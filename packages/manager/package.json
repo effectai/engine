@@ -1,0 +1,20 @@
+{
+  "name": "@effectai/manager-node",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@chainsafe/libp2p-noise": "^16.0.0",
+    "@chainsafe/libp2p-yamux": "^7.0.1",
+    "@libp2p/mplex": "^11.0.8",
+    "@libp2p/webrtc-direct": "^6.0.0",
+    "@libp2p/websockets": "^9.0.8",
+    "@libp2p/webtransport": "5.0.13",
+    "libp2p": "^2.1.9"
+  }
+}

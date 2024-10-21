@@ -1,14 +1,19 @@
 {
-  "name": "etm-frontend",
+  "name": "effect-tasks",
   "private": true,
   "sideEffects": false,
   "type": "module",
+  "workspaces": ["packages/*"],
   "scripts": {
     "build": "remix vite:build",
     "dev": "remix vite:dev",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "start": "remix-serve ./build/server/index.js",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "docs:dev": "vocs dev",
+    "docs:build": "vocs build",
+    "docs:preview": "vocs preview",
+    "worker:run": "cd packages/worker && bun run start"
   },
   "dependencies": {
     "@remix-run/node": "^2.12.1",
@@ -16,7 +21,8 @@
     "@remix-run/serve": "^2.12.1",
     "isbot": "^4.1.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "vocs": "^1.0.0-alpha.58"
   },
   "devDependencies": {
     "@remix-run/dev": "^2.12.1",

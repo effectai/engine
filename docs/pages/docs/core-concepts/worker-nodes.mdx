@@ -1,0 +1,43 @@
+## Worker Nodes
+
+Worker nodes are essential to the functionality of the Effect Tasks network, serving as the execution layer for tasks. They peform the heavy lifting by actively processing and completing tasks that range from data labeling, to audio transcribing, to verifying AI generated content. Each task must be completed within the framework set by the task provider, with manager nodes overseeing the entire process to ensure quality and accuracy. Once a task is submitted by a worker, the manager node validates the work. After validation, the worker node is rewarded based on their contribution.
+
+### Worker Node Scoring System
+As a worker node, you are scored on 6 different criteria of cognitive abilities according to Bloom’s Taxonomy:
+
+- **Remembering**
+- **Understanding**
+- **Applying**
+- **Analyzing**
+- **Evaluating**
+- **Creating**
+
+All active participants in the pool **earn a base rate of EFFECT**, which depends on your current worker node level This value is a numeric representation based on four key factors:
+
+1. **Cognitive Ability Level**
+2. **Experience**
+3. **Uniqueness**
+4. **Current Demand for your skill set**
+
+Each of these factors is then combined into a weighted sum:
+
+##### C = Cognitive Ability Index
+A numeric value representing your worker node level based on your total tasks completed and the number of skills you have obtained.
+
+##### U = Uniqueness
+A score from 0 to 1, indicating how unique your skills are compared to other worker nodes in the pool.
+
+##### D = Demand
+A score from 0 to 1, representing the current demand for your skills (e.g., the number of pending jobs that require your specific skill set).
+
+We can combine these into a value V as follows:
+```V = f(C, U, D)```
+Where V is your worker node's intrinsic value, which determines your base rate of earnings in the network.
+
+
+
+
+
+
+
+
