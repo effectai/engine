@@ -3,15 +3,16 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "docs:dev": "vocs dev",
-    "docs:build": "vocs build",
     "docs:preview": "vocs preview",
     "worker:run": "cd packages/worker && bun run start"
   },
-  "dependencies": {},
-  "devDependencies": {},
+  "devDependencies": {
+    "vitest": "^2.1.3"
+  },
   "engines": {
     "node": ">=20.0.0"
   }

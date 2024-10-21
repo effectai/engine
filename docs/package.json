@@ -1,0 +1,17 @@
+{
+	"name": "@effectai/docs",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"dev": "vocs dev",
+		"build": "vocs build",
+		"preview": "vocs preview"
+	},
+	"devDependencies": {
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
+		"vocs": "^1.0.0-alpha.61",
+		"@types/bun": "latest"
+	},
+	"dependencies": {}
+}

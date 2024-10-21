@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsc -w",
     "build": "tsc",
-    "start": "bun run index.ts"
+    "start": "node run dist/index.js"
   },
   "devDependencies": {
     "@types/bun": "latest"
