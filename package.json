@@ -3,12 +3,9 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
-    "docs:preview": "vocs preview",
-    "worker:run": "cd packages/worker && bun run start"
+    "docs:dev": "pnpm --filter @effectai/docs run dev",
+    "test": "vitest"
   },
   "devDependencies": {
     "vitest": "^2.1.3"
