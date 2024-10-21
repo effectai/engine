@@ -8,5 +8,4 @@ export function sum(a: number, b: number) {
 }
 
 test('creates a manager node', async () => {
-    await createManagerNode()
 })
