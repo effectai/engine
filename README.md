@@ -6,8 +6,10 @@ Welcome to the Effect Tasking Mono Repo, this repository contains the neccesary 
 
 | Package Name     | Description                                 | Version | Notes                      |
 |------------------|---------------------------------------------|---------|----------------------------|
-| `@effectai/worker`| libp2p worker node implementation for the browser | 1.0.0   | -        |
-| `@effectai/manager`| libp2p manager node implementation for nodejs   | 1.0.0   | -         |
+| `@effectai/task-core`| Core module that defines the tasking infrastructure, shared utilities, and protocols for the Effect Tasks network. | 1.0.0   | -        |
+| `@effectai/task-provider`| SDK for task providers to post encrypted tasks (batches) on-chain and manage interactions with manager nodes  | 1.0.0   | -         |
+| `@effectai/task-manager`| Libp2p-based implementation of a manager node, responsible for assigning tasks to worker nodes and validating results. Built for Node.js   | 1.0.0   | -         |
+| `@effectai/task-worker`| Libp2p-based implementation of a worker node, designed for browser environments, allowing workers to receive and execute tasks from manager nodes.   | 1.0.0   | -         |
 
 
 # Installation

@@ -1,33 +1,39 @@
-import { expect, test, afterEach, beforeEach } from 'vitest'
+import { expect, test, afterEach, beforeEach, it } from 'vitest'
+import { ManagerNode} from 'packages/manager/src/manager'
+import { WorkerNode } from 'packages/worker/src/worker'
+import { Batch } from 'packages/core/dist'
 
-import type {Libp2p} from 'libp2p'
-import { createManagerNode } from 'packages/manager'
-import { createWorkerNode } from 'packages/worker'
-import { multiaddr } from '@multiformats/multiaddr'
+const exampleBatch: Batch = {
+    repetitions: 2,
+    validationRate: 0.5,
+    template: '<html><body><h1>{{title}}</h1><p>{{description}}</p> <input type="submit" value="submit"/> </body></html>',
+    data: [
+      {
+        title: 'Task 1',
+        description: 'This is task 1'
+      },
+      {
+        title: 'Task 2',
+        description: 'This is task 2'
+      }
+    ]
+  }
 
-let manager: Libp2p, worker: Libp2p
+let manager: ManagerNode, worker: WorkerNode
 
 beforeEach(async () => {
-    manager = await createManagerNode()
-    worker = await createWorkerNode()
-    await manager.start();
-    await worker.start();
-})
+    manager = new ManagerNode();
+    worker = new WorkerNode();
+
+    await manager.start(15000)
+    await worker.start(15001)
+  })
 
 afterEach(async () => {
    await manager.stop()
    await worker.stop()
 })
 
-
-test('dials the manager node', async () => {
-    const managerAddress = multiaddr('/dns4/localhost/tcp/15000/ws');
-    const connection = await worker.dial(managerAddress)
-
-    // send hello from worker to manager
-    const stream = await connection.newStream('/task-flow/1.0.0')
-    await stream.sink([Buffer.from('hello from workerrr')])
-
-    // close connection
-    await connection.close()
+it('should correctly delegate tasks to workers', async () => {
+  await manager.manageBatch(exampleBatch)
 })

@@ -1,7 +1,10 @@
 {
-  "name": "@effectai/worker-node",
+  "name": "@effectai/task-worker",
   "module": "index.ts",
   "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "scripts": {
     "dev": "tsc -w",
     "build": "tsc",
@@ -14,5 +17,6 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@effectai/task-core": "workspace:*"
   }
 }

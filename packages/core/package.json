@@ -1,0 +1,29 @@
+{
+  "name": "@effectai/task-core",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "^build": "tsc",
+    "dev": "tsc -w",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@chainsafe/libp2p-noise": "^16.0.0",
+    "@chainsafe/libp2p-yamux": "^7.0.1",
+    "@libp2p/mplex": "^11.0.8",
+    "@libp2p/webrtc-direct": "^6.0.0",
+    "@libp2p/websockets": "^9.0.8",
+    "@libp2p/webtransport": "5.0.13",
+    "libp2p": "^2.1.9"
+  }
+}
