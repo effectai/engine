@@ -1,4 +1,3 @@
-// sum.test.js
 import { expect, test, afterEach, beforeEach } from 'vitest'
 
 import type {Libp2p} from 'libp2p'
