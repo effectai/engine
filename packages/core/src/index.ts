@@ -2,6 +2,9 @@ import { noise } from "@chainsafe/libp2p-noise";
 import { yamux } from "@chainsafe/libp2p-yamux";
 import { webSockets } from "@libp2p/websockets";
 import { createLibp2p, type Libp2p } from "libp2p";
+export type { Stream } from '@libp2p/interface'
+import { multiaddr, type Multiaddr } from '@multiformats/multiaddr';
+
 
 export type Batch = {
     // amount of times each task in the batch should be completed (by a different worker)
@@ -21,9 +24,8 @@ export type TaskPayload = {
 }
 
 export type TaskFlowMessage = {
-    id: string,
-    result: string,
-    type: 'task-accepted' | 'task-completed'
+    d: Record<string, any>,
+    t: 'task-accepted' | 'task-completed' | 'task-rejected' | 'task'
 }
 
 export class Libp2pNode {
@@ -67,3 +69,14 @@ export async function createNode({
         }
     });
 }
+
+export const preRenderTask = async (template: string, placeholders: Record<string, any>): Promise<string> => {
+    return template.replace(/{{(.*?)}}/g, (_, match) => placeholders[match]);
+}
+
+// TODO:: discover an array of worker nodes
+export const discoverWorkerNodes = async (): Promise<Multiaddr[]> => {
+    return [
+      multiaddr('/dns4/localhost/tcp/15001/ws')
+    ];
+  }

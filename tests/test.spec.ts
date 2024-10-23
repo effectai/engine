@@ -1,7 +1,10 @@
 import { expect, test, afterEach, beforeEach, it } from 'vitest'
 import { ManagerNode} from 'packages/manager/src/manager'
 import { WorkerNode } from 'packages/worker/src/worker'
-import { Batch } from 'packages/core/dist'
+import { Batch, createNode } from 'packages/core/dist'
+import { multiaddr, type Multiaddr } from '@multiformats/multiaddr';
+import { pipe } from 'it-pipe'
+import { fromString, toString } from 'uint8arrays'
 
 const exampleBatch: Batch = {
     repetitions: 2,
@@ -37,3 +40,4 @@ afterEach(async () => {
 it('should correctly delegate tasks to workers', async () => {
   await manager.manageBatch(exampleBatch)
 })
+
