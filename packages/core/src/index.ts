@@ -1,9 +1,20 @@
 import { noise } from "@chainsafe/libp2p-noise";
 import { yamux } from "@chainsafe/libp2p-yamux";
-import { webSockets } from "@libp2p/websockets";
+export { peerIdFromString } from '@libp2p/peer-id'
 import { createLibp2p, type Libp2p } from "libp2p";
-export type { Stream } from '@libp2p/interface'
 import { multiaddr, type Multiaddr } from '@multiformats/multiaddr';
+import { webRTC } from "@libp2p/webrtc";
+
+export type { Stream, Connection } from '@libp2p/interface'
+export {createLibp2p} from 'libp2p'
+export {webRTC} from '@libp2p/webrtc'
+export {webSockets} from '@libp2p/websockets'
+export {noise} from '@chainsafe/libp2p-noise'
+export {yamux} from '@chainsafe/libp2p-yamux'
+export {circuitRelayTransport, circuitRelayServer} from '@libp2p/circuit-relay-v2'
+export {identify} from '@libp2p/identify'
+export {multiaddr, type Multiaddr} from '@multiformats/multiaddr'
+export * as filters from '@libp2p/websockets/filters'
 
 
 export type Batch = {
@@ -18,7 +29,7 @@ export type Batch = {
 }
 
 export type TaskPayload = {
-    id:string
+    id: string
     template: string,
     data: Record<string, any>
 }
@@ -31,12 +42,13 @@ export type TaskFlowMessage = {
 export class Libp2pNode {
     public node?: Libp2p;
 
-    constructor() {}
+    constructor() { }
 
     // creates a nodes and starts it
     async start(port: number) {
-        this.node = await createNode({port})
+        this.node = await createNode({ port })
         await this.node.start();
+
     }
 
     async stop() {
@@ -52,9 +64,15 @@ export async function createNode({
 }: {
     port: number
 }): Promise<Libp2p> {
+    // have the node autoconnect to signalling server: // /ip4/127.0.0.1/tcp/24642/ws/p2p-webrtc-star/
     return await createLibp2p({
+        addresses: {
+            listen: [
+                '/ip4/127.0.0.1/tcp/20000/wss/p2p-webrtc-star'
+            ]
+        },
         transports: [
-            webSockets()
+            webRTC(),
         ],
         connectionEncrypters: [
             noise()
@@ -62,11 +80,6 @@ export async function createNode({
         streamMuxers: [
             yamux()
         ],
-        addresses: {
-            listen: [
-                `/dns4/` + 'localhost' + `/tcp/` + port + `/ws`
-            ]
-        }
     });
 }
 
@@ -77,6 +90,26 @@ export const preRenderTask = async (template: string, placeholders: Record<strin
 // TODO:: discover an array of worker nodes
 export const discoverWorkerNodes = async (): Promise<Multiaddr[]> => {
     return [
-      multiaddr('/dns4/localhost/tcp/15001/ws')
+        multiaddr('/ip4/127.0.0.1/tcp/40591/ws/p2p/12D3KooWQBPqBN8qmbzpN5kYttT1brE1z1K98yXzxdsot77TcxWo/p2p-circuit/webrtc/p2p/12D3KooWCd9ooEpmsgZLWwAqQmZruecVsFLDvdAiQZSETLzR1x8B')
     ];
-  }
+}
+
+export class Task {
+    id: string;
+    template: string;
+    data: Record<string, any>;
+
+    static fromPayload(data: TaskPayload) {
+        return new Task(data.id, data.template, data.data);
+    }
+
+    constructor(id: string, template: string, data: Record<string, any>) {
+        this.id = id;
+        this.template = template;
+        this.data = data;
+    }
+
+    compile() {
+        return preRenderTask(this.template, this.data);
+    }
+}

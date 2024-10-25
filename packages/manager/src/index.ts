@@ -1,5 +1,4 @@
-import type { Connection } from '@libp2p/interface'
-import  { Libp2pNode, type Batch, type TaskFlowMessage, discoverWorkerNodes } from '@effectai/task-core'
+import { Libp2pNode, type Batch, type TaskFlowMessage, discoverWorkerNodes, type Connection, createLibp2p, webSockets, webRTC, circuitRelayTransport, noise, yamux, identify, filters, type Multiaddr } from '@effectai/task-core'
 import { nanoid } from 'nanoid'
 import { pipe } from 'it-pipe'
 
@@ -11,20 +10,31 @@ export type InternalTask = {
   result: null | string
 }
 
-// flow of task delegation:
-// - manager requests all active worker nodes from the network
-// - manager sends tasks to available worker nodes
-// - worker nodes accepts a task and marks themselves as busy
-// - worker nodes send the result back to the manager
-
 export class ManagerNode extends Libp2pNode {
   activeBatch: Batch | null = null;
   taskMap: Map<string, InternalTask> = new Map();
+  public workerNodes: Multiaddr[] = [];
+
+  async start(port: number) {
+    this.node = await createLibp2p({
+      transports: [
+        webSockets({ filter: filters.all }),
+        webRTC(),
+        circuitRelayTransport()
+      ],
+      connectionEncrypters: [noise()],
+      streamMuxers: [yamux()],
+      services: {
+        identify: identify(),
+      }
+    })
+  }
+
 
   async delegateBatch(batch: Batch) {
     // delegate each uncompleted task to a worker node
     for (const [index, task] of this.taskMap.entries()) {
-      await this.delegateTask(batch, task);  
+      await this.delegateTask(batch, task);
     }
     // wait for all tasks to be completed
     while (Array.from(this.taskMap.values()).some(task => task.result === null)) {
@@ -33,29 +43,39 @@ export class ManagerNode extends Libp2pNode {
     }
   }
 
-  async delegateTask(batch: Batch, task: InternalTask) {
-    const addresses = await discoverWorkerNodes()
+  async invalidateTasks() {
+    for (const [index, task] of this.taskMap.entries()) {
+      // if task is sent to a worker node and it has not responded in 60 seconds, invalidate the task
+      if (task.requestSentAt && Date.now() - task.requestSentAt > 60000) {
+      }
+    }
+  }
 
-    for(const address of addresses) {
-      console.log('Dialing worker node:', address.toString());
-      if(!this.node) {
+  async delegateTask(batch: Batch, task: InternalTask) {
+    const addresses = this.workerNodes
+
+    for (const address of addresses) {
+      if (!this.node) {
         throw new Error('Node not initialized');
       }
 
+      console.log('Dialing worker node:', address.toString());
       const workerNode = await this.node.dial(address);
 
-      if(!workerNode) {
-        console.log('Failed to connect to worker node:', address.toString());
+      if (!workerNode) {
+        console.error('Failed to connect to worker node:', address.toString());
         continue;
       }
 
       const stream = await workerNode.newStream('/task-flow/1.0.0');
 
-      const sendTaskMessage = JSON.stringify({ t: 'task', d: {
-        id: task.id,
-        template: batch.template,
-        data: task.data,
-      } });
+      const sendTaskMessage = JSON.stringify({
+        t: 'task', d: {
+          id: task.id,
+          template: batch.template,
+          data: task.data,
+        }
+      });
 
       task.requestSentAt = Date.now();
 
@@ -70,21 +90,36 @@ export class ManagerNode extends Libp2pNode {
             // handle task rejection
             const receivedData = JSON.parse(new TextDecoder().decode(msg.subarray()))
             const { d, t } = receivedData as TaskFlowMessage;
-            console.log('Received messsage from worker:',t,d);
+
+            if (t === 'task-rejected') {
+              console.log('Task rejected by worker node:', d.id);
+              break;
+            }
+
+            // handle task acceptance
+            if (t === 'task-accepted') {
+              console.log('Task accepted by worker node:', d.id);
+              task.activeWorker = workerNode;
+              break;
+            }
+
+            if (t === 'task-completed') {
+              console.log('Task completed by worker node:', d.id);
+              task.result = d.result;
+              break;
+            }
           }
         }
       )
-      // wait 60 seconds for the worker to accept the task
-      // await new Promise(resolve => setTimeout(resolve, 60_000));
     }
   }
 
   async manageBatch(batch: Batch) {
-    if(!this.node) {
+    if (!this.node) {
       throw new Error('Node not initialized');
     }
 
-    if(this.activeBatch) {
+    if (this.activeBatch) {
       throw new Error('There is already an active batch');
     }
 

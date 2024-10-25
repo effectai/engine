@@ -17,6 +17,7 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
-    "@effectai/task-core": "workspace:*"
+    "@effectai/task-core": "workspace:*",
+    "uint8arraylist": "2.4.8"
   }
 }
