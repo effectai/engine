@@ -140,6 +140,9 @@ importers:
       libp2p:
         specifier: ^2.1.10
         version: 2.1.10
+      nanoid:
+        specifier: 5.0.7
+        version: 5.0.7
     devDependencies:
       typescript:
         specifier: ^5.6.3

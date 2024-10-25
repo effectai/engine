@@ -3,7 +3,8 @@ import {
   Libp2pNode, Task, type TaskFlowMessage,
   type TaskPayload, filters,
   createLibp2p, yamux, webSockets,
-  webRTC, noise, circuitRelayTransport, identify
+  webRTC, noise, circuitRelayTransport, identify,
+  type NodeEventMap
 } from '@effectai/task-core';
 
 export enum STATUS {
@@ -16,7 +17,13 @@ type WorkerState = {
   activeTask: Task | null
 }
 
-export class WorkerNode extends Libp2pNode<WorkerState> {
+export interface WorkerEvents extends NodeEventMap<WorkerState> {
+  'incoming-task': TaskPayload;
+  'accept-task': Task;
+  'reject-task': Task;
+}
+
+export class WorkerNode extends Libp2pNode<WorkerState, WorkerEvents> {
   activeTask: Task | null = null;
 
   constructor() {
@@ -42,7 +49,7 @@ export class WorkerNode extends Libp2pNode<WorkerState> {
     return true;
   }
 
-  async start() {
+  async init(){
     this.node = await createLibp2p({
       addresses: {
         listen: [
@@ -70,10 +77,6 @@ export class WorkerNode extends Libp2pNode<WorkerState> {
       }
     })
 
-    if (!this.node) {
-      throw new Error('Node not initialized');
-    }
-
     this.node.handle('/task-flow/1.0.0', async (streamData) => {
       const data = new Uint8ArrayList();
 
@@ -83,15 +86,13 @@ export class WorkerNode extends Libp2pNode<WorkerState> {
 
       const messageFromManager = JSON.parse(new TextDecoder().decode(data.subarray())) as TaskFlowMessage;
 
-      console.log("Worker received message", messageFromManager);
-
       switch (messageFromManager.t) {
-        case 'task':
+        case 'task': {
           const payload = messageFromManager.d as TaskPayload;
-          this.emit('incoming-task', messageFromManager.d);
           const task = Task.fromPayload(payload);
+          this.emit('incoming-task', task);
 
-          if (this.status === STATUS.BUSY) {
+          if (this.state.status === STATUS.BUSY) {
             await this.rejectTask(task)
             const message = JSON.stringify({
               t: 'task-rejected', d: {
@@ -102,21 +103,11 @@ export class WorkerNode extends Libp2pNode<WorkerState> {
             return;
           }
 
-          // OPTIONAL wait for acknowledgement from the manager node before setting active task
-          //TODO:: move to SetActiveTask()
-          await this.acceptTask(task)
-
-          const message = JSON.stringify({
-            t: 'task-accepted', d: {
-              id: task.id
-            }
-          });
-
-          await streamData.stream.sink([new TextEncoder().encode(message)]);
-
           break;
+        }
       }
     });
+
   }
 }
 
