@@ -1,4 +1,4 @@
-import { Libp2pNode, type Batch, type TaskFlowMessage, discoverWorkerNodes, type Connection, createLibp2p, webSockets, webRTC, circuitRelayTransport, noise, yamux, identify, filters, type Multiaddr } from '@effectai/task-core'
+import { Libp2pNode, type Batch, type TaskFlowMessage, discoverWorkerNodes, type Connection, createLibp2p, webSockets, webRTC, circuitRelayTransport, noise, yamux, identify, filters, type Multiaddr, type Libp2p } from '@effectai/task-core'
 import { nanoid } from 'nanoid'
 import { pipe } from 'it-pipe'
 
@@ -10,41 +10,64 @@ export type InternalTask = {
   result: null | string
 }
 
-export class ManagerNode extends Libp2pNode {
-  activeBatch: Batch | null = null;
-  taskMap: Map<string, InternalTask> = new Map();
-  public workerNodes: Multiaddr[] = [];
+export type ManagerState = {
+  workerNodes: Multiaddr[],
+  activeBatch: Batch | null,
+  taskMap: Map<string, InternalTask>
+}
 
-  async start(port: number) {
+export interface ManagerEvents {
+  initialized: Libp2p; // Add the appropriate type
+  'state:updated': ManagerState; // The state type you are using
+  'batch:started': Batch;
+  'task:completed': InternalTask;
+}
+
+declare module 'events' {
+  interface EventEmitter {
+    on<K extends keyof ManagerEvents>(event: K, listener: (payload: ManagerEvents[K]) => void): this;
+    emit<K extends keyof ManagerEvents>(event: K, payload: ManagerEvents[K]): boolean;
+  }
+}
+
+export class ManagerNode extends Libp2pNode<ManagerState> {
+
+  constructor() {
+    super({
+      workerNodes: [],
+      activeBatch: null,
+      taskMap: new Map()
+    })
+  }
+
+
+  async init() {
+
     this.node = await createLibp2p({
-      transports: [
-        webSockets({ filter: filters.all }),
-        webRTC(),
-        circuitRelayTransport()
-      ],
+      transports: [webSockets({ filter: filters.all }), webRTC(), circuitRelayTransport()],
       connectionEncrypters: [noise()],
       streamMuxers: [yamux()],
-      services: {
-        identify: identify(),
-      }
-    })
+      services: { identify: identify() },
+    });
+
+    this.emit('initialized', this.node);
   }
 
 
   async delegateBatch(batch: Batch) {
     // delegate each uncompleted task to a worker node
-    for (const [index, task] of this.taskMap.entries()) {
+    for (const [index, task] of this.state.taskMap.entries()) {
       await this.delegateTask(batch, task);
     }
     // wait for all tasks to be completed
-    while (Array.from(this.taskMap.values()).some(task => task.result === null)) {
+    while (Array.from(this.state.taskMap.values()).some(task => task.result === null)) {
       console.log('Waiting for tasks to be completed...');
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
 
   async invalidateTasks() {
-    for (const [index, task] of this.taskMap.entries()) {
+    for (const [index, task] of this.state.taskMap.entries()) {
       // if task is sent to a worker node and it has not responded in 60 seconds, invalidate the task
       if (task.requestSentAt && Date.now() - task.requestSentAt > 60000) {
       }
@@ -52,7 +75,7 @@ export class ManagerNode extends Libp2pNode {
   }
 
   async delegateTask(batch: Batch, task: InternalTask) {
-    const addresses = this.workerNodes
+    const addresses = this.state.workerNodes
 
     for (const address of addresses) {
       if (!this.node) {
@@ -114,31 +137,33 @@ export class ManagerNode extends Libp2pNode {
     }
   }
 
+
   async manageBatch(batch: Batch) {
     if (!this.node) {
       throw new Error('Node not initialized');
     }
 
-    if (this.activeBatch) {
+    if (this.state.activeBatch) {
       throw new Error('There is already an active batch');
     }
 
-    // set the active batch
-    this.activeBatch = batch;
-
     // store an in-memory map of tasks and their results
-    this.taskMap = new Map(
-      batch.data.map((task) => [
-        nanoid(),
-        {
-          id: nanoid(),
-          activeWorker: null,
-          requestSentAt: null,
-          data: task,
-          result: null
-        }
-      ])
-    );
+    this.setState({
+      activeBatch: batch, taskMap: new Map(
+        batch.data.map((task) => [
+          nanoid(),
+          {
+            id: nanoid(),
+            activeWorker: null,
+            requestSentAt: null,
+            data: task,
+            result: null
+          }
+        ])
+      )
+    });
+
+    this.emit('batch:started', batch);
     // start delegating tasks in this batch to worker nodes
     await this.delegateBatch(batch);
   }

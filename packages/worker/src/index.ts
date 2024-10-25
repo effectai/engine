@@ -11,11 +11,38 @@ export enum STATUS {
   BUSY = 'busy',
 }
 
-export class WorkerNode extends Libp2pNode {
-  public status: STATUS = STATUS.IDLE;
+type WorkerState = {
+  status: STATUS
+  activeTask: Task | null
+}
+
+export class WorkerNode extends Libp2pNode<WorkerState> {
   activeTask: Task | null = null;
 
-  async start(port: number) {
+  constructor() {
+    super({
+      status: STATUS.IDLE,
+      activeTask: null
+    });
+  }
+
+  async rejectTask(task: Task) {
+    this.activeTask = null;
+    this.emit('reject-task', task);
+    return true;
+  }
+
+  async acceptTask(task: Task) {
+    if (this.state.status === STATUS.BUSY) {
+      return false;
+    }
+    this.state.status = STATUS.BUSY;
+    this.activeTask = task;
+    this.emit('accept-task', task);
+    return true;
+  }
+
+  async start() {
     this.node = await createLibp2p({
       addresses: {
         listen: [
@@ -60,23 +87,24 @@ export class WorkerNode extends Libp2pNode {
 
       switch (messageFromManager.t) {
         case 'task':
-
           const payload = messageFromManager.d as TaskPayload;
+          this.emit('incoming-task', messageFromManager.d);
           const task = Task.fromPayload(payload);
 
-
           if (this.status === STATUS.BUSY) {
+            await this.rejectTask(task)
             const message = JSON.stringify({
               t: 'task-rejected', d: {
                 id: task.id
               }
             });
-
             await streamData.stream.sink([new TextEncoder().encode(message)]);
             return;
           }
 
-          this.status = STATUS.BUSY;
+          // OPTIONAL wait for acknowledgement from the manager node before setting active task
+          //TODO:: move to SetActiveTask()
+          await this.acceptTask(task)
 
           const message = JSON.stringify({
             t: 'task-accepted', d: {
@@ -84,9 +112,6 @@ export class WorkerNode extends Libp2pNode {
             }
           });
 
-          // OPTIONAL wait for acknowledgement from the manager node before setting active task
-          //TODO:: move to SetActiveTask()
-          this.activeTask = task;
           await streamData.stream.sink([new TextEncoder().encode(message)]);
 
           break;

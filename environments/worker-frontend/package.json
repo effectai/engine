@@ -10,6 +10,12 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@multiformats/multiaddr-matcher": "1.3.0",
+    "vite-plugin-node-polyfills": "0.22.0",
+    "@effectai/task-core": "workspace:*",
+    "@effectai/task-worker": "workspace:*",
+    "delay": "6.0.0",
+    "buffer": "6.0.3",
     "nuxt": "^3.13.2",
     "vue": "latest",
     "vue-router": "latest"

@@ -1,5 +1,5 @@
 {
-  "name": "nuxt-app",
+  "name": "playground",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,13 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@effectai/task-core": "workspace:*",
+    "@effectai/task-manager": "workspace:*",
+    "@effectai/task-relay": "workspace:*",
+    "@effectai/task-worker": "workspace:*",
+    "@nuxt/ui": "^2.18.7",
     "nuxt": "^3.13.2",
+    "vite-plugin-node-polyfills": "0.22.0",
     "vue": "latest",
     "vue-router": "latest"
   }

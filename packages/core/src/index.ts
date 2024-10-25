@@ -8,6 +8,7 @@ import { webRTC } from "@libp2p/webrtc";
 export type { Stream, Connection } from '@libp2p/interface'
 export {createLibp2p} from 'libp2p'
 export {webRTC} from '@libp2p/webrtc'
+export { WebRTC } from '@multiformats/multiaddr-matcher'
 export {webSockets} from '@libp2p/websockets'
 export {noise} from '@chainsafe/libp2p-noise'
 export {yamux} from '@chainsafe/libp2p-yamux'
@@ -15,7 +16,9 @@ export {circuitRelayTransport, circuitRelayServer} from '@libp2p/circuit-relay-v
 export {identify} from '@libp2p/identify'
 export {multiaddr, type Multiaddr} from '@multiformats/multiaddr'
 export * as filters from '@libp2p/websockets/filters'
+export {type Libp2p} from 'libp2p'
 
+import { EventEmitter } from 'events'
 
 export type Batch = {
     // amount of times each task in the batch should be completed (by a different worker)
@@ -39,14 +42,26 @@ export type TaskFlowMessage = {
     t: 'task-accepted' | 'task-completed' | 'task-rejected' | 'task'
 }
 
-export class Libp2pNode {
+export class Libp2pNode<LocalState> extends EventEmitter{
     public node?: Libp2p;
 
-    constructor() { }
+    public state: LocalState = {} as LocalState;
+
+    constructor(state: LocalState) {
+        super();
+        this.state = state;
+    }
+
+  setState(newState: Record<string, any>) {
+    // Merge newState into the existing state
+    this.state = { ...this.state, ...newState };
+    // Emit the updated state
+    this.emit('state:updated', this.state);
+  }
 
     // creates a nodes and starts it
-    async start(port: number) {
-        this.node = await createNode({ port })
+    async start() {
+        this.node = await createNode({})
         await this.node.start();
 
     }
@@ -60,15 +75,11 @@ export class Libp2pNode {
 }
 
 export async function createNode({
-    port = 15000
-}: {
-    port: number
-}): Promise<Libp2p> {
+}: {}): Promise<Libp2p> {
     // have the node autoconnect to signalling server: // /ip4/127.0.0.1/tcp/24642/ws/p2p-webrtc-star/
     return await createLibp2p({
         addresses: {
             listen: [
-                '/ip4/127.0.0.1/tcp/20000/wss/p2p-webrtc-star'
             ]
         },
         transports: [
