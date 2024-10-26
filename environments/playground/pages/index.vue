@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { multiaddr, Task, WebRTC, type Multiaddr } from "@effectai/task-core";
+import { multiaddr, type Task, WebRTC, type Multiaddr } from "@effectai/task-core";
 import { WorkerNode } from "@effectai/task-worker";
 import {
     delegateTaskToWorker,
@@ -70,7 +70,7 @@ import {
 import { exampleBatch } from "~/constants/exampleBatch";
 
 const relayAddress =
-    "/ip4/127.0.0.1/tcp/32989/ws/p2p/12D3KooWG8Kb4xjLhMbb2pDTsuLNN9doFE6ppUhQ29Bp6vnNP6y4";
+    "/ip4/127.0.0.1/tcp/42695/ws/p2p/12D3KooWKVr5AEUheuJSucmqDRAmKFcphJZame3QxfH1418nyMtt";
 const webRTCMultiAddress = shallowRef<Multiaddr | null | undefined>(null);
 const workerNode = shallowRef(new WorkerNode());
 const managerNode = ref(new ManagerNode());

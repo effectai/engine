@@ -1,5 +1,5 @@
-# Effect Tasking Network Mono Repo
-
+# Effect AI P2P Tasking Infrastructure
+ 
 Welcome to the Effect Tasking Mono Repo, this repository contains the neccesary packages for our tasking infrastructure to operate.
 
 ## Packages

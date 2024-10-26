@@ -86,4 +86,13 @@ export class Task {
 	compile() {
 		return preRenderTask(this.template, this.data);
 	}
+
+	toJSON() {
+		return {
+			id: this.id,
+			template: this.template,
+			data: this.data,
+			result: this.result,
+		};
+	}
 }
