@@ -37,14 +37,7 @@
         <section class="manager-section">
             <div>
                 Manager Node
-                <UBadge v-if="managerNode.node?.status == 'started'">running</UBadge>
-                <div v-if="managerNode.node?.status !== 'started'">
-                    <UButton @click="startManagerNode">start</UButton>
-                </div>
-                <div v-else class="flex gap-2 my-3">
-                    <UButton color="red">stop</UButton>
-                    <UButton color="indigo" @click="delegateTask">Delegate Task</UButton>
-                </div>
+                
             </div>
         </section>
         <section class="relay-section bg-red-500">
@@ -53,7 +46,6 @@
                     <UBadge>running</UBadge>
                 </h2>
                 <div>
-                    <p class="text-sm my-3" v-if="relayAddress"> {{ trimOnBothEnds(relayAddress, 15) }}</p>
                 </div>
             </div>
         </section>
@@ -63,44 +55,26 @@
 <script setup lang="ts">
 import { multiaddr, type Task, WebRTC, type Multiaddr } from "@effectai/task-core";
 import { WorkerNode } from "@effectai/task-worker";
-import {
-    delegateTaskToWorker,
-    ManagerNode,
-} from "../../../packages/manager/dist";
+
+import { type ManagerNode, createManagerNode } from '@effectai/task-manager';
 import { exampleBatch } from "~/constants/exampleBatch";
 
-const relayAddress =
-    "/ip4/127.0.0.1/tcp/42695/ws/p2p/12D3KooWKVr5AEUheuJSucmqDRAmKFcphJZame3QxfH1418nyMtt";
 const webRTCMultiAddress = shallowRef<Multiaddr | null | undefined>(null);
 const workerNode = shallowRef(new WorkerNode());
-const managerNode = ref(new ManagerNode());
-
 
 const incomingTask = ref<Task | null>(null);
-workerNode.value.on("incoming-task", (task: Task) => {
-    console.log("Incoming task", task);
-    incomingTask.value = task;
-});
 
-const startManagerNode = async () => {
-    await managerNode.value.init();
+console.log("hallo")
+try{
+const managerNode = shallowRef<ManagerNode | null>(await createManagerNode());
 
-    // register event listeners
-    managerNode.value.on("state:updated", (state) => {
-        console.log("state:updated", state);
-    });
+    await managerNode.value?.start();
+    const multiAddr = managerNode.value?.node?.getMultiaddrs();
+    console.log('mutliL:', multiAddr);
 
-    managerNode.value.on("initialized", (worker) => {
-        console.log("Manager initialized", worker);
-    });
-
-    managerNode.value.on("node:started", (node) => {
-        console.log("Node started", node.status);
-    });
-
-    // start the manager node
-    await managerNode.value.start();
-};
+}catch(e){
+    console.log(e)
+}
 
 const delegateTask = async () => {
     try {
@@ -112,16 +86,10 @@ const delegateTask = async () => {
 
         const tasks = exampleBatch.extractTasks();
 
-        if (!managerNode.value.node) {
+        if (!managerNode.value?.node) {
             console.error("Manager node not found");
             return;
         }
-
-        await delegateTaskToWorker(
-            managerNode.value.node,
-            webRTCMultiAddress.value,
-            tasks[0],
-        );
 
         console.log("Task delegated");
     } catch (e) {
@@ -137,7 +105,7 @@ const connectToRelay = async () => {
     try {
         await workerNode.value.init();
         await workerNode.value.start();
-        await workerNode.value.node?.dial(multiaddr(relayAddress));
+        // await workerNode.value.node?.dial(multiaddr(relayAddress));
 
         while (true) {
             webRTCMultiAddress.value = workerNode.value.node

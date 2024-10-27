@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "tsc -w",
     "build": "tsc",
-    "start:manager": "pnpm build && pnpm node dist/startManager.js"
+    "start": "pnpm build && node scripts/startManager.js"
   },
   "devDependencies": {
     "@types/uuid": "10.0.0",
@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@effectai/task-core": "workspace:*",
+    "@libp2p/circuit-relay-v2": "3.0.0",
     "nanoid": "5.0.7",
     "it-pipe": "3.0.1"
   }
