@@ -217,14 +217,6 @@ export const createManagerNode = async (bootstrapNodes: string[] = []) => {
 	});
 
 	node.addEventListener("peer:discovery", ({ detail }) => {
-		console.log(detail)
-	})
-
-	node.addEventListener("peer:update", ({ detail }) => {
-		console.log("peer info changed..")
-	})
-
-	node.addEventListener("peer:discovery", ({ detail }) => {
 		console.log("Manager Discovered:", detail);
 	});
 

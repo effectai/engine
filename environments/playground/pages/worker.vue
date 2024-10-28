@@ -19,7 +19,7 @@ const workerNode = shallowRef<WorkerNode | null>(null);
 const peers = shallowRef<Peer[] | undefined>([]);
 
 onMounted(async () => {
-	workerNode.value = await createWorkerNode(["/ip4/127.0.0.1/tcp/15003/ws/p2p/12D3KooWSYSk15diP2PfXd1S1CMgRvKUtEB3ndEA33MsDgUA8Rgn"]);
+	workerNode.value = await createWorkerNode(["/ip4/127.0.0.1/tcp/15003/ws/p2p/12D3KooWHq8fCAmHAM3DHa3tDcRxjPUsbkdeXAHyTXDc4x8NEtjm"]);
 
 	
 	await workerNode.value.node?.start();

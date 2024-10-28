@@ -37,71 +37,67 @@
 </template>
 
 <script lang="ts" setup>
-import { Task, multiaddr, type Peer } from '@effectai/task-core';
-import { type ManagerNode, createManagerNode } from '@effectai/task-manager';
-import { exampleBatch } from '~/constants/exampleBatch';
+import { Task, multiaddr, type Peer } from "@effectai/task-core";
+import { type ManagerNode, createManagerNode } from "@effectai/task-manager";
+import { exampleBatch } from "~/constants/exampleBatch";
 
 const isRunning = ref(false);
 const peers = ref<Peer[]>([]);
 const managerNode = ref<ManagerNode | null>(null);
-const workerPeers = computed(() => peers.value.filter(peer => !peer.tags.has("bootstrap")));
+const workerPeers = computed(() =>
+	peers.value.filter((peer) => !peer.tags.has("bootstrap")),
+);
+
 const selectedWorker = ref<string | null>(null);
 
 const updatePeers = async () => {
-  peers.value = await managerNode.value?.node?.peerStore.all()
-  console.log(peers.value)
-}
+	peers.value = await managerNode.value?.node?.peerStore.all();
+};
 
 const sliceBoth = (str: string) => {
-  console.log("tr:", str)
-  return `${str.slice(0, 6)}...${str.slice(-6)}`;
-}
+	return `${str.slice(0, 6)}...${str.slice(-6)}`;
+};
 
 const sendTask = async () => {
-  if(!managerNode.value){
-    throw new Error("Manager node is not available")
-  }
+	if (!managerNode.value) {
+		throw new Error("Manager node is not available");
+	}
 
-  console.log("Sending task to worker", selectedWorker.value)
+	try {
+		const foundPeer = workerPeers.value.find(
+			(peer) => peer.id.toString() == selectedWorker.value,
+		);
+		const tasks = exampleBatch.extractTasks();
 
-  const foundPeer = workerPeers.value.find(peer => peer.id.toString() == selectedWorker.value)
-  console.log("Found peer", foundPeer)
-
-  const tasks = exampleBatch.extractTasks()
-
-  try{
-
-    console.log(multiaddr(foundPeer?.addresses[0].multiaddr).toString())
-    console.log(multiaddr(foundPeer?.addresses[1].multiaddr).toString())
-
-    await managerNode.value.delegateTaskToWorker(tasks[0], multiaddr(foundPeer?.addresses[1].multiaddr))
-  }catch(e){
-    console.error(e)
-  }
-
-}
-
+		// TODO:: find the webrtc MA
+		await managerNode.value.delegateTaskToWorker(
+			tasks[0],
+			multiaddr(foundPeer?.addresses[1].multiaddr),
+		);
+	} catch (e) {
+		console.error(e);
+	}
+};
 
 onMounted(async () => {
-  try{
-    console.log("Creating manager node");
-    managerNode.value = await createManagerNode(["/ip4/127.0.0.1/tcp/15003/ws/p2p/12D3KooWSYSk15diP2PfXd1S1CMgRvKUtEB3ndEA33MsDgUA8Rgn"]);
-    
-      managerNode.value.node?.addEventListener("peer:discovery", ({detail}) => {
-        console.log(detail)
-        updatePeers()
-      });
-    
-    await managerNode.value.start();
+	try {
+		console.log("Creating manager node");
+		managerNode.value = await createManagerNode([
+			"/ip4/127.0.0.1/tcp/15003/ws/p2p/12D3KooWHq8fCAmHAM3DHa3tDcRxjPUsbkdeXAHyTXDc4x8NEtjm",
+		]);
 
-    isRunning.value = true;
+		managerNode.value.node?.addEventListener("peer:discovery", ({ detail }) => {
+			console.log(detail);
+			updatePeers();
+		});
 
-    
+		await managerNode.value.start();
 
-  }catch(e){
-    console.error(e);
-  }
-})
+		isRunning.value = true;
+	} catch (e) {
+		console.error(e);
+	}
+});
 </script>
 
 <style scoped>
