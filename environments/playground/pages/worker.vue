@@ -1,32 +1,64 @@
 <template>
-	<div class="flex justify-center p-20 bg-green-500">
-		<div v-if="workerNode" class="p-10 text-center" >
-			PeerId: {{ workerNode?.node?.peerId }}
-			<br />
-			<div v-if="peers">
-				Connected peers: {{ peers.length }}
+	<div class="relative flex min-h-screen flex-col justify-center overflow-hidden bg-gray-50 py-6 sm:py-12">
+		<img src="/img/beams.jpg" alt="" class="absolute top-1/2 left-1/2 max-w-none -translate-x-1/2 -translate-y-1/2"
+			width="1308" />
+		<div
+			class="absolute inset-0 bg-[url(/img/grid.svg)] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]">
+		</div>
+		<div
+			class="relative bg-white px-6 pt-10 pb-8 shadow-xl ring-1 ring-gray-900/5 sm:mx-auto sm:max-w-lg sm:rounded-lg sm:px-10">
+			<div class="mx-auto max-w-md">
+				<h1 class="text-xl">Worker Node</h1>
+				<div class="divide-y divide-gray-300/50">
+					<div class="my-5" v-if="isRunning">
+						<div class="my-5" v-if="workerNode?.node?.peerId">
+							<p class="text-sm">{{ sliceBoth(workerNode.node.peerId.toString()) }}</p>
+							Connected peers: {{ peers?.length || 0 }}
+						</div>
+					</div>
+					<div class="pt-8 text-base font-semibold leading-7">
+						<p class="text-gray-900">Want to dig deeper into the network?</p>
+						<p>
+							<a href="https://effect.ai/docs" class="text-sky-500 hover:text-sky-600">Read the docs
+								&rarr;</a>
+						</p>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script lang="ts" setup>
-import { multiaddr, WebRTC, type Multiaddr, type Peer } from "@effectai/task-core";
+import {
+	multiaddr,
+	Task,
+	WebRTC,
+	type Multiaddr,
+	type Peer,
+	type TaskPayload,
+} from "@effectai/task-core";
 import { type WorkerNode, createWorkerNode } from "@effectai/task-worker";
 
 // connect to relay server
 const workerNode = shallowRef<WorkerNode | null>(null);
 const peers = shallowRef<Peer[] | undefined>([]);
+const isRunning = ref(false);
+const incomingTask = ref<Task | null>();
+const config = useRuntimeConfig();
 
 onMounted(async () => {
-	workerNode.value = await createWorkerNode(["/ip4/127.0.0.1/tcp/15003/ws/p2p/12D3KooWHq8fCAmHAM3DHa3tDcRxjPUsbkdeXAHyTXDc4x8NEtjm"]);
+	if (!config.public.BOOTSTRAP_NODE) {
+		throw new Error(
+			"No bootstrap node provided, please check your env file & config",
+		);
+	}
 
-	
+	workerNode.value = await createWorkerNode([config.public.BOOTSTRAP_NODE]);
+
 	await workerNode.value.node?.start();
-    
-	workerNode.value.node?.addEventListener("peer:discovery", (peer) => {
-		updatePeers();
-	});
+
+	isRunning.value = true;
 
 	if (!workerNode.value.node) {
 		throw new Error("node is not available");
@@ -34,18 +66,21 @@ onMounted(async () => {
 
 	await workerNode.value.listenForTask();
 
-	workerNode.value.on("incoming-task", async (task) => {
+	workerNode.value.on("incoming-task", async (task: TaskPayload) => {
 		console.log("Received task", task);
+		const t = Task.fromPayload(task);
+		incomingTask.value = t;
+		console.log("Incoming task", t);
 	});
 
+	workerNode.value.node?.addEventListener("peer:discovery", (peer) => {
+		updatePeers();
+	});
 });
 
 const updatePeers = async () => {
-	peers.value = await workerNode.value?.node?.peerStore.all()
-
-	console.log("peers", peers.value);
+	peers.value = await workerNode.value?.node?.peerStore.all();
 };
-
 </script>
 
 <style scoped></style>

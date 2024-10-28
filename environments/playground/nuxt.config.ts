@@ -20,6 +20,9 @@ export default defineNuxtConfig({
     }
   },
   runtimeConfig: {
+    public: {
+      BOOTSTRAP_NODE: process.env.BOOTSTRAP_NODE || [],
+    }
   },
   vite: {
     plugins: [

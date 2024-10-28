@@ -41,6 +41,7 @@ const managerNode = ref<ManagerNode | null>(null);
 const workerPeers = computed(() =>
 	peers.value.filter((peer) => !peer.tags.has("bootstrap")),
 );
+const config = useRuntimeConfig();
 
 const selectedWorker = ref<string | null>(null);
 
@@ -48,9 +49,6 @@ const updatePeers = async () => {
 	peers.value = await managerNode.value?.node?.peerStore.all();
 };
 
-const sliceBoth = (str: string) => {
-	return `${str.slice(0, 6)}...${str.slice(-6)}`;
-};
 
 const sendTask = async () => {
 	if (!managerNode.value) {
@@ -76,9 +74,12 @@ const sendTask = async () => {
 onMounted(async () => {
 	try {
 		console.log("Creating manager node");
-		managerNode.value = await createManagerNode([
-			"/ip4/127.0.0.1/tcp/15003/ws/p2p/12D3KooWHq8fCAmHAM3DHa3tDcRxjPUsbkdeXAHyTXDc4x8NEtjm",
-		]);
+
+		if(!config.public.BOOTSTRAP_NODE) {
+			throw new Error("No bootstrap node provided, please check your env file & config");
+		}
+
+		managerNode.value = await createManagerNode([config.public.BOOTSTRAP_NODE]);
 
 		managerNode.value.node?.addEventListener("peer:discovery", ({ detail }) => {
 			console.log(detail);

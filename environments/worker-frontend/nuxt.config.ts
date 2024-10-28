@@ -9,7 +9,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      ALTERNATIVE_FRONTEND_URL: process.env.ALTERNATIVE_FRONTEND_URL
+      ALTERNATIVE_FRONTEND_URL: process.env.ALTERNATIVE_FRONTEND_URL,
     }
   }
 })
