@@ -11,17 +11,15 @@
 				<h1 class="text-xl">Worker Node</h1>
 				<div class="divide-y divide-gray-300/50">
 					<div class="my-5" v-if="isRunning">
-						<div class="my-5" v-if="workerNode?.node?.peerId">
-							<p class="text-sm">{{ sliceBoth(workerNode.node.peerId.toString()) }}</p>
+						<div class="my-5 text-sm" v-if="workerNode?.node?.peerId">
+							<p class="text-sm">peerId: {{ sliceBoth(workerNode.node.peerId.toString()) }}</p>
 							Connected peers: {{ peers?.length || 0 }}
 						</div>
+
 					</div>
 					<div class="pt-8 text-base font-semibold leading-7">
-						<p class="text-gray-900">Want to dig deeper into the network?</p>
-						<p>
-							<a href="https://effect.ai/docs" class="text-sky-500 hover:text-sky-600">Read the docs
-								&rarr;</a>
-						</p>
+						<h2>Incoming Task from Manager</h2>
+						<div class="font-normal">{{ incomingTask }}</div>
 					</div>
 				</div>
 			</div>
@@ -47,6 +45,12 @@ const isRunning = ref(false);
 const incomingTask = ref<Task | null>();
 const config = useRuntimeConfig();
 
+onBeforeUnmount(async () => {
+	if (workerNode.value) {
+		await workerNode.value.node?.stop();
+	}
+});
+
 onMounted(async () => {
 	if (!config.public.BOOTSTRAP_NODE) {
 		throw new Error(
@@ -70,7 +74,6 @@ onMounted(async () => {
 		console.log("Received task", task);
 		const t = Task.fromPayload(task);
 		incomingTask.value = t;
-		console.log("Incoming task", t);
 	});
 
 	workerNode.value.node?.addEventListener("peer:discovery", (peer) => {
