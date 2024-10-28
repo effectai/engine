@@ -17,6 +17,10 @@ import {
 	filters,
 	circuitRelayServer,
 	multiaddr,
+	workerPubSubPeerDiscovery,
+	bootstrap,
+	gossipsub,
+	persistentPeerStore,
 } from "@effectai/task-core";
 import { pipe } from "it-pipe";
 
@@ -56,6 +60,7 @@ export class ManagerNode extends Libp2pNode<ManagerState, ManagerEvents> {
 			activeBatch: null,
 			taskMap: new Map(),
 		});
+
 		this.node = node;
 	}
 
@@ -122,16 +127,10 @@ export class ManagerNode extends Libp2pNode<ManagerState, ManagerEvents> {
 		}
 	}
 
-	async delegateTaskToWorker(task: Task) {
-		const workerNode = this.selectWorkerNode();
-
-		if (!workerNode) {
-			// no worker node available.. requeue the task
-			throw new WorkerNotAvailableError();
-		}
-
+	async delegateTaskToWorker(task: Task, worker: Multiaddr) {
+		console.log("Delegating task to worker:", task.id);
 		const { stream, workerPeerId } = await this.createTaskStream(
-			workerNode,
+			worker,
 			task,
 		);
 
@@ -172,7 +171,7 @@ export class ManagerNode extends Libp2pNode<ManagerState, ManagerEvents> {
 
 		for (const task of tasks) {
 			try {
-				await this.delegateTaskToWorker(task);
+				await this.delegateTaskToWorker(task, this.state.workerNodes[0]);
 			} catch (error) {
 				if (error instanceof WorkerNotAvailableError) {
 					// requeue the task
@@ -186,22 +185,47 @@ export class ManagerNode extends Libp2pNode<ManagerState, ManagerEvents> {
 	}
 }
 
-export const createManagerNode = async () => {
+export const createManagerNode = async (bootstrapNodes: string[] = []) => {
 	const node = await createLibp2p({
+		addresses: {
+			listen: ["/p2p-circuit", "/webrtc"],
+		},
+		connectionGater: {
+			denyDialMultiaddr: async () => false,
+		},
 		transports: [
 			webSockets({ filter: filters.all }),
 			webRTC(),
 			circuitRelayTransport(),
 		],
-		addresses: {
-			listen: ["/ip4/127.0.0.1/tcp/0/ws"],
-		},
+		peerDiscovery: [
+			workerPubSubPeerDiscovery({
+				type: "manager",
+			}),
+			bootstrap({
+				list: bootstrapNodes,
+			}),
+		],
 		connectionEncrypters: [noise()],
 		streamMuxers: [yamux()],
 		services: {
 			identify: identify(),
-			relay: circuitRelayServer({}),
+			pubsub: gossipsub({
+				allowPublishToZeroTopicPeers: true,
+			}),
 		},
+	});
+
+	node.addEventListener("peer:discovery", ({ detail }) => {
+		console.log(detail)
+	})
+
+	node.addEventListener("peer:update", ({ detail }) => {
+		console.log("peer info changed..")
+	})
+
+	node.addEventListener("peer:discovery", ({ detail }) => {
+		console.log("Manager Discovered:", detail);
 	});
 
 	return new ManagerNode(node);

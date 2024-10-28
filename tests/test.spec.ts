@@ -1,43 +1,94 @@
-import { expect, test, afterEach, beforeEach, it } from 'vitest'
-import { ManagerNode} from 'packages/manager/src/manager'
-import { WorkerNode } from 'packages/worker/src/worker'
-import { Batch, createNode } from 'packages/core/dist'
-import { multiaddr, type Multiaddr } from '@multiformats/multiaddr';
-import { pipe } from 'it-pipe'
-import { fromString, toString } from 'uint8arrays'
+import {
+	circuitRelayServer,
+	circuitRelayTransport,
+	createLibp2p,
+	filters,
+	identify,
+	kadDHT,
+	multiaddr,
+	bootstrap,
+	noise,
+	peerIdFromString,
+	removePublicAddressesMapper,
+	webRTC,
+	webSockets,
+	yamux,
+} from "packages/core/dist";
+import { expect, test, afterEach, beforeEach, it } from "vitest";
 
-const exampleBatch: Batch = {
-    repetitions: 2,
-    validationRate: 0.5,
-    template: '<html><body><h1>{{title}}</h1><p>{{description}}</p> <input type="submit" value="submit"/> </body></html>',
-    data: [
-      {
-        title: 'Task 1',
-        description: 'This is task 1'
-      },
-      {
-        title: 'Task 2',
-        description: 'This is task 2'
-      }
-    ]
-  }
+it(
+	"tests a DHT",
+	async () => {
+		const bootstrapNode = await createLibp2p({
+			addresses: {
+				listen: ["/ip4/127.0.0.1/tcp/15005/ws"],
+			},
+			transports: [webSockets({})],
+			connectionEncrypters: [noise()],
+			streamMuxers: [yamux()],
+			services: {
+				kadDHT: kadDHT({
+					clientMode: false,
+					peerInfoMapper: (peer) => {
+						console.log("hello!", peer)
+						return peer
+					},
+				}),
+			
+				identify: identify(),
+			},
+		});
 
-let manager: ManagerNode, worker: WorkerNode
+		bootstrapNode.addEventListener("peer:discovery", (peer) => {
+			console.log("Discovered:", peer.detail);
+		});
 
-beforeEach(async () => {
-    manager = new ManagerNode();
-    worker = new WorkerNode();
+		bootstrapNode.addEventListener("peer:connect", (peer) => {
+			console.log("bootstrap Connected:", peer.detail);
+		})
 
-    await manager.start(15000)
-    await worker.start(15001)
-  })
+		await bootstrapNode.start();
 
-afterEach(async () => {
-   await manager.stop()
-   await worker.stop()
-})
+		// connect the client to the bootstrap node
+		const bootstrapNodeAddr = bootstrapNode.getMultiaddrs()[0];
 
-it('should correctly delegate tasks to workers', async () => {
-  await manager.manageBatch(exampleBatch)
-})
+		const client1 = await createLibp2p({
+			transports: [webSockets({})],
+			peerDiscovery: [
+				bootstrap({
+					list: [bootstrapNodeAddr.toString()],
+				}),
+			],
+			connectionEncrypters: [noise()],
+			streamMuxers: [yamux()],
+		});
 
+		client1.addEventListener("peer:discovery", (peer) => {
+			console.log("Client1 Discovered:", peer.detail);
+		});
+
+		const client2 = await createLibp2p({
+			transports: [webSockets({})],
+			peerDiscovery: [
+				bootstrap({
+					list: [bootstrapNodeAddr.toString()],
+				}),
+			],
+			connectionEncrypters: [noise()],
+			streamMuxers: [yamux()],
+			services: {
+				identify: identify({})
+			}
+		});
+
+		client2.addEventListener("peer:discovery", (peer) => {
+			console.log("Client2 Discovered:", peer.detail);
+		});
+
+		await client1.start();
+		await client2.start();
+
+		// wait for the connection to be established
+	},
+	{ timeout: 25000 },
+);

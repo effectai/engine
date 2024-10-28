@@ -1,2 +1,2 @@
-import {createRelayServer} from './../dist/index.js'
-const server = createRelayServer()
+import {createBootstrapRelayerServer} from './../dist/index.js'
+const server = createBootstrapRelayerServer()

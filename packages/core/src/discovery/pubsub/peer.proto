@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+enum PeerType {
+  WORKER = 0;
+  MANAGER = 1;
+  RELAY = 2;
+}
+
+message Peer {
+  bytes publicKey = 1;
+  repeated bytes addrs = 2;
+  PeerType peerType = 3;
+}
