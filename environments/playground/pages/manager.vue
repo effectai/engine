@@ -49,7 +49,6 @@ const updatePeers = async () => {
 	peers.value = await managerNode.value?.node?.peerStore.all();
 };
 
-
 const sendTask = async () => {
 	if (!managerNode.value) {
 		throw new Error("Manager node is not available");
@@ -70,6 +69,7 @@ const sendTask = async () => {
 		console.error(e);
 	}
 };
+
 
 onMounted(async () => {
 	try {
@@ -93,6 +93,17 @@ onMounted(async () => {
 		console.error(e);
 	}
 });
+
+onBeforeUnmount(async () => {
+	if (managerNode.value) {
+		await managerNode.value.node?.stop();
+	}
+});
+
+setInterval(() => {
+	updatePeers();
+}, 7500);
+
 </script>
 
 <style scoped>

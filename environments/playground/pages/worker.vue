@@ -18,8 +18,13 @@
 
 					</div>
 					<div class="pt-8 text-base font-semibold leading-7">
-						<h2>Incoming Task from Manager</h2>
-						<div class="font-normal">{{ incomingTask }}</div>
+						<h2 v-if="incomingTask">Incoming Task from Manager:
+							<div class="font-normal">{{ incomingTask }}</div>
+						</h2>
+						<div v-else>
+							<p class="text-sm text-slate-300 my-2">awaiting tasks from managers.</p>
+							<UProgress animation="carousel" />
+						</div>
 					</div>
 				</div>
 			</div>
