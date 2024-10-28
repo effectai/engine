@@ -29,7 +29,12 @@ export const createBootstrapRelayerServer = async () => {
 				allowPublishToZeroTopicPeers: true,
 			}),
 			identify: identify(),
-			relay: circuitRelayServer(),
+			relay: circuitRelayServer({
+				reservations: {
+					maxReservations: 32,
+					reservationClearInterval: 30000,
+				}
+			}),
 		},
 	});
 
