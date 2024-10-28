@@ -19,12 +19,10 @@ export const createBootstrapRelayerServer = async () => {
 		},
 		nodeInfo: {
 			version: "1.0.0",
-			name: 'relay'
+			name: "relay",
 		},
 		connectionEncrypters: [noise()],
-		peerDiscovery: [
-			workerPubSubPeerDiscovery({type: 'relay'}),
-		],
+		peerDiscovery: [workerPubSubPeerDiscovery({ type: "relay" })],
 		streamMuxers: [yamux()],
 		services: {
 			pubsub: gossipsub({

@@ -11,7 +11,7 @@
 	},
 	"scripts": {
 		"build": "tsc",
-		"start": "tsc && node scripts/startRelayServer.js",
+		"start": "node scripts/startRelayServer.js",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"keywords": [],

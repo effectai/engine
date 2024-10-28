@@ -8,19 +8,13 @@
       <div class="divide-y divide-gray-300/50">
 		<div class="my-5" v-if="isRunning">
 			Connected worker nodes: {{ workerPeers?.length || 0 }}
-      
       <div class="my-5">
-
-        
         <URadioGroup
           v-model="selectedWorker"
           :options="workerPeers.map(peer => ({ label: sliceBoth(peer.id.toString()), value: peer.id }))"
         >
-
         </URadioGroup>
-
 			<UButton :disabled="!selectedWorker" @click="sendTask" class="mt-5">Send Task</UButton>
-
       </div>
 		</div>
         <div class="pt-8 text-base font-semibold leading-7">
