@@ -15,7 +15,7 @@ export const createBootstrapRelayerServer = async () => {
 	const relay = await createLibp2p({
 		transports: [webSockets({ filter: filters.all })],
 		addresses: {
-			listen: ["/ip4/127.0.0.1/tcp/15003/ws"],
+			listen: ["/ip4/0.0.0.0/tcp/15003/ws"],
 		},
 		nodeInfo: {
 			version: "1.0.0",
