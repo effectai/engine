@@ -1,12 +1,14 @@
 import type { Libp2p, Libp2pNode, Peer, NodeEventMap } from "@effectai/task-core";
 
-const peers: Ref<Peer[]> = ref([]);
+export const usePeerInfo = (node: Libp2p) => {
 
-export const usePeerInfo = (node: Ref<Libp2pNode | null>) => {
+    const peers: Ref<Peer[]> = ref([]);
 
     const refreshPeers = async () => {
-        if(!node.value?.node) return;
-        peers.value = await node.value.node.peerStore.all();
+        if(!node) return;
+        const result = await node.peerStore.all();
+        console.log(result)
+        peers.value = result;
     }
 
 	const managerPeers = computed(() =>
@@ -29,7 +31,5 @@ export const usePeerInfo = (node: Ref<Libp2pNode | null>) => {
         workerPeers
     }
 };
-
-export const useManagerNode = () => {};
 
 export const useNodes = () => {};

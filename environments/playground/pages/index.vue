@@ -68,7 +68,6 @@ console.log("hallo")
 try{
 const managerNode = shallowRef<ManagerNode | null>(await createManagerNode());
 
-    await managerNode.value?.start();
     const multiAddr = managerNode.value?.node?.getMultiaddrs();
     console.log('mutliL:', multiAddr);
 

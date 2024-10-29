@@ -46,10 +46,17 @@ import { type ManagerNode, createManagerNode } from "@effectai/task-manager";
 import { exampleBatch } from "~/constants/exampleBatch";
 
 const isRunning = ref(false);
-const managerNode = shallowRef<ManagerNode | null>(null);
-const { workerPeers, managerPeers, refreshPeers } = usePeerInfo(managerNode);
-
 const config = useRuntimeConfig();
+const managerNode = shallowRef<ManagerNode | null>(await createManagerNode([config.public.BOOTSTRAP_NODE]));
+await managerNode.value?.node?.start()
+isRunning.value = true;
+
+if(!managerNode.value?.node) {
+	throw new Error("Manager node is not available");
+}
+
+const { workerPeers, refreshPeers } = usePeerInfo(managerNode.value.node);
+
 const toast = useToast();
 
 const formattedPeer = computed(() => {
@@ -67,17 +74,18 @@ const sendTask = async () => {
 	}
 
 	try {
-		const selectedPeerMultiAddress = workerPeers.value?.find((peer) => peer.id.toString() === selectedWorker.value?.toString())?.addresses.find(
-			(address) => WebRTC.matches(multiaddr(address.multiaddr)),
-		)
+		const selectedPeerMultiAddress = workerPeers.value
+			?.find((peer) => peer.id.toString() === selectedWorker.value?.toString())
+			?.addresses.find((address) =>
+				WebRTC.matches(multiaddr(address.multiaddr)),
+			);
 
-		if(!selectedPeerMultiAddress) {
+		if (!selectedPeerMultiAddress) {
 			throw new Error("Selected peer does not have a dialable address");
 		}
 
+		// send an example task to the worker
 		const tasks = exampleBatch.extractTasks();
-
-		// TODO:: find the webrtc MA
 		await managerNode.value.delegateTaskToWorker(
 			tasks[0],
 			multiaddr(selectedPeerMultiAddress.multiaddr),
@@ -93,30 +101,6 @@ const sendTask = async () => {
 	}
 };
 
-onMounted(async () => {
-	try {
-		console.log("Creating manager node");
-
-		if (!config.public.BOOTSTRAP_NODE) {
-			throw new Error(
-				"No bootstrap node provided, please check your env file & config",
-			);
-		}
-
-		managerNode.value = await createManagerNode([config.public.BOOTSTRAP_NODE]);
-
-		managerNode.value.node?.addEventListener("peer:discovery", ({ detail }) => {
-			refreshPeers()
-		});
-
-		await managerNode.value.start();
-
-		isRunning.value = true;
-	} catch (e) {
-		console.error(e);
-	}
-});
-
 const interval = setInterval(() => {
 	refreshPeers();
 }, 7500);
@@ -127,8 +111,6 @@ onBeforeUnmount(async () => {
 	}
 	clearInterval(interval);
 });
-
-
 </script>
 
 <style scoped></style>
