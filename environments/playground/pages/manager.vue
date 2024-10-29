@@ -35,23 +35,19 @@
 </template>
 
 <script lang="ts" setup>
-import {
-	Task,
-	multiaddr,
-	type Peer,
-	WebRTC,
-	webRTC,
-} from "@effectai/task-core";
+import { Task, multiaddr, type Peer, WebRTC } from "@effectai/task-core";
 import { type ManagerNode, createManagerNode } from "@effectai/task-manager";
 import { exampleBatch } from "~/constants/exampleBatch";
 
 const isRunning = ref(false);
 const config = useRuntimeConfig();
-const managerNode = shallowRef<ManagerNode | null>(await createManagerNode([config.public.BOOTSTRAP_NODE]));
-await managerNode.value?.node?.start()
+const managerNode = shallowRef<ManagerNode | null>(
+	await createManagerNode([config.public.BOOTSTRAP_NODE]),
+);
+await managerNode.value?.node?.start();
 isRunning.value = true;
 
-if(!managerNode.value?.node) {
+if (!managerNode.value?.node) {
 	throw new Error("Manager node is not available");
 }
 
@@ -74,13 +70,18 @@ const sendTask = async () => {
 	}
 
 	try {
-		const selectedPeerMultiAddress = workerPeers.value
-			?.find((peer) => peer.id.toString() === selectedWorker.value?.toString())
-			?.addresses.find((address) =>
-				WebRTC.matches(multiaddr(address.multiaddr)),
-			);
+		// find peer in peerStore
+		const peer = workerPeers.value?.find(
+			(peer) => peer.id.toString() === selectedWorker.value?.toString(),
+		);
+		if (!peer) {
+			throw new Error("Selected worker is not available");
+		}
+		const webrtcWithPeerId = peer.addresses.filter((addr) =>
+			/webrtc\/p2p\/\w+$/.test(multiaddr(addr.multiaddr).toString()),
+		);
 
-		if (!selectedPeerMultiAddress) {
+		if (!webrtcWithPeerId) {
 			throw new Error("Selected peer does not have a dialable address");
 		}
 
@@ -88,7 +89,7 @@ const sendTask = async () => {
 		const tasks = exampleBatch.extractTasks();
 		await managerNode.value.delegateTaskToWorker(
 			tasks[0],
-			multiaddr(selectedPeerMultiAddress.multiaddr),
+			multiaddr(webrtcWithPeerId[0].multiaddr),
 		);
 
 		toast.add({

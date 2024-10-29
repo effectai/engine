@@ -78,6 +78,12 @@ export class Task {
 	data: Record<string, any>;
 	result: string | null = null;
 
+	// override equals method
+	equals(other: Task) {
+		return this.id === other.id;
+	}
+
+
 	static fromPayload(data: TaskPayload) {
 		return new Task(data.id, data.template, data.data);
 	}
