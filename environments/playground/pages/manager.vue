@@ -11,9 +11,9 @@
 				<h1 class="text-xl">Manager Node
 					<span class="text-sm" v-if="formattedPeer">({{ formattedPeer }})</span>
 				</h1> 
-				<div class="divide-y divide-gray-300/50">
-					<div class="my-5" v-if="isRunning">
-						Connected worker nodes: {{ workerPeers?.length || 0 }}
+				<div class="divide-y divide-gray-300/50 font-mono">
+					<div class="" v-if="isRunning">
+						<p class="font-sm">Connected worker nodes: {{ workerPeers?.length || 0 }}</p>
 						<div class="my-5">
 							<URadioGroup v-model="selectedWorker"
 								:options="workerPeers.map(peer => ({ label: sliceBoth(peer.id.toString()), value: peer.id }))">

@@ -8,8 +8,9 @@
 		</div>
 		<div
 			class="relative font-mono bg-white px-6 pt-10 pb-8 shadow-xl ring-1 ring-gray-900/5 sm:mx-auto sm:max-w-2xl sm:rounded-lg sm:px-10">
-			<div class="mx-auto max-w-xl">
-				<h1 class="text-xl font-mono">Worker Node <span class="text-sm">({{ peerIdFormatted }})</span></h1>
+			<div class="mx-auto max-w-xl text-center">
+				<h1 class="text-xl font-mono">Worker Node V0</h1>
+				<span class="text-sm">({{ peerIdFormatted }})</span>
 				<div class="divide-y divide-gray-300/50">
 					<div class="text-sm" v-if="managerPeers.length">paired to {{ managerPeers.length }} manager(s)
 					
