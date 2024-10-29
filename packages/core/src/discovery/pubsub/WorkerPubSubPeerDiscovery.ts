@@ -1,4 +1,8 @@
-import { TypedEventEmitter, peerDiscoverySymbol } from "@libp2p/interface";
+import {
+	NotFoundError,
+	TypedEventEmitter,
+	peerDiscoverySymbol,
+} from "@libp2p/interface";
 import type {
 	PeerDiscovery,
 	PeerDiscoveryEvents,
@@ -35,6 +39,13 @@ export interface WorkerPubSubPeerDiscoveryOptions {
 	interval?: number;
 
 	/**
+	 * If true, we will broadcast messages without subscribing to the topic
+	 * @default false
+	 * @example
+	 * ```js
+	 */
+	broadcastWithoutSubscribing?: boolean;
+	/**
 	 * The type of the node
 	 */
 	type: "worker" | "manager" | "relay";
@@ -48,6 +59,7 @@ export class WorkerPubSubPeerDiscovery
 	private readonly interval: number;
 	private intervalId?: ReturnType<typeof setInterval>;
 	private topics: string[] = [];
+	private broadcastWithoutSubscribing: boolean;
 	private type: WorkerPubSubPeerDiscoveryOptions["type"];
 
 	constructor(
@@ -58,12 +70,16 @@ export class WorkerPubSubPeerDiscovery
 
 		this.components = components;
 		this.type = initOptions.type;
+		this.broadcastWithoutSubscribing =
+			initOptions.broadcastWithoutSubscribing || false;
+
 		this.interval = initOptions.interval || 3000;
 		this.topics = ["worker-discovery:pubsub"];
 	}
 
 	beforeStart(): void | Promise<void> {
 		// throw new Error('Method not implemented.')
+		console.log("starting..");
 	}
 
 	start(): void | Promise<void> {
@@ -83,9 +99,10 @@ export class WorkerPubSubPeerDiscovery
 		}
 
 		for (const topic of this.topics) {
-			pubsub.subscribe(topic);
-			console.log("Subscribed to topic", topic);
-			pubsub.addEventListener("message", (event) => this._onMessage(event));
+			if (!this.broadcastWithoutSubscribing) {
+				pubsub.subscribe(topic);
+				pubsub.addEventListener("message", (event) => this._onMessage(event));
+			}
 		}
 
 		this._broadcastMessage();
@@ -119,29 +136,42 @@ export class WorkerPubSubPeerDiscovery
 		const message = event.detail;
 
 		try {
-			// if we are a worker, we should ignore messages from other workers
 			const peer = PBPeer.decode(message.data);
 			const publicKey = publicKeyFromProtobuf(peer.publicKey);
 			const peerId = peerIdFromPublicKey(publicKey);
-			
-			if (this.type === "worker" && peer.peerType === PeerType.Worker || peerId.equals(this.components.peerId)) {
-				// ignore worker messages if we are a worker or if the message is from us
+
+			// ignore worker messages if we are a worker or if the message is from us
+			// or if we are a manager, we should ignore messages from other managers
+			if (
+				(this.type === "worker" && peer.peerType === PeerType.Worker) ||
+				(this.type === "manager" && peer.peerType === PeerType.Manager) ||
+				peerId.equals(this.components.peerId)
+			) {
 				return;
 			}
 
-			//  if we are a manager, we should ignore messages from other managers
-			if (this.type === "manager" && peer.peerType === PeerType.Manager) {
-				return;
-			}
-			
-			this.safeDispatchEvent<PeerInfo & {peerType: number}>("peer", {
+			// check if this peer is already in the peer store, if so update the tags
+			this.components.peerStore
+				.get(peerId)
+				.then((p) => {
+					if (peer) {
+						this.components.peerStore.merge(peerId, {
+							tags: {
+								peerType: { value: peer.peerType },
+							},
+						});
+					}
+				})
+				.catch((e) => {
+					console.log("Error while getting peer from peer store", e);
+				});
+
+			this.safeDispatchEvent<PeerInfo>("peer", {
 				detail: {
 					id: peerId,
 					multiaddrs: peer.addrs.map((b) => multiaddr(b)),
-					peerType: peer.peerType
 				},
 			});
-
 		} catch (err) {
 			console.error("Failed to decode peer message", err);
 		}

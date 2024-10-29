@@ -21,6 +21,8 @@ export const createBootstrapRelayerServer = async () => {
 			version: "1.0.0",
 			name: "relay",
 		},
+		connectionManager: {
+		},
 		connectionEncrypters: [noise()],
 		peerDiscovery: [workerPubSubPeerDiscovery({ type: "relay" })],
 		streamMuxers: [yamux()],
@@ -33,12 +35,22 @@ export const createBootstrapRelayerServer = async () => {
 				reservations: {
 					maxReservations: 32,
 					reservationClearInterval: 30000,
-				}
+				},
 			}),
 		},
 	});
 
+
 	await relay.start();
+
+	relay.addEventListener("peer:discovery", ({ detail }) => {
+		console.log("Relay Discovered:", detail);
+	})
+
+	// report amount of reservations every 10 seconds
+	setInterval(() => {
+		console.log("Relay reservations:", relay.services.relay.reservations.size);
+	}, 10000);
 
 	console.log("Relay server listening on:", relay.getMultiaddrs());
 

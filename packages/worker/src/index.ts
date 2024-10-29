@@ -129,7 +129,9 @@ export const createWorkerNode = async (bootstrapNodes: string[] = []) => {
 		streamMuxers: [yamux()],
 		services: {
 			identify: identify({}),
-			pubsub: gossipsub(),
+			pubsub: gossipsub({
+				allowPublishToZeroTopicPeers: true,
+			}),
 		},
 	});
 

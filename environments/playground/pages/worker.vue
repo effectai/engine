@@ -8,14 +8,13 @@
 		<div
 			class="relative bg-white px-6 pt-10 pb-8 shadow-xl ring-1 ring-gray-900/5 sm:mx-auto sm:max-w-lg sm:rounded-lg sm:px-10">
 			<div class="mx-auto max-w-md">
-				<h1 class="text-xl">Worker Node</h1>
+				<h1 class="text-xl font-mono">Worker Node</h1>
 				<div class="divide-y divide-gray-300/50">
-					<div class="my-5" v-if="isRunning">
-						<div class="my-5 text-sm" v-if="workerNode?.node?.peerId">
-							<p class="text-sm">peerId: {{ sliceBoth(workerNode.node.peerId.toString()) }}</p>
-							Connected peers: {{ peers?.length || 0 }}
+					<div class="my-5 font-mono" v-if="isRunning">
+						<div class="my-5" v-if="workerNode?.node?.peerId">
+							<p class=""><b>peerId:</b> {{ sliceBoth(workerNode.node.peerId.toString()) }}</p>
+							<b>Connected peers:</b> {{ peers?.length || 0 }}
 						</div>
-
 					</div>
 					<div class="pt-8 text-base font-semibold leading-7">
 						<h2 v-if="incomingTask">Incoming Task from Manager:

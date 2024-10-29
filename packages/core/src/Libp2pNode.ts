@@ -6,7 +6,7 @@ export interface NodeEventMap<State> {
 	"state:updated": State;
 }
 
-export class Libp2pNode<State, Events extends NodeEventMap<State> = NodeEventMap<State>> extends EventEmitter {
+export class Libp2pNode<State = unknown, Events extends NodeEventMap<State> = NodeEventMap<State>> extends EventEmitter {
     protected eventMap: Events = {} as Events;
     public node?: Libp2p;
 

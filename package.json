@@ -11,6 +11,7 @@
     }
   },
   "scripts": {
+    "purge": "pnpm recursive exec -- rm -rf node_modules dist",
     "manager:start": "pnpm --filter @effectai/task-manager run start",
     "relay:start": "pnpm --filter @effectai/task-relay run start",
     "dev": "pnpm turbo dev",
