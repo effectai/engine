@@ -92,7 +92,7 @@ export class WorkerNode extends Libp2pNode<WorkerState, WorkerEvents> {
 	}
 
 	async closeActiveStream() {
-		await this.activeTaskStream?.close();
+		// await this.activeTaskStream?.close();
 		this.activeTaskStream = null;
 	}
 
