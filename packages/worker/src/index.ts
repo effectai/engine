@@ -180,7 +180,8 @@ export const createWorkerNode = async (bootstrapNodes: string[] = []) => {
 		transports: [
 			webSockets({ filter: filters.all }),
 			webRTC(),
-			circuitRelayTransport({}),
+			circuitRelayTransport({
+			}),
 		],
 		connectionEncrypters: [noise()],
 		streamMuxers: [yamux()],

@@ -8,7 +8,7 @@
 		</div>
 		<div
 			class="relative font-mono bg-white px-6 pt-10 pb-8 shadow-xl ring-1 ring-gray-900/5 sm:mx-auto sm:max-w-2xl sm:rounded-lg sm:px-10">
-			<div class="mx-auto max-w-xl text-center">
+			<div class="mx-auto max-w-lg text-center">
 				<h1 class="text-xl font-mono">Worker Node V0</h1>
 				<span class="text-sm">({{ peerIdFormatted }})</span>
 				<div class="divide-y divide-gray-300/50">
@@ -25,7 +25,7 @@
 							<p class="text-sm">Awaiting tasks</p>
 							<UProgress></UProgress>
 						</div>
-						<div v-else-if="activeTask" class="mt-5 bg-slate-300 p-3">
+						<div v-else-if="activeTask" class="mt-5 bg-gray-200 p-3">
 							<form @submit.prevent="submitTemplate">
 								<div v-html="activeTask.compile()"></div>
 							</form>
@@ -34,11 +34,11 @@
 							<p class="mt-5 font-bold">Incoming tasks:</p>
 
 							<div v-for="incomingTask in incomingTasks.values()">
-								<div class="my-5 bg-slate-300 p-4">
+								<div class="my-5 bg-slate-300 p-4 flex-col gap-3 flex">
 									<p class="text-sm">Task ID: {{ incomingTask.task.id }}</p>
 									<p class="text-sm">Task title: {{ incomingTask.task.data.title }}</p>
 									<p class="text-sm">Task description: {{ incomingTask.task.data.description }}</p>
-									<div class="flex gap-2 mt-5">
+									<div class="flex gap-2 mt-5 justify-center">
 										<UButton @click="acceptTask(incomingTask.task)">Accept Task</UButton>
 										<UButton color="red" @click="rejectTask(incomingTask.task)">Reject Task </UButton>
 									</div>

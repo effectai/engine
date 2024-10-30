@@ -14,6 +14,7 @@
 				<div class="divide-y divide-gray-300/50 font-mono">
 					<div class="" v-if="isRunning">
 						<p class="font-sm">Connected worker nodes: {{ workerPeers?.length || 0 }}</p>
+						<!-- {{ selectedWorkerAddresses }} -->
 						<div class="my-5">
 							<URadioGroup v-model="selectedWorker"
 								:options="workerPeers.map(peer => ({ label: sliceBoth(peer.id.toString()), value: peer.id }))">
@@ -63,6 +64,21 @@ const formattedPeer = computed(() => {
 });
 
 const selectedWorker = ref<string | null>(null);
+const selectedWorkerAddresses = computed(() => {
+	if (!workerPeers.value || !selectedWorker.value) {
+		return [];
+	}
+
+	const peer = workerPeers.value.find(
+		(peer) => peer.id.toString() === selectedWorker.value?.toString(),
+	);
+
+	if (!peer) {
+		return [];
+	}
+
+	return peer.addresses.map((addr) => multiaddr(addr.multiaddr))
+});
 
 const sendTask = async () => {
 	if (!managerNode.value) {
@@ -74,9 +90,11 @@ const sendTask = async () => {
 		const peer = workerPeers.value?.find(
 			(peer) => peer.id.toString() === selectedWorker.value?.toString(),
 		);
+
 		if (!peer) {
 			throw new Error("Selected worker is not available");
 		}
+
 		const webrtcWithPeerId = peer.addresses.filter((addr) =>
 			/webrtc\/p2p\/\w+$/.test(multiaddr(addr.multiaddr).toString()),
 		);
@@ -87,8 +105,9 @@ const sendTask = async () => {
 
 		// send an example task to the worker
 		const tasks = exampleBatch.extractTasks();
+
 		await managerNode.value.delegateTaskToWorker(
-			tasks[0],
+			tasks[Math.floor(Math.random() * tasks.length)],
 			multiaddr(webrtcWithPeerId[0].multiaddr),
 		);
 
@@ -107,7 +126,10 @@ const interval = setInterval(() => {
 }, 7500);
 
 onBeforeUnmount(async () => {
-	if (managerNode.value) {
+	if (managerNode.value?.node) {
+		for(const connection of managerNode.value.node.getConnections()) {
+			await connection.close();
+		}
 		await managerNode.value.node?.stop();
 	}
 	clearInterval(interval);
