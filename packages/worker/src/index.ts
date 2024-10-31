@@ -1,9 +1,11 @@
 import { Uint8ArrayList } from "uint8arraylist";
 import {
-	Libp2pNode,
-	Task,
 	type TaskFlowMessage,
 	type TaskPayload,
+	type NodeEventMap,
+	type Libp2p,
+	Libp2pNode,
+	Task,
 	filters,
 	createLibp2p,
 	yamux,
@@ -12,11 +14,6 @@ import {
 	noise,
 	circuitRelayTransport,
 	identify,
-	identifyPush,
-	type NodeEventMap,
-	type Libp2p,
-	kadDHT,
-	removePrivateAddressesMapper,
 	gossipsub,
 	workerPubSubPeerDiscovery,
 	bootstrap,
@@ -175,13 +172,12 @@ export const createWorkerNode = async (bootstrapNodes: string[] = []) => {
 			}),
 			bootstrap({
 				list: bootstrapNodes,
-			}),
+			}), 
 		],
 		transports: [
 			webSockets({ filter: filters.all }),
 			webRTC(),
-			circuitRelayTransport({
-			}),
+			circuitRelayTransport({}),
 		],
 		connectionEncrypters: [noise()],
 		streamMuxers: [yamux()],

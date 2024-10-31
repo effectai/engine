@@ -12,17 +12,16 @@
 				<h1 class="text-xl font-mono">Worker Node V0</h1>
 				<span class="text-sm">({{ peerIdFormatted }})</span>
 				<div class="divide-y divide-gray-300/50">
-					<div class="text-sm" v-if="managerPeers.length">paired to {{ managerPeers.length }} manager(s)
-					
+					<div class="text-sm" v-if="managerPeers.length">
+						paired to {{ managerPeers.length }} manager(s)
 					</div>
 					<div class="my-5 font-mono" v-if="isRunning">
 						<div v-if="managerPeers.length == 0" class="mt-3 text-center">
 							<p class="text-sm my-2">pairing with manager nodes</p>
 							<UProgress></UProgress>
 						</div>
-
 						<div class="text-center my-5" v-else-if="!incomingTasks.size && !activeTask">
-							<p class="text-sm">Awaiting tasks</p>
+							<p class="text-sm my-2">Awaiting tasks</p>
 							<UProgress></UProgress>
 						</div>
 						<div v-else-if="activeTask" class="mt-5 bg-gray-200 p-3">
@@ -32,7 +31,6 @@
 						</div>
 						<div v-else-if="incomingTasks && incomingTasks.size > 0">
 							<p class="mt-5 font-bold">Incoming tasks:</p>
-
 							<div v-for="incomingTask in incomingTasks.values()">
 								<div class="my-5 bg-slate-300 p-4 flex-col gap-3 flex">
 									<p class="text-sm">Task ID: {{ incomingTask.task.id }}</p>
