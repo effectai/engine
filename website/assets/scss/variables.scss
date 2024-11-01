@@ -1,0 +1,15 @@
+@use "bulma/sass" with (
+    $family-sans-serif: '"Inter", sans-serif',
+    $primary: #000000,
+);
+
+$title-weight: 400;
+$title-size: 4.5rem;
+
+
+// @import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url("https://use.typekit.net/kej5qyk.css");
+
+// @use "bulma/sass/utilities/initial-variables";
+// @use "bulma/sass/utilities/functions";
