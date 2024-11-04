@@ -2,7 +2,7 @@
 !define USECASE_USECASE
 skinparam actorStyle awesome
 
-actor "Task Provider" as TP
+actor "Provider Node" as TP
 actor "Manager Node" as MN
 actor "Worker Node" as WN
 
