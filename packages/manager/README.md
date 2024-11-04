@@ -1,7 +1,7 @@
 ## Package Logic:
 
 ### Task Batch Management:
-The manager node is responsible for discovering and reserving task batches (posted on-chain by task providers).
+The manager node is responsible for discovering and reserving task batches (posted on-chain by provider nodes).
 Task batches remain encrypted until a manager node picks them up and performs a handshake with the task provider to decrypt the batch information.
 
 ### Worker Node Discovery:

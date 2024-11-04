@@ -1,0 +1,26 @@
+# E2E Data Flow/Lifecycle
+The Effect Task Network is a decentralized system that uses blockchain and peer-to-peer (p2p) technology to connect three main entities: worker nodes, manager nodes, and provider nodes. These components collaborate to assign, complete, and verify AI-driven tasks within the network. The data lifecycle of the network consists of four main stages: batch creation, task delegation, task validation, and result posting. Each stage plays a crucial role in the overall functionality of the network and ensures that tasks are managed and completed in a decentralized and efficient manner.
+
+## 1.Batch creation
+Batch creation is the first stage in the data lifecycle of the network.
+In order to create a batch, a provider node must first define a template for the tasks they want to create. The template specifies the requirements for the tasks, such as the input data, expected output, and computational resources needed to complete the tasks. Once the template and its data are defined, the provider node can submit the batch to our smart contract which creates and returns an escrow account holding the neccesary funds, along with a unique batch ID. The batch is subsequentially broadcasted to the network and can be reserved by a manager node, the manager node then peforms some validity checks and reserves the batch. Once the batch is reserved, the manager node can decrypt the job details and start delegating tasks to worker nodes.
+
+## 2.Task delegation
+The second stage in the data lifecycle is task delegation.
+Once a batch is reserved by a manager node, the manager node can decrypt the job details and start delegating tasks to worker nodes. The manager node uses a peer-to-peer (p2p) connection to assign individual tasks to available worker nodes in the network. It manages the distribution of tasks, ensuring that workers are provided with the right jobs based on their skills, availability, and demand. Worker nodes complete tasks via an interface, like a web form, and submit them back for validation. The manager node checks and confirms the work, ensuring accuracy. Once tasks are validated, rewards are distributed to both managers and workers, and the completion record is posted on-chain for transparency.
+
+## 3.Task validation
+The third stage in the lifecycle of a batch is task validation.
+Manager nodes are responsible for validating the work completed by worker nodes. This involves checking the accuracy and quality of the tasks submitted and ensuring that they meet the requirements set by the task provider. By validating tasks, manager nodes help maintain the integrity of the network and ensure that only high-quality work is rewarded. Once the batch is validated, the manager node handles the reward distribution to both the workers and itself. Finally, verification of the completed jobs is posted on-chain to maintain transparency and accountability.
+
+## 4.Result posting
+The final stage in the data lifecycle is result posting.
+Once tasks are validated, rewards are distributed to both managers and workers, and the completion record is posted on-chain for transparency. This ensures that all completed tasks are recorded on the blockchain and can be verified by all participants in the network. The result posting stage helps maintain accountability and transparency in the network, ensuring that tasks are completed accurately and that rewards are fairly distributed.
+
+## 5.Reward distribution
+Once the batch is validated, the manager node handles the reward distribution to both the workers and itself, it does so by accessing the escrow account created in the first stage of the lifecycle. The manager node then distributes the rewards to the workers based on the completion of their tasks and the quality of their work. The reward distribution ensures that workers are compensated fairly for their efforts and incentivizes them to continue participating in the network.
+
+
+## Data lifecycle diagram
+
+![image](../../diagrams/sequence.png)(Image Source: Effect Network)

@@ -6,8 +6,9 @@ participant Manager
 actor Worker
 
 == Batch Posting & Reservation ==
-Provider -> Blockchain: Create Escrow
-Provider -> Manager: Post Batch
+Provider -> Blockchain: Post Batch
+Blockchain -> Blockchain: Create Escrow
+Provider -> Manager: Broadcast Batch
 Manager -> Blockchain: Check & Verify Escrow
 Manager -> Provider: Accept Batch (ack) 
 
@@ -25,7 +26,6 @@ Worker -> Worker: Update Status to "Idle"
 == Batch Completion ==
 Manager -> Provider: Post Batch Results
 Provider -> Manager: Accept Batch Results (ack)
-Manager -> Worker: Sign payment receipt
-Worker -> Blockchain: Redeem Payment
+Manager -> Manager: Distribute Payment
 
 @enduml

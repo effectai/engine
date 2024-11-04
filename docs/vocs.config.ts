@@ -36,7 +36,7 @@ export default defineConfig({
 					link: "/network-architecture/entities",
 					items: [
 						{
-							text: "Task Providers",
+							text: "Provider Nodes",
 							link: "/network-architecture/entities/provider-node",
 						},
 						{
@@ -50,26 +50,8 @@ export default defineConfig({
 					]
 				},
 				{
-					text: "Batch Lifecycle",
+					text: "Data Lifecycle",
 					link: "/network-architecture/batch-lifecycle",
-					items: [
-						{
-							text: "Batch Creation & Reservation",
-							link: "/batch-lifecycle/batch-creation",
-						},
-						{
-							text: "Batch Delegation",
-							link: "/batch-lifecycle/batch-delegation",
-						},
-						{
-							text: "Batch Completion & Validation",
-							link: "/batch-lifecycle/batch-completion",
-						},
-						{
-							text: "Batch Results Posting",
-							link: "/batch-lifecycle/batch-results",
-						},
-					],
 				},
 			],
 		},
