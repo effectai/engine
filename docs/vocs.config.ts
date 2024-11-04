@@ -56,6 +56,23 @@ export default defineConfig({
 			],
 		},
 		{
+			text: 'Protocol',
+			items: [
+				{
+					text: 'Batch',
+					link: '/protocol/batch'
+				},
+				{
+					text: 'Task',
+					link: '/protocol/task'
+				},
+				{
+					text: 'Template',
+					link: '/protocol/template'
+				}
+			]
+		},
+		{
 			text: 'Governance',
 			items: [
 				{

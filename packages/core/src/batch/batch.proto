@@ -1,0 +1,10 @@
+syntax = "proto3";
+import "../task/task.proto";               // Import the Task message
+
+message Batch {
+  int32 repetitions = 1;           // Number of repetitions for the batch
+  float validationRate = 2;        // Validation rate as a floating point
+  string template = 3;             // Template in string format
+  repeated Task taskData = 4;      // Array of Task objects
+}
+

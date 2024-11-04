@@ -1,9 +1,16 @@
 
 ## Provider Nodes
-Provider nodes are the vital source of job collections (batches) within the Effect Tasks network, responsible for posting tasks that need to be completed. These providers can be individuals, organizations, or companies seeking to leverage the decentralized workforce for various projects, ranging from transcribing audio files, to document translation tasks, to verification in AI generated content.
+Provider nodes are the vital source of job collections (batches) within the Effect Tasks network, responsible for posting tasks that need to be completed. These providers can be individuals, organizations, or developers seeking to leverage the decentralized workforce for various projects, ranging from transcribing audio files, to document translation tasks, to verification in AI generated content.
 
-When provider nodes submit job collections, they do so in an encrypted format, ensuring that sensitive information remains secure until it is accessed by a manager node. Each batch of tasks can vary in complexity and requirements, allowing providers to tailor job offerings based on their specific needs.
+### Creating Batches
+Provider nodes start by defining a template, which is a blueprint for the tasks they want to post on the network. This template includes the task description, instructions, requirements, and rewards for completing the tasks. Once the template is created, The provider node submits the batch along with the funds to the smart contract which creates an escrow account holding the necessary funds, along with a unique batch ID. The batch is then ready to be broadcasted to the network and can be reserved by a manager node.
 
-Once a job collection is posted on-chain, manager nodes can select and reserve these batches. A handshake is then established between the task provider and the manager node to decrypt the job details, allowing the manager to distribute tasks to worker nodes effectively.
+To read more about the batch lifecycle, click [here](../network-architecture/batch-lifecycle.mdx).
 
-Task providers benefit from this decentralized structure by gaining access to a wide pool of talent without the traditional overhead associated with hiring. They can also track the progress of their tasks and ensure that the work meets their quality standards, as the validation process managed by the manager nodes helps maintain accountability.
+
+
+#### Escrow Mechanism
+
+### Batch Result Verification
+Once a batch has been completed by the worker nodes, the manager node sends the batch and its results back to the provider node for verification. The provider node then reviews the results to ensure that the tasks have been completed accurately and meet the specified requirements. If the provider node is satisfied with the results, they approve the batch, and the manager node distributes the rewards to the worker nodes. If the provider node is not satisfied, a dispute resolution process may be initiated to resolve any issues.
+
