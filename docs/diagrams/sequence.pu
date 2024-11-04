@@ -1,0 +1,31 @@
+@startuml
+
+actor Provider
+participant Blockchain
+participant Manager
+actor Worker
+
+== Batch Posting & Reservation ==
+Provider -> Blockchain: Create Escrow
+Provider -> Manager: Post Batch
+Manager -> Blockchain: Check & Verify Escrow
+Manager -> Provider: Accept Batch (ack) 
+
+== Task Delegation ==
+Manager -> Manager: Fetch Idle worker nodes
+Manager -> Worker: Assign Task
+Worker -> Manager: Accept Task (ack)
+Worker -> Worker: Update Status to "Busy"
+
+== Task Execution ==
+Worker -> Worker: Process Task
+Worker -> Manager: Submit Results
+Worker -> Worker: Update Status to "Idle"
+
+== Batch Completion ==
+Manager -> Provider: Post Batch Results
+Provider -> Manager: Accept Batch Results (ack)
+Manager -> Worker: Sign payment receipt
+Worker -> Blockchain: Redeem Payment
+
+@enduml

@@ -1,0 +1,27 @@
+@startuml
+!define USECASE_USECASE
+skinparam actorStyle awesome
+
+actor "Task Provider" as TP
+actor "Manager Node" as MN
+actor "Worker Node" as WN
+
+rectangle "Network" {
+    (Post Batch) as UC1
+    (Reserve Batch) as UC2
+    (Submit Batch) as UC3
+    (Delegate Tasks) as UC4
+    (Complete Tasks) as UC5
+    (Distribute Rewards) as UC7
+
+
+    TP --> UC1
+    
+    MN --> UC2
+    MN --> UC3
+    MN --> UC4
+    WN --> UC5
+    MN --> UC7
+}
+
+@enduml

@@ -1,9 +1,0 @@
-# Effect Task Network
-
-Leverarging **blockchain-powered node technology** and **peer-to-peer (p2p) communication technology**, the network operates with three core entities: **worker nodes**, **manager nodes** and **task providers**. 
-
-It all starts with **task providers**, who post encrypted job collections (also called batches) on-chain. These batches could be anything from data labeling tasks to audio transcription, or *complex AI-driven workloads*. To ensure security and privacy, the job details remain encrypted until a **manager node** selects the batch. Once a manager reserves a job collection, a **handshake** between the provider and manager node is needed to decrypt the batch information.
-
-From there, the **manager node** uses a **peer-to-peer (p2p) connection** to assign tasks to **worker nodes** in the network. Workers access the tasks through an interface, such as an HTML form, and complete them in real-time. The manager node oversees the process, validates the completed tasks, and ensures accuracy. Upon successful completion, **rewards** are distributed to both managers and workers, while the verification is posted on-chain to maintain *transparency* and *accountability*.
-
-This more modern approach is a significant improvement over our previous solution on the EOS blockchain. In this model, the blockchain serves primarily as a verification tool rather than the engine driving the network, allowing for a more flexible and efficient architecture. This shift towards blockchain agnosticism means that the core functionalities of task distribution and management can operate independently of a specific blockchain platform, reducing complexities and potential bottlenecks associated with traditional blockchain systems.
