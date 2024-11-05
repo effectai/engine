@@ -110,9 +110,97 @@
       </template>
     </SimpleSection>
 
+    <SimpleSection :centered="true" class="">
+        <template #subtitle>
+            <h1 class="is-size-2 has-text-weight-medium has-text-primary" style="line-height: 59px; text-align: left; margin-bottom: 5.5rem;">
+                Harmonizing AI with Humanity: Empowering <br> Tomorrow's Workforce Together
+            </h1>
+            <div class="columns" style="margin-top: 3.75rem; max-width: 1100px;">
+                <div class="column" style="background-image: url(./img/hero-background.png); border-radius:20px; height: 280px; max-width: 440px;">
+                </div>
+                <div class="column" style="margin-left: 3.75rem">
+                    <p class="has-text-weight-medium is-size-2 has-text-left" style="line-height: 50.83px; padding-bottom: 20px;">Effect AI: Plans for 2024</p>
+                    <p class="has-text-weight-normal is-size-5 has-text-left" style="line-height: 30px;">
+                        Today, we're thrilled to bring forward the plans that Effect AI has in store for 2024. 
+                        This year is bound to be a transformative one for Effect AI, as some of the most exciting 
+                        and groundbreaking updates...
+                    </p>
+                </div>
+            </div>
+            <div class="columns" style="margin-top: 3.75rem; max-width: 1100px;">
+                <div class="column" style="background-image: url(./img/hero-background.png); border-radius:20px; height: 280px; max-width: 440px;">
+                </div>
+                <div class="column" style="margin-left: 3.75rem">
+                    <p class="has-text-weight-medium is-size-2 has-text-left" style="line-height: 50.83px; padding-bottom: 20px;">Tech Blog: On-Chain Microtasks</p>
+                    <p class="has-text-weight-normal is-size-5 has-text-left" style="line-height: 30px;">
+                        In this article, we’ll take a look at Effect Force’s new task creation mechanism. 
+                        This technology makes it simple for people and businesses to add microtasks to the blockchain.
+                    </p>
+                </div>
+            </div>
+            <div class="columns" style="margin-top: 3.75rem; max-width: 1100px;">
+                <div class="column" style="background-image: url(./img/hero-background.png); border-radius:20px; height: 280px; max-width: 440px;">
+                </div>
+                <div class="column" style="margin-left: 3.75rem">
+                    <p class="has-text-weight-medium is-size-2 has-text-left" style="line-height: 50.83px; padding-bottom: 20px;">The Effect DAO: Effect Staking Protocol 2.0</p>
+                    <p class="has-text-weight-normal is-size-5 has-text-left" style="line-height: 30px;">
+                        By staking EFX, holders can improve their rank in The Effect DAO. Achieving a high rank 
+                        has many benefits like vote casting, fee reward collection, and gaining privileges on the dApp level.
+                    </p>
+                </div>
+            </div>
+        </template>
+    </SimpleSection>
+
+    <SimpleSection :centered="true">
+      <template #subtitle>
+        <div class="columns">
+            <div class="column">
+                <p class="is-size-2 has-text-weight-medium has-text-left">Explore the Frontier of AI Excellence <br> within the Effect AI Ecosystem</p>
+            </div>
+            <div class="column is-flex is-align-items-center is-justify-content-right">
+                <div>
+                    <a href="https://app.effect.ai/" target="_blank" class="button is-primary launch-button"
+                        exact-active-class="is-active">
+                        Launch App
+                        <div id="button-arrow"><img src="/img/arrow-vector.svg" alt="arrow vector" /></div>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="columns is-flex is-justify-content-center" style="margin-top: 3.75rem; gap: 60px;">
+            <div class="column dapp-card is-flex is-justify-content-center">
+                <img src="/img/ask-a-stranger.png" alt="Description of the image">
+            </div>
+            <div class="column dapp-card is-flex is-justify-content-center">
+                <img src="/img/delos.png" alt="Description of the image">
+            </div>
+            <div class="column dapp-card is-flex is-justify-content-center">
+                <img src="/img/quick-cat.png" alt="Description of the image">
+            </div>
+            <div class="column dapp-card is-flex is-justify-content-center">
+                <img src="/img/vibelyze.png" alt="Description of the image">
+            </div>
+        </div>
+      </template>
+    </SimpleSection>
+
 </template>
  
   <style lang="scss">
+
+    .dapp-card{
+        max-width: 300px;
+        height: 100px;
+        border: 1px solid;
+        border-radius: 50px;
+        img{
+            height: auto;
+            max-width: 115px;
+            max-height: 100%;
+            object-fit: contain;
+        }
+    }
     .achievement-banner{
         height: 291px;
         background-color: black;
