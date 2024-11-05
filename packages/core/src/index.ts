@@ -34,10 +34,10 @@ export type TaskFlowMessage = {
 	t: "task-accepted" | "task-completed" | "task-rejected" | "task";
 };
 
-export const preRenderTask = async (
+export const preRenderTask = (
 	template: string,
 	placeholders: Record<string, any>,
-): Promise<string> => {
+): string => {
 	return template.replace(/{{(.*?)}}/g, (_, match) => placeholders[match]);
 };
 
@@ -77,6 +77,12 @@ export class Task {
 	template: string;
 	data: Record<string, any>;
 	result: string | null = null;
+
+	// override equals method
+	equals(other: Task) {
+		return this.id === other.id;
+	}
+
 
 	static fromPayload(data: TaskPayload) {
 		return new Task(data.id, data.template, data.data);

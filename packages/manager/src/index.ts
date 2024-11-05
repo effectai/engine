@@ -196,7 +196,9 @@ export const createManagerNode = async (bootstrapNodes: string[] = []) => {
 		transports: [
 			webSockets({ filter: filters.all }),
 			webRTC(),
-			circuitRelayTransport(),
+			circuitRelayTransport({
+				
+			}),
 		],
 		peerDiscovery: [
 			workerPubSubPeerDiscovery({

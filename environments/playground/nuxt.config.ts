@@ -4,21 +4,15 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
   devtools: { enabled: true },
-  ssr:false,
-  hooks: {
-    listen(server, { host, port }) {
-      // start relay server and pass the server instance to the client
-      // console.log("test", test);
-
-      // set the state
-      // useState(() => {
-      //   createRelayServer().then((relay) => {
-      //     console.log("Relay server listening on:", relay.getMultiaddrs());
-      //     server.$relay = relay;
-      //   });
-      // })
-    }
+  colorMode: {
+    preference: 'light',
+    fallback: 'light',
+    classSuffix: ''
   },
+  css: [
+    '@/assets/css/main.css'
+  ],
+  ssr:false,
   runtimeConfig: {
     public: {
       BOOTSTRAP_NODE: process.env.BOOTSTRAP_NODE || [],

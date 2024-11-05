@@ -1,9 +1,11 @@
 import { Uint8ArrayList } from "uint8arraylist";
 import {
-	Libp2pNode,
-	Task,
 	type TaskFlowMessage,
 	type TaskPayload,
+	type NodeEventMap,
+	type Libp2p,
+	Libp2pNode,
+	Task,
 	filters,
 	createLibp2p,
 	yamux,
@@ -12,26 +14,21 @@ import {
 	noise,
 	circuitRelayTransport,
 	identify,
-	identifyPush,
-	type NodeEventMap,
-	type Libp2p,
-	kadDHT,
-	removePrivateAddressesMapper,
 	gossipsub,
 	workerPubSubPeerDiscovery,
 	bootstrap,
+	type Stream,
 } from "@effectai/task-core";
 
 export enum STATUS {
-
-
 	IDLE = "idle",
 	BUSY = "busy",
 }
 
-type WorkerState = {
+export type WorkerState = {
 	status: STATUS;
 	activeTask: Task | null;
+	incomingTasks: Map<string, {stream: Stream, task: Task}>;
 };
 
 export interface WorkerEvents extends NodeEventMap<WorkerState> {
@@ -41,30 +38,90 @@ export interface WorkerEvents extends NodeEventMap<WorkerState> {
 }
 
 export class WorkerNode extends Libp2pNode<WorkerState, WorkerEvents> {
-	activeTask: Task | null = null;
+	private activeTaskStream: Stream | null = null;
 
 	constructor(node: Libp2p) {
 		super({
 			status: STATUS.IDLE,
 			activeTask: null,
+			incomingTasks: new Map(),
 		});
 		this.node = node;
 	}
 
 	async rejectTask(task: Task) {
-		this.activeTask = null;
 		this.emit("reject-task", task);
+		// remove task from incoming tasks
+		this.setState({
+			...this.state,
+			incomingTasks: new Map(
+				[...this.state.incomingTasks].filter(([id]) => id !== task.id),
+			),
+		})
 		return true;
 	}
 
 	async acceptTask(task: Task) {
 		if (this.state.status === STATUS.BUSY) {
+			console.warn("Worker is busy, cannot accept task");
 			return false;
 		}
-		this.state.status = STATUS.BUSY;
-		this.activeTask = task;
+
+		this.setState({
+			...this.state,
+			status: STATUS.BUSY,
+			activeTask: task,
+		});
+
 		this.emit("accept-task", task);
+
+		// get the task from the incoming tasks and accept it
+		const incomingTask = this.state.incomingTasks.get(task.id);
+		
+		if(!incomingTask) {
+			console.warn("Task not found in incoming tasks");
+			return false;
+		}
+
+		this.activeTaskStream = incomingTask?.stream;
+
 		return true;
+	}
+
+	async closeActiveStream() {
+		// await this.activeTaskStream?.close();
+		this.activeTaskStream = null;
+	}
+
+	async submitTask(task: Task) {
+		console.log("Worker submitted task", task);
+		
+		this.setState({
+			...this.state,
+			status: STATUS.IDLE,
+			activeTask: null,
+		});
+
+		// send the task to the manager
+		const message = JSON.stringify({
+			t: "task-completed",
+			d: {
+				id: task.id,
+				result: task.result,
+			},
+		});
+
+		await this.activeTaskStream?.sink([new TextEncoder().encode(message)]);
+
+		// remove the task from the incoming tasks
+		this.setState({
+			...this.state,
+			incomingTasks: new Map(
+				[...this.state.incomingTasks].filter(([id]) => id !== task.id),
+			),
+		})
+
+		await this.closeActiveStream();
 	}
 
 	async listenForTask() {
@@ -83,20 +140,17 @@ export class WorkerNode extends Libp2pNode<WorkerState, WorkerEvents> {
 				case "task": {
 					const payload = messageFromManager.d as TaskPayload;
 					const task = Task.fromPayload(payload);
+					
+					this.setState({
+						...this.state,
+						incomingTasks: new Map([...this.state.incomingTasks, [task.id, {stream: streamData.stream, task}]]),
+					})
+
 					this.emit("incoming-task", task);
 
 					if (this.state.status === STATUS.BUSY) {
-						await this.rejectTask(task);
-						const message = JSON.stringify({
-							t: "task-rejected",
-							d: {
-								id: task.id,
-							},
-						});
-						await streamData.stream.sink([new TextEncoder().encode(message)]);
-						return;
+						this.rejectTask(task);
 					}
-
 					break;
 				}
 			}
@@ -118,8 +172,8 @@ export const createWorkerNode = async (bootstrapNodes: string[] = []) => {
 			}),
 			bootstrap({
 				list: bootstrapNodes,
-			}),
-		  ],
+			}), 
+		],
 		transports: [
 			webSockets({ filter: filters.all }),
 			webRTC(),
@@ -129,12 +183,14 @@ export const createWorkerNode = async (bootstrapNodes: string[] = []) => {
 		streamMuxers: [yamux()],
 		services: {
 			identify: identify({}),
-			pubsub: gossipsub(),
+			pubsub: gossipsub({
+				allowPublishToZeroTopicPeers: true,
+			}),
 		},
 	});
 
 	// set mode to server
-	node.addEventListener('peer:discovery', (peer) => {
+	node.addEventListener("peer:discovery", (peer) => {
 		console.log("Worker Discovered:", peer.detail);
 	});
 

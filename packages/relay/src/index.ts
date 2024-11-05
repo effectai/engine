@@ -13,13 +13,15 @@ import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 
 export const createBootstrapRelayerServer = async () => {
 	const relay = await createLibp2p({
-		transports: [webSockets({ filter: filters.all })],
-		addresses: {
-			listen: ["/ip4/0.0.0.0/tcp/15003/ws"],
-		},
 		nodeInfo: {
 			version: "1.0.0",
 			name: "relay",
+		},
+		transports: [webSockets({ filter: filters.all })],
+		addresses: {
+			listen: ["/ip4/0.0.0.0/tcp/15006/ws"],
+		},
+		connectionManager: {
 		},
 		connectionEncrypters: [noise()],
 		peerDiscovery: [workerPubSubPeerDiscovery({ type: "relay" })],
@@ -33,12 +35,22 @@ export const createBootstrapRelayerServer = async () => {
 				reservations: {
 					maxReservations: 32,
 					reservationClearInterval: 30000,
-				}
+				},
 			}),
 		},
 	});
 
+
 	await relay.start();
+
+	relay.addEventListener("peer:discovery", ({ detail }) => {
+		console.log("Relay Discovered:", detail);
+	})
+
+	// report amount of reservations every 10 seconds
+	setInterval(() => {
+		console.log("Relay reservations:", relay.services.relay.reservations.size);
+	}, 10000);
 
 	console.log("Relay server listening on:", relay.getMultiaddrs());
 
