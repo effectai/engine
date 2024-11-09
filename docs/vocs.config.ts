@@ -107,5 +107,5 @@ export default defineConfig({
 			],
 		},
 	],
-	title: "Effect.AI Task Network",
+	title: "Effect AI Docs",
 });
