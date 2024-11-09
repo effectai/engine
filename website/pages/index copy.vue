@@ -44,7 +44,7 @@
     </div>
   </template>
   
-  <style lang="scss">
+  <style lang="scss" scoped>
 
   .title{
     font-family: "Inter";

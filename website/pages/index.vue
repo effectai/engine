@@ -1,8 +1,9 @@
 <template>
     <div>
-        <HeroSection id="main-hero" style="min-height: 700px;">
+        <HeroSection class="nav-bar-height" id="main-hero" style="min-height: 700px;">
             <template #title>
-                <h1 class="title title-weight is-spaced has-text-primary">
+                <!-- <h1 class="title title-weight is-spaced has-text-primary"> -->
+                <h1 class="title has-text-weight-normal">
                     Handcrafted Data for Artificial Intelligence.
                 </h1>
             </template>
@@ -55,26 +56,30 @@
     <SimpleSection :centered="true" class="task-cards">
       <template #subtitle>
         <div class="columns">
-            <div class="column mr-6" style="height: 472px; background-image: url(./img/hero-background.png);">
-                <p class="is-size-2 has-text-weight-medium has-text-left has-text-black">Complete Tasks</p>
-                <p class="is-size-5 has-text-weight-normal has-text-left">Complete tasks and earn EFX directly to your wallet.</p>
-                <div class="mt-5 has-text-left">
-                    <a href="https://app.effect.ai/" target="_blank" class="button is-primary launch-button"
-                        exact-active-class="is-active">
-                        Join the Workforce
-                        <div id="button-arrow"><img src="/img/arrow-vector.svg" alt="arrow vector" /></div>
-                    </a>
+            <div class="column mx-5 box is-radius-medium" style="height: 472px; background-image: url(./img/hero-background.png);">
+                <div>
+                    <p class="is-size-2 has-text-weight-medium has-text-left has-text-black">Complete Tasks</p>
+                    <p class="is-size-5 has-text-weight-normal has-text-left">Complete tasks and earn EFX directly to your wallet.</p>
+                    <div class="mt-5 has-text-left">
+                        <a href="https://app.effect.ai/" target="_blank" class="button is-primary launch-button"
+                            exact-active-class="is-active">
+                            Join the Workforce
+                            <div id="button-arrow"><img src="/img/arrow-vector.svg" alt="arrow vector" /></div>
+                        </a>
+                    </div>
                 </div>
             </div>
-            <div class="column" style="background-image: url(./img/hero-background.png);">
-                <p class="is-size-2 has-text-weight-medium has-text-left has-text-black">Create Tasks</p>
-                <p class="is-size-5 has-text-weight-normal has-text-left">Access a global, on-demand, 24x7 scalable work force.</p>
-                <div class="mt-5 has-text-left">
-                    <a href="https://app.effect.ai/" target="_blank" class="button is-primary launch-button"
-                        exact-active-class="is-active">
-                        Create a Task
-                        <div id="button-arrow"><img src="/img/arrow-vector.svg" alt="arrow vector" /></div>
-                    </a>
+            <div class="column mx-5 box is-radius-medium" style="height: 472px; background-image: url(./img/hero-background.png);">
+                <div>
+                    <p class="is-size-2 has-text-weight-medium has-text-left has-text-black">Create Tasks</p>
+                    <p class="is-size-5 has-text-weight-normal has-text-left">Access a global, on-demand, 24x7 scalable work force.</p>
+                    <div class="mt-5 has-text-left">
+                        <a href="https://app.effect.ai/" target="_blank" class="button is-primary launch-button"
+                            exact-active-class="is-active">
+                            Create a Task
+                            <div id="button-arrow"><img src="/img/arrow-vector.svg" alt="arrow vector" /></div>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -109,13 +114,14 @@
         </div>
       </template>
     </SimpleSection>
-
+    <SimpleSection :centered="true" class="">
+        <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left">
+            Harmonizing AI with Humanity: Empowering <br> Tomorrow's Workforce Together
+        </h1>
+    </SimpleSection>
     <SimpleSection :centered="true" class="">
         <template #subtitle>
-            <h1 class="is-size-2 has-text-weight-medium has-text-primary" style="line-height: 59px; text-align: left; margin-bottom: 5.5rem;">
-                Harmonizing AI with Humanity: Empowering <br> Tomorrow's Workforce Together
-            </h1>
-            <div class="columns" style="margin-top: 3.75rem; max-width: 1100px;">
+            <div class="columns" style="max-width: 1100px;">
                 <div class="column" style="background-image: url(./img/hero-background.png); border-radius:20px; height: 280px; max-width: 440px;">
                 </div>
                 <div class="column" style="margin-left: 3.75rem">
@@ -153,33 +159,54 @@
     </SimpleSection>
 
     <SimpleSection :centered="true">
-      <template #subtitle>
-        <div class="columns">
-            <div class="column">
-                <p class="is-size-2 has-text-weight-medium has-text-left">Explore the Frontier of AI Excellence <br> within the Effect AI Ecosystem</p>
-            </div>
-            <div class="column is-flex is-align-items-center is-justify-content-right">
-                <div>
-                    <a href="https://app.effect.ai/" target="_blank" class="button is-primary launch-button"
-                        exact-active-class="is-active">
-                        Launch App
-                        <div id="button-arrow"><img src="/img/arrow-vector.svg" alt="arrow vector" /></div>
-                    </a>
+        <template #subtitle>
+            <div class="columns">
+                <div class="column">
+                    <p class="is-size-2 has-text-weight-medium has-text-left">Explore the Frontier of AI Excellence <br> within the Effect AI Ecosystem</p>
+                </div>
+                <div class="column is-flex is-align-items-center is-justify-content-right">
+                    <div>
+                        <a href="https://app.effect.ai/" target="_blank" class="button is-primary launch-button"
+                            exact-active-class="is-active">
+                            Launch App
+                            <div id="button-arrow"><img src="/img/arrow-vector.svg" alt="arrow vector" /></div>
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="columns is-flex is-justify-content-center" style="margin-top: 3.75rem; gap: 60px;">
-            <div class="column dapp-card is-flex is-justify-content-center">
-                <img src="/img/ask-a-stranger.png" alt="Description of the image">
+        </template>
+    </SimpleSection>
+
+    <SimpleSection :centered="true" class="">
+      <template #subtitle>
+        <div class="columns is-variable is-4">
+            <div class="column">
+                <div class="box is-radius-medium is-flex is-justify-content-center">
+                    <figure class="image is-96x96">
+                        <img src="/img/ask-a-stranger.png" alt="Description of the image">
+                    </figure>
+                </div>
             </div>
-            <div class="column dapp-card is-flex is-justify-content-center">
-                <img src="/img/delos.png" alt="Description of the image">
+            <div class="column">
+                <div class="box is-radius-medium is-flex is-justify-content-center">
+                    <figure class="image is-96x96 is-flex is-align-items-center">
+                        <img src="/img/delos.png" alt="Description of the image">
+                    </figure>
+                </div>
             </div>
-            <div class="column dapp-card is-flex is-justify-content-center">
-                <img src="/img/quick-cat.png" alt="Description of the image">
+            <div class="column">
+                <div class="box is-radius-medium is-flex is-justify-content-center">
+                    <figure class="image is-96x96">
+                        <img src="/img/quick-cat.png" alt="Description of the image">
+                    </figure>
+                </div>
             </div>
-            <div class="column dapp-card is-flex is-justify-content-center">
-                <img src="/img/vibelyze.png" alt="Description of the image">
+            <div class="column">
+                <div class="box is-radius-medium is-flex is-justify-content-center">
+                    <figure class="image is-96x96">
+                        <img src="/img/vibelyze.png" alt="Description of the image">
+                    </figure>
+                </div>
             </div>
         </div>
       </template>
@@ -187,20 +214,20 @@
 
 </template>
  
-  <style lang="scss">
+  <style lang="scss" scoped>
 
-    .dapp-card{
-        max-width: 300px;
-        height: 100px;
-        border: 1px solid;
-        border-radius: 50px;
-        img{
-            height: auto;
-            max-width: 115px;
-            max-height: 100%;
-            object-fit: contain;
-        }
-    }
+    // .dapp-card{
+    //     max-width: 300px;
+    //     height: 100px;
+    //     border: 1px solid;
+    //     border-radius: 50px;
+    //     img{
+    //         height: auto;
+    //         max-width: 115px;
+    //         max-height: 100%;
+    //         object-fit: contain;
+    //     }
+    // }
     .achievement-banner{
         height: 291px;
         background-color: black;
@@ -229,10 +256,6 @@
             padding-top: 264px;
             padding-left: 50px;
         }
-    }
-
-    .subtitle{
-        width: 120%;
     }
 
     #main-hero{

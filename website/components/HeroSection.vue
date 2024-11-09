@@ -40,9 +40,8 @@
   .title{
     // font-family: "Inter" !important;
     font-size: variables.$title-size !important;
-    font-weight: variables.$title-weight !important;
+    // font-weight: variables.$title-weight !important;
     line-height: 87.14px !important;
-    color: black !important;
   }
 
 //   .subtitle{
