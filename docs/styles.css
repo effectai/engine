@@ -11,6 +11,7 @@
 :root {
   --vocs-fontFamily_default: 'Inter', sans-serif;
   --vocs-color_background: white;
+  --vocs-fontWeight_semibold: 700;
 }
  
 :root.dark {

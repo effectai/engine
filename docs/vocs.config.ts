@@ -32,7 +32,7 @@ export default defineConfig({
 			text: "Protocol",
 			items: [
 				{
-					text: "Entities & Roles",
+					text: "Entities and Roles",
 					collapsed: true,
 					link: "/network-architecture/entities",
 					items: [
@@ -72,7 +72,7 @@ export default defineConfig({
 					],
 				},
 				{
-					text: "Rewards & Incentives",
+					text: "Incentives",
 					items: [
 						{
 							text: "Universal Static Income",
@@ -89,7 +89,7 @@ export default defineConfig({
 					]
 				},
 				{
-					text: "Consensus and Validation",
+					text: "Consensus",
 				},
 			],
 		},
