@@ -1,3 +1,4 @@
+import type { TaskPayload } from "../index.js";
 
 export class Task {
 	id: string;
@@ -22,7 +23,7 @@ export class Task {
 	}
 
 	compile() {
-		return preRenderTask(this.template, this.data);
+		// return preRenderTask(this.template, this.data);
 	}
 
 	toJSON() {

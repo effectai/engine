@@ -12,6 +12,7 @@ export enum PeerType {
   Worker = 0,
   Manager = 1,
   Relay = 2,
+  Provider = 3,
 }
 
 export interface Peer {

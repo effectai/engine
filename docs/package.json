@@ -1,5 +1,5 @@
 {
-	"name": "@effectai/docs",
+	"name": "docs",
 	"type": "module",
 	"private": true,
 	"scripts": {

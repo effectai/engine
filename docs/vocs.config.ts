@@ -29,63 +29,84 @@ export default defineConfig({
 			],
 		},
 		{
-			text: "Network Architecture",
+			text: "Protocol",
 			items: [
 				{
 					text: "Entities & Roles",
+					collapsed: true,
 					link: "/network-architecture/entities",
 					items: [
 						{
-							text: "Provider Nodes",
+							text: "Provider",
 							link: "/network-architecture/entities/provider-node",
 						},
 						{
-							text: "Manager Nodes",
+							text: "Manager",
 							link: "/network-architecture/entities/manager-node",
 						},
 						{
-							text: "Worker Nodes",
+							text: "Worker",
 							link: "/network-architecture/entities/worker-node",
 						},
+					],
+				},
+				{
+					text: "Task Lifecycle",
+					link: "/network-architecture/task-lifecycle",
+					items: [
+						{
+							text: "Creation",
+						},
+						{
+							text: "Delegation",
+						},
+						{
+							text: "Execution",
+						},
+						{
+							text: "Validation",
+						},
+						{
+							text: "Completion",
+						},
+					],
+				},
+				{
+					text: "Rewards & Incentives",
+					items: [
+						{
+							text: "Universal Static Income",
+						},
+						{
+							text: "Penalties",
+						},
+						{
+							text: "Staking",
+						},
+						{
+							text: "Fees",
+						}
 					]
 				},
 				{
-					text: "Data Lifecycle",
-					link: "/network-architecture/batch-lifecycle",
+					text: "Consensus and Validation",
 				},
 			],
 		},
 		{
-			text: 'Protocol',
+			text: "Governance",
 			items: [
 				{
-					text: 'Batch',
-					link: '/protocol/batch'
+					text: "DAO",
+					link: "/governance/dao",
 				},
 				{
-					text: 'Task',
-					link: '/protocol/task'
+					text: "Dispute Resolution",
+					link: "/governance/governance-token",
 				},
 				{
-					text: 'Template',
-					link: '/protocol/template'
-				}
-			]
-		},
-		{
-			text: 'Governance',
-			items: [
-				{
-					text: 'DAO',
-					link: '/governance/dao',
-				},
-				{
-					text: 'Dispute Resolution',
-					link: '/governance/governance-token',
-				},
-				{
-					text: 'Voting',
-					link: '/governance/voting',
+					text: "Voting",
+					link: "/governance/voting",
 				},
 			],
 		},
@@ -107,5 +128,5 @@ export default defineConfig({
 			],
 		},
 	],
-	title: "Effect AI Docs",
+	title: "Effect AI: Docs",
 });

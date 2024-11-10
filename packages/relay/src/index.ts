@@ -6,10 +6,11 @@ import {
 	yamux,
 	noise,
 	filters,
-	workerPubSubPeerDiscovery,
+	pubSubPeerDiscovery,
 	Libp2p,
 } from "@effectai/task-core";
 import { gossipsub } from "@chainsafe/libp2p-gossipsub";
+import { PeerType } from "../../core/dist/discovery/pubsub/peer.js";
 
 export const createBootstrapRelayerServer = async () => {
 	const relay = await createLibp2p({
@@ -21,10 +22,13 @@ export const createBootstrapRelayerServer = async () => {
 		addresses: {
 			listen: ["/ip4/0.0.0.0/tcp/15006/ws"],
 		},
-		connectionManager: {
-		},
 		connectionEncrypters: [noise()],
-		peerDiscovery: [workerPubSubPeerDiscovery({ type: "relay" })],
+		peerDiscovery: [
+			pubSubPeerDiscovery({
+				type: PeerType.Relay,
+				topics: ["provider-manager-discovery", "manager-worker-discovery"],
+			}),
+		],
 		streamMuxers: [yamux()],
 		services: {
 			pubsub: gossipsub({
@@ -40,12 +44,7 @@ export const createBootstrapRelayerServer = async () => {
 		},
 	});
 
-
 	await relay.start();
-
-	relay.addEventListener("peer:discovery", ({ detail }) => {
-		console.log("Relay Discovered:", detail);
-	})
 
 	// report amount of reservations every 10 seconds
 	setInterval(() => {

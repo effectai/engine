@@ -3,49 +3,44 @@
         <section class="worker-section">
             <div class="flex flex-col my-5 text-center">
                 Worker Node
-                <div v-if="!webRTCMultiAddress">
-                    <UButton @click="connectToRelay">Connect to Relay server</UButton>
+                <div v-if="worker.state.activeTask" class="bg-white p-5 text-black">
+                    Active task:
+                    <div>{{ worker.state.activeTask.id }}</div>
+                    <div>{{ worker.state.activeTask.data }}</div>
+                    <UButton @click="worker.submitTask(worker.state.activeTask)">Complete</UButton>
                 </div>
-                <div v-else>
-                    <UBadge>Connected</UBadge>
-                    <p class="my-3"> {{ trimOnBothEnds(webRTCMultiAddress.toString(), 10) }}</p>
+                <div v-else-if="worker.state.incomingTasks.size > 0">
+                    Incoming task:
+                    <div v-for="({ task }, i) in worker.state.incomingTasks.values()">
+                        <div>{{ task.id }}</div>
+                        <div>{{ task.data }}</div>
 
-
-                    <div v-if="incomingTask" class="bg-white p-5 text-[black]">
-                        <h2 class="text-2xl">Incoming Task</h2>
-
-                        <div class="flex flex-col gap-2 ">
-                            <div>
-                                <p>Task ID: {{ incomingTask.id }}</p>
-                            </div>
-                            <div>
-                                <p>Difficulty: 1/5</p>
-                            </div>
-                            <div>
-                                <p class="text-sm">Task Description: Lorem ipsum dolor sit amet</p>
-                            </div>
-
-                            <div class="flex gap-3 justify-center my-5"> 
-                                <UButton color="green" @click="incomingTask.accept()">Accept Task</UButton>
-                                <UButton color="red" @click="incomingTask.reject()">Reject Task</UButton>
-                            </div>
-                        </div>
+                        <UButton @click="worker.acceptTask(task)">Accept</UButton>
                     </div>
                 </div>
             </div>
         </section>
         <section class="manager-section">
-            <div>
-                Manager Node
-                
+            <div class="flex flex-col my-5 text-center">
+                <h2 class=block> Manager Node</h2>
+                <div class="block" v-if="manager.state.activeBatch">
+                    Active batch
+
+                    <!-- show taskmap -->
+                    <div class="block bg-white p-3 text-black" v-for="{ activeWorkerPeerId, status, updatedAt } in managerTaskMap.values()">
+                        <!-- <div>TaskId: {{ sliceBoth(taskId) }}</div> -->
+                        <div>activeWorker: {{ sliceBoth(activeWorkerPeerId) }}</div>
+                        <div>status: {{ status }}</div>
+                    </div>
+                </div>
             </div>
         </section>
         <section class="relay-section bg-red-500">
             <div class="text-center flex flex-col">
-                <h2 class="text-2xl flex justify-center gap-5">Relay Node
-                    <UBadge>running</UBadge>
+                <h2 class="text-2xl flex justify-center gap-5">Provider Node
                 </h2>
                 <div>
+                    <UButton @click="offerBatchToNetwork">Post Batch</UButton>
                 </div>
             </div>
         </section>
@@ -53,75 +48,39 @@
 </template>
 
 <script setup lang="ts">
-import { multiaddr, type Task, WebRTC, type Multiaddr } from "@effectai/task-core";
-import { WorkerNode } from "@effectai/task-worker";
-
-import { type ManagerNode, createManagerNode } from '@effectai/task-manager';
+import { createManagerNode } from "@effectai/task-manager";
+import { createProviderNode, offerBatch } from "@effectai/task-provider";
+import { createWorkerNode } from "@effectai/task-worker";
 import { exampleBatch } from "~/constants/exampleBatch";
 
-const webRTCMultiAddress = shallowRef<Multiaddr | null | undefined>(null);
-const workerNode = shallowRef(new WorkerNode());
+const config = useRuntimeConfig();
+const bootstrapNode = config.public.BOOTSTRAP_NODE;
 
-const incomingTask = ref<Task | null>(null);
+const provider = await createProviderNode([bootstrapNode]);
+await provider.start();
 
-console.log("hallo")
-try{
-const managerNode = shallowRef<ManagerNode | null>(await createManagerNode());
+const worker = ref(await createWorkerNode([bootstrapNode]));
+await worker.value.start();
+await worker.value.listenForTask();
 
-    const multiAddr = managerNode.value?.node?.getMultiaddrs();
-    console.log('mutliL:', multiAddr);
+const manager = ref(await createManagerNode([bootstrapNode]))
+await manager.value.start();
 
-}catch(e){
-    console.log(e)
-}
+const managerTaskMap = ref(new Map());
+manager.value.addListener("state:updated", (state) => {
+    console.log("Manager state change", state);
+    managerTaskMap.value = state.taskMap;
+});
 
-const delegateTask = async () => {
-    try {
-        // dial the worker node through the multiaqddress
-        if (!webRTCMultiAddress.value) {
-            console.error("WebRTC Multiaddress not found");
-            return;
-        }
-
-        const tasks = exampleBatch.extractTasks();
-
-        if (!managerNode.value?.node) {
-            console.error("Manager node not found");
-            return;
-        }
-
-        console.log("Task delegated");
-    } catch (e) {
-        console.error(e);
-    }
+const offerBatchToNetwork = async () => {
+    await provider.offerBatch(manager.value.node.getMultiaddrs()[0], exampleBatch);
 };
 
-const trimOnBothEnds = (str: string, length: number) => {
-    return `${str.substring(0, length)}...${str.substring(str.length - length, str.length)}`;
-};
-
-const connectToRelay = async () => {
-    try {
-        await workerNode.value.init();
-        await workerNode.value.start();
-        // await workerNode.value.node?.dial(multiaddr(relayAddress));
-
-        while (true) {
-            webRTCMultiAddress.value = workerNode.value.node
-                ?.getMultiaddrs()
-                .find((ma) => WebRTC.matches(ma));
-
-            if (webRTCMultiAddress.value != null) {
-                break;
-            }
-
-            // try again every second
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
-    } catch (e) {
-        console.error(e);
-    }
-};
+onBeforeUnmount(async () => {
+    await provider.stop();
+    await worker.value.stop();
+    await manager.value.stop();
+});
 </script>
 
 <style scoped>

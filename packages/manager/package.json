@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@effectai/task-core": "workspace:*",
-    "@libp2p/circuit-relay-v2": "3.0.0",
+    "@libp2p/circuit-relay-v2": "^3.1.0",
     "nanoid": "5.0.7",
     "it-pipe": "3.0.1"
   }
