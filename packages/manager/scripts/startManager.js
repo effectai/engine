@@ -1,6 +1,6 @@
 import { createManagerNode } from "../dist/index.js";
 
-const manager = await createManagerNode(['/ip4/127.0.0.1/tcp/15003/ws/p2p/12D3KooWJPTy9RrqdBJiYitMpq6Bj4ePQK1aHJi8cg4unNxdvHAr']);
+const manager = await createManagerNode(["/ip4/127.0.0.1/tcp/15006/ws/p2p/12D3KooWC7n5gLJciHeke7qv5SjJ9CjDKCaRFX5NKErQr9jFMfhh"]);
 
 await manager.start();
 

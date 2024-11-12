@@ -12,7 +12,6 @@ import type {
 	PubSub,
 	Startable,
 	ComponentLogger,
-	Logger,
 	PeerStore,
 } from "@libp2p/interface";
 import {
@@ -32,26 +31,24 @@ export interface PubSubPeerDiscoveryComponents {
 	logger: ComponentLogger;
 }
 
-export interface WorkerPubSubPeerDiscoveryOptions {
+export interface PubSubPeerDiscoveryOptions {
 	/**
 	 * How often (ms) we should broadcast our infos
 	 */
 	interval?: number;
 
 	/**
-	 * If true, we will broadcast messages without subscribing to the topic
-	 * @default false
-	 * @example
-	 * ```js
+	 * The topics to subscribe to
 	 */
-	broadcastWithoutSubscribing?: boolean;
+	topics?: string[];
+
 	/**
 	 * The type of the node
 	 */
-	type: "worker" | "manager" | "relay";
+	type: PeerType;
 }
 
-export class WorkerPubSubPeerDiscovery
+export class PubSubPeerDiscovery
 	extends TypedEventEmitter<PeerDiscoveryEvents>
 	implements PeerDiscovery, Startable
 {
@@ -59,32 +56,23 @@ export class WorkerPubSubPeerDiscovery
 	private readonly interval: number;
 	private intervalId?: ReturnType<typeof setInterval>;
 	private topics: string[] = [];
-	private broadcastWithoutSubscribing: boolean;
-	private type: WorkerPubSubPeerDiscoveryOptions["type"];
+	private type: PubSubPeerDiscoveryOptions["type"];
 
 	constructor(
 		components: PubSubPeerDiscoveryComponents,
-		initOptions: WorkerPubSubPeerDiscoveryOptions,
+		initOptions: PubSubPeerDiscoveryOptions,
 	) {
 		super();
 
 		this.components = components;
 		this.type = initOptions.type;
-		this.broadcastWithoutSubscribing =
-			initOptions.broadcastWithoutSubscribing || false;
-
 		this.interval = initOptions.interval || 3000;
-		this.topics = ["worker-discovery:pubsub"];
+		this.topics = initOptions.topics || ["peer-discovery"];
 	}
 
-	beforeStart(): void | Promise<void> {
-		// throw new Error('Method not implemented.')
-		console.log("starting..");
-	}
+	beforeStart(): void | Promise<void> {}
 
-	start(): void | Promise<void> {
-		// start
-	}
+	start(): void | Promise<void> {}
 
 	afterStart(): void | Promise<void> {
 		if (this.intervalId != null) {
@@ -99,10 +87,8 @@ export class WorkerPubSubPeerDiscovery
 		}
 
 		for (const topic of this.topics) {
-			if (!this.broadcastWithoutSubscribing) {
-				pubsub.subscribe(topic);
-				pubsub.addEventListener("message", (event) => this._onMessage(event));
-			}
+			pubsub.subscribe(topic);
+			pubsub.addEventListener("message", (event) => this._onMessage(event));
 		}
 
 		this._broadcastMessage();
@@ -133,18 +119,17 @@ export class WorkerPubSubPeerDiscovery
 	}
 
 	_onMessage(event: CustomEvent<Message>): void {
-		const message = event.detail;
-
 		try {
+			const message =  event.detail;
 			const peer = PBPeer.decode(message.data);
 			const publicKey = publicKeyFromProtobuf(peer.publicKey);
 			const peerId = peerIdFromPublicKey(publicKey);
-
 			// ignore worker messages if we are a worker or if the message is from us
 			// or if we are a manager, we should ignore messages from other managers
 			if (
-				(this.type === "worker" && peer.peerType === PeerType.Worker) ||
-				(this.type === "manager" && peer.peerType === PeerType.Manager) ||
+				(this.type === PeerType.Worker && peer.peerType === PeerType.Worker) ||
+				(this.type === PeerType.Manager &&
+					peer.peerType === PeerType.Manager) ||
 				peerId.equals(this.components.peerId)
 			) {
 				return;
@@ -163,7 +148,9 @@ export class WorkerPubSubPeerDiscovery
 					}
 				})
 				.catch((e) => {
-					console.log("Error while getting peer from peer store", e);
+					if (e instanceof NotFoundError) {
+						// ignore
+					}
 				});
 
 			this.safeDispatchEvent<PeerInfo>("peer", {
@@ -186,12 +173,7 @@ export class WorkerPubSubPeerDiscovery
 
 		const peer = {
 			publicKey: publicKeyToProtobuf(peerId.publicKey),
-			peerType:
-				this.type === "worker"
-					? PeerType.Worker
-					: this.type === "manager"
-						? PeerType.Manager
-						: PeerType.Relay,
+			peerType: this.type,
 			addrs: this.components.addressManager
 				.getAddresses()
 				.map((ma) => ma.bytes),
@@ -211,9 +193,9 @@ export class WorkerPubSubPeerDiscovery
 	}
 }
 
-export function workerPubSubPeerDiscovery(
-	options: WorkerPubSubPeerDiscoveryOptions = { type: "worker" },
+export function pubSubPeerDiscovery(
+	options: PubSubPeerDiscoveryOptions,
 ): (components: PubSubPeerDiscoveryComponents) => PeerDiscovery {
 	return (components: PubSubPeerDiscoveryComponents) =>
-		new WorkerPubSubPeerDiscovery(components, options);
+		new PubSubPeerDiscovery(components, options);
 }

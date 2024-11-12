@@ -16,7 +16,8 @@
     "relay:start": "pnpm --filter @effectai/task-relay run start",
     "dev": "pnpm turbo dev",
     "packages:build": "pnpm turbo build --filter @effectai/*",
-    "docs:dev": "pnpm --filter @effectai/docs run dev",
+    "provider:start": "pnpm --filter @effectai/task-provider run start",
+    "docs:dev": "pnpm --filter docs run dev",
     "test": "vitest"
   },
   "devDependencies": {

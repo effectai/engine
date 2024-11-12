@@ -12,6 +12,7 @@
   "dependencies": {
     "@effectai/task-core": "workspace:*",
     "@effectai/task-manager": "workspace:*",
+    "@effectai/task-provider": "workspace:*",
     "@effectai/task-relay": "workspace:*",
     "@effectai/task-worker": "workspace:*",
     "@nuxt/ui": "^2.18.7",

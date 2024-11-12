@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400..900&family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
 
 @layer vocs_preflight {
   @tailwind base;
@@ -7,10 +7,11 @@
   @tailwind utilities;
 }
 
-
  
 :root {
+  --vocs-fontFamily_default: 'Inter', sans-serif;
   --vocs-color_background: white;
+  --vocs-fontWeight_semibold: 700;
 }
  
 :root.dark {
@@ -18,13 +19,14 @@
 }
 
 .vocs_Heading {
-    font-family: 'Orbitron', sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
 }
 
-.title{
-  font-family: 'Orbitron', sans-serif;
-  @apply text-6xl;
+.vocs_HomePage_title {
+    font-family: 'Inter', sans-serif !important;
 }
+
+
 
 #splash-container {
   background: url('/preview-bg.png') no-repeat center center;

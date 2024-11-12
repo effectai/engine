@@ -14,7 +14,6 @@ rectangle "Network" {
     (Complete Tasks) as UC5
     (Distribute Rewards) as UC7
 
-
     TP --> UC1
     
     MN --> UC2

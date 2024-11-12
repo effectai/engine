@@ -5,7 +5,7 @@ import {
 	type Libp2p,
 	type NodeEventMap,
 	type Task,
-	type Batch,
+	Batch,
 	Libp2pNode,
 	createLibp2p,
 	webSockets,
@@ -15,14 +15,14 @@ import {
 	yamux,
 	identify,
 	filters,
-	circuitRelayServer,
-	multiaddr,
-	workerPubSubPeerDiscovery,
+	pubSubPeerDiscovery,
 	bootstrap,
 	gossipsub,
-	persistentPeerStore,
+	multiaddr,
+	type Peer,
 } from "@effectai/task-core";
 import { pipe } from "it-pipe";
+import { PeerType } from "../../core/dist/discovery/pubsub/peer.js";
 
 export class WorkerNotAvailableError extends Error {
 	constructor() {
@@ -33,9 +33,7 @@ export class WorkerNotAvailableError extends Error {
 export type TaskStatus = "pending" | "accepted" | "completed";
 
 export type ManagerState = {
-	workerNodes: Multiaddr[];
 	activeBatch: Batch | null;
-
 	// internal map of tasks to track which worker is processing which task
 	taskMap: Map<
 		string,
@@ -55,31 +53,26 @@ export interface ManagerEvents extends NodeEventMap<ManagerState> {
 
 export class ManagerNode extends Libp2pNode<ManagerState, ManagerEvents> {
 	constructor(node: Libp2p) {
-		super({
-			workerNodes: [],
+		super(node, {
 			activeBatch: null,
 			taskMap: new Map(),
 		});
 
-		this.node = node;
+		// listen for batches
+		this.handleBatchMessage();
 	}
 
 	// TODO:: Implement worker node selection strategy
-	selectWorkerNode(): Multiaddr | null {
-		const activeWorkers = Array.from(this.state.taskMap.values())
-			.filter((t) => t.status === "accepted")
-			.map((v) => v.activeWorkerPeerId);
+	async selectWorkerNode(): Promise<Peer | null> {
+		const peers = await this.node.peerStore.all();
 
-		const workerNode = this.state.workerNodes
-			.filter((node) => !activeWorkers.includes(node.toString()))
-			.shift();
+		// get all active worker peers
+		const workerPeers = peers.filter(
+			(peer) => peer.tags.get("peerType")?.value === PeerType.Worker,
+		);
 
-		if (workerNode) {
-			// push it back to the end of the queue
-			this.state.workerNodes.push(workerNode);
-		}
-
-		return workerNode || null;
+		// return the first worker peer
+		return workerPeers[0] || null;
 	}
 
 	async handleTaskResponse(streamPeerId: string, stream: Stream, task: Task) {
@@ -88,8 +81,31 @@ export class ManagerNode extends Libp2pNode<ManagerState, ManagerEvents> {
 				const receivedData = JSON.parse(
 					new TextDecoder().decode(msg.subarray()),
 				);
-				this.handleTaskMessage(streamPeerId, receivedData, task);
+				 this.handleTaskMessage(streamPeerId, receivedData, task);
 			}
+		});
+	}
+
+	handleBatchMessage() {
+		this.node.handle("/effect-ai/task/1.0.0", async ({ stream }) => {
+			pipe(stream.source, async (source) => {
+				for await (const msg of source) {
+					const { t, d } = JSON.parse(new TextDecoder().decode(msg.subarray()));
+					// handle batch message
+					if (t === "batch") {
+						const batch = new Batch(d);
+						// send accept message
+						const acceptMessage = JSON.stringify({
+							t: "batch-accepted",
+							d: null,
+						});
+
+						await stream.sink([new TextEncoder().encode(acceptMessage)]);
+
+						await this.processBatch(batch);
+					}
+				}
+			});
 		});
 	}
 
@@ -102,23 +118,42 @@ export class ManagerNode extends Libp2pNode<ManagerState, ManagerEvents> {
 
 		switch (t) {
 			case "task-rejected":
+				console.log("Task rejected by worker:", d.id);
 				// TODO:: requeue the task
 				break;
 			case "task-accepted":
 				console.log("Task accepted by worker:", d.id);
-				// TODO:: get worker id and update internal task state
-				this.state.taskMap.set(task.id, {
-					activeWorkerPeerId: streamPeerId,
-					status: "accepted",
-					updatedAt: new Date(),
+				this.setState({
+					...this.state,
+					taskMap: new Map([
+						...this.state.taskMap,
+						[
+							task.id,
+							{
+								activeWorkerPeerId: streamPeerId,
+								status: "accepted",
+								updatedAt: new Date(),
+							},
+						],
+					]),
 				});
 				break;
 			case "task-completed":
+				console.log("Manager: Task completed by worker:", d.id);
 				task.result = d.result;
-				this.state.taskMap.set(task.id, {
-					activeWorkerPeerId: streamPeerId,
-					status: "completed",
-					updatedAt: new Date(),
+				this.setState({
+					...this.state,
+					taskMap: new Map([
+						...this.state.taskMap,
+						[
+							task.id,
+							{
+								activeWorkerPeerId: streamPeerId,
+								status: "completed",
+								updatedAt: new Date(),
+							},
+						],
+					]),
 				});
 				this.emit("task:completed", task);
 				break;
@@ -127,22 +162,25 @@ export class ManagerNode extends Libp2pNode<ManagerState, ManagerEvents> {
 		}
 	}
 
-	async delegateTaskToWorker(task: Task, worker: Multiaddr) {
+	async delegateTaskToWorker(task: Task, worker: Peer) {
+		// create a stream to the worker
 		console.log("Delegating task to worker:", task.id);
-		const { stream, workerPeerId } = await this.createTaskStream(
-			worker,
-			task,
-		);
-
-		await this.handleTaskResponse(workerPeerId, stream, task);
+		const { stream, workerPeerId } = await this.createTaskStream(task, worker);
+		this.handleTaskResponse(workerPeerId, stream, task);
 	}
 
-	async createTaskStream(workerNode: Multiaddr, task: Task) {
+	async createTaskStream(task: Task, worker: Peer) {
 		if (!this.node) {
 			throw new Error("Node not initialized");
 		}
 
-		const connection = await this.node.dial(workerNode);
+		let connection = this.node.getConnections(worker.id)[0];
+
+		if (!connection) {
+			console.log("Dialing worker:", worker.id);
+			connection = await this.node.dial(worker.id);
+		}
+
 		const stream = await connection.newStream("/task-flow/1.0.0");
 		const workerPeerId = connection.remotePeer.toString();
 		const sendTaskMessage = JSON.stringify({ t: "task", d: task.toJSON() });
@@ -165,13 +203,20 @@ export class ManagerNode extends Libp2pNode<ManagerState, ManagerEvents> {
 			throw new Error("There is already an active batch");
 
 		this.emit("batch:started", batch);
-		this.state.activeBatch = batch;
+		this.setState({ ...this.state, activeBatch: batch });
 
 		const tasks = batch.extractTasks();
 
 		for (const task of tasks) {
 			try {
-				await this.delegateTaskToWorker(task, this.state.workerNodes[0]);
+				const worker = await this.selectWorkerNode();
+
+				if (!worker) {
+					console.warn("No worker available for task:", task.id);
+					continue;
+				}
+
+				await this.delegateTaskToWorker(task, worker);
 			} catch (error) {
 				if (error instanceof WorkerNotAvailableError) {
 					// requeue the task
@@ -196,13 +241,12 @@ export const createManagerNode = async (bootstrapNodes: string[] = []) => {
 		transports: [
 			webSockets({ filter: filters.all }),
 			webRTC(),
-			circuitRelayTransport({
-				
-			}),
+			circuitRelayTransport({}),
 		],
 		peerDiscovery: [
-			workerPubSubPeerDiscovery({
-				type: "manager",
+			pubSubPeerDiscovery({
+				type: PeerType.Manager,
+				topics: ["manager-worker-discovery", "provider-manager-discovery"],
 			}),
 			bootstrap({
 				list: bootstrapNodes,
@@ -216,10 +260,6 @@ export const createManagerNode = async (bootstrapNodes: string[] = []) => {
 				allowPublishToZeroTopicPeers: true,
 			}),
 		},
-	});
-
-	node.addEventListener("peer:discovery", ({ detail }) => {
-		console.log("Manager Discovered:", detail);
 	});
 
 	return new ManagerNode(node);
