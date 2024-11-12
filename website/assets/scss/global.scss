@@ -1,1 +1,7 @@
 @use "bulma/bulma";
+@use "utility";
+
+.title.is-auto-phrase {
+    word-break: auto-phrase;
+  }
+

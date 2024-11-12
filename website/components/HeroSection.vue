@@ -4,8 +4,8 @@
         <div class="container mt-5">
           <div class="columns is-vcentered">
             <div class="column is-full-mobile is-three-fifths-tablet is-half-widescreen">
-              <h1 v-if="title" class="title is-spaced is-auto-phrase is-in-front">
-                <span class="has-text-primary is-block is-in-front">
+              <h1 v-if="title" class="title is-spaced is-auto-phrase">
+                <span class="has-text-primary is-block">
                     {{title}}
                 </span>
               </h1>
@@ -37,20 +37,6 @@
   
   <style lang="scss">
   @use "@/assets/scss/variables.scss";
-  .title{
-    // font-family: "Inter" !important;
-    font-size: variables.$title-size !important;
-    // font-weight: variables.$title-weight !important;
-    line-height: 87.14px !important;
-  }
-
-//   .subtitle{
-//     // font-family: "Inter";
-//     // font-size: 20px !important;
-//     // font-weight: 400 !important;
-//     // line-height: 30px !important;
-//     // color: #666666 !important;
-//   }
 
   #hero {
     position: relative;

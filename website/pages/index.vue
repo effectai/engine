@@ -3,7 +3,7 @@
         <HeroSection class="nav-bar-height" id="main-hero" style="min-height: 700px;">
             <template #title>
                 <!-- <h1 class="title title-weight is-spaced has-text-primary"> -->
-                <h1 class="title has-text-weight-normal">
+                <h1 class="title hero-title has-text-weight-normal is-auto-phrase">
                     Handcrafted Data for Artificial Intelligence.
                 </h1>
             </template>
@@ -86,38 +86,38 @@
       </template>
     </SimpleSection>
 
-    <SimpleSection :centered="true" class="achievement-banner">
+    <SimpleSection class="has-text-white has-background-black">
       <template #subtitle>
-        <div class="columns">
-            <div class="column">
-                <p class="is-size-2 has-text-weight-medium has-text-left">Be part of the <br> AI future:</p>
+        <div class="columns is-mobile is-multiline">
+            <div class="column is-full-mobile is-one-third-tablet has-text-left has-text-centered-mobile">
+                <p class="is-size-2 has-text-weight-normal">Be part of the <br> AI future:</p>
             </div>
-            <div class="column"></div>
-            <div class="column">
-                <p class="achievment-number">
-                    22
-                </p>
-                <p class="achievment-text">Apps in Ecosystem</p>
+            <div class="column is-full-mobile has-text-left has-text-centered-mobile">
+                <p class="is-size-1 has-text-weight-bold">22</p>
+                <p class="is-size-5 has-text-grey-light has-text-weight-normal">Apps in Ecosystem</p>
             </div>
-            <div class="column">
-                <p class="achievment-number">
-                    22M
-                </p>
-                <p class="achievment-text">Tasks Completed</p>
+            <div class="column is-full-mobile has-text-left has-text-centered-mobile">
+                <p class="is-size-1 has-text-weight-bold">22M</p>
+                <p class="is-size-5 has-text-grey-light has-text-weight-normal">Tasks Completed</p>
             </div>
-            <div class="column">
-                <p class="achievment-number">
-                    156
-                </p>
-                <p class="achievment-text">Proposals created</p>
+            <div class="column is-full-mobile has-text-left has-text-centered-mobile">
+                <p class="is-size-1 has-text-weight-bold">156</p>
+                <p class="is-size-5 has-text-grey-light has-text-weight-normal">Proposals created</p>
             </div>
         </div>
       </template>
     </SimpleSection>
-    <SimpleSection :centered="true" class="">
-        <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left">
-            Harmonizing AI with Humanity: Empowering <br> Tomorrow's Workforce Together
-        </h1>
+    <SimpleSection class="">
+        <!-- <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left is-half">
+            Harmonizing AI with Humanity: Empowering Tomorrow's Workforce Together
+        </h1> -->
+        <div class="columns">
+            <div class="column is-half">
+                <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left is-half">
+                    Harmonizing AI with Humanity: Empowering Tomorrow's Workforce Together
+                </h1>
+            </div>
+        </div>
     </SimpleSection>
     <SimpleSection :centered="true" class="">
         <template #subtitle>
@@ -215,39 +215,6 @@
 </template>
  
   <style lang="scss" scoped>
-
-    // .dapp-card{
-    //     max-width: 300px;
-    //     height: 100px;
-    //     border: 1px solid;
-    //     border-radius: 50px;
-    //     img{
-    //         height: auto;
-    //         max-width: 115px;
-    //         max-height: 100%;
-    //         object-fit: contain;
-    //     }
-    // }
-    .achievement-banner{
-        height: 291px;
-        background-color: black;
-        color: white;
-
-        .achievment-number{
-            font-size: 4.25rem;
-            font-weight: 700;
-            line-height: 95.2px;
-            text-align: left;
-        }
-
-        .achievment-text{
-            font-size: 1.25rem;
-            font-weight: 400;
-            line-height: 28px;
-            text-align: left;
-            color: #999999;
-        }
-    }
 
     .task-cards{
         background: linear-gradient(to bottom,#D9D9D91A,#D9D9D91A);

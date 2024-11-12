@@ -10,6 +10,7 @@
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
         </a>
       </div>
       <div id="navbar" class="navbar-menu" :class="{ 'is-active': mobileMenu }">
@@ -49,11 +50,8 @@ const mobileMenu = ref(false);
 </script>
 
 <style lang="scss">
-.navbar{
-    background-color: #ffffff60 !important;
-    position: relative !important;
-    z-index: 1 !important;
-  }
+
+
 nav {
   // .container{
   //   padding: 0px 90px 0px 90px;
@@ -112,11 +110,5 @@ nav {
     justify-content: center;
     align-items: center;
   }
-
-  // @media screen and (min-width: 1408px) {
-  //   .container:not(.is-max-tablet):not(.is-max-desktop) {
-  //       max-width: 100vw;
-  //   }
-  // }
 }
 </style>
