@@ -22,6 +22,7 @@ describe("solana_efx_airdrop", () => {
   let metadataPubKey: PublicKey;
   let vaultPubKey: PublicKey;
 
+  // airdrop some sol and create a dummy mint and token account
   before(async () => {
     // air drop some SOL
     await provider.connection.requestAirdrop(
@@ -37,7 +38,9 @@ describe("solana_efx_airdrop", () => {
       6
     )
 
+    // create a token account for the new mint
     token_account = await createTokenAccount(connection, keypair, mint, keypair.publicKey)
+    
     // mint some tokens to the account
     await mintToAccount(connection, keypair, mint, token_account, keypair, 500)
   })
@@ -47,9 +50,6 @@ describe("solana_efx_airdrop", () => {
       "5KPm6mVzGWgvBv2aYf5e4izCfSK69KW5NKSS2XVm6YQ3g2pfQpw"
     )
 
-    const message = "testing"
-    const sig = privateKey.signMessage(Buffer.from(message))
-
     const { metadata, vaultAccount } = await initializeVaultAccount({
       foreignPubKey: Buffer.from(privateKey.toPublic().data.array),
       mint,
@@ -57,9 +57,6 @@ describe("solana_efx_airdrop", () => {
       payerTokens: token_account,
       amount: 100
     })
-
-    // verify that the metadata and vault accounts are created
-    // and that the vault account holds the correct amount of tokens
 
     metadataPubKey = metadata.publicKey
     vaultPubKey = vaultAccount
@@ -70,6 +67,7 @@ describe("solana_efx_airdrop", () => {
     const data = AccountLayout.decode(vaultAccountInfo.data)
 
     expect(metadataAccount).to.not.be.null
+
     expect(vaultAccountInfo).to.not.be.null
 
     expect(data.mint.toBase58()).to.eql(mint.toBase58())
