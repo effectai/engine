@@ -26,9 +26,13 @@ export {
 export { identify, identifyPush } from "@libp2p/identify";
 export { multiaddr, type Multiaddr } from "@multiformats/multiaddr";
 
+export { Task, TaskMessage, TaskStatus } from "./task/task.js";
+export { Batch, BatchMessage } from "./batch/batch.js";
+export {kadDHT} from '@libp2p/kad-dht'
 
-export { Task } from "./task/task.js";
-export { Batch } from "./batch/batch.js";
+export {pubsubPeerDiscovery} from '@libp2p/pubsub-peer-discovery'
+
+export { Buffer } from 'node:buffer'
 
 export * as filters from "@libp2p/websockets/filters";
 
@@ -36,4 +40,8 @@ export type { Libp2p } from "libp2p";
 
 export { persistentPeerStore } from "@libp2p/peer-store";
 
-export { getOpenOutboundConnections, getActiveOutBoundStreams } from "./utils.js"
+export * from './service/queue/index.js'
+
+export * from './utils.js'
+
+export { fromString } from 'uint8arrays/from-string'

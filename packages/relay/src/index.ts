@@ -7,13 +7,15 @@ import {
 	noise,
 	filters,
 	pubSubPeerDiscovery,
+	pubsubPeerDiscovery,
 	Libp2p,
+	PeerType,
+	kadDHT
 } from "@effectai/task-core";
 import { gossipsub } from "@chainsafe/libp2p-gossipsub";
-import { PeerType } from "../../core/dist/discovery/pubsub/peer.js";
 
 export const createBootstrapRelayerServer = async () => {
-	const relay = await createLibp2p({
+	const node = await createLibp2p({
 		nodeInfo: {
 			version: "1.0.0",
 			name: "relay",
@@ -24,13 +26,20 @@ export const createBootstrapRelayerServer = async () => {
 		},
 		connectionEncrypters: [noise()],
 		peerDiscovery: [
-			pubSubPeerDiscovery({
-				type: PeerType.Relay,
-				topics: ["provider-manager-discovery", "manager-worker-discovery"],
-			}),
+			pubsubPeerDiscovery({
+				
+			})
+			// pubSubPeerDiscovery({
+			// 	type: PeerType.Relay,
+			// 	topics: ["provider-manager-discovery", "manager-worker-discovery"],
+			// }),
 		],
 		streamMuxers: [yamux()],
 		services: {
+			kadDHT: kadDHT({
+				clientMode: false,
+				protocol: "ipfs/kad/1.0.0",
+			}),
 			pubsub: gossipsub({
 				allowPublishToZeroTopicPeers: true,
 			}),
@@ -44,14 +53,14 @@ export const createBootstrapRelayerServer = async () => {
 		},
 	});
 
-	await relay.start();
+	await node.start();
 
 	// report amount of reservations every 10 seconds
 	setInterval(() => {
-		console.log("Relay reservations:", relay.services.relay.reservations.size);
+		console.log("Relay reservations:", node.services.relay.reservations.size);
 	}, 10000);
 
-	console.log("Relay server listening on:", relay.getMultiaddrs());
+	console.log("Relay server listening on:", node.getMultiaddrs());
 
-	return relay;
+	return node;
 };

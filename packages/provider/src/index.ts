@@ -1,5 +1,4 @@
 import {
-	Libp2pNode,
 	circuitRelayTransport,
 	pubSubPeerDiscovery,
 	createLibp2p,
@@ -16,41 +15,7 @@ import {
 	type Multiaddr,
 	PeerType,
 } from "@effectai/task-core";
-import { pipe } from "it-pipe";
-
-type ProviderNodeState = {
-	providerAddress: string;
-};
-
-export class ProviderNode extends Libp2pNode<ProviderNodeState> {
-	constructor(node: Libp2p) {
-		super(node, { providerAddress: "" });
-		this.node = node;
-	}
-
-	async offerBatch(address: Multiaddr, batch: Batch) {
-		const stream = await offerBatch(this.node, address, batch);
-
-		if(!stream) {
-			throw new Error("Stream not available");
-		}
-
-		// wait for the batch to be accepted
-		const response = await pipe(stream.source, async (source) => {
-			for await (const msg of source) {
-					const { t,d } = JSON.parse(
-						new TextDecoder().decode(msg.subarray()),
-					);
-
-                    if(t === "batch-accepted") {
-                        console.log("Batch accepted");
-                    }
-			}
-		});
-
-        // TODO:: handle the response
-	}
-}
+import { providerService } from "./services/providerService.js";
 
 export const createProviderNode = async (bootstrapNodes: string[] = []) => {
 	const node = await createLibp2p({
@@ -77,6 +42,7 @@ export const createProviderNode = async (bootstrapNodes: string[] = []) => {
 		connectionEncrypters: [noise()],
 		streamMuxers: [yamux()],
 		services: {
+			provider: providerService(),
 			identify: identify(),
 			pubsub: gossipsub({
 				allowPublishToZeroTopicPeers: true,
@@ -84,24 +50,5 @@ export const createProviderNode = async (bootstrapNodes: string[] = []) => {
 		},
 	});
 
-	return new ProviderNode(node);
-};
-
-// Offer a batch to the supplied address
-export const offerBatch = async (
-	provider: Libp2p,
-	address: Multiaddr,
-	batch: Batch,
-) => {
-	try {
-		const stream = await provider.dialProtocol(
-			address,
-			"/effect-ai/task/1.0.0",
-		);
-		const offerBatchMessage = JSON.stringify({ t: "batch", d: batch.toJSON() });
-		stream.sink([Buffer.from(offerBatchMessage)]);
-		return stream;
-	} catch (e) {
-		console.error(e);
-	}
+	return node;
 };

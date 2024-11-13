@@ -10,7 +10,9 @@ import {
 	gossipsub,
 	pubSubPeerDiscovery,
 	bootstrap,
-	PeerType
+	PeerType,
+	kadDHT,
+	pubsubPeerDiscovery
 } from "@effectai/task-core";
 
 import { workerService } from "./service/workerService";
@@ -24,10 +26,11 @@ export const createWorkerNode = async (bootstrapNodes: string[] = []) => {
 			denyDialMultiaddr: async () => false,
 		},
 		peerDiscovery: [
-			pubSubPeerDiscovery({
-				type: PeerType.Worker,
-				topics: ["manager-worker-discovery"],
-			}),
+			// pubSubPeerDiscovery({
+			// 	type: PeerType.Worker,
+			// 	topics: ["manager-worker-discovery"],
+			// }),
+			pubsubPeerDiscovery({}),
 			bootstrap({
 				list: bootstrapNodes,
 			}),
@@ -40,6 +43,11 @@ export const createWorkerNode = async (bootstrapNodes: string[] = []) => {
 		connectionEncrypters: [noise()],
 		streamMuxers: [yamux()],
 		services: {
+			kadDHT: kadDHT({
+				allowQueryWithZeroPeers: true,
+				clientMode: false,
+				protocol: "ipfs/kad/1.0.0",
+			}),
 			worker: workerService(),
 			identify: identify({}),
 			pubsub: gossipsub({
@@ -48,9 +56,6 @@ export const createWorkerNode = async (bootstrapNodes: string[] = []) => {
 		},
 	});
 
-	node.services.worker.addEventListener("task:accepted", (event) => {
-		console.log("Task accepted", event);
-	})
 
 	return node
 };

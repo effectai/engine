@@ -5,6 +5,8 @@ import {
 	type PeerStore,
 	type ConnectionManager,
 	type Registrar,
+	type TaskMessage,
+	TaskStatus
 } from "@effectai/task-core";
 import { Uint8ArrayList } from "uint8arraylist";
 
@@ -12,13 +14,6 @@ export interface TaskManagerComponents {
 	registrar: Registrar;
 	peerStore: PeerStore;
 	connectionManager: ConnectionManager;
-}
-
-export enum TaskStatus {
-	PENDING = "pending",
-	ACCEPTED = "accepted",
-	COMPLETED = "completed",
-	REJECTED = "rejected",
 }
 
 export interface WorkerServiceEvents {
@@ -44,6 +39,7 @@ export class WorkerService extends TypedEventEmitter<WorkerServiceEvents> {
 
 	private _initialize() {
 		console.log("Initializing worker service..");
+		// handle incoming task messages from the manager
 		this.components.registrar.handle(
 			"/effect-ai/task/1.0.0",
 			async (streamData) => {
@@ -53,25 +49,40 @@ export class WorkerService extends TypedEventEmitter<WorkerServiceEvents> {
 					data.append(chunk);
 				}
 
-				const messageFromManager = JSON.parse(
-					new TextDecoder().decode(data.subarray()),
-				);
+				const rawMessage = new TextDecoder().decode(data.subarray());
+				let messageFromManager: TaskMessage;
 
-				console.log("workerService received message", messageFromManager);
-
-				switch (messageFromManager.t) {
-					case "task": {
-						// add task to the list of tasks
-						this.addTask(
-							streamData.connection.remotePeer,
-							messageFromManager.d,
-						);
-						break;
-					}
+				try {
+					messageFromManager = JSON.parse(rawMessage) as TaskMessage;
+				} catch (e) {
+					console.error("Error parsing message from manager", e);
+					return;
 				}
+
+				this._processMessage(messageFromManager);
 			},
 			{ runOnLimitedConnection: false },
 		);
+	}
+
+	private _processMessage(message: TaskMessage) {
+		switch (message.t) {
+			case "task":
+				// handle task message
+				// this.addTask(message.managerPeerId, Task.fromMessage(message));
+				break;
+			case "status":
+				// handle status message
+				break;
+			case "error":
+				//TODO:: handle error message
+				break;
+			case "result":
+				//TODO:: handle result message
+				break;
+			default:
+				// console.warn("Unknown message type:", message.t);
+		}
 	}
 
 	public addTask(peerId: PeerId, task: Task) {

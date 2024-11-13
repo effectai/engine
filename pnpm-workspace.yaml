@@ -4,5 +4,6 @@ packages:
   - 'environments/*'
   - 'docs'
   - 'website'
+  - 'solana'
   # exclude packages that are inside test directories
   - '!**/test/**'
