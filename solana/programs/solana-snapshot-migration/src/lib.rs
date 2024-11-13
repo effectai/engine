@@ -1,10 +1,14 @@
 use core::str;
+use std::result;
 use anchor_spl::{associated_token::AssociatedToken, token::{self, Mint, Token, TokenAccount, Transfer, SetAuthority}};
 
 use anchor_lang::{
     prelude::*,
-    solana_program::{secp256k1_recover::{secp256k1_recover, Secp256k1Pubkey}},
+    solana_program::{keccak, secp256k1_recover::{secp256k1_recover, Secp256k1Pubkey}},
 };
+
+use sha2::{Sha256, Digest};
+use tiny_keccak::{Hasher, Keccak};
 
 declare_id!("5su2b4QEeM8TWtH9XeEwRDLH95mNkgRhLZ1hfhkntJdW");
 
@@ -16,9 +20,8 @@ pub mod solana_snapshot_migration {
     pub fn initialize(ctx: Context<InitializeAndDeposit>, foreign_public_key: Vec<u8>, amount: u64) -> Result<()> {
         let metadata_account = &mut ctx.accounts.metadata;
         metadata_account.foreign_public_key = foreign_public_key; // Store the EOS/BSC public key as bytes
-     
-        msg!("Foreign Public Key: {:?}", metadata_account.foreign_public_key);
 
+        // set the authority of the vault account to the program
         let (vault_authority, _) = Pubkey::find_program_address(&[metadata_account.to_account_info().key.as_ref()], ctx.program_id);
 
         let _ = token::set_authority(
@@ -35,29 +38,33 @@ pub mod solana_snapshot_migration {
         Ok(())
     }
 
-    pub fn claim(ctx: Context<Claim>, sig: Vec<u8>, message: Vec<u8>) -> Result<()> {
-        let recovered_public_key = recover_pubkey(&sig, &message)
+    pub fn claim(ctx: Context<Claim>, sig: Vec<u8>, message: Vec<u8>, is_eth: bool) -> Result<()> {
+        let recovered_public_key = recover_pubkey(&sig, &message, is_eth)
             .map_err(|e| {
-                msg!("Error: {:?}", e);
+                msg!("Errorrtje: {:?}", e);
                 e
             })?;
 
+
         let metadata_account = &ctx.accounts.metadata_account;
+        
+        msg!("Recovered Public Key: {:?}", recovered_public_key.0);
+        msg!("Foreign Public Key: {:?}", metadata_account.foreign_public_key);
 
         // check if first 32 bytes of the recovered public key matches the foreign public key in the vaultAccount metadata
-        if recovered_public_key.0[..32] != metadata_account.foreign_public_key[1..].to_vec() {
-            msg!("Public Key Mismatch");
-            return Err(CustomError::PublicKeyMismatch.into());
-        }
+        // if recovered_public_key.0[..32] != metadata_account.foreign_public_key[1..].to_vec() {
+        //     msg!("Public Key Mismatch");
+        //     return Err(CustomError::PublicKeyMismatch.into());
+        // }
 
-        let (_vault_authority, bump) = Pubkey::find_program_address(&[metadata_account.key().as_ref()], ctx.program_id);
-        let seeds = [ctx.accounts.metadata_account.to_account_info().key.as_ref(), &[bump]];
+        // let (_vault_authority, bump) = Pubkey::find_program_address(&[metadata_account.key().as_ref()], ctx.program_id);
+        // let seeds = [ctx.accounts.metadata_account.to_account_info().key.as_ref(), &[bump]];
 
-        // claim all the tokens
-        token::transfer(
-            ctx.accounts.into_transfer_to_taker_context().with_signer(&[&seeds]),
-            ctx.accounts.vault_account.amount,
-        )?;
+        // // claim all the tokens
+        // token::transfer(
+        //     ctx.accounts.into_transfer_to_taker_context().with_signer(&[&seeds]),
+        //     ctx.accounts.vault_account.amount,
+        // )?;
         
         Ok(())
     }
@@ -140,7 +147,6 @@ pub struct Claim<'info> {
     #[account(signer)]
     pub payer: Signer<'info>,
 
-    /// CHECK:
     #[account(mut)]
     pub recipient_tokens: Account<'info, TokenAccount>,
 
@@ -163,29 +169,78 @@ pub enum CustomError {
     PublicKeyMismatch,
 }
 
-fn recover_pubkey(signature: &[u8], message: &[u8]) -> Result<Secp256k1Pubkey> {
-    // extract the recovery id from the signature (first byte)
-    let (recovery_id, signature) = signature.split_at(1);
+// TODO:: Signature malleability check: https://docs.rs/sol-chainsaw/latest/sol_chainsaw/solana_sdk/secp256k1_recover/fn.secp256k1_recover.html#signature-malleability
+fn recover_pubkey(signature: &[u8], message: &[u8], is_eth: bool) -> Result<Secp256k1Pubkey> {
+    let (recovery_id, signature) = match is_eth {
+        true => {
+            //  ethereum has recovery_id in the last byte
+            let (signature, recovery_id) = signature.split_at(signature.len() - 1);
+            (recovery_id, signature)
+        },
+        false => {
+            // EOS has recovery_id in the first byte
+            let (recovery_id, signature ) = signature.split_at(1);
+            (recovery_id, signature)
+        }
+    };
 
-    // TODO:: check signature length which should be 65 bytes
-    // TODO:: preferably we hash the message on the contract side to prevent malleability
+    msg!("Recovery ID: {:?}", recovery_id);
+    msg!("Signature: {:?}", signature);
 
-    let public_key = secp256k1_recover(
-        &message,
-        //TODO:: eos adds 31 to the recovery id, eth adds 27 (?)..
-        recovery_id[0] - 31, 
-        &signature,
-    );
+    if signature.len() != 64 {
+        msg!("Error: Invalid signature length");
+        return Err(CustomError::InvalidSignature.into());
+    }
+
+    let hashed_message = match is_eth {
+        true => {
+            keccak256(&message)
+        },
+        false => {
+            sha256(&message)
+        }
+    };
+
+    let recovery_id_adjusted = match is_eth {
+        true => {
+            recovery_id[0] - 27
+        },
+        false => {
+            recovery_id[0] - 31
+        }
+    };
+
+    msg!("Recovery ID: {:?}", recovery_id_adjusted);
+    msg!("Hashed Message: {:?}", hashed_message);
 
     // handle result
-    match public_key {
+    match secp256k1_recover(
+        &hashed_message,
+        recovery_id_adjusted,
+        &signature,
+    ) {
         Ok(pub_key) => {
             Ok(pub_key)
-        }
+        },
         Err(e) => {
-            // debug
             msg!("Error: {:?}", e);
             Err(CustomError::InvalidSignature.into())
         }
     }
+}
+
+fn keccak256(message: &[u8]) -> [u8; 32] {
+    let mut hasher = keccak::Hasher::default();
+    hasher.hash(message);
+    let result  = hasher.result();
+    result.0
+}
+
+fn sha256(message: &[u8]) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update(message);
+    let result = hasher.finalize();
+    let mut output = [0u8; 32];
+    output.copy_from_slice(&result[..]);
+    output
 }

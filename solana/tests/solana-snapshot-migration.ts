@@ -1,12 +1,14 @@
 import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
 import type { SolanaSnapshotMigration } from "../target/types/solana_snapshot_migration";
-import { Checksum256, PrivateKey } from "@wharfkit/antelope";
+import { PrivateKey } from "@wharfkit/antelope";
 import { initializeVaultAccount } from "../utils/anchor";
 import { createMint, createTokenAccount, mintToAccount } from "../utils/spl";
-import { ComputeBudgetProgram, type PublicKey } from "@solana/web3.js";
+import { type PublicKey } from "@solana/web3.js";
 import { expect } from "chai";
 import { AccountLayout } from "@solana/spl-token";
+import { keccak256 } from "viem";
+import { secp256k1 } from '@noble/curves/secp256k1';
 
 describe("solana_efx_airdrop", () => {
   // Configure the client to use the local cluster.
@@ -40,7 +42,7 @@ describe("solana_efx_airdrop", () => {
 
     // create a token account for the new mint
     token_account = await createTokenAccount(connection, keypair, mint, keypair.publicKey)
-    
+
     // mint some tokens to the account
     await mintToAccount(connection, keypair, mint, token_account, keypair, 500)
   })
@@ -51,6 +53,7 @@ describe("solana_efx_airdrop", () => {
     )
 
     const { metadata, vaultAccount } = await initializeVaultAccount({
+      // 33 bytes public key
       foreignPubKey: Buffer.from(privateKey.toPublic().data.array),
       mint,
       payer: keypair,
@@ -84,7 +87,8 @@ describe("solana_efx_airdrop", () => {
 
     const tx = await program.methods.claim(
       Buffer.from(sig.data.array),
-      Buffer.from(Checksum256.hash(Buffer.from(message)).array),
+      Buffer.from(message),
+      false
     ).accounts({
       recipientTokens: token_account,
       metadataAccount: metadataPubKey,
@@ -94,4 +98,55 @@ describe("solana_efx_airdrop", () => {
       .signers([keypair])
       .rpc()
   });
+
+
+  it("initializes & claims an BSC public key", async () => {
+    const ethPrivateKey = "dec08ffda7d9addd59809371399f1fb359392c1ad5a876d52449d8e840f7d636"
+    const pk = secp256k1.getPublicKey(ethPrivateKey, true)
+
+    const { metadata, vaultAccount } = await initializeVaultAccount({
+      // 33 bytes public key
+      foreignPubKey: pk,
+      mint,
+      payer: keypair,
+      payerTokens: token_account,
+      amount: 100
+    })
+
+    const metadataPubKey = metadata.publicKey
+    const vaultPubKey = vaultAccount
+
+    const metadataAccount = await provider.connection.getAccountInfo(metadataPubKey)
+    const vaultAccountInfo = await provider.connection.getAccountInfo(vaultPubKey)
+
+    const data = AccountLayout.decode(vaultAccountInfo.data)
+    expect(metadataAccount).to.not.be.null
+    expect(data.mint.toBase58()).to.eql(mint.toBase58())
+    expect(data.amount).to.eql(BigInt(100))
+
+    const message = "testing"
+
+    // keccak256 hash of the message
+    const keccakHash = keccak256(Buffer.from(message))
+   
+    // sign the hash
+    const sig = secp256k1.sign(keccakHash.slice(2), ethPrivateKey)
+   
+    // add the recovery byte to the signature
+    const sigWithRecovery = Buffer.concat([sig.toCompactRawBytes(), Buffer.from([sig.recovery + 27])])
+
+    const tx = await program.methods.claim(
+      sigWithRecovery,
+      Buffer.from(message),
+      true
+    ).accounts({
+      recipientTokens: token_account,
+      metadataAccount: metadataPubKey,
+      vaultAccount: vaultPubKey,
+      payer: keypair.publicKey,
+    })
+      .signers([keypair])
+      .rpc()
+  })
+
 });
