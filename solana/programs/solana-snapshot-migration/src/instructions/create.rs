@@ -1,17 +1,21 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, solana_program::program::invoke_signed};
+use anchor_spl::token::{self, SetAuthority, TokenAccount, Transfer};
 use anchor_spl::{
-    token::{self, SetAuthority, TokenAccount, Transfer},
+    associated_token::AssociatedToken,
+    token::{Mint, Token},
 };
-use anchor_spl::{associated_token::AssociatedToken, token::{ Mint, Token}};
 
 use crate::state::MetadataAccount;
 
 #[derive(Accounts)]
+#[instruction(foreign_public_key: Vec<u8>, amount: u64)]
 pub struct Create<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + 32, 
+        space = 8 + 8 + 32, 
+        seeds = [foreign_public_key.as_slice()],
+        bump 
     )]
     pub metadata: Account<'info, MetadataAccount>,
 
@@ -24,7 +28,6 @@ pub struct Create<'info> {
         bump
     )]
     pub vault_account: Account<'info, TokenAccount>,
-
     pub mint: Account<'info, Mint>,
 
     #[account(mut)]
@@ -39,13 +42,9 @@ pub struct Create<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
-pub fn handler(
-    ctx: Context<Create>,
-    foreign_public_key: Vec<u8>,
-    amount: u64,
-) -> Result<()> {
+pub fn handler(ctx: Context<Create>, foreign_public_key: Vec<u8>, amount: u64) -> Result<()> {
     let metadata_account = &mut ctx.accounts.metadata;
-    metadata_account.foreign_public_key = foreign_public_key; // Store the EOS/BSC public key as bytes
+    metadata_account.foreign_public_key = foreign_public_key; 
 
     // set the authority of the vault account to the program
     let (vault_authority, _) = Pubkey::find_program_address(

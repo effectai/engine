@@ -10,4 +10,7 @@ pub enum CustomError {
 
     #[msg("Public key does not match the foreign public key.")]
     PublicKeyMismatch,
+
+    #[msg("Invalid metadata provided.")]
+    InvalidMetadataAccount,
 }

@@ -19,27 +19,14 @@ export const initializeVaultAccount = async ({
     payerTokens: PublicKey
     payer: Keypair,
 }) => {
-    const metadata = anchor.web3.Keypair.generate();
     const program = anchor.workspace.SolanaSnapshotMigration as Program<SolanaSnapshotMigration>;
 
-    const [vaultAccount, _] = PublicKey.findProgramAddressSync(
-        [metadata.publicKey.toBuffer()],
-        program.programId
-    );
-
-    const tx = await program.methods.initialize(
+    await program.methods.create(
         Buffer.from(foreignPubKey),
         new BN(amount),
     ).accounts({
         payer: payer.publicKey,
         payerTokens,
-        metadata: metadata.publicKey,
         mint,
-    }).signers([metadata, payer]).rpc()
-
-    return {
-        metadata,
-        vaultAccount
-    }
-
+    }).signers([payer]).rpc()
 }

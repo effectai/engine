@@ -14,12 +14,8 @@ export const setup = async (payer: Keypair, connection: Connection) => {
     // create spl token mint
     const mint = await createMint(connection, payer, payer.publicKey, 2);
 
-    console.log('mint', mint.toBase58())
-
      // create associated token account
     const ata = await createTokenAccount(connection, payer, mint, payer.publicKey);
-
-    console.log('ata', ata.toBase58())
 
      // mint some tokens to the associated token account
     await mintToAccount(connection, payer, mint, ata, payer, 1000);

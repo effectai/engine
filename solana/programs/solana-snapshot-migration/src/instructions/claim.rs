@@ -46,18 +46,26 @@ impl<'info> Claim<'info> {
 
 pub fn handler(ctx: Context<Claim>, sig: Vec<u8>, message: Vec<u8>, is_eth: bool) -> Result<()> {
     let message_str = str::from_utf8(&message).unwrap();
+    
     if !message_str.contains("Effect.AI: Sign this message to prove ownership of your address.") {
         msg!("Invalid message");
         return Err(CustomError::MessageInvalid.into());
     }
+   
+    let metadata_account = &ctx.accounts.metadata_account;
+    let (metadata, _bump) = Pubkey::find_program_address(&[metadata_account.foreign_public_key.as_ref()], ctx.program_id);
     
+    if metadata != metadata_account.key() {
+        msg!("Invalid metadata account");
+        return Err(CustomError::InvalidMetadataAccount.into());
+    }
+
     let recovered_public_key = recover_pubkey(&sig, &message, is_eth)
         .map_err(|e| {
             msg!("Error: {:?}", e);
             e
         })?;
 
-    let metadata_account = &ctx.accounts.metadata_account;
     let uncompressed_public_key = recovered_public_key.0;
   
     // returns the public key to the original format (in bytes)
