@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-solana_snapshot_migration = "5su2b4QEeM8TWtH9XeEwRDLH95mNkgRhLZ1hfhkntJdW"
+solana_snapshot_migration = "53ADM5kMezJ6KmgKQpmnngfVSRaYewZVRQ1m1q8gDXvt"
 
 [registry]
 url = "https://api.apr.dev"

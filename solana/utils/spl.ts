@@ -1,6 +1,36 @@
 import { type Connection, Keypair, type PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, MintLayout, createInitializeMintInstruction, getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, createMintToInstruction } from '@solana/spl-token';
 
+export const setup = async (payer: Keypair, connection: Connection) => {
+    // create a wallet 
+    // airdrop some SOL to the wallet
+    const tx = await connection.requestAirdrop(payer.publicKey, 1000000000);
+   
+    await connection.confirmTransaction(
+        tx,
+        'confirmed',
+    );
+
+    // create spl token mint
+    const mint = await createMint(connection, payer, payer.publicKey, 2);
+
+    console.log('mint', mint.toBase58())
+
+     // create associated token account
+    const ata = await createTokenAccount(connection, payer, mint, payer.publicKey);
+
+    console.log('ata', ata.toBase58())
+
+     // mint some tokens to the associated token account
+    await mintToAccount(connection, payer, mint, ata, payer, 1000);
+
+    return {
+        payer,
+        mint,
+        ata
+    }
+}
+
 /**
  * Creates a new SPL token mint for testing purposes.
  * @param connection - Solana connection object

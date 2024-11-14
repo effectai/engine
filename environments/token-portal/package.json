@@ -1,0 +1,26 @@
+{
+  "name": "nuxt-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@nuxt/devtools": "latest",
+    "@nuxt/ui": "^2.19.2",
+    "@solana/wallet-adapter-wallets": "0.19.32",
+    "@tanstack/vue-query": "^5.59.20",
+    "@wagmi/vue": "^0.0.62",
+    "nuxt": "^3.14.159",
+    "solana-wallets-vue": "0.6.1",
+    "@solana/spl-token": "0.4.9",
+    "@solana/web3.js": "1.95.4",
+    "viem": "2.x",
+    "vue": "latest",
+    "vue-router": "latest"
+  }
+}

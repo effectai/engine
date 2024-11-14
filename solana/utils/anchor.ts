@@ -5,21 +5,22 @@ import { type Keypair, PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 
 export const initializeVaultAccount = async ({
+    provider,
     foreignPubKey,
     mint,
     amount,
     payer,
     payerTokens
 }: {
+    provider: anchor.Provider,
     foreignPubKey: Uint8Array,
     mint: PublicKey
     amount: number,
     payerTokens: PublicKey
     payer: Keypair,
 }) => {
-    const program = anchor.workspace.SolanaSnapshotMigration as Program<SolanaSnapshotMigration>;
-
     const metadata = anchor.web3.Keypair.generate();
+    const program = anchor.workspace.SolanaSnapshotMigration as Program<SolanaSnapshotMigration>;
 
     const [vaultAccount, _] = PublicKey.findProgramAddressSync(
         [metadata.publicKey.toBuffer()],

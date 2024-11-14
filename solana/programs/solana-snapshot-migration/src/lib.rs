@@ -10,7 +10,7 @@ use anchor_lang::{
 use sha2::{Sha256, Digest};
 use tiny_keccak::{Hasher, Keccak};
 
-declare_id!("5su2b4QEeM8TWtH9XeEwRDLH95mNkgRhLZ1hfhkntJdW");
+declare_id!("53ADM5kMezJ6KmgKQpmnngfVSRaYewZVRQ1m1q8gDXvt");
 
 /// CHECK:
 #[program]
@@ -39,32 +39,39 @@ pub mod solana_snapshot_migration {
     }
 
     pub fn claim(ctx: Context<Claim>, sig: Vec<u8>, message: Vec<u8>, is_eth: bool) -> Result<()> {
+        // to prevent signature forgeries
+        let message_str = str::from_utf8(&message).unwrap();
+        if !message_str.contains("Effect AI: Please sign this message to claim your tokens") {
+            msg!("Invalid message");
+            return Err(CustomError::MessageInvalid.into());
+        }
+        
         let recovered_public_key = recover_pubkey(&sig, &message, is_eth)
             .map_err(|e| {
-                msg!("Errorrtje: {:?}", e);
+                msg!("Error: {:?}", e);
                 e
             })?;
 
-
         let metadata_account = &ctx.accounts.metadata_account;
-        
-        msg!("Recovered Public Key: {:?}", recovered_public_key.0);
-        msg!("Foreign Public Key: {:?}", metadata_account.foreign_public_key);
+        let uncompressed_public_key = recovered_public_key.0;
+      
+        // returns the public key to the original format (in bytes)
+        let recovered_public_key_parsed = parse_recovered_uncompressed_public_key(is_eth, &uncompressed_public_key);
 
         // check if first 32 bytes of the recovered public key matches the foreign public key in the vaultAccount metadata
-        // if recovered_public_key.0[..32] != metadata_account.foreign_public_key[1..].to_vec() {
-        //     msg!("Public Key Mismatch");
-        //     return Err(CustomError::PublicKeyMismatch.into());
-        // }
+        if recovered_public_key_parsed != metadata_account.foreign_public_key {
+            msg!("Public Key Mismatch");
+            return Err(CustomError::PublicKeyMismatch.into());
+        }
 
-        // let (_vault_authority, bump) = Pubkey::find_program_address(&[metadata_account.key().as_ref()], ctx.program_id);
-        // let seeds = [ctx.accounts.metadata_account.to_account_info().key.as_ref(), &[bump]];
+        let (_vault_authority, bump) = Pubkey::find_program_address(&[metadata_account.key().as_ref()], ctx.program_id);
+        let seeds = [ctx.accounts.metadata_account.to_account_info().key.as_ref(), &[bump]];
 
-        // // claim all the tokens
-        // token::transfer(
-        //     ctx.accounts.into_transfer_to_taker_context().with_signer(&[&seeds]),
-        //     ctx.accounts.vault_account.amount,
-        // )?;
+        // claim all the tokens
+        token::transfer(
+            ctx.accounts.into_transfer_to_taker_context().with_signer(&[&seeds]),
+            ctx.accounts.vault_account.amount,
+        )?;
         
         Ok(())
     }
@@ -113,8 +120,7 @@ pub struct InitializeAndDeposit<'info> {
     #[account(
         init,
         payer = payer,
-        space = 64 , 
-        // + 32 bytes for the public key
+        space = 8 + 32, 
     )]
     pub metadata: Account<'info, MetadataAccount>,
 
@@ -162,6 +168,9 @@ pub struct Claim<'info> {
 // Custom Error
 #[error_code]
 pub enum CustomError {
+    #[msg("Invalid message provided.")]
+    MessageInvalid,
+
     #[msg("Invalid signature provided.")]
     InvalidSignature,
 
@@ -183,9 +192,6 @@ fn recover_pubkey(signature: &[u8], message: &[u8], is_eth: bool) -> Result<Secp
             (recovery_id, signature)
         }
     };
-
-    msg!("Recovery ID: {:?}", recovery_id);
-    msg!("Signature: {:?}", signature);
 
     if signature.len() != 64 {
         msg!("Error: Invalid signature length");
@@ -210,9 +216,6 @@ fn recover_pubkey(signature: &[u8], message: &[u8], is_eth: bool) -> Result<Secp
         }
     };
 
-    msg!("Recovery ID: {:?}", recovery_id_adjusted);
-    msg!("Hashed Message: {:?}", hashed_message);
-
     // handle result
     match secp256k1_recover(
         &hashed_message,
@@ -227,6 +230,17 @@ fn recover_pubkey(signature: &[u8], message: &[u8], is_eth: bool) -> Result<Secp
             Err(CustomError::InvalidSignature.into())
         }
     }
+}
+
+fn parse_recovered_uncompressed_public_key(is_eth: bool, uncompressed_public_key: &[u8]) -> Vec<u8> {
+    let recovered_public_key_parsed = if is_eth {
+        let hashed_public_key = keccak256(uncompressed_public_key);
+        hashed_public_key[12..32].to_vec()  
+    } else {
+        uncompressed_public_key[1..34].to_vec()
+    };
+
+    recovered_public_key_parsed
 }
 
 fn keccak256(message: &[u8]) -> [u8; 32] {
