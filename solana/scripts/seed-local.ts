@@ -30,7 +30,9 @@ const seed = async () => {
         payerTokens: ata    
     })
 
+    console.log('ata', ata.toBase58())
     console.log('metadata', metadata.publicKey.toBase58())
+    console.log("mint", mint.toBase58())
 }
 
 
