@@ -8,9 +8,9 @@ export function getPublic(privkey: Uint8Array, type: string) {
     return new Uint8Array(pubKey)
 }
 
-export const deriveMetadataAndVaultFromPublicKey = (foreignPubKey: Uint8Array, programId: PublicKey) => {
+export const deriveMetadataAndVaultFromPublicKey = (payer: PublicKey, foreignPubKey: Uint8Array, programId: PublicKey) => {
     const [metadata] = PublicKey.findProgramAddressSync(
-        [foreignPubKey],
+        [payer.toBuffer(), foreignPubKey],
         programId
     )
     const [vault] = PublicKey.findProgramAddressSync(
@@ -23,12 +23,21 @@ export const deriveMetadataAndVaultFromPublicKey = (foreignPubKey: Uint8Array, p
 
 export function compressEosPubkey(eosPubkey: string): Uint8Array | null {
     // Step 1: Check and remove the "EOS" prefix
-    if (!eosPubkey.startsWith("EOS")) {
+    if (!eosPubkey.startsWith("EOS") && !eosPubkey.startsWith("PUB_K1_")) {
         throw new Error("Invalid EOS public key prefix");
     }
     
-    // Remove "EOS" prefix
-    const base58Key = eosPubkey.slice(3); 
+    // Remove "EOS" or PUB_K1 prefix
+    let base58Key: string;
+    
+    // Step 1: Remove the correct prefix
+    if (eosPubkey.startsWith("EOS")) {
+        base58Key = eosPubkey.slice(3); // Remove "EOS" prefix
+    } else if (eosPubkey.startsWith("PUB_K1_")) {
+        base58Key = eosPubkey.slice(7); // Remove "PUB_K1_" prefix
+    } else {
+        throw new Error("Unsupported key format");
+    }
 
     // Step 2: Decode from Base58
     const decoded = Base58.decode(base58Key);

@@ -21,7 +21,7 @@ describe("solana_efx_airdrop", () => {
   const payer = (wallet as anchor.Wallet).payer;
 
   const publicKey1 = "0xA03E94548C26E85DBd81d93ca782A3449564C27f"
-  // EOS7abGp9AVsTpt4TLSdCFKS2Tm49zCwg8nWLpJhAmEpppGAW3CWK
+
   let mint: PublicKey;
   let ata: PublicKey;
 
@@ -42,7 +42,7 @@ describe("solana_efx_airdrop", () => {
         amount: 5
       })
 
-      const { metadata } = deriveMetadataAndVaultFromPublicKey(toBytes(publicKey1), program.programId)
+      const { metadata } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, toBytes(publicKey1), program.programId)
 
       // check if the metadata account was created
       const metadataAccount = await provider.connection.getAccountInfo(metadata)
@@ -50,7 +50,7 @@ describe("solana_efx_airdrop", () => {
     })
 
     it('correctly initializes a EOS based vault', async () => {
-      const eosPublicKey = "EOS7abGp9AVsTpt4TLSdCFKS2Tm49zCwg8nWLpJhAmEpppGAW3CWK"
+      const eosPublicKey = "PUB_K1_7abGp9AVsTpt4TLSdCFKS2Tm49zCwg8nWLpJhAmEpppG9fjJsy"
       const publicKey = compressEosPubkey(eosPublicKey)
 
       await initializeVaultAccount({
@@ -62,6 +62,14 @@ describe("solana_efx_airdrop", () => {
         amount: 5
       })
     })
+
+    it('correctly throws an error when the foreign public key is invalid', async () => {})
+    it('correctly throws an error when the mint is invalid', async () => {})
+    it('correctly throws an error when the ata is invalid', async () => {})
+    it('correctly throws an error when the amount is invalid', async () => {})
+    it('errors when account already exists', () => {
+
+    })
   })
 
 
@@ -70,22 +78,25 @@ describe("solana_efx_airdrop", () => {
     it('correctly claims with an eos signature', async () => {
       const eosPrivatekey = PrivateKey.from("5K5UuCj9PmMSFTyiWzTtPF4VmUftVqScM3QJd9HorrZGCt4LgLu")
       const message = "Effect.AI: Sign this message to prove ownership of your address."
-      const signature = await eosPrivatekey.signMessage(message)
+      const signature = eosPrivatekey.signMessage(Buffer.from(message))
 
-      const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(toBytes(publicKey1), program.programId)
+      const eosPublicKey = eosPrivatekey.toPublic()
+      const pk = compressEosPubkey(eosPublicKey.toString())
+
+      const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, pk, program.programId)
 
       await program.methods.claim(
         Buffer.from(signature.data.array),
         Buffer.from(message),
         false
       ).accounts({
+        metadataAccount: metadata,
+        vaultAccount: vault,
         recipientTokens: ata,
         payer: payer.publicKey,
       })
         .signers([payer])
         .rpc()
-
-
     })
 
     it('correctly signs with keccak256', async () => {
@@ -101,7 +112,7 @@ describe("solana_efx_airdrop", () => {
       // add the recovery byte to the signature
       const sigWithRecovery = Buffer.concat([sig.toCompactRawBytes(), Buffer.from([sig.recovery + 27])])
 
-      const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(toBytes(publicKey1), program.programId)
+      const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, toBytes(publicKey1), program.programId)
 
       await program.methods.claim(
         sigWithRecovery,
@@ -126,7 +137,7 @@ describe("solana_efx_airdrop", () => {
       const signature = await account.signMessage({ message: originalMessage })
 
       // const pk = secp256k1.getPublicKey(account.address.slice, true)
-      const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(toBytes(publicKey1), program.programId)
+      const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, toBytes(publicKey1), program.programId)
 
       await program.methods.claim(
         Buffer.from(toBytes(signature)),
@@ -140,6 +151,12 @@ describe("solana_efx_airdrop", () => {
       })
         .signers([payer])
         .rpc()
+    })
+
+    it('correctly throws an error when the message is incorrect', async () => {
+    })
+
+    it('correctly throws an error when the signature is incorrect', async () => {
     })
 
   })
