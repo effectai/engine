@@ -93,6 +93,24 @@ importers:
       '@wagmi/vue':
         specifier: ^0.0.62
         version: 0.0.62(@tanstack/vue-query@5.59.20)(nuxt@3.14.159)(react-dom@18.3.1)(react-native@0.76.1)(react@18.3.1)(typescript@5.6.3)(viem@2.21.45)(vue@3.5.12)
+      '@wharfkit/session':
+        specifier: ^1.4.0
+        version: 1.4.0
+      '@wharfkit/signing-request':
+        specifier: 3.2.0
+        version: 3.2.0
+      '@wharfkit/wallet-plugin-anchor':
+        specifier: ^1.0.0
+        version: 1.4.0(@wharfkit/session@1.4.0)
+      '@wharfkit/web-renderer':
+        specifier: ^1.0.3
+        version: 1.4.1(@wharfkit/session@1.4.0)
+      anchor-link:
+        specifier: 3.6.0
+        version: 3.6.0
+      anchor-link-browser-transport:
+        specifier: 3.6.1
+        version: 3.6.1(anchor-link@3.6.0)
       nuxt:
         specifier: ^3.14.159
         version: 3.14.159(@biomejs/biome@1.9.4)(sass-embedded@1.80.7)(typescript@5.6.3)(vite@5.4.11)
@@ -348,6 +366,12 @@ importers:
       '@wharfkit/antelope':
         specifier: ^1.0.10
         version: 1.0.13
+      '@wharfkit/session':
+        specifier: 1.4.0
+        version: 1.4.0
+      '@wharfkit/wallet-plugin-privatekey':
+        specifier: 1.1.0
+        version: 1.1.0(@wharfkit/session@1.4.0)
       chai:
         specifier: ^4.3.4
         version: 4.5.0
@@ -2889,6 +2913,19 @@ packages:
       - '@solana/web3.js'
       - react
       - react-dom
+    dev: false
+
+  /@greymass/buoy@1.0.4:
+    resolution: {integrity: sha512-/O9EsjWJw81TiJcvKqMKxjrJpEfHKh8WcUK07gFT+uS0+JUKfoVrYVQn1qNOAdYWU+AZrhZJop8xP/LYmKfGHg==}
+    dependencies:
+      eventemitter3: 4.0.7
+      tslib: 2.8.1
+    dev: false
+
+  /@greymass/miniaes@1.0.0:
+    resolution: {integrity: sha512-xKYTnAyyoq3gpJS11JvU4dkju28M8Zbp06CuP3aKR4DMH6B2z64LauGGGzKksKh5Qd770JA/dzhLbImnBlymbg==}
+    dependencies:
+      tslib: 2.8.1
     dev: false
 
   /@headlessui/tailwindcss@0.2.1(tailwindcss@3.4.14):
@@ -9115,6 +9152,24 @@ packages:
       tslib: 1.14.1
     dev: false
 
+  /@wharfkit/abicache@1.2.2:
+    resolution: {integrity: sha512-yOsYz2qQpQy7Nb8XZj62pZqp8YnmWDqFlrenYksBb9jl+1aWIpFhWd+14VEez4tUAezRH4UWW+w1SX5vhmUY9A==}
+    dependencies:
+      '@wharfkit/antelope': 1.0.13
+      '@wharfkit/signing-request': 3.2.0
+      pako: 2.1.0
+      tslib: 2.8.1
+
+  /@wharfkit/account@1.2.0:
+    resolution: {integrity: sha512-mO+FJEJVGJA3qEBD3LQmF0br157tva66jOwhB7E6UZZwuniXromkV51TKGWJ6hbi6HDwwiA1eSGWyQ6RDTQrSA==}
+    dependencies:
+      '@wharfkit/antelope': 1.0.13
+      '@wharfkit/common': 1.4.0(@wharfkit/antelope@1.0.13)
+      '@wharfkit/contract': 1.1.5
+      '@wharfkit/resources': 1.3.1
+      '@wharfkit/token': 1.1.2
+      tslib: 2.8.1
+
   /@wharfkit/antelope@1.0.13:
     resolution: {integrity: sha512-f4O5O8+6Bd5BHpMUHTmlWQmlhX5xYb4AfzT2NJweyqIPqQOstm+aInF42AtUhSALDa8fvoY80YZoqwM0L8TUyw==}
     dependencies:
@@ -9124,7 +9179,104 @@ packages:
       hash.js: 1.1.7
       pako: 2.1.0
       tslib: 2.8.1
+
+  /@wharfkit/common@1.4.0(@wharfkit/antelope@1.0.13):
+    resolution: {integrity: sha512-j7A+tcGUqB935mrojfsNCYoSBu6ZcO1nkEANMYVmvjO8VD9ZWm/uPfu9HsdBlnspQIhNeKnQJZuVGdawp0Ioqg==}
+    peerDependencies:
+      '@wharfkit/antelope': ^1.0.0
+    dependencies:
+      '@wharfkit/antelope': 1.0.13
+      tslib: 2.8.1
+
+  /@wharfkit/contract@1.1.5:
+    resolution: {integrity: sha512-I4w2QFvD/zb4uj5z0U4uQJLRCiZEbrT+AJ9/5goGm6SU42fsRud/k55qSBzW8Ij00OAv2h1+e8rR7xzUruXC9g==}
+    dependencies:
+      '@wharfkit/abicache': 1.2.2
+      '@wharfkit/antelope': 1.0.13
+      '@wharfkit/signing-request': 3.2.0
+      tslib: 2.8.1
+
+  /@wharfkit/protocol-esr@1.3.2(@wharfkit/antelope@1.0.13)(@wharfkit/session@1.4.0):
+    resolution: {integrity: sha512-LK/iP7T9ybGTl97SRtCNO2aBctY/JQ6yH9N+UkI7gthQPn4zmzAHr+Ew8rHlKSvX03FwoyD1EtB3klHRa00WLw==}
+    peerDependencies:
+      '@wharfkit/antelope': ^1.0.5
+      '@wharfkit/session': ^1.2.7
+    dependencies:
+      '@greymass/buoy': 1.0.4
+      '@greymass/miniaes': 1.0.0
+      '@wharfkit/antelope': 1.0.13
+      '@wharfkit/session': 1.4.0
+      isomorphic-ws: 5.0.0(ws@8.18.0)
+      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+    dev: false
+
+  /@wharfkit/resources@1.3.1:
+    resolution: {integrity: sha512-XgL/yiwcJia8chYySt2dBOxa4BRKPqMeNxaZFvvzLgBI3s7m6MUXlXpZSeBvaQH+dr9D9nlBbmgP7PCBrJITIg==}
+    dependencies:
+      '@wharfkit/antelope': 1.0.13
+      bn.js: 4.12.1
+      js-big-decimal: 2.1.0
+      tslib: 2.8.1
+
+  /@wharfkit/session@1.4.0:
+    resolution: {integrity: sha512-U+K9eWbYzFeDshYwgrhyNoF47kYToKFpTe6xFAwaJO+2w0kIkP0vtJFl7ygd06muh7Hu3K1BqrZ3j6+FyyuIyA==}
+    dependencies:
+      '@wharfkit/abicache': 1.2.2
+      '@wharfkit/account': 1.2.0
+      '@wharfkit/antelope': 1.0.13
+      '@wharfkit/common': 1.4.0(@wharfkit/antelope@1.0.13)
+      '@wharfkit/signing-request': 3.2.0
+      pako: 2.1.0
+      tslib: 2.8.1
+
+  /@wharfkit/signing-request@3.2.0:
+    resolution: {integrity: sha512-rIMzqwAKA5vb09+1BI+9fUXbj73JIkYcD1XT/Tom+k/+bqi51JcmC0trjCOjTUOK9UYDabpxYFixrf1ZvQymKw==}
+    dependencies:
+      '@wharfkit/antelope': 1.0.13
+      tslib: 2.8.1
+
+  /@wharfkit/token@1.1.2:
+    resolution: {integrity: sha512-LYAGB7LnE3hxwjNsYYwpxbJ8APi0Y8pmh7i1SeKv13HaPVjuHisTnuPxJm3ndwU7pX9GT3hPyo/By0l3CEuLfw==}
+    dependencies:
+      '@wharfkit/antelope': 1.0.13
+      '@wharfkit/contract': 1.1.5
+      bn.js: 4.12.1
+      tslib: 2.8.1
+
+  /@wharfkit/wallet-plugin-anchor@1.4.0(@wharfkit/session@1.4.0):
+    resolution: {integrity: sha512-4BHWmxTk/wYRwUfATTbxOY3WYvmURkaQojvmm6HM6PB4PRQqTVcl5F/DBJQHgwu83SW7wsQ+g01U+dSpEZ0a/A==}
+    peerDependencies:
+      '@wharfkit/session': ^1.2.7
+    dependencies:
+      '@wharfkit/antelope': 1.0.13
+      '@wharfkit/protocol-esr': 1.3.2(@wharfkit/antelope@1.0.13)(@wharfkit/session@1.4.0)
+      '@wharfkit/session': 1.4.0
+      isomorphic-ws: 5.0.0(ws@8.18.0)
+      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+    dev: false
+
+  /@wharfkit/wallet-plugin-privatekey@1.1.0(@wharfkit/session@1.4.0):
+    resolution: {integrity: sha512-45LPj7AOVDm4RugDEhy0fnQX/BcMffeJPjGUCUrLazJ2S0Sti8nNk4nqiJqyme84c/0gq7d65vvwlmVfGtPVEg==}
+    peerDependencies:
+      '@wharfkit/session': ^1.1.0
+    dependencies:
+      '@wharfkit/session': 1.4.0
+      tslib: 2.8.1
     dev: true
+
+  /@wharfkit/web-renderer@1.4.1(@wharfkit/session@1.4.0):
+    resolution: {integrity: sha512-ky/keS0rHxJcdIWLo7d9H6eo+rK0l2mQj/3xOCwVaDKBAd/dTQwuqYIzOYMC9azdyMglgNcTRgYWm5PJrU4lIA==}
+    peerDependencies:
+      '@wharfkit/session': ^1.4.0
+    dependencies:
+      '@wharfkit/session': 1.4.0
+    dev: false
 
   /JSONStream@1.3.5:
     resolution: {integrity: sha512-E+iruNOY8VV9s4JEbe1aNEm6MiszPRr/UfcHMz0TQh1BXSxHK+ASV1R6W4HpjBhSeS+54PIsAMCBmwD06LLsqQ==}
@@ -9235,6 +9387,33 @@ packages:
     engines: {node: '>= 8.0.0'}
     dependencies:
       humanize-ms: 1.2.1
+
+  /anchor-link-browser-transport@3.6.1(anchor-link@3.6.0):
+    resolution: {integrity: sha512-lrV+qpXVN28VyAK3nKTXKvBQNLdKcwqTM92iBBnZVqulPFhhNAVAqDeLgq78zd9Pl4m9Cdq27hlSC1wcMyr63w==}
+    peerDependencies:
+      anchor-link: ^3.3.0
+    dependencies:
+      anchor-link: 3.6.0
+      tslib: 2.8.1
+    dev: false
+
+  /anchor-link@3.6.0:
+    resolution: {integrity: sha512-orXjgcJyg60rpWzGDuRRzQs4v1tOf0hRP1ERn+rTB5wdhujmhb3g9VDrvAKxdNVGPQQxAdT1U1XtJ0gXm3wQVw==}
+    dependencies:
+      '@greymass/miniaes': 1.0.0
+      '@wharfkit/antelope': 1.0.13
+      '@wharfkit/signing-request': 3.2.0
+      fetch-ponyfill: 7.1.0
+      isomorphic-ws: 4.0.1(ws@8.18.0)
+      pako: 2.1.0
+      tslib: 2.8.1
+      uuid: 8.3.2
+      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - utf-8-validate
+    dev: false
 
   /anser@1.4.10:
     resolution: {integrity: sha512-hCv9AqTQ8ycjpSd3upOJd7vFwW1JaoYQ7tpham03GJ1ca8/65rqn0RpaWpItOAd6ylW9wAw6luXYPJIyPFVOww==}
@@ -11859,6 +12038,14 @@ packages:
       picomatch: 4.0.2
     dev: false
 
+  /fetch-ponyfill@7.1.0:
+    resolution: {integrity: sha512-FhbbL55dj/qdVO3YNK7ZEkshvj3eQ7EuIGV2I6ic/2YiocvyWv+7jg2s4AyS0wdRU75s3tA8ZxI/xPigb0v5Aw==}
+    dependencies:
+      node-fetch: 2.6.13
+    transitivePeerDependencies:
+      - encoding
+    dev: false
+
   /file-uri-to-path@1.0.0:
     resolution: {integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==}
 
@@ -13006,6 +13193,22 @@ packages:
     dependencies:
       ws: 7.5.10
 
+  /isomorphic-ws@4.0.1(ws@8.18.0):
+    resolution: {integrity: sha512-BhBvN2MBpWTaSHdWRb/bwdZJ1WaehQ2L1KngkCkfLUGF0mAWAT1sQUQacEmQ0jXkFw/czDXPNQSL5u2/Krsz1w==}
+    peerDependencies:
+      ws: '*'
+    dependencies:
+      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+    dev: false
+
+  /isomorphic-ws@5.0.0(ws@8.18.0):
+    resolution: {integrity: sha512-muId7Zzn9ywDsyXgTIafTry2sV3nySZeUDe6YedVd1Hvuuep5AsIlqK+XefWpYTyJG5e503F2xIuT2lcU6rCSw==}
+    peerDependencies:
+      ws: '*'
+    dependencies:
+      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+    dev: false
+
   /isows@1.0.6(ws@8.18.0):
     resolution: {integrity: sha512-lPHCayd40oW98/I0uvgaHKWCSvkzY27LjWLbtzOm64yQ+G3Q5npjjbdppU65iZXkK1Zt+kH9pfegli0AYfwYYw==}
     peerDependencies:
@@ -13327,6 +13530,9 @@ packages:
   /js-base64@3.7.7:
     resolution: {integrity: sha512-7rCnleh0z2CkXhH67J8K1Ytz0b2Y+yxTPL+/KOJoa20hfnVQ/3/T6W/KflYI4bRHRagNeXeU2bkNGI3v1oS/lw==}
     dev: false
+
+  /js-big-decimal@2.1.0:
+    resolution: {integrity: sha512-6BOJi5gJ/u5KIOiRjwDnYee64wDw48/mzObV10L5ZYZ/u3ujpzJrO1JyIdIYbfxJPhIT7+oKn7d/1Fw1kOsh2w==}
 
   /js-levenshtein@1.1.6:
     resolution: {integrity: sha512-X2BB11YZtrRqY4EnQcLX5Rh373zbK4alC1FW7D7MBhL2gtcC17cTnr6DmfHZeS0s2rTHjUTMMHfG7gO8SSdw+g==}
@@ -15254,6 +15460,18 @@ packages:
 
   /node-fetch-native@1.6.4:
     resolution: {integrity: sha512-IhOigYzAKHd244OC0JIMIUrjzctirCmPkaIfhDeGcEETWof5zKYUW7e7MYvChGWh/4CJeXEgsRyGzuF334rOOQ==}
+    dev: false
+
+  /node-fetch@2.6.13:
+    resolution: {integrity: sha512-StxNAxh15zr77QvvkmveSQ8uCQ4+v5FkvNTj0OESmiHu+VRi/gXArXtkWMElOsOUNLtUEvI4yS+rdtOHZTwlQA==}
+    engines: {node: 4.x || >=6.0.0}
+    peerDependencies:
+      encoding: ^0.1.0
+    peerDependenciesMeta:
+      encoding:
+        optional: true
+    dependencies:
+      whatwg-url: 5.0.0
     dev: false
 
   /node-fetch@2.7.0:

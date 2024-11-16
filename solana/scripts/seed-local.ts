@@ -3,6 +3,7 @@ import * as anchor from '@coral-xyz/anchor'
 import { initializeVaultAccount } from '../utils/anchor'
 import { setup } from '../utils/spl'
 import { hexToBytes } from '@noble/curves/abstract/utils'
+import { compressEosPubkey } from '../utils/keys'
 
 const seed = async () => {
     const anchorWallet = process.env.ANCHOR_WALLET
@@ -19,19 +20,28 @@ const seed = async () => {
 
     const {mint, ata} = await setup(payer, provider.connection);
 
-    const foreignPubKey = "0xA03E94548C26E85DBd81d93ca782A3449564C27f";
+    const ethPublicKey = "0xA03E94548C26E85DBd81d93ca782A3449564C27f";
+    const eosPublicKey = compressEosPubkey("PUB_K1_7abGp9AVsTpt4TLSdCFKS2Tm49zCwg8nWLpJhAmEpppG9fjJsy")
 
-    const {metadata} = await initializeVaultAccount({
-        foreignPubKey: Buffer.from(hexToBytes(foreignPubKey.substring(2))),
+    await initializeVaultAccount({
+        provider: provider,
+        foreignPubKey: eosPublicKey,
         mint,
-        provider,
         payer,
-        amount: 100,
-        payerTokens: ata    
+        payerTokens: ata,
+        amount: 10
+    })
+
+    await initializeVaultAccount({
+        provider: provider,
+        foreignPubKey: hexToBytes(ethPublicKey),
+        mint,
+        payer,
+        payerTokens: ata,
+        amount: 10
     })
 
     console.log('ata', ata.toBase58())
-    console.log('metadata', metadata.publicKey.toBase58())
     console.log("mint", mint.toBase58())
 }
 

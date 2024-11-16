@@ -80,7 +80,9 @@ export const useSolana = () => {
                 )
 
                 const transaction = new Transaction()
+                
                 transaction.add(createAccountInstruction)
+                transaction.recentBlockhash = (await connection.getRecentBlockhash()).blockhash
 
                 try {
                     const sentTx = await sendTransaction(transaction, connection)

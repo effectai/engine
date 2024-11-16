@@ -45,7 +45,7 @@ export function compressEosPubkey(eosPubkey: string): Uint8Array | null {
         throw new Error("Invalid EOS public key length after Base58 decoding");
     }
 
-    // Step 3: Split the key and checksum
+    // remove checksum (last 4 bytes)
     const keyBytes = decoded.array.slice(0, 33); // Compressed key (33 bytes)
 
     // remove first byte (0x02 or 0x03)

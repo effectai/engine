@@ -17,7 +17,10 @@
                 <nuxt-link :to="'/migrate-bsc'">
                     <UButton>I want to migrate a BSC wallet</UButton>
                 </nuxt-link>
-                <UButton>I want to migrate an EOS wallet</UButton>
+                <nuxt-link :to="'/migrate-eos'">
+                    <UButton>I want to migrate an EOS wallet</UButton>
+                </nuxt-link>
+
             </div>
         </div>
     </UContainer>

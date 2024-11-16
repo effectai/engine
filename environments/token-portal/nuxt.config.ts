@@ -12,6 +12,11 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   vite: {
     esbuild: {
+      tsconfigRaw: {
+        compilerOptions: {
+          experimentalDecorators: true
+        }
+      },
       target: "esnext",
     },
     build: {

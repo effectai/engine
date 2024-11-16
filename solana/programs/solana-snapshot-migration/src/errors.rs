@@ -15,5 +15,9 @@ pub enum CustomError {
     InvalidMetadataAccount,
 
     #[msg("Invalid recovery id provided.")]
-    InvalidRecoveryId
+    InvalidRecoveryId,
+
+    #[msg("Invalid action provided.")]
+    InvalidActions,
+
 }

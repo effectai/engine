@@ -21,6 +21,12 @@
     "@solana/web3.js": "1.95.4",
     "viem": "2.x",
     "vue": "latest",
-    "vue-router": "latest"
+    "vue-router": "latest",
+    "@wharfkit/session": "^1.4.0",
+    "@wharfkit/wallet-plugin-anchor": "^1.0.0",
+    "@wharfkit/web-renderer": "^1.0.3",
+    "@wharfkit/signing-request": "3.2.0",
+    "anchor-link": "3.6.0",
+    "anchor-link-browser-transport": "3.6.1"
   }
 }
