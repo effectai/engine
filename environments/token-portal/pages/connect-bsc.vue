@@ -35,7 +35,7 @@ const signature = ref<string | null>(null);
 const metadata = new PublicKey("9FGhFTBgmdYyRsjrMGgsW6X2RYw5whhx4dhFLRR5WJHi");
 
 const { useClaim } = useSolana();
-const { claim } = useClaim();
+const { mutateAsync:claim } = useClaim();
 
 const _signMessage = async () => {
 	const originalMessage =
@@ -44,11 +44,15 @@ const _signMessage = async () => {
 	const message = Buffer.from(prefix + originalMessage);
 	signature.value = await signMessageAsync({ message: originalMessage });
 
+    if(!address.value) {
+        console.warn('No address')
+        return
+    }
+
 	await claim({
 		signature: Buffer.from(toBytes(signature.value)),
 		message: message,
-		isEth: true,
-        metadata,
+        foreignPublicKey: toBytes(address.value)
 	});
 };
 </script>

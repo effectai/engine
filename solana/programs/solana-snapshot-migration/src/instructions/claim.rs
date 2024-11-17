@@ -65,7 +65,7 @@ pub fn unlock_eth(ctx: Context<Claim>, sig: Vec<u8>, message: Vec<u8>) -> Result
 
     let hashed_public_key = keccak256(&recovered_public_key.0)[12..32].to_vec();
 
-    unlock_vault(ctx, hashed_public_key.to_vec())?;
+    authorize_and_claim(ctx, hashed_public_key.to_vec())?;
 
     Ok(())
 }
@@ -102,12 +102,12 @@ pub fn unlock_eos(
  
     let hash = Sha256::digest(&uncompressed_key);
     let double_hash = Sha256::digest(hash);
-    let checksum = &double_hash[0..4]; // Take the first 4 bytes.
+    let checksum = &double_hash[0..4]; // checksum = first 4 bytes of the double hash
  
     let mut eos_key_with_checksum = uncompressed_key.clone();
     eos_key_with_checksum.extend_from_slice(checksum);
     
-    unlock_vault(ctx, eos_key_with_checksum[1..33].to_vec())?;
+    authorize_and_claim(ctx, eos_key_with_checksum[1..33].to_vec())?;
     
     Ok(())
 }
@@ -130,22 +130,21 @@ pub fn recover_public_key(
             .map_err(|e| CustomError::InvalidSignature)?);
 
 }
+pub fn unlock_vault(ctx: Context<Claim>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
+    let foreign_public_key = &ctx.accounts.metadata_account.foreign_public_key;
 
+    msg!("Foreign Public Key: {:?}", foreign_public_key);
 
-pub fn unlock_vault(ctx: Context<Claim>, recovered_public_key: Vec<u8>) -> Result<()>  {
-    let metadata_account = &ctx.accounts.metadata_account;
-    let (metadata, _bump) = Pubkey::find_program_address(
-        &[
-            ctx.accounts.payer.key.as_ref(),
-            metadata_account.foreign_public_key.as_ref(),
-        ],
-        ctx.program_id,
-    );
-
-    if metadata != metadata_account.key() {
-        msg!("Invalid metadata account");
-        return Err(CustomError::InvalidMetadataAccount.into());
+    if foreign_public_key.len() == 20 {
+        unlock_eth(ctx, signature, message)
+    } else {
+        unlock_eos(ctx, signature, message)
     }
+
+}
+
+pub fn authorize_and_claim(ctx: Context<Claim>, recovered_public_key: Vec<u8>) -> Result<()>  {
+    let metadata_account = &ctx.accounts.metadata_account;
 
     if recovered_public_key != metadata_account.foreign_public_key {
         msg!("Public Key Mismatch");
@@ -168,57 +167,8 @@ pub fn unlock_vault(ctx: Context<Claim>, recovered_public_key: Vec<u8>) -> Resul
     )?;
 
     Ok(())
-
 }
 
-// fn recover_pubkey(
-//     signature_bytes: &[u8],
-//     hashed_message: [u8; 32],
-//     recovery_id_bytes: u8,
-// ) -> Result<Secp256k1Pubkey> {
-// let (recovery_id_bytes, signature_bytes) = if is_eth {
-//     // Ethereum: Recovery ID is the last byte, signature is the first 64 bytes
-//     let (sig_bytes, rec_id) = signature.split_at(signature.len() - 1);
-//     (rec_id, sig_bytes)
-// } else {
-//     // EOS: Recovery ID is the first byte, signature is the remaining 64 bytes
-//     let (rec_id, sig_bytes) = signature.split_at(1);
-//     (rec_id, sig_bytes)
-// };
-
-// let hashed_message = if is_eth {
-//     keccak256(message)
-// } else {
-//     sha256(message)
-// };
-
-// let recovery_id_adjusted = match recovery_id_bytes.get(0) {
-//     Some(&id) => {
-//         let adjustment = if is_eth { 27 } else { 31 };
-//         id.checked_sub(adjustment)
-//             .ok_or(CustomError::InvalidRecoveryId)?
-//     }
-//     None => {
-//         msg!("Error: Recovery ID byte missing from the signature");
-//         return Err(CustomError::InvalidSignature.into());
-//     }
-// };
-
-// handle result
-// }
-
-// fn parse_recovered_uncompressed_public_key(
-//     uncompressed_public_key: &[u8],
-// ) -> Vec<u8> {
-//     let recovered_public_key_parsed = if is_eth {
-//         let hashed_public_key = keccak256(uncompressed_public_key);
-//         hashed_public_key[12..32].to_vec()
-//     } else {
-//         uncompressed_public_key[0..32].to_vec()
-//     };
-
-//     recovered_public_key_parsed
-// }
 
 fn keccak256(message: &[u8]) -> [u8; 32] {
     let mut hasher = keccak::Hasher::default();

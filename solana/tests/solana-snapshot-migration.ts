@@ -132,7 +132,7 @@ describe("solana_efx_airdrop", () => {
 
       const signature = await session.signTransaction(tx)
 
-      await program.methods.unlockEos(
+      await program.methods.claim(
         Buffer.from(signature[0].data.array),
         Buffer.from(serializedTransactionBytes.array),
       ).accounts({
@@ -159,7 +159,7 @@ describe("solana_efx_airdrop", () => {
 
       const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, toBytes(publicKey1), program.programId)
 
-      await program.methods.unlockEth(
+      await program.methods.claim(
         sigWithRecovery,
         Buffer.from(originalMessage),
       ).accounts({
@@ -182,7 +182,7 @@ describe("solana_efx_airdrop", () => {
       // const pk = secp256k1.getPublicKey(account.address.slice, true)
       const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, toBytes(publicKey1), program.programId)
 
-      await program.methods.unlockEth(
+      await program.methods.claim(
         Buffer.from(toBytes(signature)),
         Buffer.from(message),
       ).accounts({

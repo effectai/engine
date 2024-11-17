@@ -19,12 +19,13 @@ const seed = async () => {
     const payer = (wallet as anchor.Wallet).payer;
 
     const {mint, ata} = await setup(payer, provider.connection);
+    console.log("payer", payer.publicKey.toBase58())
 
     const ethPublicKey = "0xA03E94548C26E85DBd81d93ca782A3449564C27f";
-    const eosPublicKey = compressEosPubkey("PUB_K1_7abGp9AVsTpt4TLSdCFKS2Tm49zCwg8nWLpJhAmEpppG9fjJsy")
+    const eosPublicKey = compressEosPubkey("PUB_K1_64vP1Y18ZJXP7KSGoQG8pgR3imaAWoBhzH77kYmYXuVnx9KXxH")
+    console.log(eosPublicKey)
 
     await initializeVaultAccount({
-        provider: provider,
         foreignPubKey: eosPublicKey,
         mint,
         payer,
@@ -32,15 +33,15 @@ const seed = async () => {
         amount: 10
     })
 
-    await initializeVaultAccount({
-        provider: provider,
-        foreignPubKey: hexToBytes(ethPublicKey),
-        mint,
-        payer,
-        payerTokens: ata,
-        amount: 10
-    })
+    // await initializeVaultAccount({
+    //     foreignPubKey: hexToBytes(ethPublicKey),
+    //     mint,
+    //     payer,
+    //     payerTokens: ata,
+    //     amount: 10
+    // })
 
+    console.log("payer", payer.publicKey.toBase58())
     console.log('ata', ata.toBase58())
     console.log("mint", mint.toBase58())
 }

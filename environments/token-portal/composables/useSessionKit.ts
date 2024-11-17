@@ -6,8 +6,6 @@ import { WalletPluginAnchor } from "@wharfkit/wallet-plugin-anchor";
 // import { WalletPluginWombat } from "@wharfkit/wallet-plugin-wombat"
 // import { WalletPluginTokenPocket } from "@wharfkit/wallet-plugin-tokenpocket"
 
-const webRenderer = new WebRenderer();
-
 const sessionKit = reactive(
 	new SessionKit(
 		{
@@ -18,7 +16,7 @@ const sessionKit = reactive(
 					url: "https://eos.greymass.com",
 				},
 			],
-			ui: webRenderer,
+			ui: new WebRenderer(),
 			walletPlugins: [
 				new WalletPluginAnchor(),
 				// new WalletPluginTokenPocket(),

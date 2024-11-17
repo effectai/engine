@@ -1,18 +1,16 @@
 import type { Program } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
 import type { SolanaSnapshotMigration } from "../target/types/solana_snapshot_migration";
-import { type Keypair, PublicKey } from "@solana/web3.js";
+import type { Keypair, PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 
 export const initializeVaultAccount = async ({
-    provider,
     foreignPubKey,
     mint,
     amount,
     payer,
     payerTokens
 }: {
-    provider: anchor.Provider,
     foreignPubKey: Uint8Array,
     mint: PublicKey
     amount: number,

@@ -2,7 +2,7 @@
 
 .title {
     font-family: 'Inter';
-    font-size: 3em;
+    font-size: 2.5em;
     font-weight: bold;
 }
 
@@ -10,4 +10,13 @@
     font-family: 'Inter';
     font-size: 1.5em;
     font-weight: 100;
+}
+
+.navigate-back {
+    font-family: 'Inter';
+    font-size: 1em;
+    font-weight: 100;
+    color:blue;
+    text-decoration: underline;
+    font-size:0.8rem;
 }
