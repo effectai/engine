@@ -4,22 +4,19 @@ import {
 	type PeerStore,
 	type ConnectionManager,
 	type Registrar,
-	type Batch,
+	Batch,
 	Uint8ArrayList,
 	TypedEventEmitter,
+	handleMessage,
+	type BatchMessage,
+	type TaskMessage,
+	TaskStatus,
 } from "@effectai/task-core";
 
-export interface TaskManagerComponents {
+export interface ManagerServiceComponents {
 	registrar: Registrar;
 	peerStore: PeerStore;
 	connectionManager: ConnectionManager;
-}
-
-export enum Status {
-	PENDING = "pending",
-	ACCEPTED = "accepted",
-	COMPLETED = "completed",
-	REJECTED = "rejected",
 }
 
 export interface ManagerServiceEvents {
@@ -34,14 +31,15 @@ export interface ManagerServiceEvents {
 }
 
 export class ManagerService extends TypedEventEmitter<ManagerServiceEvents> {
-	private components: TaskManagerComponents;
-	
-    private tasks: Map<
-		string,
-		{ peerId: PeerId; task: Task; status: Status }
-	> = new Map();
+	private components: ManagerServiceComponents;
 
-	constructor(components: TaskManagerComponents) {
+	// Manager state
+	private tasks: Map<string, Task> = new Map();
+
+	private batches: Map<string, Batch> = new Map();
+	private activeBatch: Batch | null = null;
+
+	constructor(components: ManagerServiceComponents) {
 		super();
 
 		this.components = components;
@@ -54,13 +52,8 @@ export class ManagerService extends TypedEventEmitter<ManagerServiceEvents> {
 		this.components.registrar.handle(
 			"/effect-ai/batch/1.0.0",
 			async (streamData) => {
-				const data = new Uint8ArrayList();
-
-				for await (const chunk of streamData.stream.source) {
-					data.append(chunk);
-				}
-
-				const message = JSON.parse(new TextDecoder().decode(data.subarray()));
+				const message = await handleMessage(streamData);
+				this._processBatchMessage(message);
 			},
 			{ runOnLimitedConnection: false },
 		);
@@ -68,32 +61,76 @@ export class ManagerService extends TypedEventEmitter<ManagerServiceEvents> {
 		this.components.registrar.handle(
 			"/effect-ai/task/1.0.0",
 			async (streamData) => {
-				const data = new Uint8ArrayList();
-
-				for await (const chunk of streamData.stream.source) {
-					data.append(chunk);
-				}
-
-				const message = JSON.parse(new TextDecoder().decode(data.subarray()));
-
-				console.log("ManagerService received message", message);
-
+				const message = await handleMessage(streamData);
+				this._processTaskMessage(message);
 			},
 			{ runOnLimitedConnection: false },
 		);
 	}
 
-	public addTask(peerId: PeerId, task: Task) {}
+	private _processTaskMessage(message: TaskMessage) {
+		switch (message.t) {
+			case "status": {
+				console.log("Task status update from worker:", message);
+				// handle task status
+				break;	
+			}
+			case "result": {
+				console.log("Task result from worker:", message);
+				// handle task result
+				break;
+			}
+			default:
+				break;
+		}
+	}
 
-	public completeTask(task: Task) {}
+	private _processBatchMessage(message: BatchMessage) {
+		switch (message.t) {
+			case "batch": {
+				// handle batch message
+				const batch = Batch.fromMessage(message);
+				this.acceptBatch(batch);
+				break;
+			}
+			default:
+				break;
+		}
+	}
 
-	public listTasks() {}
+	public acceptBatch(batch: Batch) {
+		// Accept a batch from a provider
+		this.batches.set(batch.id, batch);
+		this.activeBatch = batch;
+	}
 
-	private _sendMessage(peerId: PeerId, message: string) {}
+	public rejectBatch(batch: Batch) {
+		// Reject a batch from a provider
+	}
+
+	public manageBatch(batch: Batch) {
+		// Manage a batch
+	}
+
+	public delegateTask(peerId: PeerId, task: Task) {
+		// Delegate a task to a worker
+
+		// TODO:: this function is responsible for assigning a task to a worker.
+		// It should:
+		// 1. Find a worker that is available
+		// in order to 
+
+		// 2. Send the task to the worker
+	}
+
+	private _sendMessage() {
+		// Send a message to a peer
+	}
 }
 
 export function managerService(
 	// init: Partial<TaskManagerInit> = {}
-): (components: TaskManagerComponents) => ManagerService {
-	return (components: TaskManagerComponents) => new ManagerService(components);
+): (components: ManagerServiceComponents) => ManagerService {
+	return (components: ManagerServiceComponents) =>
+		new ManagerService(components);
 }

@@ -1,5 +1,9 @@
-# E2E Data Flow/Lifecycle
+# Task Lifecycle
 The Effect Task Network is a decentralized system that uses blockchain and peer-to-peer (p2p) technology to connect three main entities: worker nodes, manager nodes, and provider nodes. These components collaborate to assign, complete, and verify AI-driven tasks within the network. The data lifecycle of the network consists of four main stages: batch creation, task delegation, task validation, and result posting. Each stage plays a crucial role in the overall functionality of the network and ensures that tasks are managed and completed in a decentralized and efficient manner.
+
+## Lifecycle diagram
+
+![image](../../diagrams/sequence.png)(Image Source: Effect Network)
 
 ## 1.Task creation
 Task creation is the first stage in the data lifecycle of the network.
@@ -20,7 +24,3 @@ Once all the tasks in a batch are validated, rewards are distributed to both man
 ### Reward distribution
 
 Once the batch is validated, the manager node handles the reward distribution to both the workers and itself, it does so by accessing the escrow account created in the first stage of the lifecycle. The manager node then distributes the rewards to the workers based on the completion of their tasks and the quality of their work.
-
-## Data lifecycle diagram
-
-![image](../../diagrams/sequence.png)(Image Source: Effect Network)

@@ -120,10 +120,12 @@ export class PubSubPeerDiscovery
 
 	_onMessage(event: CustomEvent<Message>): void {
 		try {
+			
 			const message =  event.detail;
 			const peer = PBPeer.decode(message.data);
 			const publicKey = publicKeyFromProtobuf(peer.publicKey);
 			const peerId = peerIdFromPublicKey(publicKey);
+			
 			// ignore worker messages if we are a worker or if the message is from us
 			// or if we are a manager, we should ignore messages from other managers
 			if (
@@ -135,7 +137,7 @@ export class PubSubPeerDiscovery
 				return;
 			}
 
-			// check if this peer is already in the peer store, if so update the tags
+			// // check if this peer is already in the peer store, if so update the tags
 			this.components.peerStore
 				.get(peerId)
 				.then((p) => {
@@ -153,14 +155,17 @@ export class PubSubPeerDiscovery
 					}
 				});
 
-			this.safeDispatchEvent<PeerInfo>("peer", {
+			this.safeDispatchEvent<PeerInfo & {
+				peerType: PeerType;
+			}>("peer", {
 				detail: {
 					id: peerId,
 					multiaddrs: peer.addrs.map((b) => multiaddr(b)),
+					peerType: peer.peerType,
 				},
 			});
 		} catch (err) {
-			console.error("Failed to decode peer message", err);
+			// console.error("Failed to decode peer message", err);
 		}
 	}
 
