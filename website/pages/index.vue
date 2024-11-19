@@ -1,6 +1,6 @@
 <template>
     <div>
-        <HeroSection class="nav-bar-height" id="main-hero" style="min-height: 700px;">
+        <HeroSection class="nav-bar-height" id="main-hero" style="min-height: 700px; background-image: url(./img/hero-background.png);">
             <template #title>
                 <!-- <h1 class="title title-weight is-spaced has-text-primary"> -->
                 <h1 class="title hero-title has-text-weight-normal is-auto-phrase">
@@ -19,17 +19,11 @@
             </template>
     
             <template #footer>
-                <div
-                    class="is-flex is-size-3 is-align-items-center is-primary has-text-primary is-in-front"
-                    data-aos="fade-left"
-                    data-aos-delay="550"
-                >
+                <div class="is-flex is-size-3 is-align-items-center is-primary has-text-primary is-in-front">
                     <div>
-                        <a href="https://app.effect.ai/" target="_blank" class="button is-primary launch-button"
-                            exact-active-class="is-active">
-                            Launch App
-                            <div id="button-arrow"><img src="/img/arrow-vector.svg" alt="arrow vector" /></div>
-                        </a>
+                        <nuxt-link to="https://app.effect.ai/" exact-active-class="is-active">
+                            <Button text="Launch App"/>
+                        </nuxt-link>
                     </div>
                 </div>
             </template>
@@ -53,32 +47,28 @@
       </template>
     </SimpleSection>
 
-    <SimpleSection :centered="true" class="task-cards">
+    <SimpleSection :centered="true">
       <template #subtitle>
         <div class="columns">
-            <div class="column mx-5 box is-radius-medium" style="height: 472px; background-image: url(./img/hero-background.png);">
+            <div class="column m-5 box is-radius-medium" style="background-image: url(./img/hero-background.png);">
                 <div>
                     <p class="is-size-2 has-text-weight-medium has-text-left has-text-black">Complete Tasks</p>
                     <p class="is-size-5 has-text-weight-normal has-text-left">Complete tasks and earn EFX directly to your wallet.</p>
                     <div class="mt-5 has-text-left">
-                        <a href="https://app.effect.ai/" target="_blank" class="button is-primary launch-button"
-                            exact-active-class="is-active">
-                            Join the Workforce
-                            <div id="button-arrow"><img src="/img/arrow-vector.svg" alt="arrow vector" /></div>
-                        </a>
+                        <nuxt-link to="https://app.effect.ai/" exact-active-class="is-active">
+                            <Button text="Join the Workforce"/>
+                        </nuxt-link>
                     </div>
                 </div>
             </div>
-            <div class="column mx-5 box is-radius-medium" style="height: 472px; background-image: url(./img/hero-background.png);">
+            <div class="column m-5 box is-radius-medium" style="background-image: url(./img/hero-background.png);">
                 <div>
                     <p class="is-size-2 has-text-weight-medium has-text-left has-text-black">Create Tasks</p>
                     <p class="is-size-5 has-text-weight-normal has-text-left">Access a global, on-demand, 24x7 scalable work force.</p>
                     <div class="mt-5 has-text-left">
-                        <a href="https://app.effect.ai/" target="_blank" class="button is-primary launch-button"
-                            exact-active-class="is-active">
-                            Create a Task
-                            <div id="button-arrow"><img src="/img/arrow-vector.svg" alt="arrow vector" /></div>
-                        </a>
+                        <nuxt-link to="https://app.effect.ai/" exact-active-class="is-active">
+                            <Button text="Create a Task"/>
+                        </nuxt-link>
                     </div>
                 </div>
             </div>
@@ -108,9 +98,6 @@
       </template>
     </SimpleSection>
     <SimpleSection class="">
-        <!-- <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left is-half">
-            Harmonizing AI with Humanity: Empowering Tomorrow's Workforce Together
-        </h1> -->
         <div class="columns">
             <div class="column is-half">
                 <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left is-half">
@@ -166,11 +153,9 @@
                 </div>
                 <div class="column is-flex is-align-items-center is-justify-content-right">
                     <div>
-                        <a href="https://app.effect.ai/" target="_blank" class="button is-primary launch-button"
-                            exact-active-class="is-active">
-                            Launch App
-                            <div id="button-arrow"><img src="/img/arrow-vector.svg" alt="arrow vector" /></div>
-                        </a>
+                        <nuxt-link to="https://app.effect.ai/" exact-active-class="is-active">
+                            <Button text="Launch App"/>
+                        </nuxt-link>
                     </div>
                 </div>
             </div>
@@ -216,46 +201,10 @@
  
   <style lang="scss" scoped>
 
-    .task-cards{
-        background: linear-gradient(to bottom,#D9D9D91A,#D9D9D91A);
-
-        .column{
-            padding-top: 264px;
-            padding-left: 50px;
-        }
-    }
-
     #main-hero{
         margin-top: -5rem;
         background-size: cover;
-        background-repeat: no-repeat;
         padding-top: 12rem;
-        width: 100vw;
-        background-image: url(./img/hero-background.png);
-        z-index: -1;
-    }
-
-    .launch-button{
-        background-color: black;
-        color: white !important;
-        border-radius: 2rem !important;
-        height: 2.8em!important;
-        padding-right: 0.5em!important;
-        font-family: Inter;
-        font-size: 16px;
-        font-weight: 400;
-        line-height: 16px;
-    }
-
-    #button-arrow{
-        width: 2em;
-        height: 2em;
-        background-color: white;
-        border-radius: 50%;
-        margin-left: 1.2rem;
-        display: flex;
-        justify-content: center;
-        align-items: center;
     }
     
 </style>

@@ -16,14 +16,14 @@
       <div id="navbar" class="navbar-menu" :class="{ 'is-active': mobileMenu }">
         <div class="navbar-start"></div>
 
-        <div class="is-centered">
+        <div class="is-flex is-align-items-center">
           <div @click="mobileMenu = false">
-            <nuxt-link class="nav-text navbar-item pr-5 pl-5" to="/developers" exact-active-class="is-active">
+            <nuxt-link class="has-text-black has-text-weight-normal is-size-5 navbar-item pr-5 pl-5" to="/developers" exact-active-class="is-active">
               Developers
             </nuxt-link>
           </div>
           <div @click="mobileMenu = false">
-            <nuxt-link to="/ecosystem" class="nav-text navbar-item pr-5 pl-5" exact-active-class="is-active">
+            <nuxt-link to="/ecosystem" class="has-text-black has-text-weight-normal is-size-5 navbar-item pr-5 pl-5" exact-active-class="is-active">
               Ecosystem
             </nuxt-link>
           </div>
@@ -31,11 +31,9 @@
         <div class="navbar-end is-align-items-center">
           <div class="navbar-item" exact-active-class="is-active">
             <div @click="mobileMenu = false">
-              <a href="https://app.effect.ai/" target="_blank" class="button is-primary launch-button"
-                exact-active-class="is-active">
-                Launch App
-                <div id="button-arrow"><img src="/img/arrow-vector.svg" alt="arrow vector" /></div>
-              </a>
+              <nuxt-link to="/ecosystem" exact-active-class="is-active">
+                <Button text="Launch App"/>
+              </nuxt-link>
             </div>
           </div>
         </div>
@@ -47,26 +45,17 @@
 
 <script setup lang="ts">
 const mobileMenu = ref(false);
+
+function joinNow() {
+  // Your function logic, e.g., navigating to another page or triggering an action
+  console.log("Launching the app!");
+}
 </script>
 
 <style lang="scss">
 
-
 nav {
-  // .container{
-  //   padding: 0px 90px 0px 90px;
-  // }
-  .nav-text{
-    font-family: 'Inter';
-    font-size: 18px;
-    font-weight: 400;
-    line-height: 27px;
-    color: black;
-  }
-  .is-centered{
-      align-items: center;
-      display: flex;
-    }
+
   .navbar-item {
     margin: 0 0.5rem;
 
@@ -88,27 +77,7 @@ nav {
     }
   }
 
-  .launch-button{
-    background-color: black;
-    color: white;
-    border-radius: 2rem;
-    height: 2.8em;
-    padding-right: 0.5em;
-    font-family: Inter;
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 16px;
-  }
 
-  #button-arrow{
-    width: 2em;
-    height: 2em;
-    background-color: white;
-    border-radius: 50%;
-    margin-left: 1.2rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+
 }
 </style>
