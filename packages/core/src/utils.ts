@@ -4,7 +4,6 @@ import { Uint8ArrayList } from "uint8arraylist";
 
 export const getOpenOutboundConnections = (node: Libp2p, peerId?: PeerId) => {
 	const connections = node.getConnections(peerId);
-	console.log("connections:", connections);
 	return connections.filter((conn) => conn.status === "open");
 };
 

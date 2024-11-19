@@ -1,94 +1,104 @@
 <template>
     <div class="text-center">
-        <ConnectBscModal v-model="isOpen" />
+        <ConnectBscModal v-model="isOpenBscWalletModal" />
 
         <h2 class="title">Verify Ownership</h2>
-        <p class="text-lg mt-5">
+        <p class="text-lg my-5">
             To claim your tokens on Solana, you must <u>verify ownership</u> of your BSC or EOS account holding EFX
             tokens. You can repeat this process for each account you own.
         </p>
 
         <div v-if="!isConnected" class="gap-5 flex justify-center mt-6 items-center">
-            <UButton @click="connectEos()"
-                class="bg-white text-black border-black border-2 font-semibold py-2 px-4 rounded-md shadow-md transition-all">
+            <UButton @click="connectEos()" color="black" variant="outline">
                 <span class="w-3">
                     <img src="@/assets/img/eos-logo.svg" alt="EOS" />
                 </span>
                 EOS Account
             </UButton>
-            <UButton @click="isOpen = true"
-                class="bg-black text-white font-semibold border-2 border-black py-2 px-4 rounded-md shadow-md transition-all">
+            <UButton @click="isOpenBscWalletModal = true" color="black">
                 <span class="w-4">
                     <img src="@/assets/img/bsc.svg" alt="bsc" />
                 </span>
                 BSC Account
             </UButton>
         </div>
-        <div v-else-if="canClaim">
-            <p>Verification successful</p>
-        </div>
-        <div v-else-if="isConnectedEos">
-            <div class="mt-5">
-                <p>Connected to EOS Account: {{ actor }}</p>
-                <div class="gap-3 flex mt-5 justify-center items-center">
-                    <UButton @click="disconnect()" color="black">Disconnect</UButton>
-                    <UButton @click="authorizeEos" color="black">Verify</UButton>
-                </div>
-            </div>
+        <div v-else-if="isConnected">
+            <WalletCard v-if="connectedAddress && connectedWalletMeta" :chain="chain" :walletMeta="connectedWalletMeta"
+                :address="connectedAddress" :balanceQuery="balanceQuery" :efxBalanceQuery="efxBalanceQuery"
+                @disconnect="disconnect">
+                <template #action>
+                    <div class="flex justify-center text-center items-center w-full mt-5">
+                        <UButton @click="authorize" color="black">
+                            Verify Ownership
+                        </UButton>
+                    </div>
+                </template>
+            </WalletCard>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { useAccount, useDisconnect, useSignMessage } from "@wagmi/vue";
-import { useWallet } from "solana-wallets-vue";
 
-const { publicKey } = useWallet();
-const { canClaim } = useClaim();
-const { address, connector } = useAccount();
+const { clear, canClaim, set } = useGlobalState();
+
 const {
-	connect: connectEos,
+    isConnected: isConnectedEos,
+    connect: connectEos,
     disconnect: disconnectEos,
-	actor,
-	authorizeTokenClaim: _authorizeEos,
-} = useEos();
-const isOpen = ref(false);
+    address: eosAddress,
+    authorizeTokenClaim: _authorizeEos,
+    walletMeta: eosWalletMeta,
+    useGetBalanceQuery: eosBalanceQuery,
+    useGetEfxBalanceQuery: eosEfxBalanceQuery,
+    authorizeTokenClaim: authorizeEos,
+} = useEosWallet();
 
-const isConnectedEos = computed(() => actor.value);
-const isConnectedBsc = computed(() => address.value);
-
-const { set, clear } = useClaim();
+const {
+    address: bscAddress,
+    walletMeta: bscWalletMeta,
+    isConnected: isConnectedBsc,
+    useGetBalanceQuery: bscBalanceQuery,
+    useGetEfxBalanceQuery: bscEfxBalanceQuery,
+    authorizeTokenClaim: authorizeBsc,
+} = useBscWallet();
 
 // check if we're connected to BSC or EOS
-const isConnected = computed(
-	() => isConnectedEos.value || isConnectedBsc.value,
-);
+const isConnected = computed(() => isConnectedEos.value || isConnectedBsc.value);
+const connectedWalletMeta = computed(() => isConnectedEos.value ? eosWalletMeta.value : bscWalletMeta.value);
+const chain = computed(() => isConnectedEos.value ? 'EOS' : 'BSC');
+const connectedAddress = computed(() => isConnectedEos.value ? eosAddress.value : bscAddress.value);
+const balanceQuery = computed(() => isConnectedEos.value ? eosBalanceQuery : bscBalanceQuery);
+const efxBalanceQuery = computed(() => isConnectedEos.value ? eosEfxBalanceQuery : bscEfxBalanceQuery);
 
-const router = useRouter();
-const authorizeEos = async () => {
-	if (!publicKey.value) {
-		throw new Error("No public key");
-	}
-
-	const {
-		publicKey: pk,
-		signature,
-		message,
-	} = await _authorizeEos(publicKey.value);
-
-    // set the signature and message to the claim state
-	set(signature, message, pk);
-    router.push('/step/claim')
-};
+const { disconnect: disconnectBsc } = useDisconnect()
 
 const disconnect = () => {
     clear();
     disconnectEos();
+    disconnectBsc();
 }
 
-onMounted(() => {
-    if(!publicKey.value) {
-        router.push('/step/connect')
+const isOpenBscWalletModal = ref(false);
+
+const router = useRouter();
+const authorize = async () => {
+    if (isConnectedEos.value) {
+        const {signature, foreignPublicKey, message} = await authorizeEos();
+        console.log(signature, foreignPublicKey, message);
+        set( signature, message, foreignPublicKey);
+    } else {
+        const {signature, foreignPublicKey, message} = await authorizeBsc();
+        set( signature, message, foreignPublicKey);
+    }
+
+    router.push("/step/claim");
+}
+
+watchEffect(() => {
+    if (isConnected.value) {
+        isOpenBscWalletModal.value = false; 
     }
 });
 

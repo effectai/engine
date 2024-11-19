@@ -14,8 +14,11 @@ pub struct Create<'info> {
         init,
         payer = payer,
         space = 8 + 8 + 32, 
-        // take the first 32 bytes of the foreign public key
-        seeds = [payer.key().as_ref(), &foreign_public_key.as_slice() ],
+        seeds = [
+            payer.key().as_ref(),
+            mint.key().as_ref(),
+            &foreign_public_key.as_slice() 
+        ],
         bump 
     )]
     pub metadata: Account<'info, MetadataAccount>,

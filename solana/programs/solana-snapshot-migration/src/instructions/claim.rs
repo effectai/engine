@@ -133,7 +133,7 @@ pub fn recover_public_key(
 pub fn unlock_vault(ctx: Context<Claim>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
     let foreign_public_key = &ctx.accounts.metadata_account.foreign_public_key;
 
-    msg!("Foreign Public Key: {:?}", foreign_public_key);
+    msg!("Initializing Claim Process...");
 
     if foreign_public_key.len() == 20 {
         unlock_eth(ctx, signature, message)
@@ -158,6 +158,8 @@ pub fn authorize_and_claim(ctx: Context<Claim>, recovered_public_key: Vec<u8>) -
         &[bump],
     ];
 
+    msg!("Claiming Tokens...");
+
     // claim all the tokens
     token::transfer(
         ctx.accounts
@@ -165,6 +167,8 @@ pub fn authorize_and_claim(ctx: Context<Claim>, recovered_public_key: Vec<u8>) -
             .with_signer(&[&seeds]),
         ctx.accounts.vault_account.amount,
     )?;
+
+    msg!("Tokens Claimed Successfully");
 
     Ok(())
 }

@@ -10,12 +10,13 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@effectai/utils": "workspace:*",
     "@headlessui/vue": "^1.7.23",
     "@nuxt/devtools": "latest",
     "@nuxt/ui": "^2.19.2",
     "@solana/spl-token": "0.4.9",
     "@solana/wallet-adapter-wallets": "0.19.32",
-    "@solana/web3.js": "1.95.4",
+    "@solana/web3.js": "^1.95.4",
     "@tanstack/vue-query": "^5.59.20",
     "@wagmi/vue": "^0.0.62",
     "@wharfkit/session": "^1.4.0",
@@ -28,6 +29,8 @@
     "solana-wallets-vue": "0.6.1",
     "viem": "2.x",
     "vue": "latest",
+    "vue-confetti-explosion": "^1.0.2",
+    "vue-number-animation": "^2.0.2",
     "vue-router": "latest"
   }
 }

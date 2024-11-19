@@ -18,7 +18,7 @@ export const setup = async (payer: Keypair, connection: Connection) => {
     const ata = await createTokenAccount(connection, payer, mint, payer.publicKey);
 
      // mint some tokens to the associated token account
-    await mintToAccount(connection, payer, mint, ata, payer, 1000);
+    await mintToAccount(connection, payer, mint, ata, payer, 10000000);
 
     return {
         payer,

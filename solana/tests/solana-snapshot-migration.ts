@@ -8,7 +8,7 @@ import { expect } from "chai";
 import { keccak256, toBytes } from "viem";
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { privateKeyToAccount } from 'viem/accounts';
-import { compressEosPubkey, deriveMetadataAndVaultFromPublicKey } from "../utils/keys";
+import { extractEosPublicKeyBytes, deriveMetadataAndVaultFromPublicKey } from "@effectai/utils";
 import { PrivateKey, Transaction, TransactionHeader } from '@wharfkit/antelope';
 import { ABICache, Action, Session } from '@wharfkit/session';
 import { WalletPluginPrivateKey } from '@wharfkit/wallet-plugin-privatekey';
@@ -37,7 +37,6 @@ describe("solana_efx_airdrop", () => {
   describe("Migration Contract: Initialization", () => {
     it('correctly initializes an ethereum based vault', async () => {
       await initializeVaultAccount({
-        provider: provider,
         foreignPubKey: toBytes(publicKey1),
         mint,
         payer,
@@ -45,7 +44,7 @@ describe("solana_efx_airdrop", () => {
         amount: 5
       })
 
-      const { metadata } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, toBytes(publicKey1), program.programId)
+      const { metadata } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, mint, toBytes(publicKey1), program.programId)
 
       // // check if the metadata account was created
       const metadataAccount = await provider.connection.getAccountInfo(metadata)
@@ -54,10 +53,9 @@ describe("solana_efx_airdrop", () => {
 
     it('correctly initializes a EOS based vault', async () => {
       const eosPublicKey = "PUB_K1_7abGp9AVsTpt4TLSdCFKS2Tm49zCwg8nWLpJhAmEpppG9fjJsy"
-      const publicKey = compressEosPubkey(eosPublicKey)
+      const publicKey = extractEosPublicKeyBytes(eosPublicKey)
 
       await initializeVaultAccount({
-        provider: provider,
         foreignPubKey: publicKey,
         mint,
         payer,
@@ -82,9 +80,9 @@ describe("solana_efx_airdrop", () => {
       const eosPrivatekey = PrivateKey.from("5K5UuCj9PmMSFTyiWzTtPF4VmUftVqScM3QJd9HorrZGCt4LgLu")
 
       const eosPublicKey = eosPrivatekey.toPublic()
-      const pk = compressEosPubkey(eosPublicKey.toString())
+      const pk = extractEosPublicKeyBytes(eosPublicKey.toString())
 
-      const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, pk, program.programId)
+      const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, mint, pk, program.programId)
 
       const session = new Session({
         permissionLevel: {
@@ -157,7 +155,7 @@ describe("solana_efx_airdrop", () => {
       // add the recovery byte to the signature
       const sigWithRecovery = Buffer.concat([sig.toCompactRawBytes(), Buffer.from([sig.recovery + 27])])
 
-      const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, toBytes(publicKey1), program.programId)
+      const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, mint, toBytes(publicKey1), program.programId)
 
       await program.methods.claim(
         sigWithRecovery,
@@ -180,7 +178,7 @@ describe("solana_efx_airdrop", () => {
       const signature = await account.signMessage({ message: originalMessage })
 
       // const pk = secp256k1.getPublicKey(account.address.slice, true)
-      const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, toBytes(publicKey1), program.programId)
+      const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(payer.publicKey, mint, toBytes(publicKey1), program.programId)
 
       await program.methods.claim(
         Buffer.from(toBytes(signature)),
