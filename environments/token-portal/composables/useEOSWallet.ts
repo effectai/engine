@@ -12,6 +12,7 @@ import type { PublicKey } from "@solana/web3.js";
 // import { WalletPluginScatter } from "@wharfkit/wallet-plugin-scatter"
 // import { WalletPluginWombat } from "@wharfkit/wallet-plugin-wombat"
 // import { WalletPluginTokenPocket } from "@wharfkit/wallet-plugin-tokenpocket"
+import WebSocket from "modern-isomorphic-ws";
 
 const sessionKit = reactive(
 	new SessionKit(
@@ -25,7 +26,10 @@ const sessionKit = reactive(
 			],
 			ui: new WebRenderer(),
 			walletPlugins: [
-				new WalletPluginAnchor(),
+				new WalletPluginAnchor({
+					channelName: "effectai",
+				}
+				),
 				// new WalletPluginTokenPocket(),
 				// new WalletPluginScatter(),
 				// new WalletPluginWombat(),
@@ -54,7 +58,7 @@ export const useEosWallet = (): SourceWalletAdapter => {
 	const isConnected = computed(() => !!session.value);
 
 	const connect = async () => {
-		const result = await sessionKit.login({})
+		const result = await sessionKit.login()
 		session.value = result.session;
 	}
 

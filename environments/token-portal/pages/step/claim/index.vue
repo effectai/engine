@@ -66,6 +66,16 @@ const startAnim = () => {
 }
 
 
+onMounted(() => {
+
+	// check if current connection is with phantom
+	if (window.solana.isPhantom) {
+		console.log("Phantom connected");
+		// hard refresh the page to avoid any issues with phantom
+		// window.location.reload();
+	}
+})
+
 const { canClaim, clear } = useGlobalState()
 
 const { useClaim, useGetVaultAccountBalance } = useProgram();

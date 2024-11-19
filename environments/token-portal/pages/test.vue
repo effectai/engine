@@ -22,8 +22,11 @@ window.solana.on("disconnect", () => {
 const { signMessage } = useWallet()
 const check = async () => {
     await window.solana.connect()
+
     // signMessage.value(Buffer.from("test"))
 }
+
+
 </script>
 
 <style lang="scss" scoped></style>

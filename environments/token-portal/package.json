@@ -21,16 +21,21 @@
     "@wagmi/vue": "^0.0.62",
     "@wharfkit/session": "^1.4.0",
     "@wharfkit/signing-request": "3.2.0",
-    "@wharfkit/wallet-plugin-anchor": "^1.0.0",
     "@wharfkit/web-renderer": "^1.0.3",
+    "@wharfkit/wallet-plugin-anchor": "file:../../../wallet-plugin-anchor",
     "anchor-link": "3.6.0",
     "anchor-link-browser-transport": "3.6.1",
+    "modern-isomorphic-ws": "^1.0.5",
     "nuxt": "^3.14.159",
     "solana-wallets-vue": "0.6.1",
     "viem": "2.x",
     "vue": "latest",
     "vue-confetti-explosion": "^1.0.2",
     "vue-number-animation": "^2.0.2",
-    "vue-router": "latest"
+    "vue-router": "latest",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.13"
   }
 }
