@@ -26,6 +26,9 @@ methods: {
 
 <style scoped>
 
+.launch-button{
+    border-color: black;
+}
 .button-arrow{
     width: 2em;
     height: 2em;
