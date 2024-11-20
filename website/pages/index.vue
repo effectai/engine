@@ -1,8 +1,7 @@
 <template>
     <div>
-        <HeroSection class="nav-bar-height" id="main-hero" style="min-height: 700px; background-image: url(./img/hero-background.png);">
+        <HeroSection id="main-hero" style="min-height: 700px; background-image: url(./img/hero-background.png);">
             <template #title>
-                <!-- <h1 class="title title-weight is-spaced has-text-primary"> -->
                 <h1 class="title hero-title has-text-weight-normal is-auto-phrase">
                     Handcrafted Data for Artificial Intelligence.
                 </h1>
@@ -30,7 +29,7 @@
         </HeroSection>
     </div>
 
-    <SimpleSection :centered="true" class="">
+    <SimpleSection :centered="true">
       <template #subtitle>
         <div class="columns">
             <div class="column">
@@ -106,37 +105,37 @@
             </div>
         </div>
     </SimpleSection>
-    <SimpleSection :centered="true" class="">
+    <SimpleSection :centered="true" class="container is-max-widescreen">
         <template #subtitle>
-            <div class="columns" style="max-width: 1100px;">
-                <div class="column" style="background-image: url(./img/hero-background.png); border-radius:20px; height: 280px; max-width: 440px;">
+            <div class="columns">
+                <div class="column box is-shadowless" style="background-image: url(./img/hero-background.png); height: 280px; max-width: 440px;">
                 </div>
-                <div class="column" style="margin-left: 3.75rem">
-                    <p class="has-text-weight-medium is-size-2 has-text-left" style="line-height: 50.83px; padding-bottom: 20px;">Effect AI: Plans for 2024</p>
-                    <p class="has-text-weight-normal is-size-5 has-text-left" style="line-height: 30px;">
+                <div class="column ml-6">
+                    <p class="has-text-weight-medium is-size-2 has-text-left pb-5">Effect AI: Plans for 2024</p>
+                    <p class="has-text-weight-normal is-size-5 has-text-left">
                         Today, we're thrilled to bring forward the plans that Effect AI has in store for 2024. 
                         This year is bound to be a transformative one for Effect AI, as some of the most exciting 
                         and groundbreaking updates...
                     </p>
                 </div>
             </div>
-            <div class="columns" style="margin-top: 3.75rem; max-width: 1100px;">
-                <div class="column" style="background-image: url(./img/hero-background.png); border-radius:20px; height: 280px; max-width: 440px;">
+            <div class="columns mt-6">
+                <div class="column box is-shadowless" style="background-image: url(./img/hero-background.png);height: 280px; max-width: 440px;">
                 </div>
-                <div class="column" style="margin-left: 3.75rem">
-                    <p class="has-text-weight-medium is-size-2 has-text-left" style="line-height: 50.83px; padding-bottom: 20px;">Tech Blog: On-Chain Microtasks</p>
-                    <p class="has-text-weight-normal is-size-5 has-text-left" style="line-height: 30px;">
+                <div class="column ml-6">
+                    <p class="has-text-weight-medium is-size-2 has-text-left pb-5">Tech Blog: On-Chain Microtasks</p>
+                    <p class="has-text-weight-normal is-size-5 has-text-left">
                         In this article, we’ll take a look at Effect Force’s new task creation mechanism. 
                         This technology makes it simple for people and businesses to add microtasks to the blockchain.
                     </p>
                 </div>
             </div>
-            <div class="columns" style="margin-top: 3.75rem; max-width: 1100px;">
-                <div class="column" style="background-image: url(./img/hero-background.png); border-radius:20px; height: 280px; max-width: 440px;">
+            <div class="columns mt-6">
+                <div class="column box is-shadowless" style="background-image: url(./img/hero-background.png); height: 280px; max-width: 440px;">
                 </div>
-                <div class="column" style="margin-left: 3.75rem">
-                    <p class="has-text-weight-medium is-size-2 has-text-left" style="line-height: 50.83px; padding-bottom: 20px;">The Effect DAO: Effect Staking Protocol 2.0</p>
-                    <p class="has-text-weight-normal is-size-5 has-text-left" style="line-height: 30px;">
+                <div class="column ml-6">
+                    <p class="has-text-weight-medium is-size-2 has-text-left pb-5">The Effect DAO: Effect Staking Protocol 2.0</p>
+                    <p class="has-text-weight-normal is-size-5 has-text-left">
                         By staking EFX, holders can improve their rank in The Effect DAO. Achieving a high rank 
                         has many benefits like vote casting, fee reward collection, and gaining privileges on the dApp level.
                     </p>
