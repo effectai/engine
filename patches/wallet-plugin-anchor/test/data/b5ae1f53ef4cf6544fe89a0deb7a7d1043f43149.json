@@ -1,0 +1,44 @@
+{
+    "request": {
+        "path": "https://jungle4.greymass.com/v1/chain/get_info",
+        "params": {
+            "method": "POST"
+        }
+    },
+    "headers": {
+        "access-control-allow-headers": "X-Requested-With,Accept,Content-Type,Origin",
+        "access-control-allow-methods": "GET, POST, OPTIONS",
+        "access-control-allow-origin": "*",
+        "connection": "close",
+        "content-length": "964",
+        "content-type": "application/json",
+        "date": "Sat, 31 Dec 2022 07:01:37 GMT",
+        "host": "jungle4.greymass.com",
+        "server": "nginx/1.18.0 (Ubuntu)",
+        "x-cached": "MISS"
+    },
+    "status": 200,
+    "json": {
+        "server_version": "905c5cc9",
+        "chain_id": "73e4385a2708e6d7048834fbc1079f2fabb17b3c125b146af438971e90716c4d",
+        "head_block_num": 53515366,
+        "last_irreversible_block_num": 53515039,
+        "last_irreversible_block_id": "0330931f8caaac25828e42073605c1fbe07ebcbb3d330890a63420e0cd596885",
+        "head_block_id": "033094661eb1189e4d3aea3800a53821f6ac21b0a50f76ab76ed69febed7468e",
+        "head_block_time": "2022-12-31T07:01:37.000",
+        "head_block_producer": "jumpingfrogs",
+        "virtual_block_cpu_limit": 200000000,
+        "virtual_block_net_limit": 1048576000,
+        "block_cpu_limit": 200000,
+        "block_net_limit": 1048576,
+        "server_version_string": "v3.1.3",
+        "fork_db_head_block_num": 53515366,
+        "fork_db_head_block_id": "033094661eb1189e4d3aea3800a53821f6ac21b0a50f76ab76ed69febed7468e",
+        "server_full_version_string": "v3.1.3-905c5cc900b4e88aed4ab6912009127bf9f4f140",
+        "total_cpu_weight": "120460600273060",
+        "total_net_weight": "117529136309360",
+        "earliest_available_block_num": 53328984,
+        "last_irreversible_block_time": "2022-12-31T06:58:53.500"
+    },
+    "text": "{\"server_version\":\"905c5cc9\",\"chain_id\":\"73e4385a2708e6d7048834fbc1079f2fabb17b3c125b146af438971e90716c4d\",\"head_block_num\":53515366,\"last_irreversible_block_num\":53515039,\"last_irreversible_block_id\":\"0330931f8caaac25828e42073605c1fbe07ebcbb3d330890a63420e0cd596885\",\"head_block_id\":\"033094661eb1189e4d3aea3800a53821f6ac21b0a50f76ab76ed69febed7468e\",\"head_block_time\":\"2022-12-31T07:01:37.000\",\"head_block_producer\":\"jumpingfrogs\",\"virtual_block_cpu_limit\":200000000,\"virtual_block_net_limit\":1048576000,\"block_cpu_limit\":200000,\"block_net_limit\":1048576,\"server_version_string\":\"v3.1.3\",\"fork_db_head_block_num\":53515366,\"fork_db_head_block_id\":\"033094661eb1189e4d3aea3800a53821f6ac21b0a50f76ab76ed69febed7468e\",\"server_full_version_string\":\"v3.1.3-905c5cc900b4e88aed4ab6912009127bf9f4f140\",\"total_cpu_weight\":\"120460600273060\",\"total_net_weight\":\"117529136309360\",\"earliest_available_block_num\":53328984,\"last_irreversible_block_time\":\"2022-12-31T06:58:53.500\"}"
+}

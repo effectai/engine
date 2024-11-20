@@ -1,0 +1,26 @@
+{
+  "name": "@effectai/utils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.cjs",
+  "type": "module",
+  "exports": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+  },
+  "scripts": {
+    "rollup": "rollup dist/index.js --file dist/index.cjs --format cjs", 
+    "build": "tsc && npm run rollup",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@solana/web3.js": "^1.95.4",
+    "@wharfkit/antelope": "^1.0.13"
+  },
+  "devDependencies": {
+    "rollup": "^4.27.3"
+  }
+}

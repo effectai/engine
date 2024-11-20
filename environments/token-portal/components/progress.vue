@@ -19,7 +19,7 @@ import { useWallet } from "solana-wallets-vue";
 
 const useSteps = () => {
 	const { publicKey } = useWallet();
-	const { canClaim } = useClaim();
+	const { canClaim } = useGlobalState();
 
 	const steps = ref([
 		{
