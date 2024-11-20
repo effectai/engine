@@ -954,6 +954,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "effect-rewards"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "effect-common",
+ "effect-staking",
+]
+
+[[package]]
 name = "effect-staking"
 version = "0.1.0"
 dependencies = [

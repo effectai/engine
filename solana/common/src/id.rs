@@ -13,7 +13,7 @@ mod system_program {
 pub use staking_program::ID as STAKING_PROGRAM;
 mod staking_program {
     use super::*;
-    declare_id!("effScmHY2uR24Zh751PmGj9ww9QRNHewh9H59AfrTJE");
+    declare_id!("eR1sM73NpFqq7DSR5YDAgneWW29AZA8sRm1BFakzYpH");
 }
 
 pub use efx_token::ID as EFX_TOKEN;
@@ -34,15 +34,6 @@ mod authority {
     declare_id!("XXXxddiNnmoD2h2LbQYaL76Swi21MaQbtBbRynAdQL8");
 }
 
-pub use market_admin::ID as MARKET_ADMIN;
-mod market_admin {
-    use super::*;
-    #[cfg(feature = "mainnet")]
-    declare_id!("AdmMVMMU3po5BP3bVWsF9GgN6NNEfpfxpTDGTzjgb72S");
-    #[cfg(not(feature = "mainnet"))]
-    declare_id!("XXXxddiNnmoD2h2LbQYaL76Swi21MaQbtBbRynAdQL8");
-}
-
 pub use token_account::ID as TOKEN_ACCOUNT;
 mod token_account {
     use super::*;
@@ -50,4 +41,10 @@ mod token_account {
     declare_id!("A9V8JkR5HihvFpHq1ZbwrpPAGBhsGfeWw5TVcUdGf2dg");
     #[cfg(not(feature = "mainnet"))]
     declare_id!("HLtABkKqsUjb4ECPEnvad6HN7QYf6ANHahAeZQXrAGgV");
+}
+
+pub use rewards_program::ID as REWARDS_PROGRAM;
+mod rewards_program {
+    use super::*;
+    declare_id!("AVKZ1LKwV7U5jQPdMev1iQ3rQrcQqzV6AwMfAZwQJomT");
 }

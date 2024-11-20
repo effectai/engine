@@ -1,9 +1,8 @@
 <template>
-    <div>
-      
-        <slot></slot>
-        <UNotifications/>
-</div>
+  <div>
+    <slot></slot>
+    <UNotifications />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -12,6 +11,4 @@ definePageMeta({
 })
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

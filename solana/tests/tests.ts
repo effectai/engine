@@ -14,7 +14,7 @@ import stakingTests from "./suites/2-staking-tests";
 import snapshotMigrationTests from "./suites/3-solana-snapshot-migration";
 
 // types
-import { EffectAccounts, EffectExists, EffectVaults } from "./types/effect";
+import type { EffectAccounts, EffectExists, EffectVaults } from "./types/effect";
 
 // run
 describe("effect programs", async () => {

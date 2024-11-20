@@ -6,6 +6,10 @@
         "dependsOn": ["^build"],
         "inputs": ["$TURBO_DEFAULT$", ".env*"]
       },
+      "rollup": {
+        "dependsOn": ["^build"],
+        "inputs": ["$TURBO_DEFAULT$", "rollup.config.js"]
+      },
       "lint": {
         "dependsOn": ["^lint"]
       },

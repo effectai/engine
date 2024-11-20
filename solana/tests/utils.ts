@@ -79,7 +79,7 @@ function getDummyKey() {
  * @param payer
  * @param authority
  */
-async function createNosMint(
+async function createEffectMint(
   connection: Connection,
   payer: Signer,
   authority: PublicKey
@@ -247,7 +247,7 @@ async function updateRewards(
   return amount;
 }
 
-async function mintNosTo(
+async function mintEffectTo(
   mochaContext: Context,
   to: PublicKey,
   amount: number | bigint
@@ -291,7 +291,7 @@ async function setupSolanaUser(mochaContext: Context) {
     publicKey
   );
   // fund user
-  await mintNosTo(mochaContext, ata, mochaContext.constants.userSupply);
+  await mintEffectTo(mochaContext, ata, mochaContext.constants.userSupply);
 
   // return user object
   return {
@@ -333,6 +333,23 @@ async function getUsers(mochaContext: Context, amount: number) {
   );
 }
 
+export const expectAnchorError = async (
+	action: () => Promise<void>,
+	expectedErrorMessage: string,
+): Promise<void> => {
+	try {
+		await action();
+	} catch (e: unknown) {
+		if (e instanceof anchor.AnchorError) {
+			expect(e.error.errorMessage).to.equal(expectedErrorMessage);
+			return;
+		}
+		throw e;
+	}
+	throw new Error("Expected an AnchorError but no error was thrown");
+}
+
+
 export {
   ask,
   buf2hex,
@@ -341,7 +358,7 @@ export {
   getTimestamp,
   getTokenBalance,
   getUsers,
-  createNosMint,
+  createEffectMint,
   now,
   pda,
   setupAnchorAndPrograms,
@@ -351,5 +368,5 @@ export {
   solanaExplorer,
   updateRewards,
   mapUsers,
-  mintNosTo,
+  mintEffectTo,
 };

@@ -1,5 +1,6 @@
 use crate::*;
 use anchor_spl::token::{Token, TokenAccount};
+use effect_common::cpi;
 
 #[derive(Accounts)]
 pub struct Slash<'info> {

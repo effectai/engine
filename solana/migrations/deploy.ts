@@ -4,9 +4,10 @@
 
 const anchor = require("@coral-xyz/anchor");
 
-module.exports = async function (provider) {
+module.exports = async (provider) => {
   // Configure client to use the provider.
   anchor.setProvider(provider);
 
   // Add your deploy script here.
+  
 };

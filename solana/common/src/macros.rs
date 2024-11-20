@@ -1,7 +1,3 @@
-/***
- * Macros
- */
-
 #[macro_export]
 macro_rules! security_txt {
     ($($name:ident: $value:expr),*) => {

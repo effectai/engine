@@ -5,11 +5,13 @@ mod state;
 
 use anchor_lang::prelude::*;
 use effect_common::*;
-pub use errors::*; // expose errors for cpi
+ 
+pub use errors::*;
+// expose errors for cpi
 use instructions::*;
 pub use state::*; // expose stake for cpi
 
-declare_id!("effScmHY2uR24Zh751PmGj9ww9QRNHewh9H59AfrTJE");
+declare_id!("eR1sM73NpFqq7DSR5YDAgneWW29AZA8sRm1BFakzYpH");
 
 #[program]
 pub mod effect_staking {
