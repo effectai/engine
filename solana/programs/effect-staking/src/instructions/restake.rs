@@ -5,7 +5,7 @@ use anchor_spl::token::TokenAccount;
 pub struct Restake<'info> {
     #[account(
         mut,
-        constraint = vault.amount >= StakeAccount::STAKE_MINIMUM
+        constraint = vault.amount >= STAKE_MINIMUM
             @ EffectStakingError::AmountNotEnough,
     )]
     pub vault: Account<'info, TokenAccount>,

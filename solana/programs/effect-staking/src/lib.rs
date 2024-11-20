@@ -18,9 +18,9 @@ pub mod effect_staking {
     use super::*;
 
     /// Initialize the [SettingsAccount](#settings-account).
-    pub fn init(ctx: Context<Init>) -> Result<()> {
-        ctx.accounts.handler()
-    }
+    // pub fn init(ctx: Context<Init>) -> Result<()> {
+    //     ctx.accounts.handler()
+    // }
 
     /// Create a [StakeAccount](#stake-account) and [VaultAccount](#vault-account).
     /// Stake `amount` of [NOS](/tokens/token) tokens for `duration` fo seconds.
@@ -58,14 +58,14 @@ pub mod effect_staking {
         ctx.accounts.handler()
     }
 
-    /// Reduce a [StakeAccount](#stake-account)'s [NOS](/tokens/token) tokens.
-    /// Slashing is a feature used by the Effect Protocol to punish bad actors.
-    pub fn slash(ctx: Context<Slash>, amount: u64) -> Result<()> {
-        ctx.accounts.handler(amount)
-    }
+    // Reduce a [StakeAccount](#stake-account)'s [NOS](/tokens/token) tokens.
+    // Slashing is a feature used by the Effect Protocol to punish bad actors.
+    // pub fn slash(ctx: Context<Slash>, amount: u64) -> Result<()> {
+    //     ctx.accounts.handler(amount)
+    // }
 
-    /// Update the Slashing Authority and Token Account.
-    pub fn update_settings(ctx: Context<UpdateSettings>) -> Result<()> {
-        ctx.accounts.handler()
-    }
+    // Update the Slashing Authority and Token Account.
+    // pub fn update_settings(ctx: Context<UpdateSettings>) -> Result<()> {
+    //     ctx.accounts.handler()
+    // }
 }

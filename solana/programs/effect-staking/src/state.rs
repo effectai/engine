@@ -1,5 +1,22 @@
 use anchor_lang::prelude::*;
 
+
+/***
+ * Constants
+ */
+#[constant]
+pub const STAKE_MINIMUM: u64 = 10;
+#[constant]
+pub const SECONDS_PER_DAY: u128 = 24 * 60 * 60;
+#[constant]
+pub const DURATION_MIN: u128 = 14 * SECONDS_PER_DAY; // 2 weeks
+#[constant]
+pub const DURATION_MAX: u128 = 365 * SECONDS_PER_DAY; // 1 year
+#[constant]
+pub const XEFX_PRECISION: u128 = u128::pow(10, 15); // 1e15
+#[constant]
+pub const XEFX_DIV: u128 = 4 * DURATION_MAX / 12; // 0.25 growth per month
+
 /***
  * Accounts
  */
@@ -11,6 +28,7 @@ pub struct SettingsAccount {
     pub authority: Pubkey,
     pub token_account: Pubkey,
 }
+
 
 impl SettingsAccount {
     pub const SIZE: usize = 8 + std::mem::size_of::<SettingsAccount>();
@@ -35,14 +53,6 @@ pub struct StakeAccount {
 }
 
 impl StakeAccount {
-    pub const SIZE: usize = 8 + std::mem::size_of::<StakeAccount>();
-    pub const STAKE_MINIMUM: u64 = 0;
-    pub const SECONDS_PER_DAY: u128 = 24 * 60 * 60;
-    pub const DURATION_MIN: u128 = 14 * StakeAccount::SECONDS_PER_DAY; // 2 weeks
-    pub const DURATION_MAX: u128 = 365 * StakeAccount::SECONDS_PER_DAY; // 1 year
-    pub const XEFX_PRECISION: u128 = u128::pow(10, 15); // 1e15
-    pub const XEFX_DIV: u128 = 4 * StakeAccount::DURATION_MAX / 12; // 0.25 growth per month
-
     pub fn init(
         &mut self,
         amount: u64,
@@ -88,10 +98,10 @@ impl StakeAccount {
         self.update_xefx();
     }
 
-    pub fn slash(&mut self, amount: u64) {
-        self.amount -= amount;
-        self.update_xefx();
-    }
+    // pub fn slash(&mut self, amount: u64) {
+    //     self.amount -= amount;
+    //     self.update_xefx();
+    // }
 
     pub fn extend(&mut self, duration: u64) -> Result<()> {
         self.duration += duration;
@@ -103,10 +113,10 @@ impl StakeAccount {
         self.xefx = if self.time_unstake != 0 {
             0
         } else {
-            (u128::from(self.duration) * StakeAccount::XEFX_PRECISION / StakeAccount::XEFX_DIV
-                + StakeAccount::XEFX_PRECISION)
+            (u128::from(self.duration) * XEFX_PRECISION / XEFX_DIV
+                + XEFX_PRECISION)
                 * u128::from(self.amount)
-                / StakeAccount::XEFX_PRECISION
+                / XEFX_PRECISION
         }
     }
 }

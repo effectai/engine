@@ -5,7 +5,7 @@ use effect_common::cpi;
 #[derive(Accounts)]
 pub struct Topup<'info> {
     #[account(mut)]
-    pub user: Account<'info, TokenAccount>,
+    pub staker_tokens: Account<'info, TokenAccount>,
     #[account(mut)]
     pub vault: Account<'info, TokenAccount>,
     #[account(

@@ -26,22 +26,23 @@ export const getStakeAccounts = (program: Program<EffectStaking>) => {
 };
 
 export const deriveStakingAccounts = async ({
-	client,
-	userAddress,
+	mint,
+	stakerAddress,
+	programId,
 }: {
-	client: StakeClient;
-	userAddress: PublicKey;
+	mint: PublicKey;
+	stakerAddress: PublicKey;
+	programId: PublicKey;
 }) => {
-	const mint = client.config.EFFECT_SPL_TOKEN_MINT;
-
-	const [vaultAccount] = PublicKey.findProgramAddressSync(
-		[Buffer.from("vault"), mint.toBuffer(), userAddress.toBuffer()],
-		client.program.programId,
-	);
 
 	const [stakeAccount] = PublicKey.findProgramAddressSync(
-		[Buffer.from("stake"), mint.toBuffer(), userAddress.toBuffer()],
-		client.program.programId,
+		[Buffer.from("stake"), mint.toBuffer(), stakerAddress.toBuffer()],
+		programId,
+	);
+
+	const [vaultAccount] = PublicKey.findProgramAddressSync(
+		[stakeAccount.toBuffer()],
+		programId,
 	);
 
 	return { stakeAccount, vaultAccount };

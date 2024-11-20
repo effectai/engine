@@ -4,7 +4,7 @@ use anchor_spl::token::{Token, TokenAccount};
 #[derive(Accounts)]
 pub struct AddFee<'info> {
     #[account(mut)]
-    pub user: Account<'info, TokenAccount>,
+    pub staker_tokens: Account<'info, TokenAccount>,
     #[account(mut, has_one = vault @ EffectError::InvalidVault)]
     pub reflection: Account<'info, ReflectionAccount>,
     #[account(mut)]

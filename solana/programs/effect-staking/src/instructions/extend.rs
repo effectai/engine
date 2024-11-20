@@ -18,7 +18,7 @@ impl<'info> Extend<'info> {
 
         // test new duration
         require!(
-            self.stake.duration + duration <= StakeAccount::DURATION_MAX.try_into().unwrap(),
+            self.stake.duration + duration <= DURATION_MAX.try_into().unwrap(),
             EffectStakingError::DurationTooLong
         );
 

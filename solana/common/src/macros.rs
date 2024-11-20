@@ -17,7 +17,7 @@ macro_rules! transfer_tokens_to_vault {
     ($accounts: expr, $amount: expr) => {
         cpi::transfer_tokens(
             $accounts.token_program.to_account_info(),
-            $accounts.user.to_account_info(),
+            $accounts.staker_tokens.to_account_info(),
             $accounts.vault.to_account_info(),
             $accounts.authority.to_account_info(),
             &[],

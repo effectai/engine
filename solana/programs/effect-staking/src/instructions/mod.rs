@@ -13,11 +13,12 @@ pub mod withdraw;
 
 pub use close::*;
 pub use extend::*;
-pub use init::*;
 pub use restake::*;
-pub use slash::*;
 pub use stake::*;
 pub use topup::*;
 pub use unstake::*;
-pub use update_settings::*;
 pub use withdraw::*;
+
+pub use init::*;
+pub use slash::*;
+pub use update_settings::*;

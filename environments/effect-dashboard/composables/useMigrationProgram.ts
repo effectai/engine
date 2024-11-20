@@ -9,8 +9,10 @@ import {
 import { useAnchorWallet, useWallet } from "solana-wallets-vue";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program, Idl } from "@coral-xyz/anchor";
+//TODO::
 import programIDL from "../../../solana/target/idl/solana_snapshot_migration.json";
 import type { SolanaSnapshotMigration } from "../../../solana/target/types/solana_snapshot_migration";
+
 import {
 	createAssociatedTokenAccountIdempotentInstructionWithDerivation,
 	getAssociatedTokenAddressSync,

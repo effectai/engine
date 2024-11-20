@@ -7,12 +7,12 @@ pub struct Stake<'info> {
     #[account(mut)]
     pub mint: Account<'info, Mint>,
     #[account(mut)]
-    pub user: Account<'info, TokenAccount>,
+    pub staker_tokens: Account<'info, TokenAccount>,
 
     #[account(
         init,
         payer = authority,
-        space = StakeAccount::SIZE,
+        space = 8 + std::mem::size_of::<StakeAccount>(),
         seeds = [ b"stake", mint.key().as_ref(), authority.key().as_ref() ],
         bump,
     )]
@@ -39,17 +39,19 @@ impl<'info> Stake<'info> {
     pub fn handler(&mut self, amount: u64, duration: u128, vault_bump: u8) -> Result<()> {
         // test duration and amount
         require!(
-            duration >= StakeAccount::DURATION_MIN,
+            duration >= DURATION_MIN,
             EffectStakingError::DurationTooShort
         );
         require!(
-            duration <= StakeAccount::DURATION_MAX,
+            duration <= DURATION_MAX,
             EffectStakingError::DurationTooLong
         );
         require!(
-            amount >= StakeAccount::STAKE_MINIMUM,
+            amount >= STAKE_MINIMUM,
             EffectStakingError::AmountNotEnough
         );
+
+        // msg!("Staking {} tokens for {} seconds", amount, duration);
 
         // get stake account and init stake
         self.stake.init(

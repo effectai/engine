@@ -1,5 +1,4 @@
 use core::str;
-use std::sync::Arc;
 
 use crate::{errors::CustomError, state::MetadataAccount};
 
@@ -14,7 +13,6 @@ use anchor_lang::{
 };
 
 use sha2::{Digest, Sha256};
-use tiny_keccak::{Hasher, Keccak};
 
 #[derive(Accounts)]
 pub struct Claim<'info> {
@@ -188,16 +186,6 @@ fn sha256(message: &[u8]) -> [u8; 32] {
     let mut output = [0u8; 32];
     output.copy_from_slice(&result[..]);
     output
-}
-
-fn extract_memo_from_actions(actions: &[u8]) -> Result<String> {
-    let actions_str = std::str::from_utf8(actions).map_err(|_| ErrorCode::InvalidActions)?;
-    if actions_str.contains("memo") {
-        let start = actions_str.find("memo").unwrap() + 7; // Offset for 'memo": '
-        let end = actions_str[start..].find('"').unwrap() + start;
-        return Ok(actions_str[start..end].to_string());
-    }
-    Err(ErrorCode::MemoNotFound.into())
 }
 
 #[error_code]
