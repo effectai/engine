@@ -315,7 +315,7 @@ export const stakingIdl = {
       ],
       "accounts": [
         {
-          "name": "user",
+          "name": "staker_tokens",
           "writable": true
         },
         {

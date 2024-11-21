@@ -1,22 +1,25 @@
-import { beforeEach, describe, inject, it } from "vitest";
-import { useAnchor, useTestContext } from "../helpers.js";
+import { describe, expect, it } from "vitest";
+import { useAnchor } from "../helpers.js";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
 import type { EffectStaking } from "../../target/types/effect_staking.js";
 import { setup } from "../../utils/spl.js";
-import type { PublicKey } from "@solana/web3.js";
 import { useConstantsIDL, useErrorsIDL } from "../../utils/idl.js";
 import { stakingIdl } from "../../constants/staking-idl.js";
+import stakingIDLJson from "../../target/idl/effect_staking.json";
+import { BN } from "bn.js";
+import { useBankRunProvider } from "../helpers.js";
+import { AccountLayout, MintLayout } from "@solana/spl-token";
 
 const SECONDS_PER_DAY = 24 * 60 * 60;
 
 describe("Staking Program", async () => {
 	const program = anchor.workspace.EffectStaking as Program<EffectStaking>;
-	const { provider, wallet, expectAnchorError, payer } = useAnchor();
+	const { provider, wallet, payer, expectAnchorError } = useAnchor();
 
 	describe("Stake Initialize", async () => {
 		it.concurrent("should correctly initialize a stake account", async () => {
-			const { mint, ata } = await setup({payer, provider});
+			const { mint, ata } = await setup({ payer, provider });
 			await program.methods
 				.stake(new anchor.BN(100), new anchor.BN(14 * SECONDS_PER_DAY))
 				.accounts({
@@ -28,20 +31,15 @@ describe("Staking Program", async () => {
 		});
 
 		it.concurrent(
-			"should fail when stake duration is below the minimum",
+			"should fail when stake duration is below the minimum duration",
 			async () => {
-				// Creates a mint and associated account for this test
-				const { mint, ata } = await setup({provider, payer});
-
-				// extract the error message from the IDL used in this test
+				const { mint, ata } = await setup({ provider, payer });
 				const { DURATION_TOO_SHORT } = useErrorsIDL(stakingIdl);
-
-				// extract the constants used in this test
-				const { STAKE_MINIMUM } = useConstantsIDL(stakingIdl)
+				const { DURATION_MIN } = useConstantsIDL(stakingIdl);
 
 				await expectAnchorError(async () => {
 					await program.methods
-						.stake(new anchor.BN(500), new anchor.BN(STAKE_MINIMUM))
+						.stake(new anchor.BN(500), DURATION_MIN.sub(new anchor.BN(1)))
 						.accounts({
 							authority: wallet.publicKey,
 							stakerTokens: ata,
@@ -53,38 +51,31 @@ describe("Staking Program", async () => {
 		);
 
 		it.concurrent(
-			"should fail when stake duration is above the maximum",
+			"should fail when stake duration is above the maximum duration",
 			async () => {
-				const { mint, ata } = await setup(payer, provider.connection);
+				const { mint, ata } = await setup({ payer, provider });
+				const { DURATION_MAX } = useConstantsIDL(stakingIdl);
+				const { DURATION_TOO_LONG } = useErrorsIDL(stakingIdl);
+
 				await expectAnchorError(async () => {
 					await program.methods
-						.stake(new anchor.BN(100), new anchor.BN(365 * SECONDS_PER_DAY + 1))
+						.stake(new anchor.BN(100), DURATION_MAX.add(new anchor.BN(1)))
 						.accounts({
 							authority: wallet.publicKey,
 							stakerTokens: ata,
 							mint: mint,
 						})
 						.rpc();
-				}, program.idl.errors[8]);
+				}, DURATION_TOO_LONG);
 			},
 		);
 
 		it.concurrent("should correctly stake the minimum amount", async () => {
-			const { mint, ata } = await setup(payer, provider.connection);
-			await program.methods
-				.stake(new anchor.BN(100), new anchor.BN(14 * SECONDS_PER_DAY))
-				.accounts({
-					authority: wallet.publicKey,
-					stakerTokens: ata,
-					mint: mint,
-				})
-				.rpc();
-		});
+			const { mint, ata } = await setup({ payer, provider });
+			const { STAKE_MINIMUM, DURATION_MIN } = useConstantsIDL(stakingIdl);
 
-		it.concurrent("should correctly stake the maximum amount", async () => {
-			const { mint, ata } = await setup(payer, provider.connection);
 			await program.methods
-				.stake(new anchor.BN(1000), new anchor.BN(14 * SECONDS_PER_DAY))
+				.stake(new BN(STAKE_MINIMUM), DURATION_MIN)
 				.accounts({
 					authority: wallet.publicKey,
 					stakerTokens: ata,
@@ -94,582 +85,71 @@ describe("Staking Program", async () => {
 		});
 	});
 
-	describe("Stake Extension", async () => {});
+	// describe("Stake Extension", async () => {});
+
+	// describe("Stake Topup", async () => {});
 
 	describe("Stake Withdraw", async () => {
-		it("can withdraw after unstake", async () => {
+		const idl = stakingIDLJson as EffectStaking;
+
+		it.concurrent('should fail when "withdraw" is called before "unstake"', async () => {
 		});
 
+		it.concurrent("expect to have withdrawn nothing", async () => {
+			const { createStakeAndImmediatelyUnstake, program: bankrunProgram } =
+				await useBankRunProvider(idl);
+			const { stakeAccount, ata, provider } = await createStakeAndImmediatelyUnstake({
+				amount: 100,
+				unstakeDuration: 14,
+			});
+
+			await bankrunProgram.methods
+				.withdraw()
+				.accounts({
+					stakerTokens: ata,
+					stake: stakeAccount,
+				})
+				.rpc();
+
+			const balance = await provider.connection.getAccountInfo(ata);
+			if (!balance) throw new Error("Balance not found");
+			const result = AccountLayout.decode(balance.data);
+			expect(result.amount).toBe(0n);
+		});
+
+		it.concurrent(
+			"can withdraw entire balance after unstake duration",
+			async () => {
+				const {
+					createStakeAndImmediatelyUnstake,
+					useTimeTravel,
+					program: bankrunProgram,
+				} = await useBankRunProvider(idl);
+
+				const { stakeAccount, ata, provider } = await createStakeAndImmediatelyUnstake({
+					unstakeDuration: 14, //14 days
+					amount: 100, // 100 tokens
+				});
+
+				// advance the clock by 14 days
+				await useTimeTravel(14);
+
+				await bankrunProgram.methods
+					.withdraw()
+					.accounts({
+						stakerTokens: ata,
+						stake: stakeAccount,
+					})
+					.rpc();
+
+				const balance = await provider.connection.getAccountInfo(ata);
+				if (!balance) throw new Error("Balance not found");
+				const result = AccountLayout.decode(balance.data);
+				expect(result.amount).toBe(100n);
+			},
+		);
+
 		it("should extend stake correctly", async () => {});
-
 		it("should restake correctly", async () => {});
-
-		it("should unstake correctly", async () => {});
-
-		it("errors when trying to withdraw before the unstake period", async () => {});
-
-		it("it can withdraw tokens after the specified duration", async () => {});
 	});
 });
-
-// export default function suite() {
-// 	beforeEach(async function () {
-// 		if (this.exists.stake) {
-// 			this.userBalanceBefore = await getTokenBalance(
-// 				this.provider,
-// 				this.accounts.user,
-// 			);
-// 			this.vaultBalanceBefore = await getTokenBalance(
-// 				this.provider,
-// 				this.accounts.vault,
-// 			);
-// 		}
-// 	});
-
-// 	afterEach(async function () {
-// 		if (this.exists.stake) {
-// 			this.userBalanceAfter = await getTokenBalance(
-// 				this.provider,
-// 				this.accounts.user,
-// 			);
-// 			this.vaultBalanceAfter = await getTokenBalance(
-// 				this.provider,
-// 				this.accounts.vault,
-// 			);
-// 			expect(this.userBalanceAfter).to.equal(this.balances.user, "user");
-// 			expect(this.vaultBalanceAfter).to.equal(
-// 				this.balances.vaultStaking,
-// 				"vault",
-// 			);
-// 		}
-// 	});
-
-// 	describe("init()", async () => {
-// 		it("can initialize", async function () {
-// 			await this.stakingProgram.methods.init().accounts(this.accounts).rpc();
-// 		});
-// 	});
-
-// 	describe("stake()", async () => {
-// 		it("should fail when stake duration is below the minimum", async function () {
-//       expectAnchorError(async () => {
-//         await this.stakingProgram.methods
-//           .stake(
-//             new anchor.BN(this.constants.stakeAmount),
-//             new anchor.BN(this.constants.stakeDurationMin - 1),
-//           )
-//           .accounts({
-//             authority: this.accounts.authority,
-//             user: this.accounts.user,
-//           })
-//           .rpc();
-//       }, this.constants.errors.StakeDurationTooShort);
-// 		});
-
-// 		it("should fail when stake duration is above the maximum", async function () {
-//       expectAnchorError(async () => {
-//         await this.stakingProgram.methods
-//           .stake(
-//             new anchor.BN(this.constants.stakeAmount),
-//             new anchor.BN(this.constants.stakeDurationMax + 1),
-//           )
-//           .accounts({
-//             authority: this.accounts.authority,
-//             user: this.accounts.user,
-//           })
-//           .rpc();
-//       }, this.constants.errors.StakeDurationTooLong)
-// 		});
-
-// 		it("can stake minimum", async function () {
-// 			await this.stakingProgram.methods
-// 				.stake(
-// 					new anchor.BN(this.constants.stakeMinimum),
-// 					new anchor.BN(this.constants.stakeDurationMin),
-// 				)
-// 				.accounts({
-//           authority: this.accounts.authority,
-//           user: this.accounts.user,
-//         })
-// 				.rpc();
-
-// 			this.balances.user -= this.constants.stakeMinimum;
-// 			this.balances.vaultStaking += this.constants.stakeMinimum;
-// 			this.exists.stake = true;
-
-//       console.log(this.accounts.)
-
-// 			// test stake
-// 			const stake = await this.stakingProgram.account.stakeAccount.fetch(
-// 				this.accounts.stake,
-// 			);
-
-// 			expect(stake.amount.toNumber()).to.equal(
-// 				this.constants.stakeMinimum,
-// 				"amount",
-// 			);
-// 			expect(stake.vault.toString()).to.equal(
-// 				this.accounts.vault.toString(),
-// 				"vault",
-// 			);
-// 			expect(stake.authority.toString()).to.equal(
-// 				this.accounts.authority.toString(),
-// 				"authority",
-// 			);
-// 			expect(stake.duration.toNumber()).to.equal(
-// 				this.constants.stakeDurationMin,
-// 				"duration",
-// 			);
-// 			expect(stake.xefx.toNumber()).to.equal(
-// 				calculateXefx(
-// 					this.constants.stakeDurationMin,
-// 					this.constants.stakeMinimum,
-// 				),
-// 				"xefx",
-// 			);
-// 		});
-
-// 		it("can stake maximum for user 4", async function () {
-// 			await this.stakingProgram.methods
-// 				.stake(
-// 					new anchor.BN(this.constants.stakeAmount),
-// 					new anchor.BN(this.constants.stakeDurationMax),
-// 				)
-// 				.accounts({
-// 					...this.accounts,
-// 					user: this.users.user4.ata,
-// 					authority: this.users.user4.publicKey,
-// 				})
-// 				.signers([this.users.user4.user])
-// 				.rpc();
-// 			this.users.user4.balance -= this.constants.stakeAmount;
-// 		});
-
-// 		it("can stake for node 1", async function () {
-// 			const amount = this.constants.minimumNodeStake - 1;
-// 			await this.stakingProgram.methods
-// 				.stake(
-// 					new anchor.BN(amount),
-// 					new anchor.BN(this.constants.stakeDurationMin),
-// 				)
-// 				.accounts({
-// 					...this.accounts,
-// 					user: this.users.node1.ata,
-// 					authority: this.users.node1.publicKey,
-// 				})
-// 				.signers([this.users.node1.user])
-// 				.rpc();
-// 			this.users.node1.balance -= amount;
-// 		});
-
-// 		it("can stake for node 2, and unstake", async function () {
-// 			await this.stakingProgram.methods
-// 				.stake(
-// 					new anchor.BN(this.constants.minimumNodeStake),
-// 					new anchor.BN(this.constants.stakeDurationMin),
-// 				)
-// 				.accounts({
-// 					...this.accounts,
-// 					user: this.users.node2.ata,
-// 					authority: this.users.node2.publicKey,
-// 				})
-// 				.signers([this.users.node2.user])
-// 				.rpc();
-// 			await this.stakingProgram.methods
-// 				.unstake()
-// 				.accounts({
-// 					...this.accounts,
-// 					stake: this.users.node2.stake,
-// 				})
-// 				.signers([this.users.node2.user])
-// 				.rpc();
-// 			this.users.node2.balance -= this.constants.minimumNodeStake;
-// 		});
-
-// 		it("can stake for other nodes", async function () {
-// 			for (const node of this.users.otherNodes) {
-// 				await this.stakingProgram.methods
-// 					.stake(
-// 						new anchor.BN(this.constants.stakeAmount * 2),
-// 						new anchor.BN(3 * this.constants.stakeDurationMin),
-// 					)
-// 					.accounts({
-// 						...this.accounts,
-// 						user: node.ata,
-// 						authority: node.publicKey,
-// 					})
-// 					.signers([node.user])
-// 					.rpc();
-// 				node.balance -= this.constants.stakeAmount * 2;
-// 				expect(await getTokenBalance(this.provider, node.ata)).to.equal(
-// 					node.balance,
-// 				);
-// 			}
-// 		});
-// 	});
-
-// 	describe("extend()", async () => {
-// 		it("can extend with negative duration", async function () {
-// 			const accountBefore =
-// 				await this.stakingProgram.account.stakeAccount.fetch(
-// 					this.accounts.stake,
-// 				);
-// 			await this.stakingProgram.methods
-// 				.extend(new anchor.BN(-7))
-// 				.accounts(this.accounts)
-// 				.rpc();
-// 			const accountAfter = await this.stakingProgram.account.stakeAccount.fetch(
-// 				this.accounts.stake,
-// 			);
-// 			expect(accountAfter.duration.toNumber()).to.equal(
-// 				accountBefore.duration.toNumber() + 7,
-// 			);
-// 		});
-
-// 		it("can not extend a stake that is too long", async function () {
-// 			let msg = "";
-// 			await this.stakingProgram.methods
-// 				.extend(new anchor.BN(this.constants.stakeDurationMax))
-// 				.accounts(this.accounts)
-// 				.rpc()
-// 				.catch((e) => (msg = e.error.errorMessage));
-// 			expect(msg).to.equal(this.constants.errors.StakeDurationTooLong);
-// 		});
-
-// 		it("can extend a stake", async function () {
-// 			await this.stakingProgram.methods
-// 				.extend(new anchor.BN(this.constants.stakeDurationMin))
-// 				.accounts(this.accounts)
-// 				.rpc();
-
-// 			// check stake
-// 			const stake = await this.stakingProgram.account.stakeAccount.fetch(
-// 				this.accounts.stake,
-// 			);
-// 			expect(stake.duration.toNumber()).to.equal(
-// 				this.constants.stakeDurationMin * 2 + 7,
-// 			);
-// 			expect(stake.amount.toNumber()).to.equal(this.constants.stakeMinimum);
-// 			expect(stake.xefx.toNumber()).to.equal(
-// 				calculateXefx(
-// 					this.constants.stakeDurationMin * 2 + 7,
-// 					this.constants.stakeMinimum,
-// 				),
-// 				"xefx",
-// 			);
-// 		});
-// 	});
-
-// 	describe("unstake()", async () => {
-// 		it("can unstake from other account", async function () {
-// 			let msg = "";
-// 			await this.stakingProgram.methods
-// 				.unstake()
-// 				.accounts({ ...this.accounts })
-// 				.signers([this.users.user3.user])
-// 				.rpc()
-// 				.catch((e) => (msg = e.error.errorMessage));
-// 			expect(msg).to.equal(this.constants.errors.Unauthorized);
-// 		});
-
-// 		it("can unstake", async function () {
-// 			await this.stakingProgram.methods.unstake().accounts(this.accounts).rpc();
-// 			const data = await this.stakingProgram.account.stakeAccount.fetch(
-// 				this.accounts.stake,
-// 			);
-// 			expect(Date.now() / 1e3).to.be.closeTo(data.timeUnstake.toNumber(), 3);
-
-// 			// check stake
-// 			const stake = await this.stakingProgram.account.stakeAccount.fetch(
-// 				this.accounts.stake,
-// 			);
-// 			expect(stake.xefx.toNumber()).to.equal(0);
-// 		});
-// 	});
-
-// 	describe("topup(), restake()", async () => {
-// 		it("can not topup after unstake", async function () {
-// 			let msg = "";
-// 			await this.stakingProgram.methods
-// 				.topup(new anchor.BN(this.constants.stakeAmount))
-// 				.accounts(this.accounts)
-// 				.rpc()
-// 				.catch((e) => (msg = e.error.errorMessage));
-// 			expect(msg).to.equal(this.constants.errors.StakeAlreadyUnstaked);
-// 		});
-
-// 		it("can restake", async function () {
-// 			await this.stakingProgram.methods.restake().accounts(this.accounts).rpc();
-// 		});
-
-// 		it("can topup", async function () {
-// 			await this.stakingProgram.methods
-// 				.topup(new anchor.BN(this.constants.stakeAmount))
-// 				.accounts(this.accounts)
-// 				.rpc();
-// 			this.balances.user -= this.constants.stakeAmount;
-// 			this.balances.vaultStaking += this.constants.stakeAmount;
-
-// 			// check stake
-// 			const stake = await this.stakingProgram.account.stakeAccount.fetch(
-// 				this.accounts.stake,
-// 			);
-// 			expect(stake.duration.toNumber()).to.equal(
-// 				this.constants.stakeDurationMin * 2 + 7,
-// 				"duration",
-// 			);
-// 			expect(stake.amount.toNumber()).to.equal(
-// 				this.constants.stakeMinimum + this.constants.stakeAmount,
-// 				"amount",
-// 			);
-// 			expect(stake.xefx.toNumber()).to.equal(
-// 				calculateXefx(
-// 					this.constants.stakeDurationMin * 2 + 7,
-// 					this.constants.stakeMinimum + this.constants.stakeAmount,
-// 				),
-// 				"xefx",
-// 			);
-// 		});
-// 	});
-
-// 	describe("close()", async () => {
-// 		it("can not close before unstake", async function () {
-// 			let msg = "";
-// 			await this.stakingProgram.methods
-// 				.close()
-// 				.accounts(this.accounts)
-// 				.rpc()
-// 				.catch((e) => (msg = e.error.errorMessage));
-// 			expect(msg).to.equal(this.constants.errors.StakeNotUnstaked);
-// 		});
-
-// 		it("can unstake", async function () {
-// 			await this.stakingProgram.methods.unstake().accounts(this.accounts).rpc();
-// 		});
-
-// 		it("can not close after too soon unstake", async function () {
-// 			let msg = "";
-// 			await this.stakingProgram.methods
-// 				.close()
-// 				.accounts(this.accounts)
-// 				.rpc()
-// 				.catch((e) => (msg = e.error.errorMessage));
-// 			expect(msg).to.equal(this.constants.errors.StakeLocked);
-// 			await this.stakingProgram.methods.restake().accounts(this.accounts).rpc();
-// 		});
-
-// 		//
-// 		//  To run this test you will have to modify claim.rs and change stake.duration to 5 seconds:
-// 		//
-// 		//          constraint = stake.time_unstake + i64::try_from(5).unwrap() <
-// 		//                                                          ^
-
-// 		/*
-//     it('Claim after unstake duration', async function () {
-//       let balanceBefore = await getTokenBalance(this.provider, this.users.node2.ata);
-//       await sleep(5000);
-//       await this.stakingProgram.methods
-//         .claim()
-//         .accounts({
-//           ...this.accounts,
-//           user: this.users.node2.ata,
-//           stake: this.users.node2.stake,
-//           authority: this.users.node2.publicKey,
-//           vault: this.users.node2.vault,
-//         })
-//         .signers([this.users.node2.user])
-//         .rpc();
-//       let balanceAfter = await getTokenBalance(this.provider, this.users.node2.ata);
-//       expect(balanceAfter).to.equal(balanceBefore + this.constants.stakeAmount);
-//     });
-
-//      */
-// 	});
-
-// 	describe("withdraw()", async () => {
-// 		it("can withdraw after unstake", async function () {
-// 			const seconds = 10; // increase this number get a higher test reliability
-// 			const duration = this.constants.stakeDurationMin * 2 + 7;
-// 			const amount = (
-// 				await this.stakingProgram.account.stakeAccount.fetch(
-// 					this.accounts.stake,
-// 				)
-// 			).amount.toNumber();
-// 			const emission = amount / duration;
-// 			const expectedWithdraw = Math.floor(emission * seconds);
-
-// 			await this.stakingProgram.methods.unstake().accounts(this.accounts).rpc();
-// 			await sleep(seconds);
-// 			await this.stakingProgram.methods
-// 				.withdraw()
-// 				.accounts(this.accounts)
-// 				.rpc();
-
-// 			const balanceAfter = await getTokenBalance(
-// 				this.provider,
-// 				this.accounts.user,
-// 			);
-// 			expect(balanceAfter).to.be.greaterThan(this.userBalanceBefore);
-
-// 			const stake = await this.stakingProgram.account.stakeAccount.fetch(
-// 				this.accounts.stake,
-// 			);
-// 			expect(stake.amount.toNumber()).to.equal(this.balances.vaultStaking);
-// 			expect(stake.amount.toNumber()).to.equal(
-// 				this.constants.stakeMinimum + this.constants.stakeAmount,
-// 			);
-// 			expect(stake.duration.toNumber()).to.equal(duration, "duration");
-
-// 			const withDraw = balanceAfter - this.userBalanceBefore;
-// 			expect(withDraw).to.be.closeTo(
-// 				expectedWithdraw,
-// 				2 * emission,
-// 				"withdraw",
-// 			); // we allow 2 second error
-
-// 			this.balances.user += withDraw;
-// 			this.balances.vaultStaking -= withDraw;
-// 		});
-
-// 		it("can withdraw a second time", async function () {
-// 			const seconds = 10; // increase this number get a higher test reliability
-// 			const duration = this.constants.stakeDurationMin * 2 + 7;
-// 			const amount = (
-// 				await this.stakingProgram.account.stakeAccount.fetch(
-// 					this.accounts.stake,
-// 				)
-// 			).amount.toNumber();
-// 			const emission = amount / duration;
-// 			const expectedWithdraw = Math.floor(emission * seconds);
-
-// 			await sleep(seconds);
-// 			await this.stakingProgram.methods
-// 				.withdraw()
-// 				.accounts(this.accounts)
-// 				.rpc();
-
-// 			const balanceAfter = await getTokenBalance(
-// 				this.provider,
-// 				this.accounts.user,
-// 			);
-// 			expect(balanceAfter).to.be.greaterThan(this.userBalanceBefore);
-
-// 			const withDraw = balanceAfter - this.userBalanceBefore;
-// 			expect(withDraw).to.be.closeTo(
-// 				expectedWithdraw,
-// 				2 * emission,
-// 				"withdraw",
-// 			); // we allow 2 second error
-
-// 			this.balances.user += withDraw;
-// 			this.balances.vaultStaking -= withDraw;
-// 		});
-
-// 		it("can restake", async function () {
-// 			await this.stakingProgram.methods.restake().accounts(this.accounts).rpc();
-
-// 			const amountStake = (
-// 				await this.stakingProgram.account.stakeAccount.fetch(
-// 					this.accounts.stake,
-// 				)
-// 			).amount.toNumber();
-// 			const amountVault = await getTokenBalance(
-// 				this.provider,
-// 				this.accounts.vault,
-// 			);
-// 			expect(amountStake).to.equal(amountVault);
-// 		});
-// 	});
-
-// 	describe("slash(), update_authority()", async () => {
-// 		it("can slash", async function () {
-// 			const stakeBefore = await this.stakingProgram.account.stakeAccount.fetch(
-// 				this.users.nodes[2].stake,
-// 			);
-
-// 			await this.stakingProgram.methods
-// 				.slash(new anchor.BN(this.constants.slashAmount))
-// 				.accounts({
-// 					...this.accounts,
-// 					stake: this.users.nodes[2].stake,
-// 				})
-// 				.rpc();
-
-// 			this.balances.user += this.constants.slashAmount;
-// 			const stakeAfter = await this.stakingProgram.account.stakeAccount.fetch(
-// 				this.users.nodes[2].stake,
-// 			);
-// 			expect(stakeAfter.amount.toNumber()).to.equal(
-// 				stakeBefore.amount.toNumber() - this.constants.slashAmount,
-// 			);
-// 		});
-
-// 		it("can not slash unauthorized", async function () {
-// 			let msg = "";
-// 			await this.stakingProgram.methods
-// 				.slash(new anchor.BN(this.constants.slashAmount))
-// 				.accounts({ ...this.accounts, authority: this.users.node1.publicKey })
-// 				.signers([this.users.node1.user])
-// 				.rpc()
-// 				.catch((e) => (msg = e.error.errorMessage));
-// 			expect(msg).to.equal(this.constants.errors.Unauthorized);
-// 		});
-
-// 		it("can not slash unauthorized hack 2", async function () {
-// 			let msg = "";
-// 			await this.stakingProgram.methods
-// 				.slash(new anchor.BN(this.constants.slashAmount))
-// 				.accounts({ ...this.accounts, settings: this.accounts.stake })
-// 				.rpc()
-// 				.catch((e) => (msg = e.error.errorMessage));
-// 			expect(msg).to.equal(this.constants.errors.Solana8ByteConstraint);
-// 		});
-
-// 		it("can update slash authority", async function () {
-// 			await this.stakingProgram.methods
-// 				.updateSettings()
-// 				.accounts({
-// 					...this.accounts,
-// 					newAuthority: this.users.node1.publicKey,
-// 				})
-// 				.rpc();
-// 			const stats = await this.stakingProgram.account.settingsAccount.fetch(
-// 				this.accounts.settings,
-// 			);
-// 			expect(stats.authority.toString()).to.equal(
-// 				this.users.node1.publicKey.toString(),
-// 			);
-// 		});
-
-// 		it("can slash with node 1", async function () {
-// 			await this.stakingProgram.methods
-// 				.slash(new anchor.BN(this.constants.slashAmount))
-// 				.accounts({
-// 					...this.accounts,
-// 					stake: this.users.nodes[2].stake,
-// 					vault: this.users.nodes[2].vault,
-// 				})
-// 				.signers([this.users.node1.user])
-// 				.rpc();
-
-// 			this.balances.user += this.constants.slashAmount;
-// 		});
-
-// 		it("can update settings authority back", async function () {
-// 			await this.stakingProgram.methods
-// 				.updateSettings()
-// 				.accounts({
-// 					...this.accounts,
-// 					newAuthority: this.accounts.authority,
-// 				})
-// 				.signers([this.users.node1.user])
-// 				.rpc();
-// 			const stats = await this.stakingProgram.account.settingsAccount.fetch(
-// 				this.accounts.settings,
-// 			);
-// 			expect(stats.authority.toString()).to.equal(
-// 				this.accounts.authority.toString(),
-// 			);
-// 		});
-// 	});
-// }

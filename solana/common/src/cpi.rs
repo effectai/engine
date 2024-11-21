@@ -26,7 +26,7 @@ pub fn transfer_tokens<'info, 'a, 'b, 'c>(
     from: AccountInfo<'info>,
     to: AccountInfo<'info>,
     authority: AccountInfo<'info>,
-    signer_seeds: &'a [&'b [&'c [u8]]],
+    signer_seeds:  &'a [&'b [&'c [u8]]],
     amount: u64,
 ) -> Result<()> {
     anchor_spl::token::transfer(

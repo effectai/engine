@@ -5,7 +5,7 @@ use effect_common::cpi;
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
     #[account(mut)]
-    pub user: Account<'info, TokenAccount>,
+    pub staker_tokens: Account<'info, TokenAccount>,
     #[account(mut, constraint = vault.amount != 0 @ EffectError::VaultEmpty)]
     pub vault: Account<'info, TokenAccount>,
     #[account(
@@ -26,7 +26,7 @@ impl<'info> Withdraw<'info> {
             .stake
             .withdraw(self.vault.amount, Clock::get()?.unix_timestamp);
         if amount > 0 {
-            transfer_tokens_from_vault!(self, user, seeds!(self.stake, self.vault), amount)
+            transfer_tokens_from_vault!(self, staker_tokens, seeds!(self.stake, &[self.stake.vault_bump]), amount)
         } else {
             Ok(())
         }

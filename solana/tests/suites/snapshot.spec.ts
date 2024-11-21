@@ -1,14 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
 
-import { PublicKey } from "@solana/web3.js";
 import { keccak256, toBytes } from "viem";
 import { secp256k1 } from "@noble/curves/secp256k1";
 import { privateKeyToAccount } from "viem/accounts";
 
 import {
-	extractEosPublicKeyBytes,
-	deriveMetadataAndVaultFromPublicKey,
+	extractEosPublicKeyBytes
 } from "@effectai/utils";
 
 import { PrivateKey, Transaction, TransactionHeader } from "@wharfkit/antelope";
@@ -16,38 +14,37 @@ import { ABICache, Action, Session } from "@wharfkit/session";
 import { WalletPluginPrivateKey } from "@wharfkit/wallet-plugin-privatekey";
 
 import type { SolanaSnapshotMigration } from "../../target/types/solana_snapshot_migration.js";
-import { initializeVaultAccount } from "../../utils/anchor.js";
 
-import { expect, describe, it, inject } from "vitest";
-import { useAnchor, useTestContext } from "../helpers.js";
+import { expect, describe, it } from "vitest";
+import {
+	useAnchor,
+	useMigrationTestHelpers
+} from "../helpers.js";
+import { setup } from "../../utils/spl.js";
 
 describe("Migration Program", async () => {
-    const program = anchor.workspace
+	const program = anchor.workspace
 		.SolanaSnapshotMigration as Program<SolanaSnapshotMigration>;
 
 	const { provider, payer } = useAnchor();
-	const { mint, ata } = useTestContext();
+	const { createMigrationAccount } = useMigrationTestHelpers(program);
 
-    // local test data
+	// local test data
 	const originalMessage = `Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: ${payer.publicKey.toBase58()}`;
-	const publicKey1 = "0xA03E94548C26E85DBd81d93ca782A3449564C27f";
+	const ethPublicKey = "0xA03E94548C26E85DBd81d93ca782A3449564C27f";
+	const eosPublicKey =
+	"PUB_K1_7abGp9AVsTpt4TLSdCFKS2Tm49zCwg8nWLpJhAmEpppG9fjJsy";
 
 	describe("Initialization", () => {
-		it("correctly initializes an ethereum based vault", async () => {
-			await initializeVaultAccount({
-				foreignPubKey: toBytes(publicKey1),
+		it.concurrent("correctly initializes an ethereum based vault", async () => {
+			const { mint, ata } = await setup({ provider, payer });
+
+			const { metadata } = await createMigrationAccount({
 				mint,
 				payer,
 				payerTokens: ata,
-				amount: 5,
+				publicKey: toBytes(ethPublicKey),
 			});
-
-			const { metadata } = deriveMetadataAndVaultFromPublicKey(
-				payer.publicKey,
-				mint,
-				toBytes(publicKey1),
-				program.programId,
-			);
 
 			// // check if the metadata account was created
 			const metadataAccount =
@@ -56,22 +53,25 @@ describe("Migration Program", async () => {
 			expect(metadataAccount).to.not.be.null;
 		});
 
-		it("correctly initializes a EOS based vault", async () => {
-			const eosPublicKey =
-				"PUB_K1_7abGp9AVsTpt4TLSdCFKS2Tm49zCwg8nWLpJhAmEpppG9fjJsy";
+		it.concurrent("correctly initializes a EOS based vault", async () => {
+			const { mint, ata } = await setup({ provider, payer });
+			
 			const publicKey = extractEosPublicKeyBytes(eosPublicKey);
 
 			if (!publicKey) {
 				throw new Error("Invalid public key");
 			}
 
-			await initializeVaultAccount({
-				foreignPubKey: publicKey,
+			const { metadata } = await createMigrationAccount({
 				mint,
 				payer,
 				payerTokens: ata,
-				amount: 5,
+				publicKey,
 			});
+
+			const metadataAccount =
+				await provider.connection.getAccountInfo(metadata);
+			expect(metadataAccount).to.not.be.null;
 		});
 
 		it("correctly throws an error when the foreign public key is invalid", async () => {});
@@ -82,24 +82,26 @@ describe("Migration Program", async () => {
 	});
 
 	describe("Migration Contract: Signing & Claiming", () => {
-		it("correctly claims with an eos signature", async () => {
+		it.concurrent("correctly claims with an eos signature", async () => {
+			const { mint, ata } = await setup({ provider, payer });
+		
 			const eosPrivatekey = PrivateKey.from(
 				"5K5UuCj9PmMSFTyiWzTtPF4VmUftVqScM3QJd9HorrZGCt4LgLu",
 			);
 
 			const eosPublicKey = eosPrivatekey.toPublic();
 			const pk = extractEosPublicKeyBytes(eosPublicKey.toString());
-
+			
 			if (!pk) {
 				throw new Error("Invalid public key");
 			}
 
-			const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(
-				payer.publicKey,
+			const { metadata, vault } = await createMigrationAccount({
 				mint,
-				pk,
-				program.programId,
-			);
+				payer,
+				payerTokens: ata,
+				publicKey: pk,
+			});
 
 			const session = new Session({
 				permissionLevel: {
@@ -171,7 +173,15 @@ describe("Migration Program", async () => {
 				.rpc();
 		});
 
-		it("correctly signs with keccak256", async () => {
+		it.concurrent("correctly signs with keccak256", async () => {
+			const { mint, ata } = await setup({ provider, payer });
+			const { metadata, vault } = await createMigrationAccount({
+				mint,
+				payer,
+				payerTokens: ata,
+				publicKey: toBytes(ethPublicKey),
+			});
+			
 			const ethPrivateKey =
 				"d09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5";
 
@@ -187,13 +197,6 @@ describe("Migration Program", async () => {
 				Buffer.from([sig.recovery + 27]),
 			]);
 
-			const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(
-				payer.publicKey,
-				mint,
-				toBytes(publicKey1),
-				program.programId,
-			);
-
 			await program.methods
 				.claim(sigWithRecovery, Buffer.from(originalMessage))
 				.accounts({
@@ -206,7 +209,15 @@ describe("Migration Program", async () => {
 				.rpc();
 		});
 
-		it("correctly claims with eth_personal_sign", async () => {
+		it.concurrent("correctly claims with eth_personal_sign", async () => {
+			const { mint, ata } = await setup({ provider, payer });
+			const { metadata, vault } = await createMigrationAccount({
+				mint,
+				payer,
+				payerTokens: ata,
+				publicKey: toBytes(ethPublicKey),
+			});
+
 			const account = privateKeyToAccount(
 				"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
 			);
@@ -216,14 +227,6 @@ describe("Migration Program", async () => {
 			const signature = await account.signMessage({
 				message: originalMessage,
 			});
-
-			// const pk = secp256k1.getPublicKey(account.address.slice, true)
-			const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(
-				payer.publicKey,
-				mint,
-				toBytes(publicKey1),
-				program.programId,
-			);
 
 			await program.methods
 				.claim(Buffer.from(toBytes(signature)), Buffer.from(message))

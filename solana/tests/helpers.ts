@@ -1,6 +1,20 @@
-import { PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { expect, inject } from "vitest";
 import * as anchor from "@coral-xyz/anchor";
+
+import { type Idl, Program } from "@coral-xyz/anchor";
+import { BankrunProvider, startAnchor } from "anchor-bankrun";
+import {
+	createStakeAccountAndUnstake,
+	initializeVaultAccount,
+} from "../utils/anchor.js";
+import { setup } from "../utils/spl.js";
+import stakingIDLJson from "../target/idl/effect_staking.json";
+import { Clock } from "solana-bankrun";
+import { toBytes } from "viem";
+import { deriveMetadataAndVaultFromPublicKey } from "@effectai/utils";
+import { deriveStakingAccounts } from "@effectai/staking";
+import { SolanaSnapshotMigration } from "../target/types/solana_snapshot_migration.js";
 
 export const useTestContext = () => {
 	const mint = new PublicKey(inject("tokenMint"));
@@ -13,6 +27,40 @@ type AnchorErrorIdl = {
 	code: number;
 	name: string;
 	msg: string;
+};
+
+export const useMigrationTestHelpers = (program: Program<SolanaSnapshotMigration>) => {
+	const createMigrationAccount = async ({
+		publicKey,
+		mint,
+		payer,
+		payerTokens,
+	}: {
+		publicKey: Uint8Array;
+		mint: PublicKey;
+		payer: Keypair;
+		payerTokens: PublicKey;
+	}) => {
+
+		await initializeVaultAccount({
+			foreignPubKey: publicKey,
+			mint,
+			payer,
+			payerTokens,
+			amount: 5,
+		});
+
+		const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(
+			payer.publicKey,
+			mint,
+			publicKey,
+			program.programId,
+		);
+
+		return { metadata, vault }
+	};
+
+	return { createMigrationAccount };
 };
 
 export const useAnchor = () => {
@@ -28,7 +76,9 @@ export const useAnchor = () => {
 			await action();
 		} catch (e: unknown) {
 			if (e instanceof anchor.AnchorError) {
-				expect(e.error.errorCode.code.toUpperCase()).toBe(expectedAnchorError.name.toUpperCase());
+				expect(e.error.errorCode.code.toUpperCase()).toBe(
+					expectedAnchorError.name.toUpperCase(),
+				);
 				expect(e.error.errorCode.number).toBe(expectedAnchorError.code);
 				expect(e.error.errorMessage).toBe(expectedAnchorError.msg);
 				return;
@@ -39,4 +89,65 @@ export const useAnchor = () => {
 	};
 
 	return { payer, provider, wallet, expectAnchorError };
+};
+
+export const useBankRunProvider = async <T extends Idl>(idl: T) => {
+	const context = await startAnchor("./", [], []);
+	const provider = new BankrunProvider(context);
+	const program = new Program(idl, provider) as Program<T>;
+
+	const useTimeTravel = async (days: number) => {
+		const currentClock = await context.banksClient.getClock();
+		context.setClock(
+			new Clock(
+				currentClock.slot,
+				currentClock.epochStartTimestamp,
+				currentClock.epoch,
+				currentClock.leaderScheduleEpoch,
+				BigInt(Math.floor(new Date().getTime() / 1000 + days * 24 * 60 * 60)),
+			),
+		);
+	};
+
+	const createStakeAndImmediatelyUnstake = async ({
+		amount,
+		unstakeDuration,
+	}: {
+		amount: number;
+		unstakeDuration: number;
+	}) => {
+		const { mint, ata } = await setup({
+			payer: provider.wallet.payer,
+			provider: provider,
+			amount,
+		});
+
+		const { stakeAccount, vaultAccount } = await createStakeAccountAndUnstake({
+			amount,
+			unstakeDuration,
+			mint,
+			ata,
+			payer: provider.wallet.payer,
+			provider: provider,
+			program,
+		});
+
+		return {
+			stakeAccount,
+			vaultAccount,
+			context,
+			ata,
+			mint,
+			program,
+			provider,
+		};
+	};
+
+	return {
+		provider,
+		program,
+		context,
+		createStakeAndImmediatelyUnstake,
+		useTimeTravel,
+	};
 };

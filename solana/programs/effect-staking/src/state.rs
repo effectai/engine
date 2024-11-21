@@ -2,8 +2,9 @@ use anchor_lang::prelude::*;
 
 
 /***
- * Constants
+ * Staking Constants
  */
+
 #[constant]
 pub const STAKE_MINIMUM: u64 = 10;
 #[constant]
@@ -85,6 +86,7 @@ impl StakeAccount {
 
     pub fn withdraw(&self, balance: u64, now: i64) -> u64 {
         let elapsed: u64 = u64::try_from(now - self.time_unstake).unwrap();
+        
         if elapsed >= self.duration {
             balance
         } else {
@@ -98,10 +100,10 @@ impl StakeAccount {
         self.update_xefx();
     }
 
-    // pub fn slash(&mut self, amount: u64) {
-    //     self.amount -= amount;
-    //     self.update_xefx();
-    // }
+    pub fn slash(&mut self, amount: u64) {
+        self.amount -= amount;
+        self.update_xefx();
+    }
 
     pub fn extend(&mut self, duration: u64) -> Result<()> {
         self.duration += duration;

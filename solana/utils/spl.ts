@@ -15,9 +15,10 @@ import {
 } from "@solana/spl-token";
 import type { Provider } from "@coral-xyz/anchor";
 
-export const setup = async ({payer, provider} : {
+export const setup = async ({payer, provider, amount} : {
     payer: Keypair;
     provider: Provider;
+	amount?: number;
 }) => {
     const connection = new Connection('http://localhost:8899');
 	// create spl token mint
@@ -45,7 +46,7 @@ export const setup = async ({payer, provider} : {
         destination: ata,
         provider,
         mintAuthority: payer,
-        amount: 10000000,
+        amount: amount || 1000000,
     });
 
 	return {
