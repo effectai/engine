@@ -35,6 +35,7 @@ impl<'info> Claim<'info> {
         // determine amount to claim
         let amount: u128 = self.reward.get_amount(self.reflection.rate);
         if amount == 0 {
+            msg!("No rewards to claim");
             return Ok(());
         }
 

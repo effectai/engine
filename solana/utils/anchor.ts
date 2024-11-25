@@ -1,35 +1,66 @@
 import type { Program } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
 import type { SolanaSnapshotMigration } from "../target/types/solana_snapshot_migration.js";
-import type { Keypair, PublicKey } from "@solana/web3.js";
+import { type Keypair, PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import type { EffectStaking } from "../target/types/effect_staking.js";
 import { useConstantsIDL } from "./idl.js";
 import { stakingIdl } from "../constants/staking-idl.js";
-import { deriveStakingAccounts } from "@effectai/staking";
 import { expect } from "vitest";
+
+export const useDeriveStakeAccounts = ({
+	mint,
+	authority,
+	programId
+}: {
+	mint: PublicKey;
+	authority: PublicKey;
+	programId: PublicKey;
+}) => {
+	const [stakeAccount] = PublicKey.findProgramAddressSync(
+		[Buffer.from("stake"), mint.toBuffer(), authority.toBuffer()],
+		programId,
+	);
+
+	const [vaultAccount] = PublicKey.findProgramAddressSync(
+		[stakeAccount.toBuffer()],
+		programId,
+	);
+
+	return {
+		stakeAccount,
+		vaultAccount
+	};
+};
 
 export const initializeVaultAccount = async ({
 	foreignPubKey,
 	mint,
+	metadata,
 	amount,
 	payer,
 	payerTokens,
+	stakeStartTime
 }: {
 	foreignPubKey: Uint8Array;
 	mint: PublicKey;
 	amount: number;
+	metadata: PublicKey;
 	payerTokens: PublicKey;
 	payer: Keypair;
+	stakeStartTime?: number;
 }) => {
 	const program = anchor.workspace
 		.SolanaSnapshotMigration as Program<SolanaSnapshotMigration>;
 
+	console.log(foreignPubKey);
+
 	await program.methods
-		.create(Buffer.from(foreignPubKey), new BN(amount))
+		.create(Buffer.from(foreignPubKey), new BN(stakeStartTime || 0), new BN(amount))
 		.accounts({
 			payer: payer.publicKey,
 			payerTokens,
+			metadata,
 			mint,
 		})
 		.signers([payer])
@@ -61,9 +92,9 @@ export const createStakeAccountAndUnstake = async ({
 		})
 		.rpc();
 
-	const { stakeAccount, vaultAccount } = await deriveStakingAccounts({
+	const { stakeAccount, vaultAccount } = useDeriveStakeAccounts({
 		mint,
-		stakerAddress: payer.publicKey,
+		authority: payer.publicKey,
 		programId: program.programId,
 	});
 

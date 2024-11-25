@@ -21,15 +21,24 @@ import { PublicKey } from "@solana/web3.js";
 // 	return { metadata, vault };
 // };
 
-export const deriveMetadataAndVaultFromPublicKey = (
+export const deriveMetadataAndVaultFromPublicKey = ({
+	stakeStartTime,
+	payer,
+	mint,
+	foreignPubKey,
+	programId,
+}: { 
+	stakeStartTime: number,
 	payer: PublicKey,
 	mint: PublicKey,
 	foreignPubKey: Uint8Array,
 	programId: PublicKey,
-) => {
+}) => {
+
+	const preSeed = stakeStartTime > 0 ? 'stake' : 'token';
+
 	const [metadata] = PublicKey.findProgramAddressSync(
-		// seeds: [payer, mint, foreignPubKey],
-		[payer.toBuffer(), mint.toBuffer(), foreignPubKey],
+		[Buffer.from(preSeed), payer.toBuffer(), mint.toBuffer(), foreignPubKey],
 		programId,
 	);
 

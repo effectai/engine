@@ -3,11 +3,16 @@ use anchor_lang::declare_id;
 /***
  * IDs
  */
-
 pub use system_program::ID as SYSTEM_PROGRAM;
 mod system_program {
     use super::*;
     declare_id!("11111111111111111111111111111111");
+}
+
+pub use migration_program::ID as MIGRATION_PROGRAM;
+mod migration_program {
+    use super::*;
+    declare_id!("9hJuxBiFY82YiciAa6wERpHX8s9n1uvzhwaUSFoBJnZD");
 }
 
 pub use staking_program::ID as STAKING_PROGRAM;
@@ -31,7 +36,7 @@ mod authority {
     #[cfg(feature = "mainnet")]
     declare_id!("EffectrMxfrZbyCx5CotBVrzxiPcrnhj6ickpX9vRkB");
     #[cfg(not(feature = "mainnet"))]
-    declare_id!("XXXxddiNnmoD2h2LbQYaL76Swi21MaQbtBbRynAdQL8");
+    declare_id!("devr1BGQndEW5k5zfvG5FsLyZv1Ap73vNgAHcQ9sUVP");
 }
 
 pub use token_account::ID as TOKEN_ACCOUNT;

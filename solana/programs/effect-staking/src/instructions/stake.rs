@@ -27,7 +27,6 @@ pub struct Stake<'info> {
         bump,
     )]
     pub vault: Account<'info, TokenAccount>,
-
     #[account(mut)]
     pub authority: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -60,6 +59,7 @@ impl<'info> Stake<'info> {
             duration.try_into().unwrap(),
             self.vault.key(),
             vault_bump,
+            Clock::get().unwrap().unix_timestamp
         );
 
         // transfer tokens to the vault

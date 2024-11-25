@@ -1,4 +1,4 @@
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { type Keypair, PublicKey } from "@solana/web3.js";
 import { expect, inject } from "vitest";
 import * as anchor from "@coral-xyz/anchor";
 
@@ -13,8 +13,8 @@ import stakingIDLJson from "../target/idl/effect_staking.json";
 import { Clock } from "solana-bankrun";
 import { toBytes } from "viem";
 import { deriveMetadataAndVaultFromPublicKey } from "@effectai/utils";
-import { deriveStakingAccounts } from "@effectai/staking";
-import { SolanaSnapshotMigration } from "../target/types/solana_snapshot_migration.js";
+import type { SolanaSnapshotMigration } from "../target/types/solana_snapshot_migration.js";
+
 
 export const useTestContext = () => {
 	const mint = new PublicKey(inject("tokenMint"));
@@ -35,27 +35,34 @@ export const useMigrationTestHelpers = (program: Program<SolanaSnapshotMigration
 		mint,
 		payer,
 		payerTokens,
+		stakeStartTime,
+		amount,
 	}: {
 		publicKey: Uint8Array;
 		mint: PublicKey;
 		payer: Keypair;
 		payerTokens: PublicKey;
+		stakeStartTime?: number;
+		amount?: number;
 	}) => {
+
+		const { metadata, vault } = deriveMetadataAndVaultFromPublicKey({
+			payer: payer.publicKey,
+			mint,
+			foreignPubKey: publicKey,
+			programId: program.programId,
+			stakeStartTime: stakeStartTime || 0
+		});
 
 		await initializeVaultAccount({
 			foreignPubKey: publicKey,
 			mint,
 			payer,
+			metadata,
 			payerTokens,
-			amount: 5,
+			amount: amount || 5000000,
+			stakeStartTime
 		});
-
-		const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(
-			payer.publicKey,
-			mint,
-			publicKey,
-			program.programId,
-		);
 
 		return { metadata, vault }
 	};

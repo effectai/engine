@@ -8,3 +8,7 @@ packages:
   - 'solana'
   # exclude packages that are inside test directories
   - '!**/test/**'
+
+hoist-pattern:
+  - '@vue/devtools-api'
+

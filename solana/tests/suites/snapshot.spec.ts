@@ -21,10 +21,14 @@ import {
 	useMigrationTestHelpers
 } from "../helpers.js";
 import { setup } from "../../utils/spl.js";
+import { useDeriveStakeAccounts } from "../../utils/anchor.js";
+import { EffectStaking } from "../../target/types/effect_staking.js";
 
 describe("Migration Program", async () => {
 	const program = anchor.workspace
 		.SolanaSnapshotMigration as Program<SolanaSnapshotMigration>;
+
+	const stakeProgram = anchor.workspace.EffectStaking as Program<EffectStaking>;
 
 	const { provider, payer } = useAnchor();
 	const { createMigrationAccount } = useMigrationTestHelpers(program);
@@ -37,7 +41,7 @@ describe("Migration Program", async () => {
 
 	describe("Initialization", () => {
 		it.concurrent("correctly initializes an ethereum based vault", async () => {
-			const { mint, ata } = await setup({ provider, payer });
+			const { mint, ata } = await setup({ provider, payer});
 
 			const { metadata } = await createMigrationAccount({
 				mint,
@@ -158,6 +162,13 @@ describe("Migration Program", async () => {
 
 			const signature = await session.signTransaction(tx);
 
+
+			const {stakeAccount, vaultAccount: stakeVaultAccount} = useDeriveStakeAccounts({
+				mint,
+				authority: payer.publicKey,
+				programId: stakeProgram.programId
+			})
+
 			await program.methods
 				.claim(
 					Buffer.from(signature[0].data.array),
@@ -166,8 +177,11 @@ describe("Migration Program", async () => {
 				.accounts({
 					metadataAccount: metadata,
 					vaultAccount: vault,
-					recipientTokens: ata,
+					payerAta: ata,
 					payer: payer.publicKey,
+					stakeAccount,
+					stakeVaultAccount,
+					mint,
 				})
 				.signers([payer])
 				.rpc();
@@ -197,11 +211,20 @@ describe("Migration Program", async () => {
 				Buffer.from([sig.recovery + 27]),
 			]);
 
+			const {stakeAccount, vaultAccount: stakeVaultAccount} = useDeriveStakeAccounts({
+				mint,
+				authority: payer.publicKey,
+				programId: stakeProgram.programId
+			})
+
 			await program.methods
 				.claim(sigWithRecovery, Buffer.from(originalMessage))
 				.accounts({
 					metadataAccount: metadata,
-					recipientTokens: ata,
+					payerAta: ata,
+					stakeAccount,
+					stakeVaultAccount,
+					mint,
 					payer: payer.publicKey,
 					vaultAccount: vault,
 				})
@@ -228,16 +251,83 @@ describe("Migration Program", async () => {
 				message: originalMessage,
 			});
 
+			const {stakeAccount, vaultAccount: stakeVaultAccount} = useDeriveStakeAccounts({
+				mint,
+				authority: payer.publicKey,
+				programId: stakeProgram.programId
+			})
+
 			await program.methods
 				.claim(Buffer.from(toBytes(signature)), Buffer.from(message))
 				.accounts({
-					recipientTokens: ata,
+					payerAta: ata,
+					metadataAccount: metadata,
+					vaultAccount: vault,
+					stakeVaultAccount,
+					mint,
+					stakeAccount,
+					payer: payer.publicKey,
+				})
+				.rpc();
+		});
+
+		it.concurrent("can claim a stake with a valid signature", async () => {
+			const { mint, ata } = await setup({ provider, payer });
+
+			// get a date from 1 year ago
+			const stakeStartTime = new Date().getTime() - 31556952000;
+			
+			const account = privateKeyToAccount(
+				"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
+			);
+
+			const prefix = `\x19Ethereum Signed Message:\n${originalMessage.length}`;
+			const message = prefix + originalMessage;
+
+			const signature = await account.signMessage({
+				message: originalMessage,
+			});
+
+			const { metadata, vault } = await createMigrationAccount({
+				mint,
+				payer,
+				payerTokens: ata,
+				publicKey: toBytes(ethPublicKey),
+				stakeStartTime,
+			});
+
+			const {stakeAccount, vaultAccount} = useDeriveStakeAccounts({
+				mint,
+				authority: payer.publicKey,
+				programId: stakeProgram.programId
+			})
+
+			await program.methods
+				.claim(Buffer.from(toBytes(signature)), Buffer.from(message))
+				.accounts({
 					metadataAccount: metadata,
 					vaultAccount: vault,
 					payer: payer.publicKey,
+					payerAta: ata,
+					stakeAccount,
+					stakeVaultAccount: vaultAccount,
+					mint,
 				})
-				.signers([payer])
 				.rpc();
+
+			// check if the stake account was created
+			const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(stakeAccount)
+			expect(stakeAccountData).to.not.be.null;
+			// check if the stake account has the correct start time (stake age)
+			expect(stakeAccountData.timeStake.toNumber()).to.equal(stakeStartTime);
+
+			// check if the stake vault account was created and has a balance
+			const stakeVaultBalance = await provider.connection.getTokenAccountBalance(vaultAccount);
+			expect(stakeVaultBalance.value.uiAmount).to.be.greaterThan(0);
+
+			// check if claim vault is created and emptied out
+			const claimVaultBalance = await provider.connection.getTokenAccountBalance(vault);
+			expect(claimVaultBalance.value.uiAmount).to.equal(0);
 		});
 
 		it("correctly throws an error when the message is incorrect", async () => {});

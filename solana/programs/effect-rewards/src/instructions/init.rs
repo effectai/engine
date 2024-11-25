@@ -3,8 +3,9 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 
 #[derive(Accounts)]
 pub struct Init<'info> {
-    //TODO:: #[account(address = id::NOS_TOKEN @ EffectError::InvalidMint)]
+    #[account(mut)]
     pub mint: Account<'info, Mint>,
+
     #[account(
         init,
         payer = authority,
@@ -18,14 +19,17 @@ pub struct Init<'info> {
         payer = authority,
         token::mint = mint,
         token::authority = vault,
-        seeds = [ mint.key().as_ref() ],
+        seeds = [ "vault".as_ref() ],
         bump,
     )]
     pub vault: Account<'info, TokenAccount>,
-    #[account(mut)]
+
+    #[account(mut, address = id::AUTHORITY)]
     pub authority: Signer<'info>,
+    
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+
     pub rent: Sysvar<'info, Rent>,
 }
 

@@ -21,6 +21,7 @@
     "@wharfkit/antelope": "^1.0.13"
   },
   "devDependencies": {
+    "typescript": "5.7.2",
     "rollup": "^4.27.3"
   }
 }

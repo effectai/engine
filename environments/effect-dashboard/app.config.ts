@@ -7,7 +7,7 @@ export default defineAppConfig({
           size: 'md',
         },
         padding: {
-          xs: 'py-1 px-2',
+          xs: 'py-2 px-2',
           sm: 'py-2 px-3',
           md: 'py-2 px-4',
           lg: 'py-4 px-5',

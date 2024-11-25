@@ -1,71 +1,109 @@
 <template>
-	<div class="min-h-screen bg-gray-900 flex items-center justify-center p-6">
+	<div class="min-h-screen bg-gray-900 flex items-center justify-center p-6 text-gray-400">
 		<div class="w-full max-w-md bg-gray-800 rounded-lg shadow-xl p-8">
 			<h2 class="text-3xl font-bold text-white mb-6 font-title">Stake Tokens</h2>
 			<form @submit.prevent="handleSubmit" class="space-y-6">
-				<div>
-					<label for="stakeAmount" class="block text-sm font-medium text-gray-400 mb-2">
-						Amount to Stake
-					</label>
+				<div class="">
 					<div class="relative">
-						<div class="relative">
-							<input id="stakeAmount" v-model="stakeAmount" type="text" inputmode="decimal"
-								placeholder="0.00"
-								class="w-full px-4 py-3 bg-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
-								:class="{ 'border-red-500': error }" />
-							<button type="button" @click="setMaxAmount"
-								class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-highlight text-black px-3 py-1 rounded-md text-sm font-mono hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-700">
-								MAX
-							</button>
-						</div>
-						<div>
-							<label for="stakeAmount" class="block text-sm font-medium text-gray-400 mb-2 mt-5">
-								Duration to stake
+						<UCard class="mb-8 bg-gray-900 ">
+							<label for="stakeAmount" class="block text-md font-medium text-gray-400 mb-2">
+								Add to Stake
 							</label>
+							<div class="relative ">
+								<input id="stakeAmount" v-model.number="stakeAmount" type="text" inputmode="decimal"
+									placeholder="0.00"
+									class="w-full px-4 py-3 bg-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
+									:class="{ 'border-red-500': error }" />
 
-							<input id="unstakeDays" v-model="unstakeDays" type="number" inputmode="decimal"
-								placeholder="14"
-								class="w-full px-4 py-3 bg-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
+								<div
+									class="flex absolute items-center gap-3 right-2 top-1/2 transform -translate-y-1/2">
+									<span class="text-sm text-gray-400" v-if="availableBalance">
+										in Wallet: <span class="text-white">{{
+											formatNumber(availableBalance.value) }}</span>
+									</span>
+									<button type="button" @click="setMaxAmount"
+										class=" bg-highlight text-black px-3 py-1 rounded-md text-sm font-mono hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-700">
+										MAX
+									</button>
+								</div>
+							</div>
+							<span class="text-sm mt-1 block">Current stake: {{ amountToBalance(currentStakeAmount || new
+								BN(0)) }}</span>
+						</UCard>
+						<div class="">
+							<label>Unstake duration: {{ unstakeDays }} days</label>
+							<URange id="unstakeDays" v-model="unstakeDays" :min="14" :max="365" placeholder="14"
 								:class="{ 'border-red-500': error }" />
+
+							<div class="mt-5 flex text-sm gap-x-5">
+								<span>Popular durations:</span>
+								<div class="flex gap-x-5">
+									<UButton color="white" size="xs" @click="unstakeDays = 30" class="">
+										30 days
+									</UButton>
+									<UButton color="white" size="xs" @click="unstakeDays = 90" class="">
+										90 days
+									</UButton>
+									<UButton color="white" size="xs" @click="unstakeDays = 365" class="">
+										365 days
+									</UButton>
+								</div>
+							</div>
 
 						</div>
 					</div>
 					<p v-if="error" class="mt-2 text-sm text-red-400">{{ error }}</p>
 				</div>
-				<div>
-					<p class="text-sm text-gray-400">
-						Available Balance: <span class="text-white">{{ formatNumber(availableBalance.value) }}</span>
-					</p>
-				</div>
-
-				<UButton @click="handleSubmit" variant="outline" class="text-white" color="white"
+				<UButton @click="handleSubmit" variant="outline"
+					class="text-white w-full text-center flex-grow justify-center" color="white"
 					:disabled="!isValid || isSubmitting">
-					{{ isSubmitting ? 'Staking...' : 'Stake Tokens' }}
+					{{ isSubmitting ? 'Staking...' : 'Confirm' }}
 				</UButton>
 			</form>
 		</div>
 	</div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { BN } from "@coral-xyz/anchor";
 import { ref, computed } from "vue";
+import { watchOnce } from "@vueuse/core";
 
 const { useGetEfxBalanceQuery } = useSolanaWallet();
 const { data: availableBalance } = useGetEfxBalanceQuery();
 
-const { useStake } = useStakingProgram();
-const { mutateAsync: stake } = useStake();
+const { useStake, useTopupOrExtendStake, useGetStakeAccount } =
+	useStakingProgram();
+const {
+	data: stakeAccount,
+	amount: currentStakeAmount,
+	unstakeDays: currentStakeUnstakeDays,
+	error: stakeError,
+} = useGetStakeAccount();
+const stakeAccountExists = computed(() => !!stakeAccount.value);
 
-const handleStake = () => {
-}
+const stakeAmount: Ref<number> = ref(0);
 
-const stakeAmount = ref("");
-const unstakeDays = ref(0);
+type Maybe<T> = T | null | undefined;
+const unstakeDays: Ref<Maybe<number>> = ref(null);
+
+watchOnce([stakeError, stakeAccount], () => {
+	if (stakeError.value?.message.startsWith("Account does not exist")) {
+		unstakeDays.value = 14;
+	}
+
+	if (stakeAccount.value) {
+		unstakeDays.value = currentStakeUnstakeDays.value;
+	}
+});
+
 const error = ref("");
 const isSubmitting = ref(false);
-
 const isValid = computed(() => {
-	const amount = Number.parseFloat(stakeAmount.value);
+	if (!stakeAmount.value || !availableBalance.value || !unstakeDays.value) {
+		return false;
+	}
+	const amount = stakeAmount.value;
 	return amount > 0 && amount <= availableBalance.value.value;
 });
 
@@ -81,8 +119,11 @@ const formatNumber = (num) => {
 	}).format(num);
 };
 
+const { mutateAsync: stake } = useStake();
+const { mutateAsync: topUpOrExtend } = useTopupOrExtendStake();
+
 const handleSubmit = async () => {
-	if (!isValid.value) {
+	if (!isValid.value || !unstakeDays.value) {
 		error.value = "Invalid stake amount";
 		return;
 	}
@@ -91,9 +132,20 @@ const handleSubmit = async () => {
 	error.value = "";
 
 	try {
-		const txId = await stake({ amount: stakeAmount.value, unstakeDays: 0 });
+		const txId = stakeAccountExists.value && currentStakeUnstakeDays.value
+			? await topUpOrExtend({
+				amount: Number(stakeAmount.value),
+				unstakeDaysDelta: unstakeDays.value - currentStakeUnstakeDays.value,
+			})
+			: await stake({
+				amount: Number(stakeAmount.value),
+				unstakeDays: unstakeDays.value,
+			});
+			
+		console.log('Transaction ID:', txId);
+
 	} catch (err) {
-		console.log(err)
+		console.error(err);
 		error.value = "Failed to stake tokens. Please try again.";
 	} finally {
 		isSubmitting.value = false;

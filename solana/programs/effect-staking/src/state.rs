@@ -1,12 +1,9 @@
 use anchor_lang::prelude::*;
-
-
 /***
  * Staking Constants
  */
-
 #[constant]
-pub const STAKE_MINIMUM: u64 = 10;
+pub const STAKE_MINIMUM: u64 = 0;
 #[constant]
 pub const SECONDS_PER_DAY: u128 = 24 * 60 * 60;
 #[constant]
@@ -24,12 +21,12 @@ pub const XEFX_DIV: u128 = 4 * DURATION_MAX / 12; // 0.25 growth per month
 
 /// The `SettingsAccount` struct holds the information about the
 /// slashing authority and token account.
+
 #[account]
 pub struct SettingsAccount {
     pub authority: Pubkey,
     pub token_account: Pubkey,
 }
-
 
 impl SettingsAccount {
     pub const SIZE: usize = 8 + std::mem::size_of::<SettingsAccount>();
@@ -48,6 +45,7 @@ pub struct StakeAccount {
     pub authority: Pubkey,
     pub duration: u64,
     pub time_unstake: i64,
+    pub time_stake: i64,
     pub vault: Pubkey,
     pub vault_bump: u8,
     pub xefx: u128,
@@ -61,12 +59,17 @@ impl StakeAccount {
         duration: u64,
         vault: Pubkey,
         vault_bump: u8,
+        time_stake: i64,
     ) {
         self.amount = amount;
         self.authority = authority;
         self.duration = duration;
         self.time_unstake = 0;
+
+        // time stake is set to the current block timestamp
+        self.time_stake = time_stake;
         self.vault = vault;
+        
         self.vault_bump = vault_bump;
         self.update_xefx();
     }
@@ -95,7 +98,27 @@ impl StakeAccount {
         }
     }
 
+    fn dilute_stake_time(
+        current_time: i64,  
+        current_amount: u64, 
+        new_time: i64,       
+        new_amount: u64,    
+    ) -> i64 {
+        let total_amount = current_amount + new_amount;
+        let weighted_time = (current_time * current_amount as i64 + new_time * new_amount as i64) / total_amount as i64;
+        weighted_time
+    }
+
     pub fn topup(&mut self, amount: u64) {
+        self.time_stake = StakeAccount::dilute_stake_time(
+            self.time_stake,
+            self.amount,
+            Clock::get().unwrap().unix_timestamp,
+            amount,
+        );
+
+        msg!("Diluted stake time: {}", self.time_stake);
+        
         self.amount += amount;
         self.update_xefx();
     }

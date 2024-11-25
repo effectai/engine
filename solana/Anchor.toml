@@ -22,4 +22,5 @@ members = [
 "programs/solana-snapshot-migration", "programs/effect-staking", "programs/effect-rewards"]
 
 [scripts]
-test = "npx tsx scripts/generate-ts-idl.ts && pnpm vitest run"
+test = "npx tsx scripts/export-IDL.ts && pnpm vitest run"
+deploy_local = "deploy --program-name effect-staking --provider.cluster localnet"

@@ -12,6 +12,11 @@ export default defineNuxtConfig({
   },
   devtools: { enabled: false },
   vite: {
+    resolve: {
+      alias: {
+        // 'eventemitter3': 'eventemitter3/browser',
+      }
+    },
     esbuild: {
       tsconfigRaw: {
         compilerOptions: {
@@ -24,7 +29,7 @@ export default defineNuxtConfig({
       target: "esnext",
     },
     optimizeDeps: {
-      include: ["@project-serum/anchor", "@solana/web3.js", "buffer"],
+      include: ["@project-serum/anchor", "@solana/web3.js", "buffer", '@wagmi/vue', 'eventemitter3'],
       esbuildOptions: {
         target: 'esnext'
       },

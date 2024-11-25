@@ -27,6 +27,20 @@ macro_rules! transfer_tokens_to_vault {
 }
 
 #[macro_export]
+macro_rules! transfer_tokens_from_claim_vault_to_vault {
+    ($accounts: expr, $amount: expr) => {
+        cpi::transfer_tokens(
+            $accounts.token_program.to_account_info(),
+            $accounts.staker_tokens.to_account_info(),
+            $accounts.vault.to_account_info(),
+            $accounts.claim_vault.to_account_info(),
+            &[],
+            $amount,
+        )
+    };
+}
+
+#[macro_export]
 macro_rules! transfer_tokens_from_vault {
     ($accounts: expr, $to: ident, $seeds: expr, $amount: expr) => {
         cpi::transfer_tokens(

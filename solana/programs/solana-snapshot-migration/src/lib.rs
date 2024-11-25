@@ -16,7 +16,7 @@ pub mod solana_snapshot_migration {
         claim::unlock_vault(ctx, sig, message)
     }
 
-    pub fn create(ctx: Context<Create>, foreign_public_key: Vec<u8>, amount: u64) -> Result<()> {
-        create::handler(ctx, foreign_public_key, amount)
+    pub fn create(ctx: Context<Create>, foreign_public_key: Vec<u8>, stake_start_time: i64, amount: u64) -> Result<()> {
+        create::handler(ctx, foreign_public_key, stake_start_time, amount)
     }
 }

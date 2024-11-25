@@ -1,35 +1,228 @@
-import { useAnchorWallet, useWallet } from "solana-wallets-vue";
+import { useWallet } from "solana-wallets-vue";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program, Idl } from "@coral-xyz/anchor";
-import programIDL from "../../../solana/target/idl/effect_staking.json";
-import type { EffectStaking } from "../../../solana/target/types/effect_staking";
-import { useMutation } from "@tanstack/vue-query";
-import {
-	createStakeTransaction,
-	createStakeClient,
-	createStakingConfig,
-} from "@effectai/staking";
-import { PublicKey } from "@solana/web3.js";
+import stakeIdl from "../../../solana/target/idl/effect_staking.json";
+import rewardIdl from "../../../solana/target/idl/effect_rewards.json";
+import { useMutation, useQuery } from "@tanstack/vue-query";
 import { useAnchorProvider } from "./useAnchorProvider";
+import {
+	PublicKey,
+	Transaction,
+	TransactionInstruction,
+} from "@solana/web3.js";
+import type { EffectStaking } from "../../../solana/target/types/effect_staking";
+import type { EffectRewards } from "../../../solana/target/types/effect_rewards";
+import {
+	createAssociatedTokenAccountIdempotentInstructionWithDerivation,
+	getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
+
+const SECONDS_PER_DAY = 86400;
 
 export function useStakingProgram() {
 	const appConfig = useRuntimeConfig();
 	const { connection } = useGlobalState();
 	const { publicKey, sendTransaction } = useWallet();
-    
-	const stakeConfig = createStakingConfig(
-		connection,
-		new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT),
-	);
+	const { provider } = useAnchorProvider();
+	const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
 
-    const { provider } = useAnchorProvider()
-
-	const program = new anchor.Program(
-		programIDL as Idl,
+	const stakeProgram = new anchor.Program(
+		stakeIdl as Idl,
 		provider,
 	) as unknown as Program<EffectStaking>;
 
-	const stakeClient = createStakeClient(stakeConfig, program);
+	const rewardsProgram = new anchor.Program(
+		rewardIdl as Idl,
+		provider,
+	) as unknown as Program<EffectRewards>;
+
+	const useDeriveStakeAccounts = () => {
+		if (!publicKey.value) {
+			throw new Error("Could not get public key");
+		}
+
+		const [reflectionAccount] = PublicKey.findProgramAddressSync(
+			[Buffer.from("reflection")],
+			rewardsProgram.programId,
+		);
+
+		const [stakeAccount] = PublicKey.findProgramAddressSync(
+			[Buffer.from("stake"), mint.toBuffer(), publicKey.value.toBuffer()],
+			stakeProgram.programId,
+		);
+
+		const [rewardAccount] = PublicKey.findProgramAddressSync(
+			[Buffer.from("rewards"), publicKey.value.toBuffer()],
+			rewardsProgram.programId,
+		);
+
+		return {
+			stakeAccount,
+			rewardAccount,
+			reflectionAccount,
+		};
+	};
+
+	const useClaimRewards = () =>
+		useMutation({
+			mutationFn: async () => {
+				if (!publicKey.value) {
+					throw new Error("Could not get public key");
+				}
+
+				const { stakeAccount, reflectionAccount, rewardAccount } =
+					useDeriveStakeAccounts();
+				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
+
+				return await rewardsProgram.methods
+					.claim()
+					.preInstructions([
+						...((await connection.getAccountInfo(ata))
+							? []
+							: [
+									createAssociatedTokenAccountIdempotentInstructionWithDerivation(
+										publicKey.value,
+										publicKey.value,
+										mint,
+									),
+								]),
+					])
+					.accounts({
+						stake: stakeAccount,
+						reward: rewardAccount,
+						reflection: reflectionAccount,
+						user: ata,
+					})
+					.rpc();
+			},
+		});
+
+	const useGetReflectionAccount = () => {
+		return useQuery({
+			queryKey: ["reflectionAccount", publicKey.value],
+			queryFn: async () => {
+				if (!publicKey.value) {
+					throw new Error("Could not get public key");
+				}
+
+				const { reflectionAccount } = useDeriveStakeAccounts();
+				const account =
+					await rewardsProgram.account.reflectionAccount.fetch(
+						reflectionAccount,
+					);
+
+				return account;
+			},
+		});
+	};
+
+	const useGetRewardAccount = () => {
+		return useQuery({
+			queryKey: ["rewardAccount", publicKey.value],
+			queryFn: async () => {
+				if (!publicKey.value) {
+					throw new Error("Could not get public key");
+				}
+
+				const { rewardAccount } = useDeriveStakeAccounts();
+				const account =
+					await rewardsProgram.account.rewardAccount.fetch(rewardAccount);
+
+				return account;
+			},
+		});
+	};
+
+	const useTopupOrExtendStake = () =>
+		useMutation({
+			mutationFn: async ({
+				amount,
+				unstakeDaysDelta,
+			}: {
+				amount?: number;
+				unstakeDaysDelta?: number;
+			}) => {
+				if (!publicKey.value) {
+					throw new Error("Could not get public key");
+				}
+
+				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
+
+				const { stakeAccount, reflectionAccount, rewardAccount } =
+					useDeriveStakeAccounts();
+
+				const transaction = new Transaction();
+
+				if (amount) {
+					transaction.add(
+						await stakeProgram.methods
+							.topup(balanceToAmount(amount))
+							.accounts({ stake: stakeAccount, stakerTokens: ata })
+							.transaction(),
+					);
+				}
+
+				if (unstakeDaysDelta && unstakeDaysDelta > 0) {
+					console.log(unstakeDaysDelta);
+					transaction.add(
+						await stakeProgram.methods
+							.extend(new anchor.BN(unstakeDaysDelta * SECONDS_PER_DAY))
+							.accounts({ stake: stakeAccount })
+							.transaction(),
+					);
+				}
+
+				// add sync instructions
+				transaction.add(
+					...(
+						await rewardsProgram.methods
+							.sync()
+							.accounts({
+								stake: stakeAccount,
+								reflection: reflectionAccount,
+								reward: rewardAccount,
+							})
+							.transaction()
+					).instructions,
+				);
+
+				try {
+					const tx = await provider.sendAndConfirm(transaction);
+					return tx;
+				} catch (e) {
+					console.log(e);
+				}
+			},
+		});
+
+	// const stakeClient = createStakeClient(stakeConfig, program);
+	const useGetStakeAccount = () => {
+		const query = useQuery({
+			queryKey: ["stakeAccount", publicKey.value],
+			retry: 0,
+			queryFn: async () => {
+				if (!publicKey.value) {
+					throw new Error("Could not get public key");
+				}
+
+				const { stakeAccount } = useDeriveStakeAccounts();
+
+				const account =
+					await stakeProgram.account.stakeAccount.fetchAndContext(stakeAccount);
+
+				return account;
+			},
+		});
+
+		const amount = computed(() => query.data.value?.data?.amount);
+		const unstakeDays = computed(
+			() =>
+				query.data.value?.data?.duration &&
+				query.data.value.data.duration.toNumber() / SECONDS_PER_DAY,
+		);
+
+		return { ...query, amount, unstakeDays };
+	};
 
 	const useStake = () =>
 		useMutation({
@@ -44,14 +237,41 @@ export function useStakingProgram() {
 					throw new Error("Could not get public key");
 				}
 
-				const transaction = await createStakeTransaction({
-					client: stakeClient,
-					userAddress: publicKey.value,
-					unstakeDays,
-					amount,
-				});
+				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
-				return await sendTransaction(transaction, connection);
+				const stakerATA = await connection.getAccountInfo(ata);
+				if (!stakerATA) {
+					throw new Error("Could not get staker ATA");
+				}
+
+				const [stakeAccount] = PublicKey.findProgramAddressSync(
+					[Buffer.from("stake"), mint.toBuffer(), publicKey.value.toBuffer()],
+					stakeProgram.programId,
+				);
+
+				const [reflectionAccount] = PublicKey.findProgramAddressSync(
+					[Buffer.from("reflection")],
+					rewardsProgram.programId,
+				);
+
+				await stakeProgram.methods
+					.stake(
+						new anchor.BN(amount * 1000000),
+						new anchor.BN(unstakeDays * SECONDS_PER_DAY),
+					)
+					.accounts({ stakerTokens: ata, mint })
+					.postInstructions([
+						...(
+							await rewardsProgram.methods
+								.enter()
+								.accounts({
+									stake: stakeAccount,
+									reflection: reflectionAccount,
+								})
+								.transaction()
+						).instructions,
+					])
+					.rpc();
 			},
 		});
 
@@ -61,8 +281,12 @@ export function useStakingProgram() {
 		});
 
 	return {
-		program,
-        useStake
-        
+		stakeProgram,
+		useStake,
+		useTopupOrExtendStake,
+		useGetReflectionAccount,
+		useGetStakeAccount,
+		useClaimRewards,
+		useGetRewardAccount,
 	};
 }

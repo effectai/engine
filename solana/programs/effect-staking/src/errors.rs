@@ -30,4 +30,9 @@ pub enum EffectStakingError {
     Decreased,
     #[msg("This stake does not belong to the authority.")]
     InvalidStakeAccount,
+    #[msg("This stake does not belong to the signer.")]
+    IncorrectSigner,
+    #[msg("This stake does not belong to the vault.")]
+    VaultAuthorityMismatch
+    
 }

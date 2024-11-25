@@ -46,7 +46,7 @@ export const setup = async ({payer, provider, amount} : {
         destination: ata,
         provider,
         mintAuthority: payer,
-        amount: amount || 1000000,
+        amount: amount || 100_000_000,
     });
 
 	return {

@@ -8,13 +8,19 @@ use anchor_spl::{
 use crate::state::MetadataAccount;
 
 #[derive(Accounts)]
-#[instruction(foreign_public_key: Vec<u8>, amount: u64)]
+#[instruction(foreign_public_key: Vec<u8>, stake_start_time: i64)]
 pub struct Create<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + 8 + 32, 
+        space = 8 + 8 + 32 + 32, 
         seeds = [
+            // if stake_start_time is > 0, then add a "stake" prefix to the seed
+            if stake_start_time > 0 {
+                b"stake"
+            } else {
+                b"token"
+            },
             payer.key().as_ref(),
             mint.key().as_ref(),
             &foreign_public_key.as_slice() 
@@ -32,6 +38,7 @@ pub struct Create<'info> {
         bump
     )]
     pub vault_account: Account<'info, TokenAccount>,
+    
     pub mint: Account<'info, Mint>,
 
     #[account(mut)]
@@ -46,9 +53,10 @@ pub struct Create<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
-pub fn handler(ctx: Context<Create>, foreign_public_key: Vec<u8>, amount: u64) -> Result<()> {
+pub fn handler(ctx: Context<Create>, foreign_public_key: Vec<u8>, stake_start_time: i64, amount: u64) -> Result<()> {
     let metadata_account = &mut ctx.accounts.metadata;
     metadata_account.foreign_public_key = foreign_public_key; 
+    metadata_account.stake_start_time = stake_start_time;
 
     // set the authority of the vault account to the program
     let (vault_authority, _) = Pubkey::find_program_address(

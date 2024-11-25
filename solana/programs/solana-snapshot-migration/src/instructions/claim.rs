@@ -2,7 +2,7 @@ use core::str;
 
 use crate::{errors::CustomError, state::MetadataAccount};
 
-use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 use anchor_lang::{
     prelude::*,
@@ -12,6 +12,9 @@ use anchor_lang::{
     },
 };
 
+use effect_staking::{
+    cpi::accounts::GenesisStake, program::EffectStaking, StakeAccount, SECONDS_PER_DAY,
+};
 use sha2::{Digest, Sha256};
 
 #[derive(Accounts)]
@@ -20,7 +23,10 @@ pub struct Claim<'info> {
     pub payer: Signer<'info>,
 
     #[account(mut)]
-    pub recipient_tokens: Account<'info, TokenAccount>,
+    pub payer_ata: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub mint: Account<'info, Mint>,
 
     #[account(mut)]
     pub metadata_account: Account<'info, MetadataAccount>,
@@ -28,14 +34,28 @@ pub struct Claim<'info> {
     #[account(mut)]
     pub vault_account: Account<'info, TokenAccount>,
 
+    /// CHECK: checked in ix body
+    #[account(mut)]
+    pub stake_account: UncheckedAccount<'info>,
+
+    /// CHECK: checked in ix body
+    #[account(mut)]
+    pub stake_vault_account: UncheckedAccount<'info>,
+
     pub token_program: Program<'info, Token>,
+
+    pub rent: Sysvar<'info, Rent>,
+
+    pub system_program: Program<'info, System>,
+
+    pub staking_program: Program<'info, EffectStaking>, // The program being called
 }
 
 impl<'info> Claim<'info> {
     fn into_transfer_to_taker_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         let cpi_accounts = Transfer {
             from: self.vault_account.to_account_info().clone(),
-            to: self.recipient_tokens.to_account_info().clone(),
+            to: self.payer_ata.to_account_info().clone(),
             authority: self.vault_account.to_account_info().clone(),
         };
         CpiContext::new(self.token_program.to_account_info().clone(), cpi_accounts)
@@ -68,12 +88,7 @@ pub fn unlock_eth(ctx: Context<Claim>, sig: Vec<u8>, message: Vec<u8>) -> Result
     Ok(())
 }
 
-pub fn unlock_eos(
-    ctx: Context<Claim>,
-    sig: Vec<u8>,
-    serialized_tx_bytes: Vec<u8>,
-) -> Result<()> {
-
+pub fn unlock_eos(ctx: Context<Claim>, sig: Vec<u8>, serialized_tx_bytes: Vec<u8>) -> Result<()> {
     let message_to_verify = &format!(
         "Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: {}",
         ctx.accounts.payer.key().to_string()
@@ -91,22 +106,23 @@ pub fn unlock_eos(
     // hash the serialized transaction (this is our message)
     let signing_digest = sha256(&serialized_tx_bytes);
     let (recovery_id_bytes, signature_bytes) = sig.split_at(1);
-    let recovered_pubkey = recover_public_key(signature_bytes, signing_digest, recovery_id_bytes[0] - 31)?;
-    
+    let recovered_pubkey =
+        recover_public_key(signature_bytes, signing_digest, recovery_id_bytes[0] - 31)?;
+
     // convert recovered secp256k1 to EOS public key format
     let mut uncompressed_key = Vec::with_capacity(65);
     uncompressed_key.push(0x04); // Prefix for uncompressed public key
     uncompressed_key.extend_from_slice(&recovered_pubkey.to_bytes());
- 
+
     let hash = Sha256::digest(&uncompressed_key);
     let double_hash = Sha256::digest(hash);
     let checksum = &double_hash[0..4]; // checksum = first 4 bytes of the double hash
- 
+
     let mut eos_key_with_checksum = uncompressed_key.clone();
     eos_key_with_checksum.extend_from_slice(checksum);
-    
+
     authorize_and_claim(ctx, eos_key_with_checksum[1..33].to_vec())?;
-    
+
     Ok(())
 }
 
@@ -123,25 +139,24 @@ pub fn recover_public_key(
         msg!("Error: Invalid signature length");
         return Err(CustomError::InvalidSignature.into());
     }
-    
-    return Ok(secp256k1_recover(&hashed_message, recovery_id_bytes, signature_bytes)
-            .map_err(|e| CustomError::InvalidSignature)?);
 
+    return Ok(
+        secp256k1_recover(&hashed_message, recovery_id_bytes, signature_bytes)
+            .map_err(|e| CustomError::InvalidSignature)?,
+    );
 }
+
 pub fn unlock_vault(ctx: Context<Claim>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
     let foreign_public_key = &ctx.accounts.metadata_account.foreign_public_key;
-
-    msg!("Initializing Claim Process...");
 
     if foreign_public_key.len() == 20 {
         unlock_eth(ctx, signature, message)
     } else {
         unlock_eos(ctx, signature, message)
     }
-
 }
 
-pub fn authorize_and_claim(ctx: Context<Claim>, recovered_public_key: Vec<u8>) -> Result<()>  {
+pub fn authorize_and_claim(ctx: Context<Claim>, recovered_public_key: Vec<u8>) -> Result<()> {
     let metadata_account = &ctx.accounts.metadata_account;
 
     if recovered_public_key != metadata_account.foreign_public_key {
@@ -156,21 +171,42 @@ pub fn authorize_and_claim(ctx: Context<Claim>, recovered_public_key: Vec<u8>) -
         &[bump],
     ];
 
-    msg!("Claiming Tokens...");
+    if metadata_account.stake_start_time != 0 {
+        let cpi_program = ctx.accounts.staking_program.to_account_info();
 
-    // claim all the tokens
-    token::transfer(
-        ctx.accounts
-            .into_transfer_to_taker_context()
-            .with_signer(&[&seeds]),
-        ctx.accounts.vault_account.amount,
-    )?;
+        let cpi_accounts = GenesisStake {
+            mint: ctx.accounts.mint.to_account_info(),
+            staker_tokens: ctx.accounts.payer_ata.to_account_info(),
+            stake: ctx.accounts.stake_account.to_account_info(),
+            vault: ctx.accounts.stake_vault_account.to_account_info(),
+            system_program: ctx.accounts.system_program.to_account_info(),
+            authority: ctx.accounts.payer.to_account_info(),
+            metadata: ctx.accounts.metadata_account.to_account_info(),
+            claim_vault: ctx.accounts.vault_account.to_account_info(),
+            rent: ctx.accounts.rent.to_account_info(),
+            token_program: ctx.accounts.token_program.to_account_info(),
+        };
 
-    msg!("Tokens Claimed Successfully");
+        effect_staking::cpi::stake_genesis(
+            CpiContext::new(cpi_program, cpi_accounts).with_signer(&[&seeds]),
+            ctx.accounts.vault_account.amount,
+            14 * SECONDS_PER_DAY,
+            metadata_account.stake_start_time,
+        )?;
+
+        return Ok(());
+    } else {
+        // claim all the tokens
+        token::transfer(
+            ctx.accounts
+                .into_transfer_to_taker_context()
+                .with_signer(&[&seeds]),
+            ctx.accounts.vault_account.amount,
+        )?;
+    }
 
     Ok(())
 }
-
 
 fn keccak256(message: &[u8]) -> [u8; 32] {
     let mut hasher = keccak::Hasher::default();
