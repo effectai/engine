@@ -3,10 +3,17 @@ use anchor_lang::declare_id;
 /***
  * IDs
  */
+
 pub use system_program::ID as SYSTEM_PROGRAM;
 mod system_program {
     use super::*;
     declare_id!("11111111111111111111111111111111");
+}
+
+pub use effect_vesting::ID as VESTING_PROGRAM;
+mod effect_vesting {
+    use super::*;
+    declare_id!("EabRXJfYfzbkTTq5546mxDiT5yv2k2rjjN4kY6c4S9Br");
 }
 
 pub use migration_program::ID as MIGRATION_PROGRAM;

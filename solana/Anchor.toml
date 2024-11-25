@@ -5,9 +5,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
+effect_vesting = "EabRXJfYfzbkTTq5546mxDiT5yv2k2rjjN4kY6c4S9Br"
 effect_rewards = "AVKZ1LKwV7U5jQPdMev1iQ3rQrcQqzV6AwMfAZwQJomT"
 effect_staking = "eR1sM73NpFqq7DSR5YDAgneWW29AZA8sRm1BFakzYpH"
-solana_snapshot_migration = "9hJuxBiFY82YiciAa6wERpHX8s9n1uvzhwaUSFoBJnZD"
+effect_migration = "9hJuxBiFY82YiciAa6wERpHX8s9n1uvzhwaUSFoBJnZD"
 
 [registry]
 url = "https://api.apr.dev"
@@ -17,10 +18,8 @@ cluster = "Localnet"
 wallet = "~/.config/solana/id.json"
 
 [workspace]
-members = [
- #"common",
-"programs/solana-snapshot-migration", "programs/effect-staking", "programs/effect-rewards"]
+members = ["programs/effect-migration", "programs/effect-staking", "programs/effect-rewards", "programs/effect-vesting"]
 
 [scripts]
-test = "npx tsx scripts/export-IDL.ts && pnpm vitest run"
 deploy_local = "deploy --program-name effect-staking --provider.cluster localnet"
+test = "npx tsx scripts/export-IDL.ts && pnpm vitest run"

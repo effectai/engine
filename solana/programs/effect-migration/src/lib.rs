@@ -9,7 +9,7 @@ declare_id!("9hJuxBiFY82YiciAa6wERpHX8s9n1uvzhwaUSFoBJnZD");
 use instructions::*;
 
 #[program]
-pub mod solana_snapshot_migration {
+pub mod effect_migration {
 
     use super::*;
 
