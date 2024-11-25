@@ -47,6 +47,23 @@ pub struct Claim<'info> {
     pub staking_program: Program<'info, EffectStaking>,
 }
 
+pub fn handler(ctx: Context<Claim>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
+    let is_eth = ctx.accounts.metadata_account.foreign_public_key.len() == 20;
+
+    // check if the message matches our expected message
+    validate_message(&ctx.accounts.payer.key, &message, is_eth)?;
+
+    // recover and validate the public key from the signature
+    let recovered_pubkey = recover_and_validate_pubkey(signature, &message, is_eth)?;
+
+    if recovered_pubkey != ctx.accounts.metadata_account.foreign_public_key {
+        msg!("Public Key Mismatch");
+        return Err(CustomError::PublicKeyMismatch.into());
+    }
+
+    authorize_and_claim(ctx)
+}
+
 pub fn recover_public_key(
     signature_bytes: &[u8],
     hashed_message: [u8; 32],
@@ -67,22 +84,6 @@ pub fn recover_public_key(
     );
 }
 
-pub fn unlock_vault(ctx: Context<Claim>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
-    let is_eth = ctx.accounts.metadata_account.foreign_public_key.len() == 20;
-
-    // check if the message matches our expected message
-    validate_message(&ctx.accounts.payer.key, &message, is_eth)?;
-
-    // recover and validate the public key
-    let recovered_pubkey = recover_and_validate_pubkey(signature, &message, is_eth)?;
-
-    if recovered_pubkey != ctx.accounts.metadata_account.foreign_public_key {
-        msg!("Public Key Mismatch");
-        return Err(CustomError::PublicKeyMismatch.into());
-    }
-
-    authorize_and_claim(ctx)
-}
 
 pub fn authorize_and_claim(ctx: Context<Claim>) -> Result<()> {
     let metadata_account = &ctx.accounts.metadata_account;

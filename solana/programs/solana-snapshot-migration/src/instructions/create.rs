@@ -15,7 +15,7 @@ pub struct Create<'info> {
         payer = payer,
         space = 8 + 8 + 32 + 32, 
         seeds = [
-            // if stake_start_time is > 0, then add a "stake" prefix to the seed
+            // if stake_start_time is > 0, then add a "stake" prefix to the seed, otherwise add a "token" prefix
             if stake_start_time > 0 {
                 b"stake"
             } else {
@@ -38,13 +38,16 @@ pub struct Create<'info> {
         bump
     )]
     pub vault_account: Account<'info, TokenAccount>,
-    
+
     pub mint: Account<'info, Mint>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        token::mint = mint,
+    )]
     pub payer_tokens: Account<'info, TokenAccount>,
 
     pub system_program: Program<'info, System>,
