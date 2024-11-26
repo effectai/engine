@@ -69,6 +69,8 @@ impl<'info> Unstake<'info> {
 
         // transfer tokens from stake vault to the vesting vault
         transfer_tokens_from_vault!(self, vesting_vault_account, seeds!(self.stake), amount)?;
+
+        self.stake.amount -= amount;
       
         Ok(())
     }

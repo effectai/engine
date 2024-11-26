@@ -9,7 +9,6 @@ pub struct Open<'info> {
         space = VestingAccount::SIZE,
     )]
     pub vesting_account: Account<'info, VestingAccount>,
-    
     #[account(
         init,
         payer = authority,

@@ -1,6 +1,5 @@
 pub mod stake_program {
     use anchor_lang::prelude::*;
-    use crate::constants::{XEFX_DIV, XEFX_PRECISION};
 
     declare_id!("eR1sM73NpFqq7DSR5YDAgneWW29AZA8sRm1BFakzYpH");
 
@@ -29,7 +28,6 @@ pub mod stake_program {
             self.amount = amount;
             self.authority = authority;
             self.duration = duration;
-            self.time_unstake = 0;
 
             // time stake is set to the current block timestamp
             self.time_stake = time_stake;
@@ -39,15 +37,14 @@ pub mod stake_program {
             self.update_xefx();
         }
 
-        pub fn unstake(&mut self, now: i64) -> Result<()> {
-            self.time_unstake = now;
+        pub fn unstake(&mut self, amount: u64) -> Result<()> {
+            self.amount -= amount;
             self.update_xefx();
             Ok(())
         }
 
         pub fn restake(&mut self, amount: u64) -> Result<()> {
             self.amount = amount;
-            self.time_unstake = 0;
             self.update_xefx();
             Ok(())
         }
@@ -85,8 +82,6 @@ pub mod stake_program {
                 amount,
             );
 
-            msg!("Diluted stake time: {}", self.time_stake);
-
             self.amount += amount;
             self.update_xefx();
         }
@@ -103,11 +98,7 @@ pub mod stake_program {
         }
 
         fn update_xefx(&mut self) {
-            self.xefx = if self.time_unstake != 0 {
-                0
-            } else {
-                u128::from(self.amount) 
-            }
+            self.xefx = self.amount as u128
         }
     }
 }

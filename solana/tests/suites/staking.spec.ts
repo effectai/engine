@@ -27,7 +27,7 @@ describe("Staking Program", async () => {
 		it.concurrent("should correctly initialize a stake account", async () => {
 			const { mint, ata } = await setup({ payer, provider });
 			await program.methods
-				.stake(new anchor.BN(100), new anchor.BN(14 * SECONDS_PER_DAY))
+				.stake(new anchor.BN(100), new anchor.BN(30 * SECONDS_PER_DAY))
 				.accounts({
 					authority: wallet.publicKey,
 					userTokenAccount: ata,
@@ -97,7 +97,7 @@ describe("Staking Program", async () => {
 			const { mint, ata } = await setup({ payer, provider });
 
 			await program.methods
-				.stake(new anchor.BN(10_000_000), new anchor.BN(14 * SECONDS_PER_DAY))
+				.stake(new anchor.BN(10_000_000), new anchor.BN(30 * SECONDS_PER_DAY))
 				.accounts({
 					authority: wallet.publicKey,
 					userTokenAccount: ata,
@@ -132,7 +132,7 @@ describe("Staking Program", async () => {
 				vestingAccount: vestingAccount.publicKey,
 				recipientTokenAccount: ata,
 				rewardAccount,
-				vestingVaultAccount: vestingVaultAccount,
+				vestingVaultAccount,
 			}).signers([vestingAccount]).rpc();
 
 			// expect to have a vesting account
@@ -161,7 +161,7 @@ describe("Staking Program", async () => {
 			});
 
 			await bankrunProgram.methods
-				.stake(new BN(100), new BN(14 * SECONDS_PER_DAY))
+				.stake(new BN(100), new BN(30 * SECONDS_PER_DAY))
 				.accounts({
 					authority: provider.wallet.payer.publicKey,
 					userTokenAccount: ata,

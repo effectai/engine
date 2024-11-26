@@ -414,11 +414,11 @@ export const stakingIdl = {
           "writable": true
         },
         {
-          "name": "recipient_token_account",
+          "name": "vesting_vault_account",
           "writable": true
         },
         {
-          "name": "vesting_vault_account",
+          "name": "recipient_token_account",
           "writable": true
         },
         {
@@ -587,7 +587,7 @@ export const stakingIdl = {
     {
       "name": "STAKE_DURATION_MIN",
       "type": "u128",
-      "value": "1209600"
+      "value": "2592000"
     },
     {
       "name": "STAKE_MINIMUM_AMOUNT",
