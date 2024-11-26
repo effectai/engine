@@ -4,59 +4,59 @@ use anchor_lang::prelude::*;
  * Accounts
  */
 
-/// The `PoolAccount` struct holds all the information for any given pool.
+/// The `VestingAccount` struct holds all the information for any given vest.
 #[account]
-pub struct PoolAccount {
+pub struct VestingAccount {
     pub authority: Pubkey,
-    pub beneficiary: Pubkey,
-    pub claim_type: u8,
-    pub claimed_tokens: u64,
-    pub closeable: bool,
-    pub emission: u64,
+    pub recipient_token_account: Pubkey,
+    pub distribution_type: u8,
+    pub distributed_tokens: u64,
+    pub is_closeable: bool,
+    pub release_rate: u64,
     pub start_time: i64,
-    pub vault: Pubkey,
+    pub vault_token_account: Pubkey,
     pub vault_bump: u8,
 }
 
-impl PoolAccount {
-    pub const SIZE: usize = 8 + std::mem::size_of::<PoolAccount>();
+impl VestingAccount {
+    pub const SIZE: usize = 8 + std::mem::size_of::<VestingAccount>();
 
     #[allow(clippy::too_many_arguments)]
     pub fn init(
         &mut self,
-        authority: Pubkey,
-        beneficiary: Pubkey,
-        claim_type: u8,
-        closeable: bool,
-        emission: u64,
+        owner: Pubkey,
+        recipient: Pubkey,
+        distribution_type: u8,
+        is_closeable: bool,
+        release_rate: u64,
         start_time: i64,
-        vault: Pubkey,
+        vault_address: Pubkey,
         vault_bump: u8,
     ) -> Result<()> {
-        self.authority = authority;
-        self.beneficiary = beneficiary;
-        self.claim_type = claim_type;
-        self.claimed_tokens = 0;
-        self.closeable = closeable;
-        self.emission = emission;
+        self.authority = owner;
+        self.recipient_token_account = recipient;
+        self.distribution_type = distribution_type;
+        self.distributed_tokens = 0;
+        self.is_closeable = is_closeable;
+        self.release_rate = release_rate;
         self.start_time = start_time;
-        self.vault = vault;
+        self.vault_token_account = vault_address;
         self.vault_bump = vault_bump;
         Ok(())
     }
 
     pub fn claim(&mut self, amount_available: u64, now: i64) -> u64 {
-        let pool_amount: u64 = (now - self.start_time) as u64 * self.emission;
-        let amount_due: u64 = pool_amount - self.claimed_tokens;
+        let pool_amount: u64 = (now - self.start_time) as u64 * self.release_rate;
+        let amount_due: u64 = pool_amount - self.distributed_tokens;
         let amount: u64 = std::cmp::min(amount_due, amount_available);
 
-        self.claimed_tokens += amount;
+        self.distributed_tokens += amount;
 
         amount
     }
 
-    pub fn update_beneficiary(&mut self, beneficiary: Pubkey) -> Result<()> {
-        self.beneficiary = beneficiary;
+    pub fn update_recipient(&mut self, recipient: Pubkey) -> Result<()> {
+        self.recipient_token_account = recipient;
         Ok(())
     }
 }

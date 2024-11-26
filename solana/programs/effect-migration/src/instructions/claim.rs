@@ -10,10 +10,11 @@ use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 use anchor_lang::{
     prelude::*,
-    solana_program::secp256k1_recover::{secp256k1_recover, Secp256k1Pubkey},
+    solana_program::{secp256k1_recover::{secp256k1_recover, Secp256k1Pubkey}},
 };
 
-use effect_staking::{cpi::accounts::GenesisStake, program::EffectStaking, SECONDS_PER_DAY};
+use effect_common::constants::SECONDS_PER_DAY;
+use effect_staking::{cpi::accounts::GenesisStake, program::EffectStaking};
 use sha2::{Digest, Sha256};
 
 #[derive(Accounts)]
@@ -172,9 +173,9 @@ impl<'info> Claim<'info> {
     fn into_genesis_stake_context(&self) -> CpiContext<'_, '_, '_, 'info, GenesisStake<'info>> {
         let cpi_accounts = GenesisStake {
             mint: self.mint.to_account_info().clone(),
-            staker_tokens: self.payer_ata.to_account_info().clone(),
+            user_token_account: self.payer_ata.to_account_info().clone(),
             stake: self.stake_account.to_account_info().clone(),
-            vault: self.stake_vault_account.to_account_info().clone(),
+            vault_token_account: self.stake_vault_account.to_account_info().clone(),
             authority: self.payer.to_account_info().clone(),
             claim_vault: self.vault_account.to_account_info().clone(),
             metadata: self.metadata_account.to_account_info().clone(),

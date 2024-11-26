@@ -1,12 +1,8 @@
+
 use anchor_lang::prelude::*;
 
-/***
- * Errors
- */
-
 #[error_code]
-pub enum NosanaPoolsError {
-    // pool errors
+pub enum VestingErrors {
     #[msg("This pool has not started yet.")]
     NotStarted,
     #[msg("This pool does not have enough funds.")]
@@ -17,4 +13,11 @@ pub enum NosanaPoolsError {
     WrongClaimType,
     #[msg("This pool does not match the beneficiary.")]
     WrongBeneficiary,
+    #[msg("This pool has an invalid token account.")]
+    InvalidTokenAccount,
+    #[msg("Unauthorized")]
+    Unauthorized,
+    #[msg("Invalid vault")]
+    InvalidVault
+    
 }

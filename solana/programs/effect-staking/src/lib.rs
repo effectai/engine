@@ -1,7 +1,8 @@
-mod errors;
 mod instructions;
 mod macros;
 mod state;
+mod constants;
+mod errors;
 
 use anchor_lang::prelude::*;
 use effect_common::*;
@@ -10,6 +11,8 @@ pub use errors::*;
 // expose errors for cpi
 use instructions::*;
 pub use state::*; // expose stake for cpi
+
+pub use effect_common::state::stake_program::StakeAccount;
 
 declare_id!("eR1sM73NpFqq7DSR5YDAgneWW29AZA8sRm1BFakzYpH");
 
@@ -25,17 +28,16 @@ pub mod effect_staking {
     /// Create a [StakeAccount](#stake-account) and [VaultAccount](#vault-account).
     /// Stake `amount` of [NOS](/tokens/token) tokens for `duration` fo seconds.
     pub fn stake(ctx: Context<Stake>, amount: u64, duration: u128) -> Result<()> {
-        ctx.accounts.handler(amount, duration, ctx.bumps.vault)
+        ctx.accounts.handler(amount, duration, ctx.bumps.vault_token_account)
     }
 
-    // 
     pub fn stake_genesis(ctx: Context<GenesisStake>, amount: u64, duration: u128, stake_start_time: i64) -> Result<()> {
-        ctx.accounts.handler(amount, duration, ctx.bumps.vault, stake_start_time)
+        ctx.accounts.handler(amount, duration, ctx.bumps.vault_token_account, stake_start_time)
     }
 
     /// Start the unstake duration.
-    pub fn unstake(ctx: Context<Unstake>) -> Result<()> {
-        ctx.accounts.handler()
+    pub fn unstake(ctx: Context<Unstake>, amount: u64) -> Result<()> {
+        ctx.accounts.handler(amount) 
     }
 
     /// Make a stake active again and reset the unstake time.
@@ -55,11 +57,6 @@ pub mod effect_staking {
 
     /// Close a [StakeAccount](#stake-account) and [VaultAccount](#vault-account).
     pub fn close(ctx: Context<Close>) -> Result<()> {
-        ctx.accounts.handler()
-    }
-
-    /// Withdraw  [NOS](/tokens/token) that is released after an [unstake](#unstake)
-    pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
         ctx.accounts.handler()
     }
 

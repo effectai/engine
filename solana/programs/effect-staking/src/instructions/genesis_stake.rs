@@ -1,5 +1,6 @@
 use crate::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
+use constants::{STAKE_DURATION_MAX, STAKE_DURATION_MIN, STAKE_MINIMUM_AMOUNT};
 use effect_common::cpi::{self, transfer_tokens};
 
 #[derive(Accounts)]
@@ -7,7 +8,7 @@ pub struct GenesisStake<'info> {
     #[account(mut)]
     pub mint: Account<'info, Mint>,
     #[account(mut)]
-    pub staker_tokens: Account<'info, TokenAccount>,
+    pub user_token_account: Account<'info, TokenAccount>,
 
     #[account(
         init,
@@ -22,11 +23,11 @@ pub struct GenesisStake<'info> {
         init,
         payer = authority,
         token::mint = mint,
-        token::authority = vault,
+        token::authority = vault_token_account,
         seeds = [ stake.key().as_ref() ],
         bump,
     )]
-    pub vault: Account<'info, TokenAccount>,
+    pub vault_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -39,7 +40,9 @@ pub struct GenesisStake<'info> {
     pub metadata: UncheckedAccount<'info>,
 
     pub system_program: Program<'info, System>,
+
     pub token_program: Program<'info, Token>,
+    
     pub rent: Sysvar<'info, Rent>,
 }
 
@@ -58,27 +61,27 @@ impl<'info> GenesisStake<'info> {
         require_eq!(
             vault_authority,
             self.claim_vault.key(),
-            EffectStakingError::VaultAuthorityMismatch
+            StakingErrors::VaultAuthorityMismatch
         );
 
         require!(
-            duration >= DURATION_MIN,
-            EffectStakingError::DurationTooShort
+            duration >= STAKE_DURATION_MIN,
+            StakingErrors::DurationTooShort
         );
 
         require!(
-            duration <= DURATION_MAX,
-            EffectStakingError::DurationTooLong
+            duration <= STAKE_DURATION_MAX,
+            StakingErrors::DurationTooLong
         );
 
-        require!(amount >= STAKE_MINIMUM, EffectStakingError::AmountNotEnough);
+        require!(amount >= STAKE_MINIMUM_AMOUNT, StakingErrors::AmountNotEnough);
 
         // get stake account and init stake
         self.stake.init(
             amount,
             self.authority.key(),
             duration.try_into().unwrap(),
-            self.vault.key(),
+            self.vault_token_account.key(),
             vault_bump,
             time_stake,
         );
@@ -87,7 +90,7 @@ impl<'info> GenesisStake<'info> {
         transfer_tokens(
             self.token_program.to_account_info(),
             self.claim_vault.to_account_info(),
-            self.vault.to_account_info(),
+            self.vault_token_account.to_account_info(),
             self.claim_vault.to_account_info(),
             &[],
             amount,

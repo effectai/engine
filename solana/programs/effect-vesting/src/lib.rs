@@ -2,17 +2,17 @@ mod errors;
 mod instructions;
 mod macros;
 mod security;
-mod state;
 mod types;
+mod state;
 
 use anchor_lang::prelude::*;
 use errors::*;
 use instructions::*;
 use effect_common::*;
-use state::*;
 use types::*;
+use state::*;
 
-declare_id!(id::POOLS_PROGRAM);
+declare_id!("EabRXJfYfzbkTTq5546mxDiT5yv2k2rjjN4kY6c4S9Br");
 
 #[program]
 pub mod effect_vesting {
@@ -21,24 +21,24 @@ pub mod effect_vesting {
     /// Open a [PoolAccount](#pool-account) and [VaultAccount](#vault-account).
     pub fn open(
         ctx: Context<Open>,
-        emission: u64,
+        release_rate: u64,
         start_time: i64,
         claim_type: u8,
-        closeable: bool,
+        is_closable: bool,
     ) -> Result<()> {
         ctx.accounts.handler(
-            emission,
+            release_rate,
             start_time,
             claim_type,
-            closeable,
-            *ctx.bumps.get("vault").unwrap(),
+            is_closable,
+            ctx.bumps.vault_token_account
         )
     }
 
     /// Add fees from a [PoolAccount](#pool-account) with claim type [`1`](#claim-type)
-    pub fn claim_fee(ctx: Context<ClaimFee>) -> Result<()> {
-        ctx.accounts.handler()
-    }
+    // pub fn claim_fee(ctx: Context<ClaimFee>) -> Result<()> {
+    //     ctx.accounts.handler()
+    // }
 
     /// Claim emission from a [PoolAccount](#pool-account) with claim type [`0`](#claim-type)
     pub fn claim_transfer(ctx: Context<ClaimTransfer>) -> Result<()> {
@@ -51,7 +51,7 @@ pub mod effect_vesting {
     }
 
     /// Update the beneficiary in a [PoolAccount](#pool-account).
-    pub fn update_beneficiary(ctx: Context<UpdateBeneficiary>) -> Result<()> {
+    pub fn update_recipient(ctx: Context<UpdateRecipientTokenAccount>) -> Result<()> {
         ctx.accounts.handler()
     }
 }

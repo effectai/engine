@@ -5,8 +5,46 @@ import { type Keypair, PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import type { EffectStaking } from "../target/types/effect_staking.js";
 import { useConstantsIDL } from "./idl.js";
-import { stakingIdl } from "../constants/staking-idl.js";
 import { expect } from "vitest";
+import { program } from "@coral-xyz/anchor/dist/cjs/native/system.js";
+
+export const useDeriveVestingAccounts = ({
+	vestingAccount,
+	authority,
+	programId
+}: {
+	vestingAccount: PublicKey;
+	authority: PublicKey;
+	programId: PublicKey;
+}) => {
+
+	const [vestingVaultAccount] = PublicKey.findProgramAddressSync(
+		[vestingAccount.toBuffer()],
+		programId,
+	);
+
+	return {
+		vestingAccount,
+		vestingVaultAccount,
+	};
+};
+
+export const useDeriveRewardAccounts = ({
+	authority,
+	programId
+}: {
+	programId: PublicKey;
+	authority: PublicKey;
+}) => {
+	const [rewardAccount] = PublicKey.findProgramAddressSync(
+		[Buffer.from("rewards"), authority.toBuffer()],
+		programId,
+	);
+
+	return {
+		rewardAccount
+	};
+}
 
 export const useDeriveStakeAccounts = ({
 	mint,

@@ -1,5 +1,6 @@
+use effect_staking::StakeAccount;
+
 use crate::*;
-use effect_staking::{EffectStakingError, StakeAccount};
 
 #[derive(Accounts)]
 pub struct Enter<'info> {
@@ -7,8 +8,8 @@ pub struct Enter<'info> {
     pub reflection: Account<'info, ReflectionAccount>,
   
     #[account(
-        has_one = authority @ EffectError::Unauthorized,
-        constraint = stake.time_unstake == 0 @ EffectStakingError::AlreadyUnstaked
+        has_one = authority @ RewardErrors::Unauthorized,
+        constraint = stake.time_unstake == 0 @ RewardErrors::AlreadyUnstaked
     )]
     pub stake: Account<'info, StakeAccount>,
    

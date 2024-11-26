@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
-use effect_common::constants::EFX_TOTAL_SUPPLY;
 
+use crate::constants::EFX_TOTAL_SUPPLY;
 /***
  * Accounts
  */
@@ -11,7 +11,7 @@ pub struct ReflectionAccount {
     pub rate: u128,
     pub total_reflection: u128,
     pub total_xefx: u128,
-    pub vault: Pubkey,
+    pub vault_token_account: Pubkey,
     pub vault_bump: u8,
 }
 
@@ -32,11 +32,11 @@ impl ReflectionAccount {
     pub const INITIAL_RATE: u128 = (u128::MAX - (u128::MAX % EFX_TOTAL_SUPPLY)) / EFX_TOTAL_SUPPLY;
     // pub const INITIAL_RATE: u128 = u128::pow(10, 15);
 
-    pub fn init(&mut self, vault: Pubkey, vault_bump: u8) -> Result<()> {
+    pub fn init(&mut self, vault_token_account: Pubkey, vault_bump: u8) -> Result<()> {
         self.rate = ReflectionAccount::INITIAL_RATE;
         self.total_reflection = 0;
         self.total_xefx = 0;
-        self.vault = vault;
+        self.vault_token_account = vault_token_account;
         self.vault_bump = vault_bump;
         Ok(())
     }
@@ -46,13 +46,13 @@ impl ReflectionAccount {
         rate: u128,
         reflection: u128,
         xefx: u128,
-        vault: Pubkey,
+        vault_token_account: Pubkey,
         vault_bump: u8,
     ) {
         self.rate = rate;
         self.total_reflection = reflection;
         self.total_xefx = xefx;
-        self.vault = vault;
+        self.vault_token_account = vault_token_account;
         self.vault_bump = vault_bump;
     }
 
@@ -76,6 +76,7 @@ impl ReflectionAccount {
         Ok(())
     }
 }
+
 
 /// The `RewardAccount` struct holds all the information for any given user account.
 #[account]

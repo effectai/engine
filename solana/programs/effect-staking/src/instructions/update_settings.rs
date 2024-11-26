@@ -9,7 +9,7 @@ pub struct UpdateSettings<'info> {
     pub token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
-        has_one = authority @ EffectError::Unauthorized,
+        has_one = authority @ StakingErrors::Unauthorized,
         seeds = [ "settings".as_ref() ],
         bump
     )]

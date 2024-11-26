@@ -1,19 +1,20 @@
 use crate::*;
 use anchor_spl::token::{Token, TokenAccount};
+use effect_common::cpi;
 
 #[derive(Accounts)]
 pub struct ClaimTransfer<'info> {
-    #[account(mut, address = pool.vault @ NosanaError::InvalidTokenAccount)]
-    pub vault: Account<'info, TokenAccount>,
+    #[account(mut, address = vesting_account.vault_token_account @ VestingErrors::InvalidTokenAccount)]
+    pub vault_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
-    pub beneficiary: Account<'info, TokenAccount>,
+    pub recipient_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
-        has_one = beneficiary @ NosanaPoolsError::WrongBeneficiary,
-        constraint = Clock::get()?.unix_timestamp > pool.start_time @ NosanaPoolsError::NotStarted,
-        constraint = pool.claim_type == ClaimType::Transfer as u8 @ NosanaPoolsError::WrongClaimType,
+        has_one = recipient_token_account @ VestingErrors::WrongBeneficiary,
+        constraint = Clock::get()?.unix_timestamp > vesting_account.start_time @ VestingErrors::NotStarted,
+        constraint = vesting_account.distribution_type == ClaimType::Transfer as u8 @ VestingErrors::WrongClaimType,
     )]
-    pub pool: Account<'info, PoolAccount>,
+    pub vesting_account: Account<'info, VestingAccount>,
     #[account(mut)]
     pub authority: Signer<'info>,
     pub token_program: Program<'info, Token>,
@@ -22,14 +23,14 @@ pub struct ClaimTransfer<'info> {
 impl<'info> ClaimTransfer<'info> {
     pub fn handler(&mut self) -> Result<()> {
         let amount: u64 = self
-            .pool
-            .claim(self.vault.amount, Clock::get()?.unix_timestamp);
+            .vesting_account
+            .claim(self.vault_token_account.amount, Clock::get()?.unix_timestamp);
 
-        // TODO: the below is not a requirement anymore, can be removed?
+        // TODO:   below is not a requirement anymore, can be removed?
         // the pool must have enough funds for an emission
-        require!(amount >= self.pool.emission, NosanaPoolsError::Underfunded);
+        require!(amount >= self.vesting_account.release_rate, VestingErrors::Underfunded);
 
         // transfer tokens from the vault back to the user
-        transfer_tokens_from_vault!(self, beneficiary, seeds!(self.pool), amount)
+        transfer_tokens_from_vault!(self, recipient_token_account, seeds!(self.vesting_account), amount)
     }
 }

@@ -1,13 +1,16 @@
 mod instructions;
 mod macros;
 mod security;
+mod errors;
 mod state;
 
 use anchor_lang::declare_id;
 use anchor_lang::prelude::*;
 use instructions::*;
 use effect_common::*;
-pub use state::*; // expose state for cpi
+
+pub use errors::*;
+pub use state::*;
 
 declare_id!("AVKZ1LKwV7U5jQPdMev1iQ3rQrcQqzV6AwMfAZwQJomT");
 
@@ -15,9 +18,9 @@ declare_id!("AVKZ1LKwV7U5jQPdMev1iQ3rQrcQqzV6AwMfAZwQJomT");
 pub mod effect_rewards {
     use super::*;
 
-    /// Initialize the [ReflectionAccount](#reflection-account) and [VaultAccount](#vault-account).
+    /// Initialize the [ReflectionAccount](#reflection-account) and [VaultAccount](#vault_token_account-account).
     pub fn init(ctx: Context<Init>) -> Result<()> {
-        ctx.accounts.handler(ctx.bumps.vault)
+        ctx.accounts.handler(ctx.bumps.vault_token_account)
     }
 
     /// Initialize a [RewardsAccount](#rewards-account).

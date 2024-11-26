@@ -1,13 +1,15 @@
 use crate::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
+use constants::{STAKE_DURATION_MAX, STAKE_DURATION_MIN, STAKE_MINIMUM_AMOUNT};
 use effect_common::cpi;
 
 #[derive(Accounts)]
 pub struct Stake<'info> {
     #[account(mut)]
     pub mint: Account<'info, Mint>,
+  
     #[account(mut)]
-    pub staker_tokens: Account<'info, TokenAccount>,
+    pub user_token_account: Account<'info, TokenAccount>,
 
     #[account(
         init,
@@ -22,13 +24,15 @@ pub struct Stake<'info> {
         init,
         payer = authority,
         token::mint = mint,
-        token::authority = vault,
+        token::authority = vault_token_account,
         seeds = [ stake.key().as_ref() ],
         bump,
     )]
-    pub vault: Account<'info, TokenAccount>,
+    pub vault_token_account: Account<'info, TokenAccount>,
+
     #[account(mut)]
     pub authority: Signer<'info>,
+    
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,
@@ -38,16 +42,16 @@ impl<'info> Stake<'info> {
     pub fn handler(&mut self, amount: u64, duration: u128, vault_bump: u8) -> Result<()> {
         // test duration and amount
         require!(
-            duration >= DURATION_MIN,
-            EffectStakingError::DurationTooShort
+            duration >= STAKE_DURATION_MIN,
+            StakingErrors::DurationTooShort
         );
         require!(
-            duration <= DURATION_MAX,
-            EffectStakingError::DurationTooLong
+            duration <= STAKE_DURATION_MAX,
+            StakingErrors::DurationTooLong
         );
         require!(
-            amount >= STAKE_MINIMUM,
-            EffectStakingError::AmountNotEnough
+            amount >= STAKE_MINIMUM_AMOUNT,
+            StakingErrors::AmountNotEnough
         );
 
         // msg!("Staking {} tokens for {} seconds", amount, duration);
@@ -57,7 +61,7 @@ impl<'info> Stake<'info> {
             amount,
             self.authority.key(),
             duration.try_into().unwrap(),
-            self.vault.key(),
+            self.vault_token_account.key(),
             vault_bump,
             Clock::get().unwrap().unix_timestamp
         );

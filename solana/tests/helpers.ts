@@ -23,11 +23,7 @@ export const useTestContext = () => {
 	return { mint, ata };
 };
 
-type AnchorErrorIdl = {
-	code: number;
-	name: string;
-	msg: string;
-};
+
 
 export const useMigrationTestHelpers = (program: Program<SolanaSnapshotMigration>) => {
 	const createMigrationAccount = async ({
@@ -68,6 +64,12 @@ export const useMigrationTestHelpers = (program: Program<SolanaSnapshotMigration
 	};
 
 	return { createMigrationAccount };
+};
+
+export type AnchorErrorIdl = {
+	code: number;
+	name: string;
+	msg: string;
 };
 
 export const useAnchor = () => {

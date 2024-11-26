@@ -1,26 +1,27 @@
 use crate::*;
 use anchor_spl::token::{Token, TokenAccount};
-use effect_staking::{EffectStakingError, StakeAccount};
+
+use effect_common::cpi;
+use effect_staking::StakeAccount;
 
 #[derive(Accounts)]
 pub struct Claim<'info> {
-    
     #[account(mut)]
     pub user: Account<'info, TokenAccount>,
    
     #[account(mut)]
-    pub vault: Account<'info, TokenAccount>,
+    pub vault_token_account: Account<'info, TokenAccount>,
   
-    #[account(mut, has_one = vault @ EffectError::InvalidVault)]
+    #[account(mut, has_one = vault_token_account @ RewardErrors::InvalidVault)]
     pub reflection: Account<'info, ReflectionAccount>,
    
-    #[account(mut, has_one = authority @ EffectError::Unauthorized)]
+    #[account(mut, has_one = authority @ RewardErrors::Unauthorized)]
     pub reward: Account<'info, RewardAccount>,
     
     #[account(
-        has_one = authority @ EffectError::Unauthorized,
-        constraint = stake.time_unstake == 0 @ EffectStakingError::AlreadyUnstaked,
-        constraint = stake.xefx >= reward.xefx @ EffectStakingError::Decreased,
+        has_one = authority @ RewardErrors::Unauthorized,
+        constraint = stake.time_unstake == 0 @ RewardErrors::AlreadyUnstaked,
+        constraint = stake.xefx >= reward.xefx @ RewardErrors::Decreased,
     )]
     pub stake: Account<'info, StakeAccount>,
    
@@ -34,6 +35,7 @@ impl<'info> Claim<'info> {
     pub fn handler(&mut self) -> Result<()> {
         // determine amount to claim
         let amount: u128 = self.reward.get_amount(self.reflection.rate);
+
         if amount == 0 {
             msg!("No rewards to claim");
             return Ok(());
@@ -53,7 +55,7 @@ impl<'info> Claim<'info> {
         transfer_tokens_from_vault!(
             self,
             user,
-            seeds!(self.reflection, self.vault),
+            seeds!(self.reflection, self.vault_token_account),
             amount.try_into().unwrap()
         )
     }

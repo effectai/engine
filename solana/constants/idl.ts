@@ -24,7 +24,7 @@ export const stakingIdl = {
       ],
       "accounts": [
         {
-          "name": "staker_tokens",
+          "name": "user_token_account",
           "writable": true
         },
         {
@@ -32,7 +32,7 @@ export const stakingIdl = {
           "writable": true
         },
         {
-          "name": "vault",
+          "name": "vault_token_account",
           "writable": true,
           "relations": [
             "stake"
@@ -105,7 +105,7 @@ export const stakingIdl = {
       ],
       "accounts": [
         {
-          "name": "vault",
+          "name": "vault_token_account",
           "writable": true,
           "relations": [
             "stake"
@@ -148,7 +148,7 @@ export const stakingIdl = {
           "writable": true
         },
         {
-          "name": "staker_tokens",
+          "name": "user_token_account",
           "writable": true
         },
         {
@@ -178,7 +178,7 @@ export const stakingIdl = {
           }
         },
         {
-          "name": "vault",
+          "name": "vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -236,7 +236,7 @@ export const stakingIdl = {
           "writable": true
         },
         {
-          "name": "staker_tokens",
+          "name": "user_token_account",
           "writable": true
         },
         {
@@ -266,7 +266,7 @@ export const stakingIdl = {
           }
         },
         {
-          "name": "vault",
+          "name": "vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -335,11 +335,11 @@ export const stakingIdl = {
       ],
       "accounts": [
         {
-          "name": "staker_tokens",
+          "name": "user_token_account",
           "writable": true
         },
         {
-          "name": "vault",
+          "name": "vault_token_account",
           "writable": true,
           "relations": [
             "stake"
@@ -389,44 +389,7 @@ export const stakingIdl = {
           "writable": true
         },
         {
-          "name": "authority",
-          "signer": true,
-          "relations": [
-            "stake"
-          ]
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "withdraw",
-      "docs": [
-        "Withdraw  [NOS](/tokens/token) that is released after an [unstake](#unstake)"
-      ],
-      "discriminator": [
-        183,
-        18,
-        70,
-        156,
-        148,
-        109,
-        161,
-        34
-      ],
-      "accounts": [
-        {
-          "name": "staker_tokens",
-          "writable": true
-        },
-        {
-          "name": "vault",
-          "writable": true,
-          "relations": [
-            "stake"
-          ]
-        },
-        {
-          "name": "stake",
+          "name": "vault_token_account",
           "writable": true
         },
         {
@@ -436,13 +399,54 @@ export const stakingIdl = {
           "relations": [
             "stake"
           ]
+        },
+        {
+          "name": "vesting_account",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vesting_account_unchecked",
+          "writable": true
+        },
+        {
+          "name": "reward_account",
+          "writable": true
+        },
+        {
+          "name": "recipient_token_account",
+          "writable": true
+        },
+        {
+          "name": "vesting_vault_account",
+          "writable": true
+        },
+        {
+          "name": "vesting_program",
+          "address": "EabRXJfYfzbkTTq5546mxDiT5yv2k2rjjN4kY6c4S9Br"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         },
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -463,81 +467,78 @@ export const stakingIdl = {
   "errors": [
     {
       "code": 6000,
-      "name": "AmountNotEnough",
-      "msg": "This amount is not enough."
+      "name": "InvalidVault",
+      "msg": "This account has an invalid vault."
     },
     {
       "code": 6001,
-      "name": "AlreadyInitialized",
-      "msg": "This stake is already running."
+      "name": "Unauthorized",
+      "msg": "This account is not authorized to perform this action."
     },
     {
       "code": 6002,
-      "name": "AlreadyClaimed",
-      "msg": "This stake is already claimed."
-    },
-    {
-      "code": 6003,
-      "name": "AlreadyStaked",
-      "msg": "This stake is already staked."
-    },
-    {
-      "code": 6004,
       "name": "AlreadyUnstaked",
       "msg": "This stake is already unstaked."
     },
     {
-      "code": 6005,
-      "name": "NotUnstaked",
-      "msg": "This stake is not yet unstaked."
-    },
-    {
-      "code": 6006,
-      "name": "Locked",
-      "msg": "This stake is still locked."
-    },
-    {
-      "code": 6007,
-      "name": "DurationTooShort",
-      "msg": "This stake duration is not long enough."
-    },
-    {
-      "code": 6008,
-      "name": "DurationTooLong",
-      "msg": "This stake duration is too long."
-    },
-    {
-      "code": 6009,
-      "name": "DoesNotExist",
-      "msg": "This stake account does not exist."
-    },
-    {
-      "code": 6010,
+      "code": 6003,
       "name": "Decreased",
       "msg": "This stake is not allowed to decrease."
     },
     {
+      "code": 6004,
+      "name": "NotUnstaked",
+      "msg": "This stake is not yet unstaked."
+    },
+    {
+      "code": 6005,
+      "name": "Locked",
+      "msg": "This stake is still locked."
+    },
+    {
+      "code": 6006,
+      "name": "VaultNotEmpty",
+      "msg": "This vault is not empty."
+    },
+    {
+      "code": 6007,
+      "name": "DurationTooLong",
+      "msg": "The stake duration is too long."
+    },
+    {
+      "code": 6008,
+      "name": "DurationTooShort",
+      "msg": "The stake duration is too short."
+    },
+    {
+      "code": 6009,
+      "name": "VaultAuthorityMismatch",
+      "msg": "The vault authority does not match."
+    },
+    {
+      "code": 6010,
+      "name": "AmountNotEnough",
+      "msg": "The stake amount is not enough."
+    },
+    {
       "code": 6011,
-      "name": "InvalidStakeAccount",
-      "msg": "This stake does not belong to the authority."
+      "name": "AlreadyStaked",
+      "msg": "This stake is already staked."
     },
     {
       "code": 6012,
-      "name": "IncorrectSigner",
-      "msg": "This stake does not belong to the signer."
+      "name": "InvalidRewardAccount",
+      "msg": "Invalid reward account."
     },
     {
       "code": 6013,
-      "name": "VaultAuthorityMismatch",
-      "msg": "This stake does not belong to the vault."
+      "name": "InvalidStakeAccount",
+      "msg": "Invalid stake account."
     }
   ],
   "types": [
     {
       "name": "StakeAccount",
-      "docs": [
-        "The `StakeAccount` struct holds all the information for any given stake."
-      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -562,7 +563,7 @@ export const stakingIdl = {
             "type": "i64"
           },
           {
-            "name": "vault",
+            "name": "vault_token_account",
             "type": "pubkey"
           },
           {
@@ -579,34 +580,19 @@ export const stakingIdl = {
   ],
   "constants": [
     {
-      "name": "DURATION_MAX",
+      "name": "STAKE_DURATION_MAX",
       "type": "u128",
       "value": "31536000"
     },
     {
-      "name": "DURATION_MIN",
+      "name": "STAKE_DURATION_MIN",
       "type": "u128",
       "value": "1209600"
     },
     {
-      "name": "SECONDS_PER_DAY",
-      "type": "u128",
-      "value": "86400"
-    },
-    {
-      "name": "STAKE_MINIMUM",
+      "name": "STAKE_MINIMUM_AMOUNT",
       "type": "u64",
       "value": "0"
-    },
-    {
-      "name": "XEFX_DIV",
-      "type": "u128",
-      "value": "10512000"
-    },
-    {
-      "name": "XEFX_PRECISION",
-      "type": "u128",
-      "value": "1000000000000000"
     }
   ]
 } as const;

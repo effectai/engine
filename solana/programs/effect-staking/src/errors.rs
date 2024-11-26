@@ -1,38 +1,34 @@
+
 use anchor_lang::prelude::*;
 
-/***
- * Errors
- */
-
 #[error_code]
-pub enum EffectStakingError {
-    #[msg("This amount is not enough.")]
-    AmountNotEnough,
-    #[msg("This stake is already running.")]
-    AlreadyInitialized,
-    #[msg("This stake is already claimed.")]
-    AlreadyClaimed,
-    #[msg("This stake is already staked.")]
-    AlreadyStaked,
+pub enum StakingErrors {
+    #[msg("This account has an invalid vault.")]
+    InvalidVault,
+    #[msg("This account is not authorized to perform this action.")]
+    Unauthorized,
     #[msg("This stake is already unstaked.")]
     AlreadyUnstaked,
+    #[msg("This stake is not allowed to decrease.")]
+    Decreased,
     #[msg("This stake is not yet unstaked.")]
     NotUnstaked,
     #[msg("This stake is still locked.")]
     Locked,
-    #[msg("This stake duration is not long enough.")]
-    DurationTooShort,
-    #[msg("This stake duration is too long.")]
+    #[msg("This vault is not empty.")]
+    VaultNotEmpty,
+    #[msg("The stake duration is too long.")]
     DurationTooLong,
-    #[msg("This stake account does not exist.")]
-    DoesNotExist,
-    #[msg("This stake is not allowed to decrease.")]
-    Decreased,
-    #[msg("This stake does not belong to the authority.")]
-    InvalidStakeAccount,
-    #[msg("This stake does not belong to the signer.")]
-    IncorrectSigner,
-    #[msg("This stake does not belong to the vault.")]
-    VaultAuthorityMismatch
-    
+    #[msg("The stake duration is too short.")]
+    DurationTooShort,
+    #[msg("The vault authority does not match.")]
+    VaultAuthorityMismatch,
+    #[msg("The stake amount is not enough.")]
+    AmountNotEnough,
+    #[msg("This stake is already staked.")]
+    AlreadyStaked,
+    #[msg("Invalid reward account.")]
+    InvalidRewardAccount,
+    #[msg("Invalid stake account.")]
+    InvalidStakeAccount
 }

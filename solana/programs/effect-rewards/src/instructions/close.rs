@@ -5,7 +5,7 @@ pub struct Close<'info> {
      #[account(mut)]
     pub reflection: Account<'info, ReflectionAccount>,
     
-    #[account(mut, close = authority, has_one = authority @ EffectError::Unauthorized)]
+    #[account(mut, close = authority, has_one = authority @ RewardErrors::Unauthorized)]
     pub reward: Account<'info, RewardAccount>,
    
     #[account(mut)]

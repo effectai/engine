@@ -5,14 +5,14 @@ use effect_common::cpi;
 #[derive(Accounts)]
 pub struct Topup<'info> {
     #[account(mut)]
-    pub staker_tokens: Account<'info, TokenAccount>,
+    pub user_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
-    pub vault: Account<'info, TokenAccount>,
+    pub vault_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
-        has_one = vault @ EffectError::InvalidVault,
-        has_one = authority @ EffectError::Unauthorized,
-        constraint = stake.time_unstake == 0 @ EffectStakingError::AlreadyUnstaked,
+        has_one = vault_token_account @ StakingErrors::InvalidVault,
+        has_one = authority @ StakingErrors::Unauthorized,
+        constraint = stake.time_unstake == 0 @ StakingErrors::AlreadyUnstaked,
     )]
     pub stake: Account<'info, StakeAccount>,
     pub authority: Signer<'info>,
@@ -22,7 +22,7 @@ pub struct Topup<'info> {
 impl<'info> Topup<'info> {
     pub fn handler(&mut self, amount: u64) -> Result<()> {
         // test amount
-        require!(amount > 0, EffectStakingError::AmountNotEnough);
+        require!(amount > 0, StakingErrors::AmountNotEnough);
 
         // get stake account and topup stake
         self.stake.topup(amount);

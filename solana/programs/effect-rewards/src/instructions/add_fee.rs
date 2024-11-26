@@ -1,14 +1,15 @@
 use crate::*;
 use anchor_spl::token::{Token, TokenAccount};
+use effect_common::cpi;
 
 #[derive(Accounts)]
 pub struct AddFee<'info> {
     #[account(mut)]
-    pub staker_tokens: Account<'info, TokenAccount>,
-    #[account(mut, has_one = vault @ EffectError::InvalidVault)]
+    pub user_token_account: Account<'info, TokenAccount>,
+    #[account(mut, has_one = vault_token_account @ RewardErrors::InvalidVault)]
     pub reflection: Account<'info, ReflectionAccount>,
     #[account(mut)]
-    pub vault: Account<'info, TokenAccount>,
+    pub vault_token_account: Account<'info, TokenAccount>,
     pub authority: Signer<'info>,
     pub token_program: Program<'info, Token>,
 }

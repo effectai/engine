@@ -18,11 +18,11 @@ pub struct Init<'info> {
         init,
         payer = authority,
         token::mint = mint,
-        token::authority = vault,
+        token::authority = vault_token_account,
         seeds = [ "vault".as_ref() ],
         bump,
     )]
-    pub vault: Account<'info, TokenAccount>,
+    pub vault_token_account: Account<'info, TokenAccount>,
 
     #[account(mut, address = id::AUTHORITY)]
     pub authority: Signer<'info>,
@@ -35,6 +35,6 @@ pub struct Init<'info> {
 
 impl<'info> Init<'info> {
     pub fn handler(&mut self, vault_bump: u8) -> Result<()> {
-        self.reflection.init(self.vault.key(), vault_bump)
+        self.reflection.init(self.vault_token_account.key(), vault_bump)
     }
 }

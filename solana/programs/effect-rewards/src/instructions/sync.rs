@@ -1,13 +1,14 @@
+use effect_staking::StakeAccount;
+
 use crate::*;
-use effect_staking::{EffectStakingError, StakeAccount};
 
 #[derive(Accounts)]
 pub struct Sync<'info> {
     #[account(mut)]
     pub reward: Account<'info, RewardAccount>,
     #[account(
-        constraint = stake.time_unstake == 0 @ EffectStakingError::AlreadyUnstaked,
-        constraint = stake.authority == reward.authority @ effect_common::EffectError::Unauthorized,
+        constraint = stake.time_unstake == 0 @ RewardErrors::AlreadyUnstaked,
+        constraint = stake.authority == reward.authority @ RewardErrors::Unauthorized,
     )]
     pub stake: Account<'info, StakeAccount>,
     #[account(mut)]

@@ -17,6 +17,8 @@ name = "effect_common"
 mainnet = []
 no-entrypoint = []
 cpi = ["no-entrypoint"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
 
 [dependencies]
 anchor-lang = "0.30.1"
