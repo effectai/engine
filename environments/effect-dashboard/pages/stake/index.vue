@@ -2,12 +2,13 @@
     <div>
         <UTabs :items="items">
             <template #overview="{ item }">
-                <div class="p-4">
-                    <StakeOverviewCard />
-                </div>
+                <StakeOverviewCard />
             </template>
             <template #stake>
                 <StakingForm/>
+            </template>
+            <template #unstake>
+                <UnstakeForm/>
             </template>
         </UTabs>
     </div>
@@ -28,7 +29,6 @@ const items = [{
     slot: 'unstake',
     label: 'Unstake',
     icon: 'i-heroicons-arrow-down-tray',
-    disabled: true,
     content: 'And, this is the content for Tab2'
 }]
 </script>

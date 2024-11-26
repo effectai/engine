@@ -12,16 +12,24 @@
             pending reward:
             {{ pendingRewards }}
             <UButton @click="handleSubmit" color="black">Claim</UButton>
+            <UButton @click="addFee" color="black">add fee</UButton>
         </div>
     </UCard>
 </template>
 
 <script setup lang="ts">
-const { useGetStakeAccount, useClaimRewards, useGetRewardAccount, useGetReflectionAccount } = useStakingProgram();
+const { useGetStakeAccount, useClaimRewards, useGetRewardAccount, useGetReflectionAccount, useAddFee } = useStakingProgram();
 
 const { data: stakeAccount } = useGetStakeAccount();
 const { data: rewardAccount } = useGetRewardAccount();
 const { data: reflectionAccount } = useGetReflectionAccount();
+
+const { mutateAsync: doAddFee } = useAddFee();
+const addFee = async () => {
+    await doAddFee({
+     amount: 5,   
+    });
+}   
 
 const { mutateAsync: claimRewards } = useClaimRewards();
 

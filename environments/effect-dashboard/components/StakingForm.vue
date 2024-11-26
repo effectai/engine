@@ -30,27 +30,6 @@
 							<span class="text-sm mt-1 block">Current stake: {{ amountToBalance(currentStakeAmount || new
 								BN(0)) }}</span>
 						</UCard>
-						<div class="">
-							<label>Unstake duration: {{ unstakeDays }} days</label>
-							<URange id="unstakeDays" v-model="unstakeDays" :min="14" :max="365" placeholder="14"
-								:class="{ 'border-red-500': error }" />
-
-							<div class="mt-5 flex text-sm gap-x-5">
-								<span>Popular durations:</span>
-								<div class="flex gap-x-5">
-									<UButton color="white" size="xs" @click="unstakeDays = 30" class="">
-										30 days
-									</UButton>
-									<UButton color="white" size="xs" @click="unstakeDays = 90" class="">
-										90 days
-									</UButton>
-									<UButton color="white" size="xs" @click="unstakeDays = 365" class="">
-										365 days
-									</UButton>
-								</div>
-							</div>
-
-						</div>
 					</div>
 					<p v-if="error" class="mt-2 text-sm text-red-400">{{ error }}</p>
 				</div>
@@ -72,8 +51,9 @@ import { watchOnce } from "@vueuse/core";
 const { useGetEfxBalanceQuery } = useSolanaWallet();
 const { data: availableBalance } = useGetEfxBalanceQuery();
 
-const { useStake, useTopupOrExtendStake, useGetStakeAccount } =
+const { useStake, useTopUp, useGetStakeAccount } =
 	useStakingProgram();
+
 const {
 	data: stakeAccount,
 	amount: currentStakeAmount,
@@ -120,7 +100,7 @@ const formatNumber = (num) => {
 };
 
 const { mutateAsync: stake } = useStake();
-const { mutateAsync: topUpOrExtend } = useTopupOrExtendStake();
+const { mutateAsync: topup } = useTopUp();
 
 const handleSubmit = async () => {
 	if (!isValid.value || !unstakeDays.value) {
@@ -132,14 +112,13 @@ const handleSubmit = async () => {
 	error.value = "";
 
 	try {
-		const txId = stakeAccountExists.value && currentStakeUnstakeDays.value
-			? await topUpOrExtend({
+		const txId = stakeAccountExists.value 
+			? await topup({
 				amount: Number(stakeAmount.value),
-				unstakeDaysDelta: unstakeDays.value - currentStakeUnstakeDays.value,
 			})
 			: await stake({
 				amount: Number(stakeAmount.value),
-				unstakeDays: unstakeDays.value,
+				unstakeDays: 30,
 			});
 			
 		console.log('Transaction ID:', txId);
