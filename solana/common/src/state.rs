@@ -106,9 +106,7 @@ pub mod stake_program {
             self.xefx = if self.time_unstake != 0 {
                 0
             } else {
-                (u128::from(self.duration) * XEFX_PRECISION / XEFX_DIV + XEFX_PRECISION)
-                    * u128::from(self.amount)
-                    / XEFX_PRECISION
+                u128::from(self.amount) 
             }
         }
     }

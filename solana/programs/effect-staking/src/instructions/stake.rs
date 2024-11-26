@@ -40,7 +40,6 @@ pub struct Stake<'info> {
 
 impl<'info> Stake<'info> {
     pub fn handler(&mut self, amount: u64, duration: u128, vault_bump: u8) -> Result<()> {
-        // test duration and amount
         require!(
             duration >= STAKE_DURATION_MIN,
             StakingErrors::DurationTooShort

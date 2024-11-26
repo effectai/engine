@@ -34,6 +34,7 @@ pub struct Claim<'info> {
 impl<'info> Claim<'info> {
     pub fn handler(&mut self) -> Result<()> {
         // determine amount to claim
+
         let amount: u128 = self.reward.get_amount(self.reflection.rate);
 
         if amount == 0 {

@@ -142,8 +142,6 @@ describe("Staking Program", async () => {
 			// expect to have balance in the vesting vault account
 			const vestingVaultAccountData = await provider.connection.getTokenAccountBalance(vestingVaultAccount);
 			expect(vestingVaultAccountData.value.uiAmount).toBe(5);
-
-
 		});
 	})
 
@@ -181,8 +179,6 @@ describe("Staking Program", async () => {
 			// fetch stake account
 			const account =
 				await bankrunProgram.account.stakeAccount.fetch(stakeAccount);
-
-			console.log(new Date(account.timeStake.toNumber() * 1000));
 
 			// wait 5 days
 			await useTimeTravel(100);
