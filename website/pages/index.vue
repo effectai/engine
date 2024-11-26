@@ -96,54 +96,62 @@
         </div>
       </template>
     </SimpleSection>
-    <SimpleSection class="">
+
+    <SimpleSection class="container">
         <div class="columns">
-            <div class="column is-half">
-                <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left is-half">
+            <div class="column is-three-quarters is-three-quarters-tablet is-three-quarters-desktop">
+                <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left">
                     Harmonizing AI with Humanity: Empowering Tomorrow's Workforce Together
                 </h1>
             </div>
         </div>
     </SimpleSection>
-    <SimpleSection :centered="true" class="container is-max-widescreen">
+
+    <SimpleSection :centered="true" class="container">
         <template #subtitle>
-            <div class="columns">
-                <div class="column box is-shadowless" style="background-image: url(./img/hero-background.png); height: 280px; max-width: 440px;">
+            <div class="columns box mb-6 is-6">
+                <div class="column is-5">
+                    <img class="box p-0 image is-4by3" src="../public/img/hero-background.png" style="">
                 </div>
-                <div class="column ml-6">
+                <div class></div>
+                <div class="column is-half is-three-fifths-desktop">
                     <p class="has-text-weight-medium is-size-2 has-text-left pb-5">Effect AI: Plans for 2024</p>
                     <p class="has-text-weight-normal is-size-5 has-text-left">
                         Today, we're thrilled to bring forward the plans that Effect AI has in store for 2024. 
                         This year is bound to be a transformative one for Effect AI, as some of the most exciting 
                         and groundbreaking updates...
-                    </p>
+                    </p> 
                 </div>
             </div>
-            <div class="columns mt-6">
-                <div class="column box is-shadowless" style="background-image: url(./img/hero-background.png);height: 280px; max-width: 440px;">
+            <div class="columns box mb-6 is-6">
+                <div class="column is-5 ">
+                    <img class="box p-0 image is-4by3" src="../public/img/hero-background.png" style="">
                 </div>
-                <div class="column ml-6">
+                <div class></div>
+                <div class="column is-half is-three-fifths-desktop">
                     <p class="has-text-weight-medium is-size-2 has-text-left pb-5">Tech Blog: On-Chain Microtasks</p>
                     <p class="has-text-weight-normal is-size-5 has-text-left">
                         In this article, we’ll take a look at Effect Force’s new task creation mechanism. 
                         This technology makes it simple for people and businesses to add microtasks to the blockchain.
-                    </p>
+                    </p> 
                 </div>
             </div>
-            <div class="columns mt-6">
-                <div class="column box is-shadowless" style="background-image: url(./img/hero-background.png); height: 280px; max-width: 440px;">
+            <div class="columns box mb-6 is-6">
+                <div class="column is-5">
+                    <img class="box p-0 image is-4by3" src="../public/img/hero-background.png" style="">
                 </div>
-                <div class="column ml-6">
+                <div class></div>
+                <div class="column is-half is-three-fifths-desktop">
                     <p class="has-text-weight-medium is-size-2 has-text-left pb-5">The Effect DAO: Effect Staking Protocol 2.0</p>
                     <p class="has-text-weight-normal is-size-5 has-text-left">
                         By staking EFX, holders can improve their rank in The Effect DAO. Achieving a high rank 
                         has many benefits like vote casting, fee reward collection, and gaining privileges on the dApp level.
-                    </p>
+                    </p> 
                 </div>
             </div>
         </template>
     </SimpleSection>
-
+        
     <SimpleSection :centered="true">
         <template #subtitle>
             <div class="columns">
