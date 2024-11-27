@@ -1,64 +1,47 @@
 <template>
-	<div class="min-h-screen bg-gray-900 flex items-center justify-center p-6 text-gray-400">
-		<div class="w-full max-w-md bg-gray-800 rounded-lg shadow-xl p-8">
-			<h2 class="text-3xl font-bold text-white mb-6 font-title">Stake Tokens</h2>
-			<form @submit.prevent="handleSubmit" class="space-y-6">
-				<div class="">
-					<div class="relative">
-						<UCard class="mb-8 bg-gray-900 ">
-							<label for="stakeAmount" class="block text-md font-medium text-gray-400 mb-2">
-								Add to Stake
-							</label>
-							<div class="relative ">
-								<input id="stakeAmount" v-model.number="stakeAmount" type="text" inputmode="decimal"
-									placeholder="0.00"
-									class="w-full px-4 py-3 bg-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
-									:class="{ 'border-red-500': error }" />
-
-								<div
-									class="flex absolute items-center gap-3 right-2 top-1/2 transform -translate-y-1/2">
-									<span class="text-sm text-gray-400" v-if="availableBalance">
-										in Wallet: <span class="text-white">{{
-											formatNumber(availableBalance.value) }}</span>
-									</span>
-									<button type="button" @click="setMaxAmount"
-										class=" bg-highlight text-black px-3 py-1 rounded-md text-sm font-mono hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-700">
-										MAX
-									</button>
-								</div>
-							</div>
-							<span class="text-sm mt-1 block">Current stake: {{ amountToBalance(currentStakeAmount || new
-								BN(0)) }}</span>
-						</UCard>
+	<UCard class="flex flex-col dark:!bg-[#1C1A1F]">
+		<form @submit.prevent="handleSubmit" class="space-y-6">
+			<div class="bg-white/5 p-6 rounded-xl">
+				<h3 class="text-lg font-semibold mb-6">Stake Tokens</h3>
+				<div class="space-y-6">
+					<div><label class="block text-sm text-gray-400 mb-2">Amount to Stake</label>
+						<div class="relative"><input type="text" v-model="stakeAmount"
+								class="w-full bg-white/5 border border-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-700"
+								placeholder="0.00">
+							<UButton @click="setMaxAmount" color="black"
+								class="absolute bg-brand-highlight right-2 top-1/2 -translate-y-1/2 px-4 py-1 bg-gray-800 rounded-md text-sm">
+								MAX</UButton>
+						</div>
 					</div>
-					<p v-if="error" class="mt-2 text-sm text-red-400">{{ error }}</p>
+					<div class="bg-white/5 rounded-lg py-4 space-y-2">
+						<div class="flex justify-between text-sm"><span class="text-gray-400">Available
+								Balance</span><span>{{ availableBalance?.value }} EFFECT</span></div>
+						<div class="flex justify-between text-sm"><span class="text-gray-400">Lock Period</span><span>30
+								Days</span></div>
+					</div>
+					<UButton @click="handleSubmit" color="white" class="flex justify-center w-full">Stake</UButton>
 				</div>
-				<UButton @click="handleSubmit" variant="outline"
-					class="text-white w-full text-center flex-grow justify-center" color="white"
-					:disabled="!isValid || isSubmitting">
-					{{ isSubmitting ? 'Staking...' : 'Confirm' }}
-				</UButton>
-			</form>
-		</div>
-	</div>
+			</div>
+
+		</form>
+	</UCard>
 </template>
 
 <script setup lang="ts">
-import { BN } from "@coral-xyz/anchor";
 import { ref, computed } from "vue";
 import { watchOnce } from "@vueuse/core";
 
 const { useGetEfxBalanceQuery } = useSolanaWallet();
 const { data: availableBalance } = useGetEfxBalanceQuery();
 
-const { useStake, useTopUp, useGetStakeAccount } =
-	useStakingProgram();
+const { useStake, useTopUp, useGetStakeAccount } = useStakingProgram();
 
 const {
 	data: stakeAccount,
 	amount: currentStakeAmount,
 	unstakeDays: currentStakeUnstakeDays,
 	error: stakeError,
+	refetch
 } = useGetStakeAccount();
 const stakeAccountExists = computed(() => !!stakeAccount.value);
 
@@ -88,20 +71,14 @@ const isValid = computed(() => {
 });
 
 const setMaxAmount = () => {
+	if (!availableBalance.value) return;
 	stakeAmount.value = availableBalance.value.value;
 	error.value = "";
 };
 
-const formatNumber = (num) => {
-	return new Intl.NumberFormat("en-US", {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	}).format(num);
-};
-
 const { mutateAsync: stake } = useStake();
 const { mutateAsync: topup } = useTopUp();
-
+const toast = useToast();
 const handleSubmit = async () => {
 	if (!isValid.value || !unstakeDays.value) {
 		error.value = "Invalid stake amount";
@@ -112,16 +89,21 @@ const handleSubmit = async () => {
 	error.value = "";
 
 	try {
-		const txId = stakeAccountExists.value 
+		const txId = stakeAccountExists.value
 			? await topup({
 				amount: Number(stakeAmount.value),
-			})
-			: await stake({
+			}) : await stake({
 				amount: Number(stakeAmount.value),
 				unstakeDays: 30,
 			});
-			
-		console.log('Transaction ID:', txId);
+
+		toast.add({
+			title: "Transaction submitted",
+			description: "Your transaction has been submitted to the network.",
+		})
+
+		// refetch the stake account
+		refetch();
 
 	} catch (err) {
 		console.error(err);

@@ -268,13 +268,17 @@ export function useStakingProgram() {
 		});
 
 		const amount = computed(() => query.data.value?.data?.amount);
+		const amountFormatted = computed(() => {
+			const amount = query.data.value?.data?.amount;
+			return amount ? amount.toNumber() / 1000000 : 0;
+		})
 		const unstakeDays = computed(
 			() =>
 				query.data.value?.data?.duration &&
 				query.data.value.data.duration.toNumber() / SECONDS_PER_DAY,
 		);
 
-		return { ...query, amount, unstakeDays };
+		return { ...query, amount, unstakeDays, amountFormatted };
 	};
 
 	const useAddFee = () => {

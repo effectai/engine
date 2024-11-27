@@ -1,36 +1,61 @@
 <template>
-    <div>
-        <UTabs :items="items">
+    <div class="">
+        <div v-if="!publicKey">
+            <div class="flex items-center flex-col justify-center h-96">
+                <TheLogo />
+                <p>Login to continue.</p>
+            </div>
+        </div>
+        <UTabs v-if="publicKey" :items="items">
             <template #overview="{ item }">
-                <StakeOverviewCard />
+                <div>
+                    <StakeOverviewCard />
+                </div>
             </template>
-            <template #stake>
-                <StakingForm/>
+            <template #stake="{ item }">
+                <div>
+                    <StakingForm />
+                </div>
             </template>
             <template #unstake>
-                <UnstakeForm/>
+                <div class="my-5 flex justify-between space-x-5">
+                    <UnstakeForm class="flex-grow" />
+                    <UnstakesCard />
+                </div>
             </template>
         </UTabs>
     </div>
 </template>
 
 <script setup lang="ts">
+import { useWallet } from 'solana-wallets-vue';
+
 const items = [{
     slot: 'overview',
     label: 'Overview',
-    icon: 'i-heroicons-eye-dropper',
     content: 'Finally, this is the content for Tab3'
 }, {
     slot: 'stake',
     label: 'Stake',
-    icon: 'i-heroicons-information-circle',
     content: 'This is the content shown for Tab1'
 }, {
     slot: 'unstake',
     label: 'Unstake',
-    icon: 'i-heroicons-arrow-down-tray',
     content: 'And, this is the content for Tab2'
 }]
+
+const { publicKey } = useWallet()
+
 </script>
 
-<style scoped></style>
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.7s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+</style>

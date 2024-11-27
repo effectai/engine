@@ -1,7 +1,9 @@
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import type { PublicKey } from "@solana/web3.js";
 import { useQuery } from "@tanstack/vue-query";
 import { useWallet } from "solana-wallets-vue";
 import type { TargetWalletAdapter, WalletMeta } from "~/types/types";
+
 
 export const useSolanaWallet = (): TargetWalletAdapter => {
 	const { connection } = useGlobalState();
@@ -45,7 +47,6 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
 			queryKey: ["efx-balance", publicKey.value],
 			enabled: computed(() => !!publicKey.value !== null),
 			queryFn: async () => {
-				console.log("getting EFX .. balance");
 
 				if (!publicKey.value) {
 					throw new Error("No public key");
@@ -69,6 +70,32 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
 		});
 	};
 
+	const useGetTokenAccountBalanceQuery = (account: PublicKey) => {
+		return useQuery({
+			queryKey: ["token-account-balance", account.toBase58()],
+			enabled: computed(() => !!account !== null),
+			queryFn: async () => {
+				if (!publicKey.value) {
+					throw new Error("No public key");
+				}
+
+				try {
+					const balance = await connection.getTokenAccountBalance(account);
+					return {
+						value: balance.value.uiAmount || 0,
+						symbol: "EFFECT",
+					};
+				} catch (e) {
+					return {
+						value: 0,
+						symbol: "EFFECT",
+					}
+				}
+			},
+		});
+	}
+
+
 	return {
 		// state
 		address,
@@ -78,6 +105,7 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
 		// queries
 		useGetBalanceQuery,
 		useGetEfxBalanceQuery,
+		useGetTokenAccountBalanceQuery,
 
 		// methods
 		connect,

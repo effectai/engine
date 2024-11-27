@@ -26,7 +26,7 @@ impl<'info> ClaimTransfer<'info> {
             .vesting_account
             .claim(self.vault_token_account.amount, Clock::get()?.unix_timestamp);
 
-        // TODO:   below is not a requirement anymore, can be removed?
+        // TODO: below is not a requirement anymore, can be removed?
         // the pool must have enough funds for an emission
         require!(amount >= self.vesting_account.release_rate, VestingErrors::Underfunded);
 

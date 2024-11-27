@@ -18,6 +18,8 @@ export type WalletAdapterBase = {
 
     useGetEfxBalanceQuery: () => UseQueryReturnType<FormattedBalanceReturnType, Error>;
     useGetBalanceQuery: () => UseQueryReturnType<FormattedBalanceReturnType, Error>;
+    useGetTokenAccountBalanceQuery: (account: PublicKey) => UseQueryReturnType<FormattedBalanceReturnType, Error>;
+
 
     connect: () => void;
     disconnect: () => void;

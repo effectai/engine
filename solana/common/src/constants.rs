@@ -12,6 +12,7 @@ pub const PREFIX_VAULT: &str = "vault";
 pub const PREFIX_VESTING: &str = "vesting";
 
 pub const SECONDS_PER_DAY: u128 = 24 * 60 * 60;
+pub const UNSTAKE_DELAY_DAYS: u64 = 0;
 
 pub const STAKE_DURATION_MIN: u128 = 30 * SECONDS_PER_DAY; // 30 days
 pub const STAKE_DURATION_MAX: u128 = 365 * SECONDS_PER_DAY; // 1 year
