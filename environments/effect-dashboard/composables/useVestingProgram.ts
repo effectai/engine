@@ -14,6 +14,7 @@ export const useVestingProgram = () => {
 	const { publicKey, sendTransaction } = useWallet();
 	const { provider } = useAnchorProvider();
 	const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
+	
 	type VestingAccount = Awaited<
 		ReturnType<typeof vestingProgram.account.vestingAccount.fetch>
 	>;
@@ -25,7 +26,7 @@ export const useVestingProgram = () => {
 
 	const useGetVestingAccounts = () => {
 		return useQuery({
-			queryKey: ["vestingAccounts", publicKey.value],
+			queryKey: ["vestingAccounts", publicKey.value, "unstake"],
 			queryFn: async () => {
 				if (!publicKey.value) {
 					throw new Error("Could not get public key");
@@ -58,11 +59,6 @@ export const useVestingProgram = () => {
 				if (!publicKey.value) {
 					throw new Error("Could not get public key");
 				}
-
-				console.log("Claiming", address.toBase58(), vestingAccount);
-				console.log("recipientTokenAccount", vestingAccount.recipientTokenAccount.toBase58());
-				console.log("vaultTokenAccount", vestingAccount.vaultTokenAccount.toBase58());
-				console.log("authority", vestingAccount.authority.toBase58());
 
 				return await vestingProgram.methods
 					.claimTransfer()

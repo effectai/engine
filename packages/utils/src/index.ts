@@ -1,2 +1,2 @@
 export * from './eos.js'
-export * from './spl.js'
+export * from './derive.js'

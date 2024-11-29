@@ -1,20 +1,17 @@
 // plugins/wagmi.js
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { WagmiPlugin } from '@wagmi/vue'
-import { http, createConfig } from '@wagmi/vue'
-import { bsc, mainnet, sepolia } from '@wagmi/vue/chains'
-import { injected, metaMask, safe, walletConnect } from '@wagmi/vue/connectors'
 
-export const config = createConfig({
-  chains: [bsc],
-  connectors: [
-    injected(),
-    metaMask()
-  ],
-  transports: {
-    [bsc.id]: http(),
-  },
+const projectId = "79d9a7fe570c471146ae1cbc2f6b05cf"
+
+import { bsc, type AppKitNetwork } from '@reown/appkit/networks'
+export const networks: [AppKitNetwork, ...AppKitNetwork[]] = [bsc]
+
+export const wagmiAdapter = new WagmiAdapter({
+  networks,
+  projectId
 })
 
 export default defineNuxtPlugin((nuxtApp) => {
-  nuxtApp.vueApp.use(WagmiPlugin, { config })
+  nuxtApp.vueApp.use(WagmiPlugin, { config: wagmiAdapter.wagmiConfig })
 })

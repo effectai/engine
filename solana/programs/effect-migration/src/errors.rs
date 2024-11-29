@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 // Custom Error
 #[error_code]
-pub enum CustomError {
+pub enum MigrationError {
     #[msg("Invalid message provided.")]
     MessageInvalid,
 
@@ -20,4 +20,12 @@ pub enum CustomError {
     #[msg("Invalid action provided.")]
     InvalidActions,
 
+    #[msg("The memo in the transaction does not match the expected value.")]
+    MemoMismatch,
+   
+    #[msg("Invalid transaction message.")]
+    InvalidMessage,
+
+    #[msg("Memo field not found in actions.")]
+    MemoNotFound,
 }

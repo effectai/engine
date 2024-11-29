@@ -1,5 +1,5 @@
 <template>
-    <UCard class="flex flex-col dark:!bg-[#1C1A1F]">
+    <UCard class="flex flex-col">
         <form @submit.prevent="handleSubmit" class="space-y-6">
         <div class="dark:!bg-[#1C1A1F] p-6 rounded-xl">
                 <h3 class="text-lg font-semibold mb-6">Unstake Tokens</h3>

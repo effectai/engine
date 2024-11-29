@@ -68,10 +68,11 @@ pub mod stake_program {
             new_amount: u64,
         ) -> i64 {
             let total_amount = current_amount + new_amount;
-            let weighted_time = (current_time * current_amount as i64
-                + new_time * new_amount as i64)
-                / total_amount as i64;
-            weighted_time
+            let weighted_time = ((current_time as i128 * current_amount as i128)
+            + (new_time as i128 * new_amount as i128))
+            / total_amount as i128;
+    
+            weighted_time as i64
         }
 
         pub fn topup(&mut self, amount: u64) {

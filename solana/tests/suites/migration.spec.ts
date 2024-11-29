@@ -13,7 +13,7 @@ import { PrivateKey, Transaction, TransactionHeader } from "@wharfkit/antelope";
 import { ABICache, Action, Session } from "@wharfkit/session";
 import { WalletPluginPrivateKey } from "@wharfkit/wallet-plugin-privatekey";
 
-import type { SolanaSnapshotMigration } from "../../target/types/solana_snapshot_migration.js";
+import type { EffectMigration } from "../../target/types/effect_migration.js";
 
 import { expect, describe, it } from "vitest";
 import {
@@ -21,17 +21,17 @@ import {
 	useMigrationTestHelpers
 } from "../helpers.js";
 import { setup } from "../../utils/spl.js";
-import { useDeriveStakeAccounts } from "../../utils/anchor.js";
-import { EffectStaking } from "../../target/types/effect_staking.js";
+import type { EffectStaking } from "../../target/types/effect_staking.js";
+import { useDeriveStakeAccounts } from "../../utils/derive.js";
 
 describe("Migration Program", async () => {
 	const program = anchor.workspace
-		.SolanaSnapshotMigration as Program<SolanaSnapshotMigration>;
+		.EffectMigration as Program<EffectMigration>;
 
 	const stakeProgram = anchor.workspace.EffectStaking as Program<EffectStaking>;
 
 	const { provider, payer } = useAnchor();
-	const { createMigrationAccount } = useMigrationTestHelpers(program);
+	const { useCreateTokenClaim, useCreateStakeClaim } = useMigrationTestHelpers(program);
 
 	// local test data
 	const originalMessage = `Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: ${payer.publicKey.toBase58()}`;
@@ -43,16 +43,17 @@ describe("Migration Program", async () => {
 		it.concurrent("correctly initializes an ethereum based vault", async () => {
 			const { mint, ata } = await setup({ provider, payer});
 
-			const { metadata } = await createMigrationAccount({
+			const { tokenClaimAccount } = await useCreateTokenClaim({
 				mint,
 				payer,
 				payerTokens: ata,
 				publicKey: toBytes(ethPublicKey),
+				provider,
 			});
 
 			// // check if the metadata account was created
 			const metadataAccount =
-				await provider.connection.getAccountInfo(metadata);
+				await provider.connection.getAccountInfo(tokenClaimAccount);
 
 			expect(metadataAccount).to.not.be.null;
 		});
@@ -66,15 +67,16 @@ describe("Migration Program", async () => {
 				throw new Error("Invalid public key");
 			}
 
-			const { metadata } = await createMigrationAccount({
+			const { tokenClaimAccount } = await useCreateTokenClaim({
 				mint,
 				payer,
 				payerTokens: ata,
 				publicKey,
+				provider,
 			});
 
 			const metadataAccount =
-				await provider.connection.getAccountInfo(metadata);
+				await provider.connection.getAccountInfo(tokenClaimAccount);
 			expect(metadataAccount).to.not.be.null;
 		});
 
@@ -100,11 +102,12 @@ describe("Migration Program", async () => {
 				throw new Error("Invalid public key");
 			}
 
-			const { metadata, vault } = await createMigrationAccount({
+			const { tokenClaimAccount, tokenClaimVault } = await useCreateTokenClaim({
 				mint,
 				payer,
 				payerTokens: ata,
 				publicKey: pk,
+				provider
 			});
 
 			const session = new Session({
@@ -162,25 +165,16 @@ describe("Migration Program", async () => {
 
 			const signature = await session.signTransaction(tx);
 
-
-			const {stakeAccount, vaultAccount: stakeVaultAccount} = useDeriveStakeAccounts({
-				mint,
-				authority: payer.publicKey,
-				programId: stakeProgram.programId
-			})
-
 			await program.methods
-				.claim(
+				.claimTokens(
 					Buffer.from(signature[0].data.array),
 					Buffer.from(serializedTransactionBytes.array),
 				)
 				.accounts({
-					metadataAccount: metadata,
-					vaultAccount: vault,
-					payerAta: ata,
+					claimAccount: tokenClaimAccount,
+					recipientTokenAccount: ata,
+					vaultAccount: tokenClaimVault,
 					payer: payer.publicKey,
-					stakeAccount,
-					stakeVaultAccount,
 					mint,
 				})
 				.signers([payer])
@@ -189,11 +183,12 @@ describe("Migration Program", async () => {
 
 		it.concurrent("correctly signs with keccak256", async () => {
 			const { mint, ata } = await setup({ provider, payer });
-			const { metadata, vault } = await createMigrationAccount({
+			const { tokenClaimAccount, tokenClaimVault } = await useCreateTokenClaim({
 				mint,
 				payer,
 				payerTokens: ata,
 				publicKey: toBytes(ethPublicKey),
+				provider
 			});
 			
 			const ethPrivateKey =
@@ -211,22 +206,14 @@ describe("Migration Program", async () => {
 				Buffer.from([sig.recovery + 27]),
 			]);
 
-			const {stakeAccount, vaultAccount: stakeVaultAccount} = useDeriveStakeAccounts({
-				mint,
-				authority: payer.publicKey,
-				programId: stakeProgram.programId
-			})
-
 			await program.methods
-				.claim(sigWithRecovery, Buffer.from(originalMessage))
+				.claimTokens(sigWithRecovery, Buffer.from(originalMessage))
 				.accounts({
-					metadataAccount: metadata,
-					payerAta: ata,
-					stakeAccount,
-					stakeVaultAccount,
 					mint,
 					payer: payer.publicKey,
-					vaultAccount: vault,
+					claimAccount: tokenClaimAccount,
+					recipientTokenAccount: ata,
+					vaultAccount: tokenClaimVault,
 				})
 				.signers([payer])
 				.rpc();
@@ -234,11 +221,12 @@ describe("Migration Program", async () => {
 
 		it.concurrent("correctly claims with eth_personal_sign", async () => {
 			const { mint, ata } = await setup({ provider, payer });
-			const { metadata, vault } = await createMigrationAccount({
+			const { tokenClaimAccount,tokenClaimVault } = await useCreateTokenClaim({
 				mint,
 				payer,
 				payerTokens: ata,
 				publicKey: toBytes(ethPublicKey),
+				provider
 			});
 
 			const account = privateKeyToAccount(
@@ -251,22 +239,14 @@ describe("Migration Program", async () => {
 				message: originalMessage,
 			});
 
-			const {stakeAccount, vaultAccount: stakeVaultAccount} = useDeriveStakeAccounts({
-				mint,
-				authority: payer.publicKey,
-				programId: stakeProgram.programId
-			})
-
 			await program.methods
-				.claim(Buffer.from(toBytes(signature)), Buffer.from(message))
+				.claimTokens(Buffer.from(toBytes(signature)), Buffer.from(message))
 				.accounts({
-					payerAta: ata,
-					metadataAccount: metadata,
-					vaultAccount: vault,
-					stakeVaultAccount,
 					mint,
-					stakeAccount,
 					payer: payer.publicKey,
+					claimAccount: tokenClaimAccount,
+					recipientTokenAccount: ata,
+					vaultAccount: tokenClaimVault,
 				})
 				.rpc();
 		});
@@ -288,12 +268,13 @@ describe("Migration Program", async () => {
 				message: originalMessage,
 			});
 
-			const { metadata, vault } = await createMigrationAccount({
+			const { stakeClaimAccount, stakeClaimVault } = await useCreateStakeClaim({
 				mint,
 				payer,
 				payerTokens: ata,
 				publicKey: toBytes(ethPublicKey),
 				stakeStartTime,
+				provider
 			});
 
 			const {stakeAccount, vaultAccount} = useDeriveStakeAccounts({
@@ -303,12 +284,12 @@ describe("Migration Program", async () => {
 			})
 
 			await program.methods
-				.claim(Buffer.from(toBytes(signature)), Buffer.from(message))
+				.claimStake(Buffer.from(toBytes(signature)), Buffer.from(message))
 				.accounts({
-					metadataAccount: metadata,
-					vaultAccount: vault,
+					recipientTokenAccount: ata,
+					vaultAccount: stakeClaimVault,
 					payer: payer.publicKey,
-					payerAta: ata,
+					claimAccount: stakeClaimAccount,
 					stakeAccount,
 					stakeVaultAccount: vaultAccount,
 					mint,
@@ -326,7 +307,7 @@ describe("Migration Program", async () => {
 			expect(stakeVaultBalance.value.uiAmount).to.be.greaterThan(0);
 
 			// check if claim vault is created and emptied out
-			const claimVaultBalance = await provider.connection.getTokenAccountBalance(vault);
+			const claimVaultBalance = await provider.connection.getTokenAccountBalance(stakeClaimVault);
 			expect(claimVaultBalance.value.uiAmount).to.equal(0);
 		});
 

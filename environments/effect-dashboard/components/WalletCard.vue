@@ -1,10 +1,10 @@
 <template>
-  <div class="w-full bg-white  dark:bg-gray-800 rounded-lg overflow-hidden">
+  <div class="w-full rounded-lg overflow-hidden">
     <div class="">
       <div class="flex items-center justify-between mb-5">
         <div class="flex items-center space-x-2">
-          <UIcon class="h-5 w-5 text-black" name="lucide:wallet" />
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+          <UIcon class="h-5 w-5 text-black dark:text-white" name="lucide:wallet" />
+          <h2 class="text-2xl font-bold">
             <slot name="title">Wallet Connected</slot>
           </h2>
         </div>
@@ -23,7 +23,7 @@
         </div>
         <div class="flex items-center justify-between">
           <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Wallet:</span>
-          <span class="text-sm text-gray-600 dark:text-gray-400 capitalize">
+          <span class="text-sm text-gray-600 dark:text-gray-400  capitalize">
             <span v-if="walletMeta.icon">
               <img :src="walletMeta.icon" class="h-5 w-5 inline-block mr-1" />
             </span>
@@ -44,7 +44,7 @@
         </div>
       </div>
     </div>
-    <div class="py-4  dark:bg-gray-700 flex justify-between gap-5">
+    <div class="py-4 flex justify-between gap-5">
       <slot name="action"></slot>
     </div>
   </div>

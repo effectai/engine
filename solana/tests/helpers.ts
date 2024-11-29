@@ -6,15 +6,13 @@ import { type Idl, Program } from "@coral-xyz/anchor";
 import { BankrunProvider, startAnchor } from "anchor-bankrun";
 import {
 	createStakeAccountAndUnstake,
-	initializeVaultAccount,
+	createStakeClaim,
+	createTokenClaim,
 } from "../utils/anchor.js";
 import { setup } from "../utils/spl.js";
-import stakingIDLJson from "../target/idl/effect_staking.json";
 import { Clock } from "solana-bankrun";
-import { toBytes } from "viem";
-import { deriveMetadataAndVaultFromPublicKey } from "@effectai/utils";
-import type { SolanaSnapshotMigration } from "../target/types/solana_snapshot_migration.js";
-
+import { useDeriveMigrationAccounts } from "@effectai/utils";
+import type { EffectMigration } from "../target/types/effect_migration.js";
 
 export const useTestContext = () => {
 	const mint = new PublicKey(inject("tokenMint"));
@@ -23,47 +21,82 @@ export const useTestContext = () => {
 	return { mint, ata };
 };
 
+export const useMigrationTestHelpers = (program: Program<EffectMigration>) => {
 
+	const useCreateTokenClaim = async ({
+		publicKey,
+		mint,
+		payer,
+		payerTokens,
+		amount,
+		provider,
+	}: {
+		publicKey: Uint8Array;
+		mint: PublicKey;
+		payer: Keypair;
+		payerTokens: PublicKey;
+		provider: anchor.Provider;
+		amount?: number;
+	}) => {
 
-export const useMigrationTestHelpers = (program: Program<SolanaSnapshotMigration>) => {
-	const createMigrationAccount = async ({
+		const { tokenClaimAccount, tokenClaimVault } = useDeriveMigrationAccounts({
+			initializer: payer.publicKey,
+			mint,
+			foreignPublicKey: publicKey,
+			programId: program.programId,
+		});
+
+		await createTokenClaim({
+			provider,
+			foreignPubKey: publicKey,
+			mint,
+			payer,
+			payerTokens,
+			amount : amount || 5000000,
+		});
+
+		return { tokenClaimAccount, tokenClaimVault };
+	};
+
+	const useCreateStakeClaim = async ({
 		publicKey,
 		mint,
 		payer,
 		payerTokens,
 		stakeStartTime,
 		amount,
+		provider,
 	}: {
 		publicKey: Uint8Array;
 		mint: PublicKey;
 		payer: Keypair;
 		payerTokens: PublicKey;
-		stakeStartTime?: number;
+		stakeStartTime: number;
 		amount?: number;
+		provider: anchor.Provider;
 	}) => {
 
-		const { metadata, vault } = deriveMetadataAndVaultFromPublicKey({
-			payer: payer.publicKey,
+		const { stakeClaimAccount, stakeClaimVault } = useDeriveMigrationAccounts({
+			initializer: payer.publicKey,
 			mint,
-			foreignPubKey: publicKey,
+			foreignPublicKey: publicKey,
 			programId: program.programId,
-			stakeStartTime: stakeStartTime || 0
 		});
 
-		await initializeVaultAccount({
+		await createStakeClaim({
 			foreignPubKey: publicKey,
 			mint,
 			payer,
-			metadata,
 			payerTokens,
+			stakeStartTime,
 			amount: amount || 5000000,
-			stakeStartTime
+			provider
 		});
 
-		return { metadata, vault }
+		return { stakeClaimAccount, stakeClaimVault}
 	};
 
-	return { createMigrationAccount };
+	return {  useCreateStakeClaim, useCreateTokenClaim  };
 };
 
 export type AnchorErrorIdl = {

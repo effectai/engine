@@ -1,107 +1,69 @@
 <template>
-	<div class="text-center flex justify-center flex-col" v-if="canClaim">
+	<UCard class="text-center flex justify-center flex-col" v-if="canClaim">
 		<div id="confetti-container" class="max-w-[50px] mx-auto w-full h-3">
 			<ConfettiExplosion v-if="txId" :particleCount="200" :force="0.3" />
 		</div>
 
-		<h2 class="title">Token Claim</h2>
-		<p class="">You have succesfully verified ownership of your account.</p>
+		<h2 class="title">Your Claims</h2>
+		<UDivider class="my-3" />
+
+		<div class="mb-12" v-if="claims && claims.length">
+			<p class="text-center text-lg mt-8">We have found the following claims
+				associated with your Public Key </p>
+			<BlockchainAddress class="w-full justify-center text-lg" v-if="publicKeyString"
+				:address="publicKeyString" />
+		</div>
+		<div v-else-if="!claims || claims.length == 0" class="my-5">
+			<UIcon class="text-5xl" name="lucide:frown"/>
+			<p class="text-center text-lg">No active claims found for your Public Key</p>
+			<BlockchainAddress class="w-full justify-center text-lg" v-if="publicKeyString"
+				:address="publicKeyString" />
+		</div>
 		<div>
 			<div class="mt-5" v-if="canClaim">
-				<div class="flex justify-center gap-x-10 gap-y-2 items-center">
-					<div class="flex flex-col text-2xl my-5">
-						<NumberAnimation v-if="vaultAccountBalance || vaultAccountBalance === 0" ref="vaultCounter"
-							:to="0" :duration="7" :format="(value: number) => value.toFixed(0)"
-							:from="vaultAccountBalance" :autoplay="false" easing="linear">
-						</NumberAnimation>
-						Vault Balance
-					</div>
-					<span class="text-3xl">
-						->
-					</span>
-					<div class="flex flex-col text-2xl my-5">
-						<NumberAnimation ref="efxBalanceCounter"
-							v-if="efxBalance && (vaultAccountBalance || vaultAccountBalance === 0)"
-							:to="efxBalance?.value" :duration="7"
-							:format="(value: number) => value.toFixed(0)" :from="efxBalance?.value || 0"
-							:autoplay="false" easing="linear">
-						</NumberAnimation>
-						Token Balance
-					</div>
+				<div v-if="isLoading">Loading Claims..</div>
+				<div v-else-if="isError">Error loading claims</div>
+				<div v-else-if="claims" class="flex flex-col md:flex-row w-full gap-5">
+					<UCard v-for="claim in claims" class="md:w-1/2 w-full">
+						<h2 class="title capitalize">{{ claim.type }} Claim</h2>
+						<label class="text-gray-600">Amount</label>
+						<p>{{ claim.amount }} EFX</p>
+						<UButton color="black" :disabled="claim.amount == 0" class="mt-5"
+							@click="handleClaim({ claimAccount: claim.data })">
+							Claim on Solana
+						</UButton>
+					</UCard>
 				</div>
-
-				<div v-if="!txId" class="flex gap-x-5 justify-center my-5 items-center">
-					<UButton color="black" :disabled="Boolean(!vaultAccountBalance)" @click="handleClaim">
-						Claim on Solana
-					</UButton>
-					<nuxt-link class="underline cursor-pointer" @click="reset">Log out</nuxt-link>
-				</div>
-				<div class="mb-3 mt-10" v-if="txId">
-					<p>Thank you for being a loyal supporter of Effect AI. We truly couldn’t have come
-						this far without the incredible support of our community. Your dedication means the world to us,
-						and we’re excited to have you with us for many more years to come.</p>
-					<p>Let’s continue building together. See you on Solana!</p>
-
-					<div class="flex justify-center mt-5">
-						<nuxt-link class="underline cursor-pointer" @click="reset">Migrate another account</nuxt-link>
-					</div>
+				<div v-if="!txId" class="flex gap-x-5 justify-center my-5 items-center mt-10">
+					<nuxt-link class="underline cursor-pointer" @click="reset">Switch accounts</nuxt-link>
 				</div>
 			</div>
 		</div>
-
-
-	</div>
+	</UCard>
 </template>
 
 <script setup lang="ts">
 import ConfettiExplosion from "vue-confetti-explosion";
-import NumberAnimation from "vue-number-animation";
 import { useMigrationProgram } from "~/composables/useMigrationProgram";
 
-const efxBalanceCounter = ref(null);
-const vaultCounter = ref(null);
-const startAnim = () => {
-	if (!vaultCounter.value) return;
-	vaultCounter.value.play();
-	efxBalanceCounter.value.play();
-}
-
 const { canClaim, clear } = useGlobalState()
-
-const { useClaim, useGetVaultAccountBalance } = useMigrationProgram();
-
-const { data: vaultAccountBalance } = useGetVaultAccountBalance();
+const { useClaim, useGetClaims } = useMigrationProgram();
+const { data: claims, isError, isLoading, isLoadingError } = useGetClaims();
 
 const { useGetEfxBalanceQuery } = useSolanaWallet()
-const { data: efxBalance, refetch } = useGetEfxBalanceQuery();
+const { data: efxBalance } = useGetEfxBalanceQuery();
 
-const efxBalanceSnapshot: Ref<number | undefined> = ref(0);
 const toast = useToast();
 const txId: Ref<string | null> = ref(null);
 const { mutateAsync: handleClaim } = useClaim({
 	options: {
-		onMutate: () => {
-			efxBalanceSnapshot.value = efxBalance.value?.value || 0;
-		},
 		onSuccess: (transationId) => {
-			console.log(transationId);
 			txId.value = transationId;
+			console.log("transationId", transationId);
 			toast.add({
 				title: "Success",
 				description: "Successfully claimed your new Effect Tokens on Solana!",
 			});
-
-			// refresh balances every 1 second, if we notice the balances are updates, stop the interval and start the animation
-			const interval = setInterval(async () => {
-				refetch();
-				if (efxBalance.value?.value !== efxBalanceSnapshot.value) {
-					console.log(efxBalance.value?.value, efxBalanceSnapshot.value)
-					clearInterval(interval);
-					await nextTick();
-					startAnim();
-				}
-
-			}, 1000);
 		}
 	}
 })
@@ -111,7 +73,7 @@ onBeforeMount(() => {
 	if (!canClaim.value) {
 		router.push("/migrate/step/verify");
 	}
-}); 
+});
 
 const { disconnect: disconnectEos } = useEosWallet();
 const { disconnect: disconnectBsc } = useBscWallet()

@@ -44,7 +44,7 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
 		const { publicKey } = useWallet();
 
 		return useQuery({
-			queryKey: ["efx-balance", publicKey.value],
+			queryKey: ["efx-balance", publicKey.value, "stake"],
 			enabled: computed(() => !!publicKey.value !== null),
 			queryFn: async () => {
 
@@ -72,7 +72,7 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
 
 	const useGetTokenAccountBalanceQuery = (account: PublicKey) => {
 		return useQuery({
-			queryKey: ["token-account-balance", account.toBase58()],
+			queryKey: ["token-account-balance", account.toBase58( )],
 			enabled: computed(() => !!account !== null),
 			queryFn: async () => {
 				if (!publicKey.value) {

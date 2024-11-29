@@ -1,11 +1,11 @@
 <template>
-    <div class="text-center">
-        <ConnectBscModal v-model="isOpenBscWalletModal" />
-
+    <UCard class="text-center">
         <h2 class="title">Verify Ownership</h2>
-        <p class="text-lg my-5">
-            To claim your tokens on Solana, you must <u>verify ownership</u> of your BSC or EOS account holding EFX
-            tokens. You can repeat this process for each account you own.
+        <UDivider class="my-3"/>
+        <p class="text-lg mt-8 mb-12">
+            To claim your new EFFECT tokens on Solana, you’ll need to verify ownership of your BSC or EOS account that
+            holds EFX tokens.
+            You can repeat this process for every account you own with EFX holdings.
         </p>
 
         <div v-if="!isConnected" class="gap-5 flex justify-center mt-6 items-center">
@@ -15,12 +15,7 @@
                 </span>
                 EOS Account
             </UButton>
-            <UButton @click="isOpenBscWalletModal = true" color="black">
-                <span class="w-4">
-                    <img src="@/assets/img/bsc.svg" alt="bsc" />
-                </span>
-                BSC Account
-            </UButton>
+            <ConnectBscModal />
         </div>
         <div v-else-if="isConnected">
             <WalletCard v-if="connectedAddress && connectedWalletMeta" :chain="chain" :walletMeta="connectedWalletMeta"
@@ -35,13 +30,13 @@
                 </template>
             </WalletCard>
         </div>
-    </div>
+
+    </UCard>
 </template>
 
 <script setup lang="ts">
-import { useAccount, useDisconnect, useSignMessage } from "@wagmi/vue";
-
-const { clear, canClaim, set } = useGlobalState();
+import { useDisconnect } from "@wagmi/vue";
+const { clear, set } = useGlobalState();
 
 const {
     isConnected: isConnectedEos,
@@ -85,20 +80,19 @@ const isOpenBscWalletModal = ref(false);
 const router = useRouter();
 const authorize = async () => {
     if (isConnectedEos.value) {
-        const {signature, foreignPublicKey, message} = await authorizeEos();
-        console.log(signature, foreignPublicKey, message);
-        set( signature, message, foreignPublicKey);
+        const { signature, foreignPublicKey, message } = await authorizeEos();
+        set(signature, message, foreignPublicKey, connectedAddress.value as string);
     } else {
-        const {signature, foreignPublicKey, message} = await authorizeBsc();
-        set( signature, message, foreignPublicKey);
+        const { signature, foreignPublicKey, message } = await authorizeBsc();
+        set(signature, message, foreignPublicKey, connectedAddress.value as string);
     }
 
-    router.push("/step/claim");
+    router.push("/migrate/step/claim");
 }
 
 watchEffect(() => {
     if (isConnected.value) {
-        isOpenBscWalletModal.value = false; 
+        isOpenBscWalletModal.value = false;
     }
 });
 

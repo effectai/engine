@@ -1,5 +1,5 @@
 <template>
-    <UCard class="flex flex-col dark:!bg-[#1C1A1F]" v-if="publicKey">
+    <UCard class="flex flex-col" v-if="publicKey">
         <div class="flex flex-col gap-5">
             <div class="bg-white/5 p-6 rounded-xl border border-gray-800">
                 <div class="flex items-center gap-4">
@@ -19,7 +19,7 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-400">Stake Age</p>
-                        <p class="text-2xl font-bold">{{ (stakeAge * 1000).toFixed(4) }}</p>
+                        <p class="text-2xl font-bold">{{ (stakeAge).toFixed(4) }}</p>
                     </div>
                 </div>
             </div>
@@ -51,7 +51,6 @@ const {
 	useClaimRewards,
 	useGetRewardAccount,
 	useGetReflectionAccount,
-	useAddFee,
 } = useStakingProgram();
 
 const { data: stakeAccount, unstakeDays, amountFormatted: stakeAmount } = useGetStakeAccount();
@@ -61,6 +60,7 @@ const { data: reflectionAccount } = useGetReflectionAccount();
 const { publicKey } = useWallet();
 
 const currentTime = ref(new Date().getTime() / 1000);
+
 onMounted(() => {
 	const interval = setInterval(() => {
 		currentTime.value = new Date().getTime() / 1000;
@@ -71,8 +71,10 @@ onMounted(() => {
 
 const stakeAge = computed(() => {
   if (!stakeAccount.value?.data?.timeStake) return 0;
-  const time = currentTime.value - stakeAccount.value.data.timeStake.toNumber();
-  return time /  86400; // Convert milliseconds to days
+
+  const time = stakeAccount.value.data.timeStake.toNumber() - currentTime.value;
+
+  return time / 86400 ; 
 });
 
 const { mutateAsync: claimRewards } = useClaimRewards();

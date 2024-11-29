@@ -2,23 +2,28 @@
     <div class="">
         <div v-if="!publicKey">
             <div class="flex items-center flex-col justify-center h-96">
-                <TheLogo />
-                <p>Login to continue.</p>
+                <div class="gap-5 flex flex-col items-center justify-center">
+                    <div class="text-center space-y-2">
+                        <h2 class="text-4xl">Hello There 👋</h2>
+                        <h1 class="text-2xl">Please connect your solana wallet.</h1>
+                    </div>
+                    <WalletMultiButton />
+                </div>
             </div>
         </div>
-        <UTabs v-if="publicKey" :items="items">
+        <UTabs v-if="publicKey" :items="items" class="">
             <template #overview="{ item }">
-                <div>
+                <div class="">
                     <StakeOverviewCard />
                 </div>
             </template>
             <template #stake="{ item }">
-                <div>
+                <div class>
                     <StakingForm />
                 </div>
             </template>
             <template #unstake>
-                <div class="my-5 flex justify-between space-x-5">
+                <div class="flex justify-between space-x-5">
                     <UnstakeForm class="flex-grow" />
                     <UnstakesCard />
                 </div>
@@ -28,20 +33,17 @@
 </template>
 
 <script setup lang="ts">
-import { useWallet } from 'solana-wallets-vue';
+import { WalletMultiButton, useWallet } from 'solana-wallets-vue';
 
 const items = [{
     slot: 'overview',
     label: 'Overview',
-    content: 'Finally, this is the content for Tab3'
 }, {
     slot: 'stake',
     label: 'Stake',
-    content: 'This is the content shown for Tab1'
 }, {
     slot: 'unstake',
     label: 'Unstake',
-    content: 'And, this is the content for Tab2'
 }]
 
 const { publicKey } = useWallet()

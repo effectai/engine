@@ -19,7 +19,7 @@ mod effect_vesting {
 pub use migration_program::ID as MIGRATION_PROGRAM;
 mod migration_program {
     use super::*;
-    declare_id!("9hJuxBiFY82YiciAa6wERpHX8s9n1uvzhwaUSFoBJnZD");
+    declare_id!("13uv7xLUTN3gEtqPf7XLbLnbE5AuddWhDxAThc4YmjfY");
 }
 
 pub use staking_program::ID as STAKING_PROGRAM;

@@ -1,25 +1,39 @@
 <script setup lang="ts">
 import { useConnect, useChainId, useAccount } from "@wagmi/vue";
-const chainId = useChainId();
 
-const { isConnected } = useAccount();
-const { connectors, connect } = useConnect();
+import { createAppKit } from '@reown/appkit/vue'
+import { bsc, type AppKitNetwork } from '@reown/appkit/networks'
+import { wagmiAdapter } from './../plugins/wagmi'
 
+const projectId = '79d9a7fe570c471146ae1cbc2f6b05cf'
+
+const metadata = {
+  name: 'Effect AI',
+  description: 'Effect AI Dashboard',
+  url: 'https://dashboard.effect.ai', // origin must match your domain & subdomain
+  icons: ['']
+}
+
+const networks: [AppKitNetwork, ...AppKitNetwork[]] = [bsc]
+
+
+const modal = createAppKit({
+  features: {
+    email: false,
+    socials: false,
+  },
+  adapters: [wagmiAdapter],
+  networks,
+  projectId,
+  metadata,
+})
 </script>
 
 <template>
-  <UModal>
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
-      <template #header>
-        <h2 class="title">Connect Wallet</h2>
-      </template>
-      <div class="flex flex-col gap-3">
-        <UButton color="black" v-for="connector in connectors" @click="connect({ connector, chainId })">
-          {{ connector.name }}
-        </UButton>
-      </div>
-      <template #footer>
-      </template>
-    </UCard>
-  </UModal>
+  <UButton @click="modal.open()" color="black">
+    <span class="w-4">
+      <img src="@/assets/img/bsc.svg" alt="bsc" />
+    </span>
+    BSC Account
+  </UButton>
 </template>

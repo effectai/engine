@@ -1,104 +1,75 @@
 import type { Program } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
-import type { SolanaSnapshotMigration } from "../target/types/solana_snapshot_migration.js";
 import { type Keypair, PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import type { EffectStaking } from "../target/types/effect_staking.js";
+
 import { useConstantsIDL } from "./idl.js";
-import { expect } from "vitest";
-import { program } from "@coral-xyz/anchor/dist/cjs/native/system.js";
+import type { EffectMigration } from "../target/types/effect_migration.js";
+import migrationIdl from "../target/idl/effect_migration.json";
 
-export const useDeriveVestingAccounts = ({
-	vestingAccount,
-	authority,
-	programId
-}: {
-	vestingAccount: PublicKey;
-	authority: PublicKey;
-	programId: PublicKey;
-}) => {
-
-	const [vestingVaultAccount] = PublicKey.findProgramAddressSync(
-		[vestingAccount.toBuffer()],
-		programId,
-	);
-
-	return {
-		vestingAccount,
-		vestingVaultAccount,
-	};
-};
-
-export const useDeriveRewardAccounts = ({
-	authority,
-	programId
-}: {
-	programId: PublicKey;
-	authority: PublicKey;
-}) => {
-	const [rewardAccount] = PublicKey.findProgramAddressSync(
-		[Buffer.from("rewards"), authority.toBuffer()],
-		programId,
-	);
-
-	return {
-		rewardAccount
-	};
-}
-
-export const useDeriveStakeAccounts = ({
-	mint,
-	authority,
-	programId
-}: {
-	mint: PublicKey;
-	authority: PublicKey;
-	programId: PublicKey;
-}) => {
-	const [stakeAccount] = PublicKey.findProgramAddressSync(
-		[Buffer.from("stake"), mint.toBuffer(), authority.toBuffer()],
-		programId,
-	);
-
-	const [vaultAccount] = PublicKey.findProgramAddressSync(
-		[stakeAccount.toBuffer()],
-		programId,
-	);
-
-	return {
-		stakeAccount,
-		vaultAccount
-	};
-};
-
-export const initializeVaultAccount = async ({
+export const createTokenClaim = async ({
 	foreignPubKey,
 	mint,
-	metadata,
 	amount,
 	payer,
 	payerTokens,
-	stakeStartTime
+	provider,
 }: {
 	foreignPubKey: Uint8Array;
 	mint: PublicKey;
 	amount: number;
-	metadata: PublicKey;
 	payerTokens: PublicKey;
 	payer: Keypair;
-	stakeStartTime?: number;
+	provider: anchor.Provider;
 }) => {
-	const program = anchor.workspace
-		.SolanaSnapshotMigration as Program<SolanaSnapshotMigration>;
+	const migrationProgram = new anchor.Program(
+		migrationIdl as anchor.Idl,
+		provider,
+	) as unknown as Program<EffectMigration>;
 
-	console.log(foreignPubKey);
-
-	await program.methods
-		.create(Buffer.from(foreignPubKey), new BN(stakeStartTime || 0), new BN(amount))
+	await migrationProgram.methods
+		.createTokenClaim(Buffer.from(foreignPubKey), new BN(amount))
 		.accounts({
 			payer: payer.publicKey,
 			payerTokens,
-			metadata,
+			mint,
+		})
+		.signers([payer])
+		.rpc();
+};
+
+export const createStakeClaim = async ({
+	foreignPubKey,
+	mint,
+	amount,
+	payer,
+	payerTokens,
+	stakeStartTime,
+	provider
+}: {
+	foreignPubKey: Uint8Array;
+	mint: PublicKey;
+	amount: number;
+	payerTokens: PublicKey;
+	payer: Keypair;
+	stakeStartTime: number;
+	provider: anchor.Provider;
+}) => {
+	const migrationProgram = new anchor.Program(
+		migrationIdl as anchor.Idl,
+		provider,
+	) as unknown as Program<EffectMigration>;
+
+	if(!stakeStartTime) {
+		throw new Error("stakeStartTime is required when creating a stake claim");
+	}
+
+	await migrationProgram.methods
+		.createStakeClaim(Buffer.from(foreignPubKey), new BN(stakeStartTime), new BN(amount))
+		.accounts({
+			payer: payer.publicKey,
+			payerTokens,
 			mint,
 		})
 		.signers([payer])

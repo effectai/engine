@@ -2,6 +2,9 @@ export default defineAppConfig({
     ui: {
       primary: 'green',
       gray: 'dark',
+      card: {
+        background: 'bg-white dark:!bg-[#1C1A1F]',
+      },
       button: {
         default: {
           size: 'md',

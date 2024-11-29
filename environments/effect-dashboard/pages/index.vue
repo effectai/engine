@@ -3,6 +3,8 @@
 </template>
 
 <script setup>
+// 
+navigateTo("/stake");
 </script>
 
 <style lang="scss" scoped>

@@ -5,6 +5,7 @@ export const signature = ref<Uint8Array | null>(null);
 export const message = ref<Uint8Array | null>(null);
 export const foreignPublicKey = ref<Uint8Array | null>(null);
 export const connection = new Connection('http://localhost:8899', 'confirmed');
+export const publicKeyString = ref<string | null>(null);
 
 export const useGlobalState = () => {
     const config = useRuntimeConfig();
@@ -27,10 +28,11 @@ export const useGlobalState = () => {
         foreignPublicKey.value = null;
     };
 
-    const set = (sig: Uint8Array, msg: Uint8Array, pk: Uint8Array) => {
+    const set = (sig: Uint8Array, msg: Uint8Array, pk: Uint8Array, pkString: string) => {
         signature.value = sig;
         message.value = msg;
         foreignPublicKey.value = pk;
+        publicKeyString.value = pkString;
     };
 
     const canClaim = computed(() => {

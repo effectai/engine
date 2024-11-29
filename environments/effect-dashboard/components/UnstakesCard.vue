@@ -1,5 +1,5 @@
 <template>
-    <UCard class="border-gray-800 dark:!bg-[#1C1A1F]" v-if="vestingSchedules">
+    <UCard class="border-gray-800 dark:!bg-[#1C1A1F]" v-if="vestingSchedules && vestingSchedules.length > 0">
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-medium">Active Unstakes</h3>

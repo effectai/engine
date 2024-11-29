@@ -1,22 +1,26 @@
-import { deriveMetadataAndVaultFromPublicKey } from "@effectai/utils";
-import { PublicKey, Transaction } from "@solana/web3.js";
+import { PublicKey, StakeProgram, Transaction } from "@solana/web3.js";
 import {
 	useMutation,
 	useQuery,
+	useQueryClient,
 	type UseMutationOptions,
+	type UseQueryReturnType,
 } from "@tanstack/vue-query";
 
 import { useAnchorWallet, useWallet } from "solana-wallets-vue";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program, Idl } from "@coral-xyz/anchor";
-//TODO::
-import programIDL from "../../../solana/target/idl/solana_snapshot_migration.json";
-import type { SolanaSnapshotMigration } from "../../../solana/target/types/solana_snapshot_migration";
+import programIDL from "../../../solana/target/idl/effect_migration.json";
+import type { EffectMigration } from "../../../solana/target/types/effect_migration";
 
 import {
 	createAssociatedTokenAccountIdempotentInstructionWithDerivation,
 	getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
+import {
+	useDeriveMigrationAccounts,
+	useDeriveStakeAccounts,
+} from "@effectai/utils";
 
 export const useMigrationProgram = () => {
 	const wallet = useAnchorWallet();
@@ -27,58 +31,144 @@ export const useMigrationProgram = () => {
 
 	const provider = new anchor.AnchorProvider(connection, wallet.value, {});
 
+	const queryClient = useQueryClient();
+
+	const { stakeProgram } = useStakingProgram();
+
+	type Claim = {
+		type: "stake" | "token";
+		amount: number;
+		data: StakeClaimAccount | TokenClaimAccount;
+	};
+
+	type StakeClaimAccount = Awaited<
+		ReturnType<typeof program.account.claimStakeAccount.fetch>
+	>;
+
+	type TokenClaimAccount = Awaited<
+		ReturnType<typeof program.account.claimTokenAccount.fetch>
+	>;
+
 	const program = new anchor.Program(
 		programIDL as Idl,
 		provider,
-	) as unknown as Program<SolanaSnapshotMigration>;
+	) as unknown as Program<EffectMigration>;
 
 	const { foreignPublicKey } = useGlobalState();
 
-	const metadataAndVault = computed(() => {
+	const migrationAccounts = computed(() => {
 		if (!publicKey.value || !foreignPublicKey.value) return null;
 
-		return deriveMetadataAndVaultFromPublicKey(
-			new PublicKey(config.public.EFFECT_VAULT_INITIALIZER),
-			new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT),
-			foreignPublicKey.value,
-			program.programId,
-		);
+		return useDeriveMigrationAccounts({
+			initializer: new PublicKey(config.public.EFFECT_VAULT_INITIALIZER),
+			mint: new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT),
+			foreignPublicKey: foreignPublicKey.value,
+			programId: program.programId,
+		});
 	});
 
-	const metadataAccount = computed(() => metadataAndVault.value?.metadata);
-	const vaultAccount = computed(() => metadataAndVault.value?.vault);
+	const stakeClaimAccount = computed(
+		() => migrationAccounts.value?.stakeClaimAccount,
+	);
 
-	const useGetVaultAccountBalance = () =>
-		useQuery({
-			queryKey: ["vault-balance", publicKey.value?.toBase58()],
+	const tokenClaimAccount = computed(
+		() => migrationAccounts.value?.tokenClaimAccount,
+	);
+
+	const stakeClaimVaultAccount = computed(
+		() => migrationAccounts.value?.stakeClaimVault,
+	);
+
+	const tokenClaimVaultAccount = computed(
+		() => migrationAccounts.value?.tokenClaimVault,
+	);
+
+	const useGetClaims = (): UseQueryReturnType<Claim[], Error> => {
+		return useQuery({
+			queryKey: ["claims", publicKey.value],
 			queryFn: async () => {
-				try {
-					if (!vaultAccount.value) {
-						return null;
-					}
-					const balance = await connection.getTokenAccountBalance(
-						vaultAccount.value,
-					);
-					if (!balance.value.uiAmount) {
-						return 0;
-					}
-					return balance.value.uiAmount;
-				} catch (e) {
-					console.error(e);
-					return 0;
+				if (
+					!stakeClaimAccount.value ||
+					!tokenClaimAccount.value ||
+					!tokenClaimVaultAccount.value ||
+					!stakeClaimVaultAccount.value
+				) {
+					throw new Error("Missing claim accounts");
 				}
+
+				const claims: Claim[] = [];
+
+				const stakeClaimData =
+					await program.account.claimStakeAccount.fetchNullable(
+						stakeClaimAccount.value,
+					);
+
+				const tokenClaimData =
+					await program.account.claimTokenAccount.fetchNullable(
+						tokenClaimAccount.value,
+					);
+
+				if (tokenClaimData) {
+					const balance = await connection.getTokenAccountBalance(
+						tokenClaimVaultAccount.value,
+					);
+
+					if (balance.value.uiAmount > 0) {
+						claims.push({
+							type: "token",
+							amount: balance.value.uiAmount || 0,
+							data: tokenClaimData,
+						});
+					}
+				}
+
+				if (stakeClaimData) {
+					const balance = await connection.getTokenAccountBalance(
+						stakeClaimVaultAccount.value,
+					);
+
+					if (balance.value.uiAmount > 0) {
+						claims.push({
+							type: "stake",
+							amount: balance.value.uiAmount || 0,
+							data: stakeClaimData,
+						});
+					}
+				}
+
+				return claims;
 			},
-			enabled: computed(() => !!vaultAccount.value),
+			enabled: computed(
+				() => !!stakeClaimAccount.value && !!tokenClaimAccount.value,
+			),
 		});
+	};
 
 	const useClaim = ({
 		options,
 	}: {
-		options: UseMutationOptions<Awaited<ReturnType<typeof sendTransaction>>>;
+		options: UseMutationOptions<
+			string,
+			Error,
+			{
+				claimAccount: StakeClaimAccount | TokenClaimAccount;
+			}
+		>;
 	}) =>
 		useMutation({
 			...options,
-			mutationFn: async () => {
+			onSuccess: () => {
+				queryClient.invalidateQueries({
+					predicate: (query) => {
+						return query.queryKey.includes("claims");
+					},
+				});
+			},
+			mutationFn: async ({
+				claimAccount,
+			}: {
+				claimAccount: StakeClaimAccount | TokenClaimAccount;
+			}) => {
 				const { foreignPublicKey, message, signature } = useGlobalState();
 
 				if (
@@ -93,49 +183,78 @@ export const useMigrationProgram = () => {
 				const mint = new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT);
 				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
-				const { metadata, vault } = deriveMetadataAndVaultFromPublicKey(
-					new PublicKey(config.public.EFFECT_VAULT_INITIALIZER),
-					new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT),
-					foreignPublicKey.value,
-					program.programId,
-				);
+				if ("stakeStartTime" in claimAccount) {
+					// dealing with a stake claim account
+					const { stakeAccount, vaultAccount } = useDeriveStakeAccounts({
+						mint,
+						authority: publicKey.value,
+						programId: stakeProgram.programId,
+					});
 
-				const transaction = new Transaction();
+					if (!stakeClaimAccount.value || !stakeClaimVaultAccount.value) {
+						throw new Error("Missing stake claim accounts");
+					}
 
-				// check if user ata exists
-				const ataAccount = await connection.getAccountInfo(ata);
-				if (!ataAccount) {
-					transaction.add(
-						createAssociatedTokenAccountIdempotentInstructionWithDerivation(
-							publicKey.value,
-							publicKey.value,
+					return await program.methods
+						.claimStake(
+							Buffer.from(signature.value),
+							Buffer.from(message.value),
+						)
+						.preInstructions([
+							...((await connection.getAccountInfo(ata))
+								? []
+								: [
+										createAssociatedTokenAccountIdempotentInstructionWithDerivation(
+											publicKey.value,
+											publicKey.value,
+											mint,
+										),
+									]),
+						])
+						.accounts({
+							payer: publicKey.value,
 							mint,
-						),
-					);
+							recipientTokenAccount: ata,
+							stakeVaultAccount: vaultAccount,
+							stakeAccount,
+							claimAccount: stakeClaimAccount.value,
+							vaultAccount: stakeClaimVaultAccount.value,
+						})
+						.rpc();
 				}
 
-				const claimTx = await program.methods
-					.claim(Buffer.from(signature.value), Buffer.from(message.value))
+				if (!tokenClaimAccount.value || !tokenClaimVaultAccount.value) {
+					throw new Error("Missing token claim accounts");
+				}
+
+				return await program.methods
+					.claimTokens(Buffer.from(signature.value), Buffer.from(message.value))
+					.preInstructions([
+						...((await connection.getAccountInfo(ata))
+							? []
+							: [
+									createAssociatedTokenAccountIdempotentInstructionWithDerivation(
+										publicKey.value,
+										publicKey.value,
+										mint,
+									),
+								]),
+					])
 					.accounts({
 						payer: publicKey.value,
-						recipientTokens: ata,
-						metadataAccount: metadata,
-						vaultAccount: vault,
+						mint,
+						recipientTokenAccount: ata,
+						claimAccount: tokenClaimAccount.value,
+						vaultAccount: tokenClaimVaultAccount.value,
 					})
-					.transaction();
-
-				transaction.add(claimTx);
-
-				// send the transaction
-				return await sendTransaction(transaction, connection);
+					.rpc();
 			},
 		});
 
 	return {
 		program,
-		metadataAccount,
-		vaultAccount,
+		migrationAccounts,
 		useClaim,
-		useGetVaultAccountBalance,
+		useGetClaims,
 	};
 };

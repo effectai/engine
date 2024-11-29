@@ -1,17 +1,21 @@
 // deploy script for local environment
 import * as anchor from "@coral-xyz/anchor";
-import { initializeVaultAccount } from "../utils/anchor";
+import { createStakeClaim, createTokenClaim } from "../utils/anchor";
 import { mintToAccount, setup } from "../utils/spl";
 import { toBytes } from "viem";
 import { PublicKey } from "@solana/web3.js";
 import { createAssociatedTokenAccount } from "@solana/spl-token";
 import rewardIDL from "../target/idl/effect_rewards.json";
-import { EffectRewards } from "../target/types/effect_rewards";
-import { Program } from "@coral-xyz/anchor";
+import type { EffectRewards } from "../target/types/effect_rewards";
+import type { Program } from "@coral-xyz/anchor";
 import { spawn } from "child_process";
 import { BN } from "bn.js";
+import { useDeriveMigrationAccounts } from "@effectai/utils";
 
-const createReflectionAcount = async ({ mint, ata }: { mint: PublicKey, ata: PublicKey }) => {
+const createReflectionAcount = async ({
+	mint,
+	ata,
+}: { mint: PublicKey; ata: PublicKey }) => {
 	// load anchor wallet
 	const provider = anchor.AnchorProvider.local();
 
@@ -36,15 +40,6 @@ const createReflectionAcount = async ({ mint, ata }: { mint: PublicKey, ata: Pub
 		[Buffer.from("reflection")],
 		program.programId,
 	);
-
-	// await program.methods
-	// 	.addFee(new BN(1000_000_000))
-	// 	.accounts({
-	// 		reflection: reflectionAccount,
-	// 		authority: provider.wallet.publicKey,
-	// 		userTokenAccount: ata,
-	// 	})
-	// 	.rpc();
 
 	return [reflectionAccount, reflectionVault];
 };
@@ -72,8 +67,6 @@ const seed = async () => {
 
 	const { mint, ata } = await setup({ payer, provider, amount: 5000_000_000 });
 
-	console.log("mint", mint.toBase58());
-
 	// also mint some tokens to the dummy account for staking
 	const dummyAta = await createAssociatedTokenAccount(
 		provider.connection,
@@ -98,7 +91,30 @@ const seed = async () => {
 		ata,
 	});
 
+	const ethereumPublicKey = "0xA03E94548C26E85DBd81d93ca782A3449564C27f";
 
+	await createTokenClaim({
+		provider,
+		foreignPubKey: toBytes(ethereumPublicKey),
+		mint,
+		amount: 500_000_000,
+		payer,
+		payerTokens: ata,
+	});
+
+	const stakeStartTime = new Date().getTime() - 31556952000;
+
+	await createStakeClaim({
+		provider,
+		foreignPubKey: toBytes(ethereumPublicKey),
+		mint,
+		amount: 350_000_000,
+		payer,
+		payerTokens: ata,
+		stakeStartTime,
+	});
+
+	console.log("mint", mint.toBase58())
 };
 
 // deploy
@@ -123,9 +139,15 @@ const args3 = [
 	"--provider.cluster",
 	"localnet",
 ];
+const args4 = [
+	"deploy",
+	"--program-name",
+	"effect-migration",
+	"--provider.cluster",
+	"localnet",
+]
 
 // start a new ledger
-
 const deploy = (command: string, args: string[]): Promise<void> => {
 	return new Promise((resolve, reject) => {
 		const deploy = spawn(command, args);
@@ -216,6 +238,7 @@ await Promise.all([
 	deploy("anchor", args1),
 	deploy("anchor", args2),
 	deploy("anchor", args3),
+	deploy("anchor", args4),
 ]);
 
 // seed the accounts

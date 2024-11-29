@@ -8,7 +8,7 @@ skip-lint = false
 effect_vesting = "EabRXJfYfzbkTTq5546mxDiT5yv2k2rjjN4kY6c4S9Br"
 effect_rewards = "AVKZ1LKwV7U5jQPdMev1iQ3rQrcQqzV6AwMfAZwQJomT"
 effect_staking = "eR1sM73NpFqq7DSR5YDAgneWW29AZA8sRm1BFakzYpH"
-effect_migration = "9hJuxBiFY82YiciAa6wERpHX8s9n1uvzhwaUSFoBJnZD"
+effect_migration = "13uv7xLUTN3gEtqPf7XLbLnbE5AuddWhDxAThc4YmjfY"
 
 [registry]
 url = "https://api.apr.dev"

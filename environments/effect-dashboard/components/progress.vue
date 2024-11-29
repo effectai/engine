@@ -49,7 +49,7 @@ const useSteps = () => {
 	};
 };
 
-const { steps, currentStep } = useSteps();
+const { steps } = useSteps();
 
 const router = useRouter();
 
