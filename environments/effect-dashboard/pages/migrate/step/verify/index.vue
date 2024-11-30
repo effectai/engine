@@ -4,7 +4,7 @@
         <UDivider class="my-3"/>
         <p class="text-lg mt-8 mb-12">
             To claim your new EFFECT tokens on Solana, you’ll need to verify ownership of your BSC or EOS account that
-            holds EFX tokens.
+            held or staked EFX tokens on {{ snapshotDate.toLocaleString() }}.
             You can repeat this process for every account you own with EFX holdings.
         </p>
 
@@ -37,6 +37,9 @@
 <script setup lang="ts">
 import { useDisconnect } from "@wagmi/vue";
 const { clear, set } = useGlobalState();
+
+const config = useRuntimeConfig();
+const snapshotDate = new Date(config.public.EFFECT_SNAPSHOT_DATE as string);
 
 const {
     isConnected: isConnectedEos,

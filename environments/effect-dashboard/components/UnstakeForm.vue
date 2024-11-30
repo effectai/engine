@@ -47,7 +47,6 @@ const setMaxAmount = () => {
 
 const handleSubmit = async () => {
     const tx = await unstake({ amount: unstakeAmount.value })
-    console.log(tx)
 }
 </script>
 

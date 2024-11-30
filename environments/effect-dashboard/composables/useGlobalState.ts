@@ -20,7 +20,7 @@ export const useGlobalState = () => {
 
     const mint = new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT);
     
-    const {publicKey} = useWallet();
+    const { publicKey } = useWallet();
 
     const clear = () => {
         signature.value = null;

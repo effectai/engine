@@ -13,16 +13,18 @@
 			<BlockchainAddress class="w-full justify-center text-lg" v-if="publicKeyString"
 				:address="publicKeyString" />
 		</div>
-		<div v-else-if="!claims || claims.length == 0" class="my-5">
-			<UIcon class="text-5xl" name="lucide:frown"/>
-			<p class="text-center text-lg">No active claims found for your Public Key</p>
-			<BlockchainAddress class="w-full justify-center text-lg" v-if="publicKeyString"
-				:address="publicKeyString" />
-		</div>
+
 		<div>
 			<div class="mt-5" v-if="canClaim">
 				<div v-if="isLoading">Loading Claims..</div>
-				<div v-else-if="isError">Error loading claims</div>
+				<div v-else-if="isError">
+					<div v-if="!claims || claims.length == 0" class="my-5">
+						<UIcon class="text-5xl" name="lucide:frown" />
+						<p class="text-center text-lg">No active claims found for your Public Key</p>
+						<BlockchainAddress class="w-full justify-center text-lg" v-if="publicKeyString"
+							:address="publicKeyString" />
+					</div>
+				</div>
 				<div v-else-if="claims" class="flex flex-col md:flex-row w-full gap-5">
 					<UCard v-for="claim in claims" class="md:w-1/2 w-full">
 						<h2 class="title capitalize">{{ claim.type }} Claim</h2>

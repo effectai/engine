@@ -54,7 +54,6 @@ const { steps } = useSteps();
 const router = useRouter();
 
 const goToStep = (step) => {
-	console.log(step);
 	if (step.disabled) return;
 	router.push(step.href);
 };

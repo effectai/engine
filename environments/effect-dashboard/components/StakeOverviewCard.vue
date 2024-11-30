@@ -86,10 +86,8 @@ const pendingRewards = computed(() => {
 	return +(reward / 1e6).toFixed(4);
 });
 
-
 const handleSubmit = async () => {
 	const tx = await claimRewards();
-	console.log(tx);
 };
 </script>
 

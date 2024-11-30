@@ -3,8 +3,7 @@
 </template>
 
 <script setup>
-// 
-navigateTo("/stake");
+navigateTo('/stake');
 </script>
 
 <style lang="scss" scoped>

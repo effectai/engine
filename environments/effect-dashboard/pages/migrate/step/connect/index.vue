@@ -9,7 +9,7 @@
                     tokens airdropped.</p>
 
                 <div class="flex gap-5 mt-10 justify-center items-center text-black-500 underline text-sm">
-                    <WalletMultiButton />
+                    <ClientOnly><WalletMultiButton /></ClientOnly>
                     <nuxt-link color="black"> I don't have a solana account</nuxt-link>
                 </div>
             </UCard>
