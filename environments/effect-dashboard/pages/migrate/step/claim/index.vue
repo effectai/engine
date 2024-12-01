@@ -21,6 +21,7 @@
 					<div v-if="!claims || claims.length == 0" class="my-5">
 						<UIcon class="text-5xl" name="lucide:frown" />
 						<p class="text-center text-lg">No active claims found for your Public Key</p>
+
 						<BlockchainAddress class="w-full justify-center text-lg" v-if="publicKeyString"
 							:address="publicKeyString" />
 					</div>
@@ -50,10 +51,7 @@ import { useMigrationProgram } from "~/composables/useMigrationProgram";
 
 const { canClaim, clear } = useGlobalState()
 const { useClaim, useGetClaims } = useMigrationProgram();
-const { data: claims, isError, isLoading, isLoadingError } = useGetClaims();
-
-const { useGetEfxBalanceQuery } = useSolanaWallet()
-const { data: efxBalance } = useGetEfxBalanceQuery();
+const { data: claims, isError, isLoading } = useGetClaims();
 
 const toast = useToast();
 const txId: Ref<string | null> = ref(null);
@@ -79,7 +77,6 @@ onBeforeMount(() => {
 
 const { disconnect: disconnectEos } = useEosWallet();
 const { disconnect: disconnectBsc } = useBscWallet()
-
 const reset = () => {
 	disconnectEos();
 	disconnectBsc();
