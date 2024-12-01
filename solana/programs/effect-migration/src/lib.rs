@@ -5,6 +5,7 @@ mod state;
 mod utils;
 use anchor_lang::prelude::*;
 use instructions::*;
+
 use state::*;
 declare_id!("13uv7xLUTN3gEtqPf7XLbLnbE5AuddWhDxAThc4YmjfY");
 
@@ -21,20 +22,37 @@ pub mod effect_migration {
         claim_token::claim_token(ctx, sig, message)
     }
 
-    pub fn create_token_claim(
-        ctx: Context<CreateTokenClaim>,
-        foreign_public_key: Vec<u8>,
-        amount: u64,
-    ) -> Result<()> {
-        create_token_claim::handler(ctx, foreign_public_key, amount)
-    }
-
     pub fn create_stake_claim(
-        ctx: Context<CreateStakeClaim>,
+        ctx: Context<CreateClaim>,
         foreign_public_key: Vec<u8>,
         stake_start_time: i64,
         amount: u64,
     ) -> Result<()> {
-        create_stake_claim::handler(ctx, foreign_public_key, stake_start_time, amount)
+        create_claim::handler(ctx, ClaimType::Stake { stake_start_time }, foreign_public_key, amount)
     }
+
+    pub fn create_token_claim(
+        ctx: Context<CreateClaim>,
+        foreign_public_key: Vec<u8>,
+        amount: u64,
+    ) -> Result<()> {
+        create_claim::handler(ctx, ClaimType::Token { }, foreign_public_key, amount)
+    }
+
+    // pub fn create_token_claim(
+    //     ctx: Context<CreateTokenClaim>,
+    //     foreign_public_key: Vec<u8>,
+    //     amount: u64,
+    // ) -> Result<()> {
+    //     create_token_claim::handler(ctx, foreign_public_key, amount)
+    // }
+
+    // pub fn create_stake_claim(
+    //     ctx: Context<CreateStakeClaim>,
+    //     foreign_public_key: Vec<u8>,
+    //     stake_start_time: i64,
+    //     amount: u64,
+    // ) -> Result<()> {
+    //     create_stake_claim::handler(ctx, foreign_public_key, stake_start_time, amount)
+    // }
 }

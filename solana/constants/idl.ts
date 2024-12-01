@@ -54,78 +54,6 @@ export const stakingIdl = {
       "args": []
     },
     {
-      "name": "extend",
-      "docs": [
-        "Extend the `duration` of a [StakeAccount](#stake-account)."
-      ],
-      "discriminator": [
-        228,
-        127,
-        0,
-        1,
-        227,
-        154,
-        54,
-        168
-      ],
-      "accounts": [
-        {
-          "name": "stake",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "signer": true,
-          "relations": [
-            "stake"
-          ]
-        }
-      ],
-      "args": [
-        {
-          "name": "duration",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "restake",
-      "docs": [
-        "Make a stake active again and reset the unstake time."
-      ],
-      "discriminator": [
-        97,
-        161,
-        241,
-        167,
-        6,
-        32,
-        213,
-        53
-      ],
-      "accounts": [
-        {
-          "name": "vault_token_account",
-          "writable": true,
-          "relations": [
-            "stake"
-          ]
-        },
-        {
-          "name": "stake",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "signer": true,
-          "relations": [
-            "stake"
-          ]
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "stake",
       "docs": [
         "Initialize the [SettingsAccount](#settings-account).",
@@ -534,6 +462,11 @@ export const stakingIdl = {
       "code": 6013,
       "name": "InvalidStakeAccount",
       "msg": "Invalid stake account."
+    },
+    {
+      "code": 6014,
+      "name": "StakeNotEmpty",
+      "msg": "Stake acount is not empty."
     }
   ],
   "types": [
@@ -551,24 +484,16 @@ export const stakingIdl = {
             "type": "pubkey"
           },
           {
-            "name": "duration",
+            "name": "lock_duration",
             "type": "u64"
           },
           {
-            "name": "time_unstake",
-            "type": "i64"
-          },
-          {
-            "name": "time_stake",
+            "name": "stake_start_time",
             "type": "i64"
           },
           {
             "name": "vault_token_account",
             "type": "pubkey"
-          },
-          {
-            "name": "vault_bump",
-            "type": "u8"
           },
           {
             "name": "xefx",

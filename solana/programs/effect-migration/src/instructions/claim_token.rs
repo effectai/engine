@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-use crate::{utils::verify_claim, vault_seed, ClaimTokenAccount};
+use crate::{utils::verify_claim, vault_seed, ClaimAccount};
 
 #[derive(Accounts)]
 pub struct ClaimToken<'info> {
@@ -15,7 +15,7 @@ pub struct ClaimToken<'info> {
     pub mint: Account<'info, Mint>,
 
     #[account(mut)]
-    pub claim_account: Account<'info, ClaimTokenAccount>,
+    pub claim_account: Account<'info, ClaimAccount>,
 
     #[account(mut)]
     pub vault_account: Account<'info, TokenAccount>,
@@ -35,7 +35,6 @@ impl<'info> ClaimToken<'info> {
         CpiContext::new(self.token_program.to_account_info().clone(), cpi_accounts)
     }
 }
-
 
 pub fn claim_token(ctx: Context<ClaimToken>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
     let is_eth = ctx.accounts.claim_account.foreign_public_key.len() == 20;

@@ -39,7 +39,7 @@ pub struct Stake<'info> {
 }
 
 impl<'info> Stake<'info> {
-    pub fn handler(&mut self, amount: u64, duration: u128, vault_bump: u8) -> Result<()> {
+    pub fn handler(&mut self, amount: u64, duration: u128) -> Result<()> {
         require!(
             duration >= STAKE_DURATION_MIN,
             StakingErrors::DurationTooShort
@@ -53,15 +53,12 @@ impl<'info> Stake<'info> {
             StakingErrors::AmountNotEnough
         );
 
-        // msg!("Staking {} tokens for {} seconds", amount, duration);
-
         // get stake account and init stake
         self.stake.init(
             amount,
             self.authority.key(),
             duration.try_into().unwrap(),
             self.vault_token_account.key(),
-            vault_bump,
             Clock::get().unwrap().unix_timestamp
         );
 

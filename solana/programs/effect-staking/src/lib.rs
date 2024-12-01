@@ -28,11 +28,11 @@ pub mod effect_staking {
     /// Create a [StakeAccount](#stake-account) and [VaultAccount](#vault-account).
     /// Stake `amount` of [NOS](/tokens/token) tokens for `duration` fo seconds.
     pub fn stake(ctx: Context<Stake>, amount: u64, duration: u128) -> Result<()> {
-        ctx.accounts.handler(amount, duration, ctx.bumps.vault_token_account)
+        ctx.accounts.handler(amount, duration)
     }
 
     pub fn stake_genesis(ctx: Context<GenesisStake>, amount: u64, duration: u128, stake_start_time: i64) -> Result<()> {
-        ctx.accounts.handler(amount, duration, ctx.bumps.vault_token_account, stake_start_time)
+        ctx.accounts.handler(amount, duration, stake_start_time)
     }
 
     /// Start the unstake duration.
@@ -40,19 +40,9 @@ pub mod effect_staking {
         ctx.accounts.handler(amount) 
     }
 
-    /// Make a stake active again and reset the unstake time.
-    pub fn restake(ctx: Context<Restake>) -> Result<()> {
-        ctx.accounts.handler()
-    }
-
     /// Top-up `amount` of [NOS](/tokens/token) of a [StakeAccount](#stake-account).
     pub fn topup(ctx: Context<Topup>, amount: u64) -> Result<()> {
         ctx.accounts.handler(amount)
-    }
-
-    /// Extend the `duration` of a [StakeAccount](#stake-account).
-    pub fn extend(ctx: Context<Extend>, duration: u64) -> Result<()> {
-        ctx.accounts.handler(duration)
     }
 
     /// Close a [StakeAccount](#stake-account) and [VaultAccount](#vault-account).

@@ -1,24 +1,26 @@
 use crate::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use effect_common::{constants::{EFX_DECIMALS, SECONDS_PER_DAY, UNSTAKE_DELAY_DAYS}, id::REWARDS_PROGRAM};
-use effect_vesting::{cpi::accounts::Open, program::EffectVesting};
 use effect_common::cpi;
+use effect_common::{
+    constants::{EFX_DECIMALS, SECONDS_PER_DAY, UNSTAKE_DELAY_DAYS},
+    id::REWARDS_PROGRAM,
+};
+use effect_vesting::{cpi::accounts::Open, program::EffectVesting};
 
 #[derive(Accounts)]
 pub struct Unstake<'info> {
     #[account(
         mut,
         has_one = authority @ StakingErrors::Unauthorized,
-        constraint = stake.time_unstake == 0 @ StakingErrors::AlreadyUnstaked,
     )]
     pub stake: Account<'info, StakeAccount>,
-    
+
     #[account(mut)]
     pub vault_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
     pub authority: Signer<'info>,
-    
+
     #[account(mut)]
     pub vesting_account: Signer<'info>,
 
@@ -29,7 +31,7 @@ pub struct Unstake<'info> {
     /// CHECK:: checked in ix body
     #[account(mut)]
     pub reward_account: UncheckedAccount<'info>,
-    
+
     /// CHECK:: checked in ix body
     #[account(mut)]
     pub vesting_vault_account: UncheckedAccount<'info>,
@@ -47,7 +49,10 @@ pub struct Unstake<'info> {
 impl<'info> Unstake<'info> {
     pub fn handler(&mut self, amount: u64) -> Result<()> {
         // derive reward account
-        let (reward_account, _) = Pubkey::find_program_address(&[b"rewards", self.stake.authority.as_ref()],  &REWARDS_PROGRAM);
+        let (reward_account, _) = Pubkey::find_program_address(
+            &[b"rewards", self.stake.authority.as_ref()],
+            &REWARDS_PROGRAM,
+        );
 
         // make sure reward account is belonging to this stake account is closed/empty/doesnt exist
         if self.reward_account.key() != reward_account && !self.reward_account.data_is_empty() {
@@ -61,19 +66,19 @@ impl<'info> Unstake<'info> {
         );
 
         // determine release rate (linear)
-        let now: i64 = Clock::get()?.unix_timestamp;
-        let release_rate = amount / self.stake.duration;
+        let release_rate = amount / self.stake.lock_duration;
 
         // open a vesting account
+        let now: i64 = Clock::get()?.unix_timestamp;
         let start_time = now + UNSTAKE_DELAY_DAYS as i64 * SECONDS_PER_DAY as i64;
-        open_vesting!(self, seeds!(self.stake), release_rate, start_time, 0, true)?;
+        open_vesting!(self, &[&vault_seed!(self.stake.key())], release_rate, start_time, 0, true)?;
 
         // transfer tokens from stake vault to the vesting vault
-        transfer_tokens_from_vault!(self, vesting_vault_account, seeds!(self.stake), amount)?;
+        transfer_tokens_from_vault!(self, vesting_vault_account, &[&vault_seed!(self.stake.key())], amount)?;
 
         // deduct the amount from the stake account
         self.stake.amount -= amount;
-      
+
         Ok(())
     }
 }

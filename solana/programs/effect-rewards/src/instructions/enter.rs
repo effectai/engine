@@ -9,7 +9,6 @@ pub struct Enter<'info> {
   
     #[account(
         has_one = authority @ RewardErrors::Unauthorized,
-        constraint = stake.time_unstake == 0 @ RewardErrors::AlreadyUnstaked
     )]
     pub stake: Account<'info, StakeAccount>,
    

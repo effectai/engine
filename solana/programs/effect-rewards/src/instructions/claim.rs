@@ -20,7 +20,6 @@ pub struct Claim<'info> {
     
     #[account(
         has_one = authority @ RewardErrors::Unauthorized,
-        constraint = stake.time_unstake == 0 @ RewardErrors::AlreadyUnstaked,
         constraint = stake.xefx >= reward.xefx @ RewardErrors::Decreased,
     )]
     pub stake: Account<'info, StakeAccount>,

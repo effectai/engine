@@ -50,9 +50,8 @@ impl<'info> GenesisStake<'info> {
     pub fn handler(
         &mut self,
         amount: u64,
-        duration: u128,
-        vault_bump: u8,
-        time_stake: i64,
+        lock_duration: u128,
+        stake_start_time: i64,
     ) -> Result<()> {
         let (vault_authority, _) =
             Pubkey::find_program_address(&[self.metadata.key().as_ref()], &id::MIGRATION_PROGRAM);
@@ -65,12 +64,12 @@ impl<'info> GenesisStake<'info> {
         );
 
         require!(
-            duration >= STAKE_DURATION_MIN,
+            lock_duration >= STAKE_DURATION_MIN,
             StakingErrors::DurationTooShort
         );
 
         require!(
-            duration <= STAKE_DURATION_MAX,
+            lock_duration <= STAKE_DURATION_MAX,
             StakingErrors::DurationTooLong
         );
 
@@ -80,10 +79,9 @@ impl<'info> GenesisStake<'info> {
         self.stake.init(
             amount,
             self.authority.key(),
-            duration.try_into().unwrap(),
+            lock_duration.try_into().unwrap(),
             self.vault_token_account.key(),
-            vault_bump,
-            time_stake,
+            stake_start_time,
         );
         
         // transfer tokens from claim vault to the stake vault

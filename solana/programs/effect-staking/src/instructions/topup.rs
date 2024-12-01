@@ -12,7 +12,6 @@ pub struct Topup<'info> {
         mut,
         has_one = vault_token_account @ StakingErrors::InvalidVault,
         has_one = authority @ StakingErrors::Unauthorized,
-        constraint = stake.time_unstake == 0 @ StakingErrors::AlreadyUnstaked,
     )]
     pub stake: Account<'info, StakeAccount>,
     pub authority: Signer<'info>,

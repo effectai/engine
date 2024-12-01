@@ -10,9 +10,9 @@ import stakingIDLJson from "../../target/idl/effect_staking.json";
 import { BN } from "bn.js";
 import { useBankRunProvider } from "../helpers.js";
 import { AccountLayout } from "@solana/spl-token";
-import { useDeriveRewardAccounts, useDeriveStakeAccounts, useDeriveVestingAccounts } from "../../utils/anchor.js";
 import type { EffectVesting } from "../../target/types/effect_vesting.js";
 import type { EffectRewards } from "../../target/types/effect_rewards.js";
+import { useDeriveRewardAccounts, useDeriveStakeAccounts, useDeriveVestingAccounts } from "@effectai/utils";
 
 const SECONDS_PER_DAY = 24 * 60 * 60;
 
@@ -183,7 +183,6 @@ describe("Staking Program", async () => {
 			// wait 5 days
 			await useTimeTravel(100);
 
-			// expect stake age to be 100 days
 			await bankrunProgram.methods
 				.topup(new BN(100))
 				.accounts({
@@ -195,7 +194,8 @@ describe("Staking Program", async () => {
 			// fetch stake account
 			const account2 =
 				await bankrunProgram.account.stakeAccount.fetch(stakeAccount);
-			console.log(new Date(account2.timeStake.toNumber() * 1000));
+
+			expect(account.stakeStartTime).not.toEqual(account2.stakeStartTime);
 
 			const balance = await provider.connection.getAccountInfo(vaultAccount);
 			if (!balance) throw new Error("Balance not found");

@@ -1,14 +1,17 @@
 import type { Program } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
-import { type Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair, type PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import type { EffectStaking } from "../target/types/effect_staking.js";
 
 import { useConstantsIDL } from "./idl.js";
 import type { EffectMigration } from "../target/types/effect_migration.js";
 import migrationIdl from "../target/idl/effect_migration.json";
+import { useDeriveStakeAccounts } from "@effectai/utils";
+import { expect } from "vitest";
 
 export const createTokenClaim = async ({
+	claimAccount,
 	foreignPubKey,
 	mint,
 	amount,
@@ -16,6 +19,7 @@ export const createTokenClaim = async ({
 	payerTokens,
 	provider,
 }: {
+	claimAccount: Keypair;
 	foreignPubKey: Uint8Array;
 	mint: PublicKey;
 	amount: number;
@@ -28,18 +32,21 @@ export const createTokenClaim = async ({
 		provider,
 	) as unknown as Program<EffectMigration>;
 
+
 	await migrationProgram.methods
 		.createTokenClaim(Buffer.from(foreignPubKey), new BN(amount))
 		.accounts({
+			claimAccount: claimAccount.publicKey,
 			payer: payer.publicKey,
 			payerTokens,
 			mint,
 		})
-		.signers([payer])
+		.signers([payer, claimAccount])
 		.rpc();
 };
 
 export const createStakeClaim = async ({
+	claimAccount,
 	foreignPubKey,
 	mint,
 	amount,
@@ -48,6 +55,7 @@ export const createStakeClaim = async ({
 	stakeStartTime,
 	provider
 }: {
+	claimAccount: Keypair;
 	foreignPubKey: Uint8Array;
 	mint: PublicKey;
 	amount: number;
@@ -68,11 +76,12 @@ export const createStakeClaim = async ({
 	await migrationProgram.methods
 		.createStakeClaim(Buffer.from(foreignPubKey), new BN(stakeStartTime), new BN(amount))
 		.accounts({
+			claimAccount: claimAccount.publicKey,
 			payer: payer.publicKey,
 			payerTokens,
 			mint,
 		})
-		.signers([payer])
+		.signers([payer, claimAccount])
 		.rpc();
 };
 
@@ -96,7 +105,7 @@ export const createStakeAccountAndUnstake = async ({
 	await program.methods
 		.stake(new BN(amount), new BN(unstakeDuration * 24 * 60 * 60))
 		.accounts({
-			stakerTokens: ata,
+			userTokenAccount: ata,
 			mint: mint,
 		})
 		.rpc();
@@ -116,7 +125,7 @@ export const createStakeAccountAndUnstake = async ({
 	expect(vault).not.toBe(null);
 
 	await program.methods
-		.unstake()
+		.unstake(new BN(amount))
 		.accounts({
 			stake: stakeAccount,
 		})

@@ -1,4 +1,4 @@
-import { type Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { expect, inject } from "vitest";
 import * as anchor from "@coral-xyz/anchor";
 
@@ -21,82 +21,64 @@ export const useTestContext = () => {
 	return { mint, ata };
 };
 
-export const useMigrationTestHelpers = (program: Program<EffectMigration>) => {
-
-	const useCreateTokenClaim = async ({
+export const useMigrationTestHelpers = <StakeType extends 'token' | 'stake'>(program: Program<EffectMigration>) => {
+	const useCreateClaim = async ({
+		type,
 		publicKey,
 		mint,
 		payer,
 		payerTokens,
 		amount,
 		provider,
-	}: {
-		publicKey: Uint8Array;
-		mint: PublicKey;
-		payer: Keypair;
-		payerTokens: PublicKey;
-		provider: anchor.Provider;
-		amount?: number;
-	}) => {
-
-		const { tokenClaimAccount, tokenClaimVault } = useDeriveMigrationAccounts({
-			initializer: payer.publicKey,
-			mint,
-			foreignPublicKey: publicKey,
-			programId: program.programId,
-		});
-
-		await createTokenClaim({
-			provider,
-			foreignPubKey: publicKey,
-			mint,
-			payer,
-			payerTokens,
-			amount : amount || 5000000,
-		});
-
-		return { tokenClaimAccount, tokenClaimVault };
-	};
-
-	const useCreateStakeClaim = async ({
-		publicKey,
-		mint,
-		payer,
-		payerTokens,
 		stakeStartTime,
-		amount,
-		provider,
 	}: {
+		type: StakeType;
 		publicKey: Uint8Array;
 		mint: PublicKey;
 		payer: Keypair;
 		payerTokens: PublicKey;
-		stakeStartTime: number;
-		amount?: number;
 		provider: anchor.Provider;
+		amount?: number;
+		stakeStartTime?: StakeType extends 'stake' ? number : never;
 	}) => {
+		const claimAccount = new Keypair();
 
-		const { stakeClaimAccount, stakeClaimVault } = useDeriveMigrationAccounts({
-			initializer: payer.publicKey,
-			mint,
-			foreignPublicKey: publicKey,
+		if (type === "token") {
+			await createTokenClaim({
+				claimAccount,
+				provider,
+				foreignPubKey: publicKey,
+				mint,
+				payer,
+				payerTokens,
+				amount: amount || 5000000,
+			});
+		} else {
+			if (!stakeStartTime) {
+				throw new Error("stakeStartTime is required for stake");
+			}
+
+			await createStakeClaim({
+				claimAccount,
+				foreignPubKey: publicKey,
+				mint,
+				payer,
+				payerTokens,
+				stakeStartTime,
+				amount: amount || 5000000,
+				provider,
+			});
+		}
+
+		const { vaultAccount } = useDeriveMigrationAccounts({
+			claimAccount: claimAccount.publicKey,
 			programId: program.programId,
 		});
 
-		await createStakeClaim({
-			foreignPubKey: publicKey,
-			mint,
-			payer,
-			payerTokens,
-			stakeStartTime,
-			amount: amount || 5000000,
-			provider
-		});
-
-		return { stakeClaimAccount, stakeClaimVault}
+		return { claimAccount: claimAccount.publicKey, vaultAccount };
 	};
 
-	return {  useCreateStakeClaim, useCreateTokenClaim  };
+	return { useCreateClaim };
 };
 
 export type AnchorErrorIdl = {
@@ -151,45 +133,10 @@ export const useBankRunProvider = async <T extends Idl>(idl: T) => {
 		);
 	};
 
-	const createStakeAndImmediatelyUnstake = async ({
-		amount,
-		unstakeDuration,
-	}: {
-		amount: number;
-		unstakeDuration: number;
-	}) => {
-		const { mint, ata } = await setup({
-			payer: provider.wallet.payer,
-			provider: provider,
-			amount,
-		});
-
-		const { stakeAccount, vaultAccount } = await createStakeAccountAndUnstake({
-			amount,
-			unstakeDuration,
-			mint,
-			ata,
-			payer: provider.wallet.payer,
-			provider: provider,
-			program,
-		});
-
-		return {
-			stakeAccount,
-			vaultAccount,
-			context,
-			ata,
-			mint,
-			program,
-			provider,
-		};
-	};
-
 	return {
 		provider,
 		program,
 		context,
-		createStakeAndImmediatelyUnstake,
 		useTimeTravel,
 	};
 };

@@ -7,11 +7,9 @@ pub mod stake_program {
     pub struct StakeAccount {
         pub amount: u64,
         pub authority: Pubkey,
-        pub duration: u64,
-        pub time_unstake: i64,
-        pub time_stake: i64,
+        pub lock_duration: u64,
+        pub stake_start_time: i64,
         pub vault_token_account: Pubkey,
-        pub vault_bump: u8,
         pub xefx: u128,
     }
 
@@ -20,20 +18,18 @@ pub mod stake_program {
             &mut self,
             amount: u64,
             authority: Pubkey,
-            duration: u64,
+            lock_duration: u64,
             vault_token_account: Pubkey,
-            vault_bump: u8,
-            time_stake: i64,
+            stake_start_time: i64,
         ) {
             self.amount = amount;
             self.authority = authority;
-            self.duration = duration;
+            self.lock_duration = lock_duration;
 
             // time stake is set to the current block timestamp
-            self.time_stake = time_stake;
+            self.stake_start_time = stake_start_time;
             self.vault_token_account = vault_token_account;
 
-            self.vault_bump = vault_bump;
             self.update_xefx();
         }
 
@@ -47,18 +43,6 @@ pub mod stake_program {
             self.amount = amount;
             self.update_xefx();
             Ok(())
-        }
-
-        pub fn withdraw(&self, balance: u64, now: i64) -> u64 {
-            let elapsed: u64 = u64::try_from(now - self.time_unstake).unwrap();
-
-            if elapsed >= self.duration {
-                balance
-            } else {
-                let precision: u64 = u64::MAX / std::cmp::max(self.amount, elapsed) - 1;
-                elapsed * precision / self.duration * self.amount / precision
-                    - (self.amount - balance)
-            }
         }
 
         fn dilute_stake_time(
@@ -76,8 +60,8 @@ pub mod stake_program {
         }
 
         pub fn topup(&mut self, amount: u64) {
-            self.time_stake = StakeAccount::dilute_stake_time(
-                self.time_stake,
+            self.stake_start_time = StakeAccount::dilute_stake_time(
+                self.stake_start_time,
                 self.amount,
                 Clock::get().unwrap().unix_timestamp,
                 amount,
@@ -93,7 +77,7 @@ pub mod stake_program {
         }
 
         pub fn extend(&mut self, duration: u64) -> Result<()> {
-            self.duration += duration;
+            self.lock_duration += duration;
             self.update_xefx();
             Ok(())
         }

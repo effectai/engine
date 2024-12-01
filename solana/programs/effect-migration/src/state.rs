@@ -3,26 +3,23 @@ use anchor_lang::prelude::*;
 #[constant]
 pub const EXPECTED_MESSAGE: &str = "Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: ";
 
-#[account]
-pub struct ClaimTokenAccount {
-    pub foreign_public_key: Vec<u8>,
-}
-
-impl ClaimTokenAccount {
-    pub fn initialize(&mut self, foreign_public_key: Vec<u8>) {
-        self.foreign_public_key = foreign_public_key;
-    }
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub enum ClaimType {
+    Token {},
+    Stake {
+        stake_start_time: i64,
+    },
 }
 
 #[account]
-pub struct ClaimStakeAccount {
+pub struct ClaimAccount {
     pub foreign_public_key: Vec<u8>,
-    pub stake_start_time: i64,
+    pub claim_type: ClaimType,
 }
 
-impl ClaimStakeAccount {
-    pub fn initialize(&mut self, foreign_public_key: Vec<u8>, stake_start_time: i64) {
+impl ClaimAccount {
+    pub fn initialize(&mut self, foreign_public_key: Vec<u8>, claim_type: ClaimType) {
         self.foreign_public_key = foreign_public_key;
-        self.stake_start_time = stake_start_time;
+        self.claim_type = claim_type;
     }
 }

@@ -7,7 +7,6 @@ pub struct Sync<'info> {
     #[account(mut)]
     pub reward: Account<'info, RewardAccount>,
     #[account(
-        constraint = stake.time_unstake == 0 @ RewardErrors::AlreadyUnstaked,
         constraint = stake.authority == reward.authority @ RewardErrors::Unauthorized,
     )]
     pub stake: Account<'info, StakeAccount>,

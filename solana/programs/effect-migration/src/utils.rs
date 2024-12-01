@@ -47,8 +47,15 @@ pub fn validate_message(payer: &Pubkey, message: &[u8], is_eth: bool) -> Result<
             return Err(MigrationError::MessageInvalid.into());
         }
     } else {
-        // For EOS, the message is the serialized transaction located at 108 bytes
-        if !message[108..108 + expected_message_bytes.len()].eq(&expected_message_bytes) {
+        let mut found = false;
+        for i in 0..message.len() - expected_message_bytes.len() {
+            if message[i..i + expected_message_bytes.len()].eq(&expected_message_bytes) {
+                found = true;
+                break;
+            }
+        }
+
+        if !found {
             return Err(MigrationError::MessageInvalid.into());
         }
     };

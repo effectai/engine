@@ -10,7 +10,7 @@ import type { EffectRewards } from "../target/types/effect_rewards";
 import type { Program } from "@coral-xyz/anchor";
 import { spawn } from "child_process";
 import { BN } from "bn.js";
-import { useDeriveMigrationAccounts } from "@effectai/utils";
+import { extractEosPublicKeyBytes, useDeriveMigrationAccounts } from "@effectai/utils";
 
 const createReflectionAcount = async ({
 	mint,
@@ -114,7 +114,24 @@ const seed = async () => {
 		stakeStartTime,
 	});
 
-	console.log("mint", mint.toBase58())
+	const eosPublicKey = "EOS64vP1Y18ZJXP7KSGoQG8pgR3imaAWoBhzH77kYmYXuVnwzGaDf";
+	const eosPublicKeyBytes = extractEosPublicKeyBytes(eosPublicKey);
+
+	if(!eosPublicKeyBytes) {
+		throw new Error("Invalid eos public key");
+	}
+
+	await createTokenClaim({
+		provider,
+		foreignPubKey: eosPublicKeyBytes,
+		mint,
+		amount: 500_000_000,
+		payer,
+		payerTokens: ata,
+	});
+
+	console.log("mint", mint.toBase58());
+
 };
 
 // deploy
