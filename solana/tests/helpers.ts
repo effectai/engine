@@ -4,15 +4,16 @@ import * as anchor from "@coral-xyz/anchor";
 
 import { type Idl, Program } from "@coral-xyz/anchor";
 import { BankrunProvider, startAnchor } from "anchor-bankrun";
-import {
-	createStakeAccountAndUnstake,
-	createStakeClaim,
-	createTokenClaim,
-} from "../utils/anchor.js";
-import { setup } from "../utils/spl.js";
 import { Clock } from "solana-bankrun";
-import { useDeriveMigrationAccounts } from "@effectai/utils";
+import {
+	useDeriveMigrationAccounts,
+	useDeriveStakeAccounts,
+} from "@effectai/utils";
 import type { EffectMigration } from "../target/types/effect_migration.js";
+import type { EffectStaking } from "../target/types/effect_staking.js";
+import { BN } from "bn.js";
+
+export const SECONDS_PER_DAY = 24 * 60 * 60;
 
 export const useTestContext = () => {
 	const mint = new PublicKey(inject("tokenMint"));
@@ -21,8 +22,49 @@ export const useTestContext = () => {
 	return { mint, ata };
 };
 
-export const useMigrationTestHelpers = <StakeType extends 'token' | 'stake'>(program: Program<EffectMigration>) => {
-	const useCreateClaim = async ({
+export const useStakeTestHelpers = (program: Program<EffectStaking>) => {
+	const useCreateStake = async ({
+		authority,
+		mint,
+		userTokenAccount,
+		amount,
+		lockTimeInDays,
+	}: {
+		authority: PublicKey;
+		mint: PublicKey;
+		userTokenAccount: PublicKey;
+		amount?: number;
+		lockTimeInDays?: number;
+	}) => {
+		const stakeAccount = new anchor.web3.Keypair();
+
+		await program.methods
+			.stake(
+				new anchor.BN(amount || 50_000_000),
+				new anchor.BN(lockTimeInDays || 30 * SECONDS_PER_DAY),
+			)
+			.accounts({
+				stake: stakeAccount.publicKey,
+				authority,
+				userTokenAccount,
+				mint: mint,
+			})
+			.signers([stakeAccount])
+			.rpc();
+
+		const { vaultAccount } = useDeriveStakeAccounts({
+			stakingAccount: stakeAccount.publicKey,
+			programId: program.programId,
+		});
+
+		return { stakeAccount, vaultAccount };
+	};
+
+	return { useCreateStake };
+};
+
+export const useMigrationTestHelpers = (program: Program<EffectMigration>) => {
+	const useCreateClaim = async <StakeType extends "token" | "stake">({
 		type,
 		publicKey,
 		mint,
@@ -39,35 +81,39 @@ export const useMigrationTestHelpers = <StakeType extends 'token' | 'stake'>(pro
 		payerTokens: PublicKey;
 		provider: anchor.Provider;
 		amount?: number;
-		stakeStartTime?: StakeType extends 'stake' ? number : never;
+		stakeStartTime?: StakeType extends "stake" ? number : never;
 	}) => {
 		const claimAccount = new Keypair();
 
 		if (type === "token") {
-			await createTokenClaim({
-				claimAccount,
-				provider,
-				foreignPubKey: publicKey,
-				mint,
-				payer,
-				payerTokens,
-				amount: amount || 5000000,
-			});
+			await program.methods
+				.createTokenClaim(Buffer.from(publicKey), new BN(amount || 50_000_000))
+				.accounts({
+					claimAccount: claimAccount.publicKey,
+					payer: payer.publicKey,
+					payerTokens,
+					mint,
+				})
+				.signers([payer, claimAccount])
+				.rpc();
 		} else {
 			if (!stakeStartTime) {
 				throw new Error("stakeStartTime is required for stake");
 			}
-
-			await createStakeClaim({
-				claimAccount,
-				foreignPubKey: publicKey,
-				mint,
-				payer,
-				payerTokens,
-				stakeStartTime,
-				amount: amount || 5000000,
-				provider,
-			});
+			await program.methods
+				.createStakeClaim(
+					Buffer.from(publicKey),
+					new BN(stakeStartTime),
+					new BN(amount || 50_000_000),
+				)
+				.accounts({
+					claimAccount: claimAccount.publicKey,
+					payer: payer.publicKey,
+					payerTokens,
+					mint,
+				})
+				.signers([payer, claimAccount])
+				.rpc();
 		}
 
 		const { vaultAccount } = useDeriveMigrationAccounts({

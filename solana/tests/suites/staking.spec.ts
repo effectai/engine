@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { useAnchor } from "../helpers.js";
+import { SECONDS_PER_DAY, useAnchor, useStakeTestHelpers } from "../helpers.js";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
 import type { EffectStaking } from "../../target/types/effect_staking.js";
@@ -14,27 +14,23 @@ import type { EffectVesting } from "../../target/types/effect_vesting.js";
 import type { EffectRewards } from "../../target/types/effect_rewards.js";
 import { useDeriveRewardAccounts, useDeriveStakeAccounts, useDeriveVestingAccounts } from "@effectai/utils";
 
-const SECONDS_PER_DAY = 24 * 60 * 60;
-
 describe("Staking Program", async () => {
 	const idl = stakingIDLJson as EffectStaking;
 	const program = anchor.workspace.EffectStaking as Program<EffectStaking>;
 	const vestingProgram = anchor.workspace.EffectVesting as Program<EffectVesting>;
 	const rewardProgram = anchor.workspace.EffectRewards as Program<EffectRewards>;
 	const { provider, wallet, payer, expectAnchorError } = useAnchor();
+	const { useCreateStake } = useStakeTestHelpers(program)
 
 	describe("Stake Initialize", async () => {
 		it.concurrent("should correctly initialize a stake account", async () => {
 			const { mint, ata } = await setup({ payer, provider });
-			await program.methods
-				.stake(new anchor.BN(100), new anchor.BN(30 * SECONDS_PER_DAY))
-				.accounts({
-					authority: wallet.publicKey,
-					userTokenAccount: ata,
-					mint: mint,
-				})
-				.rpc();
-		});
+			await useCreateStake({
+				authority: wallet.publicKey,
+				mint,
+				userTokenAccount: ata,
+			})
+		});	
 
 		it.concurrent(
 			"should fail when stake duration is below the minimum duration",
@@ -44,14 +40,12 @@ describe("Staking Program", async () => {
 				const { STAKE_DURATION_MIN } = useConstantsIDL(stakingIdl);
 
 				await expectAnchorError(async () => {
-					await program.methods
-						.stake(new anchor.BN(500), STAKE_DURATION_MIN.sub(new anchor.BN(1)))
-						.accounts({
-							authority: wallet.publicKey,
-							userTokenAccount: ata,
-							mint: mint,
-						})
-						.rpc();
+					await useCreateStake({
+						lockTimeInDays: STAKE_DURATION_MIN.sub(new BN(1)).toNumber(),
+						authority: wallet.publicKey,
+						mint,
+						userTokenAccount: ata,
+					})
 				}, DURATION_TOO_SHORT);
 			},
 		);
@@ -64,14 +58,12 @@ describe("Staking Program", async () => {
 				const { DURATION_TOO_LONG } = useErrorsIDL(stakingIdl);
 
 				await expectAnchorError(async () => {
-					await program.methods
-						.stake(new anchor.BN(100), STAKE_DURATION_MAX.add(new anchor.BN(1)))
-						.accounts({
-							userTokenAccount: ata,
-							authority: wallet.publicKey,
-							mint: mint,
-						})
-						.rpc();
+					await useCreateStake({
+						lockTimeInDays: STAKE_DURATION_MAX.add(new BN(1)).toNumber(),
+						authority: wallet.publicKey,
+						mint,
+						userTokenAccount: ata,
+					})
 				}, DURATION_TOO_LONG);
 			},
 		);
@@ -81,14 +73,13 @@ describe("Staking Program", async () => {
 			const { STAKE_MINIMUM_AMOUNT, STAKE_DURATION_MIN } =
 				useConstantsIDL(stakingIdl);
 
-			await program.methods
-				.stake(new BN(STAKE_MINIMUM_AMOUNT), STAKE_DURATION_MIN)
-				.accounts({
+				await useCreateStake({
+					lockTimeInDays: STAKE_DURATION_MIN.toNumber(),
+					amount: STAKE_MINIMUM_AMOUNT,
 					authority: wallet.publicKey,
+					mint,
 					userTokenAccount: ata,
-					mint: mint,
 				})
-				.rpc();
 		});
 	});
 
@@ -96,18 +87,14 @@ describe("Staking Program", async () => {
 		it.concurrent("should correctly unstake a stake account", async () => {
 			const { mint, ata } = await setup({ payer, provider });
 
-			await program.methods
-				.stake(new anchor.BN(10_000_000), new anchor.BN(30 * SECONDS_PER_DAY))
-				.accounts({
-					authority: wallet.publicKey,
-					userTokenAccount: ata,
-					mint: mint,
-				})
-				.rpc();
-
-			const { stakeAccount, vaultAccount: stakeVaultAccount } = useDeriveStakeAccounts({
-				mint,
+			const {stakeAccount, vaultAccount} = await useCreateStake({
 				authority: wallet.publicKey,
+				mint,
+				userTokenAccount: ata,
+			})
+
+			const { vaultAccount: stakeVaultAccount } = useDeriveStakeAccounts({
+				stakingAccount: stakeAccount.publicKey,
 				programId: program.programId,
 			});
 
@@ -125,7 +112,7 @@ describe("Staking Program", async () => {
 			})
 
 			await program.methods.unstake(new BN(5_000_000)).accounts({
-				stake: stakeAccount,
+				stake: stakeAccount.publicKey,
 				mint,
 				vaultTokenAccount: stakeVaultAccount,
 				vestingAccountUnchecked: vestingAccount.publicKey,
@@ -160,25 +147,28 @@ describe("Staking Program", async () => {
 				amount: 5000,
 			});
 
+			const stakeAccount = new anchor.web3.Keypair();
+
 			await bankrunProgram.methods
 				.stake(new BN(100), new BN(30 * SECONDS_PER_DAY))
 				.accounts({
+					stake: stakeAccount.publicKey,
 					authority: provider.wallet.payer.publicKey,
 					userTokenAccount: ata,
 					mint,
 				})
+				.signers([stakeAccount])
 				.rpc();
 
 			// get stake account
-			const { stakeAccount, vaultAccount } = useDeriveStakeAccounts({
-				mint,
-				authority: provider.wallet.payer.publicKey,
+			const { vaultAccount } = useDeriveStakeAccounts({
+				stakingAccount: stakeAccount.publicKey,
 				programId: program.programId,
 			});
 
 			// fetch stake account
 			const account =
-				await bankrunProgram.account.stakeAccount.fetch(stakeAccount);
+				await bankrunProgram.account.stakeAccount.fetch(stakeAccount.publicKey);
 
 			// wait 5 days
 			await useTimeTravel(100);
@@ -187,13 +177,13 @@ describe("Staking Program", async () => {
 				.topup(new BN(100))
 				.accounts({
 					userTokenAccount: ata,
-					stake: stakeAccount,
+					stake: stakeAccount.publicKey,
 				})
 				.rpc();
 
 			// fetch stake account
 			const account2 =
-				await bankrunProgram.account.stakeAccount.fetch(stakeAccount);
+				await bankrunProgram.account.stakeAccount.fetch(stakeAccount.publicKey);
 
 			expect(account.stakeStartTime).not.toEqual(account2.stakeStartTime);
 

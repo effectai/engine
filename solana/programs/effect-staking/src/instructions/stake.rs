@@ -15,8 +15,6 @@ pub struct Stake<'info> {
         init,
         payer = authority,
         space = 8 + std::mem::size_of::<StakeAccount>(),
-        seeds = [ b"stake", mint.key().as_ref(), authority.key().as_ref() ],
-        bump,
     )]
     pub stake: Account<'info, StakeAccount>,
 

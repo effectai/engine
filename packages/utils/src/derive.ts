@@ -20,7 +20,6 @@ export const useDeriveMigrationAccounts = ({
 
 export const useDeriveVestingAccounts = ({
 	vestingAccount,
-	authority,
 	programId
 }: {
 	vestingAccount: PublicKey;
@@ -51,32 +50,31 @@ export const useDeriveRewardAccounts = ({
 		programId,
 	);
 
+	const [reflectionAccount] = PublicKey.findProgramAddressSync(
+		[Buffer.from("reflection")],
+		programId
+	);
+
 	return {
-		rewardAccount
+		rewardAccount,
+		reflectionAccount
 	};
 }
 
 export const useDeriveStakeAccounts = ({
-	mint,
-	authority,
-	programId
+	stakingAccount,
+	programId,
 }: {
-	mint: PublicKey;
-	authority: PublicKey;
+	stakingAccount: PublicKey;
 	programId: PublicKey;
 }) => {
-	const [stakeAccount] = PublicKey.findProgramAddressSync(
-		[Buffer.from("stake"), mint.toBuffer(), authority.toBuffer()],
-		programId,
-	);
 
 	const [vaultAccount] = PublicKey.findProgramAddressSync(
-		[stakeAccount.toBuffer()],
+		[stakingAccount.toBuffer()],
 		programId,
 	);
 
 	return {
-		stakeAccount,
 		vaultAccount
 	};
 };

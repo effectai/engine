@@ -280,9 +280,10 @@ describe("Migration Program", async () => {
 				provider
 			});
 
-			const {stakeAccount, vaultAccount: stakeVaultAccount} = useDeriveStakeAccounts({
-				mint,
-				authority: payer.publicKey,
+			const stakeAccount = new anchor.web3.Keypair();
+
+			const {vaultAccount: stakeVaultAccount} = useDeriveStakeAccounts({
+				stakingAccount: stakeAccount.publicKey,
 				programId: stakeProgram.programId
 			})
 
@@ -293,15 +294,14 @@ describe("Migration Program", async () => {
 					vaultTokenAccount: claimVaultAccount,
 					payer: payer.publicKey,
 					claimAccount: claimAccount,
-					stakeAccount,
+					stakeAccount: stakeAccount.publicKey,
 					stakeVaultTokenAccount: stakeVaultAccount,
 					mint,
-				})
-
+				}).signers([stakeAccount])
 				.rpc();
 
 			// check if the stake account was created
-			const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(stakeAccount)
+			const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(stakeAccount.publicKey)
 			expect(stakeAccountData).to.not.be.null;
 			// check if the stake account has the correct start time (stake age)
 			expect(stakeAccountData.stakeStartTime.toNumber()).to.equal(stakeStartTime);

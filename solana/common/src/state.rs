@@ -1,5 +1,7 @@
 pub mod stake_program {
-    use anchor_lang::prelude::*;
+    use anchor_lang::{prelude::*};
+
+    use crate::constants::{SECONDS_PER_DAY, STAKE_AGE_MAX_DAYS};
 
     declare_id!("eR1sM73NpFqq7DSR5YDAgneWW29AZA8sRm1BFakzYpH");
 
@@ -26,23 +28,15 @@ pub mod stake_program {
             self.authority = authority;
             self.lock_duration = lock_duration;
 
-            // time stake is set to the current block timestamp
-            self.stake_start_time = stake_start_time;
+            if stake_start_time < Clock::get().unwrap().unix_timestamp - STAKE_AGE_MAX_DAYS as i64 * SECONDS_PER_DAY as i64 {
+                self.stake_start_time = Clock::get().unwrap().unix_timestamp - STAKE_AGE_MAX_DAYS as i64 * SECONDS_PER_DAY as i64;
+            } else {
+                self.stake_start_time = stake_start_time;
+            }
+
             self.vault_token_account = vault_token_account;
 
             self.update_xefx();
-        }
-
-        pub fn unstake(&mut self, amount: u64) -> Result<()> {
-            self.amount -= amount;
-            self.update_xefx();
-            Ok(())
-        }
-
-        pub fn restake(&mut self, amount: u64) -> Result<()> {
-            self.amount = amount;
-            self.update_xefx();
-            Ok(())
         }
 
         fn dilute_stake_time(
@@ -60,24 +54,25 @@ pub mod stake_program {
         }
 
         pub fn topup(&mut self, amount: u64) {
-            self.stake_start_time = StakeAccount::dilute_stake_time(
+            let diluted_stake_start = StakeAccount::dilute_stake_time(
                 self.stake_start_time,
                 self.amount,
                 Clock::get().unwrap().unix_timestamp,
                 amount,
             );
 
+            if diluted_stake_start < Clock::get().unwrap().unix_timestamp - STAKE_AGE_MAX_DAYS as i64 * SECONDS_PER_DAY as i64 {
+                self.stake_start_time = Clock::get().unwrap().unix_timestamp - STAKE_AGE_MAX_DAYS as i64 * SECONDS_PER_DAY as i64;
+            } else {
+                self.stake_start_time = diluted_stake_start;
+            }
+
             self.amount += amount;
             self.update_xefx();
         }
 
-        pub fn slash(&mut self, amount: u64) {
+        pub fn unstake(&mut self, amount: u64) -> Result<()> {
             self.amount -= amount;
-            self.update_xefx();
-        }
-
-        pub fn extend(&mut self, duration: u64) -> Result<()> {
-            self.lock_duration += duration;
             self.update_xefx();
             Ok(())
         }

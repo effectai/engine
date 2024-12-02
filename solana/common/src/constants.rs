@@ -17,6 +17,7 @@ pub const UNSTAKE_DELAY_DAYS: u64 = 0;
 pub const STAKE_DURATION_MIN: u128 = 30 * SECONDS_PER_DAY; // 30 days
 pub const STAKE_DURATION_MAX: u128 = 365 * SECONDS_PER_DAY; // 1 year
 pub const STAKE_MINIMUM_AMOUNT: u64 = 0;
+pub const STAKE_AGE_MAX_DAYS: u64 = 1000;
 
 pub const XEFX_DIV: u128 = 4 * STAKE_DURATION_MAX / 12; // 0.25 growth per month
 pub const XEFX_PRECISION: u128 = u128::pow(10, 15); // 1e15

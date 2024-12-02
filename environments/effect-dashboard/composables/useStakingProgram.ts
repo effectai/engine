@@ -9,8 +9,6 @@ import { useAnchorProvider } from "./useAnchorProvider";
 import {
 	Keypair,
 	PublicKey,
-	Transaction,
-	TransactionInstruction,
 } from "@solana/web3.js";
 import type { EffectStaking } from "../../../solana/target/types/effect_staking";
 import type { EffectRewards } from "../../../solana/target/types/effect_rewards";
@@ -245,6 +243,8 @@ export function useStakingProgram() {
 				const { stakeAccount, reflectionAccount, rewardAccount } =
 					useDeriveStakeAccounts();
 
+				console.log("stakeAccount", stakeAccount.toBase58());
+				
 				try {
 					return await stakeProgram.methods
 						.topup(new anchor.BN(amount * 1000000))
@@ -374,6 +374,7 @@ export function useStakingProgram() {
 
 	return {
 		stakeProgram,
+		rewardsProgram,
 		useStake,
 		useUnstake,
 		useTopUp,

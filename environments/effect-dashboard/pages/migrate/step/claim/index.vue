@@ -27,17 +27,16 @@
 					</div>
 				</div>
 				<div v-else-if="claims" class="flex flex-col md:flex-row w-full gap-5">
-					<UCard v-for="claim in claims" class="md:w-1/2 w-full">
+					<UCard v-for="claim in claims" class="md:w-1/2 flex-grow w-full">
 						<h2 class="title capitalize">{{ claim.type }} Claim</h2>
 						<label class="text-gray-600">Amount</label>
 						<p>{{ claim.amount }} EFX</p>
-						<UButton color="black" :disabled="claim.amount == 0" class="mt-5"
-							@click="handleClaim({ claimAccount: claim.data })">
+						<UButton color="black" :disabled="claim.amount == 0" class="mt-5" @click="handleClaim({ claim })">
 							Claim on Solana
 						</UButton>
 					</UCard>
 				</div>
-				<div v-if="!txId" class="flex gap-x-5 justify-center my-5 items-center mt-10">
+				<div class="flex gap-x-5 justify-center my-5 items-center mt-10">
 					<nuxt-link class="underline cursor-pointer" @click="reset">Switch accounts</nuxt-link>
 				</div>
 			</div>
@@ -46,20 +45,29 @@
 </template>
 
 <script setup lang="ts">
+import { useQueryClient } from "@tanstack/vue-query";
 import ConfettiExplosion from "vue-confetti-explosion";
 import { useMigrationProgram } from "~/composables/useMigrationProgram";
 
 const { canClaim, clear } = useGlobalState()
-const { useClaim, useGetClaims } = useMigrationProgram();
-const { data: claims, isError, isLoading } = useGetClaims();
+const { useClaim, useGetClaimAccounts } = useMigrationProgram();
+const { data: claims, isLoading, isError } = useGetClaimAccounts();
 
 const toast = useToast();
 const txId: Ref<string | null> = ref(null);
+const queryClient = useQueryClient();
 const { mutateAsync: handleClaim } = useClaim({
 	options: {
-		onSuccess: (transationId) => {
-			txId.value = transationId;
-			console.log("transationId", transationId);
+		onSuccess: (transactionId) => {
+			// Invalidate the claims query
+			queryClient.invalidateQueries({
+				predicate: (query) => {
+					return query.queryKey.includes("claims");
+				},
+			});
+
+			txId.value = transactionId;
+
 			toast.add({
 				title: "Success",
 				description: "Successfully claimed your new Effect Tokens on Solana!",

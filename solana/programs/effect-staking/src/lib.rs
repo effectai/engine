@@ -19,12 +19,6 @@ declare_id!("eR1sM73NpFqq7DSR5YDAgneWW29AZA8sRm1BFakzYpH");
 #[program]
 pub mod effect_staking {
     use super::*;
-
-    /// Initialize the [SettingsAccount](#settings-account).
-    // pub fn init(ctx: Context<Init>) -> Result<()> {
-    //     ctx.accounts.handler()
-    // }
-
     /// Create a [StakeAccount](#stake-account) and [VaultAccount](#vault-account).
     /// Stake `amount` of [NOS](/tokens/token) tokens for `duration` fo seconds.
     pub fn stake(ctx: Context<Stake>, amount: u64, duration: u128) -> Result<()> {
@@ -49,6 +43,10 @@ pub mod effect_staking {
     pub fn close(ctx: Context<Close>) -> Result<()> {
         ctx.accounts.handler()
     }
+
+    // pub fn init(ctx: Context<Init>) -> Result<()> {
+    //     ctx.accounts.handler()
+    // }
 
     // Reduce a [StakeAccount](#stake-account)'s [NOS](/tokens/token) tokens.
     // Slashing is a feature used by the Effect Protocol to punish bad actors.

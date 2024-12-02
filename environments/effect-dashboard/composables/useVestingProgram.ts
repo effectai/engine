@@ -10,8 +10,7 @@ import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 export const useVestingProgram = () => {
 	const appConfig = useRuntimeConfig();
-	const { connection } = useGlobalState();
-	const { publicKey, sendTransaction } = useWallet();
+	const { publicKey } = useWallet();
 	const { provider } = useAnchorProvider();
 	const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
 	

@@ -56,7 +56,6 @@ export const stakingIdl = {
     {
       "name": "stake",
       "docs": [
-        "Initialize the [SettingsAccount](#settings-account).",
         "Create a [StakeAccount](#stake-account) and [VaultAccount](#vault-account).",
         "Stake `amount` of [NOS](/tokens/token) tokens for `duration` fo seconds."
       ],
@@ -82,28 +81,7 @@ export const stakingIdl = {
         {
           "name": "stake",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115,
-                  116,
-                  97,
-                  107,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
+          "signer": true
         },
         {
           "name": "vault_token_account",
@@ -170,28 +148,7 @@ export const stakingIdl = {
         {
           "name": "stake",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115,
-                  116,
-                  97,
-                  107,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
+          "signer": true
         },
         {
           "name": "vault_token_account",
@@ -216,7 +173,8 @@ export const stakingIdl = {
           "signer": true
         },
         {
-          "name": "metadata"
+          "name": "claim_account",
+          "writable": true
         },
         {
           "name": "system_program",

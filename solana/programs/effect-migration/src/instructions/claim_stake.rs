@@ -22,9 +22,8 @@ pub struct ClaimStake<'info> {
     #[account(mut)]
     pub vault_token_account: Account<'info, TokenAccount>,
 
-    /// CHECK: checked in ix body
     #[account(mut)]
-    pub stake_account: UncheckedAccount<'info>,
+    pub stake_account: Signer<'info>,
 
     /// CHECK: checked in ix body
     #[account(mut)]
@@ -45,7 +44,7 @@ impl<'info> ClaimStake<'info> {
             vault_token_account: self.stake_vault_token_account.to_account_info().clone(),
             authority: self.payer.to_account_info().clone(),
             claim_vault: self.vault_token_account.to_account_info().clone(),
-            metadata: self.claim_account.to_account_info().clone(),
+            claim_account: self.claim_account.to_account_info().clone(),
             system_program: self.system_program.to_account_info().clone(),
             token_program: self.token_program.to_account_info().clone(),
             rent: self.rent.to_account_info().clone(),

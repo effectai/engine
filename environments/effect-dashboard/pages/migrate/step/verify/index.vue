@@ -30,7 +30,6 @@
                 </template>
             </WalletCard>
         </div>
-
     </UCard>
 </template>
 

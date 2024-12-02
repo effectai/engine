@@ -29,9 +29,9 @@
                     <div class="flex justify-between"><span class="text-gray-400">Your Stake</span><span
                             class="font-medium">{{ stakeAmount || 0 }} EFFECT</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span
-                            class="font-medium">{{unstakeDays || 0}} Days</span></div>
+                            class="font-medium">{{ unstakeDays || 0 }} Days</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">Rewards Earned</span><span
-                            class="font-medium">{{pendingRewards || 0}} EFFECT</span></div>
+                            class="font-medium">{{ pendingRewards || 0 }} EFFECT</span></div>
 
                     <UButton @click="handleSubmit" color="white" class="flex justify-center w-full">Claim</UButton>
                 </div>
@@ -47,10 +47,10 @@
 import { useWallet } from "solana-wallets-vue";
 
 const {
-	useGetStakeAccount,
-	useClaimRewards,
-	useGetRewardAccount,
-	useGetReflectionAccount,
+    useGetStakeAccount,
+    useClaimRewards,
+    useGetRewardAccount,
+    useGetReflectionAccount,
 } = useStakingProgram();
 
 const { data: stakeAccount, unstakeDays, amountFormatted: stakeAmount } = useGetStakeAccount();
@@ -62,32 +62,32 @@ const { publicKey } = useWallet();
 const currentTime = ref(new Date().getTime() / 1000);
 
 onMounted(() => {
-	const interval = setInterval(() => {
-		currentTime.value = new Date().getTime() / 1000;
-	}, 1000);
+    const interval = setInterval(() => {
+        currentTime.value = new Date().getTime() / 1000;
+    }, 1000);
 
-	onUnmounted(() => clearInterval(interval));
+    onUnmounted(() => clearInterval(interval));
 });
 
 const stakeAge = computed(() => {
-  if (!stakeAccount.value?.data?.timeStake) return 0;
+    if (!stakeAccount.value?.data?.stakeStartTime) return 0;
 
-  const time = stakeAccount.value.data.timeStake.toNumber() - currentTime.value;
+    const time = currentTime.value - stakeAccount.value.data.stakeStartTime.toNumber()
 
-  return time / 86400 ; 
+    return time / 86400;
 });
 
 const { mutateAsync: claimRewards } = useClaimRewards();
 
 const pendingRewards = computed(() => {
-	const reward =
-		rewardAccount.value?.reflection / reflectionAccount.value?.rate -
-		rewardAccount.value?.xefx;
-	return +(reward / 1e6).toFixed(4);
+    const reward =
+        rewardAccount.value?.reflection / reflectionAccount.value?.rate -
+        rewardAccount.value?.xefx;
+    return +(reward / 1e6).toFixed(4);
 });
 
 const handleSubmit = async () => {
-	const tx = await claimRewards();
+    const tx = await claimRewards();
 };
 </script>
 

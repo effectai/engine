@@ -13,9 +13,7 @@ pub struct GenesisStake<'info> {
     #[account(
         init,
         payer = authority,
-        space = 8 + std::mem::size_of::<StakeAccount>(),
-        seeds = [ b"stake", mint.key().as_ref(), authority.key().as_ref() ],
-        bump,
+        space = 8 + std::mem::size_of::<StakeAccount>()
     )]
     pub stake: Account<'info, StakeAccount>,
 
@@ -36,8 +34,11 @@ pub struct GenesisStake<'info> {
     #[account(mut)]
     pub claim_vault: Signer<'info>,
 
+    // require claim vault to be signer
+    #[account(mut)]
+
     /// CHECK: checked in ix body
-    pub metadata: UncheckedAccount<'info>,
+    pub claim_account: UncheckedAccount<'info>,
 
     pub system_program: Program<'info, System>,
 
@@ -54,7 +55,7 @@ impl<'info> GenesisStake<'info> {
         stake_start_time: i64,
     ) -> Result<()> {
         let (vault_authority, _) =
-            Pubkey::find_program_address(&[self.metadata.key().as_ref()], &id::MIGRATION_PROGRAM);
+            Pubkey::find_program_address(&[self.claim_account.key().as_ref()], &id::MIGRATION_PROGRAM);
 
         // Check if the claim_vault (signer) PDA is the same as the derived vault authority
         require_eq!(

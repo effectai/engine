@@ -11,6 +11,8 @@ import type { Program } from "@coral-xyz/anchor";
 import { spawn } from "child_process";
 import { BN } from "bn.js";
 import { extractEosPublicKeyBytes, useDeriveMigrationAccounts } from "@effectai/utils";
+import { useMigrationTestHelpers } from "../tests/helpers";
+import { program } from "@coral-xyz/anchor/dist/cjs/native/system";
 
 const createReflectionAcount = async ({
 	mint,
@@ -92,28 +94,6 @@ const seed = async () => {
 	});
 
 	const ethereumPublicKey = "0xA03E94548C26E85DBd81d93ca782A3449564C27f";
-
-	await createTokenClaim({
-		provider,
-		foreignPubKey: toBytes(ethereumPublicKey),
-		mint,
-		amount: 500_000_000,
-		payer,
-		payerTokens: ata,
-	});
-
-	const stakeStartTime = new Date().getTime() - 31556952000;
-
-	await createStakeClaim({
-		provider,
-		foreignPubKey: toBytes(ethereumPublicKey),
-		mint,
-		amount: 350_000_000,
-		payer,
-		payerTokens: ata,
-		stakeStartTime,
-	});
-
 	const eosPublicKey = "EOS64vP1Y18ZJXP7KSGoQG8pgR3imaAWoBhzH77kYmYXuVnwzGaDf";
 	const eosPublicKeyBytes = extractEosPublicKeyBytes(eosPublicKey);
 
@@ -121,7 +101,22 @@ const seed = async () => {
 		throw new Error("Invalid eos public key");
 	}
 
+	const claimAccount1 = new anchor.web3.Keypair();
+
 	await createTokenClaim({
+		claimAccount: claimAccount1,
+		provider,
+		foreignPubKey: toBytes(ethereumPublicKey),
+		mint,
+		amount: 500_000_000,
+		payer,
+		payerTokens: ata,
+	});
+
+	const claimAccount2 = new anchor.web3.Keypair();
+
+	await createTokenClaim({
+		claimAccount: claimAccount2,
 		provider,
 		foreignPubKey: eosPublicKeyBytes,
 		mint,
@@ -129,6 +124,22 @@ const seed = async () => {
 		payer,
 		payerTokens: ata,
 	});
+
+	// 1 year ago
+	const stakeStartTime = Math.floor(Date.now() / 1000) - 31556952;
+
+	const stakeClaimAccount = new anchor.web3.Keypair();
+
+	await createStakeClaim({
+		claimAccount: stakeClaimAccount,
+		foreignPubKey: toBytes(ethereumPublicKey),
+		mint,
+		payer,
+		payerTokens: ata,
+		amount: 500_000_000,
+		stakeStartTime,
+		provider,
+	})
 
 	console.log("mint", mint.toBase58());
 
