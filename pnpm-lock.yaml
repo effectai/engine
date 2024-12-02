@@ -7,8 +7,6 @@ settings:
 overrides:
   '@vue/devtools': 7.6.4
 
-packageExtensionsChecksum: 14a0ec223410c2fcd57609705dc80aff
-
 importers:
 
   .:
@@ -113,9 +111,6 @@ importers:
       viem:
         specifier: 2.x
         version: 2.21.45(typescript@5.7.2)(zod@3.22.4)
-      vite-node:
-        specifier: ^2.1.6
-        version: 2.1.6(sass-embedded@1.81.0)
       vue:
         specifier: latest
         version: 3.5.13(typescript@5.7.2)
@@ -3421,19 +3416,16 @@ packages:
       react-dom: 18.3.1(react@18.3.1)
     dev: false
 
-  /@fractalwagmi/solana-wallet-adapter@0.1.1(react-dom@18.3.1)(react@18.3.1):
+  /@fractalwagmi/solana-wallet-adapter@0.1.1(@solana/web3.js@1.95.5)(react-dom@18.3.1)(react@18.3.1):
     resolution: {integrity: sha512-oTZLEuD+zLKXyhZC5tDRMPKPj8iaxKLxXiCjqRfOo4xmSbS2izGRWLJbKMYYsJysn/OI3UJ3P6CWP8WUWi0dZg==}
     dependencies:
       '@fractalwagmi/popup-connection': 1.1.1(react-dom@18.3.1)(react@18.3.1)
       '@solana/wallet-adapter-base': 0.9.23(@solana/web3.js@1.95.5)
-      '@solana/web3.js': 1.95.5
       bs58: 5.0.0
     transitivePeerDependencies:
-      - bufferutil
-      - encoding
+      - '@solana/web3.js'
       - react
       - react-dom
-      - utf-8-validate
     dev: false
 
   /@greymass/buoy@1.0.4:
@@ -7831,15 +7823,12 @@ packages:
     peerDependencies:
       '@solana/web3.js': ^1.77.3
     dependencies:
-      '@fractalwagmi/solana-wallet-adapter': 0.1.1(react-dom@18.3.1)(react@18.3.1)
+      '@fractalwagmi/solana-wallet-adapter': 0.1.1(@solana/web3.js@1.95.5)(react-dom@18.3.1)(react@18.3.1)
       '@solana/wallet-adapter-base': 0.9.23(@solana/web3.js@1.95.5)
       '@solana/web3.js': 1.95.5
     transitivePeerDependencies:
-      - bufferutil
-      - encoding
       - react
       - react-dom
-      - utf-8-validate
     dev: false
 
   /@solana/wallet-adapter-huobi@0.1.15(@solana/web3.js@1.95.5):

@@ -35,13 +35,6 @@
 	"pnpm": {
 		"overrides": {
 			"@vue/devtools": "7.6.4"
-		},
-		"packageExtensions": {
-			"@fractalwagmi/solana-wallet-adapter@0.1.1": {
-				"dependencies": {
-					"@solana/web3.js": "1.95.5"
-				}
-			}
 		}
 	}
 }
