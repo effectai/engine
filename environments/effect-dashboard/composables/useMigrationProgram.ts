@@ -10,8 +10,7 @@ import {
 import { useAnchorWallet, useWallet } from "solana-wallets-vue";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program, Idl } from "@coral-xyz/anchor";
-import programIDL from "../../../solana/target/idl/effect_migration.json";
-import type { EffectMigration } from "../../../solana/target/types/effect_migration";
+import { EffectMigrationIdl, type EffectMigration } from "@effectai/shared";
 
 import {
 	createAssociatedTokenAccountIdempotentInstructionWithDerivation,
@@ -33,10 +32,7 @@ export const useMigrationProgram = () => {
 
 	const provider = new anchor.AnchorProvider(connection, wallet.value, {});
 
-	const queryClient = useQueryClient();
-
 	const { rewardsProgram } = useStakingProgram();
-
 	const { stakeProgram } = useStakingProgram();
 
 	type Claim = {
@@ -51,7 +47,7 @@ export const useMigrationProgram = () => {
 	>;
 
 	const program = new anchor.Program(
-		programIDL as Idl,
+		EffectMigrationIdl as Idl,
 		provider,
 	) as unknown as Program<EffectMigration>;
 

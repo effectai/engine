@@ -12,6 +12,7 @@
 	"dependencies": {
 		"@coral-xyz/anchor": "0.30.1",
 		"@effectai/utils": "workspace:*",
+		"@effectai/shared": "workspace:*",
 		"@effectai/wallet-plugin-anchor": "workspace:*",
 		"@headlessui/vue": "^1.7.23",
 		"@heroicons/vue": "^2.2.0",

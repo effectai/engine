@@ -1,25 +1,43 @@
 import fs from 'node:fs';
 
-const target = "target/idl/effect_staking.json";
+const types = [
+  "target/types/effect_staking.ts",
+  "target/types/effect_migration.ts",
+  "target/types/effect_vesting.ts",
+  "target/types/effect_rewards.ts",
+]
 
-function generateTypescriptObject(jsonObject: any, objectName: string) {
-    const tsObject = JSON.stringify(jsonObject, null, 2); // Format the JSON with indentation
-    return `export const ${objectName} = ${tsObject} as const;\n`;
+const idls = [
+  "target/idl/effect_staking.json",
+  "target/idl/effect_migration.json",
+  "target/idl/effect_vesting.json",
+  "target/idl/effect_rewards.json",
+]
+
+const targetFolder = "../packages/shared/src"
+
+for(const type of types) {
+  fs.copyFileSync(type, `${targetFolder}/types/${type.split("/")[2]}`);
 }
 
-function readJsonFile(filePath: string) {
-    try {
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
-      return JSON.parse(fileContent);
-    } catch (error) {
-      console.error('Error reading or parsing the JSON file:', error);
-      return null;
-    }
-  }
 
-const idl = readJsonFile(target);
-
-if (idl) {
-    const tsObject = generateTypescriptObject(idl, 'stakingIdl');
-    fs.writeFileSync('./constants/idl.ts', tsObject);
+for (const idl of idls) {
+  fs.copyFileSync(idl, `${targetFolder}/idl/${idl.split("/")[2]}`);
 }
+
+// function generateTypescriptObject(jsonObject: any, objectName: string) {
+//     const tsObject = JSON.stringify(jsonObject, null, 2); // Format the JSON with indentation
+//     return `export const ${objectName} = ${tsObject} as const;\n`;
+// }
+
+// function readJsonFile(filePath: string) {
+//     try {
+//       const fileContent = fs.readFileSync(filePath, 'utf-8');
+//       return JSON.parse(fileContent);
+//     } catch (error) {
+//       console.error('Error reading or parsing the JSON file:', error);
+//       return null;
+//     }
+//   }
+
+

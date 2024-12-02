@@ -1,18 +1,18 @@
 import { useWallet } from "solana-wallets-vue";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program, Idl } from "@coral-xyz/anchor";
-import stakeIdl from "../../../solana/target/idl/effect_staking.json";
-import rewardIdl from "../../../solana/target/idl/effect_rewards.json";
-import vestingIdl from "../../../solana/target/idl/effect_vesting.json";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { useAnchorProvider } from "./useAnchorProvider";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import {
-	Keypair,
-	PublicKey,
-} from "@solana/web3.js";
-import type { EffectStaking } from "../../../solana/target/types/effect_staking";
-import type { EffectRewards } from "../../../solana/target/types/effect_rewards";
-import type { EffectVesting } from "../../../solana/target/types/effect_vesting";
+	EffectStakingIdl,
+	EffectVestingIdl,
+	EffectRewardsIdl,
+	type EffectStaking,
+	type EffectRewards,
+	type EffectVesting,
+} from "@effectai/shared";
+
 import {
 	createAssociatedTokenAccountIdempotentInstructionWithDerivation,
 	getAssociatedTokenAddressSync,
@@ -28,19 +28,16 @@ export function useStakingProgram() {
 	const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
 
 	const stakeProgram = new anchor.Program(
-		stakeIdl as Idl,
+		EffectStakingIdl as Idl,
 		provider,
 	) as unknown as Program<EffectStaking>;
 
 	const rewardsProgram = new anchor.Program(
-		rewardIdl as Idl,
+		EffectRewardsIdl as Idl,
 		provider,
 	) as unknown as Program<EffectRewards>;
 
-	const vestingProgram = new anchor.Program(
-		vestingIdl as Idl,
-		provider,
-	) as unknown as Program<EffectVesting>;
+	const {vestingProgram} = useVestingProgram();
 
 	const queryClient = useQueryClient();
 
@@ -153,8 +150,8 @@ export function useStakingProgram() {
 				queryClient.invalidateQueries({
 					predicate: (query) => {
 						return query.queryKey.includes("unstake");
-					}
-				})
+					},
+				});
 			},
 			mutationFn: async ({ amount }: { amount: number }) => {
 				if (!publicKey.value) {
@@ -226,8 +223,8 @@ export function useStakingProgram() {
 				queryClient.invalidateQueries({
 					predicate: (query) => {
 						return query.queryKey.includes("stake");
-					}
-				})
+					},
+				});
 			},
 			mutationFn: async ({
 				amount,
@@ -244,7 +241,7 @@ export function useStakingProgram() {
 					useDeriveStakeAccounts();
 
 				console.log("stakeAccount", stakeAccount.toBase58());
-				
+
 				try {
 					return await stakeProgram.methods
 						.topup(new anchor.BN(amount * 1000000))
@@ -320,8 +317,8 @@ export function useStakingProgram() {
 				queryClient.invalidateQueries({
 					predicate: (query) => {
 						return query.queryKey.includes("stake");
-					}
-				})
+					},
+				});
 			},
 			mutationFn: async ({
 				amount,

@@ -1,12 +1,13 @@
 import { PublicKey } from "@solana/web3.js";
 import { useWallet } from "solana-wallets-vue";
 import * as anchor from "@coral-xyz/anchor";
-
 import type { Program, Idl } from "@coral-xyz/anchor";
-import type { EffectVesting } from "../../../solana/target/types/effect_vesting";
-import vestingIdl from "../../../solana/target/idl/effect_vesting.json";
 import { useMutation, useQuery } from "@tanstack/vue-query";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import {
+	EffectVestingIdl,
+	type EffectVesting,
+} from "@effectai/shared";
 
 export const useVestingProgram = () => {
 	const appConfig = useRuntimeConfig();
@@ -19,7 +20,7 @@ export const useVestingProgram = () => {
 	>;
 
 	const vestingProgram = new anchor.Program(
-		vestingIdl as Idl,
+		EffectVestingIdl as Idl,
 		provider,
 	) as unknown as Program<EffectVesting>;
 
