@@ -4,7 +4,10 @@ import { useWallet } from "solana-wallets-vue";
 export const signature = ref<Uint8Array | null>(null);
 export const message = ref<Uint8Array | null>(null);
 export const foreignPublicKey = ref<Uint8Array | null>(null);
-export const connection = new Connection('http://localhost:8899', 'confirmed');
+
+const rpcUrl = process.env.EFFECT_SOLANA_RPC_NODE_URL || 'https://api.devnet.solana.com';
+export const connection = new Connection(rpcUrl, 'confirmed');
+
 export const publicKeyString = ref<string | null>(null);
 
 export const useGlobalState = () => {
