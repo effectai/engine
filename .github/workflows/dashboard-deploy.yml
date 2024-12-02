@@ -13,13 +13,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-
       - run: pnpm install
-      - run: pnpm run dashboard:generate
+        working-directory: ./environments/effect-dashboard
+      - run: pnpm run generate
+        working-directory: ./environments/effect-dashboard
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: ./environments/effect-dashboard/dist
 
   deploy:
     needs: build
