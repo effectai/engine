@@ -1,7 +1,7 @@
 <template>
 	<UCard class="flex flex-col">
 		<form @submit.prevent="handleSubmit" class="space-y-6">
-			<div class="bg-white/5 p-6 rounded-xl">
+			<div class="dark:!bg-[#1C1A1F] p-6 rounded-xl">
 				<h3 class="text-lg font-semibold mb-6">Stake Tokens</h3>
 				<div class="space-y-6">
 					<div><label class="block text-sm text-gray-400 mb-2">Amount to Stake</label>
@@ -13,7 +13,7 @@
 								MAX</UButton>
 						</div>
 					</div>
-					<div class="bg-white/5 rounded-lg py-4 space-y-2">
+					<div class="bg-white/5 rounded-lg py-4 px-2 space-y-2">
 						<div class="flex justify-between text-sm"><span class="text-gray-400">Available
 								Balance</span><span>{{ availableBalance?.value }} EFFECT</span></div>
 						<div class="flex justify-between text-sm"><span class="text-gray-400">Lock Period</span><span>30
