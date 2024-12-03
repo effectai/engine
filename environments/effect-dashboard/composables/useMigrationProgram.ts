@@ -145,7 +145,7 @@ export const useMigrationProgram = () => {
 				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
 				if (claim.type === "stake") {
-					let signers: Keypair[] = [];
+					const signers: Keypair[] = [];
 					let stakingAccount: Keypair | StakingAccount | null = null;
 
 					// check if user has an existing stakingAccount
@@ -160,6 +160,7 @@ export const useMigrationProgram = () => {
 					]);
 
 					if (stakingAccounts.length === 0) {
+						console.log("No staking account found, creating..");
 						stakingAccount = Keypair.generate();
 						signers.push(stakingAccount);
 					} else {
@@ -205,7 +206,7 @@ export const useMigrationProgram = () => {
 												userTokenAccount: ata,
 												mint,
 											})
-											.signers([stakingAccount])
+											.signers(signers)
 											.instruction(),
 									]
 								: []),
@@ -224,7 +225,6 @@ export const useMigrationProgram = () => {
 									]),
 						])
 						.accounts({
-							payer: publicKey.value,
 							mint,
 							recipientTokenAccount: ata,
 							stakeVaultTokenAccount: stakeVaultTokenAccount,
@@ -249,7 +249,6 @@ export const useMigrationProgram = () => {
 								]),
 					])
 					.accounts({
-						payer: publicKey.value,
 						mint,
 						recipientTokenAccount: ata,
 						claimAccount: claim.account.publicKey,
