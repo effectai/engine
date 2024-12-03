@@ -36,7 +36,7 @@
 <script setup lang="ts">
 
 const { useUnstake, useGetStakeAccount } = useStakingProgram();
-const { amountFormatted: stakeAmount } = useGetStakeAccount()
+const { amountFormatted: stakeAmount, data: stakeAccount } = useGetStakeAccount()
 const { mutateAsync: unstake, isPending } = useUnstake();
 
 const unstakeAmount = ref<number>(0);
@@ -46,7 +46,11 @@ const setMaxAmount = () => {
 }
 
 const handleSubmit = async () => {
-    const tx = await unstake({ amount: unstakeAmount.value })
+    if (!stakeAccount.value){
+        throw new Error('No stake account found');
+    }
+    
+    const tx = await unstake({ amount: unstakeAmount.value, stakeAccount: stakeAccount.value });
 }
 </script>
 

@@ -15,6 +15,7 @@ import {
 } from "@solana/spl-token";
 import type { Provider } from "@coral-xyz/anchor";
 
+
 export const setup = async ({payer, provider, amount} : {
     payer: Keypair;
     provider: Provider;
@@ -191,3 +192,4 @@ export async function mintToAccount({
 		mintAuthority,
 	]);
 }
+ 

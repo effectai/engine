@@ -1,6 +1,5 @@
 // deploy script for local environment
 import * as anchor from "@coral-xyz/anchor";
-import { createStakeClaim, createTokenClaim } from "../utils/anchor";
 import { mintToAccount, setup } from "../utils/spl";
 import { toBytes } from "viem";
 import { PublicKey } from "@solana/web3.js";
@@ -11,8 +10,9 @@ import type { Program } from "@coral-xyz/anchor";
 import { spawn } from "child_process";
 import { BN } from "bn.js";
 import { extractEosPublicKeyBytes, useDeriveMigrationAccounts } from "@effectai/utils";
-import { useMigrationTestHelpers } from "../tests/helpers";
 import { program } from "@coral-xyz/anchor/dist/cjs/native/system";
+import { createMigrationClaim } from "../utils/migration";
+import { EffectMigration } from "../target/types/effect_migration";
 
 const createReflectionAcount = async ({
 	mint,
@@ -52,6 +52,7 @@ const seed = async () => {
 	if (!anchorWallet) {
 		throw new Error("ANCHOR_WALLET env variable is not set");
 	}
+	
 	const provider = anchor.AnchorProvider.local();
 
 	await provider.connection.requestAirdrop(
@@ -101,48 +102,19 @@ const seed = async () => {
 		throw new Error("Invalid eos public key");
 	}
 
-	const claimAccount1 = new anchor.web3.Keypair();
+	const program = anchor.workspace.EffectMigration as Program<EffectMigration>;
 
-	await createTokenClaim({
-		claimAccount: claimAccount1,
-		provider,
-		foreignPubKey: toBytes(ethereumPublicKey),
+	await createMigrationClaim({
+		type: 'token',
+		program,
+		publicKey: toBytes(ethereumPublicKey),
 		mint,
 		amount: 500_000_000,
 		payer,
 		payerTokens: ata,
 	});
-
-	const claimAccount2 = new anchor.web3.Keypair();
-
-	await createTokenClaim({
-		claimAccount: claimAccount2,
-		provider,
-		foreignPubKey: eosPublicKeyBytes,
-		mint,
-		amount: 500_000_000,
-		payer,
-		payerTokens: ata,
-	});
-
-	// 1 year ago
-	const stakeStartTime = Math.floor(Date.now() / 1000) - 31556952;
-
-	const stakeClaimAccount = new anchor.web3.Keypair();
-
-	await createStakeClaim({
-		claimAccount: stakeClaimAccount,
-		foreignPubKey: toBytes(ethereumPublicKey),
-		mint,
-		payer,
-		payerTokens: ata,
-		amount: 500_000_000,
-		stakeStartTime,
-		provider,
-	})
 
 	console.log("mint", mint.toBase58());
-
 };
 
 // deploy

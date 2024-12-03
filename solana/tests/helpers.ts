@@ -1,4 +1,4 @@
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { expect, inject } from "vitest";
 import * as anchor from "@coral-xyz/anchor";
 
@@ -6,12 +6,9 @@ import { type Idl, Program } from "@coral-xyz/anchor";
 import { BankrunProvider, startAnchor } from "anchor-bankrun";
 import { Clock } from "solana-bankrun";
 import {
-	useDeriveMigrationAccounts,
-	useDeriveStakeAccounts,
+	useDeriveStakeAccounts
 } from "@effectai/utils";
-import type { EffectMigration } from "../target/types/effect_migration.js";
 import type { EffectStaking } from "../target/types/effect_staking.js";
-import { BN } from "bn.js";
 
 export const SECONDS_PER_DAY = 24 * 60 * 60;
 
@@ -61,70 +58,6 @@ export const useStakeTestHelpers = (program: Program<EffectStaking>) => {
 	};
 
 	return { useCreateStake };
-};
-
-export const useMigrationTestHelpers = (program: Program<EffectMigration>) => {
-	const useCreateClaim = async <StakeType extends "token" | "stake">({
-		type,
-		publicKey,
-		mint,
-		payer,
-		payerTokens,
-		amount,
-		provider,
-		stakeStartTime,
-	}: {
-		type: StakeType;
-		publicKey: Uint8Array;
-		mint: PublicKey;
-		payer: Keypair;
-		payerTokens: PublicKey;
-		provider: anchor.Provider;
-		amount?: number;
-		stakeStartTime?: StakeType extends "stake" ? number : never;
-	}) => {
-		const claimAccount = new Keypair();
-
-		if (type === "token") {
-			await program.methods
-				.createTokenClaim(Buffer.from(publicKey), new BN(amount || 50_000_000))
-				.accounts({
-					claimAccount: claimAccount.publicKey,
-					payer: payer.publicKey,
-					payerTokens,
-					mint,
-				})
-				.signers([payer, claimAccount])
-				.rpc();
-		} else {
-			if (!stakeStartTime) {
-				throw new Error("stakeStartTime is required for stake");
-			}
-			await program.methods
-				.createStakeClaim(
-					Buffer.from(publicKey),
-					new BN(stakeStartTime),
-					new BN(amount || 50_000_000),
-				)
-				.accounts({
-					claimAccount: claimAccount.publicKey,
-					payer: payer.publicKey,
-					payerTokens,
-					mint,
-				})
-				.signers([payer, claimAccount])
-				.rpc();
-		}
-
-		const { vaultAccount } = useDeriveMigrationAccounts({
-			claimAccount: claimAccount.publicKey,
-			programId: program.programId,
-		});
-
-		return { claimAccount: claimAccount.publicKey, vaultAccount };
-	};
-
-	return { useCreateClaim };
 };
 
 export type AnchorErrorIdl = {

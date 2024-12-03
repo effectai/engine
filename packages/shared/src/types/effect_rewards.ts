@@ -276,7 +276,7 @@ export type EffectRewards = {
           "name": "authority",
           "writable": true,
           "signer": true,
-          "address": "devr1BGQndEW5k5zfvG5FsLyZv1Ap73vNgAHcQ9sUVP"
+          "address": "devEs8EACCACJqJxJb2jBTRVsmrtsPobvJvMpD33mht"
         },
         {
           "name": "systemProgram",
@@ -430,10 +430,6 @@ export type EffectRewards = {
           {
             "name": "authority",
             "type": "pubkey"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
           },
           {
             "name": "reflection",

@@ -28,10 +28,9 @@ pub struct Enter<'info> {
 }
 
 impl<'info> Enter<'info> {
-    pub fn handler(&mut self, bump: u8) -> Result<()> {
+    pub fn handler(&mut self) -> Result<()> {
         self.reward.init(
             self.authority.key(),
-            bump,
             self.reflection.add_rewards_account(self.stake.xefx, 0),
             self.stake.xefx,
         )

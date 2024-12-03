@@ -29,12 +29,11 @@ pub struct Init<'info> {
     
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
-
     pub rent: Sysvar<'info, Rent>,
 }
 
 impl<'info> Init<'info> {
-    pub fn handler(&mut self, vault_bump: u8) -> Result<()> {
-        self.reflection.init(self.vault_token_account.key(), vault_bump)
+    pub fn handler(&mut self) -> Result<()> {
+        self.reflection.init(self.vault_token_account.key())
     }
 }

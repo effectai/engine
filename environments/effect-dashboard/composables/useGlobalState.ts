@@ -5,7 +5,8 @@ export const signature = ref<Uint8Array | null>(null);
 export const message = ref<Uint8Array | null>(null);
 export const foreignPublicKey = ref<Uint8Array | null>(null);
 
-const rpcUrl = process.env.EFFECT_SOLANA_RPC_NODE_URL || 'https://api.devnet.solana.com';
+const config = useRuntimeConfig();
+const rpcUrl = config.public.EFFECT_SOLANA_RPC_NODE_URL;
 export const connection = new Connection(rpcUrl, 'confirmed');
 
 export const publicKeyString = ref<string | null>(null);

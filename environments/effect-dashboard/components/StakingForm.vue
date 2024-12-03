@@ -22,7 +22,6 @@
 					<UButton @click="handleSubmit" color="white" class="flex justify-center w-full">Stake</UButton>
 				</div>
 			</div>
-
 		</form>
 	</UCard>
 </template>
@@ -39,16 +38,16 @@ const { useStake, useTopUp, useGetStakeAccount } = useStakingProgram();
 const {
 	data: stakeAccount,
 	amount: currentStakeAmount,
-	unstakeDays: currentStakeUnstakeDays,
 	error: stakeError,
 	refetch
 } = useGetStakeAccount();
+
 const stakeAccountExists = computed(() => !!stakeAccount.value);
 
 const stakeAmount: Ref<number> = ref(0);
 
 type Maybe<T> = T | null | undefined;
-const unstakeDays: Ref<Maybe<number>> = ref(null);
+const unstakeDays: Ref<Maybe<number>> = ref(30);
 
 watchOnce([stakeError, stakeAccount], () => {
 	if (stakeError.value?.message.startsWith("Account does not exist")) {
@@ -56,7 +55,7 @@ watchOnce([stakeError, stakeAccount], () => {
 	}
 
 	if (stakeAccount.value) {
-		unstakeDays.value = currentStakeUnstakeDays.value;
+		unstakeDays.value = stakeAccount.value.account.lockDuration.toNumber() / 86400;
 	}
 });
 
@@ -89,8 +88,9 @@ const handleSubmit = async () => {
 	error.value = "";
 
 	try {
-		const txId = stakeAccountExists.value
+		const txId = stakeAccount.value
 			? await topup({
+				stakeAccount: stakeAccount.value,
 				amount: Number(stakeAmount.value),
 			}) : await stake({
 				amount: Number(stakeAmount.value),

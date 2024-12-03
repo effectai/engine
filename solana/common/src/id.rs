@@ -28,22 +28,13 @@ mod staking_program {
     declare_id!("eR1sM73NpFqq7DSR5YDAgneWW29AZA8sRm1BFakzYpH");
 }
 
-pub use efx_token::ID as EFX_TOKEN;
-mod efx_token {
-    use super::*;
-    #[cfg(feature = "mainnet")]
-    declare_id!("nosXBVoaCTtYdLvKY6Csb4AC8JCdQKKAaWYtx2ZMoo7");
-    #[cfg(not(feature = "mainnet"))]
-    declare_id!("devr1BGQndEW5k5zfvG5FsLyZv1Ap73vNgAHcQ9sUVP");
-}
-
 pub use authority::ID as AUTHORITY;
 mod authority {
     use super::*;
     #[cfg(feature = "mainnet")]
     declare_id!("EffectrMxfrZbyCx5CotBVrzxiPcrnhj6ickpX9vRkB");
     #[cfg(not(feature = "mainnet"))]
-    declare_id!("devr1BGQndEW5k5zfvG5FsLyZv1Ap73vNgAHcQ9sUVP");
+    declare_id!("devEs8EACCACJqJxJb2jBTRVsmrtsPobvJvMpD33mht");
 }
 
 pub use token_account::ID as TOKEN_ACCOUNT;

@@ -32,3 +32,16 @@ const spawnProcess = (command: string, args: string[]): SpawnProcessResult => {
 		stderr: deploy.stderr,
 	};
 };
+
+yargs(hideBin(process.argv))
+.command('deploy', 'Deploy Effect Contracts to a cluster', (yargs) => {
+    yargs.positional('name', {
+      type: 'string',
+      default: 'Cambi',
+      describe: 'the name to say hello to'
+    })
+  }, (argv) => {
+    console.log('hello', argv.name, 'welcome to yargs!')
+  })
+.help()
+.argv;

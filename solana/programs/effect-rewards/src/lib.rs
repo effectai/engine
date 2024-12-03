@@ -20,12 +20,12 @@ pub mod effect_rewards {
 
     /// Initialize the [ReflectionAccount](#reflection-account) and [VaultAccount](#vault_token_account-account).
     pub fn init(ctx: Context<Init>) -> Result<()> {
-        ctx.accounts.handler(ctx.bumps.vault_token_account)
+        ctx.accounts.handler()
     }
 
     /// Initialize a [RewardsAccount](#rewards-account).
     pub fn enter(ctx: Context<Enter>) -> Result<()> {
-        ctx.accounts.handler(ctx.bumps.reward)
+        ctx.accounts.handler()
     }
 
     /// Send [NOS](/tokens/token) to the [VaultAccount](#vault-account).

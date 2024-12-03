@@ -32,12 +32,11 @@ impl ReflectionAccount {
     pub const INITIAL_RATE: u128 = (u128::MAX - (u128::MAX % EFX_TOTAL_SUPPLY)) / EFX_TOTAL_SUPPLY;
     // pub const INITIAL_RATE: u128 = u128::pow(10, 15);
 
-    pub fn init(&mut self, vault_token_account: Pubkey, vault_bump: u8) -> Result<()> {
+    pub fn init(&mut self, vault_token_account: Pubkey) -> Result<()> {
         self.rate = ReflectionAccount::INITIAL_RATE;
         self.total_reflection = 0;
         self.total_xefx = 0;
         self.vault_token_account = vault_token_account;
-        self.vault_bump = vault_bump;
         Ok(())
     }
 
@@ -47,13 +46,11 @@ impl ReflectionAccount {
         reflection: u128,
         xefx: u128,
         vault_token_account: Pubkey,
-        vault_bump: u8,
     ) {
         self.rate = rate;
         self.total_reflection = reflection;
         self.total_xefx = xefx;
         self.vault_token_account = vault_token_account;
-        self.vault_bump = vault_bump;
     }
 
     pub fn add_fee(&mut self, fee: u128) {
@@ -82,7 +79,6 @@ impl ReflectionAccount {
 #[account]
 pub struct RewardAccount {
     pub authority: Pubkey,
-    pub bump: u8,
     pub reflection: u128,
     pub xefx: u128,
 }
@@ -93,12 +89,10 @@ impl RewardAccount {
     pub fn init(
         &mut self,
         authority: Pubkey,
-        bump: u8,
         reflection: u128,
         tokens: u128,
     ) -> Result<()> {
         self.authority = authority;
-        self.bump = bump;
         self.reflection = reflection;
         self.xefx = tokens;
         Ok(())

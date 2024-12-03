@@ -1,5 +1,31 @@
 import { Base58 } from "@wharfkit/antelope";
 
+
+export const extractKeyFromEosUsername = async (username: string, key = "active"): Promise<string> => {
+
+    const result = await fetch("https://eos.greymass.com/v1/chain/get_account", {        
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            account_name: username,
+        }),
+    });
+
+    const data = await result.json();
+
+    const activePermission = data.permissions.find((permission: any) => permission.perm_name === key);
+
+    if (!activePermission) {
+        throw new Error(`No ${key} permission found for account ${username}`);
+    }
+
+    const publicKey = activePermission.required_auth.keys[0].key.toString();
+
+    return publicKey
+}
+
 export function extractEosPublicKeyBytes(eosPubkey: string): Uint8Array | null {
     // Step 1: Check and remove the "EOS" prefix
     if (!eosPubkey.startsWith("EOS") && !eosPubkey.startsWith("PUB_K1_")) {
