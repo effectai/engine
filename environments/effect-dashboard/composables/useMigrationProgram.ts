@@ -163,6 +163,7 @@ export const useMigrationProgram = () => {
 						console.log("No staking account found, creating..");
 						stakingAccount = Keypair.generate();
 						signers.push(stakingAccount);
+						console.log("Staking account created", stakingAccount.publicKey.toBase58());
 					} else {
 						stakingAccount = stakingAccounts[0];
 					}
@@ -202,7 +203,6 @@ export const useMigrationProgram = () => {
 											)
 											.accounts({
 												stake: stakingAccount.publicKey,
-												authority: publicKey.value,
 												userTokenAccount: ata,
 												mint,
 											})
@@ -221,6 +221,7 @@ export const useMigrationProgram = () => {
 												stake: stakingAccount.publicKey,
 												reflection: reflectionAccount,
 											})
+											.signers(signers)
 											.instruction(),
 									]),
 						])
@@ -232,6 +233,7 @@ export const useMigrationProgram = () => {
 							claimAccount: claim.account.publicKey,
 							vaultTokenAccount: vaultAccount,
 						})
+						.signers(signers)
 						.rpc();
 				}
 
