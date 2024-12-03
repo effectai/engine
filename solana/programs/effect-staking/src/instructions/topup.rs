@@ -24,7 +24,8 @@ impl<'info> Topup<'info> {
         require!(amount > 0, StakingErrors::AmountNotEnough);
 
         // get stake account and topup stake
-        self.stake.topup(amount);
+        let new_time = Clock::get().unwrap().unix_timestamp;
+        self.stake.topup(amount, new_time);
 
         // transfer tokens to the vault
         transfer_tokens_to_vault!(self, amount)
