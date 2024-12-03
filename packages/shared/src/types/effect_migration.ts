@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/effect_migration.json`.
  */
 export type EffectMigration = {
-  "address": "13uv7xLUTN3gEtqPf7XLbLnbE5AuddWhDxAThc4YmjfY",
+  "address": "BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g",
   "metadata": {
     "name": "effectMigration",
     "version": "0.1.0",
@@ -27,8 +27,11 @@ export type EffectMigration = {
       ],
       "accounts": [
         {
-          "name": "payer",
-          "signer": true
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "stakeAccount"
+          ]
         },
         {
           "name": "recipientTokenAccount",
@@ -48,8 +51,7 @@ export type EffectMigration = {
         },
         {
           "name": "stakeAccount",
-          "writable": true,
-          "signer": true
+          "writable": true
         },
         {
           "name": "stakeVaultTokenAccount",
@@ -69,7 +71,7 @@ export type EffectMigration = {
         },
         {
           "name": "stakingProgram",
-          "address": "eR1sM73NpFqq7DSR5YDAgneWW29AZA8sRm1BFakzYpH"
+          "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw"
         }
       ],
       "args": [
@@ -97,7 +99,7 @@ export type EffectMigration = {
       ],
       "accounts": [
         {
-          "name": "payer",
+          "name": "authority",
           "signer": true
         },
         {
@@ -290,6 +292,19 @@ export type EffectMigration = {
         61,
         165
       ]
+    },
+    {
+      "name": "stakeAccount",
+      "discriminator": [
+        80,
+        158,
+        67,
+        124,
+        50,
+        189,
+        192,
+        255
+      ]
     }
   ],
   "errors": [
@@ -377,6 +392,38 @@ export type EffectMigration = {
                 "type": "i64"
               }
             ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "stakeAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "lockDuration",
+            "type": "u64"
+          },
+          {
+            "name": "stakeStartTime",
+            "type": "i64"
+          },
+          {
+            "name": "vaultTokenAccount",
+            "type": "pubkey"
+          },
+          {
+            "name": "xefx",
+            "type": "u128"
           }
         ]
       }

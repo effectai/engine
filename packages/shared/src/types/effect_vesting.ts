@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/effect_vesting.json`.
  */
 export type EffectVesting = {
-  "address": "EabRXJfYfzbkTTq5546mxDiT5yv2k2rjjN4kY6c4S9Br",
+  "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe",
   "metadata": {
     "name": "effectVesting",
     "version": "0.1.0",

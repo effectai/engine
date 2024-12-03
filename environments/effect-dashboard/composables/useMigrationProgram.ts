@@ -232,7 +232,6 @@ export const useMigrationProgram = () => {
 							claimAccount: claim.account.publicKey,
 							vaultTokenAccount: vaultAccount,
 						})
-						.signers(signers)
 						.rpc();
 				}
 

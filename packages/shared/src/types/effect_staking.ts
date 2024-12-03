@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/effect_staking.json`.
  */
 export type EffectStaking = {
-  "address": "eR1sM73NpFqq7DSR5YDAgneWW29AZA8sRm1BFakzYpH",
+  "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw",
   "metadata": {
     "name": "effectStaking",
     "version": "0.1.0",
@@ -144,6 +144,13 @@ export type EffectStaking = {
       ],
       "accounts": [
         {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "stake"
+          ]
+        },
+        {
           "name": "mint",
           "writable": true
         },
@@ -157,12 +164,10 @@ export type EffectStaking = {
         },
         {
           "name": "vaultTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "authority",
           "writable": true,
-          "signer": true
+          "relations": [
+            "stake"
+          ]
         },
         {
           "name": "claimVault",
@@ -306,7 +311,7 @@ export type EffectStaking = {
         },
         {
           "name": "vestingProgram",
-          "address": "EabRXJfYfzbkTTq5546mxDiT5yv2k2rjjN4kY6c4S9Br"
+          "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
         },
         {
           "name": "systemProgram",

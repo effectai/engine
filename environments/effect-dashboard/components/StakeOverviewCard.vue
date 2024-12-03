@@ -62,13 +62,13 @@ const { publicKey } = useWallet();
 const { data: stakeAccount, unstakeDays, amountFormatted: stakeAmount } = useGetStakeAccount();
 const stakeAge = computed(() => {
     if (!stakeAccount.value?.account.stakeStartTime) return 0;
-    const time = Math.floor(currentTime.value) - stakeAccount.value.account.stakeStartTime.toNumber()
-    return time / 86400 / 1000;
+    const time = currentTime.value - stakeAccount.value.account.stakeStartTime.toNumber()
+    return time / 86400;
 });
 const currentTime = ref(new Date().getTime());
 onMounted(() => {
     const interval = setInterval(() => {
-        currentTime.value = new Date().getTime();
+        currentTime.value = new Date().getTime() / 1000;
     }, 1000);
 
     onUnmounted(() => clearInterval(interval));
