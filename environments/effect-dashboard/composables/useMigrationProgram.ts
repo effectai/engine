@@ -160,10 +160,8 @@ export const useMigrationProgram = () => {
 					]);
 
 					if (stakingAccounts.length === 0) {
-						console.log("No staking account found, creating..");
 						stakingAccount = Keypair.generate();
 						signers.push(stakingAccount);
-						console.log("Staking account created", stakingAccount.publicKey.toBase58());
 					} else {
 						stakingAccount = stakingAccounts[0];
 					}
@@ -233,7 +231,7 @@ export const useMigrationProgram = () => {
 							claimAccount: claim.account.publicKey,
 							vaultTokenAccount: vaultAccount,
 						})
-						.signers(signers)
+						.signers(signers) 
 						.rpc();
 				}
 
