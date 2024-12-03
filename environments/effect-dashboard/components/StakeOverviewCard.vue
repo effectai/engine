@@ -70,9 +70,9 @@ onMounted(() => {
 });
 
 const stakeAge = computed(() => {
-    if (!stakeAccount.value?.data?.stakeStartTime) return 0;
+    if (!stakeAccount.value?.account.stakeStartTime) return 0;
 
-    const time = currentTime.value - stakeAccount.value.data.stakeStartTime.toNumber()
+    const time = currentTime.value - stakeAccount.value.account.stakeStartTime.toNumber()
 
     return time / 86400;
 });
@@ -87,7 +87,13 @@ const pendingRewards = computed(() => {
 });
 
 const handleSubmit = async () => {
-    const tx = await claimRewards();
+    if(!stakeAccount.value) {
+        throw new Error('No stake account found');
+    }
+
+    const tx = await claimRewards({
+      stakeAccount: stakeAccount.value,  
+    });
 };
 </script>
 

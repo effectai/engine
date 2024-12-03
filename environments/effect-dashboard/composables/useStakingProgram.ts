@@ -63,7 +63,9 @@ export function useStakingProgram() {
 
 	const useClaimRewards = () =>
 		useMutation({
-			mutationFn: async (stakeAccount: StakingAccount) => {
+			mutationFn: async ({stakeAccount}: {
+				stakeAccount: StakingAccount;
+			}) => {
 				if (!publicKey.value) {
 					throw new Error("Could not get public key");
 				}
