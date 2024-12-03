@@ -64,7 +64,6 @@ pub fn validate_message(payer: &Pubkey, message: &[u8], is_eth: bool) -> Result<
 }
 
 pub fn verify_claim(signature: Vec<u8>, message: Vec<u8>, is_eth: bool, payer: Pubkey, foreign_pub_key: Vec<u8>) -> Result<Vec<u8>> {
-
     // check if the message matches our expected message
     validate_message(&payer, &message, is_eth)?;
 

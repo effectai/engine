@@ -25,7 +25,7 @@
                 </div>
             </template>
             <template #unstake>
-                <div class="flex justify-between space-x-5">
+                <div class="flex justify-between gap-3 flex-col md:flex-row">
                     <UnstakeForm class="flex-grow" />
                     <UnstakesCard />
                 </div>

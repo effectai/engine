@@ -44,7 +44,7 @@
         </div>
       </div>
     </div>
-    <div class="py-4 flex justify-between gap-5">
+    <div class="mt-5 flex justify-between gap-5">
       <slot name="action"></slot>
     </div>
   </div>

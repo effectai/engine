@@ -16,9 +16,9 @@
                 <UBadge v-if="!scheduleStarted(vestingAccount.startTime)" color="gray" variant="outline">
                     Locked
                 </UBadge>
-                <UButton v-else-if="amountDue" color="gray" variant="solid" icon="i-heroicons-gift"
+                <UButton v-else-if="amountDue" color="gray" variant="solid" size="sm" icon="i-heroicons-gift"
                     @click="claimTokens">
-                    Claim {{ amountToBalance(amountDue) }} EFFECT
+                    Claim {{ amountToBalance(amountDue).toFixed(2) }} EFFECT
                 </UButton>
                 <p>{{ progress.toFixed(2) }}% completed</p>
             </div>

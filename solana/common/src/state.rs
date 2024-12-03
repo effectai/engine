@@ -53,11 +53,11 @@ pub mod stake_program {
             weighted_time as i64
         }
 
-        pub fn topup(&mut self, amount: u64) {
+        pub fn topup(&mut self, amount: u64, new_time: i64) {
             let diluted_stake_start = StakeAccount::dilute_stake_time(
                 self.stake_start_time,
                 self.amount,
-                Clock::get().unwrap().unix_timestamp,
+                new_time,
                 amount,
             );
 
