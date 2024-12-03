@@ -107,7 +107,38 @@
         </div>
     </SimpleSection>
 
-    <SimpleSection :centered="true" class="container">
+    <NewsCard>
+        <template #header>
+            <p>Effect AI: Plans for 2024</p>
+        </template>
+        <p>
+            Today, we're thrilled to bring forward the plans that Effect AI has in store for 2024. 
+            This year is bound to be a transformative one for Effect AI, as some of the most exciting 
+            and groundbreaking updates...
+        </p>
+    </NewsCard>
+
+    <NewsCard>
+        <template #header>
+            <p>Tech Blog: On-Chain Microtasks</p>
+        </template>
+        <p>
+            In this article, we’ll take a look at Effect Force’s new task creation mechanism. 
+            This technology makes it simple for people and businesses to add microtasks to the blockchain.
+        </p>
+    </NewsCard>
+
+    <NewsCard>
+        <template #header>
+            <p>The Effect DAO: Effect Staking Protocol 2.0</p>
+        </template>
+        <p>
+            By staking EFX, holders can improve their rank in The Effect DAO. Achieving a high rank 
+            has many benefits like vote casting, fee reward collection, and gaining privileges on the dApp level.
+        </p>
+    </NewsCard>
+
+    <!-- <SimpleSection class="container">
         <template #subtitle>
             <div class="columns box mb-6 is-6">
                 <div class="column is-5">
@@ -150,7 +181,7 @@
                 </div>
             </div>
         </template>
-    </SimpleSection>
+    </SimpleSection> -->
         
     <SimpleSection :centered="true">
         <template #subtitle>
