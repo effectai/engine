@@ -6,9 +6,13 @@ use crate::{utils::verify_claim, vault_seed, ClaimAccount};
 #[derive(Accounts)]
 pub struct ClaimToken<'info> {
     #[account(signer)]
-    pub payer: Signer<'info>,
+    pub authority: Signer<'info>,
 
-    #[account(mut)]
+    #[account(
+        mut, 
+        token::mint = mint,
+        token::authority = authority,
+    )]
     pub recipient_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
@@ -17,7 +21,7 @@ pub struct ClaimToken<'info> {
     #[account(mut)]
     pub claim_account: Account<'info, ClaimAccount>,
 
-    #[account(mut)]
+    #[account(mut, token::authority = vault_account, token::mint = mint)]
     pub vault_account: Account<'info, TokenAccount>,
 
     pub rent: Sysvar<'info, Rent>,
@@ -43,7 +47,7 @@ pub fn claim_token(ctx: Context<ClaimToken>, signature: Vec<u8>, message: Vec<u8
         signature,
         message,
         is_eth,
-        *ctx.accounts.payer.key,
+        *ctx.accounts.authority.key,
         ctx.accounts.claim_account.foreign_public_key.clone(),
     )?;
     

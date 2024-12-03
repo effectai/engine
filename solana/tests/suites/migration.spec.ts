@@ -261,7 +261,7 @@ describe("Migration Program", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
 			// get a date from 1 year ago
-			const stakeStartTime = new Date().getTime() - 31556952000;
+			const stakeStartTime = new Date().getTime() - 31556952000 / 1000;
 
 			const account = privateKeyToAccount(
 				"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
@@ -313,7 +313,6 @@ describe("Migration Program", async () => {
 				.accounts({
 					recipientTokenAccount: ata,
 					vaultTokenAccount: claimVaultAccount,
-					payer: payer.publicKey,
 					claimAccount: claimAccount,
 					stakeAccount: stakeAccount.publicKey,
 					stakeVaultTokenAccount: stakeVaultAccount,
@@ -392,13 +391,11 @@ describe("Migration Program", async () => {
 					.accounts({
 						recipientTokenAccount: ata,
 						vaultTokenAccount: claimVaultAccount,
-						payer: payer.publicKey,
 						claimAccount: claimAccount,
 						stakeAccount: stakeAccount.publicKey,
 						stakeVaultTokenAccount: stakeVaultAccount,
 						mint,
 					})
-					.signers([stakeAccount])
 					.rpc();
 
 				// check if the stake account was created

@@ -12,7 +12,7 @@ pub struct CreateClaim<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + 64,
+        space = 8 + std::mem::size_of::<ClaimAccount>(),
     )]
     pub claim_account: Account<'info, ClaimAccount>,
 

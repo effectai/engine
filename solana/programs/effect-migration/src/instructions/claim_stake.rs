@@ -1,16 +1,19 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use effect_common::constants::{self};
-use effect_staking::{cpi::accounts::GenesisStake, program::EffectStaking};
+use effect_staking::{cpi::accounts::GenesisStake, program::EffectStaking, StakeAccount};
 
 use crate::{errors::MigrationError, utils::verify_claim, vault_seed, ClaimAccount, ClaimType};
 
 #[derive(Accounts)]
 pub struct ClaimStake<'info> {
     #[account(signer)]
-    pub payer: Signer<'info>,
+    pub authority: Signer<'info>,
 
-    #[account(mut)]
+    #[account(mut, 
+        token::mint = mint,
+        token::authority = authority,
+    )]
     pub recipient_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
@@ -19,15 +22,20 @@ pub struct ClaimStake<'info> {
     #[account(mut)]
     pub claim_account: Account<'info, ClaimAccount>,
 
-    #[account(mut)]
+    #[account(mut, 
+        token::authority = vault_token_account, 
+        token::mint = mint
+    )]
     pub vault_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut)]
-    pub stake_account: Signer<'info>,
+    #[account(mut, has_one = authority)]
+    pub stake_account: Account<'info, StakeAccount>,
 
-    /// CHECK: checked in ix body
-    #[account(mut)]
-    pub stake_vault_token_account: UncheckedAccount<'info>,
+    #[account(mut, 
+        token::authority = stake_vault_token_account, 
+        token::mint = mint
+    )]
+    pub stake_vault_token_account: Account<'info, TokenAccount>,
 
     pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
@@ -42,7 +50,7 @@ impl<'info> ClaimStake<'info> {
             user_token_account: self.recipient_token_account.to_account_info().clone(),
             stake: self.stake_account.to_account_info().clone(),
             vault_token_account: self.stake_vault_token_account.to_account_info().clone(),
-            authority: self.payer.to_account_info().clone(),
+            authority: self.authority.to_account_info().clone(),
             claim_vault: self.vault_token_account.to_account_info().clone(),
             claim_account: self.claim_account.to_account_info().clone(),
             system_program: self.system_program.to_account_info().clone(),
@@ -60,7 +68,7 @@ pub fn claim_stake(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8
         signature,
         message,
         is_eth,
-        *ctx.accounts.payer.key,
+        *ctx.accounts.authority.key,
         ctx.accounts.claim_account.foreign_public_key.clone(),
     )?;
 
@@ -70,7 +78,7 @@ pub fn claim_stake(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8
         ClaimType::Stake { stake_start_time } => {
             if stake_start_time == 0 {
                 return Err(MigrationError::InvalidMetadataAccount.into());
-            } else { 
+            } else {  
                 effect_staking::cpi::stake_genesis(
                     ctx.accounts
                         .into_genesis_stake_context()

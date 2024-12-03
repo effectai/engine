@@ -7,7 +7,7 @@ use anchor_lang::prelude::*;
 use instructions::*;
 
 use state::*;
-declare_id!("13uv7xLUTN3gEtqPf7XLbLnbE5AuddWhDxAThc4YmjfY");
+declare_id!("BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g");
 
 #[program]
 pub mod effect_migration {

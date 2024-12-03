@@ -12,7 +12,7 @@ use effect_common::*;
 pub use errors::*;
 pub use state::*;
 
-declare_id!("AVKZ1LKwV7U5jQPdMev1iQ3rQrcQqzV6AwMfAZwQJomT");
+declare_id!("HJR3op52N7tNycXqQnVu8cDnxH7udp4pYi1ps9S1hdBz");
 
 #[program]
 pub mod effect_rewards {

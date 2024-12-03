@@ -1,23 +1,33 @@
 use crate::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use constants::{STAKE_DURATION_MAX, STAKE_DURATION_MIN, STAKE_MINIMUM_AMOUNT};
-use effect_common::cpi::{self, transfer_tokens};
+use effect_common::cpi::transfer_tokens;
 
 #[derive(Accounts)]
 pub struct GenesisStake<'info> {
+    #[account(signer)]
+    pub authority: Signer<'info>,
+
     #[account(mut)]
     pub mint: Account<'info, Mint>,
-    #[account(mut)]
+    
+    #[account(mut, 
+        token::mint = mint,
+        token::authority = authority,
+    )]
     pub user_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+    #[account(mut, 
+        has_one = vault_token_account @ StakingErrors::InvalidVault,
+        has_one = authority @ StakingErrors::Unauthorized,
+    )]
     pub stake: Account<'info, StakeAccount>,
     
-    #[account(mut)]
+    #[account(mut, 
+        token::mint = mint,
+        token::authority = vault_token_account,
+    )]
     pub vault_token_account: Account<'info, TokenAccount>,
-
-    #[account(mut)]
-    pub authority: Signer<'info>,
 
     #[account(mut)]
     pub claim_vault: Signer<'info>,
@@ -67,10 +77,10 @@ impl<'info> GenesisStake<'info> {
             StakingErrors::AmountNotEnough
         );
 
-        // we always do a topup here, as to only allow already initialized stakes.
+        // We always do a topup here, as to only allow already initialized stakes.
         self.stake.topup(amount, stake_start_time);
       
-        // transfer tokens from claim vault to the stake vault
+        // Transfer tokens from claim vault to the stake vault
         transfer_tokens(
             self.token_program.to_account_info(),
             self.claim_vault.to_account_info(),

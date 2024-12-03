@@ -14,7 +14,7 @@ pub use state::*; // expose stake for cpi
 
 pub use effect_common::state::stake_program::StakeAccount;
 
-declare_id!("eR1sM73NpFqq7DSR5YDAgneWW29AZA8sRm1BFakzYpH");
+declare_id!("3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw");
 
 #[program]
 pub mod effect_staking {

@@ -12,7 +12,7 @@ use effect_common::*;
 use types::*;
 use state::*;
 
-declare_id!("EabRXJfYfzbkTTq5546mxDiT5yv2k2rjjN4kY6c4S9Br");
+declare_id!("GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe");
 
 #[program]
 pub mod effect_vesting {
