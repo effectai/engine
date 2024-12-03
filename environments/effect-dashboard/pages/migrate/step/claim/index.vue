@@ -31,7 +31,7 @@
 						<h2 class="title capitalize">{{ claim.type }} Claim</h2>
 						<label class="text-gray-600">Amount</label>
 						<p>{{ claim.amount }} EFX</p>
-						<UButton color="black" :disabled="claim.amount == 0" class="mt-5" @click="handleClaim({ claim })">
+						<UButton :loading="isPending" color="black" :disabled="claim.amount == 0" class="mt-5" @click="handleClaim({ claim })">
 							Claim on Solana
 						</UButton>
 					</UCard>
@@ -56,7 +56,7 @@ const { data: claims, isLoading, isError } = useGetClaimAccounts();
 const toast = useToast();
 const txId: Ref<string | null> = ref(null);
 const queryClient = useQueryClient();
-const { mutateAsync: handleClaim } = useClaim({
+const { mutateAsync: handleClaim, isPending } = useClaim({
 	options: {
 		onSuccess: (transactionId) => {
 			queryClient.invalidateQueries({

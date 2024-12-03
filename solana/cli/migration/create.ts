@@ -2,13 +2,19 @@ import * as anchor from "@coral-xyz/anchor";
 import { type EffectMigration, EffectMigrationIdl } from "@effectai/shared";
 import { createMigrationClaim } from "../../utils/migration";
 import { toBytes } from "viem";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import {
+	createAssociatedTokenAccount,
+	getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { loadProvider } from "../../utils/provider";
 import chalk from "chalk";
 
 import type { CommandModule } from "yargs";
-import { extractEosPublicKeyBytes, extractKeyFromEosUsername } from "@effectai/utils";
+import {
+	extractEosPublicKeyBytes,
+	extractKeyFromEosUsername,
+} from "@effectai/utils";
 
 interface MigrationClaimOptions {
 	mint: string;
@@ -35,7 +41,7 @@ export const createMigrationClaimCommand: CommandModule<
 				type: "string",
 				description: "The public key of the account to be migrated",
 			})
-		
+
 			.option("amount", {
 				type: "number",
 				requiresArg: true,
@@ -59,7 +65,14 @@ export const createMigrationClaimCommand: CommandModule<
 				return true;
 			})
 			.demandOption(["mint", "amount"]),
-	handler: async ({ mint, publicKey, amount, type, stakeStartTime, username }) => {
+	handler: async ({
+		mint,
+		publicKey,
+		amount,
+		type,
+		stakeStartTime,
+		username,
+	}) => {
 		const { payer, provider } = await loadProvider();
 
 		const migrationProgram = new anchor.Program(
@@ -78,14 +91,14 @@ export const createMigrationClaimCommand: CommandModule<
 
 		let publicKeyBytes = null;
 
-		if(username){
+		if (username) {
 			const publicKey = await extractKeyFromEosUsername(username);
 			publicKeyBytes = extractEosPublicKeyBytes(publicKey);
-		}else if(publicKey){
+		} else if (publicKey) {
 			publicKeyBytes = toBytes(publicKey);
 		}
 
-		if(!publicKeyBytes){
+		if (!publicKeyBytes) {
 			throw new Error("Invalid public key");
 		}
 

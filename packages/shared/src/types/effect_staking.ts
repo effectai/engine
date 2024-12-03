@@ -153,20 +153,11 @@ export type EffectStaking = {
         },
         {
           "name": "stake",
-          "writable": true,
-          "signer": true
+          "writable": true
         },
         {
           "name": "vaultTokenAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "stake"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",

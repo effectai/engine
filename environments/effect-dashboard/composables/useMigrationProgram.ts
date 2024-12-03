@@ -23,10 +23,13 @@ import {
 import { base64 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import type { StakingAccount } from "./useStakingProgram";
 
+export type EffectMigrationProgramAccounts =
+	anchor.IdlAccounts<EffectMigration>;
+export type MigrationClaimAccount = anchor.ProgramAccount<
+	EffectMigrationProgramAccounts["claimAccount"]
+>;
 
-
-export type EffectMigrationProgramAccounts = anchor.IdlAccounts<EffectMigration>;
-export type MigrationClaimAccount = anchor.ProgramAccount<EffectMigrationProgramAccounts['claimAccount']>;
+const SECONDS_PER_DAY = 86400;
 
 export const useMigrationProgram = () => {
 	const wallet = useAnchorWallet();
@@ -36,7 +39,6 @@ export const useMigrationProgram = () => {
 	const { connection } = useGlobalState();
 
 	const provider = new anchor.AnchorProvider(connection, wallet.value, {});
-
 	const { rewardsProgram } = useStakingProgram();
 	const { stakeProgram } = useStakingProgram();
 
@@ -139,31 +141,31 @@ export const useMigrationProgram = () => {
 					throw new Error("Missing required data");
 				}
 
-				let signers : Keypair[] = [];
-				let stakingAccount: Keypair | StakingAccount | null = null;
-
-				// check if user has an existing stakingAccount
-				const stakingAccounts = await stakeProgram.account.stakeAccount.all([
-					{
-						memcmp: {
-							offset: 8 + 8,
-							encoding: "base58",
-							bytes: publicKey.value.toBase58(),
-						},
-					},
-				]);
-
-				if (stakingAccounts.length === 0) {
-					stakingAccount = new Keypair();
-					signers = [stakingAccount];
-				} else {
-					stakingAccount = stakingAccounts[0];
-				}
-
 				const mint = new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT);
 				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
 				if (claim.type === "stake") {
+					let signers: Keypair[] = [];
+					let stakingAccount: Keypair | StakingAccount | null = null;
+
+					// check if user has an existing stakingAccount
+					const stakingAccounts = await stakeProgram.account.stakeAccount.all([
+						{
+							memcmp: {
+								offset: 8 + 8,
+								encoding: "base58",
+								bytes: publicKey.value.toBase58(),
+							},
+						},
+					]);
+
+					if (stakingAccounts.length === 0) {
+						stakingAccount = Keypair.generate();
+						signers.push(stakingAccount);
+					} else {
+						stakingAccount = stakingAccounts[0];
+					}
+
 					const { vaultAccount: stakeVaultTokenAccount } =
 						useDeriveStakeAccounts({
 							stakingAccount: stakingAccount.publicKey,
@@ -190,6 +192,23 @@ export const useMigrationProgram = () => {
 											mint,
 										),
 									]),
+							...(stakingAccounts.length === 0
+								? [
+										await stakeProgram.methods
+											.stake(
+												new anchor.BN(0),
+												new anchor.BN(30 * SECONDS_PER_DAY),
+											)
+											.accounts({
+												stake: stakingAccount.publicKey,
+												authority: publicKey.value,
+												userTokenAccount: ata,
+												mint,
+											})
+											.signers([stakingAccount])
+											.instruction(),
+									]
+								: []),
 						])
 						.postInstructions([
 							...((await connection.getAccountInfo(rewardAccount))

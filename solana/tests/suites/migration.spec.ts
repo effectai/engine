@@ -15,12 +15,14 @@ import { ABICache, Action, Session } from "@wharfkit/session";
 import { WalletPluginPrivateKey } from "@wharfkit/wallet-plugin-privatekey";
 
 import type { EffectMigration } from "../../target/types/effect_migration.js";
+import type { EffectStaking } from "../../target/types/effect_staking.js";
 
 import { expect, describe, it } from "vitest";
-import { useAnchor } from "../helpers.js";
+import { SECONDS_PER_DAY, useAnchor } from "../helpers.js";
 import { setup } from "../../utils/spl.js";
-import type { EffectStaking } from "../../target/types/effect_staking.js";
 import { createMigrationClaim } from "../../utils/migration.js";
+import { createStake } from "../../utils/stake.js";
+import { BN } from "bn.js";
 
 describe("Migration Program", async () => {
 	const program = anchor.workspace.EffectMigration as Program<EffectMigration>;
@@ -255,7 +257,6 @@ describe("Migration Program", async () => {
 				})
 				.rpc();
 		});
-
 		it.concurrent("can claim a stake with a valid signature", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
@@ -286,6 +287,7 @@ describe("Migration Program", async () => {
 				});
 
 			const stakeAccount = new anchor.web3.Keypair();
+			// initialize stake before we claim..
 
 			const { vaultAccount: stakeVaultAccount } = useDeriveStakeAccounts({
 				stakingAccount: stakeAccount.publicKey,
@@ -294,6 +296,20 @@ describe("Migration Program", async () => {
 
 			await program.methods
 				.claimStake(Buffer.from(toBytes(signature)), Buffer.from(message))
+				.preInstructions([
+					...[
+						await stakeProgram.methods
+							.stake(new BN(0), new BN(30 * SECONDS_PER_DAY))
+							.accounts({
+								stake: stakeAccount.publicKey,
+								authority: payer.publicKey,
+								userTokenAccount: ata,
+								mint,
+							})
+							.signers([stakeAccount])
+							.instruction(),
+					],
+				])
 				.accounts({
 					recipientTokenAccount: ata,
 					vaultTokenAccount: claimVaultAccount,
@@ -326,6 +342,86 @@ describe("Migration Program", async () => {
 				await provider.connection.getTokenAccountBalance(claimVaultAccount);
 			expect(claimVaultBalance.value.uiAmount).to.equal(0);
 		});
+
+		it.concurrent(
+			"can claim an stake and topups an existing stake account",
+			async () => {
+				const { mint, ata } = await setup({ provider, payer });
+
+				// get a date from 1 year ago
+				const stakeStartTime = new Date().getTime() - 31556952000;
+
+				const account = privateKeyToAccount(
+					"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
+				);
+
+				const prefix = `\x19Ethereum Signed Message:\n${originalMessage.length}`;
+				const message = prefix + originalMessage;
+
+				const signature = await account.signMessage({
+					message: originalMessage,
+				});
+
+				const { stakeAccount } = await createStake({
+					amount: 0,
+					program: stakeProgram,
+					mint,
+					payer,
+					payerTokens: ata,
+				});
+
+				const { claimAccount, vaultAccount: claimVaultAccount } =
+					await createMigrationClaim({
+						type: "stake",
+						mint,
+						payer,
+						payerTokens: ata,
+						publicKey: toBytes(ethPublicKey),
+						amount: 100_000_000,
+						stakeStartTime,
+						program,
+					});
+
+				const { vaultAccount: stakeVaultAccount } = useDeriveStakeAccounts({
+					stakingAccount: stakeAccount.publicKey,
+					programId: stakeProgram.programId,
+				});
+
+				await program.methods
+					.claimStake(Buffer.from(toBytes(signature)), Buffer.from(message))
+					.accounts({
+						recipientTokenAccount: ata,
+						vaultTokenAccount: claimVaultAccount,
+						payer: payer.publicKey,
+						claimAccount: claimAccount,
+						stakeAccount: stakeAccount.publicKey,
+						stakeVaultTokenAccount: stakeVaultAccount,
+						mint,
+					})
+					.signers([stakeAccount])
+					.rpc();
+
+				// check if the stake account was created
+				const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
+					stakeAccount.publicKey,
+				);
+				expect(stakeAccountData).to.not.be.null;
+				// check if the stake account has the correct start time (stake age)
+				expect(stakeAccountData.stakeStartTime.toNumber()).to.equal(
+					stakeStartTime,
+				);
+
+				// check if the stake vault account was created and has a balance
+				const stakeVaultBalance =
+					await provider.connection.getTokenAccountBalance(stakeVaultAccount);
+				expect(stakeVaultBalance.value.uiAmount).to.be.greaterThan(0);
+
+				// check if claim vault is created and emptied out
+				const claimVaultBalance =
+					await provider.connection.getTokenAccountBalance(claimVaultAccount);
+				expect(claimVaultBalance.value.uiAmount).to.equal(0);
+			},
+		);
 
 		it("correctly throws an error when the message is incorrect", async () => {});
 

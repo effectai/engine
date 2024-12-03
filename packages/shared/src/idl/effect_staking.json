@@ -147,20 +147,11 @@
         },
         {
           "name": "stake",
-          "writable": true,
-          "signer": true
+          "writable": true
         },
         {
           "name": "vault_token_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "stake"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",

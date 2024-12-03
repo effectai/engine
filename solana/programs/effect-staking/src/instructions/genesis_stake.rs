@@ -10,21 +10,10 @@ pub struct GenesisStake<'info> {
     #[account(mut)]
     pub user_token_account: Account<'info, TokenAccount>,
 
-    #[account(
-        init,
-        payer = authority,
-        space = 8 + std::mem::size_of::<StakeAccount>()
-    )]
+    #[account(mut)]
     pub stake: Account<'info, StakeAccount>,
-
-    #[account(
-        init,
-        payer = authority,
-        token::mint = mint,
-        token::authority = vault_token_account,
-        seeds = [ stake.key().as_ref() ],
-        bump,
-    )]
+    
+    #[account(mut)]
     pub vault_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
@@ -78,29 +67,18 @@ impl<'info> GenesisStake<'info> {
             StakingErrors::AmountNotEnough
         );
 
-        // check if stake account already exists
-        if self.stake.to_account_info().data_is_empty() {
-            // if stake does not exist, we init the account.
-            self.stake.init(
-                amount,
-                self.authority.key(),
-                lock_duration.try_into().unwrap(),
-                self.vault_token_account.key(),
-                stake_start_time,
-            );
-        } else {
-            // if stake already exists, we do a topup
-            self.stake.topup(amount, stake_start_time);
-        }
-
+        // we always do a topup here, as to only allow already initialized stakes.
+        self.stake.topup(amount, stake_start_time);
+      
         // transfer tokens from claim vault to the stake vault
         transfer_tokens(
             self.token_program.to_account_info(),
             self.claim_vault.to_account_info(),
             self.vault_token_account.to_account_info(),
             self.claim_vault.to_account_info(),
-            &[],
+            &[&vault_seed!(self.stake.key())],
             amount,
         )
+        
     }
 }

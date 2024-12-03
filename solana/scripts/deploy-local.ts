@@ -114,6 +114,19 @@ const seed = async () => {
 		payerTokens: ata,
 	});
 
+	const dateOneYearAgo = new Date().getTime() - 365 * 24 * 60 * 60 * 1000;
+
+	await createMigrationClaim({
+		type: 'stake',
+		program,
+		publicKey: toBytes(ethereumPublicKey),
+		mint,
+		amount: 250_000_000,
+		payer,
+		payerTokens: ata,
+		stakeStartTime: dateOneYearAgo,
+	});
+
 	console.log("mint", mint.toBase58());
 };
 
