@@ -4,7 +4,7 @@
         <div class="dark:!bg-[#1C1A1F] p-6 rounded-xl">
                 <h3 class="text-lg font-semibold mb-6">Unstake Tokens</h3>
                 <div class="space-y-6">
-                    <div><label class="block text-sm text-gray-400 mb-2">Amount to Unstake</label>
+                    <div><label class="block text-gray-400 mb-2">Amount to Unstake</label>
                         <div class="relative"><input type="text" v-model="unstakeAmount"
                                 class="w-full bg-white/5 border border-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-700"
                                 placeholder="0.00">
@@ -15,13 +15,13 @@
                         </div>
                     </div>
                     <div class="bg-white/5 rounded-lg py-4 px-2 space-y-2">
-                        <div class="flex justify-between text-sm"><span class="text-gray-400">Total Staked
+                        <div class="flex justify-between"><span class="text-gray-400">Total Staked
                                 Tokens</span><span>{{ stakeAmount }} EFFECT</span></div>
-                        <div class="flex justify-between text-sm"><span class="text-gray-400">Lock Period</span><span>30
+                        <div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span>30
                                 Days</span>
             
                         </div>
-                        <div class="flex justify-between text-sm"><span class="text-gray-400">Unstake Delay
+                        <div class="flex justify-between"><span class="text-gray-400">Unstake Delay
                                 </span><span>7 Days</span></div>
                       
                     </div>
@@ -49,7 +49,7 @@ const handleSubmit = async () => {
     if (!stakeAccount.value){
         throw new Error('No stake account found');
     }
-    
+
     const tx = await unstake({ amount: unstakeAmount.value, stakeAccount: stakeAccount.value });
 }
 </script>

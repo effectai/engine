@@ -8,7 +8,7 @@
                         <h1 class="text-2xl">Please connect your solana wallet.</h1>
                     </div>
                     <ClientOnly>
-                    <WalletMultiButton />
+                        <WalletMultiButton />
                     </ClientOnly>
                 </div>
             </div>

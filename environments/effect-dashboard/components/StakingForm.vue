@@ -4,7 +4,7 @@
 			<div class="dark:!bg-[#1C1A1F] p-6 rounded-xl">
 				<h3 class="text-lg font-semibold mb-6">Stake Tokens</h3>
 				<div class="space-y-6">
-					<div><label class="block text-sm text-gray-400 mb-2">Amount to Stake</label>
+					<div><label class="block text-gray-400 mb-2">Amount to Stake</label>
 						<div class="relative"><input type="text" v-model="stakeAmount"
 								class="w-full bg-white/5 border border-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-700"
 								placeholder="0.00">
@@ -14,9 +14,9 @@
 						</div>
 					</div>
 					<div class="bg-white/5 rounded-lg py-4 px-2 space-y-2">
-						<div class="flex justify-between text-sm"><span class="text-gray-400">Available
+						<div class="flex justify-between"><span class="text-gray-400">Available
 								Balance</span><span>{{ availableBalance?.value }} EFFECT</span></div>
-						<div class="flex justify-between text-sm"><span class="text-gray-400">Lock Period</span><span>30
+						<div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span>30
 								Days</span></div>
 					</div>
 					<UButton @click="handleSubmit" color="white" class="flex justify-center w-full">Stake</UButton>
