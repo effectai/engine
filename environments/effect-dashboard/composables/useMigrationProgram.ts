@@ -2,7 +2,6 @@ import { Keypair, PublicKey, StakeProgram, Transaction } from "@solana/web3.js";
 import {
 	useMutation,
 	useQuery,
-	useQueryClient,
 	type UseMutationOptions,
 	type UseQueryReturnType,
 } from "@tanstack/vue-query";
@@ -22,12 +21,18 @@ import {
 	useDeriveStakeAccounts,
 } from "@effectai/utils";
 import { base64 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import type { StakingAccount } from "./useStakingProgram";
+
+
+
+export type EffectMigrationProgramAccounts = anchor.IdlAccounts<EffectMigration>;
+export type MigrationClaimAccount = anchor.ProgramAccount<EffectMigrationProgramAccounts['claimAccount']>;
 
 export const useMigrationProgram = () => {
 	const wallet = useAnchorWallet();
 	const config = useRuntimeConfig();
 
-	const { publicKey, sendTransaction } = useWallet();
+	const { publicKey } = useWallet();
 	const { connection } = useGlobalState();
 
 	const provider = new anchor.AnchorProvider(connection, wallet.value, {});
@@ -38,13 +43,8 @@ export const useMigrationProgram = () => {
 	type Claim = {
 		type: "stake" | "token";
 		amount: number;
-		data: ClaimAccount;
-		publicKey: PublicKey;
+		account: MigrationClaimAccount;
 	};
-
-	type ClaimAccount = Awaited<
-		ReturnType<typeof program.account.claimAccount.fetch>
-	>;
 
 	const program = new anchor.Program(
 		EffectMigrationIdl as Idl,
@@ -95,8 +95,7 @@ export const useMigrationProgram = () => {
 					claims.push({
 						type,
 						amount: amount.value.uiAmount || 0,
-						data: claimAccount.account,
-						publicKey: claimAccount.publicKey,
+						account: claimAccount,
 					});
 				}
 
@@ -127,7 +126,7 @@ export const useMigrationProgram = () => {
 				const { foreignPublicKey, message, signature } = useGlobalState();
 
 				const { vaultAccount } = useDeriveMigrationAccounts({
-					claimAccount: claim.publicKey,
+					claimAccount: claim.account.publicKey,
 					programId: program.programId,
 				});
 
@@ -140,7 +139,26 @@ export const useMigrationProgram = () => {
 					throw new Error("Missing required data");
 				}
 
-				const stakingAccount = new Keypair();
+				let signers : Keypair[] = [];
+				let stakingAccount: Keypair | StakingAccount | null = null;
+
+				// check if user has an existing stakingAccount
+				const stakingAccounts = await stakeProgram.account.stakeAccount.all([
+					{
+						memcmp: {
+							offset: 8 + 8,
+							encoding: "base58",
+							bytes: publicKey.value.toBase58(),
+						},
+					},
+				]);
+
+				if (stakingAccounts.length === 0) {
+					stakingAccount = new Keypair();
+					signers = [stakingAccount];
+				} else {
+					stakingAccount = stakingAccounts[0];
+				}
 
 				const mint = new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT);
 				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
@@ -192,10 +210,10 @@ export const useMigrationProgram = () => {
 							recipientTokenAccount: ata,
 							stakeVaultTokenAccount: stakeVaultTokenAccount,
 							stakeAccount: stakingAccount.publicKey,
-							claimAccount: claim.publicKey,
+							claimAccount: claim.account.publicKey,
 							vaultTokenAccount: vaultAccount,
 						})
-						.signers([stakingAccount])
+						.signers(signers)
 						.rpc();
 				}
 
@@ -216,7 +234,7 @@ export const useMigrationProgram = () => {
 						payer: publicKey.value,
 						mint,
 						recipientTokenAccount: ata,
-						claimAccount: claim.publicKey,
+						claimAccount: claim.account.publicKey,
 						vaultAccount,
 					})
 					.rpc();

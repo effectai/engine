@@ -25,7 +25,7 @@
                                 </span><span>7 Days</span></div>
                       
                     </div>
-                    <UButton @click="handleSubmit" color="white" class="flex justify-center w-full">Unstake</UButton>
+                    <UButton :loading="isPending" @click="handleSubmit" color="white" class="flex justify-center w-full">Unstake</UButton>
                 </div>
             </div>
 

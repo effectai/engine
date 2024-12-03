@@ -59,7 +59,6 @@ const queryClient = useQueryClient();
 const { mutateAsync: handleClaim } = useClaim({
 	options: {
 		onSuccess: (transactionId) => {
-			// Invalidate the claims query
 			queryClient.invalidateQueries({
 				predicate: (query) => {
 					return query.queryKey.includes("claims");

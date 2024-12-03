@@ -19,7 +19,9 @@
 						<div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span>30
 								Days</span></div>
 					</div>
-					<UButton @click="handleSubmit" color="white" class="flex justify-center w-full">Stake</UButton>
+					<UButton
+					:loading="isPending"
+					@click="handleSubmit" color="white" class="flex justify-center w-full">Stake</UButton>
 				</div>
 			</div>
 		</form>
@@ -37,30 +39,16 @@ const { useStake, useTopUp, useGetStakeAccount } = useStakingProgram();
 
 const {
 	data: stakeAccount,
-	amount: currentStakeAmount,
 	error: stakeError,
 	refetch
 } = useGetStakeAccount();
-
-const stakeAccountExists = computed(() => !!stakeAccount.value);
 
 const stakeAmount: Ref<number> = ref(0);
 
 type Maybe<T> = T | null | undefined;
 const unstakeDays: Ref<Maybe<number>> = ref(30);
 
-watchOnce([stakeError, stakeAccount], () => {
-	if (stakeError.value?.message.startsWith("Account does not exist")) {
-		unstakeDays.value = 14;
-	}
-
-	if (stakeAccount.value) {
-		unstakeDays.value = stakeAccount.value.account.lockDuration.toNumber() / 86400;
-	}
-});
-
 const error = ref("");
-const isSubmitting = ref(false);
 const isValid = computed(() => {
 	if (!stakeAmount.value || !availableBalance.value || !unstakeDays.value) {
 		return false;
@@ -75,7 +63,7 @@ const setMaxAmount = () => {
 	error.value = "";
 };
 
-const { mutateAsync: stake } = useStake();
+const { mutateAsync: stake, isPending } = useStake();
 const { mutateAsync: topup } = useTopUp();
 const toast = useToast();
 const handleSubmit = async () => {
@@ -84,7 +72,6 @@ const handleSubmit = async () => {
 		return;
 	}
 
-	isSubmitting.value = true;
 	error.value = "";
 
 	try {
@@ -108,8 +95,6 @@ const handleSubmit = async () => {
 	} catch (err) {
 		console.error(err);
 		error.value = "Failed to stake tokens. Please try again.";
-	} finally {
-		isSubmitting.value = false;
 	}
 };
 </script>

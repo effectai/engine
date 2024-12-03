@@ -1,50 +1,42 @@
 import { useWallet } from "solana-wallets-vue";
 import * as anchor from "@coral-xyz/anchor";
-import type { Program, Idl } from "@coral-xyz/anchor";
+import type {
+	Program,
+	Idl,
+	ProgramAccount,
+	IdlAccounts,
+} from "@coral-xyz/anchor";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { useAnchorProvider } from "./useAnchorProvider";
 import { Keypair, PublicKey } from "@solana/web3.js";
-import {
-	EffectStakingIdl, EffectRewardsIdl,
-	type EffectStaking,
-	type EffectRewards
-} from "@effectai/shared";
+import { EffectStakingIdl, type EffectStaking } from "@effectai/shared";
 
-import {
-	createAssociatedTokenAccountIdempotentInstructionWithDerivation,
-	getAssociatedTokenAddressSync,
-} from "@solana/spl-token";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { useDeriveRewardAccounts } from "@effectai/utils";
 
 const SECONDS_PER_DAY = 86400;
 
+export type EffectStakingProgramAccounts = IdlAccounts<EffectStaking>;
+export type StakingAccount = ProgramAccount<
+	EffectStakingProgramAccounts["stakeAccount"]
+>;
+
 export function useStakingProgram() {
 	const appConfig = useRuntimeConfig();
 	const { connection } = useGlobalState();
-	const { publicKey, sendTransaction } = useWallet();
+	const { publicKey } = useWallet();
 	const { provider } = useAnchorProvider();
 	const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
-
-	type StakingAccounts = Awaited<
-		ReturnType<typeof stakeProgram.account.stakeAccount.all>
-	>;
-
-	type StakingAccount = StakingAccounts[0];
 
 	const stakeProgram = new anchor.Program(
 		EffectStakingIdl as Idl,
 		provider,
 	) as unknown as Program<EffectStaking>;
 
-	const rewardsProgram = new anchor.Program(
-		EffectRewardsIdl as Idl,
-		provider,
-	) as unknown as Program<EffectRewards>;
-
 	const { vestingProgram } = useVestingProgram();
+	const { rewardsProgram } = useRewardProgram();
 
 	const queryClient = useQueryClient();
-
 
 	const useDeriveStakeAccounts = (stakeAccount: PublicKey) => {
 		if (!publicKey.value) {
@@ -57,91 +49,8 @@ export function useStakingProgram() {
 		);
 
 		return {
-			stakeVaultAccount
+			stakeVaultAccount,
 		};
-	};
-
-	const useClaimRewards = () =>
-		useMutation({
-			mutationFn: async ({stakeAccount}: {
-				stakeAccount: StakingAccount;
-			}) => {
-				if (!publicKey.value) {
-					throw new Error("Could not get public key");
-				}
-
-				const { reflectionAccount, rewardAccount } = useDeriveRewardAccounts({
-					authority: publicKey.value,
-					programId: rewardsProgram.programId,
-				});
-
-				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
-
-				return await rewardsProgram.methods
-					.claim()
-					.preInstructions([
-						...((await connection.getAccountInfo(ata))
-							? []
-							: [
-									createAssociatedTokenAccountIdempotentInstructionWithDerivation(
-										publicKey.value,
-										publicKey.value,
-										mint,
-									),
-								]),
-					])
-					.accounts({
-						stake: stakeAccount.publicKey,
-						reward: rewardAccount,
-						reflection: reflectionAccount,
-						user: ata,
-					})
-					.rpc();
-			},
-		});
-
-	const useGetReflectionAccount = () => {
-		return useQuery({
-			queryKey: ["reflectionAccount", publicKey.value],
-			queryFn: async () => {
-				if (!publicKey.value) {
-					throw new Error("Could not get public key");
-				}
-
-				const { reflectionAccount } = useDeriveRewardAccounts({
-					authority: publicKey.value,
-					programId: rewardsProgram.programId,
-				});
-
-				const account =
-					await rewardsProgram.account.reflectionAccount.fetch(
-						reflectionAccount,
-					);
-
-				return account;
-			},
-		});
-	};
-
-	const useGetRewardAccount = () => {
-		return useQuery({
-			queryKey: ["rewardAccount", publicKey.value],
-			queryFn: async () => {
-				if (!publicKey.value) {
-					throw new Error("Could not get public key");
-				}
-
-				const { rewardAccount } = useDeriveRewardAccounts({
-					authority: publicKey.value,
-					programId: rewardsProgram.programId,
-				});
-
-				const account =
-					await rewardsProgram.account.rewardAccount.fetch(rewardAccount);
-
-				return account;
-			},
-		});
 	};
 
 	const useUnstake = () =>
@@ -153,7 +62,10 @@ export function useStakingProgram() {
 					},
 				});
 			},
-			mutationFn: async ({ stakeAccount, amount }: { stakeAccount: StakingAccount, amount: number }) => {
+			mutationFn: async ({
+				stakeAccount,
+				amount,
+			}: { stakeAccount: StakingAccount; amount: number }) => {
 				if (!publicKey.value) {
 					throw new Error("Could not get public key");
 				}
@@ -165,7 +77,9 @@ export function useStakingProgram() {
 					programId: rewardsProgram.programId,
 				});
 
-				const {stakeVaultAccount} = useDeriveStakeAccounts(stakeAccount.publicKey);
+				const { stakeVaultAccount } = useDeriveStakeAccounts(
+					stakeAccount.publicKey,
+				);
 
 				// create a new pubkey for unstake vestment
 				const vestmentAccount = Keypair.generate();
@@ -239,7 +153,6 @@ export function useStakingProgram() {
 
 				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
-		
 				const { rewardAccount, reflectionAccount } = useDeriveRewardAccounts({
 					authority: publicKey.value,
 					programId: rewardsProgram.programId,
@@ -280,45 +193,6 @@ export function useStakingProgram() {
 				}
 			},
 		});
-
-	const useGetStakeAccount = () => {
-		const query = useQuery({
-			queryKey: ["stake", publicKey.value],
-			retry: 0,
-			queryFn: async () => {
-				if (!publicKey.value) {
-					throw new Error("Could not get public key");
-				}
-
-				const stakingAccounts = await stakeProgram.account.stakeAccount.all([
-					{
-						memcmp: {
-							offset: 8 + 8,
-							encoding: "base58",
-							bytes: publicKey.value.toBase58(),
-						},
-					},
-				]);
-
-				return stakingAccounts[0];
-			},
-		});
-
-		// computed helpers
-		const amount = computed(() => query.data.value?.account?.amount);
-		const amountFormatted = computed(() => {
-			const amount = query.data.value?.account?.amount;
-			return amount ? amount.toNumber() / 1000000 : 0;
-		});
-
-		const unstakeDays = computed(
-			() =>
-				query.data.value?.account?.lockDuration &&
-				query.data.value.account.lockDuration.toNumber() / SECONDS_PER_DAY,
-		);
-
-		return { ...query, amount, unstakeDays, amountFormatted };
-	};
 
 	const useStake = () =>
 		useMutation({
@@ -382,15 +256,51 @@ export function useStakingProgram() {
 			},
 		});
 
+	const useGetStakeAccount = () => {
+		const query = useQuery({
+			queryKey: ["stake", publicKey.value],
+			retry: 0,
+			queryFn: async () => {
+				if (!publicKey.value) {
+					throw new Error("Could not get public key");
+				}
+
+				const stakingAccounts = await stakeProgram.account.stakeAccount.all([
+					{
+						memcmp: {
+							offset: 8 + 8,
+							encoding: "base58",
+							bytes: publicKey.value.toBase58(),
+						},
+					},
+				]);
+
+				return stakingAccounts[0];
+			},
+		});
+
+		// computed helpers
+		const amount = computed(() => query.data.value?.account?.amount);
+		const amountFormatted = computed(() => {
+			const amount = query.data.value?.account?.amount;
+			return amount ? amount.toNumber() / 1000000 : 0;
+		});
+
+		const unstakeDays = computed(
+			() =>
+				query.data.value?.account?.lockDuration &&
+				query.data.value.account.lockDuration.toNumber() / SECONDS_PER_DAY,
+		);
+
+		return { ...query, amount, unstakeDays, amountFormatted };
+	};
+
 	return {
 		stakeProgram,
 		rewardsProgram,
 		useStake,
 		useUnstake,
 		useTopUp,
-		useGetReflectionAccount,
 		useGetStakeAccount,
-		useClaimRewards,
-		useGetRewardAccount,
 	};
 }
