@@ -65,7 +65,7 @@ const stakeAge = computed(() => {
     const time = currentTime.value - stakeAccount.value.account.stakeStartTime.toNumber()
     return time / 86400;
 });
-const currentTime = ref(new Date().getTime());
+const currentTime = ref(new Date().getTime() / 1000);
 onMounted(() => {
     const interval = setInterval(() => {
         currentTime.value = new Date().getTime() / 1000;
