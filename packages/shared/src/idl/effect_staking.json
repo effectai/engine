@@ -191,10 +191,6 @@
           "type": "u64"
         },
         {
-          "name": "duration",
-          "type": "u128"
-        },
-        {
           "name": "stake_start_time",
           "type": "i64"
         }

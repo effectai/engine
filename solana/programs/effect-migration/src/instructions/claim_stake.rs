@@ -84,7 +84,6 @@ pub fn claim_stake(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8
                         .into_genesis_stake_context()
                         .with_signer(&[&vault_seed!(ctx.accounts.claim_account.key(), *ctx.program_id)[..]]),
                     ctx.accounts.vault_token_account.amount,
-                    constants::STAKE_DURATION_MIN,
                     stake_start_time,
                 )?;
             }

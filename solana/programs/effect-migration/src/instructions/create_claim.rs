@@ -1,8 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, TokenAccount, Transfer};
-use anchor_spl::{
-    token::{Mint, Token},
-};
+use anchor_spl::token::{Mint, Token};
+use effect_common::id::AUTHORITY;
 
 use crate::{ClaimAccount, ClaimType};
 
@@ -26,9 +25,11 @@ pub struct CreateClaim<'info> {
     )]
     pub vault_account: Account<'info, TokenAccount>,
 
+    // CHECK:: is this neccessary?
+    // #[account(address = EFFECT_TOKEN @ MigrationError::InvalidMint)]
     pub mint: Account<'info, Mint>,
 
-    #[account(mut)]
+    #[account(mut, address = AUTHORITY)]
     pub payer: Signer<'info>,
 
     #[account(

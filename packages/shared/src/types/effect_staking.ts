@@ -197,10 +197,6 @@ export type EffectStaking = {
           "type": "u64"
         },
         {
-          "name": "duration",
-          "type": "u128"
-        },
-        {
           "name": "stakeStartTime",
           "type": "i64"
         }

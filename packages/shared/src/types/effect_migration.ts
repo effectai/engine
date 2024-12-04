@@ -178,7 +178,8 @@ export type EffectMigration = {
         {
           "name": "payer",
           "writable": true,
-          "signer": true
+          "signer": true,
+          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
         },
         {
           "name": "payerTokens",
@@ -248,7 +249,8 @@ export type EffectMigration = {
         {
           "name": "payer",
           "writable": true,
-          "signer": true
+          "signer": true,
+          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
         },
         {
           "name": "payerTokens",
@@ -352,6 +354,11 @@ export type EffectMigration = {
       "code": 6008,
       "name": "memoNotFound",
       "msg": "Memo field not found in actions."
+    },
+    {
+      "code": 6009,
+      "name": "invalidMint",
+      "msg": "Invalid mint provided."
     }
   ],
   "types": [

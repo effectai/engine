@@ -25,8 +25,8 @@ pub mod effect_staking {
         ctx.accounts.handler(amount, duration)
     }
 
-    pub fn stake_genesis(ctx: Context<GenesisStake>, amount: u64, duration: u128, stake_start_time: i64) -> Result<()> {
-        ctx.accounts.handler(amount, duration, stake_start_time)
+    pub fn stake_genesis(ctx: Context<GenesisStake>, amount: u64, stake_start_time: i64) -> Result<()> {
+        ctx.accounts.handler(amount, stake_start_time)
     }
 
     /// Start the unstake duration.

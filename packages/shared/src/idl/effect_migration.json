@@ -172,7 +172,8 @@
         {
           "name": "payer",
           "writable": true,
-          "signer": true
+          "signer": true,
+          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
         },
         {
           "name": "payer_tokens",
@@ -242,7 +243,8 @@
         {
           "name": "payer",
           "writable": true,
-          "signer": true
+          "signer": true,
+          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
         },
         {
           "name": "payer_tokens",
@@ -346,6 +348,11 @@
       "code": 6008,
       "name": "MemoNotFound",
       "msg": "Memo field not found in actions."
+    },
+    {
+      "code": 6009,
+      "name": "InvalidMint",
+      "msg": "Invalid mint provided."
     }
   ],
   "types": [

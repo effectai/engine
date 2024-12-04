@@ -28,4 +28,7 @@ pub enum MigrationError {
 
     #[msg("Memo field not found in actions.")]
     MemoNotFound,
+
+    #[msg("Invalid mint provided.")]
+    InvalidMint,
 }

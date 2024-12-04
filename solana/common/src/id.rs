@@ -4,10 +4,22 @@ use anchor_lang::declare_id;
  * IDs
  */
 
-pub use system_program::ID as SYSTEM_PROGRAM;
-mod system_program {
+ pub use authority::ID as AUTHORITY;
+ mod authority {
+     use super::*;
+     #[cfg(feature = "mainnet")]
+     declare_id!("TODO::GRIND_KEY_PAIR");
+     #[cfg(not(feature = "mainnet"))]
+     declare_id!("authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV");
+ }
+
+pub use effect_token::ID as EFFECT_TOKEN;
+mod effect_token {
     use super::*;
-    declare_id!("11111111111111111111111111111111");
+    #[cfg(feature = "mainnet")]
+    declare_id!("TODO::GRIND_KEY_PAIR");
+    #[cfg(not(feature = "mainnet"))]
+    declare_id!("mintTrhsrzTrrZo2kMJ7FKcJ9HCdRN8nadzKJFi9f4r");
 }
 
 pub use effect_vesting::ID as VESTING_PROGRAM;
@@ -26,24 +38,6 @@ pub use staking_program::ID as STAKING_PROGRAM;
 mod staking_program {
     use super::*;
     declare_id!("3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw");
-}
-
-pub use authority::ID as AUTHORITY;
-mod authority {
-    use super::*;
-    #[cfg(feature = "mainnet")]
-    declare_id!("EffectrMxfrZbyCx5CotBVrzxiPcrnhj6ickpX9vRkB");
-    #[cfg(not(feature = "mainnet"))]
-    declare_id!("devEs8EACCACJqJxJb2jBTRVsmrtsPobvJvMpD33mht");
-}
-
-pub use token_account::ID as TOKEN_ACCOUNT;
-mod token_account {
-    use super::*;
-    #[cfg(feature = "mainnet")]
-    declare_id!("A9V8JkR5HihvFpHq1ZbwrpPAGBhsGfeWw5TVcUdGf2dg");
-    #[cfg(not(feature = "mainnet"))]
-    declare_id!("HLtABkKqsUjb4ECPEnvad6HN7QYf6ANHahAeZQXrAGgV");
 }
 
 pub use rewards_program::ID as REWARDS_PROGRAM;

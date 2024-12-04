@@ -276,7 +276,7 @@ export type EffectRewards = {
           "name": "authority",
           "writable": true,
           "signer": true,
-          "address": "devEs8EACCACJqJxJb2jBTRVsmrtsPobvJvMpD33mht"
+          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
         },
         {
           "name": "systemProgram",

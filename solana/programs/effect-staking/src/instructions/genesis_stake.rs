@@ -1,6 +1,5 @@
 use crate::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use constants::{STAKE_DURATION_MAX, STAKE_DURATION_MIN, STAKE_MINIMUM_AMOUNT};
 use effect_common::cpi::transfer_tokens;
 
 #[derive(Accounts)]
@@ -47,7 +46,6 @@ impl<'info> GenesisStake<'info> {
     pub fn handler(
         &mut self,
         amount: u64,
-        lock_duration: u128,
         stake_start_time: i64,
     ) -> Result<()> {
         let (vault_authority, _) = Pubkey::find_program_address(
@@ -62,21 +60,6 @@ impl<'info> GenesisStake<'info> {
             StakingErrors::VaultAuthorityMismatch
         );
 
-        require!(
-            lock_duration >= STAKE_DURATION_MIN,
-            StakingErrors::DurationTooShort
-        );
-
-        require!(
-            lock_duration <= STAKE_DURATION_MAX,
-            StakingErrors::DurationTooLong
-        );
-
-        require!(
-            amount >= STAKE_MINIMUM_AMOUNT,
-            StakingErrors::AmountNotEnough
-        );
-
         // We always do a topup here, as to only allow already initialized stakes.
         self.stake.topup(amount, stake_start_time);
       
@@ -89,6 +72,5 @@ impl<'info> GenesisStake<'info> {
             &[&vault_seed!(self.stake.key())],
             amount,
         )
-        
     }
 }
