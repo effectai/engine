@@ -24,7 +24,12 @@ import { createMigrationClaim } from "../../utils/migration.js";
 import { createStake } from "../../utils/stake.js";
 import { BN } from "bn.js";
 import { useErrorsIDL } from "../../utils/idl.js";
-import { EffectMigrationIdl, effect_migration, effect_staking } from "@effectai/shared";
+import {
+	EffectMigrationIdl,
+	effect_migration,
+	effect_staking,
+} from "@effectai/shared";
+import { createDummyEosTransactionWithMemo } from "../../utils/eos.js";
 
 describe("Migration Program", async () => {
 	const program = anchor.workspace.EffectMigration as Program<EffectMigration>;
@@ -84,8 +89,25 @@ describe("Migration Program", async () => {
 			expect(metadataAccount).to.not.be.null;
 		});
 
-		it("correctly throws an error when the foreign public key is invalid", async () => {});
-		it("correctly throws an error when the amount is invalid", async () => {});
+		it.concurrent(
+			"throws an error if the foreign public key is invalid",
+			async () => {
+				const { mint, ata } = await setup({ provider, payer });
+				const { INVALID_FOREIGN_PUBLIC_KEY } = useErrorsIDL(effect_migration);
+
+				expectAnchorError(async () => {
+					await createMigrationClaim({
+						type: "token",
+						mint,
+						payer,
+						payerTokens: ata,
+						publicKey: toBytes("0x123"),
+						amount: 100_000_000,
+						program,
+					});
+				}, INVALID_FOREIGN_PUBLIC_KEY);
+			},
+		);
 	});
 
 	describe("Migration Contract: Signing & Claiming", () => {
@@ -113,56 +135,10 @@ describe("Migration Program", async () => {
 				program,
 			});
 
-			const session = new Session({
-				permissionLevel: {
-					actor: "effectai",
-					permission: "active",
-				},
-				chain: {
-					id: "aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906",
-					url: "https://eos.greymass.com",
-				},
-				walletPlugin: new WalletPluginPrivateKey(
-					"5K5UuCj9PmMSFTyiWzTtPF4VmUftVqScM3QJd9HorrZGCt4LgLu",
-				),
-			});
-
-			const abi = new ABICache(session.client);
-			const eosAbi = await abi.getAbi("eosio.token");
-
-			const action = Action.from(
-				{
-					account: "effecttokens",
-					name: "issue",
-					authorization: [
-						{
-							actor: "effectai",
-							permission: "active",
-						},
-					],
-					data: {
-						to: "effectai",
-						quantity: "0 EFX",
-						memo: originalMessage,
-					},
-				},
-				eosAbi,
-			);
-
-			// serialize the transaction
-			const txHeader = TransactionHeader.from({
-				expiration: 0,
-				ref_block_num: 11,
-				ref_block_prefix: 32,
-				delay_sec: 0,
-			});
-
-			const tx = Transaction.from({
-				actions: [action],
-				...txHeader,
-			});
+			const {tx, session} = await createDummyEosTransactionWithMemo(originalMessage);
 
 			const serializedTransactionBytes = tx.signingData(
+				// eos mainnet chain id
 				"aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906",
 			);
 
@@ -202,7 +178,7 @@ describe("Migration Program", async () => {
 			// keccak256 hash of the message
 			const keccakHash = keccak256(Buffer.from(originalMessage));
 
-			// sign the hash
+			// sign the hash (without the 0x prefix)
 			const sig = secp256k1.sign(keccakHash.slice(2), ethPrivateKey);
 
 			// add the recovery byte to the signature
@@ -285,8 +261,8 @@ describe("Migration Program", async () => {
 					program,
 				});
 
-			const stakeAccount = new anchor.web3.Keypair();
 			// initialize stake before we claim..
+			const stakeAccount = new anchor.web3.Keypair();
 
 			const { vaultAccount: stakeVaultAccount } = useDeriveStakeAccounts({
 				stakingAccount: stakeAccount.publicKey,
@@ -297,6 +273,7 @@ describe("Migration Program", async () => {
 				.claimStake(Buffer.from(toBytes(signature)), Buffer.from(message))
 				.preInstructions([
 					...[
+						// create a 0 amount stake
 						await stakeProgram.methods
 							.stake(new BN(0), new BN(30 * SECONDS_PER_DAY))
 							.accounts({
@@ -419,77 +396,83 @@ describe("Migration Program", async () => {
 			},
 		);
 
-		it.concurrent("correctly throws a INVALID MESSAGE error when the message is incorrect", async () => {
-			const { mint, ata } = await setup({ provider, payer });
-			const {MESSAGE_INVALID} = useErrorsIDL(effect_migration)
+		it.concurrent(
+			"correctly throws a INVALID MESSAGE error when the message is incorrect",
+			async () => {
+				const { mint, ata } = await setup({ provider, payer });
+				const { MESSAGE_INVALID } = useErrorsIDL(effect_migration);
 
-			const { claimAccount, vaultAccount } = await createMigrationClaim({
-				type: "token",
-				mint,
-				payer,
-				payerTokens: ata,
-				publicKey: toBytes(ethPublicKey),
-				amount: 100_000_000,
-				program,
-			});
+				const { claimAccount, vaultAccount } = await createMigrationClaim({
+					type: "token",
+					mint,
+					payer,
+					payerTokens: ata,
+					publicKey: toBytes(ethPublicKey),
+					amount: 100_000_000,
+					program,
+				});
 
-			const account = privateKeyToAccount(
-				"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
-			);
+				const account = privateKeyToAccount(
+					"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
+				);
 
-			const signature = await account.signMessage({
-				message: originalMessage,
-			});
+				const signature = await account.signMessage({
+					message: originalMessage,
+				});
 
-			expectAnchorError(async () => {
-				await program.methods
-					.claimTokens(Buffer.from(toBytes(signature)), Buffer.from("wrong"))
-					.accounts({
-						mint,
-						claimAccount,
-						recipientTokenAccount: ata,
-						vaultAccount,
-					})
-					.rpc();
-			}, MESSAGE_INVALID)
-		});
+				expectAnchorError(async () => {
+					await program.methods
+						.claimTokens(Buffer.from(toBytes(signature)), Buffer.from("wrong"))
+						.accounts({
+							mint,
+							claimAccount,
+							recipientTokenAccount: ata,
+							vaultAccount,
+						})
+						.rpc();
+				}, MESSAGE_INVALID);
+			},
+		);
 
-		it.concurrent("correctly throws a PUBLIC_KEY_MISMATCH when signing a different message", async () => {
-			const { mint, ata } = await setup({ provider, payer });
-			const {PUBLIC_KEY_MISMATCH} = useErrorsIDL(effect_migration)
+		it.concurrent(
+			"correctly throws a PUBLIC_KEY_MISMATCH when signing a different message",
+			async () => {
+				const { mint, ata } = await setup({ provider, payer });
+				const { PUBLIC_KEY_MISMATCH } = useErrorsIDL(effect_migration);
 
-			const { claimAccount, vaultAccount } = await createMigrationClaim({
-				type: "token",
-				mint,
-				payer,
-				payerTokens: ata,
-				publicKey: toBytes(ethPublicKey),
-				amount: 100_000_000,
-				program,
-			});
+				const { claimAccount, vaultAccount } = await createMigrationClaim({
+					type: "token",
+					mint,
+					payer,
+					payerTokens: ata,
+					publicKey: toBytes(ethPublicKey),
+					amount: 100_000_000,
+					program,
+				});
 
-			const account = privateKeyToAccount(
-				"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
-			);
+				const account = privateKeyToAccount(
+					"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
+				);
 
-			const prefix = `\x19Ethereum Signed Message:\n${originalMessage.length}`;
-			const message = prefix + originalMessage;
+				const prefix = `\x19Ethereum Signed Message:\n${originalMessage.length}`;
+				const message = prefix + originalMessage;
 
-			const signature = await account.signMessage({
-				message: 'wrong',
-			});
+				const signature = await account.signMessage({
+					message: "wrong",
+				});
 
-			expectAnchorError(async () => {
-				await program.methods
-					.claimTokens(Buffer.from(toBytes(signature)), Buffer.from(message))
-					.accounts({
-						mint,
-						claimAccount,
-						recipientTokenAccount: ata,
-						vaultAccount,
-					})
-					.rpc();
-			}, PUBLIC_KEY_MISMATCH)
-		});
+				expectAnchorError(async () => {
+					await program.methods
+						.claimTokens(Buffer.from(toBytes(signature)), Buffer.from(message))
+						.accounts({
+							mint,
+							claimAccount,
+							recipientTokenAccount: ata,
+							vaultAccount,
+						})
+						.rpc();
+				}, PUBLIC_KEY_MISMATCH);
+			},
+		);
 	});
 });

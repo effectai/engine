@@ -348,6 +348,11 @@ export const effect_migration = {
       "code": 6008,
       "name": "InvalidMint",
       "msg": "Invalid mint provided."
+    },
+    {
+      "code": 6009,
+      "name": "InvalidForeignPublicKey",
+      "msg": "Invalid Foreign Public Key"
     }
   ],
   "types": [

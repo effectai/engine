@@ -28,4 +28,7 @@ pub enum MigrationError {
 
     #[msg("Invalid mint provided.")]
     InvalidMint,
+
+    #[msg("Invalid Foreign Public Key")]
+    InvalidForeignPublicKey,
 }

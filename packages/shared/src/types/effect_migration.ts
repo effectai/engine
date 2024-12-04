@@ -354,6 +354,11 @@ export type EffectMigration = {
       "code": 6008,
       "name": "invalidMint",
       "msg": "Invalid mint provided."
+    },
+    {
+      "code": 6009,
+      "name": "invalidForeignPublicKey",
+      "msg": "Invalid Foreign Public Key"
     }
   ],
   "types": [

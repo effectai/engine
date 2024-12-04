@@ -55,7 +55,7 @@ impl<'info> CreateClaim<'info> {
 }
 
 pub fn handler(ctx: Context<CreateClaim>, claim_type: ClaimType, foreign_public_key: Vec<u8>, amount: u64 ) -> Result<()> {
-    ctx.accounts.claim_account.initialize(foreign_public_key, claim_type);
+    ctx.accounts.claim_account.initialize(foreign_public_key, claim_type)?;
     token::transfer(ctx.accounts.into_transfer_to_pda_context(), amount)?;
     Ok(())
 }
