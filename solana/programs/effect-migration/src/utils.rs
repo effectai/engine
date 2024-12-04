@@ -46,8 +46,10 @@ pub fn validate_message(payer: &Pubkey, message: &[u8], is_eth: bool) -> Result<
         if !message_str.contains(str::from_utf8(&expected_message_bytes).unwrap()) {
             return Err(MigrationError::MessageInvalid.into());
         }
+        
     } else {
         let mut found = false;
+        // look for the expected message in the serialized transaction 
         for i in 0..message.len() - expected_message_bytes.len() {
             if message[i..i + expected_message_bytes.len()].eq(&expected_message_bytes) {
                 found = true;

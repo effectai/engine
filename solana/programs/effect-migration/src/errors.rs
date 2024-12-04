@@ -11,10 +11,10 @@ pub enum MigrationError {
     #[msg("Public key does not match the foreign public key.")]
     PublicKeyMismatch,
 
-    #[msg("Invalid metadata provided.")]
-    InvalidMetadataAccount,
+    #[msg("Invalid claim account provided.")]
+    InvalidClaimAccount,
 
-    #[msg("Invalid recovery id provided.")]
+    #[msg("Invalid recovery id.")]
     InvalidRecoveryId,
 
     #[msg("Invalid action provided.")]
@@ -23,9 +23,6 @@ pub enum MigrationError {
     #[msg("The memo in the transaction does not match the expected value.")]
     MemoMismatch,
    
-    #[msg("Invalid transaction message.")]
-    InvalidMessage,
-
     #[msg("Memo field not found in actions.")]
     MemoNotFound,
 

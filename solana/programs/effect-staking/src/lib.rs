@@ -8,10 +8,8 @@ use anchor_lang::prelude::*;
 use effect_common::*;
  
 pub use errors::*;
-// expose errors for cpi
-use instructions::*;
-pub use state::*; // expose stake for cpi
-
+pub use state::*; 
+pub use instructions::*;
 pub use effect_common::state::stake_program::StakeAccount;
 
 declare_id!("3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw");
@@ -19,8 +17,7 @@ declare_id!("3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw");
 #[program]
 pub mod effect_staking {
     use super::*;
-    /// Create a [StakeAccount](#stake-account) and [VaultAccount](#vault-account).
-    /// Stake `amount` of [NOS](/tokens/token) tokens for `duration` fo seconds.
+
     pub fn stake(ctx: Context<Stake>, amount: u64, duration: u128) -> Result<()> {
         ctx.accounts.handler(amount, duration)
     }

@@ -327,13 +327,13 @@ export type EffectMigration = {
     },
     {
       "code": 6003,
-      "name": "invalidMetadataAccount",
-      "msg": "Invalid metadata provided."
+      "name": "invalidClaimAccount",
+      "msg": "Invalid claim account provided."
     },
     {
       "code": 6004,
       "name": "invalidRecoveryId",
-      "msg": "Invalid recovery id provided."
+      "msg": "Invalid recovery id."
     },
     {
       "code": 6005,
@@ -347,16 +347,11 @@ export type EffectMigration = {
     },
     {
       "code": 6007,
-      "name": "invalidMessage",
-      "msg": "Invalid transaction message."
-    },
-    {
-      "code": 6008,
       "name": "memoNotFound",
       "msg": "Memo field not found in actions."
     },
     {
-      "code": 6009,
+      "code": 6008,
       "name": "invalidMint",
       "msg": "Invalid mint provided."
     }

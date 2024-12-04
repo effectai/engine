@@ -23,13 +23,15 @@ import { setup } from "../../utils/spl.js";
 import { createMigrationClaim } from "../../utils/migration.js";
 import { createStake } from "../../utils/stake.js";
 import { BN } from "bn.js";
+import { useErrorsIDL } from "../../utils/idl.js";
+import { EffectMigrationIdl, effect_migration, effect_staking } from "@effectai/shared";
 
 describe("Migration Program", async () => {
 	const program = anchor.workspace.EffectMigration as Program<EffectMigration>;
 
 	const stakeProgram = anchor.workspace.EffectStaking as Program<EffectStaking>;
 
-	const { provider, payer } = useAnchor();
+	const { provider, payer, expectAnchorError } = useAnchor();
 
 	// local test data
 	const originalMessage = `Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: ${payer.publicKey.toBase58()}`;
@@ -175,7 +177,6 @@ describe("Migration Program", async () => {
 					claimAccount,
 					recipientTokenAccount: ata,
 					vaultAccount,
-					payer: payer.publicKey,
 					mint,
 				})
 				.signers([payer])
@@ -214,7 +215,6 @@ describe("Migration Program", async () => {
 				.claimTokens(sigWithRecovery, Buffer.from(originalMessage))
 				.accounts({
 					mint,
-					payer: payer.publicKey,
 					claimAccount,
 					recipientTokenAccount: ata,
 					vaultAccount,
@@ -250,7 +250,6 @@ describe("Migration Program", async () => {
 				.claimTokens(Buffer.from(toBytes(signature)), Buffer.from(message))
 				.accounts({
 					mint,
-					payer: payer.publicKey,
 					claimAccount,
 					recipientTokenAccount: ata,
 					vaultAccount,
@@ -420,8 +419,77 @@ describe("Migration Program", async () => {
 			},
 		);
 
-		it("correctly throws an error when the message is incorrect", async () => {});
+		it.concurrent("correctly throws a INVALID MESSAGE error when the message is incorrect", async () => {
+			const { mint, ata } = await setup({ provider, payer });
+			const {MESSAGE_INVALID} = useErrorsIDL(effect_migration)
 
-		it("correctly throws an error when the signature is incorrect", async () => {});
+			const { claimAccount, vaultAccount } = await createMigrationClaim({
+				type: "token",
+				mint,
+				payer,
+				payerTokens: ata,
+				publicKey: toBytes(ethPublicKey),
+				amount: 100_000_000,
+				program,
+			});
+
+			const account = privateKeyToAccount(
+				"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
+			);
+
+			const signature = await account.signMessage({
+				message: originalMessage,
+			});
+
+			expectAnchorError(async () => {
+				await program.methods
+					.claimTokens(Buffer.from(toBytes(signature)), Buffer.from("wrong"))
+					.accounts({
+						mint,
+						claimAccount,
+						recipientTokenAccount: ata,
+						vaultAccount,
+					})
+					.rpc();
+			}, MESSAGE_INVALID)
+		});
+
+		it.concurrent("correctly throws a PUBLIC_KEY_MISMATCH when signing a different message", async () => {
+			const { mint, ata } = await setup({ provider, payer });
+			const {PUBLIC_KEY_MISMATCH} = useErrorsIDL(effect_migration)
+
+			const { claimAccount, vaultAccount } = await createMigrationClaim({
+				type: "token",
+				mint,
+				payer,
+				payerTokens: ata,
+				publicKey: toBytes(ethPublicKey),
+				amount: 100_000_000,
+				program,
+			});
+
+			const account = privateKeyToAccount(
+				"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
+			);
+
+			const prefix = `\x19Ethereum Signed Message:\n${originalMessage.length}`;
+			const message = prefix + originalMessage;
+
+			const signature = await account.signMessage({
+				message: 'wrong',
+			});
+
+			expectAnchorError(async () => {
+				await program.methods
+					.claimTokens(Buffer.from(toBytes(signature)), Buffer.from(message))
+					.accounts({
+						mint,
+						claimAccount,
+						recipientTokenAccount: ata,
+						vaultAccount,
+					})
+					.rpc();
+			}, PUBLIC_KEY_MISMATCH)
+		});
 	});
 });

@@ -55,10 +55,6 @@
     },
     {
       "name": "stake",
-      "docs": [
-        "Create a [StakeAccount](#stake-account) and [VaultAccount](#vault-account).",
-        "Stake `amount` of [NOS](/tokens/token) tokens for `duration` fo seconds."
-      ],
       "discriminator": [
         206,
         176,

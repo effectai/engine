@@ -1,13 +1,7 @@
-/**
- * Program IDL in camelCase format in order to be used in JS/TS.
- *
- * Note that this is only a type helper and is not the actual IDL. The original
- * IDL can be found at `target/idl/effect_staking.json`.
- */
-export type EffectStaking = {
+export const effect_staking = {
   "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw",
   "metadata": {
-    "name": "effectStaking",
+    "name": "effect_staking",
     "version": "0.1.0",
     "spec": "0.1.0",
     "description": "Effect Staking Program."
@@ -30,7 +24,7 @@ export type EffectStaking = {
       ],
       "accounts": [
         {
-          "name": "userTokenAccount",
+          "name": "user_token_account",
           "writable": true
         },
         {
@@ -38,7 +32,7 @@ export type EffectStaking = {
           "writable": true
         },
         {
-          "name": "vaultTokenAccount",
+          "name": "vault_token_account",
           "writable": true,
           "relations": [
             "stake"
@@ -53,7 +47,7 @@ export type EffectStaking = {
           ]
         },
         {
-          "name": "tokenProgram",
+          "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
@@ -77,7 +71,7 @@ export type EffectStaking = {
           "writable": true
         },
         {
-          "name": "userTokenAccount",
+          "name": "user_token_account",
           "writable": true
         },
         {
@@ -86,7 +80,7 @@ export type EffectStaking = {
           "signer": true
         },
         {
-          "name": "vaultTokenAccount",
+          "name": "vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -103,11 +97,11 @@ export type EffectStaking = {
           "signer": true
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "tokenProgram",
+          "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
@@ -127,7 +121,7 @@ export type EffectStaking = {
       ]
     },
     {
-      "name": "stakeGenesis",
+      "name": "stake_genesis",
       "discriminator": [
         254,
         31,
@@ -151,7 +145,7 @@ export type EffectStaking = {
           "writable": true
         },
         {
-          "name": "userTokenAccount",
+          "name": "user_token_account",
           "writable": true
         },
         {
@@ -159,27 +153,27 @@ export type EffectStaking = {
           "writable": true
         },
         {
-          "name": "vaultTokenAccount",
+          "name": "vault_token_account",
           "writable": true,
           "relations": [
             "stake"
           ]
         },
         {
-          "name": "claimVault",
+          "name": "claim_vault",
           "writable": true,
           "signer": true
         },
         {
-          "name": "claimAccount",
+          "name": "claim_account",
           "writable": true
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "tokenProgram",
+          "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
@@ -193,7 +187,7 @@ export type EffectStaking = {
           "type": "u64"
         },
         {
-          "name": "stakeStartTime",
+          "name": "stake_start_time",
           "type": "i64"
         }
       ]
@@ -215,11 +209,11 @@ export type EffectStaking = {
       ],
       "accounts": [
         {
-          "name": "userTokenAccount",
+          "name": "user_token_account",
           "writable": true
         },
         {
-          "name": "vaultTokenAccount",
+          "name": "vault_token_account",
           "writable": true,
           "relations": [
             "stake"
@@ -237,7 +231,7 @@ export type EffectStaking = {
           ]
         },
         {
-          "name": "tokenProgram",
+          "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
@@ -269,7 +263,7 @@ export type EffectStaking = {
           "writable": true
         },
         {
-          "name": "vaultTokenAccount",
+          "name": "vault_token_account",
           "writable": true
         },
         {
@@ -281,36 +275,36 @@ export type EffectStaking = {
           ]
         },
         {
-          "name": "vestingAccount",
+          "name": "vesting_account",
           "writable": true,
           "signer": true
         },
         {
-          "name": "vestingAccountUnchecked",
+          "name": "vesting_account_unchecked",
           "writable": true
         },
         {
-          "name": "rewardAccount",
+          "name": "reward_account",
           "writable": true
         },
         {
-          "name": "vestingVaultAccount",
+          "name": "vesting_vault_account",
           "writable": true
         },
         {
-          "name": "recipientTokenAccount",
+          "name": "recipient_token_account",
           "writable": true
         },
         {
-          "name": "vestingProgram",
+          "name": "vesting_program",
           "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "tokenProgram",
+          "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
@@ -331,7 +325,7 @@ export type EffectStaking = {
   ],
   "accounts": [
     {
-      "name": "stakeAccount",
+      "name": "StakeAccount",
       "discriminator": [
         80,
         158,
@@ -347,83 +341,83 @@ export type EffectStaking = {
   "errors": [
     {
       "code": 6000,
-      "name": "invalidVault",
+      "name": "InvalidVault",
       "msg": "This account has an invalid vault."
     },
     {
       "code": 6001,
-      "name": "unauthorized",
+      "name": "Unauthorized",
       "msg": "This account is not authorized to perform this action."
     },
     {
       "code": 6002,
-      "name": "alreadyUnstaked",
+      "name": "AlreadyUnstaked",
       "msg": "This stake is already unstaked."
     },
     {
       "code": 6003,
-      "name": "decreased",
+      "name": "Decreased",
       "msg": "This stake is not allowed to decrease."
     },
     {
       "code": 6004,
-      "name": "notUnstaked",
+      "name": "NotUnstaked",
       "msg": "This stake is not yet unstaked."
     },
     {
       "code": 6005,
-      "name": "locked",
+      "name": "Locked",
       "msg": "This stake is still locked."
     },
     {
       "code": 6006,
-      "name": "vaultNotEmpty",
+      "name": "VaultNotEmpty",
       "msg": "This vault is not empty."
     },
     {
       "code": 6007,
-      "name": "durationTooLong",
+      "name": "DurationTooLong",
       "msg": "The stake duration is too long."
     },
     {
       "code": 6008,
-      "name": "durationTooShort",
+      "name": "DurationTooShort",
       "msg": "The stake duration is too short."
     },
     {
       "code": 6009,
-      "name": "vaultAuthorityMismatch",
+      "name": "VaultAuthorityMismatch",
       "msg": "The vault authority does not match."
     },
     {
       "code": 6010,
-      "name": "amountNotEnough",
+      "name": "AmountNotEnough",
       "msg": "The stake amount is not enough."
     },
     {
       "code": 6011,
-      "name": "alreadyStaked",
+      "name": "AlreadyStaked",
       "msg": "This stake is already staked."
     },
     {
       "code": 6012,
-      "name": "invalidRewardAccount",
+      "name": "InvalidRewardAccount",
       "msg": "Invalid reward account."
     },
     {
       "code": 6013,
-      "name": "invalidStakeAccount",
+      "name": "InvalidStakeAccount",
       "msg": "Invalid stake account."
     },
     {
       "code": 6014,
-      "name": "stakeNotEmpty",
+      "name": "StakeNotEmpty",
       "msg": "Stake acount is not empty."
     }
   ],
   "types": [
     {
-      "name": "stakeAccount",
+      "name": "StakeAccount",
       "type": {
         "kind": "struct",
         "fields": [
@@ -436,15 +430,15 @@ export type EffectStaking = {
             "type": "pubkey"
           },
           {
-            "name": "lockDuration",
+            "name": "lock_duration",
             "type": "u64"
           },
           {
-            "name": "stakeStartTime",
+            "name": "stake_start_time",
             "type": "i64"
           },
           {
-            "name": "vaultTokenAccount",
+            "name": "vault_token_account",
             "type": "pubkey"
           },
           {
@@ -457,19 +451,19 @@ export type EffectStaking = {
   ],
   "constants": [
     {
-      "name": "stakeDurationMax",
+      "name": "STAKE_DURATION_MAX",
       "type": "u128",
       "value": "31536000"
     },
     {
-      "name": "stakeDurationMin",
+      "name": "STAKE_DURATION_MIN",
       "type": "u128",
       "value": "2592000"
     },
     {
-      "name": "stakeMinimumAmount",
+      "name": "STAKE_MINIMUM_AMOUNT",
       "type": "u64",
       "value": "0"
     }
   ]
-};
+} as const;

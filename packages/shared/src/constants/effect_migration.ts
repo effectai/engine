@@ -1,4 +1,4 @@
-{
+export const effect_migration = {
   "address": "BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g",
   "metadata": {
     "name": "effect_migration",
@@ -432,4 +432,4 @@
       "value": "\"Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: \""
     }
   ]
-}
+} as const;

@@ -76,7 +76,7 @@ pub fn claim_stake(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8
     match claim_account.claim_type {
         ClaimType::Stake { stake_start_time } => {
             if stake_start_time == 0 {
-                return Err(MigrationError::InvalidMetadataAccount.into());
+                return Err(MigrationError::InvalidClaimAccount.into());
             } else {  
                 effect_staking::cpi::stake_genesis(
                     ctx.accounts
@@ -87,7 +87,7 @@ pub fn claim_stake(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8
                 )?;
             }
         }
-        _ => return Err(MigrationError::InvalidMetadataAccount.into()),
+        _ => return Err(MigrationError::InvalidClaimAccount.into()),
     }
 
     Ok(())
