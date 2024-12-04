@@ -18,7 +18,7 @@
                 </UBadge>
                 <UButton v-else-if="amountDue" color="gray" variant="solid" size="sm" icon="i-heroicons-gift"
                     @click="claimTokens">
-                    Claim {{ amountToBalance(amountDue).toFixed(2) }} EFFECT
+                    Claim {{ formatAmountToBalance(amountDue).toFixed(2) }} EFFECT
                 </UButton>
                 <p>{{ progress.toFixed(2) }}% completed</p>
             </div>
@@ -66,7 +66,7 @@ const amountDue = computed(() => {
 
 const progress = computed(() => {
     if (!balance.value || !amountDue.value) return 100
-    return amountToBalance(amountDue.value) / balance.value.value
+    return formatAmountToBalance(amountDue.value) / balance.value.value
 })
 
 const calculateDue = (
