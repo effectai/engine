@@ -144,13 +144,13 @@ describe("Staking Program", async () => {
 			const { mint, ata } = await setup({
 				payer: provider.wallet.payer,
 				provider: provider,
-				amount: 5000,
+				amount: 2_000_000,
 			});
 
 			const stakeAccount = new anchor.web3.Keypair();
 
 			await bankrunProgram.methods
-				.stake(new BN(100), new BN(30 * SECONDS_PER_DAY))
+				.stake(new BN(1_000_000), new BN(30 * SECONDS_PER_DAY))
 				.accounts({
 					stake: stakeAccount.publicKey,
 					authority: provider.wallet.payer.publicKey,
@@ -170,11 +170,11 @@ describe("Staking Program", async () => {
 			const account =
 				await bankrunProgram.account.stakeAccount.fetch(stakeAccount.publicKey);
 
-			// wait 5 days
-			await useTimeTravel(100);
+			// wait 30 days
+			await useTimeTravel(30);
 
 			await bankrunProgram.methods
-				.topup(new BN(100))
+				.topup(new BN(1_000_000))
 				.accounts({
 					userTokenAccount: ata,
 					stake: stakeAccount.publicKey,
@@ -185,14 +185,13 @@ describe("Staking Program", async () => {
 			const account2 =
 				await bankrunProgram.account.stakeAccount.fetch(stakeAccount.publicKey);
 
-			expect(account.stakeStartTime).not.toEqual(account2.stakeStartTime);
+			// expect stake age to be diluted
+			expect(account.stakeStartTime.toNumber()).to.be.lessThan(account2.stakeStartTime.toNumber());
 
 			const balance = await provider.connection.getAccountInfo(vaultAccount);
 			if (!balance) throw new Error("Balance not found");
 			const result = AccountLayout.decode(balance.data);
-			expect(result.amount).toBe(200n);
+			expect(result.amount).toBe(2_000_000n);
 		});
 	});
-	// describe("Stake Restake", async () => {});
-
 });
