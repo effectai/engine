@@ -61,6 +61,11 @@ impl<'info> ClaimStake<'info> {
 }
 
 pub fn claim_stake(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
+     // return an error if the claim account is not a stake claim account
+     if let ClaimType::Token { .. } = ctx.accounts.claim_account.claim_type {
+        return Err(MigrationError::InvalidClaimAccount.into());
+    }
+
     let is_eth = ctx.accounts.claim_account.foreign_public_key.len() == 20;
     
     verify_claim(

@@ -27,6 +27,21 @@ impl ClaimAccount {
             return Err(MigrationError::InvalidForeignPublicKey.into());
         }
 
+        // if claim type is stake, check if the stake start time is a valid unix timestamp
+        if let ClaimType::Stake { stake_start_time } = claim_type {
+
+            let now = Clock::get()?.unix_timestamp;
+
+            if stake_start_time < 0 {
+                return Err(MigrationError::InvalidStakeStartTime.into());
+            }
+
+            // if the stake start time is in the future, return an error
+            if stake_start_time > now {
+                return Err(MigrationError::InvalidStakeStartTime.into());
+            }
+        }
+
         self.foreign_public_key = foreign_public_key;
         self.claim_type = claim_type;
         Ok(())

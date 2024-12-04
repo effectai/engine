@@ -353,6 +353,11 @@
       "code": 6009,
       "name": "InvalidForeignPublicKey",
       "msg": "Invalid Foreign Public Key"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidStakeStartTime",
+      "msg": "Invalid Stake Start Time"
     }
   ],
   "types": [

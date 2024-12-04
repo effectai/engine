@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-use crate::{utils::verify_claim, vault_seed, ClaimAccount};
+use crate::{errors::MigrationError, utils::verify_claim, vault_seed, ClaimAccount, ClaimType};
 
 #[derive(Accounts)]
 pub struct ClaimToken<'info> {
@@ -41,6 +41,11 @@ impl<'info> ClaimToken<'info> {
 }
 
 pub fn claim_token(ctx: Context<ClaimToken>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
+    // return an error if the claim account is not a token claim account
+    if let ClaimType::Stake { .. } = ctx.accounts.claim_account.claim_type {
+        return Err(MigrationError::InvalidClaimAccount.into());
+    }
+
     let is_eth = ctx.accounts.claim_account.foreign_public_key.len() == 20;
   
     verify_claim(

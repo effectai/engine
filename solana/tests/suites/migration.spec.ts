@@ -235,8 +235,8 @@ describe("Migration Program", async () => {
 		it.concurrent("can claim a stake with a valid signature", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
-			// get a date from 1 year ago
-			const stakeStartTime = new Date().getTime() - 31556952000 / 1000;
+			// get a unix_timestamp from 1 year ago
+			const stakeStartTime = Math.floor(new Date().getTime() / 1000 - 365 * 24 * 60 * 60);
 
 			const account = privateKeyToAccount(
 				"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
@@ -323,8 +323,8 @@ describe("Migration Program", async () => {
 			async () => {
 				const { mint, ata } = await setup({ provider, payer });
 
-				// get a date from 1 year ago
-				const stakeStartTime = new Date().getTime() - 31556952000;
+				// get a unix_timestamp from 1 year ago
+				const stakeStartTime = Math.floor(new Date().getTime() / 1000 - 365 * 24 * 60 * 60);
 
 				const account = privateKeyToAccount(
 					"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",

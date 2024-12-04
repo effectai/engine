@@ -31,4 +31,7 @@ pub enum MigrationError {
 
     #[msg("Invalid Foreign Public Key")]
     InvalidForeignPublicKey,
+
+    #[msg("Invalid Stake Start Time")]
+    InvalidStakeStartTime,
 }

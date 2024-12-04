@@ -359,6 +359,11 @@ export type EffectMigration = {
       "code": 6009,
       "name": "invalidForeignPublicKey",
       "msg": "Invalid Foreign Public Key"
+    },
+    {
+      "code": 6010,
+      "name": "invalidStakeStartTime",
+      "msg": "Invalid Stake Start Time"
     }
   ],
   "types": [
