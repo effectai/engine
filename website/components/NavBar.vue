@@ -6,7 +6,8 @@
           <img style="height: 3.5rem; width: auto" src="/img/effect-logo.svg" alt="Effect Network" class="logo p-1" />
         </nuxt-link>
 
-        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbar" @click="mobileMenu = !mobileMenu">
+        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbar" 
+          @click="mobileMenu = !mobileMenu">
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
@@ -15,15 +16,14 @@
       </div>
       <div id="navbar" class="navbar-menu" :class="{ 'is-active': mobileMenu }">
         <div class="navbar-start"></div>
-
         <div class="is-flex is-align-items-center">
           <div @click="mobileMenu = false">
-            <nuxt-link class="has-text-black has-text-weight-normal is-size-5 navbar-item pr-5 pl-5" to="/developers" exact-active-class="is-active">
+            <nuxt-link class="is-size-5 navbar-item px-5" to="/developers" exact-active-class="is-active">
               Developers
             </nuxt-link>
           </div>
           <div @click="mobileMenu = false">
-            <nuxt-link to="/ecosystem" class="has-text-black has-text-weight-normal is-size-5 navbar-item pr-5 pl-5" exact-active-class="is-active">
+            <nuxt-link class="is-size-5 navbar-item px-5" to="/ecosystem" exact-active-class="is-active">
               Ecosystem
             </nuxt-link>
           </div>
