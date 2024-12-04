@@ -2,7 +2,7 @@ use crate::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use effect_common::cpi;
 use effect_common::{
-    constants::{EFX_DECIMALS, SECONDS_PER_DAY, UNSTAKE_DELAY_DAYS},
+    constants::{SECONDS_PER_DAY, UNSTAKE_DELAY_DAYS},
     id::REWARDS_PROGRAM,
 };
 use effect_vesting::{cpi::accounts::Open, program::EffectVesting};

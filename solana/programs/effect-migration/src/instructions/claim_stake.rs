@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use effect_common::constants::{self};
 use effect_staking::{cpi::accounts::GenesisStake, program::EffectStaking, StakeAccount};
 
 use crate::{errors::MigrationError, utils::verify_claim, vault_seed, ClaimAccount, ClaimType};

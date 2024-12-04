@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use effect_common::constants::{XEFX_DIV, XEFX_PRECISION};
 
 #[account]
 pub struct SettingsAccount {

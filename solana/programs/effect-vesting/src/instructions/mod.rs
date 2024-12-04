@@ -6,7 +6,7 @@ pub mod close;
 pub mod open;
 pub mod update_recipient;
 
-pub use claim_fee::*;
+// pub use claim_fee::*;
 pub use claim_transfer::*;
 pub use close::*;
 pub use open::*;

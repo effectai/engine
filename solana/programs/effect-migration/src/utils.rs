@@ -5,11 +5,11 @@ use anchor_lang::{prelude::Pubkey, solana_program::keccak};
 
 use anchor_lang::{
     prelude::*,
-    solana_program::{secp256k1_recover::{secp256k1_recover, Secp256k1Pubkey}},
+    solana_program::secp256k1_recover::{secp256k1_recover, Secp256k1Pubkey},
 };
 
 use crate::errors::MigrationError;
-use crate::{state::EXPECTED_MESSAGE};
+use crate::state::EXPECTED_MESSAGE;
 
 pub fn keccak256(message: &[u8]) -> [u8; 32] {
     let mut hasher = keccak::Hasher::default();
@@ -92,7 +92,7 @@ pub fn recover_public_key(
 
     return Ok(
         secp256k1_recover(&hashed_message, recovery_id_bytes, signature_bytes)
-            .map_err(|e| MigrationError::InvalidSignature)?,
+            .map_err(|_e| MigrationError::InvalidSignature)?,
     );
 }
 
