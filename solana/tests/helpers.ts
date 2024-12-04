@@ -12,13 +12,6 @@ import type { EffectStaking } from "../target/types/effect_staking.js";
 
 export const SECONDS_PER_DAY = 24 * 60 * 60;
 
-export const useTestContext = () => {
-	const mint = new PublicKey(inject("tokenMint"));
-	const ata = new PublicKey(inject("tokenAccount"));
-
-	return { mint, ata };
-};
-
 export const useStakeTestHelpers = (program: Program<EffectStaking>) => {
 	const useCreateStake = async ({
 		authority,

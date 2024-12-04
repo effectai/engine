@@ -1,33 +1,40 @@
 <template>
     <div class="text-center">
-        <div id="step-content text-center">
-            <UCard v-if="!address" class="flex justify-center flex-col items-center">
-                <h1 class="title">Let’s get started.</h1>
-                <UDivider class="my-3"/>
+        <ClaimProgress  class="my-5" v-motion :initial="{ opacity: 0, scale: 0.7 }" :enter="{ opacity: 1, scale: 1 }"
+            :delay="300" :duration="600" />
 
-                <p class="text-center text-lg"> First, connect the <u>Solana account</u> where you’d like to receive your Effect
-                    tokens airdropped.</p>
-
-                <div class="flex gap-5 mt-10 justify-center items-center text-black-500 underline text-sm">
-                    <ClientOnly><WalletMultiButton /></ClientOnly>
-                    <nuxt-link color="black"> I don't have a solana account</nuxt-link>
+        <div v-motion :initial="{ opacity: 0, scale: 0.7 }" :enter="{ opacity: 1, scale: 1 }" :delay="0"
+            :duration="600">
+            <UCard class="w-full">
+                <template #header>
+                    <h2 class="title">Connect Solana Wallet</h2>
+                </template>
+                <div class="w-full">
+                    <div v-if="!address">
+                        <p class="text-center text-lg"> First, connect the <u>Solana wallet</u> on which you’d like to
+                            receive
+                            your claimed
+                            tokens.</p>
+                        <div class="flex gap-5 mt-10 justify-center items-center text-black-500 underline text-sm">
+                            <ClientOnly>
+                                <WalletMultiButton />
+                            </ClientOnly>
+                            <nuxt-link color="black"> I don't have a solana account</nuxt-link>
+                        </div>
+                    </div>
+                    <div v-else>
+                        <WalletCard v-if="address && walletMeta" :walletMeta="walletMeta" chain="solana"
+                            :balance-query="useGetBalanceQuery" :efx-balance-query="useGetEfxBalanceQuery"
+                            :address="address" @disconnect="disconnect">
+                            <template #action>
+                                <SolanaExplorerButton type="account" :hash="address" />
+                                <UButton color="black" @click="nextStep" class="flex-grow justify-center flex">
+                                    Yes, use this wallet
+                                </UButton>
+                            </template>
+                        </WalletCard>
+                    </div>
                 </div>
-            </UCard>
-
-            <UCard v-else class="">
-                <WalletCard v-if="address && walletMeta"
-                :walletMeta="walletMeta"
-                chain="solana"
-                :balance-query="useGetBalanceQuery"
-                :efx-balance-query="useGetEfxBalanceQuery"
-                :address="address" @disconnect="disconnect">
-                    <template #action>
-                        <SolanaExplorerButton type="account" :hash="address" />
-                        <UButton color="black" @click="nextStep" class="flex-grow justify-center flex">
-                            Next
-                        </UButton>
-                    </template>
-                </WalletCard>
             </UCard>
         </div>
     </div>

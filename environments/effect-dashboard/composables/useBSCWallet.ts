@@ -38,7 +38,7 @@ export const useBscWallet = (): SourceWalletAdapter => {
 
 				return {
 					symbol: "BNB",
-					value: Number(balance.value),
+					value: Number(balance.formatted),
 				};
 			},
 		});
@@ -59,7 +59,7 @@ export const useBscWallet = (): SourceWalletAdapter => {
 
 				return {
 					symbol: "EFX",
-					value: Number(balance.value),
+					value: Number(balance.formatted),
 				};
 			},
 		});

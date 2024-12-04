@@ -1,36 +1,44 @@
 <template>
-    <UCard class="text-center">
-        <h2 class="title">Verify Ownership</h2>
-        <UDivider class="my-3"/>
-        <p class="text-lg mt-8 mb-12">
-            To claim your new EFFECT tokens on Solana, you’ll need to verify ownership of your BSC or EOS account that
-            held or staked EFX tokens on {{ snapshotDate.toLocaleString() }}.
-            You can repeat this process for every account you own with EFX holdings.
-        </p>
+    <div class="text-center">
+        <ClaimProgress class="my-5" v-motion :initial="{ opacity: 0, scale: 0.7 }" :enter="{ opacity: 1, scale: 1 }"
+            :delay="300" :duration="600" />
 
-        <div v-if="!isConnected" class="gap-5 flex justify-center mt-6 items-center">
-            <UButton @click="connectEos()" color="black" variant="outline">
-                <span class="w-3">
-                    <img src="@/assets/img/eos-logo.svg" alt="EOS" />
-                </span>
-                EOS Account
-            </UButton>
-            <ConnectBscModal />
-        </div>
-        <div v-else-if="isConnected">
-            <WalletCard v-if="connectedAddress && connectedWalletMeta" :chain="chain" :walletMeta="connectedWalletMeta"
-                :address="connectedAddress" :balanceQuery="balanceQuery" :efxBalanceQuery="efxBalanceQuery"
-                @disconnect="disconnect">
-                <template #action>
-                    <div class="flex justify-center text-center items-center w-full mt-5">
-                        <UButton @click="authorize" color="black">
-                            Verify Ownership
-                        </UButton>
-                    </div>
-                </template>
-            </WalletCard>
-        </div>
-    </UCard>
+        <UCard v-motion :initial="{ opacity: 0, scale: 0.7 }" :enter="{ opacity: 1, scale: 1 }" :delay="0"
+            :duration="600">
+            <h2 class="title">Verify Ownership</h2>
+            <UDivider class="my-3" />
+            <p class="text-lg mt-8 mb-12">
+                To claim your new EFFECT tokens on Solana, you’ll need to <u>verify ownership</u> of a <b>BSC</b> or
+                <b>EOS</b> account
+                that
+                held or staked EFX tokens on <u>{{ snapshotDate.toLocaleString() }}</u>.
+                You can repeat this process for every account you own with EFX holdings.
+            </p>
+
+            <div v-if="!isConnected" class="gap-5 flex justify-center mt-6 items-center">
+                <UButton  v-motion-fade-visible @click="connectEos()" color="black" variant="outline">
+                    <span class="w-3">
+                        <img src="@/assets/img/eos-logo.svg" alt="EOS" />
+                    </span>
+                    EOS Account
+                </UButton>
+                <ConnectBscModal  v-motion-fade-visible />
+            </div>
+            <div v-else-if="isConnected">
+                <WalletCard v-if="connectedAddress && connectedWalletMeta" :chain="chain"
+                    :walletMeta="connectedWalletMeta" :address="connectedAddress" :balanceQuery="balanceQuery"
+                    :efxBalanceQuery="efxBalanceQuery" @disconnect="disconnect">
+                    <template #action>
+                        <div class="flex justify-center text-center items-center w-full mt-5">
+                            <UButton @click="authorize" color="black">
+                                Verify ownership
+                            </UButton>
+                        </div>
+                    </template>
+                </WalletCard>
+            </div>
+        </UCard>
+    </div>
 </template>
 
 <script setup lang="ts">

@@ -23,18 +23,18 @@ const useSteps = () => {
 
 	const steps = ref([
 		{
-			name: "Select Solana Wallet",
+			name: "1. Select Solana Wallet",
 			href: "/migrate/step/connect",
 			completed: computed(() => !!publicKey.value),
 		},
 		{
-			name: "Verify Ownership",
+			name: "2. Verify Ownership",
 			href: "/migrate/step/verify",
 			completed: computed(() => !!canClaim.value),
 			disabled: computed(() => !publicKey.value),
 		},
 		{
-			name: "Claim Tokens",
+			name: "3. Claim Tokens",
 			href: "/migrate/step/claim",
 			completed: false,
 			disabled: computed(() => !canClaim.value),

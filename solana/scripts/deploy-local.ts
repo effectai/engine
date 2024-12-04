@@ -114,7 +114,7 @@ const seed = async () => {
 		payerTokens: ata,
 	});
 
-	const dateOneYearAgo = new Date().getTime() - 365 * 24 * 60 * 60 * 1000;
+	const dateOneYearAgo = new Date().getTime() / 1000 - 365 * 24 * 60 * 60;
 
 	await createMigrationClaim({
 		type: 'stake',

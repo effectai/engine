@@ -19,7 +19,9 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-400">Stake Age</p>
-                        <p class="text-2xl font-bold">{{ (stakeAge).toFixed(4) }}</p>
+                        <AnimatedNumber easing="easeInOutCubic" :value="stakeAge" class="text-2xl font-bold flex">{{ (stakeAge).toFixed(4) }}
+                            <div class="text-sm text-gray-400 items-end self-end">(+1 per second)</div>
+                        </AnimatedNumber>
                     </div>
                 </div>
             </div>
@@ -65,13 +67,13 @@ const { data: stakeAccount, unstakeDays, amountFormatted: stakeAmount } = useGet
 const stakeAge = computed(() => {
     if (!stakeAccount.value?.account.stakeStartTime) return 0;
     const time = currentTime.value - stakeAccount.value.account.stakeStartTime.toNumber()
-    return time / 86400;
+    return time;
 });
 const currentTime = ref(new Date().getTime() / 1000);
 onMounted(() => {
     const interval = setInterval(() => {
-        currentTime.value = new Date().getTime() / 1000;
-    }, 1000);
+        currentTime.value = new Date().getTime() / 1000
+    }, 5000);
 
     onUnmounted(() => clearInterval(interval));
 });

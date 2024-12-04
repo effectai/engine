@@ -32,7 +32,7 @@
         </div>
         <div class="flex items-center justify-between">
           <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Address:</span>
-          <BlockchainAddress :address="address" />
+          <BlockchainAddress class="text-sm" :address="address" />
         </div>
         <div class="flex items-center justify-between">
           <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{balance?.symbol}} Balance:</span>

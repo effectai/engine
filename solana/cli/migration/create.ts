@@ -1,9 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
-import { type EffectMigration, EffectMigrationIdl } from "@effectai/shared";
 import { createMigrationClaim } from "../../utils/migration";
+import EffectMigrationIdl from '../../target/idl/effect_migration.json'
 import { toBytes } from "viem";
 import {
-	createAssociatedTokenAccount,
 	getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
@@ -15,6 +14,7 @@ import {
 	extractEosPublicKeyBytes,
 	extractKeyFromEosUsername,
 } from "@effectai/utils";
+import type { EffectMigration } from "../../target/types/effect_migration";
 
 interface MigrationClaimOptions {
 	mint: string;

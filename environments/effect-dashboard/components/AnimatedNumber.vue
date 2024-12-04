@@ -1,5 +1,5 @@
 <template>
-    <span>
+    <span :class="{ shake : isAnimating}">
         {{ animatedValue }}
     </span>
 </template>
@@ -25,6 +25,7 @@ const props = defineProps({
 })
 
 const animatedValue = ref(props.value)
+const isAnimating = ref(false)
 
 watch(() => props.value, (newValue, oldValue) => {
     if (newValue !== oldValue) {
@@ -37,15 +38,17 @@ onMounted(() => {
 })
 
 const animateValue = (start: number, end: number) => {
-    console.log("Animating value from", start, "to", end, "with duration", props.duration)
     let startTimestamp: number | null = null
     const step = (timestamp: number) => {
         if (!startTimestamp) startTimestamp = timestamp
         const progress = Math.min((timestamp - startTimestamp) / props.duration, 1)
-        animatedValue.value = props.format(start + (end - start) * easing(progress))
+        const easedProgress = easing(progress)
+
+        animatedValue.value = props.format(start + (end - start) * easedProgress)
+
         if (progress < 1) {
             window.requestAnimationFrame(step)
-        }
+        } 
     }
     window.requestAnimationFrame(step)
 }

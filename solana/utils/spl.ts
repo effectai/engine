@@ -14,7 +14,7 @@ import {
 	createMintToInstruction,
 } from "@solana/spl-token";
 import type { Provider } from "@coral-xyz/anchor";
-
+import { createKeypairFromFile } from "@effectai/utils";
 
 export const setup = async ({payer, provider, amount} : {
     payer: Keypair;
@@ -23,7 +23,10 @@ export const setup = async ({payer, provider, amount} : {
 }) => {
     const connection = new Connection('http://localhost:8899');
 	// create spl token mint
+	const mintKeypair = await createKeypairFromFile('./tests/keys/mintTrhsrzTrrZo2kMJ7FKcJ9HCdRN8nadzKJFi9f4r.json')
+
 	const mint = await createMint({
+		mint: mintKeypair,
         connection,
         payer,
         decimals: 6,
@@ -37,8 +40,7 @@ export const setup = async ({payer, provider, amount} : {
         mint,
         owner: payer.publicKey,
         provider,
-    }
-	);
+	});
 
 	// mint some tokens to the associated token account
 	await mintToAccount({
@@ -71,14 +73,15 @@ export async function createMint({
 	mintAuthority,
 	decimals,
 	provider,
+	mint,
 }: {
+	mint: Keypair;
 	connection: Connection;
 	payer: Keypair;
 	mintAuthority: PublicKey;
 	decimals: number;
 	provider: Provider;
 }): Promise<PublicKey> {
-	const mint = Keypair.generate();
 	const lamports = await connection.getMinimumBalanceForRentExemption(
 		MintLayout.span,
 	);
