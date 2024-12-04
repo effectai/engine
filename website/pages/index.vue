@@ -51,7 +51,7 @@
         <div class="columns">
             <div class="column m-5 box is-radius-medium" style="background-image: url(./img/hero-background.png);">
                 <div>
-                    <p class="is-size-2 has-text-weight-medium has-text-left has-text-black">Complete Tasks</p>
+                    <p class="is-size-2 has-text-weight-medium has-text-left">Complete Tasks</p>
                     <p class="is-size-5 has-text-weight-normal has-text-left">Complete tasks and earn EFX directly to your wallet.</p>
                     <div class="mt-5 has-text-left">
                         <nuxt-link to="https://app.effect.ai/" exact-active-class="is-active">
@@ -111,31 +111,38 @@
         <template #header>
             <p>Effect AI: Plans for 2024</p>
         </template>
-        <p>
-            Today, we're thrilled to bring forward the plans that Effect AI has in store for 2024. 
-            This year is bound to be a transformative one for Effect AI, as some of the most exciting 
-            and groundbreaking updates...
-        </p>
+        <template #content>
+            <p>
+                Today, we're thrilled to bring forward the plans that Effect AI has in store for 2024. 
+                This year is bound to be a transformative one for Effect AI, as some of the most exciting 
+                and groundbreaking updates...
+            </p>
+        </template>
     </NewsCard>
 
     <NewsCard>
         <template #header>
             <p>Tech Blog: On-Chain Microtasks</p>
         </template>
-        <p>
-            In this article, we’ll take a look at Effect Force’s new task creation mechanism. 
-            This technology makes it simple for people and businesses to add microtasks to the blockchain.
-        </p>
+        <template #content>
+            <p>
+                In this article, we’ll take a look at Effect Force’s new task creation mechanism. 
+                This technology makes it simple for people and businesses to add microtasks to the blockchain.
+            </p>
+        </template>
+        
     </NewsCard>
 
     <NewsCard>
         <template #header>
             <p>The Effect DAO: Effect Staking Protocol 2.0</p>
         </template>
-        <p>
-            By staking EFX, holders can improve their rank in The Effect DAO. Achieving a high rank 
-            has many benefits like vote casting, fee reward collection, and gaining privileges on the dApp level.
-        </p>
+        <template #content>
+            <p>
+                By staking EFX, holders can improve their rank in The Effect DAO. Achieving a high rank 
+                has many benefits like vote casting, fee reward collection, and gaining privileges on the dApp level.
+            </p>
+        </template>
     </NewsCard>
 
     <!-- <SimpleSection class="container">

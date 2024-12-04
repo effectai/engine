@@ -1,6 +1,6 @@
 <template>
   <section
-    class="section container"
+    class="section container box"
   >
       <div class="columns is-6">
           <div class="column is-5">
@@ -11,7 +11,7 @@
                 <slot name="header"></slot>
               </p>
               <p class="has-text-weight-normal is-size-5 has-text-left has-text-centered-mobile">
-                  <slot></slot>
+                  <slot name="content"></slot>
               </p> 
           </div>
       </div>
