@@ -6,11 +6,11 @@ export const sliceBoth = (str: string) => {
 	return `${str.slice(0, 6)}...${str.slice(-6)}`;
 };
 
-export const amountToBalance = (amount: BN) => {
+export const formatAmountToBalance = (amount: BN) => {
 	return amount.toNumber() / 10 ** 6;
 };
 
-export const balanceToAmount = (balance: number): BN => {
+export const formatBalanceToAmount = (balance: number): BN => {
 	return new BN(balance * 10 ** 6);
 };
 
