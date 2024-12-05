@@ -26,10 +26,6 @@ pub struct Unstake<'info> {
 
     /// CHECK:: checked in ix body
     #[account(mut)]
-    pub vesting_account_unchecked: UncheckedAccount<'info>,
-
-    /// CHECK:: checked in ix body
-    #[account(mut)]
     pub reward_account: UncheckedAccount<'info>,
 
     /// CHECK:: checked in ix body
@@ -50,12 +46,12 @@ impl<'info> Unstake<'info> {
     pub fn handler(&mut self, amount: u64) -> Result<()> {
         // derive reward account
         let (reward_account, _) = Pubkey::find_program_address(
-            &[b"rewards", self.stake.authority.as_ref()],
+            &[self.stake.key().as_ref()],
             &REWARDS_PROGRAM,
         );
 
         // make sure reward account is belonging to this stake account is closed/empty/doesnt exist
-        if self.reward_account.key() != reward_account && !self.reward_account.data_is_empty() {
+        if self.reward_account.key() != reward_account || !self.reward_account.data_is_empty() {
             return Err(StakingErrors::InvalidRewardAccount.into());
         }
 

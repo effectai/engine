@@ -16,7 +16,7 @@ pub struct Enter<'info> {
         init,
         payer = authority,
         space = RewardAccount::SIZE,
-        seeds = [ b"rewards", authority.key().as_ref() ],
+        seeds = [ stake.key().as_ref() ],
         bump,
     )]
     pub reward: Account<'info, RewardAccount>,

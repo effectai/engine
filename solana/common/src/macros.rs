@@ -75,7 +75,7 @@ macro_rules! open_vesting {
                 $accounts.vesting_program.to_account_info(),
                 Open {
                     authority: $accounts.authority.to_account_info(),
-                    vesting_account: $accounts.vesting_account_unchecked.to_account_info(),
+                    vesting_account: $accounts.vesting_account.to_account_info(),
                     recipient_token_account: $accounts.recipient_token_account.to_account_info(),
                     vault_token_account: $accounts.vesting_vault_account.to_account_info(),
                     system_program: $accounts.system_program.to_account_info(),
