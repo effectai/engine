@@ -1,0 +1,30 @@
+<template>
+    <UCard v-if="!address">
+        <div class="text-center space-y-2">
+            <h2 class="text-4xl">Hello There 👋</h2>
+            <h1 class="text-2xl">Please connect your solana wallet.</h1>
+        </div>
+        <ClientOnly>
+            <WalletMultiButton />
+        </ClientOnly>
+    </UCard>
+    <UCard v-else>
+        <template #header>
+            <h1 class="text-2xl">Vesting</h1>
+        </template>
+        <div>
+            <VestingScheduleItem v-for="account in vestingAccounts" :vesting-account="account"/>
+        </div>
+    </UCard>
+</template>
+
+<script setup lang="ts">
+import { WalletMultiButton } from 'solana-wallets-vue';
+const { address } = useSolanaWallet()
+
+const {useGetVestingAccounts} = useVestingProgram()
+const {data: vestingAccounts} = useGetVestingAccounts()
+
+</script>
+
+<style scoped></style>

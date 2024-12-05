@@ -4,20 +4,18 @@ import * as anchor from "@coral-xyz/anchor";
 import type { Program, Idl } from "@coral-xyz/anchor";
 import { useMutation, useQuery } from "@tanstack/vue-query";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import {
-	EffectVestingIdl,
-	type EffectVesting,
-} from "@effectai/shared";
+import { EffectVestingIdl, type EffectVesting } from "@effectai/shared";
+
+export type EffectVestingProgramAccounts = anchor.IdlAccounts<EffectVesting>;
+export type VestingAccount = anchor.ProgramAccount<
+	EffectVestingProgramAccounts["vestingAccount"]
+>;
 
 export const useVestingProgram = () => {
 	const appConfig = useRuntimeConfig();
 	const { publicKey } = useWallet();
 	const { provider } = useAnchorProvider();
 	const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
-	
-	type VestingAccount = Awaited<
-		ReturnType<typeof vestingProgram.account.vestingAccount.fetch>
-	>;
 
 	const vestingProgram = new anchor.Program(
 		EffectVestingIdl as Idl,
@@ -65,7 +63,7 @@ export const useVestingProgram = () => {
 					.accounts({
 						vestingAccount: address,
 						authority: publicKey.value,
-						vaultTokenAccount: vestingAccount.vaultTokenAccount,
+						vaultTokenAccount: vestingAccount.account.vaultTokenAccount,
 					})
 					.rpc();
 			},
@@ -73,7 +71,7 @@ export const useVestingProgram = () => {
 	};
 
 	return {
-        useClaim,
+		useClaim,
 		useGetVestingAccounts,
 		vestingProgram,
 	};

@@ -27,6 +27,7 @@ const navigation = ref([
     // { name: 'Dashboard', href: '/', icon: 'lucide:home', current: computed(() => route.path === '/') },
     { name: 'Stake', href: '/stake', icon: 'lucide:wallet', current: computed(() => route.path.includes('/stake')) },
     { name: 'Migrate', href: '/migrate/step/connect', icon: 'lucide:forward', current: computed(() => route.path.includes('migrate')) },
+    { name: 'Vesting', href: '/vesting', icon: 'lucide:clock', current: computed(() => route.path.includes('vesting')) },
 ])
 </script>
 

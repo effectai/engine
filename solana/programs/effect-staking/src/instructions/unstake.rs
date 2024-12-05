@@ -71,7 +71,7 @@ impl<'info> Unstake<'info> {
         // open a vesting account
         let now: i64 = Clock::get()?.unix_timestamp;
         let start_time = now + UNSTAKE_DELAY_DAYS as i64 * SECONDS_PER_DAY as i64;
-        open_vesting!(self, &[&vault_seed!(self.stake.key())], release_rate, start_time, 0, true)?;
+        open_vesting!(self, &[&vault_seed!(self.stake.key())], release_rate, start_time, 0, false)?;
 
         // transfer tokens from stake vault to the vesting vault
         transfer_tokens_from_vault!(self, vesting_vault_account, &[&vault_seed!(self.stake.key())], amount)?;

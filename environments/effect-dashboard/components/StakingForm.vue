@@ -19,9 +19,8 @@
 						<div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span>30
 								Days</span></div>
 					</div>
-					<UButton
-					:loading="isPending"
-					@click="handleSubmit" color="white" class="flex justify-center w-full">Stake</UButton>
+					<UButton :loading="isPending" @click="handleSubmit" color="white"
+						class="flex justify-center w-full">Stake</UButton>
 				</div>
 			</div>
 		</form>

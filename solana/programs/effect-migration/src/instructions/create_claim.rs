@@ -11,9 +11,9 @@ pub struct CreateClaim<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + // Anchor's account discriminator
+        space = 8 + // discriminator
         4 + 32 +  // Vec<u8> for foreign_public_key (4 bytes for length + max length)
-        1 + 8, // Discriminant (1 byte) + largest variant (Stake: 8 bytes for i64)
+        1 + 8, // discriminator (1 byte) + largest variant (Stake: 8 bytes for i64)
     )]
     pub claim_account: Account<'info, ClaimAccount>,
 

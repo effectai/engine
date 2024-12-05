@@ -9,11 +9,11 @@
                 <div class="flex gap-1 text-sm text-gray-400">
                     <span>
                         Starts on:
-                        {{ new Date(vestingAccount.startTime.toNumber() * 1000).toLocaleString() }}</span>
+                        {{ new Date(vestingAccount.account.startTime.toNumber() * 1000).toLocaleString() }}</span>
                 </div>
             </div>
             <div class="flex flex-col items-end gap-2">
-                <UBadge v-if="!scheduleStarted(vestingAccount.startTime)" color="gray" variant="outline">
+                <UBadge v-if="!scheduleStarted(vestingAccount.account.startTime)" color="gray" variant="outline">
                     Locked
                 </UBadge>
                 <UButton v-else-if="amountDue" color="gray" variant="solid" size="sm" icon="i-heroicons-gift"
@@ -35,15 +35,12 @@ import type { PublicKey } from '@solana/web3.js';
 
 const { vestingProgram, useClaim } = useVestingProgram()
 
-type VestingAccount = Awaited<ReturnType<typeof vestingProgram.account.vestingAccount.fetch>>
-
 const props = defineProps<{
-    address: PublicKey,
     vestingAccount: VestingAccount
 }>()
 
 const { useGetTokenAccountBalanceQuery } = useSolanaWallet()
-const { data: balance } = useGetTokenAccountBalanceQuery(props.vestingAccount.vaultTokenAccount)
+const { data: balance } = useGetTokenAccountBalanceQuery(props.vestingAccount.account.vaultTokenAccount)
 
 const scheduleStarted = (timestamp: BN) => {
     return Date.now() > timestamp.toNumber() * 1000
@@ -51,15 +48,15 @@ const scheduleStarted = (timestamp: BN) => {
 
 const { mutateAsync: claim } = useClaim()
 const claimTokens = async () => {
-    await claim({ address: props.address, vestingAccount: props.vestingAccount })
+    await claim({ address: props.vestingAccount.publicKey, vestingAccount: props.vestingAccount })
 }
 
 const amountDue = computed(() => {
     if (!balance.value) return 0
     return new BN(calculateDue(
-        props.vestingAccount.startTime.toNumber(),
-        props.vestingAccount.releaseRate.toNumber(),
-        props.vestingAccount.distributedTokens.toNumber(),
+        props.vestingAccount.account.startTime.toNumber(),
+        props.vestingAccount.account.releaseRate.toNumber(),
+        props.vestingAccount.account.distributedTokens.toNumber(),
         balance.value.value
     ))
 })
