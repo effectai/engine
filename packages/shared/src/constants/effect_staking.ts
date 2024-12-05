@@ -280,10 +280,6 @@ export const effect_staking = {
           "signer": true
         },
         {
-          "name": "vesting_account_unchecked",
-          "writable": true
-        },
-        {
           "name": "reward_account",
           "writable": true
         },

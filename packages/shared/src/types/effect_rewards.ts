@@ -178,20 +178,8 @@ export type EffectRewards = {
           "pda": {
             "seeds": [
               {
-                "kind": "const",
-                "value": [
-                  114,
-                  101,
-                  119,
-                  97,
-                  114,
-                  100,
-                  115
-                ]
-              },
-              {
                 "kind": "account",
-                "path": "authority"
+                "path": "stake"
               }
             ]
           }

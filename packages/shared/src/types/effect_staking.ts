@@ -286,10 +286,6 @@ export type EffectStaking = {
           "signer": true
         },
         {
-          "name": "vestingAccountUnchecked",
-          "writable": true
-        },
-        {
           "name": "rewardAccount",
           "writable": true
         },

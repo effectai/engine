@@ -39,14 +39,14 @@ export const useDeriveVestingAccounts = ({
 };
 
 export const useDeriveRewardAccounts = ({
-	authority,
+	stakingAccount,
 	programId
 }: {
 	programId: PublicKey;
-	authority: PublicKey;
+	stakingAccount: PublicKey;
 }) => {
 	const [rewardAccount] = PublicKey.findProgramAddressSync(
-		[Buffer.from("rewards"), authority.toBuffer()],
+		[stakingAccount.toBuffer()],
 		programId,
 	);
 
