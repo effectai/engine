@@ -19,10 +19,6 @@ published: true
 
 ## Effect AI: Migration Snapshot Announcement
 
-
-
-## New architecture
-
 Effect Force’s mission is to deliver high-quality annotated datasets. Requesters (clients) can submit their dataset to the platform along with an EFX payment and receive an annotated dataset in exchange.
 
 Tasks and submissions are the two most essential components of Effect Force. A task is a single datapoint that a requester adds. A submission is a single annotation made by a worker. When initiating a task, requesters must place the needed EFX in escrow to ensure payment to workers. Additionally, workers must have relevant qualifications before starting to work on a task.

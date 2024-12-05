@@ -150,7 +150,7 @@
             <div class="columns">
                 <div class="column is-three-quarters is-three-quarters-tablet is-three-quarters-desktop">
                     <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left">
-                        Harmonizing AI with Humanity: Empowering Tomorrow's Workforce Together
+                        Explore the Frontier  of AI Excellence within the Effect AI Ecosystem
                     </h1>
                 </div>
                 <div class="column is-flex is-align-items-center is-justify-content-right">
