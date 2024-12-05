@@ -2,12 +2,20 @@
     <div>
         <HeroSection id="main-hero" style="background-image: url(./img/hero-background.png);">
             <template #title>
-                <h1 v-motion-pop-visible-once :delay="150"
+                <h1
                     class="title hero-title has-text-weight-normal is-auto-phrase">
-                    Handcrafted Data for Artificial Intelligence.
+                    <span v-motion-pop :delay="250">
+                        Unleashing
+                    </span>
+                    <span  v-motion-pop :delay="500">
+                        Decentralized
+                    </span>
+                    <span  v-motion-pop :delay="800">
+                      Intelligence
+                    </span>
                 </h1>
                 <div class="is-flex mb-6 mt-2 is-very-small">
-                    <nuxt-link :delay="250" v-motion-pop-visible-once to="https://github.com/effectai" class="">
+                    <nuxt-link :delay="1250" v-motion-pop-visible-once to="https://github.com/effectai" class="">
                         <div class="control">
                             <div class="tags has-addons">
                                 <span class="tag is-primary has-text-white is-very-small"> open source</span>
@@ -18,7 +26,7 @@
                         </div>
                     </nuxt-link>
 
-                    <nuxt-link v-motion-pop-visible-once :delay="400"
+                    <nuxt-link v-motion-pop-visible-once :delay="1500"
                         to="https://github.com/effectai/effect-network/blob/master/LICENSE" style="font-size: 10px"
                         class="badge mx-2">
                         <div class="control">
@@ -33,17 +41,15 @@
             </template>
 
             <template #subtitle>
-                <p v-motion-slide-visible-once-left class="subtitle mb-5">
+                <p v-motion-slide-visible-once-left :delay="1800" class="subtitle mb-5">
                     <span class="pr-6">
-                        Effect AI is the data network for training next-gen transparent AI
-                        models. <br> Join the workforce by collecting and enriching datasets and
-                        get paid instantly.
+                        Effect Task Protocol™ is a decentralized P2P Network used to turbocharge human-driven AI tasks. Worker nodes, manager nodes, provider nodes—plug in, get tasks done, and thrive in a trustless network.
                     </span>
                 </p>
             </template>
 
             <template #footer>
-                <div :delay="600" v-motion-slide-visible-once-left
+                <div :delay="1900" v-motion-slide-visible-once-left
                     class="is-flex is-size-3 is-align-items-center is-primary has-text-primary is-in-front">
                     <div class="columns is-mobile is-vcentered ">
                         <div class="column">
