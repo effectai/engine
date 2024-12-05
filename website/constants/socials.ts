@@ -44,6 +44,6 @@ export const reddit = {
     activeMembers: 3082,
   };
   
-  export const socials = [github, twitter, discord, telegram];
+  export const socials = [github, twitter, telegram];
   
   export const communities = [reddit, discord, telegram];

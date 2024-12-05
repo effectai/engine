@@ -1,6 +1,6 @@
 <template>
     <div>
-        <HeroSection id="main-hero" style="min-height: 700px; background-image: url(./img/hero-background.png);">
+        <HeroSection id="main-hero" style="background-image: url(./img/hero-background.png);">
             <template #title>
                 <h1 v-motion-pop-visible-once :delay="150"
                     class="title hero-title has-text-weight-normal is-auto-phrase">
@@ -45,7 +45,7 @@
             <template #footer>
                 <div :delay="600" v-motion-slide-visible-once-left
                     class="is-flex is-size-3 is-align-items-center is-primary has-text-primary is-in-front">
-                    <div class="columns is-mobile is-vcentered">
+                    <div class="columns is-mobile is-vcentered ">
                         <div class="column">
                             <div class="">
                                 <nuxt-link class="is-flex" to="https://app.effect.ai/" exact-active-class="is-active">
@@ -54,7 +54,7 @@
 
                             </div>
                         </div>
-                        <div class="column is-full ">
+                        <div class="column">
                             <SocialBar class="p-0" :socials="socials"></SocialBar>
                         </div>
                     </div>
@@ -62,52 +62,6 @@
             </template>
         </HeroSection>
     </div>
-
-    <!-- <SimpleSection :centered="true">
-      <template #subtitle>
-        <div class="columns">
-            <div class="column">
-                <p class="is-size-5 has-text-weight-normal has-text-left">Effect Workforce</p>
-            </div>
-            <div class="column">
-                <p class="is-size-3 has-text-left has-text-weight-medium">
-                    In this dynamic ecosystem, every action you take fuels the evolution of AI, 
-                    driving progress and pushing boundaries. With each dataset you enhance, you're not just earning rewards 
-                </p>
-                <p class="is-size-3 has-text-left has-text-weight-medium"> — you're shaping the future of technology.</p>
-            </div>
-        </div>
-      </template>
-    </SimpleSection> -->
-
-    <!-- <SimpleSection :centered="true">
-      <template #subtitle>
-        <div class="columns">
-            <div class="column m-5 box is-radius-medium" style="background-image: url(./img/hero-background.png);">
-                <div>
-                    <p class="is-size-2 has-text-weight-medium has-text-left">Complete Tasks</p>
-                    <p class="is-size-5 has-text-weight-normal has-text-left">Complete tasks and earn EFX directly to your wallet.</p>
-                    <div class="mt-5 has-text-left">
-                        <nuxt-link to="https://app.effect.ai/" exact-active-class="is-active">
-                            <Button text="Join the Workforce"/>
-                        </nuxt-link>
-                    </div>
-                </div>
-            </div>
-            <div class="column m-5 box is-radius-medium" style="background-image: url(./img/hero-background.png);">
-                <div>
-                    <p class="is-size-2 has-text-weight-medium has-text-left has-text-black">Create Tasks</p>
-                    <p class="is-size-5 has-text-weight-normal has-text-left">Access a global, on-demand, 24x7 scalable work force.</p>
-                    <div class="mt-5 has-text-left">
-                        <nuxt-link to="https://app.effect.ai/" exact-active-class="is-active">
-                            <Button text="Create a Task"/>
-                        </nuxt-link>
-                    </div>
-                </div>
-            </div>
-        </div>
-      </template>
-    </SimpleSection> -->
 
     <SimpleSection class="has-text-white has-background-black">
         <template #subtitle>
@@ -150,7 +104,7 @@
             <div class="columns">
                 <div class="column is-three-quarters is-three-quarters-tablet is-three-quarters-desktop">
                     <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left">
-                        Explore the Frontier  of AI Excellence within the Effect AI Ecosystem
+                        Explore the Frontier of AI Excellence within the Effect AI Ecosystem
                     </h1>
                 </div>
                 <div class="column is-flex is-align-items-center is-justify-content-right">
@@ -198,12 +152,6 @@
 
 </template>
 
-<style lang="scss" scoped>
-#main-hero {
-    background-size: cover;
-    padding-top: 5rem;
-}
-</style>
 
 <script setup lang="ts">
 import { socials } from '~/constants/socials';
@@ -221,3 +169,20 @@ const { data: news } = await useAsyncData("news", async () => {
     });
 });
 </script>
+
+<style lang="scss" scoped>
+#main-hero {
+    background-size: cover;
+    padding-top: 5rem;
+}
+
+.subtitle {
+    font-family: Inter;
+    font-weight: 400;
+    line-height: 28px;
+    letter-spacing: -0.02em;
+    text-align: left;
+    text-underline-position: from-font;
+    text-decoration-skip-ink: none;
+}
+</style>

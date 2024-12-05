@@ -3,6 +3,8 @@
     $primary: #000000,
 );
 
+@use "bulma/sass/utilities/mixins";
+
 $nav-background: rgba(255, 255, 255, 0.561);
 $title-weight: 400;
 $title-size: 5rem;
@@ -19,6 +21,9 @@ $title-size: 5rem;
 }
 
 .hero-title{
+    @include mixins.mobile {
+        font-size: 3rem;
+    }
     font-size: $title-size;
 }
 
