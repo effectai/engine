@@ -32,11 +32,10 @@ export const createMigrationClaim = async <
 			.createTokenClaim(Buffer.from(publicKey), new BN(amount))
 			.accounts({
 				claimAccount: claimAccount.publicKey,
-				payer: payer.publicKey,
 				payerTokens,
 				mint,
 			})
-			.signers([payer, claimAccount])
+			.signers([claimAccount])
 			.rpc();
 	} else {
 		if (!stakeStartTime) {
@@ -51,11 +50,10 @@ export const createMigrationClaim = async <
 			)
 			.accounts({
 				claimAccount: claimAccount.publicKey,
-				payer: payer.publicKey,
 				payerTokens,
 				mint,
 			})
-			.signers([payer, claimAccount])
+			.signers([claimAccount])
 			.rpc();
 	}
 

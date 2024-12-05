@@ -92,8 +92,8 @@ export const createMigrationClaimCommand: CommandModule<
 		let publicKeyBytes = null;
 
 		if (username) {
-			const publicKey = await extractKeyFromEosUsername(username);
-			publicKeyBytes = extractEosPublicKeyBytes(publicKey);
+			const eosPublicKey = await extractKeyFromEosUsername(username);
+			publicKeyBytes = extractEosPublicKeyBytes(eosPublicKey);
 		} else if (publicKey) {
 			publicKeyBytes = toBytes(publicKey);
 		}

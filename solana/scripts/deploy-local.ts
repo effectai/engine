@@ -9,7 +9,7 @@ import type { EffectRewards } from "../target/types/effect_rewards";
 import type { Program } from "@coral-xyz/anchor";
 import { spawn } from "child_process";
 import { BN } from "bn.js";
-import { extractEosPublicKeyBytes, useDeriveMigrationAccounts } from "@effectai/utils";
+import { createKeypairFromFile, extractEosPublicKeyBytes, useDeriveMigrationAccounts } from "@effectai/utils";
 import { program } from "@coral-xyz/anchor/dist/cjs/native/system";
 import { createMigrationClaim } from "../utils/migration";
 import { EffectMigration } from "../target/types/effect_migration";
@@ -68,7 +68,9 @@ const seed = async () => {
 	const wallet = provider.wallet;
 	const payer = (wallet as anchor.Wallet).payer;
 
-	const { mint, ata } = await setup({ payer, provider, amount: 5000_000_000 });
+	const mintKeypair = await createKeypairFromFile("./../tests/keys/mintTrhsrzTrrZo2kMJ7FKcJ9HCdRN8nadzKJFi9f4r.json");
+
+	const { mint, ata } = await setup({ payer, provider, amount: 5000_000_000, mintKeypair });
 
 	// also mint some tokens to the dummy account for staking
 	const dummyAta = await createAssociatedTokenAccount(

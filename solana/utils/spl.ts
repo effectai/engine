@@ -14,19 +14,19 @@ import {
 	createMintToInstruction,
 } from "@solana/spl-token";
 import type { Provider } from "@coral-xyz/anchor";
-import { createKeypairFromFile } from "@effectai/utils";
 
-export const setup = async ({payer, provider, amount} : {
+export const setup = async ({payer, provider, amount, mintKeypair} : {
     payer: Keypair;
     provider: Provider;
 	amount?: number;
+	mintKeypair?: Keypair;
 }) => {
     const connection = new Connection('http://localhost:8899');
-	// create spl token mint
-	const mintKeypair = await createKeypairFromFile('./tests/keys/mintTrhsrzTrrZo2kMJ7FKcJ9HCdRN8nadzKJFi9f4r.json')
+
+	const finalMintKeypair = mintKeypair || Keypair.generate();
 
 	const mint = await createMint({
-		mint: mintKeypair,
+		mint: finalMintKeypair,
         connection,
         payer,
         decimals: 6,
