@@ -8,20 +8,19 @@
   },
   "instructions": [
     {
-      "name": "claim_transfer",
+      "name": "claim",
       "docs": [
-        "Add fees from a [PoolAccount](#pool-account) with claim type [`1`](#claim-type)",
         "Claim emission from a [PoolAccount](#pool-account) with claim type [`0`](#claim-type)"
       ],
       "discriminator": [
-        202,
-        178,
-        58,
-        190,
-        230,
-        234,
-        229,
-        17
+        62,
+        198,
+        214,
+        193,
+        213,
+        159,
+        108,
+        210
       ],
       "accounts": [
         {
@@ -164,14 +163,61 @@
           "type": "i64"
         },
         {
-          "name": "claim_type",
-          "type": "u8"
-        },
-        {
           "name": "is_closable",
           "type": "bool"
+        },
+        {
+          "name": "is_publicly_claimable",
+          "type": "bool"
+        },
+        {
+          "name": "tag",
+          "type": {
+            "option": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
+          }
         }
       ]
+    },
+    {
+      "name": "update_authority",
+      "discriminator": [
+        32,
+        46,
+        64,
+        28,
+        149,
+        75,
+        243,
+        88
+      ],
+      "accounts": [
+        {
+          "name": "new_authority",
+          "writable": true
+        },
+        {
+          "name": "vesting_account",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "vesting_account"
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
     },
     {
       "name": "update_recipient",
@@ -275,9 +321,6 @@
   "types": [
     {
       "name": "VestingAccount",
-      "docs": [
-        "The `VestingAccount` struct holds all the information for any given vest."
-      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -288,10 +331,6 @@
           {
             "name": "recipient_token_account",
             "type": "pubkey"
-          },
-          {
-            "name": "distribution_type",
-            "type": "u8"
           },
           {
             "name": "distributed_tokens",
@@ -314,8 +353,17 @@
             "type": "pubkey"
           },
           {
-            "name": "vault_bump",
-            "type": "u8"
+            "name": "is_publicly_claimable",
+            "type": "bool"
+          },
+          {
+            "name": "tag",
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
           }
         ]
       }

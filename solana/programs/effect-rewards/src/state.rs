@@ -53,8 +53,8 @@ impl ReflectionAccount {
         self.vault_token_account = vault_token_account;
     }
 
-    pub fn add_fee(&mut self, fee: u128) {
-        self.total_xefx += fee;
+    pub fn topup(&mut self, amount: u128) {
+        self.total_xefx += amount;
         self.rate = self.total_reflection / self.total_xefx;
     }
 

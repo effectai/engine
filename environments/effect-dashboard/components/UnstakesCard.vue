@@ -10,8 +10,7 @@
       </template>
       <div class="space-y-4">
         <VestingScheduleItem 
-        :address="account.publicKey"
-        :vesting-account="account.account"
+        :vesting-account="account"
         v-for="(account,i) in vestingSchedules" :key="i" >
         </VestingScheduleItem>
       </div>
@@ -22,7 +21,6 @@
 
 const { useGetVestingAccounts } = useVestingProgram()
 const { data: vestingSchedules } = useGetVestingAccounts() 
-
 
 </script>
 

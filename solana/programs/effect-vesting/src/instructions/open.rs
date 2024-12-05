@@ -36,19 +36,19 @@ impl<'info> Open<'info> {
         &mut self,
         emission: u64,
         start_time: i64,
-        claim_type: u8,
         closeable: bool,
-        vault_bump: u8,
+        is_publicly_claimable: bool,
+        tag: Option<[u8; 8]>,
     ) -> Result<()> {
         self.vesting_account.init(
             self.authority.key(),
             self.recipient_token_account.key(),
-            ClaimType::from(claim_type) as u8,
             closeable,
             emission,
             start_time,
             self.vault_token_account.key(),
-            vault_bump,
+            is_publicly_claimable,
+            tag,
         )
     }
 }

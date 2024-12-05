@@ -9,8 +9,8 @@ use anchor_lang::prelude::*;
 use errors::*;
 use instructions::*;
 use effect_common::*;
-use types::*;
-use state::*;
+pub use state::VestingAccount;
+
 
 declare_id!("GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe");
 
@@ -23,25 +23,21 @@ pub mod effect_vesting {
         ctx: Context<Open>,
         release_rate: u64,
         start_time: i64,
-        claim_type: u8,
         is_closable: bool,
+        is_publicly_claimable: bool,
+        tag: Option<[u8; 8]>,
     ) -> Result<()> {
         ctx.accounts.handler(
             release_rate,
             start_time,
-            claim_type,
             is_closable,
-            ctx.bumps.vault_token_account
+            is_publicly_claimable,
+            tag,
         )
     }
 
-    /// Add fees from a [PoolAccount](#pool-account) with claim type [`1`](#claim-type)
-    // pub fn claim_fee(ctx: Context<ClaimFee>) -> Result<()> {
-    //     ctx.accounts.handler()
-    // }
-
     /// Claim emission from a [PoolAccount](#pool-account) with claim type [`0`](#claim-type)
-    pub fn claim_transfer(ctx: Context<ClaimTransfer>) -> Result<()> {
+    pub fn claim(ctx: Context<Claim>) -> Result<()> {
         ctx.accounts.handler()
     }
 
@@ -52,6 +48,10 @@ pub mod effect_vesting {
 
     /// Update the beneficiary in a [PoolAccount](#pool-account).
     pub fn update_recipient(ctx: Context<UpdateRecipientTokenAccount>) -> Result<()> {
+        ctx.accounts.handler()
+    }
+
+    pub fn update_authority(ctx: Context<UpdateAuthority>) -> Result<()> {
         ctx.accounts.handler()
     }
 }

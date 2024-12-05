@@ -1,28 +1,40 @@
 <template>
-  <section
-    class="section container box"
-  >
-      <div class="columns is-6">
-          <div class="column is-5">
-              <img class="box p-0 image is-4by3" src="../public/img/hero-background.png" style="">
-          </div>
-          <div class="column is-half is-three-fifths-desktop">
-              <p class="has-text-weight-medium is-size-2 has-text-left pb-5 has-text-centered-mobile">
-                <slot name="header"></slot>
-              </p>
-              <p class="has-text-weight-normal is-size-5 has-text-left has-text-centered-mobile">
-                  <slot name="content"></slot>
-              </p> 
-          </div>
+    <nuxt-link
+      :class="{ 'is-featured': news.featured }"
+      :to="`${news._path}`"
+      class="is-hoverable is-fullheight is-flex columns is-4"
+    >
+      <div class="column">
+        <img
+          class="image is-5by3"
+          :src="news.image.src"
+        ></img>
       </div>
-
-  </section>
+      <div class="column">
+        <div
+          class="is-flex is-justify-content-space-between has-fullwidth py-2 has-text-primary"
+        >
+          <span> {{ news.created }}</span>
+          <span>News</span>
+        </div>
+        <div class="title hero-title has-text-black is-4 is-size-2 has-text-weight-normal">
+          {{ news.title }}
+        </div>
+        <p class="has-text-black">
+          {{ limitText(news.description, 190) }}
+        </p>
+      </div>
+    </nuxt-link>
 </template>
 
 <script setup lang="ts">
+const props = defineProps<{
+  news: News;
+}>();
 
+const limitText = (text: string, limit: number) => {
+  return text.length > limit ? `${text.slice(0, limit)}...` : text;
+};
 </script>
 
-<style lang="scss">
-
-</style>
+<style lang="scss"></style>

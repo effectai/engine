@@ -11,6 +11,7 @@ use effect_common::*;
 
 pub use errors::*;
 pub use state::*;
+pub use macros::*;
 
 declare_id!("HJR3op52N7tNycXqQnVu8cDnxH7udp4pYi1ps9S1hdBz");
 
@@ -29,7 +30,7 @@ pub mod effect_rewards {
     }
 
     /// Send [NOS](/tokens/token) to the [VaultAccount](#vault-account).
-    pub fn add_fee(ctx: Context<AddFee>, amount: u64) -> Result<()> {
+    pub fn claim_stream(ctx: Context<ClaimStream>, amount: u64) -> Result<()> {
         ctx.accounts.handler(amount)
     }
 

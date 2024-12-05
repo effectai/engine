@@ -30,7 +30,8 @@ const isAnimating = ref(false)
 
 watch(() => props.value, (newValue, oldValue) => {
     if (newValue !== oldValue) {
-        animateValue(oldValue, newValue)
+        // cap old value to 0 if it's negative
+        animateValue(Math.max(oldValue, 0), newValue)
     }
 })
 

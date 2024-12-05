@@ -10,9 +10,12 @@
     </UCard>
     <UCard v-else>
         <template #header>
-            <h1 class="text-2xl">Vesting</h1>
+            <h1 class="text-2xl">Vesting Contracts</h1>
         </template>
-        <div>
+        <div v-if="!vestingAccounts || vestingAccounts.length == 0">
+            <p class="">No active vesting contracts found.</p>
+        </div>
+        <div v-else>
             <VestingScheduleItem v-for="account in vestingAccounts" :vesting-account="account"/>
         </div>
     </UCard>

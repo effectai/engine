@@ -69,7 +69,7 @@ macro_rules! close_vault {
 
 #[macro_export]
 macro_rules! open_vesting {
-    ($accounts: expr, $seeds: expr, $release_rate: expr, $start_time: expr, $distribution_type: expr, $is_closable:expr ) => {
+    ($accounts: expr, $seeds: expr, $release_rate: expr, $start_time: expr, $is_closable:expr, $is_publicly_claimable:expr, $tag: expr ) => {
         effect_vesting::cpi::open(
             CpiContext::new_with_signer(
                 $accounts.vesting_program.to_account_info(),
@@ -87,28 +87,28 @@ macro_rules! open_vesting {
             ),
             $release_rate,
             $start_time,
-            $distribution_type,
-            $is_closable
+            $is_closable,
+            $is_publicly_claimable,
+            $tag,
         )
     };
 }
 
 #[macro_export]
-macro_rules! transfer_fee {
-    ($accounts: expr, $from: ident, $authority: ident, $seeds: expr, $amount: expr) => {
-        effect_rewards::cpi::add_fee(
+macro_rules! claim_vesting {
+    ($accounts: expr, $seeds: expr) => {
+        effect_vesting::cpi::claim(
             CpiContext::new_with_signer(
-                $accounts.rewards_program.to_account_info(),
-                AddFee {
-                    user_token_account: $accounts.$from.to_account_info(),
-                    reflection: $accounts.rewards_reflection.to_account_info(),
-                    vault_token_account: $accounts.rewards_vault.to_account_info(),
-                    authority: $accounts.$authority.to_account_info(),
+                $accounts.vesting_program.to_account_info(),
+                Claim {
+                    vesting_account: $accounts.vesting_account.to_account_info(),
+                    vault_token_account: $accounts.vesting_vault_token_account.to_account_info(),
+                    authority: $accounts.authority.to_account_info(),
+                    recipient_token_account: $accounts.vault_token_account.to_account_info(),
                     token_program: $accounts.token_program.to_account_info(),
                 },
                 $seeds,
             ),
-            $amount,
         )
     };
 }

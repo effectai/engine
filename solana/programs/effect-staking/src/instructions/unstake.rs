@@ -45,10 +45,8 @@ pub struct Unstake<'info> {
 impl<'info> Unstake<'info> {
     pub fn handler(&mut self, amount: u64) -> Result<()> {
         // derive reward account
-        let (reward_account, _) = Pubkey::find_program_address(
-            &[self.stake.key().as_ref()],
-            &REWARDS_PROGRAM,
-        );
+        let (reward_account, _) =
+            Pubkey::find_program_address(&[self.stake.key().as_ref()], &REWARDS_PROGRAM);
 
         // make sure reward account is belonging to this stake account is closed/empty/doesnt exist
         if self.reward_account.key() != reward_account || !self.reward_account.data_is_empty() {
@@ -67,10 +65,23 @@ impl<'info> Unstake<'info> {
         // open a vesting account
         let now: i64 = Clock::get()?.unix_timestamp;
         let start_time = now + UNSTAKE_DELAY_DAYS as i64 * SECONDS_PER_DAY as i64;
-        open_vesting!(self, &[&vault_seed!(self.stake.key())], release_rate, start_time, 0, false)?;
+        open_vesting!(
+            self,
+            &[&vault_seed!(self.stake.key())],
+            release_rate,
+            start_time,
+            false,
+            true,
+            Some([b'u', b'n', b's', b't', b'a', b'k', b'e', 0])
+        )?;
 
         // transfer tokens from stake vault to the vesting vault
-        transfer_tokens_from_vault!(self, vesting_vault_account, &[&vault_seed!(self.stake.key())], amount)?;
+        transfer_tokens_from_vault!(
+            self,
+            vesting_vault_account,
+            &[&vault_seed!(self.stake.key())],
+            amount
+        )?;
 
         // deduct the amount from the stake account
         self.stake.amount -= amount;

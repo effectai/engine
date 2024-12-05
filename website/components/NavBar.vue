@@ -17,7 +17,7 @@
       <div id="navbar" class="navbar-menu" :class="{ 'is-active': mobileMenu }">
         <div class="navbar-start"></div>
         <div class="is-flex is-align-items-center">
-          <div @click="mobileMenu = false">
+          <!-- <div @click="mobileMenu = false">
             <nuxt-link class="is-size-5 navbar-item px-5" to="/developers" exact-active-class="is-active">
               Developers
             </nuxt-link>
@@ -26,16 +26,16 @@
             <nuxt-link class="is-size-5 navbar-item px-5" to="/ecosystem" exact-active-class="is-active">
               Ecosystem
             </nuxt-link>
-          </div>
+          </div> -->
         </div> 
         <div class="navbar-end is-align-items-center">
-          <div class="navbar-item" exact-active-class="is-active">
+          <!-- <div class="navbar-item" exact-active-class="is-active">
             <div @click="mobileMenu = false">
               <nuxt-link to="/ecosystem" exact-active-class="is-active">
                 <Button text="Launch App"/>
               </nuxt-link>
             </div>
-          </div>
+          </div> -->
         </div>
 
       </div>

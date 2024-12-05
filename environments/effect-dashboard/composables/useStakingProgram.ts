@@ -73,7 +73,7 @@ export function useStakingProgram() {
 				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
 				const { rewardAccount, reflectionAccount } = useDeriveRewardAccounts({
-					authority: publicKey.value,
+					stakingAccount: stakeAccount.publicKey,
 					programId: rewardsProgram.programId,
 				});
 
@@ -111,7 +111,6 @@ export function useStakingProgram() {
 						vaultTokenAccount: stakeVaultAccount,
 
 						vestingAccount: vestmentAccount.publicKey,
-						vestingAccountUnchecked: vestmentAccount.publicKey,
 						vestingVaultAccount: vestingVaultAccount,
 
 						mint,
@@ -154,7 +153,7 @@ export function useStakingProgram() {
 				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
 				const { rewardAccount, reflectionAccount } = useDeriveRewardAccounts({
-					authority: publicKey.value,
+					stakingAccount: stakeAccount.publicKey,
 					programId: rewardsProgram.programId,
 				});
 

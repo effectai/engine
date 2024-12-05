@@ -4,10 +4,9 @@
 
 #[macro_export]
 macro_rules! seeds {
-    ($pool: expr) => {
+    ($vesting_account: expr) => {
         &[&[
-            $pool.key().as_ref(),
-            &[$pool.vault_bump],
+            $vesting_account.key().as_ref(),
         ][..]][..]
     };
 }

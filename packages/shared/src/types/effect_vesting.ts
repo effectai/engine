@@ -14,20 +14,19 @@ export type EffectVesting = {
   },
   "instructions": [
     {
-      "name": "claimTransfer",
+      "name": "claim",
       "docs": [
-        "Add fees from a [PoolAccount](#pool-account) with claim type [`1`](#claim-type)",
         "Claim emission from a [PoolAccount](#pool-account) with claim type [`0`](#claim-type)"
       ],
       "discriminator": [
-        202,
-        178,
-        58,
-        190,
-        230,
-        234,
-        229,
-        17
+        62,
+        198,
+        214,
+        193,
+        213,
+        159,
+        108,
+        210
       ],
       "accounts": [
         {
@@ -170,14 +169,61 @@ export type EffectVesting = {
           "type": "i64"
         },
         {
-          "name": "claimType",
-          "type": "u8"
-        },
-        {
           "name": "isClosable",
           "type": "bool"
+        },
+        {
+          "name": "isPubliclyClaimable",
+          "type": "bool"
+        },
+        {
+          "name": "tag",
+          "type": {
+            "option": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
+          }
         }
       ]
+    },
+    {
+      "name": "updateAuthority",
+      "discriminator": [
+        32,
+        46,
+        64,
+        28,
+        149,
+        75,
+        243,
+        88
+      ],
+      "accounts": [
+        {
+          "name": "newAuthority",
+          "writable": true
+        },
+        {
+          "name": "vestingAccount",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "vestingAccount"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
     },
     {
       "name": "updateRecipient",
@@ -281,9 +327,6 @@ export type EffectVesting = {
   "types": [
     {
       "name": "vestingAccount",
-      "docs": [
-        "The `VestingAccount` struct holds all the information for any given vest."
-      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -294,10 +337,6 @@ export type EffectVesting = {
           {
             "name": "recipientTokenAccount",
             "type": "pubkey"
-          },
-          {
-            "name": "distributionType",
-            "type": "u8"
           },
           {
             "name": "distributedTokens",
@@ -320,8 +359,17 @@ export type EffectVesting = {
             "type": "pubkey"
           },
           {
-            "name": "vaultBump",
-            "type": "u8"
+            "name": "isPubliclyClaimable",
+            "type": "bool"
+          },
+          {
+            "name": "tag",
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
           }
         ]
       }

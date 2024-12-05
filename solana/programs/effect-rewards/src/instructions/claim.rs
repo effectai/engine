@@ -55,7 +55,7 @@ impl<'info> Claim<'info> {
         transfer_tokens_from_vault!(
             self,
             user,
-            seeds!(self.reflection, self.vault_token_account),
+            &[&vault_seed!()],
             amount.try_into().unwrap()
         )
     }

@@ -8,53 +8,6 @@
   },
   "instructions": [
     {
-      "name": "add_fee",
-      "docs": [
-        "Send [NOS](/tokens/token) to the [VaultAccount](#vault-account)."
-      ],
-      "discriminator": [
-        67,
-        225,
-        189,
-        212,
-        253,
-        123,
-        76,
-        112
-      ],
-      "accounts": [
-        {
-          "name": "user_token_account",
-          "writable": true
-        },
-        {
-          "name": "reflection",
-          "writable": true
-        },
-        {
-          "name": "vault_token_account",
-          "writable": true,
-          "relations": [
-            "reflection"
-          ]
-        },
-        {
-          "name": "authority",
-          "signer": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
-    },
-    {
       "name": "claim",
       "docs": [
         "Claim rewards from a [RewardsAccount](#rewards-account) and [VaultAccount](#vault-account)."
@@ -107,6 +60,65 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "claim_stream",
+      "docs": [
+        "Send [NOS](/tokens/token) to the [VaultAccount](#vault-account)."
+      ],
+      "discriminator": [
+        157,
+        247,
+        164,
+        226,
+        240,
+        158,
+        183,
+        36
+      ],
+      "accounts": [
+        {
+          "name": "reflection",
+          "writable": true
+        },
+        {
+          "name": "vault_token_account",
+          "writable": true,
+          "relations": [
+            "reflection"
+          ]
+        },
+        {
+          "name": "vesting_vault_token_account",
+          "writable": true
+        },
+        {
+          "name": "vesting_account",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "vesting_program",
+          "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "close",
@@ -345,6 +357,19 @@
         192,
         255
       ]
+    },
+    {
+      "name": "VestingAccount",
+      "discriminator": [
+        102,
+        73,
+        10,
+        233,
+        200,
+        188,
+        228,
+        216
+      ]
     }
   ],
   "errors": [
@@ -452,6 +477,55 @@
           {
             "name": "xefx",
             "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VestingAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient_token_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "distributed_tokens",
+            "type": "u64"
+          },
+          {
+            "name": "is_closeable",
+            "type": "bool"
+          },
+          {
+            "name": "release_rate",
+            "type": "u64"
+          },
+          {
+            "name": "start_time",
+            "type": "i64"
+          },
+          {
+            "name": "vault_token_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "is_publicly_claimable",
+            "type": "bool"
+          },
+          {
+            "name": "tag",
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
           }
         ]
       }

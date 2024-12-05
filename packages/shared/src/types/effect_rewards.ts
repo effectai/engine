@@ -14,53 +14,6 @@ export type EffectRewards = {
   },
   "instructions": [
     {
-      "name": "addFee",
-      "docs": [
-        "Send [NOS](/tokens/token) to the [VaultAccount](#vault-account)."
-      ],
-      "discriminator": [
-        67,
-        225,
-        189,
-        212,
-        253,
-        123,
-        76,
-        112
-      ],
-      "accounts": [
-        {
-          "name": "userTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "reflection",
-          "writable": true
-        },
-        {
-          "name": "vaultTokenAccount",
-          "writable": true,
-          "relations": [
-            "reflection"
-          ]
-        },
-        {
-          "name": "authority",
-          "signer": true
-        },
-        {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
-    },
-    {
       "name": "claim",
       "docs": [
         "Claim rewards from a [RewardsAccount](#rewards-account) and [VaultAccount](#vault-account)."
@@ -113,6 +66,65 @@ export type EffectRewards = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "claimStream",
+      "docs": [
+        "Send [NOS](/tokens/token) to the [VaultAccount](#vault-account)."
+      ],
+      "discriminator": [
+        157,
+        247,
+        164,
+        226,
+        240,
+        158,
+        183,
+        36
+      ],
+      "accounts": [
+        {
+          "name": "reflection",
+          "writable": true
+        },
+        {
+          "name": "vaultTokenAccount",
+          "writable": true,
+          "relations": [
+            "reflection"
+          ]
+        },
+        {
+          "name": "vestingVaultTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "vestingAccount",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "vestingProgram",
+          "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "close",
@@ -351,6 +363,19 @@ export type EffectRewards = {
         192,
         255
       ]
+    },
+    {
+      "name": "vestingAccount",
+      "discriminator": [
+        102,
+        73,
+        10,
+        233,
+        200,
+        188,
+        228,
+        216
+      ]
     }
   ],
   "errors": [
@@ -458,6 +483,55 @@ export type EffectRewards = {
           {
             "name": "xefx",
             "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "vestingAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipientTokenAccount",
+            "type": "pubkey"
+          },
+          {
+            "name": "distributedTokens",
+            "type": "u64"
+          },
+          {
+            "name": "isCloseable",
+            "type": "bool"
+          },
+          {
+            "name": "releaseRate",
+            "type": "u64"
+          },
+          {
+            "name": "startTime",
+            "type": "i64"
+          },
+          {
+            "name": "vaultTokenAccount",
+            "type": "pubkey"
+          },
+          {
+            "name": "isPubliclyClaimable",
+            "type": "bool"
+          },
+          {
+            "name": "tag",
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
           }
         ]
       }

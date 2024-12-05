@@ -3,7 +3,7 @@ use anchor_spl::token::{Token, TokenAccount};
 use effect_common::cpi;
 
 #[derive(Accounts)]
-pub struct ClaimTransfer<'info> {
+pub struct Claim<'info> {
     #[account(mut, address = vesting_account.vault_token_account @ VestingErrors::InvalidTokenAccount)]
     pub vault_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
@@ -12,7 +12,6 @@ pub struct ClaimTransfer<'info> {
         mut,
         has_one = recipient_token_account @ VestingErrors::WrongBeneficiary,
         constraint = Clock::get()?.unix_timestamp > vesting_account.start_time @ VestingErrors::NotStarted,
-        constraint = vesting_account.distribution_type == ClaimType::Transfer as u8 @ VestingErrors::WrongClaimType,
     )]
     pub vesting_account: Account<'info, VestingAccount>,
     #[account(mut)]
@@ -20,11 +19,11 @@ pub struct ClaimTransfer<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> ClaimTransfer<'info> {
+impl<'info> Claim<'info> {
     pub fn handler(&mut self) -> Result<()> {
         let amount: u64 = self
             .vesting_account
-            .claim(self.vault_token_account.amount, Clock::get()?.unix_timestamp);
+            .claim( self.authority.key(), self.vault_token_account.amount, Clock::get()?.unix_timestamp)?;
 
         // TODO: below is not a requirement anymore, can be removed?
         // the pool must have enough funds for an emission

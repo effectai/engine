@@ -18,6 +18,6 @@ pub enum VestingErrors {
     #[msg("Unauthorized")]
     Unauthorized,
     #[msg("Invalid vault")]
-    InvalidVault
+    InvalidVault,
     
 }

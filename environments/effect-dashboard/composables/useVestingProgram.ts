@@ -15,6 +15,7 @@ export const useVestingProgram = () => {
 	const appConfig = useRuntimeConfig();
 	const { publicKey } = useWallet();
 	const { provider } = useAnchorProvider();
+
 	const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
 
 	const vestingProgram = new anchor.Program(

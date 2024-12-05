@@ -973,6 +973,7 @@ dependencies = [
  "anchor-spl",
  "effect-common",
  "effect-staking",
+ "effect-vesting",
 ]
 
 [[package]]
