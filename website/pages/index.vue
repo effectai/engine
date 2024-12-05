@@ -171,9 +171,12 @@ const { data: news } = await useAsyncData("news", async () => {
 </script>
 
 <style lang="scss" scoped>
+@use "bulma/sass/utilities/mixins";
 #main-hero {
     background-size: cover;
-    padding-top: 5rem;
+    @include mixins.desktop {
+        padding: 6rem 0rem;
+    }
 }
 
 .subtitle {
