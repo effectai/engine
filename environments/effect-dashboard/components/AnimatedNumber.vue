@@ -1,6 +1,7 @@
 <template>
-    <span :class="{ shake : isAnimating}">
+    <span>
         {{ animatedValue }}
+        <slot v-if="isAnimating" name="animating"></slot>
     </span>
 </template>
 
@@ -39,6 +40,7 @@ onMounted(() => {
 
 const animateValue = (start: number, end: number) => {
     let startTimestamp: number | null = null
+    isAnimating.value = true
     const step = (timestamp: number) => {
         if (!startTimestamp) startTimestamp = timestamp
         const progress = Math.min((timestamp - startTimestamp) / props.duration, 1)
@@ -48,7 +50,9 @@ const animateValue = (start: number, end: number) => {
 
         if (progress < 1) {
             window.requestAnimationFrame(step)
-        } 
+        } else {
+            isAnimating.value = false
+        }
     }
     window.requestAnimationFrame(step)
 }
@@ -84,10 +88,8 @@ const easing = (progress: number) => {
         default:
             return progress
     }
-}   
+}
 
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

@@ -30,7 +30,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { watchOnce } from "@vueuse/core";
+
+const emit = defineEmits(["submit"]);
 
 const { useGetEfxBalanceQuery } = useSolanaWallet();
 const { data: availableBalance } = useGetEfxBalanceQuery();
@@ -92,6 +93,7 @@ const handleSubmit = async () => {
 		// refetch the stake account
 		refetch();
 
+		emit("submit");
 	} catch (err) {
 		console.error(err);
 		error.value = "Failed to stake tokens. Please try again.";

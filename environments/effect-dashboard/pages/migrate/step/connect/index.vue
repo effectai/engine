@@ -3,8 +3,7 @@
         <ClaimProgress  class="my-5" v-motion :initial="{ opacity: 0, scale: 0.7 }" :enter="{ opacity: 1, scale: 1 }"
             :delay="300" :duration="600" />
 
-        <div v-motion :initial="{ opacity: 0, scale: 0.7 }" :enter="{ opacity: 1, scale: 1 }" :delay="0"
-            :duration="600">
+        <div v-motion-pop :duration="600">
             <UCard class="w-full">
                 <template #header>
                     <h2 class="title">Connect Solana Wallet</h2>

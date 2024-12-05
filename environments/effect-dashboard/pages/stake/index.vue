@@ -1,5 +1,5 @@
 <template>
-    <div v-motion-pop-visible>
+    <div v-motion-pop-visible :delay="150" :duration="500">
         <div v-if="!publicKey">
             <div class="flex items-center flex-col justify-center h-96">
                 <div class="gap-5 flex flex-col items-center justify-center">
@@ -13,7 +13,7 @@
                 </div>
             </div>
         </div>
-        <UTabs v-if="publicKey" :items="items" class="">
+        <UTabs v-if="publicKey" :items="items" class="" v-model="selected">
             <template #overview="{ item }">
                 <div class="">
                     <StakeOverviewCard />
@@ -21,7 +21,7 @@
             </template>
             <template #stake="{ item }">
                 <div class>
-                    <StakingForm />
+                    <StakingForm @submit="selected = 0" />
                 </div>
             </template>
             <template #unstake>
@@ -48,8 +48,8 @@ const items = [{
     label: 'Unstake',
 }]
 
+const selected = ref(0)
 const { publicKey } = useWallet()
-
 </script>
 
 <style scoped>

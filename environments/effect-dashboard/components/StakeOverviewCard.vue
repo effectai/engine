@@ -19,8 +19,8 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-400">Stake Age</p>
-                        <AnimatedNumber easing="easeInOutCubic" :value="stakeAge" class="text-2xl font-bold flex">{{ (stakeAge).toFixed(4) }}
-                            <div class="text-sm text-gray-400 items-end self-end">(+1 per second)</div>
+                        <AnimatedNumber easing="easeInOutCubic" :value="stakeAge" :format="formatNumber"
+                            class="text-2xl font-bold flex relative">{{ (stakeAge).toFixed(4) }}
                         </AnimatedNumber>
                     </div>
                 </div>
@@ -29,18 +29,25 @@
                 <h3 class="text-lg font-semibold mb-4">Staking Statistics</h3>
                 <div class="space-y-4">
                     <div class="flex justify-between"><span class="text-gray-400">Your Stake</span><span
-                            class="font-medium">{{ stakeAmount || 0 }} EFFECT</span></div>
+                            class="font-medium">{{
+                                stakeAmount || 0 }} EFFECT</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span
-                            class="font-medium">{{ unstakeDays || 0 }} Days</span></div>
-                    <div class="flex justify-between" v-if="reflectionAccount?.totalXefx"><span class="text-gray-400">Total Staked</span><span
-                            class="font-medium">{{ formatAmountToBalance(reflectionAccount.totalXefx) }} EFFECT</span></div>
+                            class="font-medium">{{
+                                unstakeDays || 0 }} Days</span></div>
+                    <div class="flex justify-between" v-if="reflectionAccount?.totalXefx"><span
+                            class="text-gray-400">Total
+                            Staked</span><span class="font-medium">{{ formatAmountToBalance(reflectionAccount.totalXefx)
+                            }}
+                            EFFECT</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">Expected APY</span><span
                             class="font-medium">30%</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">Pending Rewards</span><span
-                            class="font-medium">{{ pendingRewards || 0 }} EFFECT</span></div>
+                            class="font-medium">{{
+                                pendingRewards || 0 }} EFFECT</span></div>
 
                     <UButton v-if="pendingRewards > 0" @click="handleSubmit" color="white"
-                        class="flex justify-center w-full">Claim</UButton>
+                        class="flex justify-center w-full">Claim
+                    </UButton>
                 </div>
             </div>
 
