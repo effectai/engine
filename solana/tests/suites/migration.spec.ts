@@ -84,9 +84,24 @@ describe("Migration Program", async () => {
 				program,
 			});
 
+			const { claimAccount: stakeClaimAccount } = await createMigrationClaim({
+				type: "stake",
+				mint,
+				payer,
+				payerTokens: ata,
+				publicKey,
+				amount: 100_000_000,
+				program,
+				stakeStartTime: Math.floor(new Date().getTime() / 1000 - 365 * 24 * 60 * 60),
+			});
+
 			const metadataAccount =
 				await provider.connection.getAccountInfo(claimAccount);
 			expect(metadataAccount).to.not.be.null;
+
+			const stakeMetadataAccount =
+				await provider.connection.getAccountInfo(stakeClaimAccount);
+			expect(stakeMetadataAccount).to.not.be.null;
 		});
 
 		it.concurrent(
