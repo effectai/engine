@@ -2,7 +2,9 @@
     <div>
         <HeroSection id="main-hero" :style="`background-image: url('./img/hero-background.png')`">
             <template #title>
-                <h1 class="title mb-6 is-size-1-tablet is-size-2 has-text-weight-light is-auto-phrase">
+                <h1 class="title mb-6 is-size-1-tablet is-size-2
+                has-text-dark
+                has-text-weight-light is-auto-phrase">
                     <span>
                         Unleashing
                     </span>
@@ -16,7 +18,7 @@
             </template>
 
             <template #subtitle>
-                <p class="subtitle mb-5">
+                <p class="subtitle mb-5 has-text-dark">
                     <span class="pr-6">
                         Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.
                         Worker nodes, manager nodes, provider nodes—plug in, get tasks done, and thrive in a trustless
@@ -26,12 +28,12 @@
             </template>
 
             <template #footer>
-                <div class="is-flex is-size-3 is-align-items-center is-primary has-text-primary is-in-front">
-                    <div class="columns is-mobile is-vcentered ">
+                <div class="mt-6 is-flex is-size-3 is-align-items-center is-primary has-text-primary is-in-front">
+                    <div class="columns is-mobile is-vcentered is-multiline">
                         <div class="column">
                             <div class="">
                                 <nuxt-link class="is-flex" to="https://app.effect.ai/" exact-active-class="is-active">
-                                    <button class="button is-black is-rounded is-outlined is-flex "
+                                    <button class="button is-black is-rounded is-outlined is-flex is-medium"
                                         style="gap:10px">Launch App
                                         <span class="icon">
                                             <i class="fas fa-arrow-right"></i>
@@ -41,15 +43,21 @@
                             </div>
                         </div>
                         <div class="column">
-                            <SocialBar class="p-0" :socials="socials"></SocialBar>
+                            <nuxt-link class="is-flex" to="/ecosystem" exact-active-class="is-active">
+                                <button :disabled="true" class="button is-black is-rounded is-flex is-medium"
+                                    style="gap:10px">Explore
+                                    Documentation
+                                </button>
+                            </nuxt-link>
                         </div>
+
                     </div>
                 </div>
             </template>
         </HeroSection>
     </div>
 
-    <SimpleSection class="has-text-white has-background-black">
+    <SimpleSection class="has-text-light has-background-dark">
         <div class="container">
             <div class="columns is-mobile is-multiline">
                 <div class="column is-full-mobile is-one-third-tablet has-text-left has-text-centered-mobile">
@@ -76,7 +84,7 @@
             <div class="columns">
                 <div class="column is-three-quarters is-three-quarters-tablet is-three-quarters-desktop my-6">
                     <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left">
-                        Syncing AI and Humanity: Building the Future Together
+                        Syncing AI and Humanity: <span class="has-text-grey">Building the Future Together</span>
                     </h1>
                 </div>
             </div>
@@ -84,7 +92,7 @@
         </div>
     </SimpleSection>
 
-    <section class="fluid-container">
+    <section class="fluid-container has-background-dark">
         <div class="container">
             <div class="columns is-gapless is-multiline">
                 <div class="column is-one-third">
@@ -132,10 +140,6 @@ const { data: news } = await useAsyncData("news", async () => {
 #main-hero {
     background-size: cover;
     background-repeat: no-repeat;
-
-    @include mixins.desktop {
-        padding: 6rem 0rem;
-    }
 }
 
 .grid-container {
@@ -148,7 +152,6 @@ const { data: news } = await useAsyncData("news", async () => {
 .fluid-container {
     width: 100%;
     overflow: hidden;
-    background-color: #1C1A1F;
     padding: 8rem 0 8rem 4rem;
 
     @include mixins.desktop {
@@ -191,13 +194,5 @@ const { data: news } = await useAsyncData("news", async () => {
     grid-row: 0;
 }
 
-.subtitle {
-    font-family: Inter;
-    font-weight: 400;
-    line-height: 28px;
-    letter-spacing: -0.02em;
-    text-align: left;
-    text-underline-position: from-font;
-    text-decoration-skip-ink: none;
-}
+
 </style>
