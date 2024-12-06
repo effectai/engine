@@ -34,9 +34,14 @@
                             <div class="">
                                 <nuxt-link class="is-flex" to="https://app.effect.ai/" exact-active-class="is-active">
                                     <button class="button is-black is-rounded is-outlined is-flex is-medium"
-                                        style="gap:10px">Launch App
+                                        style="gap:14px; font-weight: 400;">Launch app
                                         <span class="icon">
-                                            <i class="fas fa-arrow-right"></i>
+                                            <i class="icon">
+					    <svg width="14" height="15" viewBox="0 0 14 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+					    <path fill-rule="evenodd" clip-rule="evenodd" d="M7.34098 0.5L12.7387 6.22566L12.7395 6.22474L13.9984 7.56009L13.9975 7.56102L14 7.56362L12.7411 8.89898L12.7387 8.89638L7.33939 14.6237L6.08052 13.2884L10.6135 8.47991H0V6.64471H10.616L6.08211 1.83536L7.34098 0.5Z" fill="#1C1A1F"/>
+					    </svg>
+
+					    </i>
                                         </span>
                                     </button>
                                 </nuxt-link>
@@ -68,7 +73,7 @@
                     <p class="is-size-5 has-text-grey-light has-text-weight-medium">Apps in Ecosystem</p>
                 </div>
                 <div class="column is-full-mobile has-text-left has-text-centered-mobile">
-                    <p class="is-size-2 has-text-weight-bold">21M</p>
+                    <p class="is-size-2 has-text-weight-bold">2.1M</p>
                     <p class="is-size-5 has-text-grey-light has-text-weight-medium">Tasks Completed</p>
                 </div>
                 <div class="column is-full-mobile has-text-left has-text-centered-mobile">
@@ -301,5 +306,9 @@ useSeoMeta({
     text-underline-position: from-font;
     text-decoration-skip-ink: none;
 
+}
+
+.button.is-outlined:hover {
+  --bulma-button-border-width: max(1px, 0.0625em);
 }
 </style>
