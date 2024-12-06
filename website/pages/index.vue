@@ -232,7 +232,6 @@ useSeoMeta({
 
 .effect-box {
     padding: 2rem;
-
     h2 {
         margin-bottom: 8rem;
     }
@@ -306,16 +305,11 @@ useSeoMeta({
     grid-row: 0;
 }
 
-
 .quote-text {
-    font-family: Inter;
     font-size: 46px;
     font-weight: 500;
     line-height: 64.4px;
     letter-spacing: -0.02em;
-    text-underline-position: from-font;
-    text-decoration-skip-ink: none;
-
 }
 
 .button.is-outlined:hover {
