@@ -85,12 +85,12 @@ useSeoMeta({
 .blog-outer-padding {
   padding: 3rem 2rem;
   @include mixins.from(1200px) {
-    padding: 5rem 2rem;
+    padding: 3rem 2rem;
   }
 }
 
 .blog-outer-padding > h2 {
-  padding: 2rem 0rem;
+  padding: 2.5rem 0rem;
 
   @include mixins.from(1200px) {
     text-align: justify;
@@ -100,7 +100,8 @@ useSeoMeta({
 .blog-outer-padding > p {
   padding: 0rem 0rem;
   @include mixins.from(1200px) {
-    padding: 0rem 7rem;
+    padding: 0rem 8rem;
+    text-align: justify;
   }
 }
 
@@ -129,6 +130,11 @@ useSeoMeta({
       color: black;
     }
   }
-  h2 { a { font-weight: 400; } }
+  h2 {
+    a { font-weight: 400; }
+    &:not(:first-child) {
+      margin-top: 0;
+    }
+  }
 }
 </style>
