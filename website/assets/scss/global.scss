@@ -1,11 +1,4 @@
-@use "bulma/bulma";
 @use "utility";
+@use "bulma/sass/utilities/mixins";
 
-.title.is-auto-phrase {
-  word-break: auto-phrase;
-}
-
-.is-flex-1 {
-  flex: 1;
-}
 

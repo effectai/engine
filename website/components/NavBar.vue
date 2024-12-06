@@ -6,13 +6,13 @@
           <img style="height: 3.5rem; width: auto" src="/img/effect-logo.svg" alt="Effect Network" class="logo p-1" />
         </nuxt-link>
 
-        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbar" 
+        <!-- <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbar" 
           @click="mobileMenu = !mobileMenu">
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
-        </a>
+        </a> -->
       </div>
       <div id="navbar" class="navbar-menu" :class="{ 'is-active': mobileMenu }">
         <div class="navbar-start"></div>

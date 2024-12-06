@@ -2,7 +2,7 @@
     <div>
         <HeroSection id="main-hero" :style="`background-image: url('./img/hero-background.png')`">
             <template #title>
-                <h1 class="title hero-title has-text-weight-light is-auto-phrase">
+                <h1 class="title mb-6 is-size-1-tablet is-size-2 has-text-weight-light is-auto-phrase">
                     <span>
                         Unleashing
                     </span>
@@ -13,9 +13,6 @@
                         Intelligence
                     </span>
                 </h1>
-                <div class="is-flex mb-6 mt-2 is-very-small">
-
-                </div>
             </template>
 
             <template #subtitle>
@@ -35,8 +32,7 @@
                             <div class="">
                                 <nuxt-link class="is-flex" to="https://app.effect.ai/" exact-active-class="is-active">
                                     <button class="button is-black is-rounded is-outlined is-flex "
-                                    style="gap:10px"
-                                    >Launch App
+                                        style="gap:10px">Launch App
                                         <span class="icon">
                                             <i class="fas fa-arrow-right"></i>
                                         </span>
@@ -57,19 +53,19 @@
         <div class="container">
             <div class="columns is-mobile is-multiline">
                 <div class="column is-full-mobile is-one-third-tablet has-text-left has-text-centered-mobile">
-                    <p class="is-size-2 has-text-weight-normal">Be part of the <br> AI future:</p>
+                    <p class="is-size-2 has-text-medium">Be part of the <br> AI future:</p>
                 </div>
                 <div class="column is-full-mobile has-text-left has-text-centered-mobile">
-                    <p class="is-size-1 has-text-weight-bold">22</p>
-                    <p class="is-size-5 has-text-grey-light has-text-weight-normal">Apps in Ecosystem</p>
+                    <p class="is-size-2 has-text-weight-bold">22</p>
+                    <p class="is-size-5 has-text-grey-light has-text-weight-medium">Apps in Ecosystem</p>
                 </div>
                 <div class="column is-full-mobile has-text-left has-text-centered-mobile">
-                    <p class="is-size-1 has-text-weight-bold">22M</p>
-                    <p class="is-size-5 has-text-grey-light has-text-weight-normal">Tasks Completed</p>
+                    <p class="is-size-2 has-text-weight-bold">22M</p>
+                    <p class="is-size-5 has-text-grey-light has-text-weight-medium">Tasks Completed</p>
                 </div>
                 <div class="column is-full-mobile has-text-left has-text-centered-mobile">
-                    <p class="is-size-1 has-text-weight-bold">156</p>
-                    <p class="is-size-5 has-text-grey-light has-text-weight-normal">Proposals created</p>
+                    <p class="is-size-2 has-text-weight-bold">156</p>
+                    <p class="is-size-5 has-text-grey-light has-text-weight-medium">Proposals created</p>
                 </div>
             </div>
         </div>
@@ -90,13 +86,13 @@
 
     <div class="fluid-container">
         <div class="container">
-            
+
             <div class="columns is-gapless is-multiline">
                 <div class="column is-one-third">
                     <p class="is-size-7 has-text-light has-text-weight-medium is-uppercase mb-5">
                         Some of our partners & dapps
                     </p>
-                    <div class="is-size-1 has-text-light mb-6">
+                    <div class="is-size-2 has-text-light mb-6">
                         Explore the Frontier of AI Excellence within the Effect AI Ecosystem
                     </div>
                 </div>

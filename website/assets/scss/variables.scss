@@ -1,33 +1,25 @@
-@use "bulma/sass" with (
-    $family-sans-serif: '"Inter", sans-serif',
+@use "bulma/sass" with ($family-sans-serif: '"Inter", sans-serif',
     $primary: #000000,
     $light: #D7D7D7,
-);
+    $size-1: 6rem,
+    $size-2: 3rem);
 
 @use "bulma/sass/utilities/mixins";
 
 $nav-background: rgba(255, 255, 255, 0.561);
-$title-weight: 400;
-$title-size: 5rem;
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import url("https://use.typekit.net/kej5qyk.css");
 
 .navbar {
     background-color: $nav-background;
-  }
-
-.navbar-burger{
-    color: black;
 }
 
-.hero-title{
-    @include mixins.mobile {
-        font-size: 3rem;
-    }
-    font-size: $title-size;
+.navbar-burger {
+    color: black;
 }
 
 :root {
     --bulma-link-text: '#000';
+    --bulma-size-1: 3rem;
 }

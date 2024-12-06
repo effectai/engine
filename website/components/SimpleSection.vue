@@ -5,7 +5,6 @@
     data-aos="fade-in"
   >
     <div>
-      <div :class="{ 'has-text-centered': centered }" class="my-6">
         <h3 v-if="title" class="title is-2 is-spaced">
           {{ title }}
         </h3>
@@ -17,7 +16,6 @@
       <div class="">
         <slot></slot>
       </div>
-    </div>
   </section>
 </template>
 
