@@ -133,7 +133,7 @@ const { data: news } = await useAsyncData("news", async () => {
     background-size: cover;
     background: 
     linear-gradient(180deg, rgba(238, 238, 238, 0) 50%, #EEEEEE 100%), 
-    url('./img/hero-background.png');
+    url('img/hero-background.png');
     background-repeat: no-repeat;
  
     @include mixins.desktop {
