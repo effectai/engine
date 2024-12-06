@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div id="main" ref="main">
         <slot></slot>
     </div>
 </template>

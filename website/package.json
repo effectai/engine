@@ -12,6 +12,7 @@
     "@fortawesome/fontawesome-free": "^5.15.2",
     "@nuxt/content": "^2.13.4",
     "@nuxt/image": "^1.8.1",
+    "@vueuse/core": "^11.3.0",
     "@vueuse/motion": "^2.2.6",
     "bulma": "^1.0.2",
     "delay": "6.0.0",

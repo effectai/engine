@@ -23,8 +23,6 @@
   .news-card {
     transition: transform 0.3s ease-in-out;
     cursor: pointer;
-    &:hover {
-      transform: scale(1.08);
-    }
+    padding-bottom:20px;
   }
   </style>

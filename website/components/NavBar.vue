@@ -1,15 +1,12 @@
 <template>
-  <nav class="navbar pt-2 pb-1 is-sticky top-0" role="navigation" aria-label="main navigation">
+  <nav ref="nav" :class="{ 'nav-transparent': !hasScrolled, 'nav-white': hasScrolled }"
+    class="pt-2 pb-1 is-sticky top-0" role="navigation" aria-label="main navigation">
     <div class="container">
       <div class="w-full is-flex is-justify-content-space-between">
         <nuxt-link class="" to="/">
           <img style="height: 3.5rem; width: auto" src="/img/effect-logo.svg" alt="Effect Network" class="logo p-1" />
         </nuxt-link>
-      
-        <div class="">
-          <social-bar :socials="socials" class="is-size-3"></social-bar>
-        </div>
-
+          <social-bar :socials="socials" class=""></social-bar>
       </div>
     </div>
   </nav>
@@ -17,37 +14,35 @@
 
 <script setup lang="ts">
 import { discord, telegram, twitter } from '~/constants/socials';
-
-const mobileMenu = ref(false);
-
 const socials = [twitter, telegram, discord]
+
+const hasScrolled = ref(false);
+const handleScroll = () => {
+  hasScrolled.value = window.scrollY > 0;
+};
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll);
+});
+
 </script>
 
 <style lang="scss">
 nav {
+  z-index: 1000;
+  transition: background-color 0.5s;
 
-  .navbar-item {
-    margin: 0 0.5rem;
-
-    &:after {
-      display: block;
-      width: 0;
-      height: 2px;
-      position: absolute;
-      transition: width 0.5s;
-      bottom: 8px;
-      background: black;
-      content: "";
-    }
+  &.nav-transparent {
+    background-color: transparent;
+    box-shadow: none;
   }
-
-  .is-active {
-    &:after {
-      width: calc(100% - 1.5rem);
-    }
+  &.nav-white {
+    background-color: rgba(255, 255, 255, 0.561);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   }
-
-
-
 }
 </style>

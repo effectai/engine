@@ -1,6 +1,6 @@
 <template>
     <div>
-        <HeroSection id="main-hero" :style="`background-image: url('./img/hero-background.png')`">
+        <HeroSection id="main-hero" :style="`margin-top: -75px; background-image: url('./img/hero-background.png')`">
             <template #title>
                 <h1 class="title mb-6 is-size-1-tablet is-size-2
                 has-text-dark
@@ -43,10 +43,9 @@
                             </div>
                         </div>
                         <div class="column">
-                            <nuxt-link class="is-flex" to="/ecosystem" exact-active-class="is-active">
-                                <button :disabled="true" class="button is-black is-rounded is-flex is-medium"
-                                    style="gap:10px">Explore
-                                    Documentation
+                            <nuxt-link class="is-flex" to="https://dao.effect.network" exact-active-class="is-active">
+                                <button class="button is-black is-rounded is-flex is-medium" style="gap:10px">DAO
+                                    Governance
                                 </button>
                             </nuxt-link>
                         </div>
@@ -57,11 +56,12 @@
         </HeroSection>
     </div>
 
+
     <SimpleSection class="has-text-light has-background-dark">
         <div class="container">
             <div class="columns is-mobile is-multiline">
                 <div class="column is-full-mobile is-one-third-tablet has-text-left has-text-centered-mobile">
-                    <p class="is-size-2 has-text-medium">Be part of the <br> AI future:</p>
+                    <p class="is-size-3 has-text-medium">Be part of the <br> AI future:</p>
                 </div>
                 <div class="column is-full-mobile has-text-left has-text-centered-mobile">
                     <p class="is-size-2 has-text-weight-bold">22</p>
@@ -79,16 +79,88 @@
         </div>
     </SimpleSection>
 
+    <SimpleSection :centered="true">
+        <template #subtitle><div class="container">
+            
+                <div class="columns">
+                    <div class="column">
+                        <p class="is-size-5 has-text-weight-normal has-text-left">Effect Workforce</p>
+                    </div>
+                    <div class="column">
+                        <p class="is-size-3 has-text-left has-text-weight-medium">
+                            Empowering a global human workforce to shape the future of AI, combining blockchain and P2P
+                            technology to deliver smarter, inclusive, and impactful AI solutions.
+                        </p>
+                        <p class="is-size-3 has-text-left has-text-weight-medium"> — you're shaping the future of
+                            technology.</p>
+                    </div>
+                </div>
+        </div>
+        </template>
+    </SimpleSection>
+
+
+    <SimpleSection :centered="true" class="has-background-dark">
+        <template #subtitle>
+            <div class="container">
+
+                <div class="columns">
+                    <div class="column  is-radius-medium effect-box has-text-light">
+                        <div>
+                            01
+                            <h2 class="is-size-3 has-text-weight-medium has-text-left">Complete Tasks</h2>
+                            <p class="is-size-5 has-text-weight-normal has-text-left">Complete tasks and earn EFX
+                                directly
+                                to your wallet.</p>
+                            <div class="mt-5 has-text-left">
+                                <button class="button is-white is-rounded is-outlined is-flex is-medium"
+                                    style="gap:10px">Coming soon
+                                    <span class="icon">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column  is-radius-medium effect-box  has-text-light">
+                        <div>
+                            02
+                            <h2 class="is-size-3 has-text-weight-medium has-text-left">Create Tasks</h2>
+                            <p class="is-size-5 has-text-weight-normal has-text-left">Access a global, on-demand, 24x7
+                                scalable work force.</p>
+                            <div class="mt-5 has-text-left">
+                                <button class="button is-white is-rounded is-outlined is-flex is-medium"
+                                    style="gap:10px">Coming soon
+                                    <span class="icon">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </SimpleSection>
+
     <SimpleSection>
         <div class="container">
             <div class="columns">
-                <div class="column is-three-quarters is-three-quarters-tablet is-three-quarters-desktop my-6">
-                    <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left">
-                        Syncing AI and Humanity: <span class="has-text-grey">Building the Future Together</span>
+                <div class="column is-one-fifths is-two-fifths-desktop">
+                    <div class="columns is-vcentered h-full">
+                        <div class="column is-four-fifths">
+                            <div class="news-image image is-5by3">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-three-quarters is-three-quarters-tablet is-three-quarters-desktop ">
+                    <h1 class="is-size-3 has-text-weight-medium has-text-primary has-text-left">
+                        Syncing AI and Humanity: <br /> <span class="has-text-grey">Building the Future Together</span>
                     </h1>
                 </div>
             </div>
-            <NewsCardList :items="news" />
+            <NewsCardList :items="news" class="my-7" />
         </div>
     </SimpleSection>
 
@@ -99,7 +171,7 @@
                     <p class="is-size-7 has-text-light has-text-weight-medium is-uppercase mb-5">
                         Some of our partners & dapps
                     </p>
-                    <div class="is-size-2 has-text-light mb-6">
+                    <div class="is-size-3 has-text-light mb-6">
                         Explore the Frontier of AI Excellence within the Effect AI Ecosystem
                     </div>
                 </div>
@@ -107,7 +179,9 @@
                     <div class="grid-container">
                         <div :key="i" v-for="(dapp, i) in dapps.slice(0, 6)" class="grid-item" :class="`item-${i}`">
                             <label class="is-size-7">{{ i + 1 }}</label>
-                            <img :src="`/img/ecosystem/${dapp.image_url}`">
+                            <div class="is-flex-center">
+                                <img :src="`/img/ecosystem/${dapp.image_url}`">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -137,6 +211,14 @@ const { data: news } = await useAsyncData("news", async () => {
 <style lang="scss" scoped>
 @use "bulma/sass/utilities/mixins";
 
+.effect-box {
+    padding: 2rem;
+
+    h2 {
+        margin-bottom: 4rem;
+    }
+}
+
 #main-hero {
     background-size: cover;
     background-repeat: no-repeat;
@@ -159,6 +241,10 @@ const { data: news } = await useAsyncData("news", async () => {
     }
 }
 
+.effect-box {
+    border: 1px solid #515053;
+}
+
 .grid-item {
     aspect-ratio: 1/1;
     border: 1px solid #515053;
@@ -179,7 +265,8 @@ const { data: news } = await useAsyncData("news", async () => {
     }
 
     img {
-        width: 50%;
+        max-width: 60%;
+        max-height: 60%;
         object-fit: contain;
     }
 }
@@ -193,6 +280,4 @@ const { data: news } = await useAsyncData("news", async () => {
     grid-column: 6 / span 2;
     grid-row: 0;
 }
-
-
 </style>

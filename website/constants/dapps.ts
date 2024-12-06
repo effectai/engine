@@ -39,9 +39,8 @@ export const dapps = [
 	},
 	{
 		id: 11,
-		group_name: "Nosana",
-		twitter: "",
-		image_url: "nosana.svg",
+		group_name: "secret dapp",
+		image_url: "random-1.png",
 		discord: "",
 		instagram: "",
 		reddit: "",
