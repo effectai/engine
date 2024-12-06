@@ -1,7 +1,7 @@
 <template>
-  <nuxt-link :class="{ 'is-featured': news.featured }" :to="`${news._path}`" class="columns">
-    <div class="column is-two-fifth">
-      <div class="columns is-vcentered h-full">
+  <nuxt-link :class="{ 'is-featured': news.featured }" :to="`${news._path}`" class="columns is-vcentered">
+    <div class="column is-two-fifth"> 
+      <div class="columns h-full is-vcentered">
         <div class="column is-four-fifths h-full">
           <div class="news-image image is-5by3">
             <img :src="news.image.src"></img>
