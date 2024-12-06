@@ -2,7 +2,7 @@
 title: "Effect AI: Snapshot & Migration Announcement"
 description: "The Effect AI ecosystem recently made a bold move: we chose Solana as our new home, to build the next generation platform for decentralized intelligence. As part of this transition, a new token called EFFECT will be launched, offering a straightforward 1:1 migration path for EFX token holders. This token represents a fresh start for our mission to enhance human intelligence in the AI era. In this post, we are pleased to share the first concrete details around this migration and what this means for our token holders."
 image:
-  src: "/img/news/snapshot.png"
+  src: "/img/news/announcement.jpg"
 author: "Jesse"
 head:
   meta:
