@@ -64,15 +64,15 @@
                     <p class="is-size-3 has-text-medium">Be part of the <br> AI future:</p>
                 </div>
                 <div class="column is-full-mobile has-text-left has-text-centered-mobile">
-                    <p class="is-size-2 has-text-weight-bold">22</p>
+                    <p class="is-size-2 has-text-weight-bold">23</p>
                     <p class="is-size-5 has-text-grey-light has-text-weight-medium">Apps in Ecosystem</p>
                 </div>
                 <div class="column is-full-mobile has-text-left has-text-centered-mobile">
-                    <p class="is-size-2 has-text-weight-bold">22M</p>
+                    <p class="is-size-2 has-text-weight-bold">21M</p>
                     <p class="is-size-5 has-text-grey-light has-text-weight-medium">Tasks Completed</p>
                 </div>
                 <div class="column is-full-mobile has-text-left has-text-centered-mobile">
-                    <p class="is-size-2 has-text-weight-bold">156</p>
+                    <p class="is-size-2 has-text-weight-bold">205</p>
                     <p class="is-size-5 has-text-grey-light has-text-weight-medium">Proposals created</p>
                 </div>
             </div>
