@@ -21,7 +21,7 @@
             <template #subtitle>
                 <p class="subtitle mb-5">
                     <span class="pr-6">
-                        Effect Task Protocol™ is a decentralized P2P Network used to turbocharge human-driven AI tasks.
+                        Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.
                         Worker nodes, manager nodes, provider nodes—plug in, get tasks done, and thrive in a trustless
                         network.
                     </span>
@@ -130,12 +130,12 @@ const { data: news } = await useAsyncData("news", async () => {
 @use "bulma/sass/utilities/mixins";
 
 #main-hero {
+    background-size: cover;
     background: 
     linear-gradient(180deg, rgba(238, 238, 238, 0) 50%, #EEEEEE 100%), 
     url('./img/hero-background.png');
-    background-size: cover;
     background-repeat: no-repeat;
-    
+ 
     @include mixins.desktop {
         padding: 6rem 0rem;
     }
