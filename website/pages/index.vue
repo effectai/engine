@@ -84,10 +84,14 @@
             <div class="container">
 
                 <div class="columns">
-                    <div class="column">
-                        <p class="is-size-5 has-text-weight-normal has-text-left">Effect Workforce</p>
+                    <div class="column is-one-fifths is-two-fifths-desktop">
+                        <div class="columns h-full">
+                            <div class="column is-four-fifths">
+                                <p class="is-size-5 has-text-weight-normal has-text-left">Effect Workforce</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="column quote-text">
+                    <div class="column is-three-quarters-tablet is-three-quarters-desktop quote-text">
                         <p class="is-size-3 has-text-left has-text-weight-medium">
                             Empowering a global human workforce to shape the future of AI, combining blockchain and P2P
                             technology to deliver smarter, inclusive, and impactful AI solutions.
@@ -106,7 +110,7 @@
             <div class="container">
 
                 <div class="columns">
-                    <div class="column  is-radius-medium effect-box has-text-light">
+                    <div class="column is-radius-medium effect-box has-text-light">
                         <div>
                             01
                             <h2 class="is-size-3 has-text-weight-medium has-text-left">Complete Tasks</h2>
@@ -155,7 +159,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="column is-three-quarters is-three-quarters-tablet is-three-quarters-desktop ">
+                <div class="column is-three-quarters-tablet is-three-quarters-desktop ">
                     <h1 class="is-size-3 has-text-weight-medium has-text-primary has-text-left">
                         Syncing AI and Humanity: <br /> <span class="has-text-grey">Building the Future Together</span>
                     </h1>
@@ -214,8 +218,9 @@ const { data: news } = await useAsyncData("news", async () => {
 
 .effect-box {
     padding: 2rem;
+
     h2 {
-        margin-bottom: 4rem;
+        margin-bottom: 8rem;
     }
 }
 

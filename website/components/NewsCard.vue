@@ -2,7 +2,7 @@
   <nuxt-link :class="{ 'is-featured': news.featured }" :to="`${news._path}`" class="columns is-multiline">
     <div class="column is-two-fifths">
       <div class="columns is-vcentered h-full">
-        <div class="column is-four-fifths">
+        <div class="column is-four-fifths h-full">
           <div class="news-image image is-5by3">
             <img :src="news.image.src"></img>
           </div>
@@ -35,12 +35,16 @@ const limitText = (text: string, limit: number) => {
 };
 </script>
 
-<style lang="scss">
-
-.news-content{
+<style lang="scss" scoped>
+.news-content {
   padding-bottom:20px;
   border-bottom: 1px solid #f0f0f0;
 }
+
+.title:hover {
+  color: rgba(0,0,0,0.5) !important;
+}
+
 .news-image {
   img {
     object-fit: cover;
