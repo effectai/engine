@@ -1,12 +1,13 @@
 <template>
-  <main id="nuxt-news">
+  <main id="nuxt-news" style="margin-top: -75px;">
     <ContentRenderer v-if="data" :value="data">
-      <div id="blog-header" class="">
+      <div id="blog-header" class="" style="padding-top: 6rem;">
+        <div id="whiteout">&nbsp;</div>
         <div class="container blog-padding">
           <div class="columns is-vcentered is-6">
             <div class="column">
               <div class="">
-                <h1 class="title is-size-1-desktop is-size-2 has-text-weight-normal is-auto-phrase">
+                <h1 class="has-text-black title is-size-2-desktop is-size-2 has-text-weight-normal is-auto-phrase">
                   {{ data.title }}
                 </h1>
                 <div class="is-flex is-align-items-center">
@@ -15,8 +16,8 @@
                       :socials="[twitter, telegram, discord]"
                     /> -->
                 </div>
-                <span class="is-size-5 mt-5 is-block has-text-black">
-                  Posted on {{ data.created }} by {{ data.author }}
+                <span class="is-size-6 mt-5 is-block has-text-weight-light has-text-darkgrey">
+                  Posted on {{ data.created }}
                 </span>
               </div>
             </div>
@@ -60,12 +61,25 @@ useSeoMeta({
 @use "bulma/sass/utilities/mixins";
 
 #blog-header {
-  background: url('./../img/blog-header.png');
+  background-image: url('./../img/blog-header.png');
   background-size: cover;
+  background-position: right 0 bottom 60%;
+
 
   @include mixins.from(1200px) {
-    padding: 6rem 3rem;
+    padding: 0rem 3rem;
   }
+}
+
+#whiteout:after {
+    position: absolute;
+    content: '';
+    display: block;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,.5);
 }
 
 .blog-padding {
