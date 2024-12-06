@@ -1,6 +1,6 @@
 <template>
-  <nuxt-link :class="{ 'is-featured': news.featured }" :to="`${news._path}`" class="columns is-multiline">
-    <div class="column is-two-fifths">
+  <nuxt-link :class="{ 'is-featured': news.featured }" :to="`${news._path}`" class="columns">
+    <div class="column is-two-fifth">
       <div class="columns is-vcentered h-full">
         <div class="column is-four-fifths h-full">
           <div class="news-image image is-5by3">
@@ -8,9 +8,8 @@
           </div>
         </div>
       </div>
-
     </div>
-    <div class="news-content column is-full is-three-fifths">
+    <div class="news-content column is-three-fifth">
       <div class="is-flex is-justify-content-space-between has-fullwidth py-2 has-text-primary">
         <span> {{ news.created }}</span>
         <span>News</span>
