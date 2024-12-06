@@ -132,7 +132,7 @@ const { data: news } = await useAsyncData("news", async () => {
 #main-hero {
     background: 
     linear-gradient(180deg, rgba(238, 238, 238, 0) 50%, #EEEEEE 100%), 
-    url(./img/hero-background.png);
+    url('./img/hero-background.png');
     background-size: cover;
     background-repeat: no-repeat;
     
@@ -156,11 +156,11 @@ const { data: news } = await useAsyncData("news", async () => {
 }
 
 .grid-item {
+    aspect-ratio: 1;
     border: 1px solid #515053;
     padding: 20px;
     font-size: 30px;
     text-align: center;
-    aspect-ratio: 1;
     position: relative;
     grid-column: span 2;
     grid-row: span 2;
