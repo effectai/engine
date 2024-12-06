@@ -45,7 +45,7 @@ If you hold EFX on a DeFi Platform or a centralized exchange, you should withdra
 
 Further details about the migration process, including instructions on how to claim the new Solana-based Effect tokens, will be provided in a blog post released alongside the launch of the Claim Portal on January 5th, 2025. 
 
-Please follow our official X account and join our Discord channel to post any questions you have about the snapshot, migration, and claiming process.
+Please follow our [official X](https://x.com/effectaix) account and join our [Discord server](https://discord.gg/effectnetwork) to post any questions you have about the snapshot, migration, and claiming process.
 
 
 
