@@ -110,6 +110,10 @@ useSeoMeta({
   p {
     line-height: 32px;
     font-weight: 300;
+    a {
+      color: #0000AA;
+      text-decoration: underline;
+    }
   }
 
   #content {
