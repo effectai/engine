@@ -1,6 +1,6 @@
 <template>
     <div>
-        <HeroSection id="main-hero">
+        <HeroSection id="main-hero" :style="`background-image: url('./img/hero-background.png')`">
             <template #title>
                 <h1 class="title hero-title has-text-weight-light is-auto-phrase">
                     <span>
@@ -131,9 +131,6 @@ const { data: news } = await useAsyncData("news", async () => {
 
 #main-hero {
     background-size: cover;
-    background: 
-    linear-gradient(180deg, rgba(238, 238, 238, 0) 50%, #EEEEEE 100%), 
-    url('img/hero-background.png');
     background-repeat: no-repeat;
  
     @include mixins.desktop {
