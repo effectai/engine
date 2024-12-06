@@ -4,7 +4,7 @@
     class="section"
     data-aos="fade-in"
   >
-    <div class="container">
+    <div>
       <div :class="{ 'has-text-centered': centered }" class="my-6">
         <h3 v-if="title" class="title is-2 is-spaced">
           {{ title }}

@@ -76,8 +76,9 @@ export const dapps = [
 	},
 	{
 		id: 1,
-		group_name: "Solana",
+		group_name: "Git Star",
 		discord: "",
+		image_url: "gitstar.png",
 		instagram: "",
 		reddit: "",
 		featured: 1,

@@ -34,9 +34,14 @@
                         <div class="column">
                             <div class="">
                                 <nuxt-link class="is-flex" to="https://app.effect.ai/" exact-active-class="is-active">
-                                    <button class="button is-black is-rounded is-outlined">Launch App</button>
+                                    <button class="button is-black is-rounded is-outlined is-flex "
+                                    style="gap:10px"
+                                    >Launch App
+                                        <span class="icon">
+                                            <i class="fas fa-arrow-right"></i>
+                                        </span>
+                                    </button>
                                 </nuxt-link>
-
                             </div>
                         </div>
                         <div class="column">
@@ -49,7 +54,7 @@
     </div>
 
     <SimpleSection class="has-text-white has-background-black">
-        <template #subtitle>
+        <div class="container">
             <div class="columns is-mobile is-multiline">
                 <div class="column is-full-mobile is-one-third-tablet has-text-left has-text-centered-mobile">
                     <p class="is-size-2 has-text-weight-normal">Be part of the <br> AI future:</p>
@@ -67,43 +72,43 @@
                     <p class="is-size-5 has-text-grey-light has-text-weight-normal">Proposals created</p>
                 </div>
             </div>
-        </template>
-    </SimpleSection>
-
-    <SimpleSection class="container">
-        <div class="columns">
-            <div class="column is-three-quarters is-three-quarters-tablet is-three-quarters-desktop">
-                <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left">
-                    Syncing AI and Humanity: Building the Future Together
-                </h1>
-            </div>
         </div>
     </SimpleSection>
 
-    <SimpleSection class="container">
-        <NewsCardList :items="news" />
-    </SimpleSection>
-
-
-    <div class="fluid-container">
-        <div class="columns is-gapless is-multiline">
-            <div class="column is-one-third">
-                <p class="is-size-7 has-text-light has-text-weight-medium is-uppercase mb-5">
-                    Some of our partners & dapps
-                </p>
-                <div class="is-size-1 has-text-light mb-6">
-                    Explore the Frontier of AI Excellence within the Effect AI Ecosystem
+    <SimpleSection>
+        <div class="container">
+            <div class="columns">
+                <div class="column is-three-quarters is-three-quarters-tablet is-three-quarters-desktop">
+                    <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left">
+                        Syncing AI and Humanity: Building the Future Together
+                    </h1>
                 </div>
             </div>
-            <div class="column">
-                <div class="grid-container">
-                    <div :key="i" v-for="(dapp, i) in dapps.slice(0, 6)" class="grid-item" :class="`item-${i}`">
-                        <label class="is-size-7">{{ i + 1 }}</label>
-                        <img :src="`/img/ecosystem/${dapp.image_url}`">
+            <NewsCardList :items="news" />
+        </div>
+    </SimpleSection>
+
+    <div class="fluid-container">
+        <div class="container">
+            
+            <div class="columns is-gapless is-multiline">
+                <div class="column is-one-third">
+                    <p class="is-size-7 has-text-light has-text-weight-medium is-uppercase mb-5">
+                        Some of our partners & dapps
+                    </p>
+                    <div class="is-size-1 has-text-light mb-6">
+                        Explore the Frontier of AI Excellence within the Effect AI Ecosystem
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="grid-container">
+                        <div :key="i" v-for="(dapp, i) in dapps.slice(0, 6)" class="grid-item" :class="`item-${i}`">
+                            <label class="is-size-7">{{ i + 1 }}</label>
+                            <img :src="`/img/ecosystem/${dapp.image_url}`">
+                        </div>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </template>
@@ -132,14 +137,14 @@ const { data: news } = await useAsyncData("news", async () => {
 #main-hero {
     background-size: cover;
     background-repeat: no-repeat;
- 
+
     @include mixins.desktop {
         padding: 6rem 0rem;
     }
 }
 
 .grid-container {
-    margin-right: -90px;
+    margin-right: calc(60% - 50vw);
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     grid-template-rows: auto;
@@ -150,10 +155,14 @@ const { data: news } = await useAsyncData("news", async () => {
     overflow: hidden;
     background-color: #1C1A1F;
     padding: 8rem 0 8rem 4rem;
+
+    @include mixins.desktop {
+        padding: 6rem 0rem;
+    }
 }
 
 .grid-item {
-    aspect-ratio: 1;
+    aspect-ratio: 1/1;
     border: 1px solid #515053;
     padding: 20px;
     font-size: 30px;
@@ -164,10 +173,10 @@ const { data: news } = await useAsyncData("news", async () => {
     display: flex;
     justify-content: center;
 
-    label{
-        color:#D7D7D7;
+    label {
+        color: #D7D7D7;
         position: absolute;
-        left:40px;
+        left: 40px;
         font-size: 12px;
     }
 
