@@ -218,8 +218,14 @@ const { data: news } = await useAsyncData("news", async () => {
 
 useSeoMeta({
     title: "Effect AI - Decentralized Intelligence",
-    ogImage: "/img/effect-logo.png",
+    ogImage: "/img/effect-logo-black.png",
     description: "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks. Worker nodes, manager nodes, provider nodes—plug in, get tasks done, and thrive in a trustless network.",
+})
+
+useHead({
+    htmlAttrs:{
+        "data-theme": "light"
+    }
 })
 </script>
 
