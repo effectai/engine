@@ -1,5 +1,5 @@
 <template>
-    <div class="my-6" id="latest">
+    <div class="" id="latest">
       <div class="columns is-multiline">
         <div
           class="column is-full-mobile"

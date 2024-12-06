@@ -150,7 +150,7 @@
                 <div class="column is-one-fifths is-two-fifths-desktop">
                     <div class="columns is-vcentered h-full">
                         <div class="column is-four-fifths">
-                            <div class="news-image image is-5by3">
+                            <div class="">
                             </div>
                         </div>
                     </div>
