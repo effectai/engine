@@ -2,7 +2,7 @@
     <div>
         <HeroSection id="main-hero" :style="`margin-top: -75px; padding-top: 5rem; background-image: url('./img/hero-background.png')`">
             <template #title>
-                <h1 class="title mb-6 is-size-1-tablet is-size-2
+                <h1 class="title mb-6 is-size-2-tablet is-size-3
                 has-text-dark
                 has-text-weight-light is-auto-phrase">
                     <span>
