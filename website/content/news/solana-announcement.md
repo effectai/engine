@@ -1,6 +1,6 @@
 ---
 title: "Effect AI: Snapshot & Migration Announcement"
-description: "professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of e Finibus Bonorum et Malorum (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem."
+description: "The Effect AI ecosystem recently made a bold move: we chose Solana as our new home, to build the next generation platform for decentralized intelligence. As part of this transition, a new token called EFFECT will be launched, offering a straightforward 1:1 migration path for EFX token holders. This token represents a fresh start for our mission to enhance human intelligence in the AI era. In this post, we are pleased to share the first concrete details around this migration and what this means for our token holders."
 image:
   src: "/img/news/snapshot.png"
 author: "Jesse"
@@ -12,8 +12,8 @@ head:
       content: "Jesse - Effect.AI"
     - name: "copyright"
       content: "© 2024 Effect.AI"
-lastUpdated: "2024-12-05"
-created: "2024-12-05"
+lastUpdated: "2024-12-06"
+created: "2024-12-06"
 published: true
 ---
 
