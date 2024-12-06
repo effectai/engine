@@ -196,7 +196,6 @@
 </template>
 
 <script setup lang="ts">
-import { socials } from '~/constants/socials';
 import { dapps } from '~/constants/dapps.js';
 
 //fetch news content and sort by created\
@@ -211,6 +210,12 @@ const { data: news } = await useAsyncData("news", async () => {
         return new Date(b.created).getTime() - new Date(a.created).getTime();
     });
 });
+
+useSeoMeta({
+    title: "Effect AI - Decentralized Intelligence",
+    ogImage: "/img/effect-logo.png",
+    description: "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks. Worker nodes, manager nodes, provider nodes—plug in, get tasks done, and thrive in a trustless network.",
+})
 </script>
 
 <style lang="scss" scoped>
