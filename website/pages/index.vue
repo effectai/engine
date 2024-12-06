@@ -1,6 +1,6 @@
 <template>
     <div>
-        <HeroSection id="main-hero" :style="`margin-top: -75px; background-image: url('./img/hero-background.png')`">
+        <HeroSection id="main-hero" :style="`margin-top: -75px; padding-top: 5rem; background-image: url('./img/hero-background.png')`">
             <template #title>
                 <h1 class="title mb-6 is-size-1-tablet is-size-2
                 has-text-dark
