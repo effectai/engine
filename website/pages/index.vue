@@ -74,7 +74,7 @@
     <SimpleSection>
         <div class="container">
             <div class="columns">
-                <div class="column is-three-quarters is-three-quarters-tablet is-three-quarters-desktop">
+                <div class="column is-three-quarters is-three-quarters-tablet is-three-quarters-desktop my-6">
                     <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left">
                         Syncing AI and Humanity: Building the Future Together
                     </h1>
@@ -84,9 +84,8 @@
         </div>
     </SimpleSection>
 
-    <div class="fluid-container">
+    <section class="fluid-container">
         <div class="container">
-
             <div class="columns is-gapless is-multiline">
                 <div class="column is-one-third">
                     <p class="is-size-7 has-text-light has-text-weight-medium is-uppercase mb-5">
@@ -106,7 +105,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 </template>
 
 <script setup lang="ts">

@@ -2,6 +2,8 @@
     $primary: #000000,
     $light: #D7D7D7,
     $size-1: 6rem,
+    $link: #000000,
+    $section-padding-desktop: 8rem 3rem,
     $size-2: 3rem);
 
 @use "bulma/sass/utilities/mixins";
@@ -19,7 +21,3 @@ $nav-background: rgba(255, 255, 255, 0.561);
     color: black;
 }
 
-:root {
-    --bulma-link-text: '#000';
-    --bulma-size-1: 3rem;
-}

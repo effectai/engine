@@ -10,7 +10,7 @@
         <span> {{ news.created }}</span>
         <span>News</span>
       </div>
-      <div class="title hero-title is-4 is-size-2 has-text-weight-medium">
+      <div class="title hero-title is-4 is-size-2 has-text-weight-medium has-text-black">
         {{ news.title }}
       </div>
       <p class="has-text-black">
