@@ -1,6 +1,6 @@
 <template>
     <div>
-        <HeroSection id="main-hero" style="background-image: url(./img/hero-background.png);">
+        <HeroSection id="main-hero">
             <template #title>
                 <h1 class="title hero-title has-text-weight-light is-auto-phrase">
                     <span>
@@ -130,8 +130,12 @@ const { data: news } = await useAsyncData("news", async () => {
 @use "bulma/sass/utilities/mixins";
 
 #main-hero {
+    background: 
+    linear-gradient(180deg, rgba(238, 238, 238, 0) 50%, #EEEEEE 100%), 
+    url(./img/hero-background.png);
     background-size: cover;
-
+    background-repeat: no-repeat;
+    
     @include mixins.desktop {
         padding: 6rem 0rem;
     }
