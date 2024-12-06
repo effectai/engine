@@ -13,7 +13,7 @@
       <div class="is-flex is-justify-content-space-between has-fullwidth pt-2 has-text-primary is-size-7">
 	<span> {{ news.created }}</span>
       </div>
-      <div class="title hero-title is-4 is-size-3 has-text-weight-medium has-text-black">
+      <div class="title hero-title is-4 is-size-4 is-size-3-tablet has-text-weight-medium has-text-black">
 	{{ news.title }}
       </div>
       <p class="has-text-black">

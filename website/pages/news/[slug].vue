@@ -7,7 +7,7 @@
           <div class="columns is-vcentered is-6">
             <div class="column">
               <div class="">
-                <h1 class="has-text-black title is-size-2-desktop is-size-2 has-text-weight-normal is-auto-phrase">
+                <h1 class="has-text-black title is-size-2-tablet is-size-3 has-text-weight-normal is-auto-phrase">
                   {{ data.title }}
                 </h1>
                 <div class="is-flex is-align-items-center">

@@ -65,7 +65,7 @@
     <SimpleSection class="has-text-light has-background-dark">
         <div class="container">
             <div class="columns is-mobile is-multiline">
-                <div class="column is-full-mobile is-one-third-tablet has-text-left has-text-centered-mobile">
+                <div class="be-part-of column is-full-mobile mb-4-mobile is-one-third-tablet has-text-left">
                     <p class="is-size-3 has-text-medium">Be part of the <br> AI future:</p>
                 </div>
                 <div class="column is-full-mobile has-text-left has-text-centered-mobile">
@@ -253,6 +253,12 @@ useSeoMeta({
 
     @include mixins.desktop {
         padding: 6rem 0rem;
+    }
+}
+
+.be-part-of {
+    @include mixins.mobile {
+       margin-bottom: 3rem;
     }
 }
 
