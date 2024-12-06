@@ -13,7 +13,7 @@ export const reddit = {
   
   export const twitter = {
     name: "Twitter",
-    faClass: "fab fa-twitter",
+    faClass: "fab fa-x-twitter",
     link: "https://twitter.com/effectaix",
     activeMembers: 12500,
   };
