@@ -3,7 +3,7 @@
       <section class="section">
         <div class="container mt-5">
           <div class="columns is-vcentered">
-            <div class="column is-full-mobile is-four-fifths-tablet is-three-fifths-widescreen is-three-quarters-desktop">
+            <div class="column is-full-mobile is-four-fifths-tablet is-four-fifths-widescreen is-three-quarters-desktop">
               <h1 v-if="title" class="title is-spaced is-auto-phrase">
                 <span class="has-text-primary is-block">
                     {{title}}

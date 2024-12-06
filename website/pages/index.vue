@@ -2,55 +2,34 @@
     <div>
         <HeroSection id="main-hero" style="background-image: url(./img/hero-background.png);">
             <template #title>
-                <h1
-                    class="title hero-title has-text-weight-normal is-auto-phrase">
-                    <span v-motion-pop :delay="250">
+                <h1 class="title hero-title has-text-weight-light is-auto-phrase">
+                    <span>
                         Unleashing
                     </span>
-                    <span  v-motion-pop :delay="500">
+                    <span>
                         Decentralized
                     </span>
-                    <span  v-motion-pop :delay="800">
-                      Intelligence
+                    <span>
+                        Intelligence
                     </span>
                 </h1>
                 <div class="is-flex mb-6 mt-2 is-very-small">
-                    <nuxt-link :delay="1250" v-motion-pop-visible-once to="https://github.com/effectai" class="">
-                        <div class="control">
-                            <div class="tags has-addons">
-                                <span class="tag is-primary has-text-white is-very-small"> open source</span>
-                                <span class="tag is-dark is-very-small">
-                                    <i class="fa fa-heart has-text-smoke"></i>
-                                </span>
-                            </div>
-                        </div>
-                    </nuxt-link>
 
-                    <nuxt-link v-motion-pop-visible-once :delay="1500"
-                        to="https://github.com/effectai/effect-network/blob/master/LICENSE" style="font-size: 10px"
-                        class="badge mx-2">
-                        <div class="control">
-                            <div class="tags has-addons">
-                                <span class="tag is-primary has-text-white is-very-small">licence</span>
-                                <span class="tag is-dark is-very-small"><small style="height: 12px">MIT</small></span>
-                            </div>
-                        </div>
-                    </nuxt-link>
                 </div>
-
             </template>
 
             <template #subtitle>
-                <p v-motion-slide-visible-once-left :delay="1800" class="subtitle mb-5">
+                <p class="subtitle mb-5">
                     <span class="pr-6">
-                        Effect Task Protocol™ is a decentralized P2P Network used to turbocharge human-driven AI tasks. Worker nodes, manager nodes, provider nodes—plug in, get tasks done, and thrive in a trustless network.
+                        Effect Task Protocol™ is a decentralized P2P Network used to turbocharge human-driven AI tasks.
+                        Worker nodes, manager nodes, provider nodes—plug in, get tasks done, and thrive in a trustless
+                        network.
                     </span>
                 </p>
             </template>
 
             <template #footer>
-                <div :delay="1900" v-motion-slide-visible-once-left
-                    class="is-flex is-size-3 is-align-items-center is-primary has-text-primary is-in-front">
+                <div class="is-flex is-size-3 is-align-items-center is-primary has-text-primary is-in-front">
                     <div class="columns is-mobile is-vcentered ">
                         <div class="column">
                             <div class="">
@@ -95,7 +74,7 @@
         <div class="columns">
             <div class="column is-three-quarters is-three-quarters-tablet is-three-quarters-desktop">
                 <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left">
-                    Harmonizing AI with Humanity: Empowering Tomorrow's Workforce Together
+                    Syncing AI and Humanity: Building the Future Together
                 </h1>
             </div>
         </div>
@@ -105,62 +84,33 @@
         <NewsCardList :items="news" />
     </SimpleSection>
 
-    <SimpleSection class="container" :centered="true">
-        <template #subtitle>
-            <div class="columns">
-                <div class="column is-three-quarters is-three-quarters-tablet is-three-quarters-desktop">
-                    <h1 class="is-size-2 has-text-weight-medium has-text-primary has-text-left">
-                        Explore the Frontier of AI Excellence within the Effect AI Ecosystem
-                    </h1>
+
+    <div class="fluid-container">
+        <div class="columns is-gapless is-multiline">
+            <div class="column is-one-third">
+                <p class="is-size-7 has-text-light has-text-weight-medium is-uppercase mb-5">
+                    Some of our partners & dapps
+                </p>
+                <div class="is-size-1 has-text-light mb-6">
+                    Explore the Frontier of AI Excellence within the Effect AI Ecosystem
                 </div>
-                <div class="column is-flex is-align-items-center is-justify-content-right">
-                    <div>
+            </div>
+            <div class="column">
+                <div class="grid-container">
+                    <div :key="i" v-for="(dapp, i) in dapps.slice(0, 6)" class="grid-item" :class="`item-${i}`">
+                        <label class="is-size-7">{{ i + 1 }}</label>
+                        <img :src="`/img/ecosystem/${dapp.image_url}`">
                     </div>
                 </div>
             </div>
-        </template>
-    </SimpleSection>
 
-    <SimpleSection :centered="true" class="">
-        <template #subtitle>
-            <div class="columns is-variable is-4">
-                <div class="column">
-                    <div class="box is-radius-medium is-flex is-justify-content-center">
-                        <figure class="image is-96x96">
-                            <img src="/img/ask-a-stranger.png" alt="Description of the image">
-                        </figure>
-                    </div>
-                </div>
-                <div class="column">
-                    <div class="box is-radius-medium is-flex is-justify-content-center">
-                        <figure class="image is-96x96 is-flex is-align-items-center">
-                            <img src="/img/delos.png" alt="Description of the image">
-                        </figure>
-                    </div>
-                </div>
-                <div class="column">
-                    <div class="box is-radius-medium is-flex is-justify-content-center">
-                        <figure class="image is-96x96">
-                            <img src="/img/quick-cat.png" alt="Description of the image">
-                        </figure>
-                    </div>
-                </div>
-                <div class="column">
-                    <div class="box is-radius-medium is-flex is-justify-content-center">
-                        <figure class="image is-96x96">
-                            <img src="/img/vibelyze.png" alt="Description of the image">
-                        </figure>
-                    </div>
-                </div>
-            </div>
-        </template>
-    </SimpleSection>
-
+        </div>
+    </div>
 </template>
-
 
 <script setup lang="ts">
 import { socials } from '~/constants/socials';
+import { dapps } from '~/constants/dapps.js';
 
 //fetch news content and sort by created\
 const { data: news } = await useAsyncData("news", async () => {
@@ -178,11 +128,62 @@ const { data: news } = await useAsyncData("news", async () => {
 
 <style lang="scss" scoped>
 @use "bulma/sass/utilities/mixins";
+
 #main-hero {
     background-size: cover;
+
     @include mixins.desktop {
         padding: 6rem 0rem;
     }
+}
+
+.grid-container {
+    margin-right: -90px;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: auto;
+}
+
+.fluid-container {
+    width: 100%;
+    overflow: hidden;
+    background-color: #1C1A1F;
+    padding: 8rem 0 8rem 4rem;
+}
+
+.grid-item {
+    border: 1px solid #515053;
+    padding: 20px;
+    font-size: 30px;
+    text-align: center;
+    aspect-ratio: 1;
+    position: relative;
+    grid-column: span 2;
+    grid-row: span 2;
+    display: flex;
+    justify-content: center;
+
+    label{
+        color:#D7D7D7;
+        position: absolute;
+        left:40px;
+        font-size: 12px;
+    }
+
+    img {
+        width: 50%;
+        object-fit: contain;
+    }
+}
+
+.item-0 {
+    grid-column: 2 / span 2;
+    grid-row: span 2;
+}
+
+.item-2 {
+    grid-column: 6 / span 2;
+    grid-row: 0;
 }
 
 .subtitle {

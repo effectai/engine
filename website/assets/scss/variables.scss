@@ -1,6 +1,7 @@
 @use "bulma/sass" with (
     $family-sans-serif: '"Inter", sans-serif',
     $primary: #000000,
+    $light: #D7D7D7,
 );
 
 @use "bulma/sass/utilities/mixins";
