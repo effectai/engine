@@ -80,13 +80,14 @@
     </SimpleSection>
 
     <SimpleSection :centered="true">
-        <template #subtitle><div class="container">
-            
+        <template #subtitle>
+            <div class="container">
+
                 <div class="columns">
                     <div class="column">
                         <p class="is-size-5 has-text-weight-normal has-text-left">Effect Workforce</p>
                     </div>
-                    <div class="column">
+                    <div class="column quote-text">
                         <p class="is-size-3 has-text-left has-text-weight-medium">
                             Empowering a global human workforce to shape the future of AI, combining blockchain and P2P
                             technology to deliver smarter, inclusive, and impactful AI solutions.
@@ -95,7 +96,7 @@
                             technology.</p>
                     </div>
                 </div>
-        </div>
+            </div>
         </template>
     </SimpleSection>
 
@@ -213,7 +214,6 @@ const { data: news } = await useAsyncData("news", async () => {
 
 .effect-box {
     padding: 2rem;
-
     h2 {
         margin-bottom: 4rem;
     }
@@ -279,5 +279,17 @@ const { data: news } = await useAsyncData("news", async () => {
 .item-2 {
     grid-column: 6 / span 2;
     grid-row: 0;
+}
+
+
+.quote-text {
+    font-family: Inter;
+    font-size: 46px;
+    font-weight: 500;
+    line-height: 64.4px;
+    letter-spacing: -0.02em;
+    text-underline-position: from-font;
+    text-decoration-skip-ink: none;
+
 }
 </style>
