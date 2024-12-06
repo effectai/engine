@@ -217,16 +217,14 @@ const { data: news } = await useAsyncData("news", async () => {
 });
 
 useSeoMeta({
+    ogDescription: "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
     title: "Effect AI - Decentralized Intelligence",
     ogImage: "/img/effect-logo-black.png",
-    description: "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks. Worker nodes, manager nodes, provider nodes—plug in, get tasks done, and thrive in a trustless network.",
+    ogTitle: "Effect AI - Decentralized Intelligence",
+    description: "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
 })
 
-useHead({
-    htmlAttrs:{
-        "data-theme": "light"
-    }
-})
+
 </script>
 
 <style lang="scss" scoped>

@@ -5,7 +5,11 @@
 </template>
 
 <script setup>
-
+useHead({
+    htmlAttrs:{
+        "data-theme": "light"
+    }
+})
 </script>
 
 <style lang="scss" scoped>
