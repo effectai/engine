@@ -29,9 +29,8 @@ pub mod effect_rewards {
         ctx.accounts.handler()
     }
 
-    /// Send [NOS](/tokens/token) to the [VaultAccount](#vault-account).
-    pub fn claim_stream(ctx: Context<ClaimStream>, amount: u64) -> Result<()> {
-        ctx.accounts.handler(amount)
+    pub fn claim_stream(ctx: Context<ClaimStream>) -> Result<()> {
+        ctx.accounts.handler()
     }
 
     /// Claim rewards from a [RewardsAccount](#rewards-account) and [VaultAccount](#vault-account).
