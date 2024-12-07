@@ -69,9 +69,6 @@ export type EffectRewards = {
     },
     {
       "name": "claimStream",
-      "docs": [
-        "Send [NOS](/tokens/token) to the [VaultAccount](#vault-account)."
-      ],
       "discriminator": [
         157,
         247,
@@ -119,12 +116,7 @@ export type EffectRewards = {
           "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
         }
       ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
+      "args": []
     },
     {
       "name": "close",
