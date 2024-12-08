@@ -32,11 +32,7 @@ On the 5th of January 2025, we will release an official Claim Portal through our
 **IMPORTANT**: Remain extremely vigilant against potential scammers. Only access the Claim Portal through our official website at [https://effect.ai](https://effect.ai). Do not use any other links or platforms claiming to be associated with this token migration.
 
 ## NFX holders
-<<<<<<< HEAD
-The Effect DAO has decided that it will discontinue support for the NFX governance token after the snapshot date. This decision will streamline the ecosystem into a simpler, single token model. NFX holders will be able to claim additional EFFECT tokens through the Claim Portal for compensation. The exact conversion rate will be published ahead of the snapshot, and more details can be found <a href="https://dao.effect.network/proposals" target="_blank">in recent DAO proposals</a>.
-=======
-The Effect DAO has decided that it will discontinue support for the NFX governance token after the snapshot date. This decision will streamline the ecosystem into a more simple single token model. NFX holders will be able to claim additional EFFECT tokens through the Claim Portal for compensation. The exact conversion rate will be published ahead of the snapshot, and more details can be found [in recent DAO proposals](https://dao.effect.network/proposals).
->>>>>>> a93bd278c0ee0159788090a97515d9856b475725
+The Effect DAO has decided that it will discontinue support for the NFX governance token after the snapshot date. This decision will streamline the ecosystem into a more simple single token model. NFX holders will be able to claim additional EFFECT tokens through the Claim Portal for compensation. The exact conversion rate will be published ahead of the snapshot, and more details can be found <a href="https://dao.effect.network/proposals" target="_blank">in recent DAO proposals</a>.
 
 ## Special cases
 While the previous information covers the migration process for most users, the following cases require special attention:
