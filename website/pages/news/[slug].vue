@@ -1,7 +1,7 @@
 <template>
   <main id="nuxt-news" style="margin-top: -75px;">
     <ContentRenderer v-if="data" :value="data">
-      <div id="blog-header" class="" style="padding-top: 7rem;">
+      <div id="blog-header" class="" style="padding-top: 9rem;">
         <div id="whiteout">&nbsp;</div>
         <div class="container blog-outer-padding">
           <div class="columns is-vcentered is-6">
@@ -63,7 +63,7 @@ useSeoMeta({
 #blog-header {
   background-image: url('./../img/blog-header.png');
   background-size: cover;
-  background-position: right 0 bottom 60%;
+  background-position: right 0% bottom 20%;
 
 
   @include mixins.from(1200px) {

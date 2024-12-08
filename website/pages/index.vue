@@ -94,7 +94,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="column quote-text">
+                    <div class="column quote-text is-two-thirds">
                         <p class="is-size-3 has-text-left has-text-weight-medium">
                             Empowering a global human workforce to shape the future of AI, combining blockchain and P2P
                             technology to deliver smarter, inclusive, and impactful AI solutions.
@@ -154,15 +154,12 @@
     <SimpleSection>
         <div class="container">
             <div class="columns">
-                <div class="column is-two-fifth">
+                <div class="column">
                     <div class="columns is-vcentered h-full">
-                        <div class="column is-four-fifths">
-                            <div class="">
-                            </div>
-                        </div>
+                        <div class="column is-four-fifths is-full is-four-fifths-desktop"></div>
                     </div>
                 </div>
-                <div class="column">
+                <div class="column is-two-thirds">
                     <h1 class="is-size-3 has-text-weight-medium has-text-primary has-text-left">
                         Syncing AI and Humanity: <br /> <span class="has-text-grey">Building the Future Together</span>
                     </h1>
