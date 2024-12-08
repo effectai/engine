@@ -61,6 +61,15 @@
         </HeroSection>
     </div>
 
+    <Countdown
+        class="section"
+        :year="2025"
+        :month="0" 
+        :day="1"
+        :hour="12"
+        :minute="0"
+        :second="0"
+    ></Countdown>
 
     <SimpleSection class="has-text-light has-background-dark">
         <div class="container">
