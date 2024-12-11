@@ -56,10 +56,8 @@ impl VestingAccount {
     }
 
     pub fn claim(&mut self, claimer: Pubkey, amount_available: u64, now: i64) -> Result<u64> {
-        if !self.is_restricted_claim  {
-            if self.authority.key() != claimer {
-                return Err(VestingErrors::Unauthorized.into());
-            }
+        if self.is_restricted_claim && self.authority != claimer {
+            return Err(VestingErrors::Unauthorized.into());
         }
 
         let pool_amount: u64 = (now - self.start_time) as u64 * self.release_rate;

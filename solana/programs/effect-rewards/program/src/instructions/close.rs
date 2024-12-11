@@ -5,7 +5,6 @@ use crate::*;
 
 #[derive(Accounts)]
 pub struct Close<'info> {
-     #[account(mut)]
     pub reflection: Account<'info, ReflectionAccount>,
     
     #[account(mut, close = authority, has_one = authority @ RewardErrors::Unauthorized)]

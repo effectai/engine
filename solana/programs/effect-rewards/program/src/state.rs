@@ -28,6 +28,7 @@ impl ReflectionAccount {
     The formula below makes initial rate as large as it can be, and rounds it
     down a little to a clean multiple of the total supply.
     */
+
     pub const INITIAL_RATE: u128 = (u128::MAX - (u128::MAX % EFX_TOTAL_SUPPLY)) / EFX_TOTAL_SUPPLY;
     // pub const INITIAL_RATE: u128 = u128::pow(10, 15);
 
@@ -36,12 +37,6 @@ impl ReflectionAccount {
         self.total_reflection = 0;
         self.total_weighted_amount = 0;
         Ok(())
-    }
-
-    pub fn migrate(&mut self, rate: u128, reflection: u128, value: u128) {
-        self.rate = rate;
-        self.total_reflection = reflection;
-        self.total_weighted_amount = value;
     }
 
     pub fn topup(&mut self, weighted_amount: u128) {

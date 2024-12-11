@@ -45,7 +45,7 @@ describe("Effect Reward Program", async () => {
 				startTime: yesterday,
 				releaseRate: 1_000_000,
 				tag: "v",
-				isPubliclyClaimable: false,
+				isRestrictedClaim: true,
 				isClosable: false,
 				amount: 1_000_000,
 				mint,

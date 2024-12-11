@@ -10,17 +10,21 @@ use effect_vesting::{cpi::accounts::Open, program::EffectVesting};
 
 #[derive(Accounts)]
 pub struct Unstake<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
     #[account(
         mut,
         has_one = authority @ StakingErrors::Unauthorized,
     )]
     pub stake: Account<'info, StakeAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [stake.key().as_ref()],
+        bump
+    )]
     pub vault_token_account: Account<'info, TokenAccount>,
-
-    #[account(mut)]
-    pub authority: Signer<'info>,
 
     #[account(
         constraint = reward_account.data_is_empty(),
@@ -44,15 +48,23 @@ pub struct Unstake<'info> {
     )]
     pub vesting_vault_account: SystemAccount<'info>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        token::mint = mint,
+        token::authority = authority,
+    )]
     pub recipient_token_account: Account<'info, TokenAccount>,
 
     pub system_program: Program<'info, System>,
+
     pub token_program: Program<'info, Token>,
+
     pub reward_program: Program<'info, RewardProgram>,
+
     pub vesting_program: Program<'info, EffectVesting>,
 
     pub mint: Account<'info, Mint>,
+
     pub rent: Sysvar<'info, Rent>,
 }
 

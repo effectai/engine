@@ -32,5 +32,7 @@ pub enum StakingErrors {
     #[msg("Invalid stake account.")]
     InvalidStakeAccount,
     #[msg("Stake acount is not empty.")]
-    StakeNotEmpty
+    StakeNotEmpty,
+    #[msg("Invalid Mint")]
+    InvalidMint,
 }

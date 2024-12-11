@@ -1,7 +1,7 @@
 use crate::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use constants::{STAKE_DURATION_MAX, STAKE_DURATION_MIN, STAKE_MINIMUM_AMOUNT};
-use effect_common::{cpi};
+use effect_common::cpi;
 use effect_staking_common::StakeAccount;
 
 #[derive(Accounts)]
@@ -57,7 +57,6 @@ impl<'info> Stake<'info> {
             amount,
             self.authority.key(),
             duration.try_into().unwrap(),
-            self.vault_token_account.key(),
             Clock::get().unwrap().unix_timestamp
         );
 

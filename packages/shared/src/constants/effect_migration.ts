@@ -428,12 +428,12 @@ export const effect_migration = {
             "type": "i64"
           },
           {
-            "name": "vault_token_account",
-            "type": "pubkey"
-          },
-          {
             "name": "weighted_amount",
             "type": "u128"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
           }
         ]
       }

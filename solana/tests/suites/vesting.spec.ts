@@ -22,7 +22,7 @@ describe("Vesting Program", async () => {
 			startTime: yesterday,
 			releaseRate: 1_000_000,
 			tag: "v",
-			isPubliclyClaimable: false,
+			isRestrictedClaim: false,
 			isClosable: false,
 			amount: 1_000_000,
 			mint,
@@ -39,7 +39,7 @@ describe("Vesting Program", async () => {
 		expect(accounts.recipientTokenAccount).toEqual(ata);
 	});
 
-	it("requires the right authority to claim a publicly claimable false vesting", async () => {
+	it("requires the right authority to claim a restricted vesting", async () => {
 		const { mint, ata } = await setup({ provider, payer });
 
 		const yesterday = new Date().getTime() / 1000 - SECONDS_PER_DAY;
@@ -49,7 +49,7 @@ describe("Vesting Program", async () => {
 			startTime: yesterday,
 			releaseRate: 1_000_000,
 			tag: "v",
-			isPubliclyClaimable: false,
+			isRestrictedClaim: true,
 			isClosable: false,
 			amount: 1_000_000,
 			mint,
@@ -100,7 +100,7 @@ describe("Vesting Program", async () => {
 			startTime: now,
 			releaseRate: 1_000_000,
 			tag: "v",
-			isPubliclyClaimable: false,
+			isRestrictedClaim: false,
 			isClosable: false,
 			amount: 1_000_000,
 			mint,
@@ -118,7 +118,7 @@ describe("Vesting Program", async () => {
 			payer,
 			provider,
 		});
-        
+
 		// claim
 		await program.methods
 			.claim()

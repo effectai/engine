@@ -434,12 +434,12 @@ export type EffectMigration = {
             "type": "i64"
           },
           {
-            "name": "vaultTokenAccount",
-            "type": "pubkey"
-          },
-          {
             "name": "weightedAmount",
             "type": "u128"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
           }
         ]
       }

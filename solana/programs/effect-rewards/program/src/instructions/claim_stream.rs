@@ -5,10 +5,18 @@ use effect_vesting_common::VestingAccount;
 
 #[derive(Accounts)]
 pub struct ClaimStream<'info> {
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [b"reflection", vault_token_account.mint.as_ref()],
+        bump,
+    )]
     pub reflection: Account<'info, ReflectionAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [reflection.key().as_ref()],
+        bump,
+    )]
     pub reward_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]

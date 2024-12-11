@@ -7,24 +7,40 @@ use effect_staking_common::StakeAccount;
 
 #[derive(Accounts)]
 pub struct Claim<'info> {
-    #[account(mut)]
-    pub user: Account<'info, TokenAccount>,
-   
-    #[account(mut)]
-    pub vault_token_account: Account<'info, TokenAccount>,
-  
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [b"reflection", recipient_token_account.mint.as_ref()],
+        bump,
+    )]
     pub reflection: Account<'info, ReflectionAccount>,
-   
-    #[account(mut, has_one = authority @ RewardErrors::Unauthorized)]
-    pub reward: Account<'info, RewardAccount>,
-    
+  
+    #[account(
+        mut,
+        seeds = [reflection.key().as_ref()],
+        bump
+    )]
+    pub vault_token_account: Account<'info, TokenAccount>,
+
     #[account(
         has_one = authority @ RewardErrors::Unauthorized,
         constraint = stake.weighted_amount >= reward.weighted_amount @ RewardErrors::Decreased,
     )]
     pub stake: Account<'info, StakeAccount>,
    
+    #[account(
+        mut, 
+        seeds = [stake.key().as_ref()],
+        bump,
+        has_one = authority @ RewardErrors::Unauthorized)]
+    pub reward: Account<'info, RewardAccount>,
+
+    #[account(
+        mut,
+        token::mint = recipient_token_account.mint,
+        token::authority = authority,
+     )]
+    pub recipient_token_account: Account<'info, TokenAccount>,
+
     #[account(mut)]
     pub authority: Signer<'info>,
    
@@ -55,7 +71,7 @@ impl<'info> Claim<'info> {
         // pay-out pending reward
         transfer_tokens_from_vault!(
             self,
-            user,
+            recipient_token_account,
             &[&vault_seed!()],
             amount.try_into().unwrap()
         )

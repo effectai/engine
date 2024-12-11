@@ -34,9 +34,14 @@ export const effect_staking = {
         {
           "name": "vault_token_account",
           "writable": true,
-          "relations": [
-            "stake"
-          ]
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake"
+              }
+            ]
+          }
         },
         {
           "name": "authority",
@@ -224,15 +229,20 @@ export const effect_staking = {
           "writable": true
         },
         {
-          "name": "vault_token_account",
-          "writable": true,
-          "relations": [
-            "stake"
-          ]
-        },
-        {
           "name": "stake",
           "writable": true
+        },
+        {
+          "name": "vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake"
+              }
+            ]
+          }
         },
         {
           "name": "authority",
@@ -270,20 +280,28 @@ export const effect_staking = {
       ],
       "accounts": [
         {
-          "name": "stake",
-          "writable": true
-        },
-        {
-          "name": "vault_token_account",
-          "writable": true
-        },
-        {
           "name": "authority",
           "writable": true,
           "signer": true,
           "relations": [
             "stake"
           ]
+        },
+        {
+          "name": "stake",
+          "writable": true
+        },
+        {
+          "name": "vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake"
+              }
+            ]
+          }
         },
         {
           "name": "reward_account",
@@ -460,6 +478,11 @@ export const effect_staking = {
       "code": 6014,
       "name": "StakeNotEmpty",
       "msg": "Stake acount is not empty."
+    },
+    {
+      "code": 6015,
+      "name": "InvalidMint",
+      "msg": "Invalid Mint"
     }
   ],
   "types": [
@@ -526,12 +549,12 @@ export const effect_staking = {
             "type": "i64"
           },
           {
-            "name": "vault_token_account",
-            "type": "pubkey"
-          },
-          {
             "name": "weighted_amount",
             "type": "u128"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
           }
         ]
       }

@@ -40,9 +40,14 @@ export type EffectStaking = {
         {
           "name": "vaultTokenAccount",
           "writable": true,
-          "relations": [
-            "stake"
-          ]
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake"
+              }
+            ]
+          }
         },
         {
           "name": "authority",
@@ -230,15 +235,20 @@ export type EffectStaking = {
           "writable": true
         },
         {
-          "name": "vaultTokenAccount",
-          "writable": true,
-          "relations": [
-            "stake"
-          ]
-        },
-        {
           "name": "stake",
           "writable": true
+        },
+        {
+          "name": "vaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake"
+              }
+            ]
+          }
         },
         {
           "name": "authority",
@@ -276,20 +286,28 @@ export type EffectStaking = {
       ],
       "accounts": [
         {
-          "name": "stake",
-          "writable": true
-        },
-        {
-          "name": "vaultTokenAccount",
-          "writable": true
-        },
-        {
           "name": "authority",
           "writable": true,
           "signer": true,
           "relations": [
             "stake"
           ]
+        },
+        {
+          "name": "stake",
+          "writable": true
+        },
+        {
+          "name": "vaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake"
+              }
+            ]
+          }
         },
         {
           "name": "rewardAccount",
@@ -466,6 +484,11 @@ export type EffectStaking = {
       "code": 6014,
       "name": "stakeNotEmpty",
       "msg": "Stake acount is not empty."
+    },
+    {
+      "code": 6015,
+      "name": "invalidMint",
+      "msg": "Invalid Mint"
     }
   ],
   "types": [
@@ -532,12 +555,12 @@ export type EffectStaking = {
             "type": "i64"
           },
           {
-            "name": "vaultTokenAccount",
-            "type": "pubkey"
-          },
-          {
             "name": "weightedAmount",
             "type": "u128"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
           }
         ]
       }

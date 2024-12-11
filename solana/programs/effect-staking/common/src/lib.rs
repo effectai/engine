@@ -20,10 +20,9 @@ pub struct StakeAccount {
     pub authority: Pubkey,
     pub lock_duration: u64,
     pub stake_start_time: i64,
-    pub vault_token_account: Pubkey,
     pub weighted_amount: u128,
+    pub mint: Pubkey,
 }
-
 
 impl StakeAccount {
     pub fn init(
@@ -31,7 +30,6 @@ impl StakeAccount {
         amount: u64,
         authority: Pubkey,
         lock_duration: u64,
-        vault_token_account: Pubkey,
         stake_start_time: i64,
     ) {
         self.amount = amount;
@@ -47,8 +45,6 @@ impl StakeAccount {
         } else {
             self.stake_start_time = stake_start_time;
         }
-
-        self.vault_token_account = vault_token_account;
 
         self.update_xefx();
     }
