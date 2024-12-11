@@ -29,10 +29,7 @@ export const effect_rewards = {
         },
         {
           "name": "vault_token_account",
-          "writable": true,
-          "relations": [
-            "reflection"
-          ]
+          "writable": true
         },
         {
           "name": "reflection",
@@ -79,19 +76,36 @@ export const effect_rewards = {
           "writable": true
         },
         {
-          "name": "vault_token_account",
-          "writable": true,
-          "relations": [
-            "reflection"
-          ]
-        },
-        {
-          "name": "vesting_vault_token_account",
+          "name": "reward_vault_token_account",
           "writable": true
         },
         {
           "name": "vesting_account",
           "writable": true
+        },
+        {
+          "name": "vault_token_account",
+          "writable": true
+        },
+        {
+          "name": "claim_authority",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  101,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "authority",
@@ -168,7 +182,8 @@ export const effect_rewards = {
           "writable": true
         },
         {
-          "name": "stake"
+          "name": "stake",
+          "writable": true
         },
         {
           "name": "reward",
@@ -236,6 +251,10 @@ export const effect_rewards = {
                   111,
                   110
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
               }
             ]
           }
@@ -246,14 +265,8 @@ export const effect_rewards = {
           "pda": {
             "seeds": [
               {
-                "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
-                ]
+                "kind": "account",
+                "path": "reflection"
               }
             ]
           }
@@ -261,8 +274,7 @@ export const effect_rewards = {
         {
           "name": "authority",
           "writable": true,
-          "signer": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "signer": true
         },
         {
           "name": "system_program",
@@ -384,6 +396,16 @@ export const effect_rewards = {
       "code": 6003,
       "name": "Decreased",
       "msg": "This stake is not allowed to decrease."
+    },
+    {
+      "code": 6004,
+      "name": "NoClaimableRewards",
+      "msg": "No Claimable Rewards"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidMint",
+      "msg": "Invalid Mint"
     }
   ],
   "types": [
@@ -396,6 +418,10 @@ export const effect_rewards = {
         "kind": "struct",
         "fields": [
           {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
             "name": "rate",
             "type": "u128"
           },
@@ -404,25 +430,14 @@ export const effect_rewards = {
             "type": "u128"
           },
           {
-            "name": "total_xefx",
+            "name": "total_weighted_amount",
             "type": "u128"
-          },
-          {
-            "name": "vault_token_account",
-            "type": "pubkey"
-          },
-          {
-            "name": "vault_bump",
-            "type": "u8"
           }
         ]
       }
     },
     {
       "name": "RewardAccount",
-      "docs": [
-        "The `RewardAccount` struct holds all the information for any given user account."
-      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -435,7 +450,7 @@ export const effect_rewards = {
             "type": "u128"
           },
           {
-            "name": "xefx",
+            "name": "weighted_amount",
             "type": "u128"
           }
         ]
@@ -467,7 +482,7 @@ export const effect_rewards = {
             "type": "pubkey"
           },
           {
-            "name": "xefx",
+            "name": "weighted_amount",
             "type": "u128"
           }
         ]
@@ -491,10 +506,6 @@ export const effect_rewards = {
             "type": "u64"
           },
           {
-            "name": "is_closeable",
-            "type": "bool"
-          },
-          {
             "name": "release_rate",
             "type": "u64"
           },
@@ -503,11 +514,11 @@ export const effect_rewards = {
             "type": "i64"
           },
           {
-            "name": "vault_token_account",
-            "type": "pubkey"
+            "name": "is_closeable",
+            "type": "bool"
           },
           {
-            "name": "is_publicly_claimable",
+            "name": "is_restricted_claim",
             "type": "bool"
           },
           {
@@ -515,7 +526,7 @@ export const effect_rewards = {
             "type": {
               "array": [
                 "u8",
-                8
+                1
               ]
             }
           }

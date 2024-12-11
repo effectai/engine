@@ -30,8 +30,20 @@ export type EffectVesting = {
       ],
       "accounts": [
         {
-          "name": "vaultTokenAccount",
+          "name": "vestingAccount",
           "writable": true
+        },
+        {
+          "name": "vaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vestingAccount"
+              }
+            ]
+          }
         },
         {
           "name": "recipientTokenAccount",
@@ -39,10 +51,6 @@ export type EffectVesting = {
           "relations": [
             "vestingAccount"
           ]
-        },
-        {
-          "name": "vestingAccount",
-          "writable": true
         },
         {
           "name": "authority",
@@ -73,18 +81,23 @@ export type EffectVesting = {
       ],
       "accounts": [
         {
-          "name": "vaultTokenAccount",
-          "writable": true,
-          "relations": [
-            "vestingAccount"
-          ]
-        },
-        {
-          "name": "userTokenAccount",
+          "name": "vestingAccount",
           "writable": true
         },
         {
-          "name": "vestingAccount",
+          "name": "vaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vestingAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "userTokenAccount",
           "writable": true
         },
         {
@@ -173,7 +186,7 @@ export type EffectVesting = {
           "type": "bool"
         },
         {
-          "name": "isPubliclyClaimable",
+          "name": "isRestrictedClaim",
           "type": "bool"
         },
         {
@@ -182,7 +195,7 @@ export type EffectVesting = {
             "option": {
               "array": [
                 "u8",
-                8
+                1
               ]
             }
           }
@@ -285,43 +298,48 @@ export type EffectVesting = {
   "errors": [
     {
       "code": 6000,
+      "name": "unauthorized",
+      "msg": "unauthorized"
+    },
+    {
+      "code": 6001,
       "name": "notStarted",
       "msg": "This pool has not started yet."
     },
     {
-      "code": 6001,
+      "code": 6002,
       "name": "underfunded",
       "msg": "This pool does not have enough funds."
     },
     {
-      "code": 6002,
+      "code": 6003,
       "name": "notCloseable",
       "msg": "This pool is not closeable."
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "wrongClaimType",
       "msg": "This pool has a different claim type."
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "wrongBeneficiary",
       "msg": "This pool does not match the beneficiary."
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "invalidTokenAccount",
       "msg": "This pool has an invalid token account."
-    },
-    {
-      "code": 6006,
-      "name": "unauthorized",
-      "msg": "unauthorized"
     },
     {
       "code": 6007,
       "name": "invalidVault",
       "msg": "Invalid vault"
+    },
+    {
+      "code": 6008,
+      "name": "claimFailed",
+      "msg": "Claim failed"
     }
   ],
   "types": [
@@ -343,10 +361,6 @@ export type EffectVesting = {
             "type": "u64"
           },
           {
-            "name": "isCloseable",
-            "type": "bool"
-          },
-          {
             "name": "releaseRate",
             "type": "u64"
           },
@@ -355,11 +369,11 @@ export type EffectVesting = {
             "type": "i64"
           },
           {
-            "name": "vaultTokenAccount",
-            "type": "pubkey"
+            "name": "isCloseable",
+            "type": "bool"
           },
           {
-            "name": "isPubliclyClaimable",
+            "name": "isRestrictedClaim",
             "type": "bool"
           },
           {
@@ -367,7 +381,7 @@ export type EffectVesting = {
             "type": {
               "array": [
                 "u8",
-                8
+                1
               ]
             }
           }

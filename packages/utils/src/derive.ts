@@ -23,7 +23,6 @@ export const useDeriveVestingAccounts = ({
 	programId
 }: {
 	vestingAccount: PublicKey;
-	authority: PublicKey;
 	programId: PublicKey;
 }) => {
 
@@ -39,25 +38,43 @@ export const useDeriveVestingAccounts = ({
 };
 
 export const useDeriveRewardAccounts = ({
-	stakingAccount,
-	programId
+	programId,
+	mint
 }: {
+	mint: PublicKey;
 	programId: PublicKey;
-	stakingAccount: PublicKey;
 }) => {
-	const [rewardAccount] = PublicKey.findProgramAddressSync(
-		[stakingAccount.toBuffer()],
-		programId,
+	const [reflectionAccount] = PublicKey.findProgramAddressSync(
+		[Buffer.from("reflection"), mint.toBuffer()],
+		programId
 	);
 
-	const [reflectionAccount] = PublicKey.findProgramAddressSync(
-		[Buffer.from("reflection")],
+	const [reflectionVaultAccount] = PublicKey.findProgramAddressSync(
+		[reflectionAccount.toBuffer()],
 		programId
 	);
 
 	return {
-		rewardAccount,
-		reflectionAccount
+		reflectionAccount,
+		reflectionVaultAccount
+	};
+}
+
+export const useDeriveStakingRewardAccount = ({
+	stakingAccount,
+	programId,
+}: {
+	stakingAccount: PublicKey;
+	programId: PublicKey;
+}) => {
+
+	const [stakingRewardAccount] = PublicKey.findProgramAddressSync(
+		[stakingAccount.toBuffer()],
+		programId
+	);
+
+	return {
+		stakingRewardAccount,
 	};
 }
 
@@ -69,12 +86,18 @@ export const useDeriveStakeAccounts = ({
 	programId: PublicKey;
 }) => {
 
+	const [rewardAccount] = PublicKey.findProgramAddressSync(
+		[stakingAccount.toBuffer()],
+		programId,
+	);
+
 	const [vaultAccount] = PublicKey.findProgramAddressSync(
 		[stakingAccount.toBuffer()],
 		programId,
 	);
 
 	return {
-		vaultAccount
+		vaultAccount,
+		rewardAccount,
 	};
 };

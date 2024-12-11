@@ -62,6 +62,10 @@ export type EffectMigration = {
           "address": "SysvarRent111111111111111111111111111111111"
         },
         {
+          "name": "migrationProgram",
+          "address": "BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g"
+        },
+        {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -283,16 +287,16 @@ export type EffectMigration = {
   ],
   "accounts": [
     {
-      "name": "claimAccount",
+      "name": "migrationAccount",
       "discriminator": [
-        113,
-        109,
-        47,
-        96,
-        242,
-        219,
-        61,
-        165
+        129,
+        168,
+        118,
+        35,
+        238,
+        212,
+        16,
+        172
       ]
     },
     {
@@ -368,26 +372,6 @@ export type EffectMigration = {
   ],
   "types": [
     {
-      "name": "claimAccount",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "foreignPublicKey",
-            "type": "bytes"
-          },
-          {
-            "name": "claimType",
-            "type": {
-              "defined": {
-                "name": "claimType"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "claimType",
       "type": {
         "kind": "enum",
@@ -404,6 +388,26 @@ export type EffectMigration = {
                 "type": "i64"
               }
             ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "migrationAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "foreignPublicKey",
+            "type": "bytes"
+          },
+          {
+            "name": "claimType",
+            "type": {
+              "defined": {
+                "name": "claimType"
+              }
+            }
           }
         ]
       }
@@ -434,7 +438,7 @@ export type EffectMigration = {
             "type": "pubkey"
           },
           {
-            "name": "xefx",
+            "name": "weightedAmount",
             "type": "u128"
           }
         ]

@@ -69,7 +69,7 @@ macro_rules! close_vault {
 
 #[macro_export]
 macro_rules! open_vesting {
-    ($accounts: expr, $seeds: expr, $release_rate: expr, $start_time: expr, $is_closable:expr, $is_publicly_claimable:expr, $tag: expr ) => {
+    ($accounts: expr, $seeds: expr, $release_rate: expr, $start_time: expr, $is_closable:expr, $is_restricted_claim:expr, $tag: expr ) => {
         effect_vesting::cpi::open(
             CpiContext::new_with_signer(
                 $accounts.vesting_program.to_account_info(),
@@ -88,7 +88,7 @@ macro_rules! open_vesting {
             $release_rate,
             $start_time,
             $is_closable,
-            $is_publicly_claimable,
+            $is_restricted_claim,
             $tag,
         )
     };
@@ -102,9 +102,9 @@ macro_rules! claim_vesting {
                 $accounts.vesting_program.to_account_info(),
                 Claim {
                     vesting_account: $accounts.vesting_account.to_account_info(),
-                    vault_token_account: $accounts.vesting_vault_token_account.to_account_info(),
-                    authority: $accounts.authority.to_account_info(),
-                    recipient_token_account: $accounts.vault_token_account.to_account_info(),
+                    vault_token_account: $accounts.vault_token_account.to_account_info(),
+                    authority: $accounts.claim_authority.to_account_info(),
+                    recipient_token_account: $accounts.reward_vault_token_account.to_account_info(),
                     token_program: $accounts.token_program.to_account_info(),
                 },
                 $seeds,

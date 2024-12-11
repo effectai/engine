@@ -135,10 +135,8 @@
       "accounts": [
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "stake"
-          ]
+          "writable": true,
+          "signer": true
         },
         {
           "name": "mint",
@@ -149,24 +147,37 @@
           "writable": true
         },
         {
-          "name": "stake",
+          "name": "stake_account",
           "writable": true
         },
         {
           "name": "vault_token_account",
-          "writable": true,
-          "relations": [
-            "stake"
-          ]
+          "writable": true
         },
         {
-          "name": "claim_vault",
-          "writable": true,
-          "signer": true
+          "name": "migration_program",
+          "address": "BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g"
         },
         {
           "name": "claim_account",
           "writable": true
+        },
+        {
+          "name": "claim_vault",
+          "writable": true,
+          "signer": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "claim_account"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "migration_program"
+            }
+          }
         },
         {
           "name": "system_program",
@@ -275,25 +286,44 @@
           ]
         },
         {
+          "name": "reward_account",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "reward_program"
+            }
+          }
+        },
+        {
           "name": "vesting_account",
           "writable": true,
           "signer": true
         },
         {
-          "name": "reward_account",
-          "writable": true
-        },
-        {
           "name": "vesting_vault_account",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vesting_account"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "vesting_program"
+            }
+          }
         },
         {
           "name": "recipient_token_account",
           "writable": true
-        },
-        {
-          "name": "vesting_program",
-          "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
         },
         {
           "name": "system_program",
@@ -302,6 +332,14 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "reward_program",
+          "address": "HJR3op52N7tNycXqQnVu8cDnxH7udp4pYi1ps9S1hdBz"
+        },
+        {
+          "name": "vesting_program",
+          "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
         },
         {
           "name": "mint"
@@ -320,6 +358,19 @@
     }
   ],
   "accounts": [
+    {
+      "name": "MigrationAccount",
+      "discriminator": [
+        129,
+        168,
+        118,
+        35,
+        238,
+        212,
+        16,
+        172
+      ]
+    },
     {
       "name": "StakeAccount",
       "discriminator": [
@@ -413,6 +464,47 @@
   ],
   "types": [
     {
+      "name": "ClaimType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Token",
+            "fields": []
+          },
+          {
+            "name": "Stake",
+            "fields": [
+              {
+                "name": "stake_start_time",
+                "type": "i64"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "MigrationAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "foreign_public_key",
+            "type": "bytes"
+          },
+          {
+            "name": "claim_type",
+            "type": {
+              "defined": {
+                "name": "ClaimType"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "StakeAccount",
       "type": {
         "kind": "struct",
@@ -438,7 +530,7 @@
             "type": "pubkey"
           },
           {
-            "name": "xefx",
+            "name": "weighted_amount",
             "type": "u128"
           }
         ]

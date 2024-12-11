@@ -18,7 +18,7 @@ cluster = "Localnet"
 wallet = "./tests/keys/authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV.json"
 
 [workspace]
-members = ["programs/effect-migration", "programs/effect-staking", "programs/effect-rewards", "programs/effect-vesting"]
+members = ["programs/effect-migration/program", "programs/effect-staking/program", "programs/effect-rewards/program", "programs/effect-vesting/program"]
 
 [scripts]
 deploy_local = "deploy --program-name effect-staking --provider.cluster localnet"

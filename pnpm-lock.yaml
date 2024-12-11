@@ -624,14 +624,17 @@ importers:
   website:
     dependencies:
       '@fortawesome/fontawesome-free':
-        specifier: ^5.15.2
-        version: 5.15.4
+        specifier: ^6.7.1
+        version: 6.7.1
       '@nuxt/content':
         specifier: ^2.13.4
         version: 2.13.4(nuxt@3.14.1592)(vue@3.5.13)
       '@nuxt/image':
         specifier: ^1.8.1
         version: 1.8.1
+      '@vueuse/core':
+        specifier: ^11.3.0
+        version: 11.3.0(vue@3.5.13)
       '@vueuse/motion':
         specifier: ^2.2.6
         version: 2.2.6(vue@3.5.13)
@@ -3471,10 +3474,9 @@ packages:
     resolution: {integrity: sha512-kym7SodPp8/wloecOpcmSnWJsK7M0E5Wg8UcFA+uO4B9s5d0ywXOEro/8HM9x0rW+TljRzul/14UYz3TleT3ig==}
     dev: true
 
-  /@fortawesome/fontawesome-free@5.15.4:
-    resolution: {integrity: sha512-eYm8vijH/hpzr/6/1CJ/V/Eb1xQFW2nnUKArb3z+yUWv7HTwj6M7SP957oMjfZjAHU6qpoNc2wQvIxBLWYa/Jg==}
+  /@fortawesome/fontawesome-free@6.7.1:
+    resolution: {integrity: sha512-ALIk/MOh5gYe1TG/ieS5mVUsk7VUIJTJKPMK9rFFqOgfp0Q3d5QiBXbcOMwUvs37fyZVCz46YjOE6IFeOAXCHA==}
     engines: {node: '>=6'}
-    requiresBuild: true
     dev: false
 
   /@fractalwagmi/popup-connection@1.1.1(react-dom@18.3.1)(react@18.3.1):

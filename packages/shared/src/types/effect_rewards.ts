@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/effect_rewards.json`.
  */
 export type EffectRewards = {
-  "address": "HJR3op52N7tNycXqQnVu8cDnxH7udp4pYi1ps9S1hdBz",
+  "address": "effectrewards",
   "metadata": {
     "name": "effectRewards",
     "version": "0.1.0",
@@ -35,10 +35,7 @@ export type EffectRewards = {
         },
         {
           "name": "vaultTokenAccount",
-          "writable": true,
-          "relations": [
-            "reflection"
-          ]
+          "writable": true
         },
         {
           "name": "reflection",
@@ -85,19 +82,36 @@ export type EffectRewards = {
           "writable": true
         },
         {
-          "name": "vaultTokenAccount",
-          "writable": true,
-          "relations": [
-            "reflection"
-          ]
-        },
-        {
-          "name": "vestingVaultTokenAccount",
+          "name": "rewardVaultTokenAccount",
           "writable": true
         },
         {
           "name": "vestingAccount",
           "writable": true
+        },
+        {
+          "name": "vaultTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "claimAuthority",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  101,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "authority",
@@ -174,7 +188,8 @@ export type EffectRewards = {
           "writable": true
         },
         {
-          "name": "stake"
+          "name": "stake",
+          "writable": true
         },
         {
           "name": "reward",
@@ -242,6 +257,10 @@ export type EffectRewards = {
                   111,
                   110
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
               }
             ]
           }
@@ -252,14 +271,8 @@ export type EffectRewards = {
           "pda": {
             "seeds": [
               {
-                "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
-                ]
+                "kind": "account",
+                "path": "reflection"
               }
             ]
           }
@@ -267,8 +280,7 @@ export type EffectRewards = {
         {
           "name": "authority",
           "writable": true,
-          "signer": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "signer": true
         },
         {
           "name": "systemProgram",
@@ -390,6 +402,16 @@ export type EffectRewards = {
       "code": 6003,
       "name": "decreased",
       "msg": "This stake is not allowed to decrease."
+    },
+    {
+      "code": 6004,
+      "name": "noClaimableRewards",
+      "msg": "No Claimable Rewards"
+    },
+    {
+      "code": 6005,
+      "name": "invalidMint",
+      "msg": "Invalid Mint"
     }
   ],
   "types": [
@@ -402,6 +424,10 @@ export type EffectRewards = {
         "kind": "struct",
         "fields": [
           {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
             "name": "rate",
             "type": "u128"
           },
@@ -410,25 +436,14 @@ export type EffectRewards = {
             "type": "u128"
           },
           {
-            "name": "totalXefx",
+            "name": "totalWeightedAmount",
             "type": "u128"
-          },
-          {
-            "name": "vaultTokenAccount",
-            "type": "pubkey"
-          },
-          {
-            "name": "vaultBump",
-            "type": "u8"
           }
         ]
       }
     },
     {
       "name": "rewardAccount",
-      "docs": [
-        "The `RewardAccount` struct holds all the information for any given user account."
-      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -441,7 +456,7 @@ export type EffectRewards = {
             "type": "u128"
           },
           {
-            "name": "xefx",
+            "name": "weightedAmount",
             "type": "u128"
           }
         ]
@@ -473,7 +488,7 @@ export type EffectRewards = {
             "type": "pubkey"
           },
           {
-            "name": "xefx",
+            "name": "weightedAmount",
             "type": "u128"
           }
         ]
@@ -497,10 +512,6 @@ export type EffectRewards = {
             "type": "u64"
           },
           {
-            "name": "isCloseable",
-            "type": "bool"
-          },
-          {
             "name": "releaseRate",
             "type": "u64"
           },
@@ -509,11 +520,11 @@ export type EffectRewards = {
             "type": "i64"
           },
           {
-            "name": "vaultTokenAccount",
-            "type": "pubkey"
+            "name": "isCloseable",
+            "type": "bool"
           },
           {
-            "name": "isPubliclyClaimable",
+            "name": "isRestrictedClaim",
             "type": "bool"
           },
           {
@@ -521,7 +532,7 @@ export type EffectRewards = {
             "type": {
               "array": [
                 "u8",
-                8
+                1
               ]
             }
           }

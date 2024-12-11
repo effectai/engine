@@ -1,7 +1,17 @@
 [workspace]
 members = [
     "common",
-    "programs/*"
+    "programs/effect-migration/common",
+    "programs/effect-migration/program",
+
+    "programs/effect-staking/common",
+    "programs/effect-staking/program",
+
+    "programs/effect-vesting/common",
+    "programs/effect-vesting/program",
+
+    "programs/effect-rewards/common",
+    "programs/effect-rewards/program"
 ]
 resolver = "2"
 

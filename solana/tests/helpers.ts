@@ -75,8 +75,8 @@ export const useAnchor = () => {
 				expect(e.error.errorCode.code.toUpperCase()).toBe(
 					expectedAnchorError.name.toUpperCase(),
 				);
-				expect(e.error.errorCode.number).toBe(expectedAnchorError.code);
-				expect(e.error.errorMessage).toBe(expectedAnchorError.msg);
+				expect(e.error.errorCode.number).toStrictEqual(expectedAnchorError.code);
+				expect(e.error.errorMessage).toStrictEqual(expectedAnchorError.msg);
 				return;
 			}
 			throw e;

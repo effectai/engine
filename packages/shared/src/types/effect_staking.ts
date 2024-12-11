@@ -141,10 +141,8 @@ export type EffectStaking = {
       "accounts": [
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "stake"
-          ]
+          "writable": true,
+          "signer": true
         },
         {
           "name": "mint",
@@ -155,24 +153,37 @@ export type EffectStaking = {
           "writable": true
         },
         {
-          "name": "stake",
+          "name": "stakeAccount",
           "writable": true
         },
         {
           "name": "vaultTokenAccount",
-          "writable": true,
-          "relations": [
-            "stake"
-          ]
+          "writable": true
         },
         {
-          "name": "claimVault",
-          "writable": true,
-          "signer": true
+          "name": "migrationProgram",
+          "address": "BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g"
         },
         {
           "name": "claimAccount",
           "writable": true
+        },
+        {
+          "name": "claimVault",
+          "writable": true,
+          "signer": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "claimAccount"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "migrationProgram"
+            }
+          }
         },
         {
           "name": "systemProgram",
@@ -281,25 +292,44 @@ export type EffectStaking = {
           ]
         },
         {
+          "name": "rewardAccount",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "rewardProgram"
+            }
+          }
+        },
+        {
           "name": "vestingAccount",
           "writable": true,
           "signer": true
         },
         {
-          "name": "rewardAccount",
-          "writable": true
-        },
-        {
           "name": "vestingVaultAccount",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vestingAccount"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "vestingProgram"
+            }
+          }
         },
         {
           "name": "recipientTokenAccount",
           "writable": true
-        },
-        {
-          "name": "vestingProgram",
-          "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
         },
         {
           "name": "systemProgram",
@@ -308,6 +338,14 @@ export type EffectStaking = {
         {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rewardProgram",
+          "address": "HJR3op52N7tNycXqQnVu8cDnxH7udp4pYi1ps9S1hdBz"
+        },
+        {
+          "name": "vestingProgram",
+          "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
         },
         {
           "name": "mint"
@@ -326,6 +364,19 @@ export type EffectStaking = {
     }
   ],
   "accounts": [
+    {
+      "name": "migrationAccount",
+      "discriminator": [
+        129,
+        168,
+        118,
+        35,
+        238,
+        212,
+        16,
+        172
+      ]
+    },
     {
       "name": "stakeAccount",
       "discriminator": [
@@ -419,6 +470,47 @@ export type EffectStaking = {
   ],
   "types": [
     {
+      "name": "claimType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "token",
+            "fields": []
+          },
+          {
+            "name": "stake",
+            "fields": [
+              {
+                "name": "stakeStartTime",
+                "type": "i64"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "migrationAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "foreignPublicKey",
+            "type": "bytes"
+          },
+          {
+            "name": "claimType",
+            "type": {
+              "defined": {
+                "name": "claimType"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "stakeAccount",
       "type": {
         "kind": "struct",
@@ -444,7 +536,7 @@ export type EffectStaking = {
             "type": "pubkey"
           },
           {
-            "name": "xefx",
+            "name": "weightedAmount",
             "type": "u128"
           }
         ]

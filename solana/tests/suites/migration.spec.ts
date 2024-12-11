@@ -10,9 +10,7 @@ import {
 	useDeriveStakeAccounts,
 } from "@effectai/utils";
 
-import { PrivateKey, Transaction, TransactionHeader } from "@wharfkit/antelope";
-import { ABICache, Action, Session } from "@wharfkit/session";
-import { WalletPluginPrivateKey } from "@wharfkit/wallet-plugin-privatekey";
+import { PrivateKey } from "@wharfkit/antelope";
 
 import type { EffectMigration } from "../../target/types/effect_migration.js";
 import type { EffectStaking } from "../../target/types/effect_staking.js";
@@ -24,11 +22,11 @@ import { createMigrationClaim } from "../../utils/migration.js";
 import { createStake } from "../../utils/stake.js";
 import { BN } from "bn.js";
 import { useErrorsIDL } from "../../utils/idl.js";
+
 import {
-	EffectMigrationIdl,
-	effect_migration,
-	effect_staking,
+	effect_migration
 } from "@effectai/shared";
+
 import { createDummyEosTransactionWithMemo } from "../../utils/eos.js";
 
 describe("Migration Program", async () => {
@@ -49,7 +47,8 @@ describe("Migration Program", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
 			const { claimAccount } = await createMigrationClaim({
-				type: "token",
+				type: "stake",
+				stakeStartTime: Math.floor(new Date().getTime() / 1000 - 365 * 24 * 60 * 60),
 				mint,
 				payer,
 				payerTokens: ata,
@@ -58,11 +57,13 @@ describe("Migration Program", async () => {
 				program,
 			});
 
-			// // check if the metadata account was created
-			const metadataAccount =
-				await provider.connection.getAccountInfo(claimAccount);
+			// check if the metadata account was created
+			const claimAccountData =
+				await program.account.migrationAccount.fetch(claimAccount);
 
-			expect(metadataAccount).to.not.be.null;
+			expect(claimAccountData).to.not.be.null;
+			expect(claimAccountData.foreignPublicKey.byteLength).to.equal(20);
+			expect(claimAccountData.foreignPublicKey).toEqual(Buffer.from(ethPublicKey.slice(2), "hex"));
 		});
 
 		it.concurrent("correctly initializes a EOS based vault", async () => {
@@ -334,7 +335,7 @@ describe("Migration Program", async () => {
 		});
 
 		it.concurrent(
-			"can claim an stake and topups an existing stake account",
+			"can claim a stake and topups an existing stake account",
 			async () => {
 				const { mint, ata } = await setup({ provider, payer });
 

@@ -56,6 +56,10 @@
           "address": "SysvarRent111111111111111111111111111111111"
         },
         {
+          "name": "migration_program",
+          "address": "BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g"
+        },
+        {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -277,16 +281,16 @@
   ],
   "accounts": [
     {
-      "name": "ClaimAccount",
+      "name": "MigrationAccount",
       "discriminator": [
-        113,
-        109,
-        47,
-        96,
-        242,
-        219,
-        61,
-        165
+        129,
+        168,
+        118,
+        35,
+        238,
+        212,
+        16,
+        172
       ]
     },
     {
@@ -362,26 +366,6 @@
   ],
   "types": [
     {
-      "name": "ClaimAccount",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "foreign_public_key",
-            "type": "bytes"
-          },
-          {
-            "name": "claim_type",
-            "type": {
-              "defined": {
-                "name": "ClaimType"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "ClaimType",
       "type": {
         "kind": "enum",
@@ -398,6 +382,26 @@
                 "type": "i64"
               }
             ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "MigrationAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "foreign_public_key",
+            "type": "bytes"
+          },
+          {
+            "name": "claim_type",
+            "type": {
+              "defined": {
+                "name": "ClaimType"
+              }
+            }
           }
         ]
       }
@@ -428,7 +432,7 @@
             "type": "pubkey"
           },
           {
-            "name": "xefx",
+            "name": "weighted_amount",
             "type": "u128"
           }
         ]
