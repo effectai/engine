@@ -7,21 +7,28 @@ macro_rules! vault_seed {
 }
 
 #[macro_export]
-macro_rules! base_account_fields {
-    () => {
-        #[account(mut)]
-        pub payer: Signer<'info>,
-
-        pub mint: Account<'info, Mint>,
-
-        #[account(
-            mut,
-            token::mint = mint,
-        )]
-        pub payer_tokens: Account<'info, TokenAccount>,
-
-        pub system_program: Program<'info, System>,
-        pub token_program: Program<'info, Token>,
-        pub rent: Sysvar<'info, Rent>,
+macro_rules! genesis_stake {
+    ($accounts: expr, $seeds:expr) => {
+        effect_staking::cpi::stake_genesis(
+            CpiContext::new_with_signer(
+                $accounts.staking_program.to_account_info(),
+                GenesisStake {
+                    mint: $accounts.mint.to_account_info(),
+                    user_token_account: $accounts.recipient_token_account.to_account_info(),
+                    stake_account: $accounts.stake_account.to_account_info(),
+                    stake_vault_token_account: $accounts.stake_vault_token_account.to_account_info(),
+                    authority: $accounts.authority.to_account_info(),
+                    claim_vault_token_account: $accounts.claim_vault_token_account.to_account_info(),
+                    claim_account: $accounts.claim_account.to_account_info(),
+                    migration_program: $accounts.migration_program.to_account_info(),
+                    system_program: $accounts.system_program.to_account_info(),
+                    token_program: $accounts.token_program.to_account_info(),
+                    rent: $accounts.rent.to_account_info(),
+                },
+                $seeds,
+            ),
+            $accounts.claim_vault_token_account.amount,
+            $accounts.claim_account.stake_start_time,
+        )
     };
 }

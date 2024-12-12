@@ -9,7 +9,7 @@ pub struct Close<'info> {
         mut,
         close = authority,
         has_one = authority @ VestingErrors::Unauthorized,
-        constraint = vesting_account.is_closeable || vault_token_account.amount == 0 @ VestingErrors::NotCloseable
+        constraint = vesting_account.is_closeable || vesting_vault_token_account.amount == 0 @ VestingErrors::NotCloseable
     )]
     pub vesting_account: Account<'info, VestingAccount>,
 
@@ -18,10 +18,10 @@ pub struct Close<'info> {
         seeds = [vesting_account.key().as_ref()],
         bump
     )]
-    pub vault_token_account: Account<'info, TokenAccount>,
+    pub vesting_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
-    pub user_token_account: Account<'info, TokenAccount>,
+    pub recipient_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -33,10 +33,11 @@ impl<'info> Close<'info> {
     pub fn handler(&self) -> Result<()> {
         transfer_tokens_from_vault!(
             self,
-            user_token_account,
+            vesting_vault_token_account,
+            recipient_token_account,
             &[seeds!(self.vesting_account.key())],
-            self.vault_token_account.amount
+            self.vesting_vault_token_account.amount
         )?;
-        close_vault!(self, &[seeds!(self.vesting_account.key())])
+        close_vault!(self, vesting_vault_token_account, &[seeds!(self.vesting_account.key())])
     }
 }

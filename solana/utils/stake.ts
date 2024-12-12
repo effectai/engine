@@ -22,9 +22,9 @@ export const createStake = async ({
 
     await program.methods.stake(new BN(amount), new BN(30 * SECONDS_PER_DAY)).accounts({
         authority: payer.publicKey,
-        mint,
-        stake: stakeAccount.publicKey,
+        stakeAccount: stakeAccount.publicKey,
         userTokenAccount: payerTokens,
+        mint,
     }).signers([stakeAccount])
     .rpc();
 

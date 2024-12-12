@@ -34,7 +34,7 @@ export type EffectVesting = {
           "writable": true
         },
         {
-          "name": "vaultTokenAccount",
+          "name": "vestingVaultTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -85,7 +85,7 @@ export type EffectVesting = {
           "writable": true
         },
         {
-          "name": "vaultTokenAccount",
+          "name": "vestingVaultTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -97,7 +97,7 @@ export type EffectVesting = {
           }
         },
         {
-          "name": "userTokenAccount",
+          "name": "recipientTokenAccount",
           "writable": true
         },
         {
@@ -137,7 +137,7 @@ export type EffectVesting = {
           "signer": true
         },
         {
-          "name": "vaultTokenAccount",
+          "name": "vestingVaultTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [

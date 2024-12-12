@@ -1,14 +1,80 @@
+use anchor_lang::prelude::*;
+use anchor_spl::token::{Mint, Token, TokenAccount};
+use effect_migration_common::{MigrationAccount, MigrationProgram};
+use effect_staking::{cpi::accounts::GenesisStake, program::EffectStaking};
+use effect_staking_common::StakeAccount;
+use crate::{errors::MigrationError, vault_seed, genesis_stake};
 use core::str;
 
 use sha2::{Digest, Sha256};
 use anchor_lang::{prelude::Pubkey, solana_program::keccak};
 
-use anchor_lang::{
-    prelude::*,
-    solana_program::secp256k1_recover::{secp256k1_recover, Secp256k1Pubkey},
-};
+use anchor_lang::solana_program::secp256k1_recover::{secp256k1_recover, Secp256k1Pubkey};
 
-use crate::errors::MigrationError;
+#[derive(Accounts)]
+pub struct ClaimStake<'info> {
+    #[account(signer)]
+    pub authority: Signer<'info>,
+
+    #[account(
+        mut,
+        token::mint = mint,
+        token::authority = authority,
+    )]
+    pub recipient_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub mint: Account<'info, Mint>,
+
+    #[account(mut)]
+    pub claim_account: Account<'info, MigrationAccount>,
+
+    #[account(
+        mut, 
+        token::authority = claim_vault_token_account, 
+        token::mint = mint,
+        seeds = [claim_account.key().as_ref()],
+        bump,
+    )]
+    pub claim_vault_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut, has_one = authority)]
+    pub stake_account: Account<'info, StakeAccount>,
+
+    #[account(
+        mut, 
+        token::authority = stake_vault_token_account, 
+        token::mint = mint,
+        seeds = [stake_account.key().as_ref()],
+        bump,
+        seeds::program = staking_program.key(),
+    )]
+    pub stake_vault_token_account: Account<'info, TokenAccount>,
+
+    pub rent: Sysvar<'info, Rent>,
+
+    pub migration_program: Program<'info, MigrationProgram>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+    pub staking_program: Program<'info, EffectStaking>,
+}
+
+pub fn claim_stake(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
+    let is_eth = ctx.accounts.claim_account.foreign_public_key.len() == 20;
+    
+    verify_claim(
+        signature,
+        message,
+        is_eth,
+        *ctx.accounts.authority.key,
+        ctx.accounts.claim_account.foreign_public_key.clone(),
+    )?;
+
+    genesis_stake!(ctx.accounts, &[&vault_seed!(ctx.accounts.claim_account.key(), *ctx.program_id)[..]])?;
+
+    Ok(())
+}
+
 use crate::state::EXPECTED_MESSAGE;
 
 pub fn keccak256(message: &[u8]) -> [u8; 32] {
@@ -41,7 +107,6 @@ pub fn validate_message(payer: &Pubkey, message: &[u8], is_eth: bool) -> Result<
 
     if is_eth {
         let message_str = str::from_utf8(&message).unwrap();
-
         // We do a contains check because eth messages are prefixed with additional data.
         if !message_str.contains(str::from_utf8(&expected_message_bytes).unwrap()) {
             return Err(MigrationError::MessageInvalid.into());

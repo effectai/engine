@@ -6,23 +6,23 @@ use effect_staking_common::StakeAccount;
 #[derive(Accounts)]
 pub struct Close<'info> {
     #[account(mut)]
-    pub user_token_account: Account<'info, TokenAccount>,
+    pub recipient_token_account: Account<'info, TokenAccount>,
     
     #[account(
         mut,
         close = authority,
         has_one = authority @ StakingErrors::Unauthorized,
-        constraint = stake.amount != 0 @ StakingErrors::StakeNotEmpty,
+        constraint = stake_account.amount != 0 @ StakingErrors::StakeNotEmpty,
     )]
-    pub stake: Account<'info, StakeAccount>,
+    pub stake_account: Account<'info, StakeAccount>,
     
     #[account(
         mut,
-        seeds = [stake.key().as_ref()],
+        seeds = [stake_account.key().as_ref()],
         bump,
-        constraint = vault_token_account.amount == 0 @ StakingErrors::VaultNotEmpty)
+        constraint = stake_vault_token_account.amount == 0 @ StakingErrors::VaultNotEmpty)
     ]
-    pub vault_token_account: Account<'info, TokenAccount>,
+    pub stake_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -32,6 +32,6 @@ pub struct Close<'info> {
 
 impl<'info> Close<'info> {
     pub fn handler(&self) -> Result<()> {
-        close_vault!(self, &[&vault_seed!(self.stake.key())])
+        close_vault!(self, stake_vault_token_account, &[&vault_seed!(self.stake_account.key())])
     }
 }

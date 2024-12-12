@@ -19,20 +19,21 @@ pub struct Claim<'info> {
         seeds = [reflection.key().as_ref()],
         bump
     )]
-    pub vault_token_account: Account<'info, TokenAccount>,
+    pub reward_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(
         has_one = authority @ RewardErrors::Unauthorized,
-        constraint = stake.weighted_amount >= reward.weighted_amount @ RewardErrors::Decreased,
+        constraint = stake_account.weighted_amount >= reward_account.weighted_amount @ RewardErrors::Decreased,
     )]
-    pub stake: Account<'info, StakeAccount>,
+    pub stake_account: Account<'info, StakeAccount>,
    
     #[account(
         mut, 
-        seeds = [stake.key().as_ref()],
+        seeds = [stake_account.key().as_ref()],
         bump,
-        has_one = authority @ RewardErrors::Unauthorized)]
-    pub reward: Account<'info, RewardAccount>,
+        has_one = authority @ RewardErrors::Unauthorized)
+    ]
+    pub reward_account: Account<'info, RewardAccount>,
 
     #[account(
         mut,
@@ -51,7 +52,7 @@ impl<'info> Claim<'info> {
     pub fn handler(&mut self) -> Result<()> {
         // determine amount to claim
 
-        let amount: u128 = self.reward.get_amount(self.reflection.rate);
+        let amount: u128 = self.reward_account.get_amount(self.reflection.rate);
 
         if amount == 0 {
             msg!("No rewards to claim");
@@ -60,17 +61,18 @@ impl<'info> Claim<'info> {
 
         // decrease the reflection pool
         self.reflection
-            .remove_rewards_account(self.reward.reflection, self.reward.weighted_amount + amount)?;
+            .remove_rewards_account(self.reward_account.reflection, self.reward_account.weighted_amount + amount)?;
 
         // re-enter the pool with the current stake
-        self.reward.update(
-            self.reflection.add_rewards_account(self.stake.weighted_amount, 0),
-            self.stake.weighted_amount,
+        self.reward_account.update(
+            self.reflection.add_rewards_account(self.stake_account.weighted_amount, 0),
+            self.stake_account.weighted_amount,
         )?;
 
         // pay-out pending reward
         transfer_tokens_from_vault!(
             self,
+            reward_vault_token_account,
             recipient_token_account,
             &[&vault_seed!()],
             amount.try_into().unwrap()

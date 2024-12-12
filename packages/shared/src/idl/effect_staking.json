@@ -24,21 +24,21 @@
       ],
       "accounts": [
         {
-          "name": "user_token_account",
+          "name": "recipient_token_account",
           "writable": true
         },
         {
-          "name": "stake",
+          "name": "stake_account",
           "writable": true
         },
         {
-          "name": "vault_token_account",
+          "name": "stake_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "stake"
+                "path": "stake_account"
               }
             ]
           }
@@ -48,7 +48,7 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "stake"
+            "stake_account"
           ]
         },
         {
@@ -80,18 +80,18 @@
           "writable": true
         },
         {
-          "name": "stake",
+          "name": "stake_account",
           "writable": true,
           "signer": true
         },
         {
-          "name": "vault_token_account",
+          "name": "stake_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "stake"
+                "path": "stake_account"
               }
             ]
           }
@@ -156,19 +156,23 @@
           "writable": true
         },
         {
-          "name": "vault_token_account",
-          "writable": true
-        },
-        {
-          "name": "migration_program",
-          "address": "BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g"
+          "name": "stake_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake_account"
+              }
+            ]
+          }
         },
         {
           "name": "claim_account",
           "writable": true
         },
         {
-          "name": "claim_vault",
+          "name": "claim_vault_token_account",
           "writable": true,
           "signer": true,
           "pda": {
@@ -183,6 +187,10 @@
               "path": "migration_program"
             }
           }
+        },
+        {
+          "name": "migration_program",
+          "address": "BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g"
         },
         {
           "name": "system_program",
@@ -229,17 +237,17 @@
           "writable": true
         },
         {
-          "name": "stake",
+          "name": "stake_account",
           "writable": true
         },
         {
-          "name": "vault_token_account",
+          "name": "stake_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "stake"
+                "path": "stake_account"
               }
             ]
           }
@@ -248,7 +256,7 @@
           "name": "authority",
           "signer": true,
           "relations": [
-            "stake"
+            "stake_account"
           ]
         },
         {
@@ -284,21 +292,21 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "stake"
+            "stake_account"
           ]
         },
         {
-          "name": "stake",
+          "name": "stake_account",
           "writable": true
         },
         {
-          "name": "vault_token_account",
+          "name": "stake_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "stake"
+                "path": "stake_account"
               }
             ]
           }
@@ -309,7 +317,7 @@
             "seeds": [
               {
                 "kind": "account",
-                "path": "stake"
+                "path": "stake_account"
               }
             ],
             "program": {
@@ -324,7 +332,7 @@
           "signer": true
         },
         {
-          "name": "vesting_vault_account",
+          "name": "vesting_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -360,11 +368,11 @@
           "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
         },
         {
-          "name": "mint"
-        },
-        {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "mint"
         }
       ],
       "args": [
@@ -487,27 +495,6 @@
   ],
   "types": [
     {
-      "name": "ClaimType",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Token",
-            "fields": []
-          },
-          {
-            "name": "Stake",
-            "fields": [
-              {
-                "name": "stake_start_time",
-                "type": "i64"
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
       "name": "MigrationAccount",
       "type": {
         "kind": "struct",
@@ -517,12 +504,8 @@
             "type": "bytes"
           },
           {
-            "name": "claim_type",
-            "type": {
-              "defined": {
-                "name": "ClaimType"
-              }
-            }
+            "name": "stake_start_time",
+            "type": "i64"
           }
         ]
       }

@@ -52,7 +52,7 @@
           }
         },
         {
-          "name": "vault_token_account",
+          "name": "reward_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -64,16 +64,16 @@
           }
         },
         {
-          "name": "stake"
+          "name": "stake_account"
         },
         {
-          "name": "reward",
+          "name": "reward_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "stake"
+                "path": "stake_account"
               }
             ]
           }
@@ -87,8 +87,8 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "stake",
-            "reward"
+            "stake_account",
+            "reward_account"
           ]
         },
         {
@@ -112,7 +112,7 @@
       ],
       "accounts": [
         {
-          "name": "reflection",
+          "name": "reflection_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -133,7 +133,7 @@
               },
               {
                 "kind": "account",
-                "path": "vault_token_account.mint",
+                "path": "vesting_vault_token_account.mint",
                 "account": "TokenAccount"
               }
             ]
@@ -146,7 +146,7 @@
             "seeds": [
               {
                 "kind": "account",
-                "path": "reflection"
+                "path": "reflection_account"
               }
             ]
           }
@@ -156,8 +156,20 @@
           "writable": true
         },
         {
-          "name": "vault_token_account",
-          "writable": true
+          "name": "vesting_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vesting_account"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "vesting_program"
+            }
+          }
         },
         {
           "name": "claim_authority",
@@ -215,10 +227,10 @@
       ],
       "accounts": [
         {
-          "name": "reflection"
+          "name": "reflection_account"
         },
         {
-          "name": "reward",
+          "name": "reward_account",
           "writable": true
         },
         {
@@ -226,7 +238,7 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "reward"
+            "reward_account"
           ]
         }
       ],
@@ -249,7 +261,7 @@
       ],
       "accounts": [
         {
-          "name": "reflection",
+          "name": "reflection_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -277,7 +289,7 @@
           }
         },
         {
-          "name": "stake",
+          "name": "stake_account",
           "writable": true
         },
         {
@@ -287,7 +299,7 @@
             "seeds": [
               {
                 "kind": "account",
-                "path": "stake"
+                "path": "stake_account"
               }
             ],
             "program": {
@@ -297,13 +309,13 @@
           }
         },
         {
-          "name": "reward",
+          "name": "reward_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "stake"
+                "path": "stake_account"
               }
             ]
           }
@@ -313,7 +325,7 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "stake"
+            "stake_account"
           ]
         },
         {
@@ -348,7 +360,7 @@
           "writable": true
         },
         {
-          "name": "reflection",
+          "name": "reflection_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -375,13 +387,13 @@
           }
         },
         {
-          "name": "vault_token_account",
+          "name": "reward_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "reflection"
+                "path": "reflection_account"
               }
             ]
           }
@@ -423,14 +435,14 @@
       ],
       "accounts": [
         {
-          "name": "reward",
+          "name": "reward_account",
           "writable": true
         },
         {
-          "name": "stake"
+          "name": "stake_account"
         },
         {
-          "name": "reflection",
+          "name": "reflection_account",
           "writable": true
         }
       ],

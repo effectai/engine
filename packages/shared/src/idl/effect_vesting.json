@@ -28,7 +28,7 @@
           "writable": true
         },
         {
-          "name": "vault_token_account",
+          "name": "vesting_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -79,7 +79,7 @@
           "writable": true
         },
         {
-          "name": "vault_token_account",
+          "name": "vesting_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -91,7 +91,7 @@
           }
         },
         {
-          "name": "user_token_account",
+          "name": "recipient_token_account",
           "writable": true
         },
         {
@@ -131,7 +131,7 @@
           "signer": true
         },
         {
-          "name": "vault_token_account",
+          "name": "vesting_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [

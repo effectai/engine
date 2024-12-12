@@ -17,17 +17,17 @@ pub struct Stake<'info> {
         payer = authority,
         space = 8 + std::mem::size_of::<StakeAccount>(),
     )]
-    pub stake: Account<'info, StakeAccount>,
+    pub stake_account: Account<'info, StakeAccount>,
 
     #[account(
         init,
         payer = authority,
         token::mint = mint,
-        token::authority = vault_token_account,
-        seeds = [ stake.key().as_ref() ],
+        token::authority = stake_vault_token_account,
+        seeds = [ stake_account.key().as_ref() ],
         bump,
     )]
-    pub vault_token_account: Account<'info, TokenAccount>,
+    pub stake_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -53,7 +53,7 @@ impl<'info> Stake<'info> {
         );
 
         // get stake account and init stake
-        self.stake.init(
+        self.stake_account.init(
             amount,
             self.authority.key(),
             duration.try_into().unwrap(),
@@ -61,6 +61,6 @@ impl<'info> Stake<'info> {
         );
 
         // transfer tokens to the vault
-        transfer_tokens_to_vault!(self, amount)
+        transfer_tokens_to_vault!(self, stake_vault_token_account, amount)
     }
 }

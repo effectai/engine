@@ -32,17 +32,18 @@ describe("Staking Program", async () => {
 	describe("Stake Initialize", async () => {
 		it.concurrent("should correctly initialize a stake account", async () => {
 			const { mint, ata } = await setup({ payer, provider });
+
 			const { stakeAccount } = await useCreateStake({
 				authority: wallet.publicKey,
 				mint,
 				userTokenAccount: ata,
 			});
 
-			// expect to have a stake account
 			const stakeAccountData = await program.account.stakeAccount.fetch(
 				stakeAccount.publicKey,
 			);
 
+			// expect to have a stake account
 			expect(stakeAccountData.authority.toBase58()).toEqual(
 				wallet.publicKey.toBase58(),
 			);
@@ -103,18 +104,13 @@ describe("Staking Program", async () => {
 		it.concurrent("cannot unstake with an open reward account", async () => {
 			const { mint, ata } = await setup({ payer, provider });
 
-			const { stakeAccount, vaultAccount } = await useCreateStake({
+			const { stakeAccount } = await useCreateStake({
 				authority: wallet.publicKey,
 				mint,
 				userTokenAccount: ata,
 			});
 
-			// get stake account
-			const data = await program.account.stakeAccount.fetch(
-				stakeAccount.publicKey,
-			);
-			expect(data).to.be.not.null;
-
+			// init reward program
 			await rewardProgram.methods
 				.init()
 				.accounts({
@@ -122,35 +118,23 @@ describe("Staking Program", async () => {
 				})
 				.rpc();
 
-			const { vaultAccount: stakeVaultAccount, rewardAccount } =
-				useDeriveStakeAccounts({
-					stakingAccount: stakeAccount.publicKey,
-					programId: program.programId,
-				});
-
-			const vestingAccount = new anchor.web3.Keypair();
-
-			const { reflectionAccount } = useDeriveRewardAccounts({
-				mint,
-				programId: rewardProgram.programId,
-			});
-
+			// enter reward with stake account
 			await rewardProgram.methods
 				.enter()
 				.accounts({
-					stake: stakeAccount.publicKey,
-					reflection: reflectionAccount,
+					stakeAccount: stakeAccount.publicKey,
 				})
 				.rpc();
+
+			const vestingAccount = new anchor.web3.Keypair();
 
 			expectAnchorError(
 				async () => {
 					await program.methods
 						.unstake(new BN(5_000_000))
 						.accounts({
-							stake: stakeAccount.publicKey,
 							mint,
-							vaultTokenAccount: stakeVaultAccount,
+							stakeAccount: stakeAccount.publicKey,
 							vestingAccount: vestingAccount.publicKey,
 							recipientTokenAccount: ata,
 						})
@@ -172,11 +156,6 @@ describe("Staking Program", async () => {
 				authority: wallet.publicKey,
 				mint,
 				userTokenAccount: ata,
-			});
-
-			const { vaultAccount: stakeVaultAccount } = useDeriveStakeAccounts({
-				stakingAccount: stakeAccount.publicKey,
-				programId: program.programId,
 			});
 
 			const { stakingRewardAccount } = useDeriveStakingRewardAccount({
@@ -202,9 +181,8 @@ describe("Staking Program", async () => {
 			await program.methods
 				.unstake(new BN(5_000_000))
 				.accounts({
-					stake: stakeAccount.publicKey,
-					mint,
-					vaultTokenAccount: stakeVaultAccount,
+					mint: mint,
+					stakeAccount: stakeAccount.publicKey,
 					vestingAccount: vestingAccount.publicKey,
 					recipientTokenAccount: ata,
 				})
@@ -246,7 +224,7 @@ describe("Staking Program", async () => {
 			await bankrunProgram.methods
 				.stake(new BN(1_000_000), new BN(30 * SECONDS_PER_DAY))
 				.accounts({
-					stake: stakeAccount.publicKey,
+					stakeAccount: stakeAccount.publicKey,
 					authority: provider.wallet.payer.publicKey,
 					userTokenAccount: ata,
 					mint,
@@ -272,7 +250,7 @@ describe("Staking Program", async () => {
 				.topup(new BN(1_000_000))
 				.accounts({
 					userTokenAccount: ata,
-					stake: stakeAccount.publicKey,
+					stakeAccount: stakeAccount.publicKey,
 				})
 				.rpc();
 

@@ -28,7 +28,7 @@ export const effect_vesting = {
           "writable": true
         },
         {
-          "name": "vault_token_account",
+          "name": "vesting_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -79,7 +79,7 @@ export const effect_vesting = {
           "writable": true
         },
         {
-          "name": "vault_token_account",
+          "name": "vesting_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -91,7 +91,7 @@ export const effect_vesting = {
           }
         },
         {
-          "name": "user_token_account",
+          "name": "recipient_token_account",
           "writable": true
         },
         {
@@ -131,7 +131,7 @@ export const effect_vesting = {
           "signer": true
         },
         {
-          "name": "vault_token_account",
+          "name": "vesting_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [

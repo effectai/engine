@@ -17,7 +17,7 @@ pub struct Claim<'info> {
         seeds = [vesting_account.key().as_ref()],
         bump
     )]
-    pub vault_token_account: Account<'info, TokenAccount>,
+    pub vesting_vault_token_account: Account<'info, TokenAccount>,
     
     #[account(mut)]
     pub recipient_token_account: Account<'info, TokenAccount>,
@@ -33,14 +33,14 @@ impl<'info> Claim<'info> {
 
         let amount: u64 = self
             .vesting_account
-            .claim( self.authority.key(), self.vault_token_account.amount, Clock::get()?.unix_timestamp)?;
+            .claim( self.authority.key(), self.vesting_vault_token_account.amount, Clock::get()?.unix_timestamp)?;
 
         // TODO: below is not a requirement anymore, can be removed?
         // the pool must have enough funds for an emission
         require!(amount >= self.vesting_account.release_rate, VestingErrors::Underfunded);
 
         // transfer tokens from the vault back to the user
-        transfer_tokens_from_vault!(self, recipient_token_account, &[seeds!(self.vesting_account.key())], amount);
+        transfer_tokens_from_vault!(self, vesting_vault_token_account, recipient_token_account, &[seeds!(self.vesting_account.key())], amount)?;
     
         Ok(())
     }

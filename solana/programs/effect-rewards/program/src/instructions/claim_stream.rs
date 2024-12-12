@@ -7,14 +7,14 @@ use effect_vesting_common::VestingAccount;
 pub struct ClaimStream<'info> {
     #[account(
         mut,
-        seeds = [b"reflection", vault_token_account.mint.as_ref()],
+        seeds = [b"reflection", vesting_vault_token_account.mint.as_ref()],
         bump,
     )]
-    pub reflection: Account<'info, ReflectionAccount>,
+    pub reflection_account: Account<'info, ReflectionAccount>,
 
     #[account(
         mut,
-        seeds = [reflection.key().as_ref()],
+        seeds = [reflection_account.key().as_ref()],
         bump,
     )]
     pub reward_vault_token_account: Account<'info, TokenAccount>,
@@ -22,51 +22,51 @@ pub struct ClaimStream<'info> {
     #[account(mut)]
     pub vesting_account: Account<'info, VestingAccount>,
 
-    #[account(mut)]
-    pub vault_token_account: Account<'info, TokenAccount>,
+    #[account(mut, 
+        seeds = [vesting_account.key().as_ref()],
+        bump,
+        seeds::program = vesting_program.key(),
+    )]
+    pub vesting_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(
         mut, 
         seeds = [b"vesting"],
         bump,
     )]
-    /// CHECK: This is the PDA account that will be used to sign the claim
-    pub claim_authority: AccountInfo<'info>,
+    pub claim_authority: SystemAccount<'info>,
 
     pub authority: Signer<'info>,
-
     pub token_program: Program<'info, Token>,
-
     pub rent: Sysvar<'info, Rent>,
-
     pub vesting_program: Program<'info, EffectVesting>,   
 }
 
 impl<'info> ClaimStream<'info> {
     pub fn handler(&mut self) -> Result<()> {
-        let balance_before = self.vault_token_account.amount;
-
         let (_, bump) = Pubkey::find_program_address(&[b"vesting"], &id());
+        
         let seeds: &[&[_]] = &[
             b"vesting",
             &[bump],
         ];
         
+        let balance_before_claim = self.vesting_vault_token_account.amount;
+
         claim_vesting!(
             self,
             &[seeds]
         )?;
 
-        // CHECK:: is this method of retrieving amounts safe ?
-        self.vault_token_account.reload()?;
-
-        let balance_after = self.vault_token_account.amount;
-        let claimed_amount = balance_before - balance_after;
+        // @Jesse CHECK:: is this method of retrieving amounts safe ?
+        // we need a way to check the balance that we've claimed from the
+        self.vesting_vault_token_account.reload()?;
+        let claimed_amount = balance_before_claim - self.vesting_vault_token_account.amount;
 
         if claimed_amount == 0 {
             return Err(RewardErrors::NoClaimableRewards.into());
         }
 
-        Ok(self.reflection.topup( claimed_amount as u128))
+        Ok(self.reflection_account.topup( claimed_amount as u128))
     }
 }

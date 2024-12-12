@@ -15,11 +15,11 @@ pub struct Open<'info> {
         init,
         payer = authority,
         token::mint = mint,
-        token::authority = vault_token_account,
+        token::authority = vesting_vault_token_account,
         seeds = [ vesting_account.key().as_ref() ],
         bump,
     )]
-    pub vault_token_account: Account<'info, TokenAccount>,
+    pub vesting_vault_token_account: Account<'info, TokenAccount>,
     
     #[account(token::mint = mint)]
     pub recipient_token_account: Account<'info, TokenAccount>,

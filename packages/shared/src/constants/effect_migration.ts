@@ -40,8 +40,16 @@ export const effect_migration = {
           "writable": true
         },
         {
-          "name": "vault_token_account",
-          "writable": true
+          "name": "claim_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "claim_account"
+              }
+            ]
+          }
         },
         {
           "name": "stake_account",
@@ -49,7 +57,19 @@ export const effect_migration = {
         },
         {
           "name": "stake_vault_token_account",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake_account"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "staking_program"
+            }
+          }
         },
         {
           "name": "rent",
@@ -84,63 +104,6 @@ export const effect_migration = {
       ]
     },
     {
-      "name": "claim_tokens",
-      "discriminator": [
-        108,
-        216,
-        210,
-        231,
-        0,
-        212,
-        42,
-        64
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "signer": true
-        },
-        {
-          "name": "recipient_token_account",
-          "writable": true
-        },
-        {
-          "name": "mint",
-          "writable": true
-        },
-        {
-          "name": "claim_account",
-          "writable": true
-        },
-        {
-          "name": "vault_account",
-          "writable": true
-        },
-        {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "sig",
-          "type": "bytes"
-        },
-        {
-          "name": "message",
-          "type": "bytes"
-        }
-      ]
-    },
-    {
       "name": "create_stake_claim",
       "discriminator": [
         209,
@@ -159,7 +122,7 @@ export const effect_migration = {
           "signer": true
         },
         {
-          "name": "vault_account",
+          "name": "claim_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -174,13 +137,13 @@ export const effect_migration = {
           "name": "mint"
         },
         {
-          "name": "payer",
+          "name": "authority",
           "writable": true,
           "signer": true,
           "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
         },
         {
-          "name": "payer_tokens",
+          "name": "user_token_account",
           "writable": true
         },
         {
@@ -204,73 +167,6 @@ export const effect_migration = {
         {
           "name": "stake_start_time",
           "type": "i64"
-        },
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "create_token_claim",
-      "discriminator": [
-        47,
-        10,
-        98,
-        54,
-        100,
-        58,
-        22,
-        12
-      ],
-      "accounts": [
-        {
-          "name": "claim_account",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "vault_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "claim_account"
-              }
-            ]
-          }
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
-        },
-        {
-          "name": "payer_tokens",
-          "writable": true
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "foreign_public_key",
-          "type": "bytes"
         },
         {
           "name": "amount",
@@ -366,27 +262,6 @@ export const effect_migration = {
   ],
   "types": [
     {
-      "name": "ClaimType",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Token",
-            "fields": []
-          },
-          {
-            "name": "Stake",
-            "fields": [
-              {
-                "name": "stake_start_time",
-                "type": "i64"
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
       "name": "MigrationAccount",
       "type": {
         "kind": "struct",
@@ -396,12 +271,8 @@ export const effect_migration = {
             "type": "bytes"
           },
           {
-            "name": "claim_type",
-            "type": {
-              "defined": {
-                "name": "ClaimType"
-              }
-            }
+            "name": "stake_start_time",
+            "type": "i64"
           }
         ]
       }

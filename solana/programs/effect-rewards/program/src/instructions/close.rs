@@ -5,10 +5,10 @@ use crate::*;
 
 #[derive(Accounts)]
 pub struct Close<'info> {
-    pub reflection: Account<'info, ReflectionAccount>,
+    pub reflection_account: Account<'info, ReflectionAccount>,
     
     #[account(mut, close = authority, has_one = authority @ RewardErrors::Unauthorized)]
-    pub reward: Account<'info, RewardAccount>,
+    pub reward_account: Account<'info, RewardAccount>,
    
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -16,7 +16,7 @@ pub struct Close<'info> {
 
 impl<'info> Close<'info> {
     pub fn handler(&mut self) -> Result<()> {
-        self.reflection
-            .remove_rewards_account(self.reward.reflection, self.reward.weighted_amount)
+        self.reflection_account
+            .remove_rewards_account(self.reward_account.reflection, self.reward_account.weighted_amount)
     }
 }

@@ -17,18 +17,20 @@ pub struct Unstake<'info> {
         mut,
         has_one = authority @ StakingErrors::Unauthorized,
     )]
-    pub stake: Account<'info, StakeAccount>,
+    pub stake_account: Account<'info, StakeAccount>,
 
     #[account(
         mut,
-        seeds = [stake.key().as_ref()],
-        bump
+        seeds = [stake_account.key().as_ref()],
+        bump,
+        token::mint = mint,
+        token::authority = stake_vault_token_account,
     )]
-    pub vault_token_account: Account<'info, TokenAccount>,
+    pub stake_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(
         constraint = reward_account.data_is_empty(),
-        seeds = [stake.key().as_ref()],
+        seeds = [stake_account.key().as_ref()],
         bump,
         seeds::program = reward_program.key(),
     )]
@@ -45,12 +47,12 @@ pub struct Unstake<'info> {
         seeds = [vesting_account.key().as_ref()],
         bump,
         seeds::program = vesting_program.key(),
+        constraint = vesting_account.data_is_empty()
     )]
-    pub vesting_vault_account: SystemAccount<'info>,
+    pub vesting_vault_token_account: SystemAccount<'info>,
 
     #[account(
         mut,
-        token::mint = mint,
         token::authority = authority,
     )]
     pub recipient_token_account: Account<'info, TokenAccount>,
@@ -63,21 +65,21 @@ pub struct Unstake<'info> {
 
     pub vesting_program: Program<'info, EffectVesting>,
 
-    pub mint: Account<'info, Mint>,
-
     pub rent: Sysvar<'info, Rent>,
+
+    pub mint: Account<'info, Mint>,
 }
 
 impl<'info> Unstake<'info> {
     pub fn handler(&mut self, amount: u64) -> Result<()> {
 
         require!(
-            amount <= self.stake.amount,
+            amount <= self.stake_account.amount,
             StakingErrors::InvalidStakeAccount
         );
 
         // determine release rate (linear)
-        let release_rate = amount / self.stake.lock_duration;
+        let release_rate = amount / self.stake_account.lock_duration;
 
         // open a vesting account
         let now: i64 = Clock::get()?.unix_timestamp;
@@ -85,7 +87,7 @@ impl<'info> Unstake<'info> {
       
         open_vesting!(
             self,
-            &[&vault_seed!(self.stake.key())],
+            &[&vault_seed!(self.stake_account.key())],
             release_rate,
             start_time,
             false,
@@ -96,13 +98,14 @@ impl<'info> Unstake<'info> {
         // transfer tokens from stake vault to the vesting vault
         transfer_tokens_from_vault!(
             self,
-            vesting_vault_account,
-            &[&vault_seed!(self.stake.key())],
+            stake_vault_token_account,
+            vesting_vault_token_account,
+            &[&vault_seed!(self.stake_account.key())],
             amount
         )?;
 
         // deduct the amount from the stake account
-        self.stake.amount -= amount;
+        self.stake_account.amount -= amount;
 
         Ok(())
 

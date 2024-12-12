@@ -6,26 +6,26 @@ use crate::*;
 #[derive(Accounts)]
 pub struct Sync<'info> {
     #[account(mut)]
-    pub reward: Account<'info, RewardAccount>,
+    pub reward_account: Account<'info, RewardAccount>,
     #[account(
-        constraint = stake.authority == reward.authority @ RewardErrors::Unauthorized,
+        constraint = stake_account.authority == reward_account.authority @ RewardErrors::Unauthorized,
     )]
-    pub stake: Account<'info, StakeAccount>,
+    pub stake_account: Account<'info, StakeAccount>,
     #[account(mut)]
-    pub reflection: Account<'info, ReflectionAccount>,
+    pub reflection_account: Account<'info, ReflectionAccount>,
 }
 
 impl<'info> Sync<'info> {
     pub fn handler(&mut self) -> Result<()> {
         // decrease the reflection pool
-        self.reflection
-            .remove_rewards_account(self.reward.reflection, self.reward.weighted_amount)?;
+        self.reflection_account
+            .remove_rewards_account(self.reward_account.reflection, self.reward_account.weighted_amount)?;
 
         // re-enter the pool with the current stake
-        let amount: u128 = self.reward.get_amount(self.reflection.rate);
-        self.reward.update(
-            self.reflection.add_rewards_account(self.stake.weighted_amount, amount),
-            self.stake.weighted_amount,
+        let amount: u128 = self.reward_account.get_amount(self.reflection_account.rate);
+        self.reward_account.update(
+            self.reflection_account.add_rewards_account(self.stake_account.weighted_amount, amount),
+            self.stake_account.weighted_amount,
         )
     }
 }

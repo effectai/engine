@@ -23,11 +23,11 @@ pub struct GenesisStake<'info> {
     
     #[account(mut, 
         token::mint = mint,
-        token::authority = vault_token_account,
+        token::authority = stake_vault_token_account,
+        seeds = [ stake_account.key().as_ref() ],
+        bump,
     )]
-    pub vault_token_account: Account<'info, TokenAccount>,
-
-    pub migration_program: Program<'info, MigrationProgram>,
+    pub stake_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
     pub claim_account: Account<'info, MigrationAccount>,
@@ -38,7 +38,9 @@ pub struct GenesisStake<'info> {
         bump,
         seeds::program = migration_program.key(),
     )]
-    pub claim_vault: Signer<'info>,
+    pub claim_vault_token_account: Signer<'info>,
+
+    pub migration_program: Program<'info, MigrationProgram>,
 
     pub system_program: Program<'info, System>,
 
@@ -60,9 +62,9 @@ impl<'info> GenesisStake<'info> {
         // Transfer tokens from claim vault to the stake vault
         transfer_tokens(
             self.token_program.to_account_info(),
-            self.claim_vault.to_account_info(),
-            self.vault_token_account.to_account_info(),
-            self.claim_vault.to_account_info(),
+            self.claim_vault_token_account.to_account_info(),
+            self.stake_vault_token_account.to_account_info(),
+            self.claim_vault_token_account.to_account_info(),
             &[&vault_seed!(self.stake_account.key())],
             amount,
         )

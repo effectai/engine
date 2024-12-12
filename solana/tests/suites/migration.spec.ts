@@ -18,14 +18,11 @@ import type { EffectStaking } from "../../target/types/effect_staking.js";
 import { expect, describe, it } from "vitest";
 import { SECONDS_PER_DAY, useAnchor } from "../helpers.js";
 import { setup } from "../../utils/spl.js";
-import { createMigrationClaim } from "../../utils/migration.js";
+import { claimMigration, createMigrationClaim } from "../../utils/migration.js";
 import { createStake } from "../../utils/stake.js";
-import { BN } from "bn.js";
 import { useErrorsIDL } from "../../utils/idl.js";
 
-import {
-	effect_migration
-} from "@effectai/shared";
+import { effect_migration } from "@effectai/shared";
 
 import { createDummyEosTransactionWithMemo } from "../../utils/eos.js";
 
@@ -42,16 +39,16 @@ describe("Migration Program", async () => {
 	const eosPublicKey =
 		"PUB_K1_7abGp9AVsTpt4TLSdCFKS2Tm49zCwg8nWLpJhAmEpppG9fjJsy";
 
+	const lastYear = Math.floor(new Date().getTime() / 1000 - 365 * 24 * 60 * 60);
+
 	describe("Initialization", () => {
 		it.concurrent("correctly initializes an ethereum based vault", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
 			const { claimAccount } = await createMigrationClaim({
-				type: "stake",
-				stakeStartTime: Math.floor(new Date().getTime() / 1000 - 365 * 24 * 60 * 60),
+				stakeStartTime: lastYear,
 				mint,
-				payer,
-				payerTokens: ata,
+				userTokenAccount: ata,
 				publicKey: toBytes(ethPublicKey),
 				amount: 100_000_000,
 				program,
@@ -63,7 +60,9 @@ describe("Migration Program", async () => {
 
 			expect(claimAccountData).to.not.be.null;
 			expect(claimAccountData.foreignPublicKey.byteLength).to.equal(20);
-			expect(claimAccountData.foreignPublicKey).toEqual(Buffer.from(ethPublicKey.slice(2), "hex"));
+			expect(claimAccountData.foreignPublicKey).toEqual(
+				Buffer.from(ethPublicKey.slice(2), "hex"),
+			);
 		});
 
 		it.concurrent("correctly initializes a EOS based vault", async () => {
@@ -75,30 +74,14 @@ describe("Migration Program", async () => {
 				throw new Error("Invalid public key");
 			}
 
-			const { claimAccount } = await createMigrationClaim({
-				type: "token",
-				mint,
-				payer,
-				payerTokens: ata,
-				publicKey,
-				amount: 100_000_000,
-				program,
-			});
-
 			const { claimAccount: stakeClaimAccount } = await createMigrationClaim({
-				type: "stake",
 				mint,
-				payer,
-				payerTokens: ata,
+				userTokenAccount: ata,
 				publicKey,
 				amount: 100_000_000,
 				program,
-				stakeStartTime: Math.floor(new Date().getTime() / 1000 - 365 * 24 * 60 * 60),
+				stakeStartTime: lastYear,
 			});
-
-			const metadataAccount =
-				await provider.connection.getAccountInfo(claimAccount);
-			expect(metadataAccount).to.not.be.null;
 
 			const stakeMetadataAccount =
 				await provider.connection.getAccountInfo(stakeClaimAccount);
@@ -113,12 +96,11 @@ describe("Migration Program", async () => {
 
 				expectAnchorError(async () => {
 					await createMigrationClaim({
-						type: "token",
 						mint,
-						payer,
-						payerTokens: ata,
+						userTokenAccount: ata,
 						publicKey: toBytes("0x123"),
 						amount: 100_000_000,
+						stakeStartTime: lastYear,
 						program,
 					});
 				}, INVALID_FOREIGN_PUBLIC_KEY);
@@ -142,16 +124,16 @@ describe("Migration Program", async () => {
 			}
 
 			const { claimAccount, vaultAccount } = await createMigrationClaim({
-				type: "token",
 				mint,
-				payer,
-				payerTokens: ata,
+				userTokenAccount: ata,
 				publicKey: pk,
 				amount: 100_000_000,
 				program,
+				stakeStartTime: lastYear,
 			});
 
-			const {tx, session} = await createDummyEosTransactionWithMemo(originalMessage);
+			const { tx, session } =
+				await createDummyEosTransactionWithMemo(originalMessage);
 
 			const serializedTransactionBytes = tx.signingData(
 				// eos mainnet chain id
@@ -160,32 +142,28 @@ describe("Migration Program", async () => {
 
 			const signature = await session.signTransaction(tx);
 
-			await program.methods
-				.claimTokens(
-					Buffer.from(signature[0].data.array),
-					Buffer.from(serializedTransactionBytes.array),
-				)
-				.accounts({
-					claimAccount,
-					recipientTokenAccount: ata,
-					vaultAccount,
-					mint,
-				})
-				.signers([payer])
-				.rpc();
+			const { stakeAccount } = await claimMigration({
+				migrationProgram: program,
+				stakeProgram,
+				ata,
+				mint,
+				payer,
+				claimAccount,
+				signature: Buffer.from(signature[0].data.array),
+				message: Buffer.from(serializedTransactionBytes.array),
+			});
 		});
 
 		it.concurrent("correctly signs with keccak256", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
-			const { claimAccount, vaultAccount } = await createMigrationClaim({
-				type: "token",
+			const { claimAccount } = await createMigrationClaim({
 				mint,
-				payer,
-				payerTokens: ata,
+				userTokenAccount: ata,
 				publicKey: toBytes(ethPublicKey),
 				amount: 100_000_000,
 				program,
+				stakeStartTime: lastYear,
 			});
 
 			const ethPrivateKey =
@@ -203,29 +181,28 @@ describe("Migration Program", async () => {
 				Buffer.from([sig.recovery + 27]),
 			]);
 
-			await program.methods
-				.claimTokens(sigWithRecovery, Buffer.from(originalMessage))
-				.accounts({
-					mint,
-					claimAccount,
-					recipientTokenAccount: ata,
-					vaultAccount,
-				})
-				.signers([payer])
-				.rpc();
+			const { stakeAccount } = await claimMigration({
+				migrationProgram: program,
+				stakeProgram,
+				ata,
+				mint,
+				payer,
+				claimAccount,
+				signature: sigWithRecovery,
+				message: Buffer.from(originalMessage),
+			});
 		});
 
 		it.concurrent("correctly claims with eth_personal_sign", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
 			const { claimAccount, vaultAccount } = await createMigrationClaim({
-				type: "token",
 				mint,
-				payer,
-				payerTokens: ata,
+				userTokenAccount: ata,
 				publicKey: toBytes(ethPublicKey),
 				amount: 100_000_000,
 				program,
+				stakeStartTime: lastYear,
 			});
 
 			const account = privateKeyToAccount(
@@ -238,21 +215,25 @@ describe("Migration Program", async () => {
 				message: originalMessage,
 			});
 
-			await program.methods
-				.claimTokens(Buffer.from(toBytes(signature)), Buffer.from(message))
-				.accounts({
-					mint,
-					claimAccount,
-					recipientTokenAccount: ata,
-					vaultAccount,
-				})
-				.rpc();
+			const { stakeAccount } = await claimMigration({
+				migrationProgram: program,
+				stakeProgram,
+				ata,
+				mint,
+				payer,
+				claimAccount,
+				signature: toBytes(signature),
+				message: Buffer.from(message),
+			});
 		});
+
 		it.concurrent("can claim a stake with a valid signature", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
 			// get a unix_timestamp from 1 year ago
-			const stakeStartTime = Math.floor(new Date().getTime() / 1000 - 365 * 24 * 60 * 60);
+			const stakeStartTime = Math.floor(
+				new Date().getTime() / 1000 - 365 * 24 * 60 * 60,
+			);
 
 			const account = privateKeyToAccount(
 				"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
@@ -267,57 +248,32 @@ describe("Migration Program", async () => {
 
 			const { claimAccount, vaultAccount: claimVaultAccount } =
 				await createMigrationClaim({
-					type: "stake",
 					mint,
-					payer,
-					payerTokens: ata,
+					userTokenAccount: ata,
 					publicKey: toBytes(ethPublicKey),
 					amount: 100_000_000,
 					stakeStartTime,
 					program,
 				});
 
-			// initialize stake before we claim..
-			const stakeAccount = new anchor.web3.Keypair();
-
-			const { vaultAccount: stakeVaultAccount } = useDeriveStakeAccounts({
-				stakingAccount: stakeAccount.publicKey,
-				programId: stakeProgram.programId,
+			const { stakeAccount, stakeVaultAccount } = await claimMigration({
+				migrationProgram: program,
+				stakeProgram,
+				ata,
+				mint,
+				payer,
+				claimAccount,
+				signature: Buffer.from(toBytes(signature)),
+				message: Buffer.from(message),
 			});
-
-			await program.methods
-				.claimStake(Buffer.from(toBytes(signature)), Buffer.from(message))
-				.preInstructions([
-					...[
-						// create a 0 amount stake
-						await stakeProgram.methods
-							.stake(new BN(0), new BN(30 * SECONDS_PER_DAY))
-							.accounts({
-								stake: stakeAccount.publicKey,
-								authority: payer.publicKey,
-								userTokenAccount: ata,
-								mint,
-							})
-							.signers([stakeAccount])
-							.instruction(),
-					],
-				])
-				.accounts({
-					recipientTokenAccount: ata,
-					vaultTokenAccount: claimVaultAccount,
-					claimAccount: claimAccount,
-					stakeAccount: stakeAccount.publicKey,
-					stakeVaultTokenAccount: stakeVaultAccount,
-					mint,
-				})
-				.signers([stakeAccount])
-				.rpc();
 
 			// check if the stake account was created
 			const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
 				stakeAccount.publicKey,
 			);
+
 			expect(stakeAccountData).to.not.be.null;
+
 			// check if the stake account has the correct start time (stake age)
 			expect(stakeAccountData.stakeStartTime.toNumber()).to.equal(
 				stakeStartTime,
@@ -340,7 +296,9 @@ describe("Migration Program", async () => {
 				const { mint, ata } = await setup({ provider, payer });
 
 				// get a unix_timestamp from 1 year ago
-				const stakeStartTime = Math.floor(new Date().getTime() / 1000 - 365 * 24 * 60 * 60);
+				const stakeStartTime = Math.floor(
+					new Date().getTime() / 1000 - 365 * 24 * 60 * 60,
+				);
 
 				const account = privateKeyToAccount(
 					"0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
@@ -363,10 +321,8 @@ describe("Migration Program", async () => {
 
 				const { claimAccount, vaultAccount: claimVaultAccount } =
 					await createMigrationClaim({
-						type: "stake",
 						mint,
-						payer,
-						payerTokens: ata,
+						userTokenAccount: ata,
 						publicKey: toBytes(ethPublicKey),
 						amount: 100_000_000,
 						stakeStartTime,
@@ -382,10 +338,8 @@ describe("Migration Program", async () => {
 					.claimStake(Buffer.from(toBytes(signature)), Buffer.from(message))
 					.accounts({
 						recipientTokenAccount: ata,
-						vaultTokenAccount: claimVaultAccount,
 						claimAccount: claimAccount,
 						stakeAccount: stakeAccount.publicKey,
-						stakeVaultTokenAccount: stakeVaultAccount,
 						mint,
 					})
 					.rpc();
@@ -419,13 +373,12 @@ describe("Migration Program", async () => {
 				const { MESSAGE_INVALID } = useErrorsIDL(effect_migration);
 
 				const { claimAccount, vaultAccount } = await createMigrationClaim({
-					type: "token",
 					mint,
-					payer,
-					payerTokens: ata,
+					userTokenAccount: ata,
 					publicKey: toBytes(ethPublicKey),
 					amount: 100_000_000,
 					program,
+					stakeStartTime: lastYear,
 				});
 
 				const account = privateKeyToAccount(
@@ -437,15 +390,16 @@ describe("Migration Program", async () => {
 				});
 
 				expectAnchorError(async () => {
-					await program.methods
-						.claimTokens(Buffer.from(toBytes(signature)), Buffer.from("wrong"))
-						.accounts({
-							mint,
-							claimAccount,
-							recipientTokenAccount: ata,
-							vaultAccount,
-						})
-						.rpc();
+					const { stakeAccount } = await claimMigration({
+						migrationProgram: program,
+						stakeProgram,
+						ata,
+						mint,
+						payer,
+						claimAccount,
+						signature: Buffer.from(toBytes(signature)),
+						message: Buffer.from("wroong"),
+					});
 				}, MESSAGE_INVALID);
 			},
 		);
@@ -457,13 +411,12 @@ describe("Migration Program", async () => {
 				const { PUBLIC_KEY_MISMATCH } = useErrorsIDL(effect_migration);
 
 				const { claimAccount, vaultAccount } = await createMigrationClaim({
-					type: "token",
 					mint,
-					payer,
-					payerTokens: ata,
+					userTokenAccount: ata,
 					publicKey: toBytes(ethPublicKey),
 					amount: 100_000_000,
 					program,
+					stakeStartTime: lastYear,
 				});
 
 				const account = privateKeyToAccount(
@@ -478,15 +431,16 @@ describe("Migration Program", async () => {
 				});
 
 				expectAnchorError(async () => {
-					await program.methods
-						.claimTokens(Buffer.from(toBytes(signature)), Buffer.from(message))
-						.accounts({
-							mint,
-							claimAccount,
-							recipientTokenAccount: ata,
-							vaultAccount,
-						})
-						.rpc();
+					await claimMigration({
+						migrationProgram: program,
+						stakeProgram,
+						ata,
+						mint,
+						payer,
+						claimAccount,
+						signature: Buffer.from(toBytes(signature)),
+						message: Buffer.from(message),
+					});
 				}, PUBLIC_KEY_MISMATCH);
 			},
 		);

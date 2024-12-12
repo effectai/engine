@@ -34,7 +34,7 @@ export const useStakeTestHelpers = (program: Program<EffectStaking>) => {
 				new anchor.BN(lockTimeInDays || 30 * SECONDS_PER_DAY),
 			)
 			.accounts({
-				stake: stakeAccount.publicKey,
+				stakeAccount: stakeAccount.publicKey,
 				authority,
 				userTokenAccount,
 				mint: mint,

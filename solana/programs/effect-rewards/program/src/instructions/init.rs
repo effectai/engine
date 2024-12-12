@@ -15,17 +15,17 @@ pub struct Init<'info> {
         seeds = [ b"reflection", mint.key().as_ref() ],
         bump
     )]
-    pub reflection: Account<'info, ReflectionAccount>,
+    pub reflection_account: Account<'info, ReflectionAccount>,
 
     #[account(
         init,
         payer = authority,
         token::mint = mint,
-        token::authority = vault_token_account,
-        seeds = [ reflection.key().as_ref() ],
+        token::authority = reward_vault_token_account,
+        seeds = [ reflection_account.key().as_ref() ],
         bump,
     )]
-    pub vault_token_account: Account<'info, TokenAccount>,
+    pub reward_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -37,6 +37,6 @@ pub struct Init<'info> {
 
 impl<'info> Init<'info> {
     pub fn handler(&mut self) -> Result<()> {
-        self.reflection.init()
+        self.reflection_account.init()
     }
 }

@@ -12,14 +12,14 @@ pub struct Topup<'info> {
         mut,
         has_one = authority @ StakingErrors::Unauthorized,
     )]
-    pub stake: Account<'info, StakeAccount>,
+    pub stake_account: Account<'info, StakeAccount>,
 
     #[account(
         mut,
-        seeds = [stake.key().as_ref()],
+        seeds = [stake_account.key().as_ref()],
         bump,
     )]
-    pub vault_token_account: Account<'info, TokenAccount>,
+    pub stake_vault_token_account: Account<'info, TokenAccount>,
 
     pub authority: Signer<'info>,
 
@@ -33,9 +33,9 @@ impl<'info> Topup<'info> {
 
         // get stake account and topup stake
         let new_time = Clock::get().unwrap().unix_timestamp;
-        self.stake.topup(amount, new_time);
+        self.stake_account.topup(amount, new_time);
 
         // transfer tokens to the vault
-        transfer_tokens_to_vault!(self, amount)
+        transfer_tokens_to_vault!(self, stake_vault_token_account, amount)
     }
 }

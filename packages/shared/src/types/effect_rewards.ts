@@ -58,7 +58,7 @@ export type EffectRewards = {
           }
         },
         {
-          "name": "vaultTokenAccount",
+          "name": "rewardVaultTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -70,16 +70,16 @@ export type EffectRewards = {
           }
         },
         {
-          "name": "stake"
+          "name": "stakeAccount"
         },
         {
-          "name": "reward",
+          "name": "rewardAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "stake"
+                "path": "stakeAccount"
               }
             ]
           }
@@ -93,8 +93,8 @@ export type EffectRewards = {
           "writable": true,
           "signer": true,
           "relations": [
-            "stake",
-            "reward"
+            "stakeAccount",
+            "rewardAccount"
           ]
         },
         {
@@ -118,7 +118,7 @@ export type EffectRewards = {
       ],
       "accounts": [
         {
-          "name": "reflection",
+          "name": "reflectionAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -139,7 +139,7 @@ export type EffectRewards = {
               },
               {
                 "kind": "account",
-                "path": "vault_token_account.mint",
+                "path": "vesting_vault_token_account.mint",
                 "account": "tokenAccount"
               }
             ]
@@ -152,7 +152,7 @@ export type EffectRewards = {
             "seeds": [
               {
                 "kind": "account",
-                "path": "reflection"
+                "path": "reflectionAccount"
               }
             ]
           }
@@ -162,8 +162,20 @@ export type EffectRewards = {
           "writable": true
         },
         {
-          "name": "vaultTokenAccount",
-          "writable": true
+          "name": "vestingVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vestingAccount"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "vestingProgram"
+            }
+          }
         },
         {
           "name": "claimAuthority",
@@ -221,10 +233,10 @@ export type EffectRewards = {
       ],
       "accounts": [
         {
-          "name": "reflection"
+          "name": "reflectionAccount"
         },
         {
-          "name": "reward",
+          "name": "rewardAccount",
           "writable": true
         },
         {
@@ -232,7 +244,7 @@ export type EffectRewards = {
           "writable": true,
           "signer": true,
           "relations": [
-            "reward"
+            "rewardAccount"
           ]
         }
       ],
@@ -255,7 +267,7 @@ export type EffectRewards = {
       ],
       "accounts": [
         {
-          "name": "reflection",
+          "name": "reflectionAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -283,7 +295,7 @@ export type EffectRewards = {
           }
         },
         {
-          "name": "stake",
+          "name": "stakeAccount",
           "writable": true
         },
         {
@@ -293,7 +305,7 @@ export type EffectRewards = {
             "seeds": [
               {
                 "kind": "account",
-                "path": "stake"
+                "path": "stakeAccount"
               }
             ],
             "program": {
@@ -303,13 +315,13 @@ export type EffectRewards = {
           }
         },
         {
-          "name": "reward",
+          "name": "rewardAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "stake"
+                "path": "stakeAccount"
               }
             ]
           }
@@ -319,7 +331,7 @@ export type EffectRewards = {
           "writable": true,
           "signer": true,
           "relations": [
-            "stake"
+            "stakeAccount"
           ]
         },
         {
@@ -354,7 +366,7 @@ export type EffectRewards = {
           "writable": true
         },
         {
-          "name": "reflection",
+          "name": "reflectionAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -381,13 +393,13 @@ export type EffectRewards = {
           }
         },
         {
-          "name": "vaultTokenAccount",
+          "name": "rewardVaultTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "reflection"
+                "path": "reflectionAccount"
               }
             ]
           }
@@ -429,14 +441,14 @@ export type EffectRewards = {
       ],
       "accounts": [
         {
-          "name": "reward",
+          "name": "rewardAccount",
           "writable": true
         },
         {
-          "name": "stake"
+          "name": "stakeAccount"
         },
         {
-          "name": "reflection",
+          "name": "reflectionAccount",
           "writable": true
         }
       ],
