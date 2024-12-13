@@ -1,22 +1,28 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { useAnchor } from "../helpers.js";
+import { useAnchor, useStakeTestHelpers } from "../helpers.js";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
 import type { EffectRewards } from "../../target/types/effect_rewards.js";
 import { mintToAccount, setup } from "../../utils/spl.js";
 import {
 	useDeriveRewardAccounts,
+	useDeriveStakeAccounts,
+	useDeriveStakingRewardAccount,
 } from "@effectai/utils";
 import { createVesting } from "../../utils/vesting.js";
 import type { EffectVesting } from "../../target/types/effect_vesting.js";
 import { PublicKey } from "@solana/web3.js";
+import type { EffectStaking } from "../../target/types/effect_staking.js";
 const SECONDS_PER_DAY = 24 * 60 * 60;
 
 describe("Effect Reward Program", async () => {
 	const program = anchor.workspace.EffectRewards as Program<EffectRewards>;
 	const vestingProgram = anchor.workspace
 		.EffectVesting as Program<EffectVesting>;
+	const stakingProgram = anchor.workspace
+		.EffectStaking as Program<EffectStaking>;
 	const { provider, payer } = useAnchor();
+	const { useCreateStake } = useStakeTestHelpers(stakingProgram);
 
 	beforeAll(async () => {
 		it("should correctly initialize a reflection", async () => {
@@ -24,18 +30,69 @@ describe("Effect Reward Program", async () => {
 		});
 	});
 
+	describe("Reward Enter", async () => {
+		// create a stake
+		it.concurrent("should correctly enter a reward account", async () => {
+			const { mint, ata } = await setup({ provider, payer });
+
+			await program.methods
+				.init()
+				.accounts({
+					mint,
+				})
+				.rpc();
+
+			const stakeAccount = new anchor.web3.Keypair();
+
+			await stakingProgram.methods
+				.stake(new anchor.BN(10 ** 6), new anchor.BN(30 * SECONDS_PER_DAY))
+				.accounts({
+					stakeAccount: stakeAccount.publicKey,
+					userTokenAccount: ata,
+					mint,
+				})
+				.postInstructions([
+					...(
+						await program.methods
+							.enter()
+							.accounts({
+								mint,
+								stakeAccount: stakeAccount.publicKey,
+							})
+							.transaction()
+					).instructions,
+				])
+				.signers([stakeAccount])
+				.rpc();
+
+			const { stakingRewardAccount } = useDeriveStakingRewardAccount({
+				stakingAccount: stakeAccount.publicKey,
+				programId: program.programId,
+			});
+
+			const rewardAccount =
+				await program.account.rewardAccount.fetch(stakingRewardAccount);
+			expect(rewardAccount.authority).toEqual(payer.publicKey);
+		});
+	});
+
 	describe("Reward Initialize", async () => {
 		it.concurrent("should correctly claim a vesting stream", async () => {
 			const { mint } = await setup({ provider, payer });
 
-			await program.methods.init().accounts({
-				mint
-			}).signers([payer]).rpc();
+			await program.methods
+				.init()
+				.accounts({
+					mint,
+				})
+				.signers([payer])
+				.rpc();
 
-			const { reflectionAccount, reflectionVaultAccount } = useDeriveRewardAccounts({
-				mint,
-				programId: program.programId,
-			});
+			const { reflectionAccount, reflectionVaultAccount } =
+				useDeriveRewardAccounts({
+					mint,
+					programId: program.programId,
+				});
 
 			// get now - 1 day
 			const yesterday = new Date().getTime() / 1000 - SECONDS_PER_DAY;
@@ -82,9 +139,6 @@ describe("Effect Reward Program", async () => {
 				.claimStream()
 				.accounts({
 					vestingAccount: vestingAccount.publicKey,
-					vaultTokenAccount: vestingVaultAccount,
-					rewardVaultTokenAccount: reflectionVaultAccount,
-					reflection: reflectionAccount,
 				})
 				.rpc();
 
@@ -95,7 +149,9 @@ describe("Effect Reward Program", async () => {
 					reflectionVaultAccount,
 				);
 
-			expect(reflectionAccountData.totalWeightedAmount.toNumber()).toEqual(1000_000_000);
+			expect(reflectionAccountData.totalWeightedAmount.toNumber()).toEqual(
+				1000_000_000,
+			);
 			expect(reflectionVaultAccountBalance.value.uiAmount).toEqual(1000);
 		});
 	});

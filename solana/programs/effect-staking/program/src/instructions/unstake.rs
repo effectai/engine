@@ -29,7 +29,7 @@ pub struct Unstake<'info> {
     pub stake_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(
-        constraint = reward_account.data_is_empty(),
+        constraint = reward_account.data_is_empty() @ StakingErrors::InvalidRewardAccount,
         seeds = [stake_account.key().as_ref()],
         bump,
         seeds::program = reward_program.key(),
@@ -38,7 +38,7 @@ pub struct Unstake<'info> {
 
     #[account(
         mut, 
-        constraint = vesting_account.data_is_empty()
+        constraint = vesting_account.data_is_empty() @ StakingErrors::InvalidVestingAccount,
     )]
     pub vesting_account: Signer<'info>,
 
@@ -47,7 +47,6 @@ pub struct Unstake<'info> {
         seeds = [vesting_account.key().as_ref()],
         bump,
         seeds::program = vesting_program.key(),
-        constraint = vesting_account.data_is_empty()
     )]
     pub vesting_vault_token_account: SystemAccount<'info>,
 

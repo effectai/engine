@@ -6,13 +6,14 @@ use effect_staking_common::StakeAccount;
 
 #[derive(Accounts)]
 pub struct GenesisStake<'info> {
-    #[account(mut)]
+    #[account()]
     pub authority: Signer<'info>,
 
-    #[account(mut)]
+    #[account()]
     pub mint: Account<'info, Mint>,
     
-    #[account(mut, 
+    #[account(
+        mut, 
         token::mint = mint,
         token::authority = authority,
     )]
@@ -21,7 +22,8 @@ pub struct GenesisStake<'info> {
     #[account(mut)]
     pub stake_account: Account<'info, StakeAccount>,
     
-    #[account(mut, 
+    #[account(
+        mut, 
         token::mint = mint,
         token::authority = stake_vault_token_account,
         seeds = [ stake_account.key().as_ref() ],
@@ -29,16 +31,19 @@ pub struct GenesisStake<'info> {
     )]
     pub stake_vault_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut)]
-    pub claim_account: Account<'info, MigrationAccount>,
+    #[account()]
+    pub migration_account: Account<'info, MigrationAccount>,
 
     #[account(
+        signer,
         mut, 
-        seeds = [claim_account.key().as_ref()],
+        seeds = [migration_account.key().as_ref()],
         bump,
         seeds::program = migration_program.key(),
+        token::mint = mint,
+        token::authority = migration_vault_token_account,
     )]
-    pub claim_vault_token_account: Signer<'info>,
+    pub migration_vault_token_account: Account<'info, TokenAccount>,
 
     pub migration_program: Program<'info, MigrationProgram>,
 
@@ -62,9 +67,9 @@ impl<'info> GenesisStake<'info> {
         // Transfer tokens from claim vault to the stake vault
         transfer_tokens(
             self.token_program.to_account_info(),
-            self.claim_vault_token_account.to_account_info(),
+            self.migration_vault_token_account.to_account_info(),
             self.stake_vault_token_account.to_account_info(),
-            self.claim_vault_token_account.to_account_info(),
+            self.migration_vault_token_account.to_account_info(),
             &[&vault_seed!(self.stake_account.key())],
             amount,
         )

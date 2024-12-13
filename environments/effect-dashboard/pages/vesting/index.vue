@@ -16,7 +16,9 @@
             <p class="">No active vesting contracts found.</p>
         </div>
         <div v-else>
+            <div class="space-y-4">
             <VestingScheduleItem v-for="account in vestingAccounts" :vesting-account="account"/>
+            </div>
         </div>
     </UCard>
 </template>

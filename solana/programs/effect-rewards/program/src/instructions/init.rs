@@ -1,13 +1,8 @@
 use crate::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-// CHECK:: we've removed the constraint for the mint here, so there can be multiple 
-
 #[derive(Accounts)]
 pub struct Init<'info> {
-    #[account(mut)]
-    pub mint: Account<'info, Mint>,
-
     #[account(
         init,
         payer = authority,
@@ -29,6 +24,8 @@ pub struct Init<'info> {
 
     #[account(mut)]
     pub authority: Signer<'info>,
+
+    pub mint: Account<'info, Mint>,
 
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,

@@ -8,11 +8,9 @@ import rewardIDL from "../target/idl/effect_rewards.json";
 import type { EffectRewards } from "../target/types/effect_rewards";
 import type { Program } from "@coral-xyz/anchor";
 import { spawn } from "child_process";
-import { BN } from "bn.js";
 import { createKeypairFromFile, extractEosPublicKeyBytes, useDeriveMigrationAccounts } from "@effectai/utils";
-import { program } from "@coral-xyz/anchor/dist/cjs/native/system";
 import { createMigrationClaim } from "../utils/migration";
-import { EffectMigration } from "../target/types/effect_migration";
+import type { EffectMigration } from "../target/types/effect_migration";
 
 const createReflectionAcount = async ({
 	mint,
@@ -106,26 +104,15 @@ const seed = async () => {
 
 	const program = anchor.workspace.EffectMigration as Program<EffectMigration>;
 
-	await createMigrationClaim({
-		type: 'token',
-		program,
-		publicKey: toBytes(ethereumPublicKey),
-		mint,
-		amount: 500_000_000,
-		payer,
-		payerTokens: ata,
-	});
 
 	const dateOneYearAgo = new Date().getTime() / 1000 - 365 * 24 * 60 * 60;
-
+	
 	await createMigrationClaim({
-		type: 'stake',
 		program,
 		publicKey: toBytes(ethereumPublicKey),
 		mint,
 		amount: 250_000_000,
-		payer,
-		payerTokens: ata,
+		userTokenAccount: ata,
 		stakeStartTime: dateOneYearAgo,
 	});
 
@@ -135,29 +122,6 @@ const seed = async () => {
 // deploy
 const args1 = [
 	"deploy",
-	"--program-name",
-	"effect-staking",
-	"--provider.cluster",
-	"localnet",
-];
-const args2 = [
-	"deploy",
-	"--program-name",
-	"effect-rewards",
-	"--provider.cluster",
-	"localnet",
-];
-const args3 = [
-	"deploy",
-	"--program-name",
-	"effect-vesting",
-	"--provider.cluster",
-	"localnet",
-];
-const args4 = [
-	"deploy",
-	"--program-name",
-	"effect-migration",
 	"--provider.cluster",
 	"localnet",
 ]
@@ -251,9 +215,6 @@ await new Promise((resolve, reject) => {
 // wait for the programs to deploy
 await Promise.all([
 	deploy("anchor", args1),
-	deploy("anchor", args2),
-	deploy("anchor", args3),
-	deploy("anchor", args4),
 ]);
 
 // seed the accounts

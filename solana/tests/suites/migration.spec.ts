@@ -34,7 +34,7 @@ describe("Migration Program", async () => {
 	const { provider, payer, expectAnchorError } = useAnchor();
 
 	// local test data
-	const originalMessage = `Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: ${payer.publicKey.toBase58()}`;
+	const originalMessage = `Effect.AI: I authorize my tokens to be claimed at the following Solana address:${payer.publicKey.toBase58()}`;
 	const ethPublicKey = "0xA03E94548C26E85DBd81d93ca782A3449564C27f";
 	const eosPublicKey =
 		"PUB_K1_7abGp9AVsTpt4TLSdCFKS2Tm49zCwg8nWLpJhAmEpppG9fjJsy";
@@ -45,7 +45,7 @@ describe("Migration Program", async () => {
 		it.concurrent("correctly initializes an ethereum based vault", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
-			const { claimAccount } = await createMigrationClaim({
+			const { migrationAccount } = await createMigrationClaim({
 				stakeStartTime: lastYear,
 				mint,
 				userTokenAccount: ata,
@@ -56,7 +56,7 @@ describe("Migration Program", async () => {
 
 			// check if the metadata account was created
 			const claimAccountData =
-				await program.account.migrationAccount.fetch(claimAccount);
+				await program.account.migrationAccount.fetch(migrationAccount);
 
 			expect(claimAccountData).to.not.be.null;
 			expect(claimAccountData.foreignPublicKey.byteLength).to.equal(20);
@@ -74,7 +74,7 @@ describe("Migration Program", async () => {
 				throw new Error("Invalid public key");
 			}
 
-			const { claimAccount: stakeClaimAccount } = await createMigrationClaim({
+			const { migrationAccount } = await createMigrationClaim({
 				mint,
 				userTokenAccount: ata,
 				publicKey,
@@ -84,7 +84,7 @@ describe("Migration Program", async () => {
 			});
 
 			const stakeMetadataAccount =
-				await provider.connection.getAccountInfo(stakeClaimAccount);
+				await provider.connection.getAccountInfo(migrationAccount);
 			expect(stakeMetadataAccount).to.not.be.null;
 		});
 
@@ -123,7 +123,7 @@ describe("Migration Program", async () => {
 				throw new Error("Invalid public key");
 			}
 
-			const { claimAccount, vaultAccount } = await createMigrationClaim({
+			const { migrationAccount } = await createMigrationClaim({
 				mint,
 				userTokenAccount: ata,
 				publicKey: pk,
@@ -148,7 +148,7 @@ describe("Migration Program", async () => {
 				ata,
 				mint,
 				payer,
-				claimAccount,
+				foreignPublicKey: pk,
 				signature: Buffer.from(signature[0].data.array),
 				message: Buffer.from(serializedTransactionBytes.array),
 			});
@@ -157,7 +157,7 @@ describe("Migration Program", async () => {
 		it.concurrent("correctly signs with keccak256", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
-			const { claimAccount } = await createMigrationClaim({
+			const { migrationAccount } = await createMigrationClaim({
 				mint,
 				userTokenAccount: ata,
 				publicKey: toBytes(ethPublicKey),
@@ -187,7 +187,7 @@ describe("Migration Program", async () => {
 				ata,
 				mint,
 				payer,
-				claimAccount,
+				foreignPublicKey: toBytes(ethPublicKey),
 				signature: sigWithRecovery,
 				message: Buffer.from(originalMessage),
 			});
@@ -196,7 +196,7 @@ describe("Migration Program", async () => {
 		it.concurrent("correctly claims with eth_personal_sign", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
-			const { claimAccount, vaultAccount } = await createMigrationClaim({
+			const { migrationAccount } = await createMigrationClaim({
 				mint,
 				userTokenAccount: ata,
 				publicKey: toBytes(ethPublicKey),
@@ -221,7 +221,7 @@ describe("Migration Program", async () => {
 				ata,
 				mint,
 				payer,
-				claimAccount,
+				foreignPublicKey: toBytes(ethPublicKey),
 				signature: toBytes(signature),
 				message: Buffer.from(message),
 			});
@@ -246,7 +246,7 @@ describe("Migration Program", async () => {
 				message: originalMessage,
 			});
 
-			const { claimAccount, vaultAccount: claimVaultAccount } =
+			const { migrationAccount, vaultAccount: claimVaultAccount } =
 				await createMigrationClaim({
 					mint,
 					userTokenAccount: ata,
@@ -260,9 +260,9 @@ describe("Migration Program", async () => {
 				migrationProgram: program,
 				stakeProgram,
 				ata,
+				foreignPublicKey: toBytes(ethPublicKey),
 				mint,
 				payer,
-				claimAccount,
 				signature: Buffer.from(toBytes(signature)),
 				message: Buffer.from(message),
 			});
@@ -319,7 +319,7 @@ describe("Migration Program", async () => {
 					payerTokens: ata,
 				});
 
-				const { claimAccount, vaultAccount: claimVaultAccount } =
+				const { migrationAccount, vaultAccount: claimVaultAccount } =
 					await createMigrationClaim({
 						mint,
 						userTokenAccount: ata,
@@ -335,10 +335,9 @@ describe("Migration Program", async () => {
 				});
 
 				await program.methods
-					.claimStake(Buffer.from(toBytes(signature)), Buffer.from(message))
+					.claimStake(Buffer.from(toBytes(signature)), Buffer.from(message), Buffer.from(toBytes(ethPublicKey)))
 					.accounts({
 						recipientTokenAccount: ata,
-						claimAccount: claimAccount,
 						stakeAccount: stakeAccount.publicKey,
 						mint,
 					})
@@ -372,7 +371,7 @@ describe("Migration Program", async () => {
 				const { mint, ata } = await setup({ provider, payer });
 				const { MESSAGE_INVALID } = useErrorsIDL(effect_migration);
 
-				const { claimAccount, vaultAccount } = await createMigrationClaim({
+				const { migrationAccount, vaultAccount } = await createMigrationClaim({
 					mint,
 					userTokenAccount: ata,
 					publicKey: toBytes(ethPublicKey),
@@ -396,7 +395,7 @@ describe("Migration Program", async () => {
 						ata,
 						mint,
 						payer,
-						claimAccount,
+						foreignPublicKey: toBytes(ethPublicKey),
 						signature: Buffer.from(toBytes(signature)),
 						message: Buffer.from("wroong"),
 					});
@@ -437,7 +436,7 @@ describe("Migration Program", async () => {
 						ata,
 						mint,
 						payer,
-						claimAccount,
+						foreignPublicKey: toBytes(ethPublicKey),
 						signature: Buffer.from(toBytes(signature)),
 						message: Buffer.from(message),
 					});

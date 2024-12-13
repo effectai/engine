@@ -1,4 +1,4 @@
-import { Keypair, PublicKey, StakeProgram, Transaction } from "@solana/web3.js";
+import { Keypair, PublicKey, StakeProgram, Transaction, type TokenAmount } from "@solana/web3.js";
 import {
 	useMutation,
 	useQuery,
@@ -19,6 +19,7 @@ import {
 	useDeriveMigrationAccounts,
 	useDeriveRewardAccounts,
 	useDeriveStakeAccounts,
+	useDeriveStakingRewardAccount,
 } from "@effectai/utils";
 import { base64 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import type { StakingAccount } from "./useStakingProgram";
@@ -26,7 +27,7 @@ import type { StakingAccount } from "./useStakingProgram";
 export type EffectMigrationProgramAccounts =
 	anchor.IdlAccounts<EffectMigration>;
 export type MigrationClaimAccount = anchor.ProgramAccount<
-	EffectMigrationProgramAccounts["claimAccount"]
+	EffectMigrationProgramAccounts["migrationAccount"]
 >;
 
 const SECONDS_PER_DAY = 86400;
@@ -42,12 +43,6 @@ export const useMigrationProgram = () => {
 	const { rewardsProgram } = useStakingProgram();
 	const { stakeProgram } = useStakingProgram();
 
-	type Claim = {
-		type: "stake" | "token";
-		amount: number;
-		account: MigrationClaimAccount;
-	};
-
 	const program = new anchor.Program(
 		EffectMigrationIdl as Idl,
 		provider,
@@ -55,7 +50,11 @@ export const useMigrationProgram = () => {
 
 	const { foreignPublicKey } = useGlobalState();
 
-	const useGetClaimAccounts = (): UseQueryReturnType<Claim[], Error> => {
+	const useGetMigrationAccount = (): UseQueryReturnType<MigrationClaimAccount["account"] & {
+		vaultBalance: {
+			value: TokenAmount;
+		}
+	}, Error> => {
 		return useQuery({
 			queryKey: [
 				"claims",
@@ -68,40 +67,19 @@ export const useMigrationProgram = () => {
 					throw new Error("Missing required data");
 				}
 
-				const claimAccounts = await program.account.claimAccount.all([
-					{
-						memcmp: {
-							offset: 12,
-							encoding: "base64",
-							bytes: base64.encode(Buffer.from(foreignPublicKey.value)),
-						},
-					},
-				]);
+				const { migrationAccount, vaultAccount } = useDeriveMigrationAccounts({
+					mint: new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT),
+					foreignPublicKey: foreignPublicKey.value,
+					programId: program.programId,
+				});
 
-				if (claimAccounts.length === 0) {
-					throw new Error("No claim accounts found");
-				}
+				const data = await program.account.migrationAccount.fetchNullable(migrationAccount);
+				const vaultBalance = await connection.getTokenAccountBalance(vaultAccount);
 
-				const claims: Claim[] = [];
-				// map claim accounts to stake or token
-				for (const claimAccount of claimAccounts) {
-					const { vaultAccount } = useDeriveMigrationAccounts({
-						claimAccount: claimAccount.publicKey,
-						programId: program.programId,
-					});
-
-					const amount = await connection.getTokenAccountBalance(vaultAccount);
-
-					const type = claimAccount.account.claimType.token ? "token" : "stake";
-
-					claims.push({
-						type,
-						amount: amount.value.uiAmount || 0,
-						account: claimAccount,
-					});
-				}
-
-				return claims;
+				return {
+					...data,
+					vaultBalance,
+				};
 			},
 			enabled: computed(() => !!publicKey.value && !!foreignPublicKey.value),
 		});
@@ -112,25 +90,13 @@ export const useMigrationProgram = () => {
 	}: {
 		options: UseMutationOptions<
 			string,
-			Error,
-			{
-				claim: Claim;
-			}
+			Error
 		>;
 	}) =>
 		useMutation({
 			...options,
-			mutationFn: async ({
-				claim,
-			}: {
-				claim: Claim;
-			}) => {
+			mutationFn: async () => {
 				const { foreignPublicKey, message, signature } = useGlobalState();
-
-				const { vaultAccount } = useDeriveMigrationAccounts({
-					claimAccount: claim.account.publicKey,
-					programId: program.programId,
-				});
 
 				if (
 					!publicKey.value ||
@@ -144,99 +110,34 @@ export const useMigrationProgram = () => {
 				const mint = new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT);
 				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
-				if (claim.type === "stake") {
-					const signers: Keypair[] = [];
-					let stakingAccount: Keypair | StakingAccount | null = null;
+				const signers: Keypair[] = [];
+				let stakingAccount: Keypair | StakingAccount | null = null;
 
-					// check if user has an existing stakingAccount
-					const stakingAccounts = await stakeProgram.account.stakeAccount.all([
-						{
-							memcmp: {
-								offset: 8 + 8,
-								encoding: "base58",
-								bytes: publicKey.value.toBase58(),
-							},
+				// check if user has an existing stakingAccount
+				const stakingAccounts = await stakeProgram.account.stakeAccount.all([
+					{
+						memcmp: {
+							offset: 8 + 8,
+							encoding: "base58",
+							bytes: publicKey.value.toBase58(),
 						},
-					]);
+					},
+				]);
 
-					if (stakingAccounts.length === 0) {
-						stakingAccount = Keypair.generate();
-						signers.push(stakingAccount);
-					} else {
-						stakingAccount = stakingAccounts[0];
-					}
-
-					const { vaultAccount: stakeVaultTokenAccount } =
-						useDeriveStakeAccounts({
-							stakingAccount: stakingAccount.publicKey,
-							programId: stakeProgram.programId,
-						});
-
-					const { rewardAccount, reflectionAccount } = useDeriveRewardAccounts({
-						authority: publicKey.value,
-						programId: rewardsProgram.programId,
-					});
-
-					return await program.methods
-						.claimStake(
-							Buffer.from(signature.value),
-							Buffer.from(message.value),
-						)
-						.preInstructions([
-							...((await connection.getAccountInfo(ata))
-								? []
-								: [
-										createAssociatedTokenAccountIdempotentInstructionWithDerivation(
-											publicKey.value,
-											publicKey.value,
-											mint,
-										),
-									]),
-							...(stakingAccounts.length === 0
-								? [
-										await stakeProgram.methods
-											.stake(
-												new anchor.BN(0),
-												new anchor.BN(30 * SECONDS_PER_DAY),
-											)
-											.accounts({
-												stake: stakingAccount.publicKey,
-												userTokenAccount: ata,
-												mint,
-											})
-											.signers(signers)
-											.instruction(),
-									]
-								: []),
-						])
-						.postInstructions([
-							...((await connection.getAccountInfo(rewardAccount))
-								? []
-								: [
-										await rewardsProgram.methods
-											.enter()
-											.accounts({
-												stake: stakingAccount.publicKey,
-												reflection: reflectionAccount,
-											})
-											.signers(signers)
-											.instruction(),
-									]),
-						])
-						.accounts({
-							mint,
-							recipientTokenAccount: ata,
-							stakeVaultTokenAccount: stakeVaultTokenAccount,
-							stakeAccount: stakingAccount.publicKey,
-							claimAccount: claim.account.publicKey,
-							vaultTokenAccount: vaultAccount,
-						})
-						.signers(signers) 
-						.rpc();
+				if (stakingAccounts.length === 0) {
+					stakingAccount = Keypair.generate();
+					signers.push(stakingAccount);
+				} else {
+					stakingAccount = stakingAccounts[0];
 				}
 
+				const {stakingRewardAccount} = useDeriveStakingRewardAccount({
+					stakingAccount: stakingAccount.publicKey,
+					programId: rewardsProgram.programId,
+				})
+
 				return await program.methods
-					.claimTokens(Buffer.from(signature.value), Buffer.from(message.value))
+					.claimStake(Buffer.from(signature.value), Buffer.from(message.value), Buffer.from(foreignPublicKey.value))
 					.preInstructions([
 						...((await connection.getAccountInfo(ata))
 							? []
@@ -247,20 +148,50 @@ export const useMigrationProgram = () => {
 										mint,
 									),
 								]),
+						...(stakingAccounts.length === 0
+							? [
+									await stakeProgram.methods
+										.stake(
+											new anchor.BN(0),
+											new anchor.BN(30 * SECONDS_PER_DAY),
+										)
+										.accounts({
+											stakeAccount: stakingAccount.publicKey,
+											userTokenAccount: ata,
+											mint,
+										})
+										.signers(signers)
+										.instruction(),
+								]
+							: []),
+					])
+					.postInstructions([
+						...((await connection.getAccountInfo(stakingRewardAccount))
+							? []
+							: [
+									await rewardsProgram.methods
+										.enter()
+										.accounts({
+											mint,
+											stakeAccount: stakingAccount.publicKey,
+										})
+										.signers(signers)
+										.instruction(),
+								]),
 					])
 					.accounts({
 						mint,
 						recipientTokenAccount: ata,
-						claimAccount: claim.account.publicKey,
-						vaultAccount,
+						stakeAccount: stakingAccount.publicKey,
 					})
+					.signers(signers)
 					.rpc();
 			},
 		});
 
 	return {
 		program,
-		useGetClaimAccounts,
+		useGetMigrationAccount,
 		useClaim,
 	};
 };

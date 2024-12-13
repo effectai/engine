@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use std::ops::{Deref, DerefMut};
 
 pub struct SettingsAccount {
     pub authority: Pubkey,

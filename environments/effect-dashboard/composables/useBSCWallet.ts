@@ -76,7 +76,7 @@ export const useBscWallet = (): SourceWalletAdapter => {
 			throw new Error("No public key");
 		}
 
-		const originalMessage = `Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: ${solanaAddress.value}`;
+		const originalMessage = `Effect.AI: I authorize my tokens to be claimed at the following Solana address:${solanaAddress.value}`;
 		const prefix = `\x19Ethereum Signed Message:\n${originalMessage.length}`;
 		const message = Buffer.from(prefix + originalMessage);
 		const signature = await signMessage(config, { message: originalMessage });

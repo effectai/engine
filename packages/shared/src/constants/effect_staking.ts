@@ -140,12 +140,10 @@ export const effect_staking = {
       "accounts": [
         {
           "name": "authority",
-          "writable": true,
           "signer": true
         },
         {
-          "name": "mint",
-          "writable": true
+          "name": "mint"
         },
         {
           "name": "user_token_account",
@@ -168,18 +166,17 @@ export const effect_staking = {
           }
         },
         {
-          "name": "claim_account",
-          "writable": true
+          "name": "migration_account"
         },
         {
-          "name": "claim_vault_token_account",
+          "name": "migration_vault_token_account",
           "writable": true,
           "signer": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "claim_account"
+                "path": "migration_account"
               }
             ],
             "program": {
@@ -484,11 +481,16 @@ export const effect_staking = {
     },
     {
       "code": 6014,
+      "name": "InvalidVestingAccount",
+      "msg": "Invalid vesting account."
+    },
+    {
+      "code": 6015,
       "name": "StakeNotEmpty",
       "msg": "Stake acount is not empty."
     },
     {
-      "code": 6015,
+      "code": 6016,
       "name": "InvalidMint",
       "msg": "Invalid Mint"
     }

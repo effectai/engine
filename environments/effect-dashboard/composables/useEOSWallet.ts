@@ -122,7 +122,7 @@ export const useEosWallet = (): SourceWalletAdapter => {
 	}> => {
 		const { address } = useSolanaWallet();
 
-		const originalMessage = `Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: ${address.value}`;
+		const originalMessage = `Effect.AI: I authorize my tokens to be claimed at the following Solana address:${address.value}`;
 
 		if (!session.value?.client) {
 			throw new Error("No client found");

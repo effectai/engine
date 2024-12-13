@@ -36,17 +36,29 @@ export const effect_migration = {
           "writable": true
         },
         {
-          "name": "claim_account",
-          "writable": true
-        },
-        {
-          "name": "claim_vault_token_account",
+          "name": "migration_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "claim_account"
+                "path": "mint"
+              },
+              {
+                "kind": "arg",
+                "path": "foreign_public_key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "migration_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "migration_account"
               }
             ]
           }
@@ -94,11 +106,15 @@ export const effect_migration = {
       ],
       "args": [
         {
-          "name": "sig",
+          "name": "signature",
           "type": "bytes"
         },
         {
           "name": "message",
+          "type": "bytes"
+        },
+        {
+          "name": "foreign_public_key",
           "type": "bytes"
         }
       ]
@@ -117,9 +133,20 @@ export const effect_migration = {
       ],
       "accounts": [
         {
-          "name": "claim_account",
+          "name": "migration_account",
           "writable": true,
-          "signer": true
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "arg",
+                "path": "foreign_public_key"
+              }
+            ]
+          }
         },
         {
           "name": "claim_vault_token_account",
@@ -128,7 +155,7 @@ export const effect_migration = {
             "seeds": [
               {
                 "kind": "account",
-                "path": "claim_account"
+                "path": "migration_account"
               }
             ]
           }
@@ -314,7 +341,7 @@ export const effect_migration = {
     {
       "name": "EXPECTED_MESSAGE",
       "type": "string",
-      "value": "\"Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: \""
+      "value": "\"Effect.AI: I authorize my tokens to be claimed at the following Solana address\""
     }
   ]
 } as const;

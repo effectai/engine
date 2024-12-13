@@ -12,7 +12,7 @@ pub struct Close<'info> {
         mut,
         close = authority,
         has_one = authority @ StakingErrors::Unauthorized,
-        constraint = stake_account.amount != 0 @ StakingErrors::StakeNotEmpty,
+        constraint = stake_account.amount == 0 @ StakingErrors::StakeNotEmpty,
     )]
     pub stake_account: Account<'info, StakeAccount>,
     

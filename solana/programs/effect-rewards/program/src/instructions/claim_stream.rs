@@ -22,7 +22,8 @@ pub struct ClaimStream<'info> {
     #[account(mut)]
     pub vesting_account: Account<'info, VestingAccount>,
 
-    #[account(mut, 
+    #[account(
+        mut, 
         seeds = [vesting_account.key().as_ref()],
         bump,
         seeds::program = vesting_program.key(),
@@ -30,7 +31,7 @@ pub struct ClaimStream<'info> {
     pub vesting_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(
-        mut, 
+        mut,
         seeds = [b"vesting"],
         bump,
     )]
@@ -58,8 +59,6 @@ impl<'info> ClaimStream<'info> {
             &[seeds]
         )?;
 
-        // @Jesse CHECK:: is this method of retrieving amounts safe ?
-        // we need a way to check the balance that we've claimed from the
         self.vesting_vault_token_account.reload()?;
         let claimed_amount = balance_before_claim - self.vesting_vault_token_account.amount;
 

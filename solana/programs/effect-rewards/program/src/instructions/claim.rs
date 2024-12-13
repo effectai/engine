@@ -12,11 +12,11 @@ pub struct Claim<'info> {
         seeds = [b"reflection", recipient_token_account.mint.as_ref()],
         bump,
     )]
-    pub reflection: Account<'info, ReflectionAccount>,
+    pub reflection_account: Account<'info, ReflectionAccount>,
   
     #[account(
         mut,
-        seeds = [reflection.key().as_ref()],
+        seeds = [reflection_account.key().as_ref()],
         bump
     )]
     pub reward_vault_token_account: Account<'info, TokenAccount>,
@@ -51,8 +51,7 @@ pub struct Claim<'info> {
 impl<'info> Claim<'info> {
     pub fn handler(&mut self) -> Result<()> {
         // determine amount to claim
-
-        let amount: u128 = self.reward_account.get_amount(self.reflection.rate);
+        let amount: u128 = self.reward_account.get_amount(self.reflection_account.rate);
 
         if amount == 0 {
             msg!("No rewards to claim");
@@ -60,12 +59,12 @@ impl<'info> Claim<'info> {
         }
 
         // decrease the reflection pool
-        self.reflection
+        self.reflection_account
             .remove_rewards_account(self.reward_account.reflection, self.reward_account.weighted_amount + amount)?;
 
         // re-enter the pool with the current stake
         self.reward_account.update(
-            self.reflection.add_rewards_account(self.stake_account.weighted_amount, 0),
+            self.reflection_account.add_rewards_account(self.stake_account.weighted_amount, 0),
             self.stake_account.weighted_amount,
         )?;
 

@@ -31,6 +31,7 @@
 
 <script setup lang="ts">
 import { BN } from '@coral-xyz/anchor';
+import { useDeriveVestingAccounts } from '@effectai/utils';
 import type { PublicKey } from '@solana/web3.js';
 
 const { vestingProgram, useClaim } = useVestingProgram()
@@ -40,7 +41,13 @@ const props = defineProps<{
 }>()
 
 const { useGetTokenAccountBalanceQuery } = useSolanaWallet()
-const { data: balance } = useGetTokenAccountBalanceQuery(props.vestingAccount.account.vaultTokenAccount)
+
+const { vestingVaultAccount } = useDeriveVestingAccounts({
+    vestingAccount: props.vestingAccount.publicKey,
+    programId: vestingProgram.programId,
+})
+
+const { data: balance } = useGetTokenAccountBalanceQuery(vestingVaultAccount)
 
 const scheduleStarted = (timestamp: BN) => {
     return Date.now() > timestamp.toNumber() * 1000
@@ -72,12 +79,9 @@ const calculateDue = (
     distributedTokens: number,
     amountAvailable: number
 ): number => {
-
     // get now as a unix timestamp
     const now = Math.floor(new Date().getTime() / 1000);
-
     const poolAmount = (now - startTime) * releaseRate;
-
     const amountDue = poolAmount - distributedTokens;
 
     return Math.min(amountDue, amountAvailable * 1_000_000);

@@ -13,7 +13,6 @@ import { AccountLayout } from "@solana/spl-token";
 import type { EffectVesting } from "../../target/types/effect_vesting.js";
 import type { EffectRewards } from "../../target/types/effect_rewards.js";
 import {
-	useDeriveRewardAccounts,
 	useDeriveStakeAccounts,
 	useDeriveStakingRewardAccount,
 	useDeriveVestingAccounts,
@@ -34,6 +33,7 @@ describe("Staking Program", async () => {
 			const { mint, ata } = await setup({ payer, provider });
 
 			const { stakeAccount } = await useCreateStake({
+				amount: 5_000_000,
 				authority: wallet.publicKey,
 				mint,
 				userTokenAccount: ata,
@@ -58,6 +58,7 @@ describe("Staking Program", async () => {
 
 				await expectAnchorError(async () => {
 					await useCreateStake({
+						amount: 5_000_000,
 						lockTimeInDays: STAKE_DURATION_MIN.sub(new BN(1)).toNumber(),
 						authority: wallet.publicKey,
 						mint,
@@ -76,6 +77,7 @@ describe("Staking Program", async () => {
 
 				await expectAnchorError(async () => {
 					await useCreateStake({
+						amount: 5_000_000,
 						lockTimeInDays: STAKE_DURATION_MAX.add(new BN(1)).toNumber(),
 						authority: wallet.publicKey,
 						mint,
@@ -108,6 +110,7 @@ describe("Staking Program", async () => {
 				authority: wallet.publicKey,
 				mint,
 				userTokenAccount: ata,
+				amount: 5_000_000,
 			});
 
 			// init reward program
@@ -122,6 +125,7 @@ describe("Staking Program", async () => {
 			await rewardProgram.methods
 				.enter()
 				.accounts({
+					mint,
 					stakeAccount: stakeAccount.publicKey,
 				})
 				.rpc();
@@ -156,6 +160,7 @@ describe("Staking Program", async () => {
 				authority: wallet.publicKey,
 				mint,
 				userTokenAccount: ata,
+				amount: 5_000_000,
 			});
 
 			const { stakingRewardAccount } = useDeriveStakingRewardAccount({
@@ -202,11 +207,12 @@ describe("Staking Program", async () => {
 
 			expect(vestingVaultAccountData.value.uiAmount).toBe(5);
 		});
+
 	});
 
 	// describe("Stake Extension", async () => {});
 	describe("Stake Topup", async () => {
-		it('dilutes stake age when "topup" is called', async () => {
+		it.concurrent('dilutes stake age when "topup" is called', async () => {
 			const {
 				program: bankrunProgram,
 				provider,
@@ -269,5 +275,55 @@ describe("Staking Program", async () => {
 			const result = AccountLayout.decode(balance.data);
 			expect(result.amount).toBe(2_000_000n);
 		});
+	});
+
+	describe("Stake Close", async () => {
+
+		it.concurrent("should correctly close a stake account", async () => {
+			const { mint, ata } = await setup({ payer, provider });
+			
+			const { stakeAccount, vaultAccount } = await useCreateStake({
+				authority: wallet.publicKey,
+				mint,
+				userTokenAccount: ata,
+				amount: 0
+			});
+
+			const stakeAccountData = await program.account.stakeAccount.fetch(stakeAccount.publicKey);
+			const stakeVaultAccountBalance = await provider.connection.getTokenAccountBalance(vaultAccount);
+
+			expect(stakeAccountData.authority.toBase58()).toEqual(wallet.publicKey.toBase58());
+			expect(stakeAccountData.amount.toNumber()).toEqual(0);
+			expect(stakeVaultAccountBalance.value.uiAmount).toEqual(0);
+
+			await program.methods.close().accounts({
+				stakeAccount: stakeAccount.publicKey,
+				recipientTokenAccount: ata,
+			}).rpc();
+		});
+
+		it.concurrent("should throw STAKE_NOT_EMPTY error on closing a non-empty stake account", async () => {
+			const { mint, ata } = await setup({ payer, provider });
+			const { STAKE_NOT_EMPTY } = useErrorsIDL(effect_staking);
+
+			const { stakeAccount } = await useCreateStake({
+				authority: wallet.publicKey,
+				mint,
+				userTokenAccount: ata,
+				amount: 5_000_000,
+			});
+
+			expectAnchorError(
+				async () => {
+					await program.methods.close().accounts({
+						stakeAccount: stakeAccount.publicKey,
+						recipientTokenAccount: ata,
+					}).rpc()
+				},
+				STAKE_NOT_EMPTY
+			);
+		});
+
+		
 	});
 });

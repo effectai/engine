@@ -11,7 +11,10 @@ use anchor_lang::{prelude::Pubkey, solana_program::keccak};
 
 use anchor_lang::solana_program::secp256k1_recover::{secp256k1_recover, Secp256k1Pubkey};
 
+use crate::state::EXPECTED_MESSAGE;
+
 #[derive(Accounts)]
+#[instruction(signature: Vec<u8>, message: Vec<u8>, foreign_public_key: Vec<u8>)]
 pub struct ClaimStake<'info> {
     #[account(signer)]
     pub authority: Signer<'info>,
@@ -26,17 +29,22 @@ pub struct ClaimStake<'info> {
     #[account(mut)]
     pub mint: Account<'info, Mint>,
 
-    #[account(mut)]
-    pub claim_account: Account<'info, MigrationAccount>,
+    #[account(
+        mut,
+        seeds = [mint.key().as_ref(), foreign_public_key.as_slice()],
+        constraint = foreign_public_key.as_slice() == migration_account.foreign_public_key.as_slice(),
+        bump
+    )]
+    pub migration_account: Account<'info, MigrationAccount>,
 
     #[account(
         mut, 
-        token::authority = claim_vault_token_account, 
+        token::authority = migration_vault_token_account, 
         token::mint = mint,
-        seeds = [claim_account.key().as_ref()],
+        seeds = [migration_account.key().as_ref()],
         bump,
     )]
-    pub claim_vault_token_account: Account<'info, TokenAccount>,
+    pub migration_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(mut, has_one = authority)]
     pub stake_account: Account<'info, StakeAccount>,
@@ -59,23 +67,21 @@ pub struct ClaimStake<'info> {
     pub staking_program: Program<'info, EffectStaking>,
 }
 
-pub fn claim_stake(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
-    let is_eth = ctx.accounts.claim_account.foreign_public_key.len() == 20;
+pub fn claim_stake(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>, _foreign_public_key: Vec<u8>) -> Result<()> {
+    let is_eth = ctx.accounts.migration_account.foreign_public_key.len() == 20;
     
     verify_claim(
         signature,
         message,
         is_eth,
         *ctx.accounts.authority.key,
-        ctx.accounts.claim_account.foreign_public_key.clone(),
+        ctx.accounts.migration_account.foreign_public_key.clone(),
     )?;
 
-    genesis_stake!(ctx.accounts, &[&vault_seed!(ctx.accounts.claim_account.key(), *ctx.program_id)[..]])?;
+    genesis_stake!(ctx.accounts, &[&vault_seed!(ctx.accounts.migration_account.key(), *ctx.program_id)[..]])?;
 
     Ok(())
 }
-
-use crate::state::EXPECTED_MESSAGE;
 
 pub fn keccak256(message: &[u8]) -> [u8; 32] {
     let mut hasher = keccak::Hasher::default();
@@ -95,7 +101,7 @@ pub fn sha256(message: &[u8]) -> [u8; 32] {
 
 pub fn get_expected_message_bytes(payer_pubkey: &Pubkey) -> Vec<u8> {
     format!(
-        "{}{}", 
+        "{}:{}", 
         EXPECTED_MESSAGE,
         payer_pubkey
     )

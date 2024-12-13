@@ -1,18 +1,36 @@
+use anchor_spl::token::TokenAccount;
 use effect_rewards_common::RewardAccount;
-use effect_staking_common::StakeAccount;
+use effect_staking_common::{StakeAccount, StakingProgram};
 
 use crate::*;
 
 #[derive(Accounts)]
 pub struct Sync<'info> {
-    #[account(mut)]
-    pub reward_account: Account<'info, RewardAccount>,
-    #[account(
-        constraint = stake_account.authority == reward_account.authority @ RewardErrors::Unauthorized,
-    )]
+    #[account()]
     pub stake_account: Account<'info, StakeAccount>,
-    #[account(mut)]
+    
+    #[account(
+        mut,
+        seeds = [ stake_account.key().as_ref() ],
+        bump,       
+    )]
+    pub reward_account: Account<'info, RewardAccount>,
+
+    #[account(
+        seeds = [ stake_account.key().as_ref() ],
+        bump,
+        seeds::program = stake_program.key()
+    )]
+    pub stake_vault_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        seeds = [b"reflection", stake_vault_token_account.mint.as_ref()],
+        bump,
+    )]
     pub reflection_account: Account<'info, ReflectionAccount>,
+    
+    pub stake_program: Program<'info, StakingProgram>,
 }
 
 impl<'info> Sync<'info> {

@@ -42,17 +42,29 @@ export type EffectMigration = {
           "writable": true
         },
         {
-          "name": "claimAccount",
-          "writable": true
-        },
-        {
-          "name": "claimVaultTokenAccount",
+          "name": "migrationAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "claimAccount"
+                "path": "mint"
+              },
+              {
+                "kind": "arg",
+                "path": "foreignPublicKey"
+              }
+            ]
+          }
+        },
+        {
+          "name": "migrationVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "migrationAccount"
               }
             ]
           }
@@ -100,11 +112,15 @@ export type EffectMigration = {
       ],
       "args": [
         {
-          "name": "sig",
+          "name": "signature",
           "type": "bytes"
         },
         {
           "name": "message",
+          "type": "bytes"
+        },
+        {
+          "name": "foreignPublicKey",
           "type": "bytes"
         }
       ]
@@ -123,9 +139,20 @@ export type EffectMigration = {
       ],
       "accounts": [
         {
-          "name": "claimAccount",
+          "name": "migrationAccount",
           "writable": true,
-          "signer": true
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "arg",
+                "path": "foreignPublicKey"
+              }
+            ]
+          }
         },
         {
           "name": "claimVaultTokenAccount",
@@ -134,7 +161,7 @@ export type EffectMigration = {
             "seeds": [
               {
                 "kind": "account",
-                "path": "claimAccount"
+                "path": "migrationAccount"
               }
             ]
           }
@@ -320,7 +347,7 @@ export type EffectMigration = {
     {
       "name": "expectedMessage",
       "type": "string",
-      "value": "\"Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: \""
+      "value": "\"Effect.AI: I authorize my tokens to be claimed at the following Solana address\""
     }
   ]
 };

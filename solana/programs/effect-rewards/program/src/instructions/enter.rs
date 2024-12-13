@@ -1,4 +1,4 @@
-use anchor_spl::token::TokenAccount;
+use anchor_spl::token::{Mint, TokenAccount};
 use effect_rewards_common::RewardAccount;
 use effect_staking_common::{StakeAccount, StakingProgram};
 
@@ -8,7 +8,7 @@ use crate::*;
 pub struct Enter<'info> {
     #[account(
         mut,
-        seeds = [ b"reflection", stake_vault_token_account.mint.key().as_ref() ],
+        seeds = [ b"reflection", mint.key().as_ref() ],
         bump
     )]
     pub reflection_account: Account<'info, ReflectionAccount>,
@@ -23,7 +23,9 @@ pub struct Enter<'info> {
         mut,
         seeds = [ stake_account.key().as_ref() ],
         bump,
-        seeds::program = stake_program.key()
+        seeds::program = stake_program.key(),
+        token::mint = mint,
+        token::authority = stake_vault_token_account,
     )]
     pub stake_vault_token_account: Account<'info, TokenAccount>,
 
@@ -35,10 +37,11 @@ pub struct Enter<'info> {
         bump,
     )]
     pub reward_account: Account<'info, RewardAccount>,
-
+  
     #[account(mut)]
     pub authority: Signer<'info>,
 
+    pub mint: Account<'info, Mint>,
     pub stake_program: Program<'info, StakingProgram>,
     pub system_program: Program<'info, System>,
 }

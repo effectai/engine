@@ -1,19 +1,27 @@
 import { PublicKey } from "@solana/web3.js";
 
 export const useDeriveMigrationAccounts = ({
-	claimAccount,
+	mint,
+	foreignPublicKey,
 	programId
 }: {
-	claimAccount: PublicKey;
+	mint: PublicKey;
+	foreignPublicKey: Uint8Array;
 	programId: PublicKey;
 }) => {
 
+	const [migrationAccount] = PublicKey.findProgramAddressSync(
+		[mint.toBuffer(), foreignPublicKey],
+		programId,
+	);
+
 	const [vaultAccount] = PublicKey.findProgramAddressSync(
-		[claimAccount.toBuffer()],
+		[migrationAccount.toBuffer()],
 		programId,
 	)
 
     return {
+		migrationAccount,
 		vaultAccount
     };
 }

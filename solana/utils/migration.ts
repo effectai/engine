@@ -3,9 +3,9 @@ import * as anchor from "@coral-xyz/anchor";
 import { BN } from "bn.js";
 import { useDeriveMigrationAccounts, useDeriveStakeAccounts } from "@effectai/utils";
 import type { EffectMigration } from "../target/types/effect_migration";
-import { toBytes } from "viem";
 import { EffectStaking } from "../target/types/effect_staking";
-import { SECONDS_PER_DAY } from "../tests/helpers";
+
+export const SECONDS_PER_DAY = 24 * 60 * 60;
 
 export const claimMigration = async ({
 	migrationProgram,
@@ -13,8 +13,8 @@ export const claimMigration = async ({
 	ata,
 	mint,
 	payer,
-	claimAccount,	
 	signature,
+	foreignPublicKey,
 	message
 }: {
 	migrationProgram: anchor.Program<EffectMigration>;
@@ -22,15 +22,21 @@ export const claimMigration = async ({
 	ata: PublicKey;
 	mint: PublicKey;
 	payer: Keypair;
-	claimAccount: PublicKey;
 	signature: Uint8Array;
+	foreignPublicKey: Uint8Array;
 	message: Uint8Array;
 }) => {
-
 	const stakeAccount = new anchor.web3.Keypair();
 
+	// derive the migration account from the mint + foreignPublicKey
+	const { migrationAccount } = useDeriveMigrationAccounts({
+		mint,
+		foreignPublicKey,
+		programId: migrationProgram.programId,
+	});
+
 	await migrationProgram.methods
-	.claimStake(Buffer.from(signature), Buffer.from(message))
+	.claimStake(Buffer.from(signature), Buffer.from(message), Buffer.from(foreignPublicKey))
 	.preInstructions([
 		...[
 			await stakeProgram.methods
@@ -47,7 +53,6 @@ export const claimMigration = async ({
 	])
 	.accounts({
 		recipientTokenAccount: ata,
-		claimAccount: claimAccount,
 		stakeAccount: stakeAccount.publicKey,
 		mint,
 	})
@@ -91,17 +96,16 @@ export const createMigrationClaim = async({
 			new BN(amount),
 		)
 		.accounts({
-			claimAccount: claimAccount.publicKey,
 			userTokenAccount,
 			mint,
 		})
-		.signers([claimAccount])
 		.rpc();
 
-	const { vaultAccount } = useDeriveMigrationAccounts({
-		claimAccount: claimAccount.publicKey,
+	const { vaultAccount, migrationAccount } = useDeriveMigrationAccounts({
+		mint,
+		foreignPublicKey: publicKey,
 		programId: program.programId,
 	});
 
-	return { claimAccount: claimAccount.publicKey, vaultAccount };
+	return { migrationAccount, vaultAccount };
 };

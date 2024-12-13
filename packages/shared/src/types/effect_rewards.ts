@@ -30,7 +30,7 @@ export type EffectRewards = {
       ],
       "accounts": [
         {
-          "name": "reflection",
+          "name": "reflectionAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -64,7 +64,7 @@ export type EffectRewards = {
             "seeds": [
               {
                 "kind": "account",
-                "path": "reflection"
+                "path": "reflectionAccount"
               }
             ]
           }
@@ -233,19 +233,76 @@ export type EffectRewards = {
       ],
       "accounts": [
         {
-          "name": "reflectionAccount"
+          "name": "reflectionAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stake_vault_token_account.mint",
+                "account": "tokenAccount"
+              }
+            ]
+          }
         },
         {
           "name": "rewardAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stakeAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stakeAccount",
           "writable": true
+        },
+        {
+          "name": "stakeVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stakeAccount"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "stakeProgram"
+            }
+          }
         },
         {
           "name": "authority",
           "writable": true,
           "signer": true,
           "relations": [
-            "rewardAccount"
+            "stakeAccount"
           ]
+        },
+        {
+          "name": "stakeProgram",
+          "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw"
         }
       ],
       "args": []
@@ -288,8 +345,7 @@ export type EffectRewards = {
               },
               {
                 "kind": "account",
-                "path": "stake_vault_token_account.mint",
-                "account": "tokenAccount"
+                "path": "mint"
               }
             ]
           }
@@ -335,6 +391,9 @@ export type EffectRewards = {
           ]
         },
         {
+          "name": "mint"
+        },
+        {
           "name": "stakeProgram",
           "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw"
         },
@@ -361,10 +420,6 @@ export type EffectRewards = {
         100
       ],
       "accounts": [
-        {
-          "name": "mint",
-          "writable": true
-        },
         {
           "name": "reflectionAccount",
           "writable": true,
@@ -410,6 +465,9 @@ export type EffectRewards = {
           "signer": true
         },
         {
+          "name": "mint"
+        },
+        {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
@@ -441,15 +499,66 @@ export type EffectRewards = {
       ],
       "accounts": [
         {
-          "name": "rewardAccount",
-          "writable": true
-        },
-        {
           "name": "stakeAccount"
         },
         {
+          "name": "rewardAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stakeAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stakeVaultTokenAccount",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stakeAccount"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "stakeProgram"
+            }
+          }
+        },
+        {
           "name": "reflectionAccount",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stake_vault_token_account.mint",
+                "account": "tokenAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stakeProgram",
+          "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw"
         }
       ],
       "args": []
