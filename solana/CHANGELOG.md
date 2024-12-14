@@ -1,7 +1,7 @@
 
 ## General 
 
-**Common packages**
+**Common packages**  
 All contracts now have their own **common package** that includes structs and struct logic.
 
 This is a bit of an **Anchor hack**: the `#[account]` macro always expects a `declare_id!()` in the root `lib.rs`, and since only one `declare_id!()` can exist per package, a global shared structure isn't supported. To avoid circular dependencies while still sharing simple things like structs between packages, we've implemented this workaround.
@@ -12,37 +12,37 @@ another alternative is to build better support for this into anchor through open
 
 https://github.com/coral-xyz/anchor/issues/3285#issuecomment-2380573058
 
-**Renamed fields to be more descriptive**
+**Renamed fields to be more descriptive**  
  - renamed data accounts to always end on _account for example:
  
-	stake -> stake_account
-	reward -> reward_account.
+	stake -> stake_account.  
+	reward -> reward_account.  
 
  - renamed token accounts to always end on _token_account, and prefix it with the type of token_account:  
-	 vault -> staking_vault_token_account
-	 vault -> vesting_vault_token_account
-	 user -> user_token_account
+	 vault -> staking_vault_token_account  
+	 vault -> vesting_vault_token_account  
+	 user -> user_token_account  
 
 this is especially useful in instructions where multiple vault accounts were being called.
 
-**Removed mint locks everywhere**
+**Removed mint locks everywhere**  
 old contracts included mint constraints on both the **reflection** and **staking** contracts, restricting operations to a single specific mint. While this approach is simple, it feels a bit limiting. By implementing good/secure validation and ensuring PDA/seed matching, we can enable our contracts to handle multiple mints, as long as they remain paired to the correct one. This unlocks some new potential features, Although it introduces added complexity in terms of extra constraints, the trade off seems worthwhile for the additional flexibility that it brings.
 
-## Staking Contract
+## Staking Contract  
 
-**Added Vested unstake**
+**Added Vested unstake**  
 unstakes now open a vesting contract with a built in delay of 10 days (configurable) and release linearly over a period of 30 days (configurable)
 
-**Added Multiple stakes**
+**Added Multiple stakes**  
 Removed the PDA seeds from staking accounts, they are now created by passing a keypair and signing with it
 
-**Added Genesis Stake**
+**Added Genesis Stake**  
 a instruction that tops up an existing stake account with a certain stake_start_time, only executable when signed by a vault account PDA that originated from the migration contract
 
-**Added a dilute mechanic to topups**
+**Added a dilute mechanic to topups**  
 calling a topup instruction now dilutes the stake accounts `stake_start_time` field with a weighted average of the current stake time/amount
 
-**removed unused instructions**
+**removed unused instructions**  
 removed extend, slash, restake, update_settings, withdraw instructions
 
 
