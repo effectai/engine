@@ -4,6 +4,7 @@ mod errors;
 mod instructions;
 mod macros;
 mod state;
+mod utils;
 
 pub use instructions::*;
 
@@ -15,7 +16,7 @@ pub mod effect_migration {
     use super::*;
 
     pub fn claim_stake(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>, foreign_public_key: Vec<u8>) -> Result<()> {
-        claim::claim_stake(ctx, signature, message, foreign_public_key)
+        claim::handler(ctx, signature, message, foreign_public_key)
     }
 
     pub fn create_stake_claim(
