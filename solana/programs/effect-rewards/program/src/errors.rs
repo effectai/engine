@@ -3,6 +3,8 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum RewardErrors {
+    #[msg("This account has an invalid reflection.")]
+    ReflectionInvalid,
     #[msg("This account has an invalid vault.")]
     InvalidVault,
     #[msg("This account is not authorized to perform this action.")]

@@ -10,7 +10,7 @@ describe("Vesting Program", async () => {
 	const program = anchor.workspace.EffectVesting as Program<EffectVesting>;
 	const { provider, payer, expectAnchorError } = useAnchor();
 
-	it("should initialize the vesting program", async () => {
+	it.concurrent("should initialize the vesting program", async () => {
 		const { mint, ata } = await setup({ provider, payer });
 
 		const yesterday = new Date().getTime() / 1000 - SECONDS_PER_DAY;
@@ -36,7 +36,7 @@ describe("Vesting Program", async () => {
 		expect(accounts.recipientTokenAccount).toEqual(ata);
 	});
 
-	it("should claim a vesting stream", async () => {
+	it.concurrent("should claim a vesting stream", async () => {
 		const { mint, ata } = await setup({ provider, payer });
 
 		const now = new Date().getTime() / 1000 - SECONDS_PER_DAY;

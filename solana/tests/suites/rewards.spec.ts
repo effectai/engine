@@ -24,12 +24,6 @@ describe("Effect Reward Program", async () => {
 	const { provider, payer } = useAnchor();
 	const { useCreateStake } = useStakeTestHelpers(stakingProgram);
 
-	beforeAll(async () => {
-		it("should correctly initialize a reflection", async () => {
-			await program.methods.init().signers([payer]).rpc();
-		});
-	});
-
 	describe("Reward Claim", async () => {
 		it.concurrent("should correctly claim a reward", async () => {
 			const { mint, ata } = await setup({
@@ -46,7 +40,6 @@ describe("Effect Reward Program", async () => {
 				})
 				.rpc();
 
-			// topup the reflection vault
 			const {
 				reflectionAccount,
 				reflectionVaultAccount,
@@ -117,7 +110,7 @@ describe("Effect Reward Program", async () => {
 
 			expect(rewardAccount.weightedAmount.toNumber()).toEqual(5_000_000);
 
-			// claim
+			// claim reward
 			await program.methods
 				.claim()
 				.accounts({

@@ -1,5 +1,4 @@
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use effect_staking_common::{StakeAccount, StakingProgram};
 
 use crate::*;
 
@@ -56,7 +55,7 @@ impl<'info> Topup<'info> {
 
         self.reflection_account.topup(
             amount.try_into().unwrap(),
-        );
+        )?;
 
         Ok(())
     }

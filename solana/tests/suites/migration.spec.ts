@@ -83,9 +83,9 @@ describe("Migration Program", async () => {
 				stakeStartTime: lastYear,
 			});
 
-			const stakeMetadataAccount =
+			const migrationAccountData =
 				await provider.connection.getAccountInfo(migrationAccount);
-			expect(stakeMetadataAccount).to.not.be.null;
+			expect(migrationAccountData).to.not.be.null;
 		});
 
 		it.concurrent(
@@ -123,7 +123,7 @@ describe("Migration Program", async () => {
 				throw new Error("Invalid public key");
 			}
 
-			const { migrationAccount } = await createMigrationClaim({
+			await createMigrationClaim({
 				mint,
 				userTokenAccount: ata,
 				publicKey: pk,
@@ -152,6 +152,14 @@ describe("Migration Program", async () => {
 				signature: Buffer.from(signature[0].data.array),
 				message: Buffer.from(serializedTransactionBytes.array),
 			});
+
+			// check if the stake account was created
+			const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
+				stakeAccount.publicKey,
+			);
+
+			expect(stakeAccountData).to.not.be.null;
+			expect(stakeAccountData.amount.toNumber()).to.equal(100_000_000);
 		});
 
 		it.concurrent("correctly signs with keccak256", async () => {
@@ -191,12 +199,19 @@ describe("Migration Program", async () => {
 				signature: sigWithRecovery,
 				message: Buffer.from(originalMessage),
 			});
+
+			const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
+				stakeAccount.publicKey,
+			);
+
+			expect(stakeAccountData).to.not.be.null;	
+			expect(stakeAccountData.amount.toNumber()).to.equal(100_000_000);
 		});
 
 		it.concurrent("correctly claims with eth_personal_sign", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
-			const { migrationAccount } = await createMigrationClaim({
+			await createMigrationClaim({
 				mint,
 				userTokenAccount: ata,
 				publicKey: toBytes(ethPublicKey),
@@ -225,6 +240,13 @@ describe("Migration Program", async () => {
 				signature: toBytes(signature),
 				message: Buffer.from(message),
 			});
+
+			const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
+				stakeAccount.publicKey,
+			);
+
+			expect(stakeAccountData).to.not.be.null;
+			expect(stakeAccountData.amount.toNumber()).to.equal(100_000_000);
 		});
 
 		it.concurrent("can claim a stake with a valid signature", async () => {
@@ -246,7 +268,7 @@ describe("Migration Program", async () => {
 				message: originalMessage,
 			});
 
-			const { migrationAccount, vaultAccount: claimVaultAccount } =
+			const { vaultAccount: claimVaultAccount } =
 				await createMigrationClaim({
 					mint,
 					userTokenAccount: ata,
@@ -319,7 +341,7 @@ describe("Migration Program", async () => {
 					payerTokens: ata,
 				});
 
-				const { migrationAccount, vaultAccount: claimVaultAccount } =
+				const { vaultAccount: claimVaultAccount } =
 					await createMigrationClaim({
 						mint,
 						userTokenAccount: ata,
@@ -371,7 +393,7 @@ describe("Migration Program", async () => {
 				const { mint, ata } = await setup({ provider, payer });
 				const { MESSAGE_INVALID } = useErrorsIDL(effect_migration);
 
-				const { migrationAccount, vaultAccount } = await createMigrationClaim({
+				await createMigrationClaim({
 					mint,
 					userTokenAccount: ata,
 					publicKey: toBytes(ethPublicKey),
@@ -389,7 +411,7 @@ describe("Migration Program", async () => {
 				});
 
 				expectAnchorError(async () => {
-					const { stakeAccount } = await claimMigration({
+					await claimMigration({
 						migrationProgram: program,
 						stakeProgram,
 						ata,
@@ -409,7 +431,7 @@ describe("Migration Program", async () => {
 				const { mint, ata } = await setup({ provider, payer });
 				const { PUBLIC_KEY_MISMATCH } = useErrorsIDL(effect_migration);
 
-				const { claimAccount, vaultAccount } = await createMigrationClaim({
+				await createMigrationClaim({
 					mint,
 					userTokenAccount: ata,
 					publicKey: toBytes(ethPublicKey),
