@@ -1,5 +1,5 @@
 export const effect_rewards = {
-  "address": "HJR3op52N7tNycXqQnVu8cDnxH7udp4pYi1ps9S1hdBz",
+  "address": "BPSquzLynBvygnkRDmE91ShzpL5SNmNjvXi85uRVuJdk",
   "metadata": {
     "name": "effect_rewards",
     "version": "0.1.0",
@@ -205,7 +205,7 @@ export const effect_rewards = {
         },
         {
           "name": "vesting_program",
-          "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
+          "address": "DBTKwjzLfABb1vAX2GijQ6SVDFQPJiBYyHvSXHMFzyHv"
         }
       ],
       "args": []
@@ -296,7 +296,7 @@ export const effect_rewards = {
         },
         {
           "name": "stake_program",
-          "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw"
+          "address": "5f7WaR7jC3metyDTSq7YGAyq1HfCuoGMUVf9NHP578Dm"
         }
       ],
       "args": []
@@ -389,7 +389,7 @@ export const effect_rewards = {
         },
         {
           "name": "stake_program",
-          "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw"
+          "address": "5f7WaR7jC3metyDTSq7YGAyq1HfCuoGMUVf9NHP578Dm"
         },
         {
           "name": "system_program",
@@ -552,7 +552,7 @@ export const effect_rewards = {
         },
         {
           "name": "stake_program",
-          "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw"
+          "address": "5f7WaR7jC3metyDTSq7YGAyq1HfCuoGMUVf9NHP578Dm"
         }
       ],
       "args": []

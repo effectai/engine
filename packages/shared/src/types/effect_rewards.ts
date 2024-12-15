@@ -211,7 +211,7 @@ export type EffectRewards = {
         },
         {
           "name": "vestingProgram",
-          "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
+          "address": "DBTKwjzLfABb1vAX2GijQ6SVDFQPJiBYyHvSXHMFzyHv"
         }
       ],
       "args": []
@@ -302,7 +302,7 @@ export type EffectRewards = {
         },
         {
           "name": "stakeProgram",
-          "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw"
+          "address": "5f7WaR7jC3metyDTSq7YGAyq1HfCuoGMUVf9NHP578Dm"
         }
       ],
       "args": []
@@ -395,7 +395,7 @@ export type EffectRewards = {
         },
         {
           "name": "stakeProgram",
-          "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw"
+          "address": "5f7WaR7jC3metyDTSq7YGAyq1HfCuoGMUVf9NHP578Dm"
         },
         {
           "name": "systemProgram",
@@ -558,7 +558,7 @@ export type EffectRewards = {
         },
         {
           "name": "stakeProgram",
-          "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw"
+          "address": "5f7WaR7jC3metyDTSq7YGAyq1HfCuoGMUVf9NHP578Dm"
         }
       ],
       "args": []

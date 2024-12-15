@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/effect_migration.json`.
  */
 export type EffectMigration = {
-  "address": "BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g",
+  "address": "effectmigration",
   "metadata": {
     "name": "effectMigration",
     "version": "0.1.0",
@@ -95,7 +95,7 @@ export type EffectMigration = {
         },
         {
           "name": "migrationProgram",
-          "address": "BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g"
+          "address": "WkXR6Wnz1wXr48vw18Q8t7GYm9h3JFUXzAJWDjZopK7"
         },
         {
           "name": "tokenProgram",
@@ -107,7 +107,7 @@ export type EffectMigration = {
         },
         {
           "name": "stakingProgram",
-          "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw"
+          "address": "5f7WaR7jC3metyDTSq7YGAyq1HfCuoGMUVf9NHP578Dm"
         }
       ],
       "args": [
