@@ -3,6 +3,7 @@ import {
 	ABICache,
 	Action,
 	PlaceholderAuth,
+	Signature,
 	Transaction,
 	TransactionHeader,
 	type Session,
@@ -13,7 +14,6 @@ import { extractEosPublicKeyBytes } from "@effectai/utils";
 import { SessionKit } from "@wharfkit/session";
 import { WebRenderer } from "@wharfkit/web-renderer";
 import { WalletPluginAnchor } from "@effectai/wallet-plugin-anchor";
-import type { PublicKey } from "@solana/web3.js";
 
 // import { WalletPluginCleos } from "@wharfkit/wallet-plugin-cleos";
 // import { WalletPluginScatter } from "@wharfkit/wallet-plugin-scatter"
@@ -35,7 +35,6 @@ const sessionKit = reactive(
 		walletPlugins: [
 			new WalletPluginAnchor(),
 			new WalletPluginWombat(),
-			new WalletPluginTokenPocket()
 		],
 	}),
 );
@@ -161,9 +160,10 @@ export const useEosWallet = (): SourceWalletAdapter => {
 		});
 
 		const transaction = await session.value.transact(tx, { broadcast: false });
+
 		const signature = transaction.signatures[0];
 		const serializedTxBytes = transaction.resolved?.signingData;
-
+		const sig = Signature.from(signature);
 		if (!serializedTxBytes) {
 			throw new Error("Could not serialize transaction");
 		}
@@ -180,8 +180,10 @@ export const useEosWallet = (): SourceWalletAdapter => {
 			throw new Error("Could not compress public key");
 		}
 
+		console.log("Signature", sig);
+
 		return {
-			signature: signature.data.array,
+			signature: sig.data.array,
 			message: serializedTxBytes?.array,
 			foreignPublicKey: compressedPk,
 		};

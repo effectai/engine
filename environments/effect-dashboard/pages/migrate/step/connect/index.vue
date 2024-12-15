@@ -1,9 +1,8 @@
 <template>
     <div class="text-center">
-        <ClaimProgress  class="my-5" v-motion :initial="{ opacity: 0, scale: 0.7 }" :enter="{ opacity: 1, scale: 1 }"
-            :delay="300" :duration="600" />
+        <ClaimProgress  class="my-5"  />
 
-        <div v-motion-pop :duration="600">
+        <div >
             <UCard class="w-full">
                 <template #header>
                     <h2 class="title">Connect Solana Wallet</h2>

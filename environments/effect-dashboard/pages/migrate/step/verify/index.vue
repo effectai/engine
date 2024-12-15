@@ -1,10 +1,8 @@
 <template>
     <div class="text-center">
-        <ClaimProgress class="my-5" v-motion :initial="{ opacity: 0, scale: 0.7 }" :enter="{ opacity: 1, scale: 1 }"
-            :delay="300" :duration="600" />
+        <ClaimProgress class="my-5" />
 
-        <UCard v-motion :initial="{ opacity: 0, scale: 0.7 }" :enter="{ opacity: 1, scale: 1 }" :delay="0"
-            :duration="600">
+        <UCard>
             <h2 class="title">Verify Ownership</h2>
             <UDivider class="my-3" />
             <p class="text-lg mt-8 mb-12">
@@ -16,13 +14,13 @@
             </p>
 
             <div v-if="!isConnected" class="gap-5 flex justify-center mt-6 items-center">
-                <UButton  v-motion-fade-visible @click="connectEos()" color="black" variant="outline">
+                <UButton @click="connectEos()" color="black" variant="outline">
                     <span class="w-3">
                         <img src="@/assets/img/eos-logo.svg" alt="EOS" />
                     </span>
                     EOS Account
                 </UButton>
-                <ConnectBscModal  v-motion-fade-visible />
+                <ConnectBscModal />
             </div>
             <div v-else-if="isConnected">
                 <WalletCard v-if="connectedAddress && connectedWalletMeta" :chain="chain"

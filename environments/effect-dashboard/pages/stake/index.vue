@@ -1,5 +1,5 @@
 <template>
-    <div v-motion-pop-visible :delay="150" :duration="500">
+    <div >
         <div v-if="!publicKey">
             <div class="flex items-center flex-col justify-center h-96">
                 <div class="gap-5 flex flex-col items-center justify-center">
