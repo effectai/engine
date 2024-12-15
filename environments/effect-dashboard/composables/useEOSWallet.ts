@@ -17,8 +17,8 @@ import type { PublicKey } from "@solana/web3.js";
 
 // import { WalletPluginCleos } from "@wharfkit/wallet-plugin-cleos";
 // import { WalletPluginScatter } from "@wharfkit/wallet-plugin-scatter"
-// import { WalletPluginWombat } from "@wharfkit/wallet-plugin-wombat"
-// import { WalletPluginTokenPocket } from "@wharfkit/wallet-plugin-tokenpocket"
+import { WalletPluginWombat } from "@wharfkit/wallet-plugin-wombat"
+import { WalletPluginTokenPocket } from "@wharfkit/wallet-plugin-tokenpocket"
 
 const session: Ref<Session | null | undefined> = ref(null);
 
@@ -33,7 +33,9 @@ const sessionKit = reactive(
 		],
 		ui: new WebRenderer(),
 		walletPlugins: [
-			new WalletPluginAnchor({}),
+			new WalletPluginAnchor(),
+			new WalletPluginWombat(),
+			new WalletPluginTokenPocket()
 		],
 	}),
 );
@@ -54,6 +56,7 @@ export const useEosWallet = (): SourceWalletAdapter => {
 	const isConnected = computed(() => !!session.value);
 
 	const connect = async () => {
+		console.log(sessionKit)
 		const result = await sessionKit.login();
 		session.value = result.session;
 	};
