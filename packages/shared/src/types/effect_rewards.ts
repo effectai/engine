@@ -75,13 +75,14 @@ export type EffectRewards = {
             "seeds": [
               {
                 "kind": "account",
-                "path": "reflectionAccount"
+                "path": "intermediateRewardVaultTokenAccount"
               }
             ]
           }
         },
         {
-          "name": "stakeAccount"
+          "name": "stakeAccount",
+          "writable": true
         },
         {
           "name": "rewardAccount",

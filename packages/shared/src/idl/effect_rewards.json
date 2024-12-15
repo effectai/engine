@@ -69,13 +69,14 @@
             "seeds": [
               {
                 "kind": "account",
-                "path": "reflection_account"
+                "path": "intermediate_reward_vault_token_account"
               }
             ]
           }
         },
         {
-          "name": "stake_account"
+          "name": "stake_account",
+          "writable": true
         },
         {
           "name": "reward_account",
