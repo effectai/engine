@@ -6,9 +6,10 @@ mod macros;
 mod state;
 mod utils;
 
+use effect_migration_common::{EFFECT_MIGRATION};
 pub use instructions::*;
 
-declare_id!("BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g");
+declare_id!(EFFECT_MIGRATION);
 
 #[program]
 pub mod effect_migration {

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-const EFFECT_MIGRATION: Pubkey = pubkey!("BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g");
+pub const EFFECT_MIGRATION: Pubkey = pubkey!("WkXR6Wnz1wXr48vw18Q8t7GYm9h3JFUXzAJWDjZopK7");
 
 declare_id!(EFFECT_MIGRATION);
 

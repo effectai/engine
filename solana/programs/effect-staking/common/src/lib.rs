@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use effect_common::constants::{SECONDS_PER_DAY, STAKE_AGE_MAX_DAYS};
 
-const EFFECT_STAKING: Pubkey = pubkey!("3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw");
+pub const EFFECT_STAKING: Pubkey = pubkey!("5f7WaR7jC3metyDTSq7YGAyq1HfCuoGMUVf9NHP578Dm");
 
 declare_id!(EFFECT_STAKING);
 

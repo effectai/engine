@@ -6,12 +6,13 @@ mod types;
 mod state;
 
 use anchor_lang::prelude::*;
+use effect_vesting_common::{EFFECT_VESTING};
 use errors::*;
 use instructions::*;
 use effect_common::*;
 
 
-declare_id!("GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe");
+declare_id!(EFFECT_VESTING);
 
 #[program]
 pub mod effect_vesting {

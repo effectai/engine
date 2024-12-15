@@ -5,10 +5,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-effect_vesting = "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
-effect_rewards = "HJR3op52N7tNycXqQnVu8cDnxH7udp4pYi1ps9S1hdBz"
-effect_staking = "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw"
-effect_migration = "BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g"
+effect_vesting = "DBTKwjzLfABb1vAX2GijQ6SVDFQPJiBYyHvSXHMFzyHv"
+effect_rewards = "BPSquzLynBvygnkRDmE91ShzpL5SNmNjvXi85uRVuJdk"
+effect_staking = "5f7WaR7jC3metyDTSq7YGAyq1HfCuoGMUVf9NHP578Dm"
+effect_migration = "WkXR6Wnz1wXr48vw18Q8t7GYm9h3JFUXzAJWDjZopK7"
 
 [registry]
 url = "https://api.apr.dev"

@@ -5,13 +5,15 @@ mod constants;
 mod errors;
 
 use anchor_lang::prelude::*;
+
 use effect_common::*;
- 
+use effect_staking_common::{StakingProgram, EFFECT_STAKING};
+
 pub use errors::*;
 pub use state::*; 
 pub use instructions::*;
 
-declare_id!("3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw");
+declare_id!(EFFECT_STAKING);
 
 #[program]
 pub mod effect_staking {

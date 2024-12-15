@@ -6,6 +6,7 @@ mod state;
 
 use anchor_lang::declare_id;
 use anchor_lang::prelude::*;
+use effect_rewards_common::RewardProgram;
 use effect_rewards_common::EFFECT_REWARDS;
 use instructions::*;
 use effect_common::*;
