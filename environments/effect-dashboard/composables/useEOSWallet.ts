@@ -35,6 +35,7 @@ const sessionKit = reactive(
 		walletPlugins: [
 			new WalletPluginAnchor(),
 			new WalletPluginWombat(),
+			new WalletPluginTokenPocket()
 		],
 	}),
 );
