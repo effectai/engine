@@ -22,7 +22,6 @@ describe("Vesting Program", async () => {
 			startTime: yesterday,
 			releaseRate: 1_000_000,
 			tag: "v",
-			isRestrictedClaim: false,
 			isClosable: false,
 			amount: 1_000_000,
 			mint,
@@ -39,57 +38,6 @@ describe("Vesting Program", async () => {
 		expect(accounts.recipientTokenAccount).toEqual(ata);
 	});
 
-	it("requires the right authority to claim a restricted vesting", async () => {
-		const { mint, ata } = await setup({ provider, payer });
-
-		const yesterday = new Date().getTime() / 1000 - SECONDS_PER_DAY;
-
-		// create a new vesting stream
-		const { vestingAccount, vestingVaultAccount } = await createVesting({
-			startTime: yesterday,
-			releaseRate: 1_000_000,
-			tag: "v",
-			isRestrictedClaim: true,
-			isClosable: false,
-			amount: 1_000_000,
-			mint,
-			payer,
-			recipientTokenAccount: ata,
-			program: program,
-		});
-
-		// transfer the authority to someone else
-		const newAuthority = new anchor.web3.Keypair();
-		await program.methods
-			.updateAuthority()
-			.accounts({
-				newAuthority: newAuthority.publicKey,
-				vestingAccount: vestingAccount.publicKey,
-			})
-			.rpc();
-
-		// send some tokens to the vesting stream
-		await mintToAccount({
-			payer,
-			mint,
-			destination: vestingVaultAccount,
-			amount: 1000_000_000,
-			provider,
-			mintAuthority: payer,
-		});
-
-		const { UNAUTHORIZED } = useErrorsIDL(effect_vesting);
-
-		expectAnchorError(async () => {
-			await program.methods
-				.claim()
-				.accounts({
-					vestingAccount: vestingAccount.publicKey,
-				})
-				.rpc();
-		}, UNAUTHORIZED);
-	});
-
 	it("should claim a vesting stream", async () => {
 		const { mint, ata } = await setup({ provider, payer });
 
@@ -100,7 +48,6 @@ describe("Vesting Program", async () => {
 			startTime: now,
 			releaseRate: 1_000_000,
 			tag: "v",
-			isRestrictedClaim: false,
 			isClosable: false,
 			amount: 1_000_000,
 			mint,

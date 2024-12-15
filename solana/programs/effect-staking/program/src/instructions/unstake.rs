@@ -90,7 +90,6 @@ impl<'info> Unstake<'info> {
             release_rate,
             start_time,
             false,
-            true,
             Some([b'u'])
         )?;
 

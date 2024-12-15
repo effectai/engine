@@ -39,7 +39,6 @@ impl<'info> Open<'info> {
         emission: u64,
         start_time: i64,
         closeable: bool,
-        is_restricted_claim: bool,
         tag: Option<[u8; 1]>,
     ) -> Result<()> {
         self.vesting_account.init(
@@ -48,7 +47,6 @@ impl<'info> Open<'info> {
             closeable,
             emission,
             start_time,
-            is_restricted_claim,
             tag,
         )
     }

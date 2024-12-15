@@ -41,7 +41,6 @@ impl VestingAccount {
         is_closeable: bool,
         release_rate: u64,
         start_time: i64,
-        is_restricted_claim: bool,
         tag: Option<[u8; 1]>,
     ) -> Result<()> {
         self.authority = owner;
@@ -50,16 +49,11 @@ impl VestingAccount {
         self.is_closeable = is_closeable;
         self.release_rate = release_rate;
         self.start_time = start_time;
-        self.is_restricted_claim = is_restricted_claim;
         self.tag = tag.unwrap_or([b'v']);
         Ok(())
     }
 
-    pub fn claim(&mut self, claimer: Pubkey, amount_available: u64, now: i64) -> Result<u64> {
-        if self.is_restricted_claim && self.authority != claimer {
-            return Err(VestingErrors::Unauthorized.into());
-        }
-
+    pub fn claim(&mut self, amount_available: u64, now: i64) -> Result<u64> {
         let pool_amount: u64 = (now - self.start_time) as u64 * self.release_rate;
         let amount_due: u64 = pool_amount - self.distributed_tokens;
         let amount: u64 = std::cmp::min(amount_due, amount_available);

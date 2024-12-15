@@ -1,7 +1,15 @@
 #[macro_export]
+macro_rules! intermediary_vault_seed {
+    ($reflection_key:expr) => {{
+        let bump = Pubkey::find_program_address(&[$reflection_key], &id()).1;
+        &[$reflection_key.as_ref(), &[bump]][..]
+    }};
+}
+
+#[macro_export]
 macro_rules! vault_seed {
-    () => {{
-        let bump = Pubkey::find_program_address(&[b"vault"], &id()).1;
-        [b"vault", &[bump]]
+    ($intermediary_vault_key:expr) => {{
+        let bump = Pubkey::find_program_address(&[$intermediary_vault_key], &id()).1;
+        &[$intermediary_vault_key.as_ref(), &[bump]][..]
     }};
 }

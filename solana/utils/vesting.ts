@@ -10,7 +10,6 @@ export const createVesting = async ({
 	releaseRate,
 	startTime,
 	isClosable,
-	isRestrictedClaim,
 	tag,
 	program,
 	mint,
@@ -20,7 +19,6 @@ export const createVesting = async ({
 	releaseRate: number;
 	startTime: number;
 	isClosable: boolean;
-	isRestrictedClaim: boolean;
 	tag: string;
 	amount: number;
 	program: anchor.Program<EffectVesting>;
@@ -40,7 +38,6 @@ export const createVesting = async ({
 			new BN(releaseRate),
 			new BN(startTime),
 			isClosable,
-			isRestrictedClaim,
 			Array.from(tag).map((c) => c.charCodeAt(0)),
 		)
 		.accounts({

@@ -58,6 +58,17 @@ export type EffectRewards = {
           }
         },
         {
+          "name": "intermediateRewardVaultTokenAccount",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "reflectionAccount"
+              }
+            ]
+          }
+        },
+        {
           "name": "rewardVaultTokenAccount",
           "writable": true,
           "pda": {
@@ -100,118 +111,6 @@ export type EffectRewards = {
         {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "claimStream",
-      "discriminator": [
-        157,
-        247,
-        164,
-        226,
-        240,
-        158,
-        183,
-        36
-      ],
-      "accounts": [
-        {
-          "name": "reflectionAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  114,
-                  101,
-                  102,
-                  108,
-                  101,
-                  99,
-                  116,
-                  105,
-                  111,
-                  110
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "vesting_vault_token_account.mint",
-                "account": "tokenAccount"
-              }
-            ]
-          }
-        },
-        {
-          "name": "rewardVaultTokenAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "reflectionAccount"
-              }
-            ]
-          }
-        },
-        {
-          "name": "vestingAccount",
-          "writable": true
-        },
-        {
-          "name": "vestingVaultTokenAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "vestingAccount"
-              }
-            ],
-            "program": {
-              "kind": "account",
-              "path": "vestingProgram"
-            }
-          }
-        },
-        {
-          "name": "claimAuthority",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  118,
-                  101,
-                  115,
-                  116,
-                  105,
-                  110,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "authority",
-          "signer": true
-        },
-        {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
-        },
-        {
-          "name": "vestingProgram",
-          "address": "DBTKwjzLfABb1vAX2GijQ6SVDFQPJiBYyHvSXHMFzyHv"
         }
       ],
       "args": []
@@ -448,13 +347,25 @@ export type EffectRewards = {
           }
         },
         {
-          "name": "rewardVaultTokenAccount",
+          "name": "intermediateRewardVaultTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
                 "path": "reflectionAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "rewardVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "intermediateRewardVaultTokenAccount"
               }
             ]
           }
@@ -562,6 +473,84 @@ export type EffectRewards = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "topup",
+      "docs": [
+        "Topup the [ReflectionAccount](#reflection-account) and [VaultAccount](#vault_token_account-account)."
+      ],
+      "discriminator": [
+        126,
+        42,
+        49,
+        78,
+        225,
+        151,
+        99,
+        77
+      ],
+      "accounts": [
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "reflectionAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "intermediateRewardVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "reflectionAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "rewardVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "intermediateRewardVaultTokenAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -602,19 +591,6 @@ export type EffectRewards = {
         189,
         192,
         255
-      ]
-    },
-    {
-      "name": "vestingAccount",
-      "discriminator": [
-        102,
-        73,
-        10,
-        233,
-        200,
-        188,
-        228,
-        216
       ]
     }
   ],
@@ -726,51 +702,6 @@ export type EffectRewards = {
           {
             "name": "mint",
             "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "vestingAccount",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "authority",
-            "type": "pubkey"
-          },
-          {
-            "name": "recipientTokenAccount",
-            "type": "pubkey"
-          },
-          {
-            "name": "distributedTokens",
-            "type": "u64"
-          },
-          {
-            "name": "releaseRate",
-            "type": "u64"
-          },
-          {
-            "name": "startTime",
-            "type": "i64"
-          },
-          {
-            "name": "isCloseable",
-            "type": "bool"
-          },
-          {
-            "name": "isRestrictedClaim",
-            "type": "bool"
-          },
-          {
-            "name": "tag",
-            "type": {
-              "array": [
-                "u8",
-                1
-              ]
-            }
           }
         ]
       }

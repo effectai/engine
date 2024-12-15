@@ -1,6 +1,4 @@
 use anchor_lang::prelude::*;
-
-use crate::constants::EFX_TOTAL_SUPPLY;
 /***
  * Accounts
  */
@@ -17,23 +15,9 @@ pub struct ReflectionAccount {
 impl ReflectionAccount {
     pub const SIZE: usize = 8 + std::mem::size_of::<ReflectionAccount>();
 
-    /*
-    This number should be as high as possible wihtout causing overflows.
-
-    Rate gets multiplied by tokens to get reflections, and is the divisor of
-    reflections to get the xefx. A higher initial rate makes sure that
-    reflections will be large numbers. This is nice as total_xefx will be forever
-    increasing.
-
-    The formula below makes initial rate as large as it can be, and rounds it
-    down a little to a clean multiple of the total supply.
-    */
-
-    pub const INITIAL_RATE: u128 = (u128::MAX - (u128::MAX % EFX_TOTAL_SUPPLY)) / EFX_TOTAL_SUPPLY;
-    // pub const INITIAL_RATE: u128 = u128::pow(10, 15);
-
-    pub fn init(&mut self) -> Result<()> {
-        self.rate = ReflectionAccount::INITIAL_RATE;
+    pub fn init(&mut self, total_supply: u64) -> Result<()> {
+        // set initial rate based on total supply
+        self.rate = (u128::MAX - (u128::MAX % total_supply as u128 )) / total_supply as u128;
         self.total_reflection = 0;
         self.total_weighted_amount = 0;
         Ok(())

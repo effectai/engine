@@ -6,7 +6,6 @@ mod state;
 
 use anchor_lang::declare_id;
 use anchor_lang::prelude::*;
-use effect_rewards_common::RewardProgram;
 use effect_rewards_common::EFFECT_REWARDS;
 use instructions::*;
 use effect_common::*;
@@ -25,12 +24,13 @@ pub mod effect_rewards {
         ctx.accounts.handler()
     }
 
-    /// Initialize a [RewardsAccount](#rewards-account).
-    pub fn enter(ctx: Context<Enter>) -> Result<()> {
+    /// Topup the [ReflectionAccount](#reflection-account) and [VaultAccount](#vault_token_account-account).
+    pub fn topup(ctx: Context<Topup>) -> Result<()> {
         ctx.accounts.handler()
     }
 
-    pub fn claim_stream(ctx: Context<ClaimStream>) -> Result<()> {
+    /// Initialize a [RewardsAccount](#rewards-account).
+    pub fn enter(ctx: Context<Enter>) -> Result<()> {
         ctx.accounts.handler()
     }
 
@@ -48,4 +48,5 @@ pub mod effect_rewards {
     pub fn close(ctx: Context<Close>) -> Result<()> {
         ctx.accounts.handler()
     }
+
 }

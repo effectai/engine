@@ -2,8 +2,6 @@ mod errors;
 mod instructions;
 mod macros;
 mod security;
-mod types;
-mod state;
 
 use anchor_lang::prelude::*;
 use effect_vesting_common::{EFFECT_VESTING};
@@ -24,14 +22,12 @@ pub mod effect_vesting {
         release_rate: u64,
         start_time: i64,
         is_closable: bool,
-        is_restricted_claim: bool,
         tag: Option<[u8; 1]>,
     ) -> Result<()> {
         ctx.accounts.handler(
             release_rate,
             start_time,
             is_closable,
-            is_restricted_claim,
             tag,
         )
     }
@@ -48,10 +44,6 @@ pub mod effect_vesting {
 
     /// Update the beneficiary in a [PoolAccount](#pool-account).
     pub fn update_recipient(ctx: Context<UpdateRecipientTokenAccount>) -> Result<()> {
-        ctx.accounts.handler()
-    }
-
-    pub fn update_authority(ctx: Context<UpdateAuthority>) -> Result<()> {
         ctx.accounts.handler()
     }
 }

@@ -11,7 +11,7 @@ macro_rules! vault_seed {
 
 #[macro_export]
 macro_rules! open_vesting {
-    ($accounts: expr, $seeds: expr, $release_rate: expr, $start_time: expr, $is_closable:expr, $is_restricted_claim:expr, $tag: expr ) => {
+    ($accounts: expr, $seeds: expr, $release_rate: expr, $start_time: expr, $is_closable:expr, $tag: expr ) => {
         effect_vesting::cpi::open(
             CpiContext::new_with_signer(
                 $accounts.vesting_program.to_account_info(),
@@ -30,7 +30,6 @@ macro_rules! open_vesting {
             $release_rate,
             $start_time,
             $is_closable,
-            $is_restricted_claim,
             $tag,
         )
     };

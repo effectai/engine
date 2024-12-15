@@ -16,8 +16,18 @@ pub struct Init<'info> {
         init,
         payer = authority,
         token::mint = mint,
-        token::authority = reward_vault_token_account,
+        token::authority = intermediate_reward_vault_token_account,
         seeds = [ reflection_account.key().as_ref() ],
+        bump,
+    )]
+    pub intermediate_reward_vault_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        init,
+        payer = authority,
+        token::mint = mint,
+        token::authority = reward_vault_token_account,
+        seeds = [ intermediate_reward_vault_token_account.key().as_ref() ],
         bump,
     )]
     pub reward_vault_token_account: Account<'info, TokenAccount>,
@@ -34,6 +44,8 @@ pub struct Init<'info> {
 
 impl<'info> Init<'info> {
     pub fn handler(&mut self) -> Result<()> {
-        self.reflection_account.init()
+        self.reflection_account.init(
+            self.mint.supply
+        )
     }
 }

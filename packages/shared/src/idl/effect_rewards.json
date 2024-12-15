@@ -52,6 +52,17 @@
           }
         },
         {
+          "name": "intermediate_reward_vault_token_account",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "reflection_account"
+              }
+            ]
+          }
+        },
+        {
           "name": "reward_vault_token_account",
           "writable": true,
           "pda": {
@@ -94,118 +105,6 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "claim_stream",
-      "discriminator": [
-        157,
-        247,
-        164,
-        226,
-        240,
-        158,
-        183,
-        36
-      ],
-      "accounts": [
-        {
-          "name": "reflection_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  114,
-                  101,
-                  102,
-                  108,
-                  101,
-                  99,
-                  116,
-                  105,
-                  111,
-                  110
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "vesting_vault_token_account.mint",
-                "account": "TokenAccount"
-              }
-            ]
-          }
-        },
-        {
-          "name": "reward_vault_token_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "reflection_account"
-              }
-            ]
-          }
-        },
-        {
-          "name": "vesting_account",
-          "writable": true
-        },
-        {
-          "name": "vesting_vault_token_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "vesting_account"
-              }
-            ],
-            "program": {
-              "kind": "account",
-              "path": "vesting_program"
-            }
-          }
-        },
-        {
-          "name": "claim_authority",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  118,
-                  101,
-                  115,
-                  116,
-                  105,
-                  110,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "authority",
-          "signer": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
-        },
-        {
-          "name": "vesting_program",
-          "address": "DBTKwjzLfABb1vAX2GijQ6SVDFQPJiBYyHvSXHMFzyHv"
         }
       ],
       "args": []
@@ -442,13 +341,25 @@
           }
         },
         {
-          "name": "reward_vault_token_account",
+          "name": "intermediate_reward_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
                 "path": "reflection_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "reward_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "intermediate_reward_vault_token_account"
               }
             ]
           }
@@ -556,6 +467,84 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "topup",
+      "docs": [
+        "Topup the [ReflectionAccount](#reflection-account) and [VaultAccount](#vault_token_account-account)."
+      ],
+      "discriminator": [
+        126,
+        42,
+        49,
+        78,
+        225,
+        151,
+        99,
+        77
+      ],
+      "accounts": [
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "reflection_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "intermediate_reward_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "reflection_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "reward_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "intermediate_reward_vault_token_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -596,19 +585,6 @@
         189,
         192,
         255
-      ]
-    },
-    {
-      "name": "VestingAccount",
-      "discriminator": [
-        102,
-        73,
-        10,
-        233,
-        200,
-        188,
-        228,
-        216
       ]
     }
   ],
@@ -720,51 +696,6 @@
           {
             "name": "mint",
             "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "VestingAccount",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "authority",
-            "type": "pubkey"
-          },
-          {
-            "name": "recipient_token_account",
-            "type": "pubkey"
-          },
-          {
-            "name": "distributed_tokens",
-            "type": "u64"
-          },
-          {
-            "name": "release_rate",
-            "type": "u64"
-          },
-          {
-            "name": "start_time",
-            "type": "i64"
-          },
-          {
-            "name": "is_closeable",
-            "type": "bool"
-          },
-          {
-            "name": "is_restricted_claim",
-            "type": "bool"
-          },
-          {
-            "name": "tag",
-            "type": {
-              "array": [
-                "u8",
-                1
-              ]
-            }
           }
         ]
       }

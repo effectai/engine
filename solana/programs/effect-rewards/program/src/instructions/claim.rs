@@ -15,6 +15,14 @@ pub struct Claim<'info> {
     pub reflection_account: Account<'info, ReflectionAccount>,
   
     #[account(
+        token::mint = recipient_token_account.mint.key(),
+        token::authority = intermediate_reward_vault_token_account,
+        seeds = [ reflection_account.key().as_ref() ],
+        bump,
+    )]
+    pub intermediate_reward_vault_token_account: Account<'info, TokenAccount>,
+
+    #[account(
         mut,
         seeds = [reflection_account.key().as_ref()],
         bump
@@ -50,6 +58,7 @@ pub struct Claim<'info> {
 
 impl<'info> Claim<'info> {
     pub fn handler(&mut self) -> Result<()> {
+
         // determine amount to claim
         let amount: u128 = self.reward_account.get_amount(self.reflection_account.rate);
 
@@ -73,7 +82,7 @@ impl<'info> Claim<'info> {
             self,
             reward_vault_token_account,
             recipient_token_account,
-            &[&vault_seed!()],
+            &[&vault_seed!(self.intermediate_reward_vault_token_account.key().as_ref())],
             amount.try_into().unwrap()
         )
     }

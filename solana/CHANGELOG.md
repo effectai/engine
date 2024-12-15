@@ -28,6 +28,9 @@ this is especially useful in instructions where multiple vault accounts were bei
 **Removed mint locks everywhere**  
 old contracts included mint constraints on both the **reflection** and **staking** contracts, restricting operations to a single specific mint. While this approach is simple, it feels a bit limiting. By implementing good/secure validation and ensuring PDA/seed matching, we can enable our contracts to handle multiple mints, as long as they remain paired to the correct one. This unlocks some new potential features, Although it introduces added complexity in terms of extra constraints, the trade off seems worthwhile for the additional flexibility that it brings.
 
+**removed bumps**
+old contracts had bumps stored into almost every data account, this is odd, as bumps using seeds are derivable, we've removed these and updated all the seed macro's accordingly.
+
 ## Staking Contract  
 
 **Added Vested unstake**  
@@ -52,18 +55,13 @@ removed extend, slash, restake, update_settings, withdraw instructions
 
 - removed the reward dependency from the vesting contracts
 
-- added flag `is_restricted_claim` to vesting account when `true` only the authority is allowed to claim the vesting.
-
-- added `update_authority` instruction to vesting contracts
-
 ## Reward  Contract
 - a reward account is now derived from the seeds of a stake account, making their relation 1:1
 
-- added a `claim_stream` instruction which expects a vesting account, and claims it.
-
-- We can setup and configure a vesting account with `is_restricted_claim` and then call `update_authority` to set the owner to a PDA of the vesting contract, the vesting contract is then the only one that can claim it through calling `claim_stream`
+- a reflection account now has two vaults an `intermediary_reward_vault` and a normal `reward_vault` all vestments/streams can be pointed to the `intermediary_reward_vault` and using a `topup` instruction the reflection account transfers funds between these 2 vaults
 
 - renamed xnos to `weighted_amount` 
+
 - removed multiplier when calculating `weighted_amount`
 
 - reflection account is now derived from the mint

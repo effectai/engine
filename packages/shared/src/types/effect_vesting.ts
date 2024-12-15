@@ -186,10 +186,6 @@ export type EffectVesting = {
           "type": "bool"
         },
         {
-          "name": "isRestrictedClaim",
-          "type": "bool"
-        },
-        {
           "name": "tag",
           "type": {
             "option": {
@@ -201,42 +197,6 @@ export type EffectVesting = {
           }
         }
       ]
-    },
-    {
-      "name": "updateAuthority",
-      "discriminator": [
-        32,
-        46,
-        64,
-        28,
-        149,
-        75,
-        243,
-        88
-      ],
-      "accounts": [
-        {
-          "name": "newAuthority",
-          "writable": true
-        },
-        {
-          "name": "vestingAccount",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true,
-          "relations": [
-            "vestingAccount"
-          ]
-        },
-        {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": []
     },
     {
       "name": "updateRecipient",
