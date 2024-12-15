@@ -7,7 +7,6 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       EFFECT_SPL_TOKEN_MINT: process.env.EFFECT_SPL_TOKEN_MINT,
-      EFFECT_VAULT_INITIALIZER: process.env.EFFECT_VAULT_INITIALIZER,
       EFFECT_SNAPSHOT_DATE: process.env.EFFECT_SNAPSHOT_DATE,
       EFFECT_SOLANA_RPC_NODE_URL: process.env.EFFECT_SOLANA_RPC_NODE_URL,
     }
