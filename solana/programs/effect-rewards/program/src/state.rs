@@ -24,6 +24,11 @@ impl ReflectionAccount {
     }
 
     pub fn topup(&mut self, weighted_amount: u128) {
+        // dont allow a topup if the rate is total_reflection = 0
+        if self.total_reflection == 0 {
+            return;
+        }
+
         self.total_weighted_amount += weighted_amount;
         self.rate = self.total_reflection / self.total_weighted_amount;
     }

@@ -5,8 +5,6 @@ import type { Program } from "@coral-xyz/anchor";
 import { mintToAccount, setup } from "../../utils/spl";
 import { SECONDS_PER_DAY, useAnchor } from "../helpers";
 import type { EffectVesting } from "../../target/types/effect_vesting";
-import { useErrorsIDL } from "../../utils/idl";
-import { effect_vesting } from "@effectai/shared";
 
 describe("Vesting Program", async () => {
 	const program = anchor.workspace.EffectVesting as Program<EffectVesting>;

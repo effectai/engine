@@ -24,12 +24,13 @@ pub struct Claim<'info> {
 
     #[account(
         mut,
-        seeds = [reflection_account.key().as_ref()],
+        seeds = [intermediate_reward_vault_token_account.key().as_ref()],
         bump
     )]
     pub reward_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(
+        mut,
         has_one = authority @ RewardErrors::Unauthorized,
         constraint = stake_account.weighted_amount >= reward_account.weighted_amount @ RewardErrors::Decreased,
     )]

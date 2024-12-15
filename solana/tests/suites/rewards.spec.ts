@@ -32,7 +32,11 @@ describe("Effect Reward Program", async () => {
 
 	describe("Reward Claim", async () => {
 		it.concurrent("should correctly claim a reward", async () => {
-			const { mint, ata } = await setup({ provider, payer });
+			const { mint, ata } = await setup({
+				provider,
+				payer,
+				amount: 10_000_000,
+			});
 
 			// create reflection
 			await program.methods
@@ -42,6 +46,27 @@ describe("Effect Reward Program", async () => {
 				})
 				.rpc();
 
+			// topup the reflection vault
+			const {
+				reflectionAccount,
+				reflectionVaultAccount,
+				intermediaryReflectionVaultAccount,
+			} = useDeriveRewardAccounts({
+				mint,
+				programId: program.programId,
+			});
+
+			// send tokens to intermediary reflection vault
+			await mintToAccount({
+				mint,
+				amount: 10_000_000,
+				payer,
+				mintAuthority: payer,
+				destination: intermediaryReflectionVaultAccount,
+				provider,
+			});
+
+			// create a stake account
 			const { stakeAccount } = await useCreateStake({
 				amount: 5_000_000,
 				authority: payer.publicKey,
@@ -58,23 +83,10 @@ describe("Effect Reward Program", async () => {
 				})
 				.rpc();
 
-			await program.methods
-				.claim()
-				.accounts({
-					recipientTokenAccount: ata,
-					stakeAccount: stakeAccount.publicKey,
-				})
-				.rpc();
-
 			const { stakingRewardAccount } = useDeriveStakingRewardAccount({
 				stakingAccount: stakeAccount.publicKey,
 				programId: program.programId,
 			});
-
-			const rewardAccount =
-				await program.account.rewardAccount.fetch(stakingRewardAccount);
-
-			expect(rewardAccount.weightedAmount.toNumber()).toEqual(5_000_000);
 
 			const { stakeAccount: anotherStakeAccount } = await useCreateStake({
 				amount: 5_000_000,
@@ -83,6 +95,7 @@ describe("Effect Reward Program", async () => {
 				userTokenAccount: ata,
 			});
 
+			// enter second reward acccount
 			await program.methods
 				.enter()
 				.accounts({
@@ -91,6 +104,39 @@ describe("Effect Reward Program", async () => {
 				})
 				.rpc();
 
+			// call topup
+			await program.methods
+				.topup()
+				.accounts({
+					mint,
+				})
+				.rpc();
+
+			const rewardAccount =
+				await program.account.rewardAccount.fetch(stakingRewardAccount);
+
+			expect(rewardAccount.weightedAmount.toNumber()).toEqual(5_000_000);
+
+			// claim
+			await program.methods
+				.claim()
+				.accounts({
+					stakeAccount: stakeAccount.publicKey,
+					recipientTokenAccount: ata,
+				})
+				.rpc();
+
+			// get reward account vault
+			const rewardAccountVault =
+				await provider.connection.getTokenAccountBalance(
+					reflectionVaultAccount,
+				);
+
+			// get ata balance
+			const ataBalance = await provider.connection.getTokenAccountBalance(ata);
+
+			expect(ataBalance.value.uiAmount).toEqual(5);
+			expect(rewardAccountVault.value.uiAmount).toEqual(5);
 		});
 	});
 
@@ -142,7 +188,7 @@ describe("Effect Reward Program", async () => {
 
 	describe("Reward Topup", async () => {
 		it.concurrent("should correctly topup", async () => {
-			const { mint } = await setup({ provider, payer });
+			const { mint, ata } = await setup({ provider, payer });
 
 			await program.methods
 				.init()
@@ -152,11 +198,14 @@ describe("Effect Reward Program", async () => {
 				.signers([payer])
 				.rpc();
 
-			const { reflectionAccount, reflectionVaultAccount, intermediaryReflectionVaultAccount } =
-				useDeriveRewardAccounts({
-					mint,
-					programId: program.programId,
-				});
+			const {
+				reflectionAccount,
+				reflectionVaultAccount,
+				intermediaryReflectionVaultAccount,
+			} = useDeriveRewardAccounts({
+				mint,
+				programId: program.programId,
+			});
 
 			// send tokens to intermediary reflection vault
 			await mintToAccount({
@@ -168,28 +217,45 @@ describe("Effect Reward Program", async () => {
 				provider,
 			});
 
-			// call topup
-			await program.methods.topup().accounts({
+			// create a stake account
+			const { stakeAccount } = await useCreateStake({
+				amount: 5_000_000,
+				authority: payer.publicKey,
 				mint,
+				userTokenAccount: ata,
+			});
+
+			// enter reward acccount
+			await program.methods.enter().accounts({
+				mint,
+				stakeAccount: stakeAccount.publicKey,
 			}).rpc()
 
-			const reflection = await program.account.reflectionAccount.fetch(
-				reflectionAccount
-			);
+			// call topup
+			await program.methods
+				.topup()
+				.accounts({
+					mint,
+				})
+				.rpc();
+
+			const reflection =
+				await program.account.reflectionAccount.fetch(reflectionAccount);
 
 			// fetch two vaults
-			const reflectionVaultTokenBalance = await provider.connection.getTokenAccountBalance(
-				reflectionVaultAccount
-			);
+			const reflectionVaultTokenBalance =
+				await provider.connection.getTokenAccountBalance(
+					reflectionVaultAccount,
+				);
 
-			const intermediaryReflectionVaultTokenBalance = await provider.connection.getTokenAccountBalance(
-				intermediaryReflectionVaultAccount
-			);
+			const intermediaryReflectionVaultTokenBalance =
+				await provider.connection.getTokenAccountBalance(
+					intermediaryReflectionVaultAccount,
+				);
 
-			expect(reflection.totalWeightedAmount.toNumber()).toEqual(1000_000_000);
+			expect(reflection.totalWeightedAmount.toNumber()).toEqual(1005_000_000);
 			expect(reflectionVaultTokenBalance.value.uiAmount).toEqual(1000);
 			expect(intermediaryReflectionVaultTokenBalance.value.uiAmount).toEqual(0);
-
 		});
 	});
 });
