@@ -1,5 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
+use effect_common::close_vault;
+use effect_common::cpi;
+use effect_common::id::AUTHORITY;
 use effect_migration_common::{MigrationAccount, MigrationProgram};
 use effect_staking::{cpi::accounts::GenesisStake, program::EffectStaking};
 use effect_staking_common::StakeAccount;
@@ -26,6 +29,7 @@ pub struct ClaimStake<'info> {
 
     #[account(
         mut,
+	close =  rent_receiver,
         seeds = [mint.key().as_ref(), migration_account.foreign_public_key.as_slice()],
         bump
     )]
@@ -53,6 +57,9 @@ pub struct ClaimStake<'info> {
     )]
     pub stake_vault_token_account: Account<'info, TokenAccount>,
 
+    #[account(address = AUTHORITY)]
+    pub rent_receiver: SystemAccount<'info>,
+
     pub rent: Sysvar<'info, Rent>,
 
     pub migration_program: Program<'info, MigrationProgram>,
@@ -78,10 +85,16 @@ pub fn handler(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>) -
     // topup the stake account
     genesis_stake!(ctx.accounts, &[&vault_seed!(ctx.accounts.migration_account.key(), *ctx.program_id)[..]])?;
 
+    close_vault!(
+	ctx.accounts,
+	migration_vault_token_account,
+	&[&vault_seed!(ctx.accounts.migration_account.key(), *ctx.program_id)[..]]
+    )?;
+
     Ok(())
 }
 
-pub fn verify_claim(signature: Vec<u8>, message: Vec<u8>, is_eth: bool, payer: Pubkey, expected_pub_key: Vec<u8>) -> Result<Vec<u8>> {
+pub fn verify_claim(signature: Vec<u8>, message: Vec<u8>, is_eth: bool, payer: Pubkey, expected_pubkey: Vec<u8>) -> Result<Vec<u8>> {
     // check if the message matches our expected message
     let expected_message = get_expected_message_bytes(&payer);
     validate_message(&message, &expected_message)?;
@@ -89,10 +102,9 @@ pub fn verify_claim(signature: Vec<u8>, message: Vec<u8>, is_eth: bool, payer: P
     // recover and validate the public key from the signature
     let recovered_pubkey = recover_and_validate_pubkey(signature, &message, is_eth)?;
 
-    if recovered_pubkey != expected_pub_key {
+    if recovered_pubkey != expected_pubkey {
         return Err(MigrationError::PublicKeyMismatch.into());
     }
-
     Ok(recovered_pubkey)
 }
 

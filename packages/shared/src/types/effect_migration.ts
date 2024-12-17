@@ -91,6 +91,10 @@ export type EffectMigration = {
           }
         },
         {
+          "name": "rentReceiver",
+          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+        },
+        {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
         },

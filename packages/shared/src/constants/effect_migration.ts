@@ -85,6 +85,10 @@ export const effect_migration = {
           }
         },
         {
+          "name": "rent_receiver",
+          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+        },
+        {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
         },

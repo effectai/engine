@@ -80,7 +80,7 @@ export const claimMigration = async ({
 	.signers(signers)
 	.rpc();
 
-	return {stakeAccount, stakeVaultAccount};
+	return {stakeAccount, stakeVaultAccount, migrationAccount};
 }
 
 export const createMigrationClaim = async({

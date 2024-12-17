@@ -208,7 +208,7 @@ describe("Migration Program", async () => {
 				stakeAccount.publicKey,
 			);
 
-			expect(stakeAccountData).to.not.be.null;	
+			expect(stakeAccountData).to.not.be.null;
 			expect(stakeAccountData.amount.toNumber()).to.equal(100_000_000);
 		});
 
@@ -282,7 +282,7 @@ describe("Migration Program", async () => {
 					program,
 				});
 
-			const { stakeAccount, stakeVaultAccount } = await claimMigration({
+			const { stakeAccount, stakeVaultAccount, migrationAccount } = await claimMigration({
 				migrationProgram: program,
 				stakeProgram,
 				ata,
@@ -310,10 +310,13 @@ describe("Migration Program", async () => {
 				await provider.connection.getTokenAccountBalance(stakeVaultAccount);
 			expect(stakeVaultBalance.value.uiAmount).to.be.greaterThan(0);
 
-			// check if claim vault is created and emptied out
-			const claimVaultBalance =
-				await provider.connection.getTokenAccountBalance(claimVaultAccount);
-			expect(claimVaultBalance.value.uiAmount).to.equal(0);
+			// check if claim vault is closed
+			expect(() =>
+			    provider.connection.getTokenAccountBalance(claimVaultAccount)
+			).rejects.toThrowError('could not find account');
+
+			// check if migration account is closed
+			await expect(provider.connection.getAccountInfo(migrationAccount)).resolves.toBeNull;
 		});
 
 		it.concurrent(
@@ -388,9 +391,9 @@ describe("Migration Program", async () => {
 				expect(stakeVaultBalance.value.uiAmount).to.be.greaterThan(0);
 
 				// check if claim vault is created and emptied out
-				const claimVaultBalance =
-					await provider.connection.getTokenAccountBalance(claimVaultAccount);
-				expect(claimVaultBalance.value.uiAmount).to.equal(0);
+				expect(() =>
+				    provider.connection.getTokenAccountBalance(claimVaultAccount)
+				).rejects.toThrowError('could not find account');
 			},
 		);
 
