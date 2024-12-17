@@ -9,7 +9,7 @@ use crate::{errors::MigrationError, vault_seed, genesis_stake};
 use anchor_lang::{prelude::Pubkey};
 
 #[derive(Accounts)]
-#[instruction(signature: Vec<u8>, message: Vec<u8>, foreign_public_key: Vec<u8>)]
+#[instruction(signature: Vec<u8>, message: Vec<u8>)]
 pub struct ClaimStake<'info> {
     #[account(signer)]
     pub authority: Signer<'info>,
@@ -26,8 +26,7 @@ pub struct ClaimStake<'info> {
 
     #[account(
         mut,
-        seeds = [mint.key().as_ref(), foreign_public_key.as_slice()],
-        constraint = foreign_public_key.as_slice() == migration_account.foreign_public_key.as_slice(),
+        seeds = [mint.key().as_ref(), migration_account.foreign_public_key.as_slice()],
         bump
     )]
     pub migration_account: Account<'info, MigrationAccount>,
@@ -62,7 +61,7 @@ pub struct ClaimStake<'info> {
     pub staking_program: Program<'info, EffectStaking>,
 }
 
-pub fn handler(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>, _foreign_public_key: Vec<u8>) -> Result<()> {
+pub fn handler(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
     // check if we are dealing with an ethereum or eos account
     // ethereum accounts always have a public key length of 20 bytes, eos accounts have 32 bytes
     let is_eth = ctx.accounts.migration_account.foreign_public_key.len() == 20;

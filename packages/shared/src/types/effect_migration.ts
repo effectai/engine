@@ -51,8 +51,9 @@ export type EffectMigration = {
                 "path": "mint"
               },
               {
-                "kind": "arg",
-                "path": "foreignPublicKey"
+                "kind": "account",
+                "path": "migration_account.foreign_public_key",
+                "account": "migrationAccount"
               }
             ]
           }
@@ -117,10 +118,6 @@ export type EffectMigration = {
         },
         {
           "name": "message",
-          "type": "bytes"
-        },
-        {
-          "name": "foreignPublicKey",
           "type": "bytes"
         }
       ]

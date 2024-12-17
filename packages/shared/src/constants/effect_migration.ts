@@ -45,8 +45,9 @@ export const effect_migration = {
                 "path": "mint"
               },
               {
-                "kind": "arg",
-                "path": "foreign_public_key"
+                "kind": "account",
+                "path": "migration_account.foreign_public_key",
+                "account": "MigrationAccount"
               }
             ]
           }
@@ -111,10 +112,6 @@ export const effect_migration = {
         },
         {
           "name": "message",
-          "type": "bytes"
-        },
-        {
-          "name": "foreign_public_key",
           "type": "bytes"
         }
       ]

@@ -18,7 +18,11 @@ import type { EffectStaking } from "../../target/types/effect_staking.js";
 import { expect, describe, it } from "vitest";
 import { SECONDS_PER_DAY, useAnchor } from "../helpers.js";
 import { setup } from "../../utils/spl.js";
-import { claimMigration, createMigrationClaim } from "../../utils/migration.js";
+import {
+	claimMigration,
+	createMigrationClaim,
+	claimMigrationPRINT
+} from "../../utils/migration.js";
 import { createStake } from "../../utils/stake.js";
 import { useErrorsIDL } from "../../utils/idl.js";
 
@@ -356,14 +360,17 @@ describe("Migration Program", async () => {
 					programId: stakeProgram.programId,
 				});
 
-				await program.methods
-					.claimStake(Buffer.from(toBytes(signature)), Buffer.from(message), Buffer.from(toBytes(ethPublicKey)))
-					.accounts({
-						recipientTokenAccount: ata,
-						stakeAccount: stakeAccount.publicKey,
-						mint,
-					})
-					.rpc();
+				await claimMigration({
+					migrationProgram: program,
+					stakeProgram,
+					ata,
+					stake: stakeAccount,
+					mint,
+					payer,
+					foreignPublicKey: toBytes(ethPublicKey),
+					signature: toBytes(signature),
+					message: Buffer.from(message),
+				});
 
 				// check if the stake account was created
 				const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
