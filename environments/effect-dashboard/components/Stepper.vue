@@ -1,5 +1,5 @@
 <template>
-    <ol class="pb-24 mt-24">
+    <ol class="pb-72 mt-24">
         <li :id="`step-${key}`"
             class=" relative flex-1 after:content-[''] after:-z-10 after:w-0.5 after:h-[999%] after:bg-gray-100 after:inline-block after:absolute after:-bottom-11 after:left-4 lg:after:left-5"
             v-for="(item, key) in items">
@@ -67,7 +67,7 @@ const isActive = (key: number) => {
         content: '';
         position: absolute;
         inset: 0px 9px;
-        background: rgb(148, 145, 145);
+        background: #22232e;
         transition: 500ms;
         animation: rotate 4s linear infinite;
         z-index: -1;

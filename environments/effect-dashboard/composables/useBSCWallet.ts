@@ -89,9 +89,6 @@ export const useBscWallet = (): SourceWalletAdapter => {
 		if (!address.value) {
 			throw new Error("No address found");
 		}
-
-		console.log("getForeignPublicKeyQuery", address.value);
-
 		return toBytes(address.value);
 	};
 

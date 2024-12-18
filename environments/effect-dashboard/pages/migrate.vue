@@ -41,8 +41,8 @@
                         <div class="flex flex-wrap justify-center items-center gap-2 my-8">
                             <span class="flex gap-2 items-center" v-if="$device.isDesktop">
                                 <WalletMultiButton /> or
-                            </span> <a href="#" class="text-sm text-red-500"
-                                @click="toggleAddress = !toggleAddress">Manually enter your address</a>
+                            </span> <a class="text-sm text-red-500" @click="toggleAddress = !toggleAddress">Manually
+                                enter your address</a>
                         </div>
                         <div class="flex w-full" v-show="toggleAddress">
                             <UInput placeholder="Your solana address" v-model="manualAddressInput" type="text"
@@ -53,7 +53,8 @@
 
                     <div v-else class="flex justify-between mt-5 items-center gap-1">
                         <b>Chosen address:</b>
-                        <BlockchainAddress :address="destinationAddress" /> | <a href="#" @click="logout">Change</a>
+                        <BlockchainAddress :address="destinationAddress" /> | <a class="cursor-pointer"
+                            @click="logout">Change</a>
                     </div>
                 </div>
             </template>
@@ -71,13 +72,17 @@
             </template>
             <template #claim>
                 <div>
-                    <div v-if="!migrationAccount">
+                    <div v-if="!migrationAccount" class="flex flex-col items-center">
+                        <BlockchainAddress v-if="address" :address="address" />
                         <p>No Active claims found for this account.</p>
+                        <UButton class="mt-5" @click="disconnectSourceWallets" color="black" variant="outline">
+                            Disconnect</UButton>
                     </div>
-                    <div v-else-if="$device.isMobileOrTablet">
+                    <div v-else-if="true">
                         It seems you've successfully authenticated and authorized using a mobile wallet. To claim your
                         tokens, please open the link below on a desktop device:
-                        <a :href="authorizeUrl">Authorize</a>
+
+                        <a class="cursor-pointer" @click="copyAuthorize">Authorize</a>
                     </div>
                     <div v-else class="text-center flex justify-center my-5">
                         <div v-if="!solanaWalletAddress">
@@ -134,8 +139,8 @@ const { data: foreignPublicKey } = useGetForeignPublicKeyQuery()
 
 const client = useQueryClient()
 const disconnectSourceWallets = async () => {
+    client.clear()
     disconnect()
-    client.resetQueries({ queryKey: ['foreign-public-key'] })
     logout()
 }
 
@@ -158,8 +163,6 @@ const selectAddress = () => {
     if (isValidSolanaAddress(manualAddressInput.value)) {
         manualAddress.value = manualAddressInput.value
         toggleAddress.value = false
-    } else {
-
     }
 }
 
@@ -183,6 +186,12 @@ const authorizeUrl = computed(() => {
         foreignPublicKey: computedForeignPublicKey.value,
     })
 })
+
+const {copy} = useCopyToClipboard()
+const copyAuthorize = () => {
+    copy(authorizeUrl.value)
+    toast.add({ title: 'Copied', description: 'Authorize link copied to clipboard', color: 'green' })
+}
 
 const getAuthorizeUrl = ({
     message,
@@ -263,9 +272,19 @@ const currentStep = computed(() => {
     }
 })
 
+watch(currentStep, async (newVal) => {
+    await nextTick();
+    // wait 2 seconds
+    await new Promise(resolve => setTimeout(resolve, 10))
+    const el = document.getElementById(`step-${newVal}`)
+    if (el) {
+        console.log('scrolling to', el)
+         await nextTick();
+        el.scrollIntoView({ behavior: 'smooth' })
+    }
+}, { immediate: true })
+
 
 </script>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
