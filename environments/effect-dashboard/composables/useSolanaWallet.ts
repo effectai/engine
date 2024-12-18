@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/vue-query";
 import { useWallet } from "solana-wallets-vue";
 import type { TargetWalletAdapter, WalletMeta } from "~/types/types";
 
-
 export const useSolanaWallet = (): TargetWalletAdapter => {
 	const { connection } = useGlobalState();
 	const { connect, disconnect, wallet, publicKey } = useWallet();

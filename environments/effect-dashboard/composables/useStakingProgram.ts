@@ -68,9 +68,6 @@ export function useStakingProgram() {
 				// create a new pubkey for unstake vestment
 				const vestmentAccount = Keypair.generate();
 
-				console.log(stakingRewardAccount)
-				const acc = await connection.getAccountInfo(stakingRewardAccount)
-
 				return await stakeProgram.methods
 					.unstake(new anchor.BN(amount * 1000000))
 					.preInstructions([

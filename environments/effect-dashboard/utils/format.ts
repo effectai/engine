@@ -1,4 +1,6 @@
 import { BN } from "@coral-xyz/anchor";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import { PublicKey } from "@solana/web3.js";
 import { format, formatDistanceToNow } from "date-fns";
 
 export const sliceBoth = (str: string) => {
@@ -36,3 +38,35 @@ export const formatNumber = (num: number) => {
 		maximumFractionDigits: 2,
 	}).format(num);
 };
+
+export function isValidSolanaAddress(address:string) {
+	try {
+	  const decoded = bs58.decode(address);
+	  
+	  if (decoded.length !== 32) {
+		return false;
+	  }
+
+	  new PublicKey(address); // Throws if invalid
+	  return true;
+	} catch (error) {
+	  return false;
+	}
+  }
+
+ export function extractAuthorizedSolanaAddress(text:string) {
+	const pattern = /I authorize my tokens to be claimed at the following Solana address:\s*([1-9A-HJ-NP-Za-km-z]{32,44})/;
+	const match = text.match(pattern);
+  
+	if (match) {
+	  const address = match[1]; // The captured address
+	  try {
+		// Validate the address using Solana's PublicKey utility
+		new PublicKey(address); // Throws if invalid
+		return address;
+	  } catch {
+		return null; // Invalid address
+	  }
+	}
+	return null; // No match found
+  }

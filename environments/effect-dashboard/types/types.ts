@@ -18,7 +18,6 @@ export type WalletAdapterBase = {
 
     useGetEfxBalanceQuery: () => UseQueryReturnType<FormattedBalanceReturnType, Error>;
     useGetBalanceQuery: () => UseQueryReturnType<FormattedBalanceReturnType, Error>;
-    useGetTokenAccountBalanceQuery: (account: PublicKey) => UseQueryReturnType<FormattedBalanceReturnType, Error>;
 
     connect: () => void;
     disconnect: () => void;
@@ -26,12 +25,14 @@ export type WalletAdapterBase = {
 
 // Target Chain Wallet Adapter Type (solana) 
 export type TargetWalletAdapter = WalletAdapterBase & {
-
+    useGetTokenAccountBalanceQuery: (account: PublicKey) => UseQueryReturnType<FormattedBalanceReturnType, Error>;
 }
 
 // Source Chain Wallet Adapter Type (eos, bsc)
 export type SourceWalletAdapter = WalletAdapterBase & {
-    authorizeTokenClaim: () => Promise<{
+    getForeignPublicKey: () => Promise<Uint8Array>;
+    useGetForeignPublicKeyQuery: () => UseQueryReturnType<Uint8Array, Error>;
+    authorizeTokenClaim: (destinationAddress: string) => Promise<{
         foreignPublicKey: Uint8Array;
         signature: Uint8Array;
         message: Uint8Array;

@@ -3,7 +3,13 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
   ssr:false,
   css: ["@/assets/css/main.css"],
-  modules: ['@wagmi/vue/nuxt', "@nuxt/ui", "@vueuse/nuxt", "@vueuse/motion/nuxt"],
+  modules: [
+    '@wagmi/vue/nuxt',
+    "@nuxt/ui",
+    "@vueuse/nuxt",
+    "@vueuse/motion/nuxt",
+    "@nuxtjs/device"
+  ],
   runtimeConfig: {
     public: {
       EFFECT_SPL_TOKEN_MINT: process.env.EFFECT_SPL_TOKEN_MINT,

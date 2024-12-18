@@ -17,8 +17,8 @@ import { WalletPluginAnchor } from "@effectai/wallet-plugin-anchor";
 
 // import { WalletPluginCleos } from "@wharfkit/wallet-plugin-cleos";
 // import { WalletPluginScatter } from "@wharfkit/wallet-plugin-scatter"
-import { WalletPluginWombat } from "@wharfkit/wallet-plugin-wombat"
-import { WalletPluginTokenPocket } from "@wharfkit/wallet-plugin-tokenpocket"
+import { WalletPluginWombat } from "@wharfkit/wallet-plugin-wombat";
+import { WalletPluginTokenPocket } from "@wharfkit/wallet-plugin-tokenpocket";
 
 const session: Ref<Session | null | undefined> = ref(null);
 
@@ -35,7 +35,7 @@ const sessionKit = reactive(
 		walletPlugins: [
 			new WalletPluginAnchor(),
 			new WalletPluginWombat(),
-			new WalletPluginTokenPocket()
+			new WalletPluginTokenPocket(),
 		],
 	}),
 );
@@ -56,7 +56,6 @@ export const useEosWallet = (): SourceWalletAdapter => {
 	const isConnected = computed(() => !!session.value);
 
 	const connect = async () => {
-		console.log(sessionKit)
 		const result = await sessionKit.login();
 		session.value = result.session;
 	};
@@ -81,7 +80,10 @@ export const useEosWallet = (): SourceWalletAdapter => {
 				);
 
 				if (res.length === 0) {
-					return 0;
+					return {
+						value: 0,
+						symbol: "EOS",
+					};
 				}
 
 				return {
@@ -107,7 +109,10 @@ export const useEosWallet = (): SourceWalletAdapter => {
 				);
 
 				if (res.length === 0) {
-					return 0;
+					return {
+						value: 0,
+						symbol: "EFX",
+					};
 				}
 
 				return {
@@ -118,14 +123,13 @@ export const useEosWallet = (): SourceWalletAdapter => {
 		});
 	};
 
-	const authorizeTokenClaim = async (): Promise<{
+	const authorizeTokenClaim = async (destinationAddress:string): Promise<{
 		foreignPublicKey: Uint8Array;
 		signature: Uint8Array;
 		message: Uint8Array;
 	}> => {
-		const { address } = useSolanaWallet();
 
-		const originalMessage = `Effect.AI: I authorize my tokens to be claimed at the following Solana address:${address.value}`;
+		const originalMessage = `Effect.AI: I authorize my tokens to be claimed at the following Solana address:${destinationAddress}`;
 
 		if (!session.value?.client) {
 			throw new Error("No client found");
@@ -181,8 +185,6 @@ export const useEosWallet = (): SourceWalletAdapter => {
 			throw new Error("Could not compress public key");
 		}
 
-		console.log("Signature", sig);
-
 		return {
 			signature: sig.data.array,
 			message: serializedTxBytes?.array,
@@ -190,7 +192,28 @@ export const useEosWallet = (): SourceWalletAdapter => {
 		};
 	};
 
+	const getForeignPublicKey = async () => {
+		if (!session.value?.client) {
+			throw new Error("No client found");
+		}
+
+		const res = await session.value.client.v1.chain.get_account(
+			session.value.actor,
+		);
+
+		const activePermission = res.getPermission("active");
+		const publicKey = activePermission.required_auth.keys[0].key.toString();
+		const compressedPk = extractEosPublicKeyBytes(publicKey);
+
+		if (!compressedPk) {
+			throw new Error("Could not compress public key");
+		}
+
+		return compressedPk;
+	};
+
 	return {
+
 		address,
 		walletMeta,
 		isConnected,
@@ -204,5 +227,7 @@ export const useEosWallet = (): SourceWalletAdapter => {
 		// Queries
 		useGetEfxBalanceQuery,
 		useGetBalanceQuery,
+
+		getForeignPublicKey,
 	};
 };

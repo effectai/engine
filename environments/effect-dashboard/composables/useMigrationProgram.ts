@@ -1,12 +1,11 @@
-import { Keypair, PublicKey, StakeProgram, Transaction, type TokenAmount } from "@solana/web3.js";
+import { Keypair, PublicKey, type TokenAmount } from "@solana/web3.js";
 import {
 	useMutation,
 	useQuery,
-	type UseMutationOptions,
 	type UseQueryReturnType,
 } from "@tanstack/vue-query";
 
-import { useAnchorWallet, useWallet } from "solana-wallets-vue";
+import { useWallet } from "solana-wallets-vue";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program, Idl } from "@coral-xyz/anchor";
 import { EffectMigrationIdl, type EffectMigration } from "@effectai/shared";
@@ -17,11 +16,8 @@ import {
 } from "@solana/spl-token";
 import {
 	useDeriveMigrationAccounts,
-	useDeriveRewardAccounts,
-	useDeriveStakeAccounts,
 	useDeriveStakingRewardAccount,
 } from "@effectai/utils";
-import { base64 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import type { StakingAccount } from "./useStakingProgram";
 
 export type EffectMigrationProgramAccounts =
@@ -33,28 +29,47 @@ export type MigrationClaimAccount = anchor.ProgramAccount<
 const SECONDS_PER_DAY = 86400;
 
 export const useMigrationProgram = () => {
-	const wallet = useAnchorWallet();
 	const config = useRuntimeConfig();
 
 	const { publicKey } = useWallet();
 	const { connection } = useGlobalState();
 
-	const provider = new anchor.AnchorProvider(connection, wallet.value, {});
+	const { provider } = useAnchorProvider();
 	const { rewardsProgram } = useStakingProgram();
 	const { stakeProgram } = useStakingProgram();
 
-	const program = new anchor.Program(
+	const migrationProgram = new anchor.Program(
 		EffectMigrationIdl as Idl,
 		provider,
 	) as unknown as Program<EffectMigration>;
 
-	const { foreignPublicKey } = useGlobalState();
+	const useGetMigrationVaultBalance = (migrationAccount: MigrationClaimAccount['account']) => {
+		return useQuery({
+			queryKey: ["claims", "vault-balance", publicKey.value],
+			queryFn: async () => {
+				if (!publicKey.value) {
+					throw new Error("Missing required data");
+				}
 
-	const useGetMigrationAccount = (): UseQueryReturnType<MigrationClaimAccount["account"] & {
-		vaultBalance: {
-			value: TokenAmount;
-		}
-	}, Error> => {
+				const {vaultAccount} = useDeriveMigrationAccounts({
+					mint: new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT),
+					foreignPublicKey: migrationAccount.foreignPublicKey,
+					programId: migrationProgram.programId,
+				});
+
+				return await connection.getTokenAccountBalance(
+					vaultAccount,
+				);
+			}
+		})
+	}
+
+	const useGetMigrationAccount = (
+		foreignPublicKey: Ref<Uint8Array | undefined | null>,
+	): UseQueryReturnType<
+		MigrationClaimAccount['account'],
+		Error
+	> => {
 		return useQuery({
 			queryKey: [
 				"claims",
@@ -70,41 +85,32 @@ export const useMigrationProgram = () => {
 				const { migrationAccount, vaultAccount } = useDeriveMigrationAccounts({
 					mint: new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT),
 					foreignPublicKey: foreignPublicKey.value,
-					programId: program.programId,
+					programId: migrationProgram.programId,
 				});
 
-				const data = await program.account.migrationAccount.fetchNullable(migrationAccount);
-				const vaultBalance = await connection.getTokenAccountBalance(vaultAccount);
-
-				return {
-					...data,
-					vaultBalance,
-				};
+				return await migrationProgram.account.migrationAccount.fetchNullable(
+					migrationAccount,
+				);
 			},
 			enabled: computed(() => !!publicKey.value && !!foreignPublicKey.value),
 		});
 	};
 
-	const useClaim = ({
-		options,
-	}: {
-		options: UseMutationOptions<
-			string,
-			Error
-		>;
-	}) =>
+	const useClaim = () =>
 		useMutation({
-			...options,
-			mutationFn: async () => {
-				const { foreignPublicKey, message, signature } = useGlobalState();
+			mutationFn: async ({
+				foreignPublicKey,
+				signature,
+				message,
+			}: {
+				foreignPublicKey: Uint8Array;
+				signature: Uint8Array;
+				message: Uint8Array;
+			}) => {
+				const { publicKey } = useWallet();
 
-				if (
-					!publicKey.value ||
-					!foreignPublicKey.value ||
-					!message.value ||
-					!signature.value
-				) {
-					throw new Error("Missing required data");
+				if (!publicKey.value) {
+					throw new Error("Not connected to a solana wallet");
 				}
 
 				const mint = new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT);
@@ -131,13 +137,17 @@ export const useMigrationProgram = () => {
 					stakingAccount = stakingAccounts[0];
 				}
 
-				const {stakingRewardAccount} = useDeriveStakingRewardAccount({
+				const { stakingRewardAccount } = useDeriveStakingRewardAccount({
 					stakingAccount: stakingAccount.publicKey,
 					programId: rewardsProgram.programId,
-				})
+				});
 
-				return await program.methods
-					.claimStake(Buffer.from(signature.value), Buffer.from(message.value), Buffer.from(foreignPublicKey.value))
+				return await migrationProgram.methods
+					.claimStake(
+						Buffer.from(signature),
+						Buffer.from(message),
+						Buffer.from(foreignPublicKey),
+					)
 					.preInstructions([
 						...((await connection.getAccountInfo(ata))
 							? []
@@ -190,8 +200,9 @@ export const useMigrationProgram = () => {
 		});
 
 	return {
-		program,
+		migrationProgram,
 		useGetMigrationAccount,
+		useGetMigrationVaultBalance,
 		useClaim,
 	};
 };
