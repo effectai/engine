@@ -11,8 +11,8 @@
                 {{ key + 1 }}</div>
             </span>
 
-            <UCard class="block ml-10 h-full">
-                <div v-if="!isActive(key)" class="absolute w-full h-full black z-10 backdrop-blur-[3px] top-[10px] left-30px"></div>
+            <UCard class="relative block ml-10 h-full">
+                <div v-if="!isActive(key)" class="absolute w-full h-full black z-10 backdrop-blur-[3px] left-[0px] top-[0px] "></div>
                 <h3 class="text-base mb-2 title"> {{ item.label }}</h3>
                 <UDivider class="my-5"/>
 

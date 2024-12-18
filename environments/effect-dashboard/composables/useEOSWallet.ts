@@ -22,25 +22,28 @@ import { WalletPluginTokenPocket } from "@wharfkit/wallet-plugin-tokenpocket";
 
 const session: Ref<Session | null | undefined> = ref(null);
 
-const sessionKit = reactive(
-	new SessionKit({
-		appName: "Effect Migration Portal",
-		chains: [
-			{
-				id: "aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906",
-				url: "https://eos.greymass.com",
-			},
-		],
-		ui: new WebRenderer(),
-		walletPlugins: [
-			new WalletPluginAnchor(),
-			new WalletPluginWombat(),
-			new WalletPluginTokenPocket(),
-		],
-	}),
-);
-
 export const useEosWallet = (): SourceWalletAdapter => {
+
+
+	const sessionKit = reactive(
+		new SessionKit({
+			appName: "Effect Migration Portal",
+			chains: [
+				{
+					id: "aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906",
+					url: "https://eos.greymass.com",
+				},
+			],
+			ui: new WebRenderer(),
+			walletPlugins: [
+				new WalletPluginAnchor(),
+				new WalletPluginWombat(),
+				new WalletPluginTokenPocket(),
+			],
+		}),
+	);
+	
+
 	const address = computed(
 		() => session.value?.actor.toString() as string | undefined,
 	);
