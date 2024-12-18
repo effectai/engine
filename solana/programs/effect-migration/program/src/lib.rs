@@ -16,8 +16,8 @@ pub mod effect_migration {
 
     use super::*;
 
-    pub fn claim_stake(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>, foreign_public_key: Vec<u8>) -> Result<()> {
-        claim::handler(ctx, signature, message, foreign_public_key)
+    pub fn claim_stake(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
+        claim::handler(ctx, signature, message)
     }
 
     pub fn create_stake_claim(

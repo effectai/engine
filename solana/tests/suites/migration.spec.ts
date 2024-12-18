@@ -18,7 +18,11 @@ import type { EffectStaking } from "../../target/types/effect_staking.js";
 import { expect, describe, it } from "vitest";
 import { SECONDS_PER_DAY, useAnchor } from "../helpers.js";
 import { setup } from "../../utils/spl.js";
-import { claimMigration, createMigrationClaim } from "../../utils/migration.js";
+import {
+	claimMigration,
+	createMigrationClaim,
+	claimMigrationPRINT
+} from "../../utils/migration.js";
 import { createStake } from "../../utils/stake.js";
 import { useErrorsIDL } from "../../utils/idl.js";
 
@@ -204,7 +208,7 @@ describe("Migration Program", async () => {
 				stakeAccount.publicKey,
 			);
 
-			expect(stakeAccountData).to.not.be.null;	
+			expect(stakeAccountData).to.not.be.null;
 			expect(stakeAccountData.amount.toNumber()).to.equal(100_000_000);
 		});
 
@@ -278,7 +282,7 @@ describe("Migration Program", async () => {
 					program,
 				});
 
-			const { stakeAccount, stakeVaultAccount } = await claimMigration({
+			const { stakeAccount, stakeVaultAccount, migrationAccount } = await claimMigration({
 				migrationProgram: program,
 				stakeProgram,
 				ata,
@@ -306,10 +310,13 @@ describe("Migration Program", async () => {
 				await provider.connection.getTokenAccountBalance(stakeVaultAccount);
 			expect(stakeVaultBalance.value.uiAmount).to.be.greaterThan(0);
 
-			// check if claim vault is created and emptied out
-			const claimVaultBalance =
-				await provider.connection.getTokenAccountBalance(claimVaultAccount);
-			expect(claimVaultBalance.value.uiAmount).to.equal(0);
+			// check if claim vault is closed
+			expect(() =>
+			    provider.connection.getTokenAccountBalance(claimVaultAccount)
+			).rejects.toThrowError('could not find account');
+
+			// check if migration account is closed
+			await expect(provider.connection.getAccountInfo(migrationAccount)).resolves.toBeNull;
 		});
 
 		it.concurrent(
@@ -356,14 +363,17 @@ describe("Migration Program", async () => {
 					programId: stakeProgram.programId,
 				});
 
-				await program.methods
-					.claimStake(Buffer.from(toBytes(signature)), Buffer.from(message), Buffer.from(toBytes(ethPublicKey)))
-					.accounts({
-						recipientTokenAccount: ata,
-						stakeAccount: stakeAccount.publicKey,
-						mint,
-					})
-					.rpc();
+				await claimMigration({
+					migrationProgram: program,
+					stakeProgram,
+					ata,
+					stake: stakeAccount,
+					mint,
+					payer,
+					foreignPublicKey: toBytes(ethPublicKey),
+					signature: toBytes(signature),
+					message: Buffer.from(message),
+				});
 
 				// check if the stake account was created
 				const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
@@ -381,9 +391,9 @@ describe("Migration Program", async () => {
 				expect(stakeVaultBalance.value.uiAmount).to.be.greaterThan(0);
 
 				// check if claim vault is created and emptied out
-				const claimVaultBalance =
-					await provider.connection.getTokenAccountBalance(claimVaultAccount);
-				expect(claimVaultBalance.value.uiAmount).to.equal(0);
+				expect(() =>
+				    provider.connection.getTokenAccountBalance(claimVaultAccount)
+				).rejects.toThrowError('could not find account');
 			},
 		);
 
