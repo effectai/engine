@@ -311,7 +311,7 @@ describe("Migration Program", async () => {
 			expect(stakeVaultBalance.value.uiAmount).to.be.greaterThan(0);
 
 			// check if claim vault is closed
-			expect(() =>
+			await expect(() =>
 			    provider.connection.getTokenAccountBalance(claimVaultAccount)
 			).rejects.toThrowError('could not find account');
 
@@ -377,7 +377,7 @@ describe("Migration Program", async () => {
 				expect(stakeVaultBalance.value.uiAmount).to.be.greaterThan(0);
 
 				// check if claim vault is created and emptied out
-				expect(() =>
+				await expect(() =>
 				    provider.connection.getTokenAccountBalance(claimVaultAccount)
 				).rejects.toThrowError('could not find account');
 			},

@@ -136,6 +136,7 @@ const client = useQueryClient()
 const disconnectSourceWallets = async () => {
     disconnect()
     client.resetQueries({ queryKey: ['foreign-public-key'] })
+    logout()
 }
 
 const toggleAddress = ref(false)
@@ -147,8 +148,11 @@ const destinationAddress = computed(() => {
 })
 const { disconnect: disconnectSolana } = useWallet()
 const logout = () => {
-    disconnectSolana()
+    message.value = null
+    signature.value = null
+    manualForeignPublicKey.value = null
     manualAddress.value = null
+    disconnectSolana()
 }
 const selectAddress = () => {
     if (isValidSolanaAddress(manualAddressInput.value)) {

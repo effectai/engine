@@ -133,9 +133,11 @@ export const useMigrationProgram = () => {
 				]);
 
 				if (stakingAccounts.length === 0) {
+					console.log("No staking account found, creating one");
 					stakingAccount = Keypair.generate();
 					signers.push(stakingAccount);
 				} else {
+					console.log("Staking account found");
 					stakingAccount = stakingAccounts[0];
 				}
 
