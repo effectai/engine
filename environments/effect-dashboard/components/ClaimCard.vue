@@ -20,7 +20,7 @@ const mint = new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT as string);
 const { migrationAccount, vaultAccount } = useDeriveMigrationAccounts({
     mint,
     foreignPublicKey: props.migrationAccount.foreignPublicKey,
-    programId: migrationProgram.programId,
+    programId: migrationProgram.value.programId,
 })
 
 const { data: balance } = useGetMigrationVaultBalance(props.migrationAccount)

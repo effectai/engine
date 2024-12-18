@@ -29,12 +29,15 @@ export function useStakingProgram() {
 	const { connection } = useGlobalState();
 	const { publicKey } = useWallet();
 	const { provider } = useAnchorProvider();
+	
 	const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
 
-	const stakeProgram = new anchor.Program(
-		EffectStakingIdl as Idl,
-		provider,
-	) as unknown as Program<EffectStaking>;
+	const stakeProgram = computed(() => {
+		return new anchor.Program(
+			EffectStakingIdl as Idl,
+			provider.value || undefined,
+		) as unknown as Program<EffectStaking>;
+	});
 
 	const { vestingProgram } = useVestingProgram();
 	const { rewardsProgram } = useRewardProgram();
@@ -62,18 +65,18 @@ export function useStakingProgram() {
 
 				const { stakingRewardAccount } = useDeriveStakingRewardAccount({
 					stakingAccount: stakeAccount.publicKey,
-					programId: rewardsProgram.programId,
+					programId: rewardsProgram.value.programId,
 				});
 
 				// create a new pubkey for unstake vestment
 				const vestmentAccount = Keypair.generate();
 
-				return await stakeProgram.methods
+				return await stakeProgram.value.methods
 					.unstake(new anchor.BN(amount * 1000000))
 					.preInstructions([
 						...((await connection.getAccountInfo(stakingRewardAccount))
 							? [
-									await rewardsProgram.methods
+									await rewardsProgram.value.methods
 										.close()
 										.accounts({
 											stakeAccount: stakeAccount.publicKey,
@@ -89,7 +92,7 @@ export function useStakingProgram() {
 						mint,
 					})
 					.postInstructions([
-						await rewardsProgram.methods
+						await rewardsProgram.value.methods
 							.enter()
 							.accounts({
 								mint,
@@ -126,17 +129,17 @@ export function useStakingProgram() {
 
 				const { stakingRewardAccount } = useDeriveStakingRewardAccount({
 					stakingAccount: stakeAccount.publicKey,
-					programId: rewardsProgram.programId,
+					programId: rewardsProgram.value.programId,
 				});
 
 				try {
-					return await stakeProgram.methods
+					return await stakeProgram.value.methods
 						.topup(new anchor.BN(amount * 1000000))
 						.preInstructions([
 							...((await connection.getAccountInfo(stakingRewardAccount))
 								? []
 								: [
-										await rewardsProgram.methods
+										await rewardsProgram.value.methods
 											.enter()
 											.accounts({
 												mint,
@@ -151,7 +154,7 @@ export function useStakingProgram() {
 						})
 						.postInstructions([
 							...(
-								await rewardsProgram.methods
+								await rewardsProgram.value.methods
 									.sync()
 									.accounts({
 										stakeAccount: stakeAccount.publicKey,
@@ -196,7 +199,7 @@ export function useStakingProgram() {
 
 				const stakeAccount = Keypair.generate();
 
-				await stakeProgram.methods
+				await stakeProgram.value.methods
 					.stake(
 						new anchor.BN(amount * 1000000),
 						new anchor.BN(30 * SECONDS_PER_DAY),
@@ -208,7 +211,7 @@ export function useStakingProgram() {
 					})
 					.postInstructions([
 						...(
-							await rewardsProgram.methods
+							await rewardsProgram.value.methods
 								.enter()
 								.accounts({
 									mint,
@@ -231,7 +234,7 @@ export function useStakingProgram() {
 					throw new Error("Could not get public key");
 				}
 
-				const stakingAccounts = await stakeProgram.account.stakeAccount.all([
+				const stakingAccounts = await stakeProgram.value.account.stakeAccount.all([
 					{
 						memcmp: {
 							offset: 8 + 8,

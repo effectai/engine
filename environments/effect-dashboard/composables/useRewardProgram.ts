@@ -11,12 +11,14 @@ import { PublicKey } from "@solana/web3.js";
 
 export const useRewardProgram = () => {
 	const { provider } = useAnchorProvider();
-    const {publicKey} = useWallet();
+    const { publicKey } = useWallet();
 
-	const rewardsProgram = new anchor.Program(
-		EffectRewardsIdl as Idl,
-		provider,
-	) as unknown as Program<EffectRewards>;
+	const rewardsProgram = computed(() => {
+		return new anchor.Program(
+			EffectRewardsIdl as Idl,
+			provider.value || undefined
+		) as unknown as Program<EffectRewards>;
+	});
 
     const appConfig = useRuntimeConfig();
     const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
@@ -30,12 +32,12 @@ export const useRewardProgram = () => {
 				}
 
 				const { reflectionAccount } = useDeriveRewardAccounts({
-					authority: publicKey.value,
-					programId: rewardsProgram.programId,
+					mint,
+					programId: rewardsProgram.value.programId,
 				});
 
 				const account =
-					await rewardsProgram.account.reflectionAccount.fetch(
+					await rewardsProgram.value.account.reflectionAccount.fetch(
 						reflectionAccount,
 					);
 
@@ -55,14 +57,14 @@ export const useRewardProgram = () => {
 					throw new Error("Could not get public key");
 				}
 
-				const { reflectionAccount, rewardAccount } = useDeriveRewardAccounts({
-					authority: publicKey.value,
-					programId: rewardsProgram.programId,
+				const { reflectionAccount } = useDeriveRewardAccounts({
+					mint,
+					programId: rewardsProgram.value.programId,
 				});
 
 				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
-				return await rewardsProgram.methods
+				return await rewardsProgram.value.methods
 					.claim()
 					.preInstructions([
 						...((await connection.getAccountInfo(ata))
@@ -76,10 +78,8 @@ export const useRewardProgram = () => {
 								]),
 					])
 					.accounts({
-						stake: stakeAccount.publicKey,
-						reward: rewardAccount,
-						reflection: reflectionAccount,
-						user: ata,
+						stakeAccount: stakeAccount.publicKey,
+						recipientTokenAccount: ata,
 					})
 					.rpc();
 			},
@@ -95,12 +95,12 @@ export const useRewardProgram = () => {
 				}
 
 				const { rewardAccount } = useDeriveRewardAccounts({
-					authority: publicKey.value,
-					programId: rewardsProgram.programId,
+					mint,
+					programId: rewardsProgram.value.programId,
 				});
 
 				const account =
-					await rewardsProgram.account.rewardAccount.fetch(rewardAccount);
+					await rewardsProgram.value.account.rewardAccount.fetch(rewardAccount);
 
 				return account;
 			},

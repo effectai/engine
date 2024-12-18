@@ -38,10 +38,12 @@ export const useMigrationProgram = () => {
 	const { rewardsProgram } = useStakingProgram();
 	const { stakeProgram } = useStakingProgram();
 
-	const migrationProgram = new anchor.Program(
-		EffectMigrationIdl as Idl,
-		provider,
-	) as unknown as Program<EffectMigration>;
+	const migrationProgram = computed(() => {
+		return new anchor.Program(
+			EffectMigrationIdl as Idl,
+			provider.value || undefined,
+		) as unknown as Program<EffectMigration>;
+	});
 
 	const useGetMigrationVaultBalance = (migrationAccount: MigrationClaimAccount['account']) => {
 		return useQuery({
@@ -54,7 +56,7 @@ export const useMigrationProgram = () => {
 				const {vaultAccount} = useDeriveMigrationAccounts({
 					mint: new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT),
 					foreignPublicKey: migrationAccount.foreignPublicKey,
-					programId: migrationProgram.programId,
+					programId: migrationProgram.value.programId,
 				});
 
 				return await connection.getTokenAccountBalance(
@@ -85,10 +87,10 @@ export const useMigrationProgram = () => {
 				const { migrationAccount, vaultAccount } = useDeriveMigrationAccounts({
 					mint: new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT),
 					foreignPublicKey: foreignPublicKey.value,
-					programId: migrationProgram.programId,
+					programId: migrationProgram.value.programId,
 				});
 
-				return await migrationProgram.account.migrationAccount.fetchNullable(
+				return await migrationProgram.value.account.migrationAccount.fetchNullable(
 					migrationAccount,
 				);
 			},
@@ -107,14 +109,6 @@ export const useMigrationProgram = () => {
 				signature: Uint8Array;
 				message: Uint8Array;
 			}) => {
-
-				const { provider } = useAnchorProvider();
-
-				const migrationProgram = new anchor.Program(
-					EffectMigrationIdl as Idl,
-					provider,
-				) as unknown as Program<EffectMigration>;
-
 				const { publicKey } = useWallet();
 
 				if (!publicKey.value) {
@@ -128,7 +122,7 @@ export const useMigrationProgram = () => {
 				let stakingAccount: Keypair | StakingAccount | null = null;
 
 				// check if user has an existing stakingAccount
-				const stakingAccounts = await stakeProgram.account.stakeAccount.all([
+				const stakingAccounts = await stakeProgram.value.account.stakeAccount.all([
 					{
 						memcmp: {
 							offset: 8 + 8,
@@ -147,10 +141,10 @@ export const useMigrationProgram = () => {
 
 				const { stakingRewardAccount } = useDeriveStakingRewardAccount({
 					stakingAccount: stakingAccount.publicKey,
-					programId: rewardsProgram.programId,
+					programId: rewardsProgram.value.programId,
 				});
 
-				return await migrationProgram.methods
+				return await migrationProgram.value.methods
 					.claimStake(
 						Buffer.from(signature),
 						Buffer.from(message),
@@ -168,7 +162,7 @@ export const useMigrationProgram = () => {
 								]),
 						...(stakingAccounts.length === 0
 							? [
-									await stakeProgram.methods
+									await stakeProgram.value.methods
 										.stake(
 											new anchor.BN(0),
 											new anchor.BN(30 * SECONDS_PER_DAY),
@@ -187,7 +181,7 @@ export const useMigrationProgram = () => {
 						...((await connection.getAccountInfo(stakingRewardAccount))
 							? []
 							: [
-									await rewardsProgram.methods
+									await rewardsProgram.value.methods
 										.enter()
 										.accounts({
 											mint,
