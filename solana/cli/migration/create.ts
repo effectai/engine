@@ -41,7 +41,6 @@ export const createMigrationClaimCommand: CommandModule<
 				type: "string",
 				description: "The public key of the account to be migrated",
 			})
-
 			.option("amount", {
 				type: "number",
 				requiresArg: true,

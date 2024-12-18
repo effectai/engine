@@ -316,7 +316,7 @@ describe("Migration Program", async () => {
 			).rejects.toThrowError('could not find account');
 
 			// check if migration account is closed
-			await expect(provider.connection.getAccountInfo(migrationAccount)).resolves.toBeNull;
+			expect(provider.connection.getAccountInfo(migrationAccount)).resolves.toBeNull;
 		});
 
 		it.concurrent(
@@ -340,14 +340,6 @@ describe("Migration Program", async () => {
 					message: originalMessage,
 				});
 
-				const { stakeAccount } = await createStake({
-					amount: 0,
-					program: stakeProgram,
-					mint,
-					payer,
-					payerTokens: ata,
-				});
-
 				const { vaultAccount: claimVaultAccount } =
 					await createMigrationClaim({
 						mint,
@@ -358,16 +350,10 @@ describe("Migration Program", async () => {
 						program,
 					});
 
-				const { vaultAccount: stakeVaultAccount } = useDeriveStakeAccounts({
-					stakingAccount: stakeAccount.publicKey,
-					programId: stakeProgram.programId,
-				});
-
-				await claimMigration({
+				const {stakeAccount, migrationAccount, stakeVaultAccount} = await claimMigration({
 					migrationProgram: program,
 					stakeProgram,
 					ata,
-					stake: stakeAccount,
 					mint,
 					payer,
 					foreignPublicKey: toBytes(ethPublicKey),

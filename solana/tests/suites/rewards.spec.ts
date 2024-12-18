@@ -1,17 +1,13 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { useAnchor, useStakeTestHelpers } from "../helpers.js";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
 import type { EffectRewards } from "../../target/types/effect_rewards.js";
 import { mintToAccount, setup } from "../../utils/spl.js";
 import {
-	useDeriveRewardAccounts,
-	useDeriveStakeAccounts,
-	useDeriveStakingRewardAccount,
+	useDeriveRewardAccounts, useDeriveStakingRewardAccount
 } from "@effectai/utils";
-import { createVesting } from "../../utils/vesting.js";
 import type { EffectVesting } from "../../target/types/effect_vesting.js";
-import { PublicKey } from "@solana/web3.js";
 import type { EffectStaking } from "../../target/types/effect_staking.js";
 const SECONDS_PER_DAY = 24 * 60 * 60;
 

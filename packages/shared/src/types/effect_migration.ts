@@ -43,20 +43,7 @@ export type EffectMigration = {
         },
         {
           "name": "migrationAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "mint"
-              },
-              {
-                "kind": "account",
-                "path": "migration_account.foreign_public_key",
-                "account": "migrationAccount"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "migrationVaultTokenAccount",
@@ -92,6 +79,7 @@ export type EffectMigration = {
         },
         {
           "name": "rentReceiver",
+          "writable": true,
           "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
         },
         {

@@ -598,31 +598,36 @@ export type EffectRewards = {
   "errors": [
     {
       "code": 6000,
+      "name": "reflectionInvalid",
+      "msg": "This account has an invalid reflection."
+    },
+    {
+      "code": 6001,
       "name": "invalidVault",
       "msg": "This account has an invalid vault."
     },
     {
-      "code": 6001,
+      "code": 6002,
       "name": "unauthorized",
       "msg": "This account is not authorized to perform this action."
     },
     {
-      "code": 6002,
+      "code": 6003,
       "name": "alreadyUnstaked",
       "msg": "This stake is already unstaked."
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "decreased",
       "msg": "This stake is not allowed to decrease."
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "noClaimableRewards",
       "msg": "No Claimable Rewards"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "invalidMint",
       "msg": "Invalid Mint"
     }
@@ -636,10 +641,6 @@ export type EffectRewards = {
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
           {
             "name": "rate",
             "type": "u128"

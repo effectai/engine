@@ -592,31 +592,36 @@
   "errors": [
     {
       "code": 6000,
+      "name": "ReflectionInvalid",
+      "msg": "This account has an invalid reflection."
+    },
+    {
+      "code": 6001,
       "name": "InvalidVault",
       "msg": "This account has an invalid vault."
     },
     {
-      "code": 6001,
+      "code": 6002,
       "name": "Unauthorized",
       "msg": "This account is not authorized to perform this action."
     },
     {
-      "code": 6002,
+      "code": 6003,
       "name": "AlreadyUnstaked",
       "msg": "This stake is already unstaked."
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "Decreased",
       "msg": "This stake is not allowed to decrease."
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "NoClaimableRewards",
       "msg": "No Claimable Rewards"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "InvalidMint",
       "msg": "Invalid Mint"
     }
@@ -630,10 +635,6 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
           {
             "name": "rate",
             "type": "u128"

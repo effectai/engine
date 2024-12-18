@@ -144,11 +144,16 @@ export const useMigrationProgram = () => {
 					programId: rewardsProgram.value.programId,
 				});
 
+				const {migrationAccount} = useDeriveMigrationAccounts({
+					mint,
+					foreignPublicKey,
+					programId: migrationProgram.value.programId,
+				})
+
 				return await migrationProgram.value.methods
 					.claimStake(
 						Buffer.from(signature),
 						Buffer.from(message),
-						Buffer.from(foreignPublicKey),
 					)
 					.preInstructions([
 						...((await connection.getAccountInfo(ata))
@@ -192,6 +197,7 @@ export const useMigrationProgram = () => {
 								]),
 					])
 					.accounts({
+						migrationAccount,
 						mint,
 						recipientTokenAccount: ata,
 						stakeAccount: stakingAccount.publicKey,

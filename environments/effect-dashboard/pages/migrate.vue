@@ -204,6 +204,7 @@ const authorize = async () => {
     }
 }
 
+const toast = useToast()
 const { mutateAsync: claimTokens } = useClaim()
 const claimHandler = async () => {
     if (!signature.value || !computedForeignPublicKey.value || !message.value) {
@@ -211,8 +212,14 @@ const claimHandler = async () => {
         return
     }
 
-    const transactionId = await claimTokens({ signature: signature.value, foreignPublicKey: computedForeignPublicKey.value, message: message.value })
-    txHash.value = transactionId;
+    try {
+        const transactionId = await claimTokens({ signature: signature.value, foreignPublicKey: computedForeignPublicKey.value, message: message.value })
+        txHash.value = transactionId;
+        toast.add({ title: 'Success', description: 'Claimed tokens successfully', color: 'green' })
+    }catch(e){
+        console.log(e)
+        toast.add({ title: 'Error', description: "Something went wrong", color: 'red' })
+    }
 }
 
 const steps = ref([

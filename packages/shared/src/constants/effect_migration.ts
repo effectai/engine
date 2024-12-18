@@ -37,20 +37,7 @@ export const effect_migration = {
         },
         {
           "name": "migration_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "mint"
-              },
-              {
-                "kind": "account",
-                "path": "migration_account.foreign_public_key",
-                "account": "MigrationAccount"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "migration_vault_token_account",
@@ -86,6 +73,7 @@ export const effect_migration = {
         },
         {
           "name": "rent_receiver",
+          "writable": true,
           "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
         },
         {

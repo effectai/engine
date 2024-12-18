@@ -29,9 +29,7 @@ pub struct ClaimStake<'info> {
 
     #[account(
         mut,
-	close =  rent_receiver,
-        seeds = [mint.key().as_ref(), migration_account.foreign_public_key.as_slice()],
-        bump
+	    close = rent_receiver,
     )]
     pub migration_account: Account<'info, MigrationAccount>,
 
@@ -57,7 +55,7 @@ pub struct ClaimStake<'info> {
     )]
     pub stake_vault_token_account: Account<'info, TokenAccount>,
 
-    #[account(address = AUTHORITY)]
+    #[account(mut, address = AUTHORITY)]
     pub rent_receiver: SystemAccount<'info>,
 
     pub rent: Sysvar<'info, Rent>,
@@ -72,7 +70,7 @@ pub fn handler(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>) -
     // check if we are dealing with an ethereum or eos account
     // ethereum accounts always have a public key length of 20 bytes, eos accounts have 32 bytes
     let is_eth = ctx.accounts.migration_account.foreign_public_key.len() == 20;
-    
+
     // verify the claim and recover the public key
     verify_claim(
         signature,
@@ -105,6 +103,7 @@ pub fn verify_claim(signature: Vec<u8>, message: Vec<u8>, is_eth: bool, payer: P
     if recovered_pubkey != expected_pubkey {
         return Err(MigrationError::PublicKeyMismatch.into());
     }
+
     Ok(recovered_pubkey)
 }
 
