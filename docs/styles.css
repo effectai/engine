@@ -7,7 +7,6 @@
   @tailwind utilities;
 }
 
- 
 :root {
   --vocs-fontFamily_default: 'Inter', sans-serif;
   --vocs-color_background: white;
@@ -22,11 +21,35 @@
     font-family: 'Inter', sans-serif !important;
 }
 
-.vocs_HomePage_title {
-    font-family: 'Inter', sans-serif !important;
+.effect-button {
+  font-size:20px;
+  border-radius: 999px;
+  padding: 10px 25px;
+  color: white;
+  border: 1px solid #1C1A1F;
 }
 
+.vocs_CodeGroup {
+  height:100%;
+}
 
+.effect-button--outlined {
+  color:black;
+  border: 1px solid #1C1A1F;
+}
+
+.effect-button--primary {
+  background-color: #1C1A1F;
+  color: white;
+  border: 1px solid #1C1A1F;
+}
+
+.vocs_HomePage_title {
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 400 !important;
+    color: #1C1A1F !important;
+    font-size:6rem;
+}
 
 #splash-container {
   background: url('/preview-bg.png') no-repeat center center;
