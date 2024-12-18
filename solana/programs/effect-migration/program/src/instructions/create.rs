@@ -12,9 +12,9 @@ pub struct Create<'info> {
     #[account(
         init,
         payer = authority,
-        space = 8 + 4 + 32 + 8,
+        space = 8 + 4  + foreign_public_key.len() + 8,
         seeds = [mint.key().as_ref(), &foreign_public_key.as_slice() ],
-        bump 
+        bump
     )]
     pub migration_account: Account<'info, MigrationAccount>,
 
