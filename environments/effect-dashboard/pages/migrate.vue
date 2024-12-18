@@ -1,5 +1,5 @@
 <template>
-    <div class="text-center max-w-sm mx-auto" v-if="config">
+    <div class="text-center max-w-sm md:max-w-md lg:max-w-lg mx-auto scroll-container" v-if="config">
         <Stepper :currentStep="currentStep" :items="steps">
             <template #authenticate="{ isCompleted }">
                 <div>
@@ -220,12 +220,11 @@ const claimHandler = async () => {
         const transactionId = await claimTokens({ signature: signature.value, foreignPublicKey: computedForeignPublicKey.value, message: message.value })
         txHash.value = transactionId;
         toast.add({ title: 'Success', description: 'Claimed tokens successfully', color: 'green' })
-    }catch(e){
+    } catch (e) {
         console.log(e)
         toast.add({ title: 'Error', description: "Something went wrong", color: 'red' })
     }
 }
-
 const steps = ref([
     {
         label: 'Authenticate',
@@ -267,4 +266,6 @@ const currentStep = computed(() => {
 
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+
+</style>

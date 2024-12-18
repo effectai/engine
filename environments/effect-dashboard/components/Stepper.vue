@@ -1,25 +1,31 @@
 <template>
-    <ol class="space-y-64">
-        <li class="relative flex-1 after:content-[''] after:-z-10 after:w-0.5 after:h-[999%] after:bg-gray-600 after:inline-block after:absolute after:-bottom-11 after:left-4 lg:after:left-5"
+    <ol class="pb-24 mt-24">
+        <li :id="`step-${key}`"
+            class=" relative flex-1 after:content-[''] after:-z-10 after:w-0.5 after:h-[999%] after:bg-gray-100 after:inline-block after:absolute after:-bottom-11 after:left-4 lg:after:left-5"
             v-for="(item, key) in items">
-            <span
-                class="w-8 h-8 aspect-square bg-gray-600 border-2 border-transparent rounded-full flex justify-center items-center mr-3 text-sm text-white lg:w-10 lg:h-10">
+            <span :class="{ 'is-active': isActive(key) && !item.isCompleted }"
+                class="step ml-[1px] w-8 h-8 aspect-square bg-black border-2 border-transparent rounded-full flex justify-center items-center mr-3 text-sm text-white lg:w-10 lg:h-10">
                 <div v-if="item.isCompleted" class="flex justify-center items-center">
                     <UIcon name="lucide:check" class="w-6 h-6" />
                 </div>
                 <div v-else>
-                {{ key + 1 }}</div>
+                    {{ key + 1 }}</div>
             </span>
 
-            <UCard class="relative block ml-10 h-full">
-                <div v-if="!isActive(key)" class="absolute w-full h-full black z-10 backdrop-blur-[3px] left-[0px] top-[0px] "></div>
-                <h3 class="text-base mb-2 title"> {{ item.label }}</h3>
-                <UDivider class="my-5"/>
+            <div class="relative ml-10 lg:ml-12 justify-center flex items-center flex-col text-gray-600 h-[500px]
+            ">
+                <div v-if="!isActive(key)"
+                    class="absolute w-full h-full black z-10 backdrop-blur-[3px] left-[0px] top-[0px] ">
+                </div>
 
-                <p>
-                    <slot :isCompleted="item.isCompleted" :name="item.slot"></slot>
-                </p>
-            </UCard>
+                <div class="flex flex-col w-full justify-center">
+                    <h2 class="mb-2 title text-black dark:text-white"> {{ item.label }}</h2>
+                    <UDivider class="my-5" />
+                    <p>
+                        <slot :isCompleted="item.isCompleted" :name="item.slot"></slot>
+                    </p>
+                </div>
+            </div>
         </li>
     </ol>
 
@@ -42,10 +48,53 @@ const isActive = (key: number) => {
 </script>
 
 <style lang="scss" scoped>
-
 .blurry-text {
     filter: blur(0.5px);
     color: transparent;
-    text-shadow: 0 0 5px rgba(0,0,0,0.5);
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.step.is-active {
+    position: relative;
+    overflow: hidden;
+    border-radius: 9999%;
+    border: none;
+    color: #e0ffff;
+    font-weight: 500;
+    z-index: 1;
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0px 9px;
+        background: rgb(148, 145, 145);
+        transition: 500ms;
+        animation: rotate 4s linear infinite;
+        z-index: -1;
+    }
+    &::after {
+        content: '';
+        position: absolute;
+        inset: 3px;
+        border-radius: 50%;
+        background: #22232e;
+        z-index: -1;
+    }
+}
+
+@keyframes rotate {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.border-animated {
+    transition: border-color 0.5s;
+    animation: border-glow 1.5s infinite;
+    border-width: 2px;
 }
 </style>
