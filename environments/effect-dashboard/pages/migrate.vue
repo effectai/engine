@@ -51,7 +51,7 @@
                         </div>
                     </div>
 
-                    <div v-else class="flex justify-between mt-5">
+                    <div v-else class="flex justify-between mt-5 items-center gap-1">
                         <b>Chosen address:</b>
                         <BlockchainAddress :address="destinationAddress" /> | <a href="#" @click="logout">Change</a>
                     </div>
@@ -71,7 +71,10 @@
             </template>
             <template #claim>
                 <div>
-                    <div v-if="$device.isMobileOrTablet">
+                    <div v-if="!migrationAccount">
+                        <p>No Active claims found for this account.</p>
+                    </div>
+                    <div v-else-if="$device.isMobileOrTablet">
                         It seems you've successfully authenticated and authorized using a mobile wallet. To claim your
                         tokens, please open the link below on a desktop device:
                         <a :href="authorizeUrl">Authorize</a>
@@ -156,7 +159,7 @@ const selectAddress = () => {
     }
 }
 
-const { useGetMigrationAccount } = useMigrationProgram();
+const { useGetMigrationAccount, useClaim } = useMigrationProgram();
 const { data: migrationAccount } = useGetMigrationAccount(computedForeignPublicKey)
 
 const txHash: Ref<string | null> = ref(null)
@@ -201,9 +204,7 @@ const authorize = async () => {
     }
 }
 
-const { useClaim } = useMigrationProgram()
 const { mutateAsync: claimTokens } = useClaim()
-
 const claimHandler = async () => {
     if (!signature.value || !computedForeignPublicKey.value || !message.value) {
         console.warn('missing signature, foreignPublicKey or message')
@@ -237,7 +238,6 @@ const steps = ref([
     },
 ])
 
-const currentFocus = ref(0)
 const isReadyToClaim = computed(() => message.value && signature.value && computedForeignPublicKey.value)
 const currentStep = computed(() => {
     if (isReadyToClaim.value) {

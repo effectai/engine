@@ -107,6 +107,14 @@ export const useMigrationProgram = () => {
 				signature: Uint8Array;
 				message: Uint8Array;
 			}) => {
+
+				const { provider } = useAnchorProvider();
+
+				const migrationProgram = new anchor.Program(
+					EffectMigrationIdl as Idl,
+					provider,
+				) as unknown as Program<EffectMigration>;
+
 				const { publicKey } = useWallet();
 
 				if (!publicKey.value) {
