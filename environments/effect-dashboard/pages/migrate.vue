@@ -77,11 +77,10 @@
                         <a :href="authorizeUrl">Authorize</a>
                     </div>
                     <div v-else class="text-center flex justify-center my-5">
-                        <div v-if="!address">
+                        <div v-if="!solanaWalletAddress">
                             <WalletMultiButton />
                         </div>
                         <div v-else>
-
                             <div id="confetti-container" class="max-w-[50px] mx-auto w-full h-1">
                                 <ConfettiExplosion v-if="txHash" :particleCount="200" :force="0.3" />
                             </div>
