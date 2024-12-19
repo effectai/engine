@@ -1,6 +1,6 @@
 <template>
     <div class="" id="latest">
-      <div class="columns is-multiline">
+      <div class="columns is-multiline is-flex is-flex-direction-column">
         <div
           class="column is-full-mobile"
           v-for="(item, i) in items"
