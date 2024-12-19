@@ -1,7 +1,7 @@
 <template>
     <div v-if="loaded">
         <section class="is-size-3 has-text-centered">
-            <h3>Countdown to Snapshot!</h3>
+            <h3>{{ title }}</h3>
         </section>
         <div class="columns is-size-1 is-justify-content-center has-text-centered">
             <div class="mx-2">
@@ -57,7 +57,7 @@
 
 <script>
 export default {
-    props: ["year", "month", "day", "hour", "minute", "second"],
+    props: ["title", "year", "month", "day", "hour", "minute", "second"],
     data: () => ({
         showDays: 0,
         showHours: 0,

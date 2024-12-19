@@ -64,7 +64,7 @@
     <div class="is-flex is-justify-content-center is-flex-direction-column my-6">
         <div class="">
             <Countdown
-                class=""
+                title="Countdown to Snapshot!"
                 :year="2025"
                 :month="0" 
                 :day="1"
