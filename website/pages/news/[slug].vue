@@ -17,7 +17,7 @@
                     /> -->
                 </div>
                 <span class="is-size-6 mt-5 is-block has-text-weight-light has-text-darkgrey">
-                  Posted on {{ data.created }}
+                  Posted on {{ data.created }} by {{ data.author }}
                 </span>
               </div>
             </div>
@@ -89,7 +89,8 @@ useSeoMeta({
   }
 }
 
-.blog-outer-padding > h2 {
+.content .blog-outer-padding > h2 {
+  margin-bottom:0;
   padding: 2.5rem 0rem;
 
   @include mixins.from(1200px) {
@@ -97,7 +98,15 @@ useSeoMeta({
     max-width: 65%;
   }
 }
-.blog-outer-padding > p {
+
+.content .blog-outer-padding > blockquote{
+  @include mixins.from(1200px) {
+    padding: 1rem 8rem;
+    text-align: justify;
+  }
+}
+
+.blog-outer-padding > p, .blog-outer-padding > ul {
   padding: 0rem 0rem;
   @include mixins.from(1200px) {
     padding: 0rem 8rem;
