@@ -24,17 +24,27 @@
                 <div class="is-size-5">seconds</div>
             </div>
         </div>
-        <div class="is-flex is-justify-content-center mt-6">
-            <div>
+        <div>
+            <div class="is-flex is-justify-content-center mt-6">
                 <nuxt-link 
                     v-if="!expired"
-                    class="is-flex is-justify-content-center" 
+                    class="mx-2" 
                     to="https://pancakeswap.finance/?inputCurrency=BNB&outputCurrency=0xC51Ef828319b131B595b7ec4B28210eCf4d05aD0" 
                     target="_blank"
                     exact-active-class="is-active"
                 >
                     <button class="button is-black is-rounded is-outlined is-flex is-medium"
                         style="gap:10px">Buy EFX (PancakeSwap)
+                    </button>
+                </nuxt-link>
+                <nuxt-link 
+                    v-if="!expired"
+                    class="mx-2" 
+                    to="./news/solana-announcement" 
+                    exact-active-class="is-active"
+                >
+                    <button class="button is-black is-rounded is-outlined is-flex is-medium"
+                        style="gap:10px">Learn More
                         <span class="icon">
                             <i class="fas fa-arrow-right"></i>
                         </span>

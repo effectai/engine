@@ -61,7 +61,7 @@
         </HeroSection>
     </div>
 
-    <div class="is-flex is-justify-content-center my-6">
+    <div class="is-flex is-justify-content-center is-flex-direction-column my-6">
         <div class="">
             <Countdown
                 class=""
