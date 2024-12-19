@@ -19,14 +19,11 @@ published: true
 
 ## Effect AI Pre-Snapshot & Migration Checklist: Preparing for the Move to Solana
 
-If you’re an EFX token holder or part of the Effect AI community, now is the time to get ready. Follow this step-by-step pre-migration checklist to ensure a smooth transition.
-
-To ensure that your EFX tokens make it through the snapshot migration process, follow this comprehensive checklist. The **snapshot for token migration** will occur on **1 January at 12:00 PM UTC** for all EFX and NFX tokens, so it’s important to prepare now.
-
+Hello everyone! My name is Rochelle T., and as the community manager of Effect AI i've written up a checklist of the do's and dont's of the upcoming migration! The **snapshot for token migration** will occur on **1 January at 12:00 PM UTC** for all EFX and NFX tokens, so now is the time to get ready. Follow this step-by-step pre-migration checklist to make sure you are ready for the big day!
 
 ## Step 1: Prepare for the Snapshot
 
-    The snapshot is a critical step in the migration process. Here’s what you need to do:
+Here are the most important rules to follow for the snapshot:
 
 - **Keep Your EFX and NFX Tokens on EOS and BSC Chains:**  
 Ensure your EFX/NFX tokens are stored in a wallet you control on either EOS or BSC networks.
@@ -37,11 +34,8 @@ Tokens held in an exchange wallet or liquidity pool during the snapshot will not
 - **Double-Check Your Wallet Control:**  
 Make sure you have access to the private keys or recovery phrases for your wallet to retain control of your tokens.
 
-> ⚠️ We do not recommend any trading or token movement after the snapshot date. 
-
 ## Step 2: Set Up a Wallet on Solana
-
-    A few days after the snapshot, the new EFFECT tokens will be claimable on Solana. To prepare:
+  On January 5th, the new EFFECT tokens will be claimable on Solana. To prepare:
 
 - **Choose a Solana Wallet:**  
 We recommend using <a href="https://phantom.com/" target="_blank">**Phantom**</a> or <a href="https://backpack.app/" target="_blank">**Backpack**</a>, as they are user-friendly and widely supported in the Solana ecosystem.
@@ -51,7 +45,7 @@ Download your wallet from its official source, set a strong password, and back u
 
 ## Step 3: Wait for Official Announcements on 5 January
 
-    After the snapshot, Effect AI will release details about the claim process. Here’s what to watch for:
+After the snapshot, Effect AI will release details about the claim process. Here’s what to watch for:
 
 - **Claim Portal:**  
 The official claim portal for swapping your old EFX tokens to the new EFFECT tokens on Solana will be released by Effect AI on 5 January, 2025, on our OFFICIAL WEBSITE ONLY.
@@ -61,7 +55,6 @@ The new token’s contract address will be announced via Effect AI’s official 
 
 > ⚠️ Do not attempt to swap your tokens or interact with any claim portal until the official announcements are made.
 
----
 ---
 
 # Frequently Asked Questions
@@ -104,6 +97,9 @@ Yes, as long as you have access to your wallet, they are safe. We recommend <a h
 
 ## 7. What is the contract address of $EFX?
 
+
+> Note: We do not advise to purchase any EFX or NFX **after** the snapshot on **1 January, 2025**. If you are looking to buy $EFX prior to the snapshot, it can be found here: 
+
 **BSC Token Contract:** [0xc51ef828319b131b595b7ec4b28210ecf4d05ad0](https://bscscan.com/token/0xC51Ef828319b131B595b7ec4B28210eCf4d05aD0)
 
 **EOS Token Contract:** [effecttokens](https://www.bloks.io/account/effecttokens)
@@ -118,14 +114,12 @@ Yes, as long as you have access to your wallet, they are safe. We recommend <a h
 
 **$EFX on** <a href="https://coinmarketcap.com/currencies/effect-ai/" target="_blank">CoinMarketCap</a>
 
-> Note: We do not advise to purchase any EFX or NFX after the snapshot on 1 January, 2025. If you are looking to buy $EFX prior to the snapshot, it can be found here: 
-
 ---
 ---
 
-# Beware of Scammers
+## Beware of Scammers
 
-    As with any blockchain migration, scammers will try to exploit users during the process. Follow these safety tips:
+As with any blockchain migration, scammers will try to exploit users during the process. Follow these safety tips:
 
 - **NEVER Share Private Keys or Recovery Phrases:** 
 No legitimate migration process will require you to share sensitive wallet information.
@@ -146,4 +140,4 @@ If you encounter suspicious activity or have questions, report them to Effect AI
 
 ---
 
-With the migration to Solana, Effect AI is entering an exciting new phase. By following this checklist and staying informed, you can make sure your tokens are safe and ready for the next chapter of the Effect Network. Keep an eye out for updates, and let’s move forward together!
+With the migration to Solana on the horizon, we are entering an exciting new phase with Effect AI. As always, Keep an eye out for updates, and let’s move forward together! See you on Solana!
