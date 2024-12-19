@@ -1,9 +1,9 @@
 <template>
-    <div v-if="loaded">
-        <section class="is-size-3 has-text-centered">
+    <div v-if="loaded" class="">
+        <section class="is-size-3 has-text-centered my-5">
             <h3>{{ title }}</h3>
         </section>
-        <div class="columns is-size-1 is-justify-content-center has-text-centered">
+        <div class="columns is-size-2 is-justify-content-center has-text-centered">
             <div class="mx-2">
                 {{ showDays }}
                 <div class="is-size-5">days</div>
@@ -43,7 +43,7 @@
                     to="./news/solana-announcement" 
                     exact-active-class="is-active"
                 >
-                    <button class="button is-black is-rounded is-outlined is-flex is-medium"
+                    <button class="button is-black is-rounded is-flex is-medium"
                         style="gap:10px">Learn More
                         <span class="icon">
                             <i class="fas fa-arrow-right"></i>
@@ -92,8 +92,8 @@ export default {
     },
     mounted() {
         this.startTimer();
-        this.checkMobile();  // Check if it's mobile
-        window.addEventListener('resize', this.checkMobile);  // Recheck on resize
+        this.checkMobile();  
+        window.addEventListener('resize', this.checkMobile); 
     },
     beforeDestroy() {
         clearInterval(this.timer);
@@ -103,7 +103,8 @@ export default {
         startTimer() {
             this.timer = setInterval(() => {
                 const now = new Date();
-                const difference = this.end - now;
+                const target = new Date("2025-01-01T00:00:00Z");
+                const difference = target - now;
 
                 if (difference <= 0) {
                     clearInterval(this.timer);

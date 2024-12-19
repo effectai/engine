@@ -61,7 +61,7 @@
         </HeroSection>
     </div>
 
-    <div class="is-flex is-justify-content-center is-flex-direction-column my-6">
+    <SimpleSection class="is-flex is-justify-content-center is-flex-direction-column">
         <div class="">
             <Countdown
                 title="Countdown to Snapshot!"
@@ -73,7 +73,7 @@
                 :second="0"
             ></Countdown>
         </div>
-    </div>
+    </SimpleSection>
     
 
     <SimpleSection class="has-text-light has-background-dark">
