@@ -18,10 +18,6 @@ export const useGlobalState = () => {
         throw new Error('EFFECT_SPL_TOKEN_MINT not set. Please set it in your .env file');
     }
     
-    if(!config.public.EFFECT_VAULT_INITIALIZER){
-        throw new Error('EFFECT_VAULT_INITIALIZER not set. Please set it in your .env file');
-    }
-
     const mint = new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT);
     
     const { publicKey } = useWallet();

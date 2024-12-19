@@ -1,19 +1,27 @@
 import { PublicKey } from "@solana/web3.js";
 
 export const useDeriveMigrationAccounts = ({
-	claimAccount,
+	mint,
+	foreignPublicKey,
 	programId
 }: {
-	claimAccount: PublicKey;
+	mint: PublicKey;
+	foreignPublicKey: Uint8Array;
 	programId: PublicKey;
 }) => {
 
+	const [migrationAccount] = PublicKey.findProgramAddressSync(
+		[mint.toBuffer(), foreignPublicKey],
+		programId,
+	);
+
 	const [vaultAccount] = PublicKey.findProgramAddressSync(
-		[claimAccount.toBuffer()],
+		[migrationAccount.toBuffer()],
 		programId,
 	)
 
     return {
+		migrationAccount,
 		vaultAccount
     };
 }
@@ -23,7 +31,6 @@ export const useDeriveVestingAccounts = ({
 	programId
 }: {
 	vestingAccount: PublicKey;
-	authority: PublicKey;
 	programId: PublicKey;
 }) => {
 
@@ -39,25 +46,49 @@ export const useDeriveVestingAccounts = ({
 };
 
 export const useDeriveRewardAccounts = ({
-	stakingAccount,
-	programId
+	programId,
+	mint
 }: {
+	mint: PublicKey;
 	programId: PublicKey;
-	stakingAccount: PublicKey;
 }) => {
-	const [rewardAccount] = PublicKey.findProgramAddressSync(
-		[stakingAccount.toBuffer()],
-		programId,
+	const [reflectionAccount] = PublicKey.findProgramAddressSync(
+		[Buffer.from("reflection"), mint.toBuffer()],
+		programId
 	);
 
-	const [reflectionAccount] = PublicKey.findProgramAddressSync(
-		[Buffer.from("reflection")],
+	const [intermediaryReflectionVaultAccount] = PublicKey.findProgramAddressSync(
+		[reflectionAccount.toBuffer()],
+		programId
+	);
+
+	const [reflectionVaultAccount] = PublicKey.findProgramAddressSync(
+		[intermediaryReflectionVaultAccount.toBuffer()],
 		programId
 	);
 
 	return {
-		rewardAccount,
-		reflectionAccount
+		reflectionAccount,
+		reflectionVaultAccount,
+		intermediaryReflectionVaultAccount
+	};
+}
+
+export const useDeriveStakingRewardAccount = ({
+	stakingAccount,
+	programId,
+}: {
+	stakingAccount: PublicKey;
+	programId: PublicKey;
+}) => {
+
+	const [stakingRewardAccount] = PublicKey.findProgramAddressSync(
+		[stakingAccount.toBuffer()],
+		programId
+	);
+
+	return {
+		stakingRewardAccount,
 	};
 }
 
@@ -69,12 +100,18 @@ export const useDeriveStakeAccounts = ({
 	programId: PublicKey;
 }) => {
 
+	const [rewardAccount] = PublicKey.findProgramAddressSync(
+		[stakingAccount.toBuffer()],
+		programId,
+	);
+
 	const [vaultAccount] = PublicKey.findProgramAddressSync(
 		[stakingAccount.toBuffer()],
 		programId,
 	);
 
 	return {
-		vaultAccount
+		vaultAccount,
+		rewardAccount,
 	};
 };

@@ -3,6 +3,7 @@ import { defineConfig } from "vocs";
 export default defineConfig({
 	rootDir: __dirname,
 	basePath: "/docs/",
+	logoUrl: { light: "/logo-dark.svg", dark: "/logo-light.svg" },
 	theme: {
 		variables: {
 			fontFamily: {
@@ -15,7 +16,7 @@ export default defineConfig({
 			text: "Introduction",
 			items: [
 				{
-					text: "Project overview",
+					text: "Overview",
 					link: "/introduction/project-overview",
 				},
 				{
@@ -31,51 +32,46 @@ export default defineConfig({
 		{
 			text: "Protocol",
 			items: [
+			
 				{
-					text: "Entities and Roles",
-					collapsed: true,
-					link: "/network-architecture/entities",
-					items: [
-						{
-							text: "Provider",
-							link: "/network-architecture/entities/provider-node",
-						},
-						{
-							text: "Manager",
-							link: "/network-architecture/entities/manager-node",
-						},
-						{
-							text: "Worker",
-							link: "/network-architecture/entities/worker-node",
-						},
-					],
+					text: "Core Concepts",
+					link: "/protocol/key-concepts",
 				},
 				{
-					text: "Task Lifecycle",
-					link: "/network-architecture/task-lifecycle",
+					text: "Architecture",
 					items: [
 						{
-							text: "Creation",
+							text: "Network Architecture",
 						},
 						{
-							text: "Delegation",
+							text: "Data Flow",
+							link: "/protocol/architecture/data-flow",
 						},
-						{
-							text: "Execution",
-						},
-						{
-							text: "Validation",
-						},
-						{
-							text: "Completion",
-						},
-					],
+					]
 				},
+				{
+					text: "Components",
+					items: [
+							{
+								text: "Provider Nodes",
+								link: "/protocol/components/provider-node",
+							},
+							{
+								text: "Manager Nodes",
+								link: "/protocol/components/manager-node",
+							},
+							{
+								text: "Worker Nodes",
+								link: "/protocol/components/worker-node",
+							},
+					]
+				},
+				
 				{
 					text: "Incentives",
 					items: [
 						{
-							text: "Universal Static Income",
+							text: "Static Income",
 						},
 						{
 							text: "Penalties",
@@ -85,28 +81,19 @@ export default defineConfig({
 						},
 						{
 							text: "Fees",
-						}
+						},
+					],
+				},
+				{
+					text: "Governance",
+					items: [
+						{
+							text: "Dispute Resolution",
+						},
+						{
+							text: "Voting",
+						},
 					]
-				},
-				{
-					text: "Consensus",
-				},
-			],
-		},
-		{
-			text: "Governance",
-			items: [
-				{
-					text: "DAO",
-					link: "/governance/dao",
-				},
-				{
-					text: "Dispute Resolution",
-					link: "/governance/governance-token",
-				},
-				{
-					text: "Voting",
-					link: "/governance/voting",
 				},
 			],
 		},
@@ -114,19 +101,16 @@ export default defineConfig({
 			text: "Setting up Nodes",
 			items: [
 				{
-					text: "Worker Node",
-					link: "/node-setup/worker-nodes",
+					text: "Provider Node",
 				},
 				{
 					text: "Manager Node",
-					link: "/node-setup/manager-nodes",
 				},
 				{
-					text: "Task Provider",
-					link: "/node-setup/task-providers",
+					text: "Worker Node",
 				},
 			],
 		},
 	],
-	title: "Effect AI: Docs",
+	title: "Effect AI",
 });

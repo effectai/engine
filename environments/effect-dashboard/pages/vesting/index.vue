@@ -1,5 +1,5 @@
 <template>
-    <UCard v-if="!address">
+     <UCard v-if="!address">
         <div class="text-center space-y-2">
             <h2 class="text-4xl">Hello There 👋</h2>
             <h1 class="text-2xl">Please connect your solana wallet.</h1>
@@ -16,7 +16,9 @@
             <p class="">No active vesting contracts found.</p>
         </div>
         <div v-else>
+            <div class="space-y-4">
             <VestingScheduleItem v-for="account in vestingAccounts" :vesting-account="account"/>
+            </div>
         </div>
     </UCard>
 </template>

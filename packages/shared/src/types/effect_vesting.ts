@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/effect_vesting.json`.
  */
 export type EffectVesting = {
-  "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe",
+  "address": "effectvesting",
   "metadata": {
     "name": "effectVesting",
     "version": "0.1.0",
@@ -30,8 +30,20 @@ export type EffectVesting = {
       ],
       "accounts": [
         {
-          "name": "vaultTokenAccount",
+          "name": "vestingAccount",
           "writable": true
+        },
+        {
+          "name": "vestingVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vestingAccount"
+              }
+            ]
+          }
         },
         {
           "name": "recipientTokenAccount",
@@ -39,10 +51,6 @@ export type EffectVesting = {
           "relations": [
             "vestingAccount"
           ]
-        },
-        {
-          "name": "vestingAccount",
-          "writable": true
         },
         {
           "name": "authority",
@@ -73,18 +81,23 @@ export type EffectVesting = {
       ],
       "accounts": [
         {
-          "name": "vaultTokenAccount",
-          "writable": true,
-          "relations": [
-            "vestingAccount"
-          ]
-        },
-        {
-          "name": "userTokenAccount",
+          "name": "vestingAccount",
           "writable": true
         },
         {
-          "name": "vestingAccount",
+          "name": "vestingVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vestingAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipientTokenAccount",
           "writable": true
         },
         {
@@ -124,7 +137,7 @@ export type EffectVesting = {
           "signer": true
         },
         {
-          "name": "vaultTokenAccount",
+          "name": "vestingVaultTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -173,57 +186,17 @@ export type EffectVesting = {
           "type": "bool"
         },
         {
-          "name": "isPubliclyClaimable",
-          "type": "bool"
-        },
-        {
           "name": "tag",
           "type": {
             "option": {
               "array": [
                 "u8",
-                8
+                1
               ]
             }
           }
         }
       ]
-    },
-    {
-      "name": "updateAuthority",
-      "discriminator": [
-        32,
-        46,
-        64,
-        28,
-        149,
-        75,
-        243,
-        88
-      ],
-      "accounts": [
-        {
-          "name": "newAuthority",
-          "writable": true
-        },
-        {
-          "name": "vestingAccount",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true,
-          "relations": [
-            "vestingAccount"
-          ]
-        },
-        {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": []
     },
     {
       "name": "updateRecipient",
@@ -285,43 +258,48 @@ export type EffectVesting = {
   "errors": [
     {
       "code": 6000,
+      "name": "unauthorized",
+      "msg": "unauthorized"
+    },
+    {
+      "code": 6001,
       "name": "notStarted",
       "msg": "This pool has not started yet."
     },
     {
-      "code": 6001,
+      "code": 6002,
       "name": "underfunded",
       "msg": "This pool does not have enough funds."
     },
     {
-      "code": 6002,
+      "code": 6003,
       "name": "notCloseable",
       "msg": "This pool is not closeable."
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "wrongClaimType",
       "msg": "This pool has a different claim type."
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "wrongBeneficiary",
       "msg": "This pool does not match the beneficiary."
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "invalidTokenAccount",
       "msg": "This pool has an invalid token account."
-    },
-    {
-      "code": 6006,
-      "name": "unauthorized",
-      "msg": "unauthorized"
     },
     {
       "code": 6007,
       "name": "invalidVault",
       "msg": "Invalid vault"
+    },
+    {
+      "code": 6008,
+      "name": "claimFailed",
+      "msg": "Claim failed"
     }
   ],
   "types": [
@@ -343,10 +321,6 @@ export type EffectVesting = {
             "type": "u64"
           },
           {
-            "name": "isCloseable",
-            "type": "bool"
-          },
-          {
             "name": "releaseRate",
             "type": "u64"
           },
@@ -355,11 +329,11 @@ export type EffectVesting = {
             "type": "i64"
           },
           {
-            "name": "vaultTokenAccount",
-            "type": "pubkey"
+            "name": "isCloseable",
+            "type": "bool"
           },
           {
-            "name": "isPubliclyClaimable",
+            "name": "isRestrictedClaim",
             "type": "bool"
           },
           {
@@ -367,7 +341,7 @@ export type EffectVesting = {
             "type": {
               "array": [
                 "u8",
-                8
+                1
               ]
             }
           }

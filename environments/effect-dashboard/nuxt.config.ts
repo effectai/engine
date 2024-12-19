@@ -3,11 +3,16 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
   ssr:false,
   css: ["@/assets/css/main.css"],
-  modules: ['@wagmi/vue/nuxt', "@nuxt/ui", "@vueuse/nuxt", "@vueuse/motion/nuxt"],
+  modules: [
+    '@wagmi/vue/nuxt',
+    "@nuxt/ui",
+    "@vueuse/nuxt",
+    "@vueuse/motion/nuxt",
+    "@nuxtjs/device"
+  ],
   runtimeConfig: {
     public: {
       EFFECT_SPL_TOKEN_MINT: process.env.EFFECT_SPL_TOKEN_MINT,
-      EFFECT_VAULT_INITIALIZER: process.env.EFFECT_VAULT_INITIALIZER,
       EFFECT_SNAPSHOT_DATE: process.env.EFFECT_SNAPSHOT_DATE,
       EFFECT_SOLANA_RPC_NODE_URL: process.env.EFFECT_SOLANA_RPC_NODE_URL,
     }

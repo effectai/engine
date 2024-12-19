@@ -1,13 +1,8 @@
 import type { SourceWalletAdapter, WalletMeta } from "~/types/types";
-import {
-	useAccount,
-	useConnect,
-	useDisconnect,
-	useConfig,
-} from "@wagmi/vue";
+import { useAccount, useConnect, useDisconnect, useConfig } from "@wagmi/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { getBalance, signMessage } from "@wagmi/core";
-import { toBytes } from 'viem'
+import { toBytes } from "viem";
 
 export const useBscWallet = (): SourceWalletAdapter => {
 	const { address, isConnected, connector } = useAccount();
@@ -65,32 +60,39 @@ export const useBscWallet = (): SourceWalletAdapter => {
 		});
 	};
 
-	const authorizeTokenClaim = async (): Promise<{
+	const authorizeTokenClaim = async (destinationAddress:string): Promise<{
 		foreignPublicKey: Uint8Array;
 		signature: Uint8Array;
 		message: Uint8Array;
 	}> => {
-		const { address: solanaAddress } = useSolanaWallet()
-
 		if (!address.value) {
 			throw new Error("No public key");
 		}
 
-		const originalMessage = `Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: ${solanaAddress.value}`;
+		const originalMessage = `Effect.AI: I authorize my tokens to be claimed at the following Solana address:${destinationAddress}`;
 		const prefix = `\x19Ethereum Signed Message:\n${originalMessage.length}`;
 		const message = Buffer.from(prefix + originalMessage);
 		const signature = await signMessage(config, { message: originalMessage });
 
-		if(!address.value){
+		if (!address.value) {
 			throw new Error("No address found");
 		}
 
 		return {
 			foreignPublicKey: toBytes(address.value),
 			signature: toBytes(signature),
-			message
+			message,
+		};
+	};
+
+	const getForeignPublicKey = async () => {
+		if (!address.value) {
+			throw new Error("No address found");
 		}
 
+		console.log("getForeignPublicKeyQuery", address.value);
+
+		return toBytes(address.value);
 	};
 
 	return {
@@ -102,6 +104,8 @@ export const useBscWallet = (): SourceWalletAdapter => {
 		useGetEfxBalanceQuery,
 
 		authorizeTokenClaim,
+
+		getForeignPublicKey,
 
 		connect,
 		disconnect,

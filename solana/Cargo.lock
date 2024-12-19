@@ -960,7 +960,20 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "effect-common",
+ "effect-migration-common",
  "effect-staking",
+ "effect-staking-common",
+ "libsecp256k1 0.7.1",
+ "sha2 0.10.8",
+]
+
+[[package]]
+name = "effect-migration-common"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "effect-common",
  "libsecp256k1 0.7.1",
  "sha2 0.10.8",
 ]
@@ -972,8 +985,22 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "effect-common",
+ "effect-rewards-common",
  "effect-staking",
+ "effect-staking-common",
  "effect-vesting",
+ "effect-vesting-common",
+]
+
+[[package]]
+name = "effect-rewards-common"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "effect-common",
+ "libsecp256k1 0.7.1",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -983,7 +1010,19 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "effect-common",
+ "effect-migration-common",
+ "effect-rewards-common",
+ "effect-staking-common",
  "effect-vesting",
+]
+
+[[package]]
+name = "effect-staking-common"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "effect-common",
 ]
 
 [[package]]
@@ -993,6 +1032,18 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "effect-common",
+ "effect-vesting-common",
+]
+
+[[package]]
+name = "effect-vesting-common"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "effect-common",
+ "libsecp256k1 0.7.1",
+ "sha2 0.10.8",
 ]
 
 [[package]]

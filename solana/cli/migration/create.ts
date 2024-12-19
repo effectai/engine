@@ -3,6 +3,7 @@ import { createMigrationClaim } from "../../utils/migration";
 import EffectMigrationIdl from '../../target/idl/effect_migration.json'
 import { toBytes } from "viem";
 import {
+	createAssociatedTokenAccount,
 	getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
@@ -20,8 +21,7 @@ interface MigrationClaimOptions {
 	mint: string;
 	publicKey: string;
 	amount: number;
-	type: "token" | "stake";
-	stakeStartTime?: number;
+	stakeStartTime: number;
 	username?: string;
 }
 
@@ -41,17 +41,10 @@ export const createMigrationClaimCommand: CommandModule<
 				type: "string",
 				description: "The public key of the account to be migrated",
 			})
-
 			.option("amount", {
 				type: "number",
 				requiresArg: true,
 				description: "The amount of tokens to be migrated",
-			})
-			.option("type", {
-				type: "string",
-				possible: ["token", "stake"] as const,
-				default: "token",
-				description: "The type of migration claim to create",
 			})
 			.option("stakeStartTime", {
 				type: "number",
@@ -64,7 +57,7 @@ export const createMigrationClaimCommand: CommandModule<
 				}
 				return true;
 			})
-			.demandOption(["mint", "amount"]),
+			.demandOption(["mint", "amount", "stakeStartTime"]),
 	handler: async ({
 		mint,
 		publicKey,
@@ -80,14 +73,18 @@ export const createMigrationClaimCommand: CommandModule<
 			provider,
 		) as unknown as anchor.Program<EffectMigration>;
 
-		if (type !== "token" && type !== "stake") {
-			throw new Error("Invalid migration type");
-		}
 
 		const ata = getAssociatedTokenAddressSync(
 			new PublicKey(mint),
 			payer.publicKey,
 		);
+
+		// check if ata exists
+		const ataInfo = await provider.connection.getAccountInfo(ata);
+		if (!ataInfo) {
+			// create ata
+			await createAssociatedTokenAccount(provider.connection, payer, new PublicKey(mint), payer.publicKey);
+		}
 
 		let publicKeyBytes = null;
 
@@ -102,19 +99,17 @@ export const createMigrationClaimCommand: CommandModule<
 			throw new Error("Invalid public key");
 		}
 
-		const { claimAccount } = await createMigrationClaim({
+		const { migrationAccount } = await createMigrationClaim({
 			program: migrationProgram,
-			type,
 			publicKey: publicKeyBytes,
 			mint: new anchor.web3.PublicKey(mint),
-			payer,
+			userTokenAccount: ata,
 			amount: amount * 10 ** 6,
-			payerTokens: ata,
-			stakeStartTime: type === "stake" ? stakeStartTime : undefined,
+			stakeStartTime
 		});
 
 		console.log(
-			chalk.green.bold("Migration claim created at", claimAccount.toString()),
+			chalk.green.bold("Migration claim created at", migrationAccount.toString()),
 		);
 	},
 };
