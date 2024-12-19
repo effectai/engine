@@ -19,7 +19,7 @@ published: true
 
 ## Effect AI Pre-Snapshot & Migration Checklist: Preparing for the Move to Solana
 
-Hello everyone! My name is Rochelle T., and as the community manager of Effect AI i've written up a checklist of the do's and dont's of the upcoming migration! The **snapshot for token migration** will occur on **1 January at 12:00 PM UTC** for all EFX and NFX tokens, so now is the time to get ready. Follow this step-by-step pre-migration checklist to make sure you are ready for the big day!
+Hey everyone! I’m Rochelle T., and most of you know me as the community manager here at Effect AI. I've written up a checklist of the do's and dont's of the upcoming migration! The **snapshot for token migration** will occur on **1 January at 12:00 PM UTC** for all EFX and NFX tokens, so now is the time to get ready. Follow this step-by-step pre-migration checklist to make sure you are ready for the big day!
 
 ## Step 1: Prepare for the Snapshot
 
