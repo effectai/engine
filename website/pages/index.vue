@@ -1,6 +1,7 @@
 <template>
     <div>
-        <HeroSection id="main-hero" :style="`margin-top: -75px; padding-top: 5rem; background-image: url('./img/hero-background.png')`">
+        <HeroSection id="main-hero"
+            :style="`margin-top: -75px; padding-top: 5rem; background-image: url('./img/hero-background.png')`">
             <template #title>
                 <h1 class="title mb-6 is-size-1-tablet is-size-3
                 has-text-dark
@@ -37,11 +38,13 @@
                                         style="gap:14px; font-weight: 400;">Launch app
                                         <span class="icon">
                                             <i class="icon">
-					    <svg width="14" height="15" viewBox="0 0 14 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-					    <path fill-rule="evenodd" clip-rule="evenodd" d="M7.34098 0.5L12.7387 6.22566L12.7395 6.22474L13.9984 7.56009L13.9975 7.56102L14 7.56362L12.7411 8.89898L12.7387 8.89638L7.33939 14.6237L6.08052 13.2884L10.6135 8.47991H0V6.64471H10.616L6.08211 1.83536L7.34098 0.5Z" fill="#1C1A1F"/>
-					    </svg>
-
-					    </i>
+                                                <svg width="14" height="15" viewBox="0 0 14 15" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <path fill-rule="evenodd" clip-rule="evenodd"
+                                                        d="M7.34098 0.5L12.7387 6.22566L12.7395 6.22474L13.9984 7.56009L13.9975 7.56102L14 7.56362L12.7411 8.89898L12.7387 8.89638L7.33939 14.6237L6.08052 13.2884L10.6135 8.47991H0V6.64471H10.616L6.08211 1.83536L7.34098 0.5Z"
+                                                        fill="#1C1A1F" />
+                                                </svg>
+                                            </i>
                                         </span>
                                     </button>
                                 </nuxt-link>
@@ -54,7 +57,6 @@
                                 </button>
                             </nuxt-link>
                         </div>
-
                     </div>
                 </div>
             </template>
@@ -63,18 +65,10 @@
 
     <SimpleSection class="is-flex is-justify-content-center is-flex-direction-column">
         <div class="">
-            <Countdown
-                title="Countdown to Snapshot!"
-                :year="2025"
-                :month="0" 
-                :day="1"
-                :hour="12"
-                :minute="0"
-                :second="0"
-            ></Countdown>
+            <Countdown title="Countdown to Snapshot!"></Countdown>
         </div>
     </SimpleSection>
-    
+
 
     <SimpleSection class="has-text-light has-background-dark">
         <div class="container">
@@ -243,6 +237,7 @@ useSeoMeta({
 
 .effect-box {
     padding: 2rem;
+
     h2 {
         margin-bottom: 8rem;
     }
@@ -272,7 +267,7 @@ useSeoMeta({
 
 .be-part-of {
     @include mixins.mobile {
-       margin-bottom: 3rem;
+        margin-bottom: 3rem;
     }
 }
 
@@ -324,6 +319,6 @@ useSeoMeta({
 }
 
 .button.is-outlined:hover {
-  --bulma-button-border-width: max(1px, 0.0625em);
+    --bulma-button-border-width: max(1px, 0.0625em);
 }
 </style>

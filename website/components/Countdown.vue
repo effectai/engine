@@ -25,31 +25,33 @@
             </div>
         </div>
         <div>
-            <div class="is-flex is-justify-content-center mt-6">
-                <nuxt-link 
-                    v-if="!expired"
-                    class="mx-2" 
-                    to="https://pancakeswap.finance/?inputCurrency=BNB&outputCurrency=0xC51Ef828319b131B595b7ec4B28210eCf4d05aD0" 
-                    target="_blank"
-                    exact-active-class="is-active"
-                >
-                    <button class="button is-black is-rounded is-outlined is-flex is-medium"
-                        style="gap:10px">Buy EFX (PancakeSwap)
-                    </button>
-                </nuxt-link>
-                <nuxt-link 
-                    v-if="!expired"
-                    class="mx-2" 
-                    to="./news/solana-announcement" 
-                    exact-active-class="is-active"
-                >
-                    <button class="button is-black is-rounded is-flex is-medium"
-                        style="gap:10px">Learn More
-                        <span class="icon">
-                            <i class="fas fa-arrow-right"></i>
-                        </span>
-                    </button>
-                </nuxt-link>
+
+            <div
+                class="mt-6 is-flex is-justify-content-center is-size-3 is-align-items-center is-primary has-text-primary is-in-front">
+                <div class="columns is-mobile is-vcentered is-multiline ">
+                    <div class="column">
+                        <div class="">
+                            <nuxt-link v-if="!expired" class="mx-2 is-flex is-justify-content-center" to="./news/solana-announcement"
+                                exact-active-class="is-active">
+                                <button class="button is-black is-rounded is-flex is-medium" style="gap:10px">Learn More
+                                </button>
+                            </nuxt-link>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <nuxt-link v-if="!expired" class="mx-2 is-flex is-justify-content-center"
+                            to="https://pancakeswap.finance/?inputCurrency=BNB&outputCurrency=0xC51Ef828319b131B595b7ec4B28210eCf4d05aD0"
+                            target="_blank" exact-active-class="is-active">
+                            <button class="button is-black is-rounded is-outlined is-flex is-medium"
+                                style="gap:12px">Buy EFX
+                                <span class="icon">
+                                    <img class="image ml-2" src="/img/pancakeswap-cake-logo.svg">
+                                </span>
+                            </button>
+                        </nuxt-link>
+
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -57,7 +59,7 @@
 
 <script>
 export default {
-    props: ["title", "year", "month", "day", "hour", "minute", "second"],
+    props: ["title"],
     data: () => ({
         showDays: 0,
         showHours: 0,
@@ -66,7 +68,7 @@ export default {
         timer: null,
         loaded: false,
         expired: false,
-        isMobile: false,  // Track if the screen is mobile
+        isMobile: false,
     }),
     computed: {
         _seconds: () => 1000,
@@ -79,45 +81,40 @@ export default {
         _days() {
             return this._hours * 24;
         },
-        end() {
-            return new Date(
-                this.year,
-                this.month,
-                this.day,
-                this.hour,
-                this.minute,
-                this.second
-            );
-        }
     },
     mounted() {
+        this.setTimer();
         this.startTimer();
-        this.checkMobile();  
-        window.addEventListener('resize', this.checkMobile); 
+        this.checkMobile();
+        window.addEventListener('resize', this.checkMobile);
     },
     beforeDestroy() {
         clearInterval(this.timer);
         window.removeEventListener('resize', this.checkMobile);  // Clean up
     },
     methods: {
+        setTimer() {
+            const now = new Date();
+            const target = new Date("2025-01-01T00:00:00Z");
+            const difference = target - now;
+
+            if (difference <= 0) {
+                clearInterval(this.timer);
+                this.timer = null;
+                this.expired = true;
+                return;
+            }
+
+            this.showDays = String(Math.floor(difference / this._days)).padStart(2, "0");
+            this.showHours = String(Math.floor((difference % this._days) / this._hours)).padStart(2, "0");
+            this.showMinutes = String(Math.floor((difference % this._hours) / this._minutes)).padStart(2, "0");
+            this.showSeconds = String(Math.floor((difference % this._minutes) / this._seconds)).padStart(2, "0");
+            this.loaded = true;
+        },
+
         startTimer() {
             this.timer = setInterval(() => {
-                const now = new Date();
-                const target = new Date("2025-01-01T00:00:00Z");
-                const difference = target - now;
-
-                if (difference <= 0) {
-                    clearInterval(this.timer);
-                    this.timer = null;
-                    this.expired = true;
-                    return;
-                }
-
-                this.showDays = String(Math.floor(difference / this._days)).padStart(2, "0");
-                this.showHours = String(Math.floor((difference % this._days) / this._hours)).padStart(2, "0");
-                this.showMinutes = String(Math.floor((difference % this._hours) / this._minutes)).padStart(2, "0");
-                this.showSeconds = String(Math.floor((difference % this._minutes) / this._seconds)).padStart(2, "0");
-                this.loaded = true;
+                this.setTimer();
             }, 1000);
         },
 

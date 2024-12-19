@@ -45,6 +45,8 @@ Download your wallet from its official source, set a strong password, and back u
 
 ## Step 3: Wait for Official Announcements on 5 January
 
+> ⚠️ Do not attempt to swap your tokens or interact with any claim portal until the official announcements are made.
+
 After the snapshot, Effect AI will release details about the claim process. Here’s what to watch for:
 
 - **Claim Portal:**  
@@ -53,7 +55,7 @@ The official claim portal for swapping your old EFX tokens to the new EFFECT tok
 - **New EFFECT Token Contract Address:**  
 The new token’s contract address will be announced via Effect AI’s official channels.
 
-> ⚠️ Do not attempt to swap your tokens or interact with any claim portal until the official announcements are made.
+
 
 ---
 
@@ -89,9 +91,9 @@ No, the claim portal will be open and working for a very long time; there’s no
 
 ---
 
-## 6. I have my tokens in Trust / TokenPocket / Wombat / Anchor wallet, are they safe?
+## 6. I have my tokens in Trust / TokenPocket / Wombat / Anchor wallet, can i use the migration portal with them ?
 
-Yes, as long as you have access to your wallet, they are safe. We recommend <a href="https://www.greymass.com/anchor" target="_blank">**Anchor wallet**</a> for the smoothest experience.
+Yes, as long as you have access to your wallet, you can use them to connect to the migration portal and migrate them to Solana. We recommend <a href="https://www.greymass.com/anchor" target="_blank">**Anchor wallet**</a> for the smoothest experience.
 
 ---
 
