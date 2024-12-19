@@ -1,5 +1,5 @@
 ---
-title: "Effect AI Pre-Snapshot & Migration Checklist: Preparing for the Move to Solana"
+title: "Pre-Snapshot & Migration Checklist"
 description: "If you’re an EFX token holder or part of the Effect AI community, now is the time to get ready. Follow this step-by-step pre-migration checklist to ensure a smooth transition."
 image:
   src: "/img/news/announcement-alt.png"
@@ -17,7 +17,7 @@ created: "2024-12-18"
 published: true
 ---
 
-## Effect AI Pre-Snapshot & Migration Checklist: Preparing for the Move to Solana
+## Preparing for the Move to Solana
 
 Hey everyone! I’m Rochelle T., and most of you know me as the community manager here at Effect AI. I've written up a checklist of the do's and dont's of the upcoming migration! The **snapshot for token migration** will occur on **1 January at 12:00 PM UTC** for all EFX and NFX tokens, so now is the time to get ready. Follow this step-by-step pre-migration checklist to make sure you are ready for the big day!
 
