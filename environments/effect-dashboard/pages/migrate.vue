@@ -41,20 +41,21 @@
                         <div class="flex flex-wrap justify-center items-center gap-2 my-8">
                             <span class="flex gap-2 items-center" v-if="$device.isDesktop">
                                 <WalletMultiButton /> or
-                            </span> <a class="text-sm text-red-500" @click="toggleAddress = !toggleAddress">Manually
+                            </span> <a class="text-sm text-red-500 cursor-pointer"
+                                @click="toggleAddress = !toggleAddress">Manually
                                 enter your address</a>
                         </div>
                         <div class="flex w-full" v-show="toggleAddress">
                             <UInput placeholder="Your solana address" v-model="manualAddressInput" type="text"
-                                class="border border-gray-300 rounded-md p-2 flex-grow" />
-                            <UButton color="black" @click="selectAddress" label="Select" />
+                                class="flex-grow h-full flex items-center justify-center" />
+                            <UButton color="black" size="sm" @click="selectAddress" label="Confirm" />
                         </div>
                     </div>
 
-                    <div v-else class="flex justify-between mt-5 items-center gap-1">
+                    <div v-else class="flex justify-center mt-5 items-center gap-1">
                         <b>Chosen address:</b>
-                        <BlockchainAddress :address="destinationAddress" /> | <a class="cursor-pointer"
-                            @click="logout">Change</a>
+                        <BlockchainAddress :address="destinationAddress" /> | <a class="cursor-pointer text-red-500"
+                            @click="logout">Switch</a>
                     </div>
                 </div>
             </template>
@@ -187,7 +188,7 @@ const authorizeUrl = computed(() => {
     })
 })
 
-const {copy} = useCopyToClipboard()
+const { copy } = useCopyToClipboard()
 const copyAuthorize = () => {
     copy(authorizeUrl.value)
     toast.add({ title: 'Copied', description: 'Authorize link copied to clipboard', color: 'green' })
@@ -273,14 +274,11 @@ const currentStep = computed(() => {
 })
 
 watch(currentStep, async (newVal) => {
-    await nextTick();
-    // wait 2 seconds
     await new Promise(resolve => setTimeout(resolve, 10))
     const el = document.getElementById(`step-${newVal}`)
     if (el) {
-        console.log('scrolling to', el)
-         await nextTick();
-        el.scrollIntoView({ behavior: 'smooth' })
+        await nextTick();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
 }, { immediate: true })
 

@@ -12,7 +12,7 @@
                     {{ key + 1 }}</div>
             </span>
 
-            <div class="relative ml-10 lg:ml-12 justify-center flex items-center flex-col text-gray-600 h-[500px]
+            <div class="relative ml-10 lg:ml-12 flex -mt-[32px] items-center flex-col text-gray-600 h-[500px]
             ">
                 <div v-if="!isActive(key)"
                     class="absolute w-full h-full black z-10 backdrop-blur-[3px] left-[0px] top-[0px] ">
@@ -66,10 +66,10 @@ const isActive = (key: number) => {
     &::before {
         content: '';
         position: absolute;
-        inset: 0px 9px;
-        background: #22232e;
+        inset: 5px 4px;
+        background: #bdbec5;
         transition: 500ms;
-        animation: rotate 4s linear infinite;
+        animation: rotate 5s linear infinite;
         z-index: -1;
     }
     &::after {
