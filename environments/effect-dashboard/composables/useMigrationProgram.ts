@@ -80,11 +80,12 @@ export const useMigrationProgram = () => {
 				foreignPublicKey.value,
 			],
 			queryFn: async () => {
+				
 				if (!publicKey.value || !foreignPublicKey.value) {
 					throw new Error("Missing required data");
 				}
 
-				const { migrationAccount, vaultAccount } = useDeriveMigrationAccounts({
+				const { migrationAccount } = useDeriveMigrationAccounts({
 					mint: new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT),
 					foreignPublicKey: foreignPublicKey.value,
 					programId: migrationProgram.value.programId,

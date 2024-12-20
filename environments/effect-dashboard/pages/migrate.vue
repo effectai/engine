@@ -79,14 +79,34 @@
                         <UButton class="mt-5" @click="disconnectSourceWallets" color="black" variant="outline">
                             Disconnect</UButton>
                     </div>
-                    <div v-else-if="true">
-                        It seems you've successfully authenticated and authorized using a mobile wallet. To claim your
-                        tokens, please open the link below on a desktop device:
 
-                        <a class="cursor-pointer" @click="copyAuthorize">Authorize</a>
-                    </div>
-                    <div v-else class="text-center flex justify-center my-5">
-                        <div v-if="!solanaWalletAddress">
+                    <div v-else class="text-center flex flex-col justify-center my-5">
+                        <div v-if="$device.isMobileOrTablet">
+                            <h2 class="text-xl my-3 font-bold">Authentication and authorization via your mobile wallet
+                                were successful! 🎉</h2>
+
+                            To claim your tokens, we need to establish a connection to the Solana blockchain.
+                            Unfortunately, this can't be done in your current browser or app.
+
+                            Please open the link below on a desktop device, to continue where you've left off.
+
+                            <div class="">
+                                <div class="w-full">
+                                    <UInput readonly :disabled="true" v-model="authorizeUrl" class="mt-5" type="text" />
+                                </div>
+                                <div class="flex gap-3 justify-center">
+                                    <UButton v-if="isSupported" @click="shareAuthorize" class="mt-5" color="black"
+                                        variant="outline">Share
+                                        Authorization Link
+                                        <UIcon name="lucide:share" class="" />
+                                    </UButton>
+                                    <UButton @click="copyAuthorize" class="mt-5" color="black" variant="outline">Copy
+                                        <UIcon name="lucide:copy" class="" />
+                                    </UButton>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else-if="!solanaWalletAddress">
                             <WalletMultiButton />
                         </div>
                         <div v-else>
@@ -94,9 +114,10 @@
                                 <ConfettiExplosion v-if="txHash" :particleCount="200" :force="0.3" />
                             </div>
 
-                            <p>Claim your new EFFECT tokens on Solana.</p>
-                            <ClaimCard v-if="migrationAccount" :migrationAccount="migrationAccount" />
-                            <UButton @click="claimHandler" class="mt-5" color="black" variant="outline">Claim</UButton>
+                            <p class="my-5">Claim your new EFFECT tokens on Solana.</p>
+
+                            <ClaimCard :foreign-public-key="computedForeignPublicKey" :message="message"
+                                :signature="signature" :migrationAccount="migrationAccount" />
                         </div>
                     </div>
                 </div>
@@ -167,7 +188,7 @@ const selectAddress = () => {
     }
 }
 
-const { useGetMigrationAccount, useClaim } = useMigrationProgram();
+const { useGetMigrationAccount } = useMigrationProgram();
 const { data: migrationAccount } = useGetMigrationAccount(computedForeignPublicKey)
 
 const txHash: Ref<string | null> = ref(null)
@@ -188,9 +209,23 @@ const authorizeUrl = computed(() => {
     })
 })
 
+const toast = useToast()
+
+const { share, isSupported } = useShare({})
+
 const { copy } = useCopyToClipboard()
 const copyAuthorize = () => {
     copy(authorizeUrl.value)
+    toast.add({ title: 'Copied', description: 'Authorize link copied to clipboard', color: 'green' })
+}
+
+const shareAuthorize = () => {
+    share({
+        title: 'Authorize link',
+        text: 'Authorize link',
+        url: authorizeUrl.value,
+    })
+
     toast.add({ title: 'Copied', description: 'Authorize link copied to clipboard', color: 'green' })
 }
 
@@ -218,23 +253,6 @@ const authorize = async () => {
     }
 }
 
-const toast = useToast()
-const { mutateAsync: claimTokens } = useClaim()
-const claimHandler = async () => {
-    if (!signature.value || !computedForeignPublicKey.value || !message.value) {
-        console.warn('missing signature, foreignPublicKey or message')
-        return
-    }
-
-    try {
-        const transactionId = await claimTokens({ signature: signature.value, foreignPublicKey: computedForeignPublicKey.value, message: message.value })
-        txHash.value = transactionId;
-        toast.add({ title: 'Success', description: 'Claimed tokens successfully', color: 'green' })
-    } catch (e) {
-        console.log(e)
-        toast.add({ title: 'Error', description: "Something went wrong", color: 'red' })
-    }
-}
 const steps = ref([
     {
         label: 'Authenticate',

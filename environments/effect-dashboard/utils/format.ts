@@ -39,6 +39,10 @@ export const formatNumber = (num: number) => {
 	}).format(num);
 };
 
+export const formatTimestampToTimeAgo = (timestamp: number) => {
+	return formatDistanceToNow(timestamp, { addSuffix: true });
+};
+
 export function isValidSolanaAddress(address:string) {
 	try {
 	  const decoded = bs58.decode(address);

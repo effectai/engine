@@ -1,7 +1,7 @@
 <template>
     <ol class="pb-72 mt-24">
         <li :id="`step-${key}`"
-            class=" relative flex-1 after:content-[''] after:-z-10 after:w-0.5 after:h-[999%] after:bg-gray-100 after:inline-block after:absolute after:-bottom-11 after:left-4 lg:after:left-5"
+            class=" relative py-36 flex-1 after:content-[''] after:-z-10 after:w-0.5 after:h-[999%] after:bg-gray-100 after:inline-block after:absolute after:-bottom-11 after:left-4 lg:after:left-5"
             v-for="(item, key) in items">
             <span :class="{ 'is-active': isActive(key) && !item.isCompleted }"
                 class="step ml-[1px] w-8 h-8 aspect-square bg-black border-2 border-transparent rounded-full flex justify-center items-center mr-3 text-sm text-white lg:w-10 lg:h-10">
@@ -12,7 +12,7 @@
                     {{ key + 1 }}</div>
             </span>
 
-            <div class="relative ml-10 lg:ml-12 flex -mt-[32px] items-center flex-col text-gray-600 h-[500px]
+            <div class="relative ml-10 h-full lg:ml-12 flex -mt-[32px] items-center flex-col text-gray-600 
             ">
                 <div v-if="!isActive(key)"
                     class="absolute w-full h-full black z-10 backdrop-blur-[3px] left-[0px] top-[0px] ">
