@@ -5,7 +5,7 @@
                 <div>
                     <div v-if="isCompleted">
                         <div class="flex-col flex items-center justify-center gap-3 mt-5" v-if="walletMeta">
-                            <span class="text-sm text-gray-600 dark:text-gray-400  capitalize">
+                            <span class="text-sm capitalize">
                                 <span v-if="walletMeta.icon">
                                     <img :src="walletMeta.icon" class="h-5 w-5 inline-block mr-1" />
                                 </span>
@@ -21,11 +21,12 @@
                     </div>
                     <div v-else>
                         <div class="my-5">
-                            To claim your new EFFECT tokens on Solana, you’ll need to <u>verify ownership</u> of a
-                            <b>BSC</b> or
-                            <b>EOS</b> account
-                            that held or staked EFX tokens on <u>{{ snapshotDate.toLocaleString() }}</u>.
-                            You can repeat this process for every account you own that held or staked EFX tokens.
+                            <p>To claim your new EFFECT tokens on Solana, you’ll need to <u>verify ownership</u> of a
+                                <b>BSC</b> or
+                                <b>EOS</b> account
+                                that held or staked EFX tokens on <u>{{ snapshotDate.toLocaleString() }}</u>.
+                                You can repeat this process for every account you own that held or staked EFX tokens.
+                            </p>
                         </div>
                         <ConnectSourceWalletForm />
                     </div>

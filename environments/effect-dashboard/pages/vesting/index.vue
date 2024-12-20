@@ -1,12 +1,14 @@
 <template>
-     <UCard v-if="!address">
+    <UCard v-if="!address" class="flex justify-center">
         <div class="text-center space-y-2">
             <h2 class="text-4xl">Hello There 👋</h2>
             <h1 class="text-2xl">Please connect your solana wallet.</h1>
         </div>
-        <ClientOnly>
-            <WalletMultiButton />
-        </ClientOnly>
+        <div class="flex justify-center my-5">
+            <ClientOnly >
+                <WalletMultiButton />
+            </ClientOnly>
+        </div>
     </UCard>
     <UCard v-else>
         <template #header>
@@ -17,7 +19,7 @@
         </div>
         <div v-else>
             <div class="space-y-4">
-            <VestingScheduleItem v-for="account in vestingAccounts" :vesting-account="account"/>
+                <VestingScheduleItem v-for="account in vestingAccounts" :vesting-account="account" />
             </div>
         </div>
     </UCard>
@@ -27,8 +29,8 @@
 import { WalletMultiButton } from 'solana-wallets-vue';
 const { address } = useSolanaWallet()
 
-const {useGetVestingAccounts} = useVestingProgram()
-const {data: vestingAccounts} = useGetVestingAccounts()
+const { useGetVestingAccounts } = useVestingProgram()
+const { data: vestingAccounts } = useGetVestingAccounts()
 
 </script>
 
