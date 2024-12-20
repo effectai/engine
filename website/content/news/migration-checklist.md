@@ -110,7 +110,7 @@ Yes, as long as you have access to your wallet, you can use them to connect to t
 
 **PancakeSwap** - <a href="https://pancakeswap.finance/swap?outputCurrency=0xc51ef828319b131b595b7ec4b28210ecf4d05ad0" target="_blank">[Buy EFX with BNB]</a>
 
-**Newdex** - <a href="https://newdex.io/trade/effecttokens-efx-eos" target="_blank">[Buy EFX with EOS]</a>
+**Defibox** - <a href="https://defibox.io/marketDetail/191" target="_blank">[Buy EFX with EOS]</a>
 
 **ORION** - <a href="https://trade.orionprotocol.io/trade/EFX-USDT" target="_blank">[Buy EFX with USDT (BSC)]</a>
 
