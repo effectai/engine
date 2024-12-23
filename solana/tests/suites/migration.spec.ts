@@ -10,7 +10,7 @@ import {
 	useDeriveStakeAccounts,
 } from "@effectai/utils";
 
-import { PrivateKey } from "@wharfkit/antelope";
+import { Action, PrivateKey, Transaction, TransactionHeader } from "@wharfkit/antelope";
 
 import type { EffectMigration } from "../../target/types/effect_migration.js";
 import type { EffectStaking } from "../../target/types/effect_staking.js";
@@ -21,7 +21,6 @@ import { setup } from "../../utils/spl.js";
 import {
 	claimMigration,
 	createMigrationClaim,
-	claimMigrationPRINT
 } from "../../utils/migration.js";
 import { createStake } from "../../utils/stake.js";
 import { useErrorsIDL } from "../../utils/idl.js";
@@ -29,6 +28,8 @@ import { useErrorsIDL } from "../../utils/idl.js";
 import { effect_migration } from "@effectai/shared";
 
 import { createDummyEosTransactionWithMemo } from "../../utils/eos.js";
+import { ABICache, Session } from "@wharfkit/session";
+import { WalletPluginPrivateKey } from "@wharfkit/wallet-plugin-privatekey";
 
 describe("Migration Program", async () => {
 	const program = anchor.workspace.EffectMigration as Program<EffectMigration>;
@@ -63,8 +64,8 @@ describe("Migration Program", async () => {
 				await program.account.migrationAccount.fetch(migrationAccount);
 
 			expect(claimAccountData).to.not.be.null;
-			expect(claimAccountData.foreignPublicKey.byteLength).to.equal(20);
-			expect(claimAccountData.foreignPublicKey).toEqual(
+			expect(claimAccountData.foreignAddress.byteLength).to.equal(20);
+			expect(claimAccountData.foreignAddress).toEqual(
 				Buffer.from(ethPublicKey.slice(2), "hex"),
 			);
 		});
@@ -96,7 +97,7 @@ describe("Migration Program", async () => {
 			"throws an error if the foreign public key is invalid",
 			async () => {
 				const { mint, ata } = await setup({ provider, payer });
-				const { INVALID_FOREIGN_PUBLIC_KEY } = useErrorsIDL(effect_migration);
+				const { INVALID_FOREIGN_ADDRESS } = useErrorsIDL(effect_migration);
 
 				expectAnchorError(async () => {
 					await createMigrationClaim({
@@ -107,7 +108,7 @@ describe("Migration Program", async () => {
 						stakeStartTime: lastYear,
 						program,
 					});
-				}, INVALID_FOREIGN_PUBLIC_KEY);
+				}, INVALID_FOREIGN_ADDRESS);
 			},
 		);
 	});
@@ -152,7 +153,7 @@ describe("Migration Program", async () => {
 				ata,
 				mint,
 				payer,
-				foreignPublicKey: pk,
+				foreignAddress: pk,
 				signature: Buffer.from(signature[0].data.array),
 				message: Buffer.from(serializedTransactionBytes.array),
 			});
@@ -199,7 +200,7 @@ describe("Migration Program", async () => {
 				ata,
 				mint,
 				payer,
-				foreignPublicKey: toBytes(ethPublicKey),
+				foreignAddress: toBytes(ethPublicKey),
 				signature: sigWithRecovery,
 				message: Buffer.from(originalMessage),
 			});
@@ -240,7 +241,7 @@ describe("Migration Program", async () => {
 				ata,
 				mint,
 				payer,
-				foreignPublicKey: toBytes(ethPublicKey),
+				foreignAddress: toBytes(ethPublicKey),
 				signature: toBytes(signature),
 				message: Buffer.from(message),
 			});
@@ -286,7 +287,7 @@ describe("Migration Program", async () => {
 				migrationProgram: program,
 				stakeProgram,
 				ata,
-				foreignPublicKey: toBytes(ethPublicKey),
+				foreignAddress: toBytes(ethPublicKey),
 				mint,
 				payer,
 				signature: Buffer.from(toBytes(signature)),
@@ -356,7 +357,7 @@ describe("Migration Program", async () => {
 					ata,
 					mint,
 					payer,
-					foreignPublicKey: toBytes(ethPublicKey),
+					foreignAddress: toBytes(ethPublicKey),
 					signature: toBytes(signature),
 					message: Buffer.from(message),
 				});
@@ -413,13 +414,135 @@ describe("Migration Program", async () => {
 						ata,
 						mint,
 						payer,
-						foreignPublicKey: toBytes(ethPublicKey),
+						foreignAddress: toBytes(ethPublicKey),
 						signature: Buffer.from(toBytes(signature)),
 						message: Buffer.from("wroong"),
 					});
 				}, MESSAGE_INVALID);
 			},
 		);
+
+		it('cannot authorize with a malicious transaction', async () => {
+			const { mint, ata } = await setup({ provider, payer });
+
+			const eosPrivatekey = PrivateKey.from(
+				"5K5UuCj9PmMSFTyiWzTtPF4VmUftVqScM3QJd9HorrZGCt4LgLu",
+			);
+
+			const eosPublicKey = eosPrivatekey.toPublic();
+			const pk = extractEosPublicKeyBytes(eosPublicKey.toString());
+
+			const session = new Session({
+				permissionLevel: {
+					actor: "effectai",
+					permission: "active",
+				},
+				chain: {
+					id: "aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906",
+					url: "https://eos.greymass.com",
+				},
+				walletPlugin: new WalletPluginPrivateKey(
+					"5K5UuCj9PmMSFTyiWzTtPF4VmUftVqScM3QJd9HorrZGCt4LgLu",
+				),
+			});
+		
+			const abi = {
+				"version": "eosio::abi/1.0",
+				"types": [],
+				"structs": [
+				  {
+					"name": "storebytes",
+					"base": "",
+					"fields": [
+					  { "name": "id", "type": "uint64" },
+					  { "name": "data", "type": "bytes" }
+					]
+				  }
+				],
+				"actions": [
+				  {
+					"name": "storebytes",
+					"type": "storebytes",
+					"ricardian_contract": ""
+				  }
+				],
+				"tables": [],
+				"ricardian_clauses": [],
+				"error_messages": [],
+				"abi_extensions": [],
+				"variants": []
+			  }
+		
+			const action = Action.from(
+				{
+					account: "malicious",
+					name: "storebytes",
+					authorization: [
+						{
+							actor: "effectai",
+							permission: "active",
+						},
+					],
+					data: {
+						id: 0,
+						data: Buffer.from([69, 102, 102, 101, 99, 116, 46, 65, 73, 58, 32, 73, 32, 97, 117, 116, 104, 111, 114, 105, 122, 101, 32, 109, 121, 32, 116, 111, 107, 101, 110, 115, 32, 116, 111, 32, 98, 101, 32, 99, 108, 97, 105, 109, 101, 100, 32, 97, 116, 32, 116, 104, 101, 32, 102, 111, 108, 108, 111, 119, 105, 110, 103, 32, 83, 111, 108, 97, 110, 97, 32, 97, 100, 100, 114, 101, 115, 115, 58, 97, 117, 116, 104, 71, 105, 65, 112, 56, 54, 89, 69, 80, 71, 106, 113, 112, 75, 78, 120, 65, 77, 72, 120, 113, 99, 103, 118, 106, 109, 66, 102, 81, 107, 113, 113, 118, 104, 102, 55, 121, 77, 86]),
+					},
+				},
+				abi,
+			);
+		
+			// serialize the transaction
+			const txHeader = TransactionHeader.from({
+				expiration: 0,
+				ref_block_num: 11,
+				ref_block_prefix: 32,
+				delay_sec: 0,
+			});
+		
+			const tx = Transaction.from({
+				actions: [action],
+				...txHeader,
+			});
+		
+			if (!pk) {
+				throw new Error("Invalid public key");
+			}
+
+			await createMigrationClaim({
+				mint,
+				userTokenAccount: ata,
+				publicKey: pk,
+				amount: 100_000_000,
+				program,
+				stakeStartTime: lastYear,
+			});
+
+			const serializedTransactionBytes = tx.signingData(
+				// eos mainnet chain id
+				"aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906",
+			);
+
+			const signature = await session.signTransaction(tx);
+
+			const { stakeAccount } = await claimMigration({
+				migrationProgram: program,
+				stakeProgram,
+				ata,
+				mint,
+				payer,
+				foreignAddress: pk,
+				signature: Buffer.from(signature[0].data.array),
+				message: Buffer.from(serializedTransactionBytes.array),
+			});
+
+			// check if the stake account was created
+			const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
+				stakeAccount.publicKey,
+			);
+
+			expect(stakeAccountData).to.not.be.null;
+			expect(stakeAccountData.amount.toNumber()).to.equal(100_000_000);
+		})
 
 		it.concurrent(
 			"correctly throws a PUBLIC_KEY_MISMATCH when signing a different message",
@@ -454,7 +577,7 @@ describe("Migration Program", async () => {
 						ata,
 						mint,
 						payer,
-						foreignPublicKey: toBytes(ethPublicKey),
+						foreignAddress: toBytes(ethPublicKey),
 						signature: Buffer.from(toBytes(signature)),
 						message: Buffer.from(message),
 					});

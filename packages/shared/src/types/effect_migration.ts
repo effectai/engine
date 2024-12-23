@@ -138,7 +138,7 @@ export type EffectMigration = {
               },
               {
                 "kind": "arg",
-                "path": "foreignPublicKey"
+                "path": "foreignAddress"
               }
             ]
           }
@@ -183,7 +183,7 @@ export type EffectMigration = {
       ],
       "args": [
         {
-          "name": "foreignPublicKey",
+          "name": "foreignAddress",
           "type": "bytes"
         },
         {
@@ -273,13 +273,18 @@ export type EffectMigration = {
     },
     {
       "code": 6009,
-      "name": "invalidForeignPublicKey",
-      "msg": "Invalid Foreign Public Key"
+      "name": "invalidForeignAddress",
+      "msg": "Invalid Foreign Address"
     },
     {
       "code": 6010,
       "name": "invalidStakeStartTime",
       "msg": "Invalid Stake Start Time"
+    },
+    {
+      "code": 6011,
+      "name": "claimingNotStarted",
+      "msg": "Claming not started yet."
     }
   ],
   "types": [
@@ -289,7 +294,7 @@ export type EffectMigration = {
         "kind": "struct",
         "fields": [
           {
-            "name": "foreignPublicKey",
+            "name": "foreignAddress",
             "type": "bytes"
           },
           {

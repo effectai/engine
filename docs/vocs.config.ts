@@ -2,7 +2,6 @@ import { defineConfig } from "vocs";
 
 export default defineConfig({
 	rootDir: __dirname,
-	basePath: "/docs/",
 	logoUrl: { light: "/logo-dark.svg", dark: "/logo-light.svg" },
 	theme: {
 		variables: {
@@ -17,7 +16,7 @@ export default defineConfig({
 			items: [
 				{
 					text: "Overview",
-					link: "/introduction/project-overview",
+					link: "/",
 				},
 				{
 					text: "Our Mission",
@@ -32,55 +31,55 @@ export default defineConfig({
 		{
 			text: "Protocol",
 			items: [
-			
 				{
 					text: "Core Concepts",
 					link: "/protocol/key-concepts",
 				},
+
 				{
-					text: "Architecture",
+					text: "Nodes",
 					items: [
 						{
-							text: "Network Architecture",
+							text: "Provider",
+							link: "/protocol/nodes/provider-node",
 						},
 						{
-							text: "Data Flow",
-							link: "/protocol/architecture/data-flow",
+							text: "Manager",
+							link: "/protocol/nodes/manager-node",
 						},
-					]
+						{
+							text: "Worker",
+							link: "/protocol/nodes/worker-node",
+						},
+					],
 				},
 				{
-					text: "Components",
-					items: [
-							{
-								text: "Provider Nodes",
-								link: "/protocol/components/provider-node",
-							},
-							{
-								text: "Manager Nodes",
-								link: "/protocol/components/manager-node",
-							},
-							{
-								text: "Worker Nodes",
-								link: "/protocol/components/worker-node",
-							},
-					]
+					text: "Data Lifecycle",
+					link: "/protocol/data-lifecycle",
 				},
-				
+				{
+					text: "Settlements",
+					link: "/protocol/settlements",
+				},
 				{
 					text: "Incentives",
+					link: "/protocol/incentives",
 					items: [
 						{
 							text: "Static Income",
+							link: "/protocol/incentives#static-income",
 						},
 						{
 							text: "Penalties",
+							link: "/protocol/incentives#penalties",
 						},
 						{
 							text: "Staking",
+							link: "/protocol/incentives#staking",
 						},
 						{
 							text: "Fees",
+							link: "/protocol/incentives#fees",
 						},
 					],
 				},
@@ -89,12 +88,15 @@ export default defineConfig({
 					items: [
 						{
 							text: "Dispute Resolution",
+							link: "/protocol/governance#dispute-resolution",
 						},
 						{
 							text: "Voting",
+							link: "/protocol/governance#voting",
 						},
-					]
+					],
 				},
+				
 			],
 		},
 		{

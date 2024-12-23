@@ -15,24 +15,24 @@ impl anchor_lang::Id for MigrationProgram {
 
 #[account]
 pub struct MigrationAccount {
-    pub foreign_public_key: Vec<u8>,
+    pub foreign_address: Vec<u8>,
     pub stake_start_time: i64,
 }
 
 #[error_code]
 pub enum MigrationError {
-    #[msg("Invalid Foreign Public Key")]
-    InvalidForeignPublicKey = 9,
+    #[msg("Invalid Foreign Address")]
+    InvalidForeignAddress = 9,
 
     #[msg("Invalid Stake Start Time")]
     InvalidStakeStartTime = 10,
 }
 
 impl MigrationAccount {
-    pub fn initialize(&mut self, foreign_public_key: Vec<u8>, stake_start_time: i64) -> Result<()> {
+    pub fn initialize(&mut self, foreign_address: Vec<u8>, stake_start_time: i64) -> Result<()> {
         // check if the foreign public key is valid
-        if foreign_public_key.len() != 20 && foreign_public_key.len() != 32 {
-            return Err(MigrationError::InvalidForeignPublicKey.into());
+        if foreign_address.len() != 20 && foreign_address.len() != 32 {
+            return Err(MigrationError::InvalidForeignAddress.into());
         }
 
         let now = Clock::get()?.unix_timestamp;
@@ -47,7 +47,7 @@ impl MigrationAccount {
         }
 
         self.stake_start_time = stake_start_time;
-        self.foreign_public_key = foreign_public_key;
+        self.foreign_address = foreign_address;
 
         Ok(())
     }

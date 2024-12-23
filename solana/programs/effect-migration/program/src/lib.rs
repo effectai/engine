@@ -22,11 +22,11 @@ pub mod effect_migration {
 
     pub fn create_stake_claim(
         ctx: Context<Create>,
-        foreign_public_key: Vec<u8>,
+        foreign_address: Vec<u8>,
         stake_start_time: i64,
         amount: u64,
     ) -> Result<()> {
-        create::handler(ctx, foreign_public_key, stake_start_time, amount)
+        create::handler(ctx, foreign_address, stake_start_time, amount)
     }
 
 }

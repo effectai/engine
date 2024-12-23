@@ -23,7 +23,7 @@ export const claimMigration = async ({
 	mint,
 	payer,
 	signature,
-	foreignPublicKey,
+	foreignAddress,
 	message,
 }: {
 	migrationProgram: anchor.Program<EffectMigration>;
@@ -32,7 +32,7 @@ export const claimMigration = async ({
 	mint: PublicKey;
 	payer: Keypair;
 	signature: Uint8Array;
-	foreignPublicKey: Uint8Array;
+	foreignAddress: Uint8Array;
 	message: Uint8Array;
 }) => {
 	const stakeAccount = new anchor.web3.Keypair();
@@ -42,10 +42,10 @@ export const claimMigration = async ({
 		programId: stakeProgram.programId,
 	});
 
-	// derive the migration account from the mint + foreignPublicKey
+	// derive the migration account from the mint + foreignAddress
 	const { migrationAccount, vaultAccount } = useDeriveMigrationAccounts({
 		mint,
-		foreignPublicKey,
+		foreignAddress,
 		programId: migrationProgram.programId,
 	});
 
@@ -112,7 +112,7 @@ export const createMigrationClaim = async ({
 
 	const { vaultAccount, migrationAccount } = useDeriveMigrationAccounts({
 		mint,
-		foreignPublicKey: publicKey,
+		foreignAddress: publicKey,
 		programId: program.programId,
 	});
 

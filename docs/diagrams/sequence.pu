@@ -1,15 +1,15 @@
 @startuml
 
 actor Provider
-participant Blockchain
+participant "Settlement Layer" as SettlementLayer
 participant Manager
 actor Worker
 
 == Batch Posting & Reservation ==
-Provider -> Blockchain: Post Batch
-Blockchain -> Blockchain: Create Escrow
+Provider -> SettlementLayer: Post Batch
+SettlementLayer -> SettlementLayer: Create Escrow
 Provider -> Manager: Broadcast Batch
-Manager -> Blockchain: Check & Verify Escrow
+Manager -> SettlementLayer: Check & Verify Escrow
 Manager -> Provider: Accept Batch (ack) 
 
 == Task Delegation ==
@@ -26,6 +26,6 @@ Worker -> Worker: Update Status to "Idle"
 == Batch Completion ==
 Manager -> Provider: Post Batch Results
 Provider -> Manager: Accept Batch Results (ack)
-Manager -> Manager: Distribute Payment
+Manager -> SettlementLayer: Distribute Payment
 
 @enduml

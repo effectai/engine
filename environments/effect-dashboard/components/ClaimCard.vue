@@ -3,7 +3,7 @@
         <template #header>
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-semibold text-gray-900">Migration Vault</h3>
-                <UBadge color="gray" variant="subtle" v-if=vaultBalance>Active</UBadge>
+                <UBadge color="gray" variant="subtle" v-if="vaultBalance">Active</UBadge>
                 <UBadge color="red" variant="subtle" v-else>Claimed</UBadge>
             </div>
         </template>

@@ -7,13 +7,13 @@ use effect_migration_common::MigrationAccount;
 use effect_common::cpi;
 
 #[derive(Accounts)]
-#[instruction(foreign_public_key: Vec<u8>)]
+#[instruction(foreign_address: Vec<u8>)]
 pub struct Create<'info> {
     #[account(
         init,
         payer = authority,
-        space = 8 + 4  + foreign_public_key.len() + 8,
-        seeds = [mint.key().as_ref(), &foreign_public_key.as_slice() ],
+        space = 8 + 4  + foreign_address.len() + 8,
+        seeds = [mint.key().as_ref(), &foreign_address.as_slice() ],
         bump
     )]
     pub migration_account: Account<'info, MigrationAccount>,
@@ -44,9 +44,9 @@ pub struct Create<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn handler(ctx: Context<Create>, foreign_public_key: Vec<u8>, stake_start_time: i64, amount: u64 ) -> Result<()> {
+pub fn handler(ctx: Context<Create>, foreign_address: Vec<u8>, stake_start_time: i64, amount: u64 ) -> Result<()> {
     // initialize the claim account
-    ctx.accounts.migration_account.initialize(foreign_public_key, stake_start_time)?;
+    ctx.accounts.migration_account.initialize(foreign_address, stake_start_time)?;
 
     // transfer the tokens to the claim vault
     transfer_tokens_to_vault!(ctx.accounts, claim_vault_token_account, amount)?;

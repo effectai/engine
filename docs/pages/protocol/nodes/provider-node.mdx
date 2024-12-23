@@ -1,13 +1,14 @@
 
-## Provider Nodes
+# Provider Nodes
 Provider nodes are the vital source of job collections (batches) within the Effect Tasks network, responsible for posting tasks that need to be completed. These providers can be individuals, organizations, or developers seeking to leverage the decentralized workforce for various projects, ranging from transcribing audio files, to document translation tasks, to verification in AI generated content.
 
 ### Creating Batches
-Provider nodes start by defining a template, which is a blueprint for the tasks they want to post on the network. This template includes the task description, instructions, requirements, and rewards for completing the tasks. Once the template is created, The provider node submits the batch along with the funds to the smart contract which creates an escrow account holding the necessary funds, along with a unique batch ID. The batch is then ready to be broadcasted to the network and can be reserved by a manager node.
+Provider nodes start by defining a template, which is a blueprint for the batch they want to post on the network. This template includes the task description, instructions, requirements, and rewards for completing the batch. Once the template is created, The provider node submits the batch along with the funds to the smart contract which creates an escrow account holding the necessary funds, along with a unique batch ID. The batch is then ready to be broadcasted to the network and can be reserved by a manager node.
 
-To read more about the batch lifecycle, click [here](../network-architecture/batch-lifecycle.mdx).
+To read more about the batch lifecycle, click [here](/protocol/data-lifecycle.mdx).
 
 #### Escrow Mechanism
+The escrow mechanism ensures that the funds are held securely in a smart contract until the tasks are completed and verified. This mechanism protects both the provider and the worker nodes by ensuring that the funds are available for distribution once the tasks have been successfully completed.
 
 ### Batch Result Verification
 Once a batch has been completed by the worker nodes, the manager node sends the batch and its results back to the provider node for verification. The provider node then reviews the results to ensure that the tasks have been completed accurately and meet the specified requirements. If the provider node is satisfied with the results, they approve the batch, and the manager node distributes the rewards to the worker nodes. If the provider node is not satisfied, a dispute resolution process may be initiated to resolve any issues.

@@ -1,5 +1,5 @@
 
-## Data Flow
+## Effect AI Protocol: Data Lifecycle
 
 ![image](../../../diagrams/sequence.png)(Image Source: Effect Network)
 
@@ -18,7 +18,3 @@ depending on the required validation rate of the batch, manager nodes are respon
 ## 4.Task Results
 The final stage in the data lifecycle is result posting.
 Once all the tasks in a batch are validated, rewards are distributed to both managers and workers, and the completion record is posted on-chain for transparency. This ensures that all completed tasks are recorded on the blockchain and can be verified by all participants in the network. 
-
-### Reward distribution
-
-Once the batch is validated, the manager node handles the reward distribution to both the workers and itself, it does so by accessing the escrow account created in the first stage of the lifecycle. The manager node then distributes the rewards to the workers based on the completion of their tasks and the quality of their work.

@@ -7,7 +7,7 @@ The worker node pool is a decentralized network of individuals who contribute th
 
 
 ### Worker Node Scoring System
-As a worker node, you are scored on 6 different criteria of cognitive abilities according to Bloom’s Taxonomy:
+As a worker node, you are scored on 6 different criteria of cognitive abilities according to [Bloom’s Taxonomy](https://pmc.ncbi.nlm.nih.gov/articles/PMC4511057/):
 
 - **Remembering**
 - **Understanding**
@@ -16,7 +16,7 @@ As a worker node, you are scored on 6 different criteria of cognitive abilities 
 - **Evaluating**
 - **Creating**
 
-All active participants in the pool **earn a base rate of EFFECT**, which depends on your current worker node level This value is a numeric representation based on four key factors:
+All active participants in the pool [**earn a base rate of EFFECT**](/protocol/incentives//static-income.mdx), which depends on your current worker node level This value is a numeric representation based on four key factors:
 
 1. **Cognitive Ability Level**
 2. **Experience**
@@ -34,6 +34,10 @@ A score from 0 to 1, indicating how unique your skills are compared to other wor
 ##### D = Demand
 A score from 0 to 1, representing the current demand for your skills (e.g., the number of pending jobs that require your specific skill set).
 
-We can combine these into a value V as follows:
-```V = f(C, U, D)```
-Where V is your worker node's intrinsic value, which determines your base rate of earnings in the network.
+These factors are aggregated into a composite score `V` using the formula:
+
+
+![image](../../../worker-node-formula.png)
+
+
+Where `V` represents your worker node’s core contribution score, which directly determines your base earning rate within the network.

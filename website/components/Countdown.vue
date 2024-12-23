@@ -26,6 +26,10 @@
         </div>
         <div>
 
+            <div v-if="expired" class="has-text-centered is-size-4 mt-6">
+                If you owned EFX tokens on 1-1-2025 12:00 UTC, you can claim your EFFECT tokens once the claiming portal becomes available. Stay tuned.
+            </div>
+
             <div
                 class="mt-6 is-flex is-justify-content-center is-size-3 is-align-items-center is-primary has-text-primary is-in-front">
                 <div class="columns is-mobile is-vcentered is-multiline ">
@@ -61,6 +65,7 @@
 export default {
     props: ["title"],
     data: () => ({
+        target: new Date("2025-01-01T00:00:00Z"), 
         showDays: 0,
         showHours: 0,
         showMinutes: 0,
@@ -95,13 +100,19 @@ export default {
     methods: {
         setTimer() {
             const now = new Date();
-            const target = new Date("2025-01-01T00:00:00Z");
-            const difference = target - now;
+            const difference = this.target - now;
 
             if (difference <= 0) {
                 clearInterval(this.timer);
                 this.timer = null;
                 this.expired = true;
+
+                // Set the countdown to 00:00:00:00
+                this.showMinutes = "00";
+                this.showHours = "00";
+                this.showDays = "00";
+                this.showSeconds = "00";
+
                 return;
             }
 

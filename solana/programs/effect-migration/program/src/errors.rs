@@ -29,9 +29,12 @@ pub enum MigrationError {
     #[msg("Invalid mint provided.")]
     InvalidMint,
 
-    #[msg("Invalid Foreign Public Key")]
-    InvalidForeignPublicKey,
+    #[msg("Invalid Foreign Address")]
+    InvalidForeignAddress,
 
     #[msg("Invalid Stake Start Time")]
     InvalidStakeStartTime,
+
+    #[msg("Claming not started yet.")]
+    ClaimingNotStarted,
 }

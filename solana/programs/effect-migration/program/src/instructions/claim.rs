@@ -8,8 +8,7 @@ use effect_staking::{cpi::accounts::GenesisStake, program::EffectStaking};
 use effect_staking_common::StakeAccount;
 use crate::utils::{eos_format, ethereum_format, get_expected_message_bytes, hash_message, parse_recovery_id, recover_public_key, split_signature, validate_message};
 use crate::{errors::MigrationError, vault_seed, genesis_stake};
-
-use anchor_lang::{prelude::Pubkey};
+use anchor_lang::prelude::Pubkey;
 
 #[derive(Accounts)]
 #[instruction(signature: Vec<u8>, message: Vec<u8>)]
@@ -67,9 +66,15 @@ pub struct ClaimStake<'info> {
 }
 
 pub fn handler(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
+    #[cfg(feature = "mainnet")]{
+        let now = Clock::get()?.unix_timestamp;
+        if now < 1635729200 {
+            return Err(MigrationError::ClaimingNotStarted.into());
+        }
+    }
+
     // check if we are dealing with an ethereum or eos account
-    // ethereum accounts always have a public key length of 20 bytes, eos accounts have 32 bytes
-    let is_eth = ctx.accounts.migration_account.foreign_public_key.len() == 20;
+    let is_eth = ctx.accounts.migration_account.foreign_address.len() == 20;
 
     // verify the claim and recover the public key
     verify_claim(
@@ -77,7 +82,7 @@ pub fn handler(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>) -
         message,
         is_eth,
         *ctx.accounts.authority.key,
-        ctx.accounts.migration_account.foreign_public_key.clone(),
+        ctx.accounts.migration_account.foreign_address.clone(),
     )?;
 
     // topup the stake account
@@ -95,6 +100,7 @@ pub fn handler(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>) -
 pub fn verify_claim(signature: Vec<u8>, message: Vec<u8>, is_eth: bool, payer: Pubkey, expected_pubkey: Vec<u8>) -> Result<Vec<u8>> {
     // check if the message matches our expected message
     let expected_message = get_expected_message_bytes(&payer);
+
     validate_message(&message, &expected_message)?;
 
     // recover and validate the public key from the signature

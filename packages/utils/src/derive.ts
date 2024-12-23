@@ -2,16 +2,16 @@ import { PublicKey } from "@solana/web3.js";
 
 export const useDeriveMigrationAccounts = ({
 	mint,
-	foreignPublicKey,
+	foreignAddress,
 	programId
 }: {
 	mint: PublicKey;
-	foreignPublicKey: Uint8Array;
+	foreignAddress: Uint8Array;
 	programId: PublicKey;
 }) => {
 
 	const [migrationAccount] = PublicKey.findProgramAddressSync(
-		[mint.toBuffer(), foreignPublicKey],
+		[mint.toBuffer(), foreignAddress],
 		programId,
 	);
 

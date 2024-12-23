@@ -46,7 +46,7 @@ impl StakeAccount {
             self.stake_start_time = stake_start_time;
         }
 
-        self.update_xefx();
+        self.update_weighted_amount();
     }
 
     fn dilute_stake_time(
@@ -78,16 +78,16 @@ impl StakeAccount {
         }
 
         self.amount += amount;
-        self.update_xefx();
+        self.update_weighted_amount();
     }
 
     pub fn unstake(&mut self, amount: u64) -> Result<()> {
         self.amount -= amount;
-        self.update_xefx();
+        self.update_weighted_amount();
         Ok(())
     }
 
-    fn update_xefx(&mut self) {
+    fn update_weighted_amount(&mut self) {
         self.weighted_amount = self.amount as u128
     }
 }

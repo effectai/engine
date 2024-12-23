@@ -132,7 +132,7 @@ export const effect_migration = {
               },
               {
                 "kind": "arg",
-                "path": "foreign_public_key"
+                "path": "foreign_address"
               }
             ]
           }
@@ -177,7 +177,7 @@ export const effect_migration = {
       ],
       "args": [
         {
-          "name": "foreign_public_key",
+          "name": "foreign_address",
           "type": "bytes"
         },
         {
@@ -267,13 +267,18 @@ export const effect_migration = {
     },
     {
       "code": 6009,
-      "name": "InvalidForeignPublicKey",
-      "msg": "Invalid Foreign Public Key"
+      "name": "InvalidForeignAddress",
+      "msg": "Invalid Foreign Address"
     },
     {
       "code": 6010,
       "name": "InvalidStakeStartTime",
       "msg": "Invalid Stake Start Time"
+    },
+    {
+      "code": 6011,
+      "name": "ClaimingNotStarted",
+      "msg": "Claming not started yet."
     }
   ],
   "types": [
@@ -283,7 +288,7 @@ export const effect_migration = {
         "kind": "struct",
         "fields": [
           {
-            "name": "foreign_public_key",
+            "name": "foreign_address",
             "type": "bytes"
           },
           {

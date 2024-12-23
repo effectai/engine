@@ -502,7 +502,7 @@ export const effect_staking = {
         "kind": "struct",
         "fields": [
           {
-            "name": "foreign_public_key",
+            "name": "foreign_address",
             "type": "bytes"
           },
           {

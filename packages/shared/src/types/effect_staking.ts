@@ -508,7 +508,7 @@ export type EffectStaking = {
         "kind": "struct",
         "fields": [
           {
-            "name": "foreignPublicKey",
+            "name": "foreignAddress",
             "type": "bytes"
           },
           {

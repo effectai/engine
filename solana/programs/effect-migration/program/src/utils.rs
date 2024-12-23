@@ -1,7 +1,6 @@
 use anchor_lang::solana_program::secp256k1_recover::secp256k1_recover;
 use anchor_lang::{prelude::Pubkey, solana_program::secp256k1_recover::Secp256k1Pubkey};
 use anchor_lang::solana_program::keccak;
-use effect_common::ProgramError;
 use sha2::{Digest, Sha256};
 
 use crate::{errors::MigrationError, state::EXPECTED_MESSAGE};
