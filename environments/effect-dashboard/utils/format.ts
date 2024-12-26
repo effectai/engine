@@ -9,7 +9,11 @@ export const sliceBoth = (str: string) => {
 };
 
 export const formatAmountToBalance = (amount: BN) => {
-	return amount.div(new BN(10 ** 6)).toNumber(); // 6 decimals
+	const result = amount.div(new BN(10 ** 6));
+	if (result.gt(new BN(Number.MAX_SAFE_INTEGER))) {
+		throw new Error("Value exceeds JavaScript safe integer limit.");
+	}
+	return result.toNumber()// 6 decimals
 };
 
 export const formatBalanceToAmount = (balance: number): BN => {
@@ -43,34 +47,35 @@ export const formatTimestampToTimeAgo = (timestamp: number) => {
 	return formatDistanceToNow(timestamp, { addSuffix: true });
 };
 
-export function isValidSolanaAddress(address:string) {
+export function isValidSolanaAddress(address: string) {
 	try {
-	  const decoded = bs58.decode(address);
-	  
-	  if (decoded.length !== 32) {
-		return false;
-	  }
+		const decoded = bs58.decode(address);
 
-	  new PublicKey(address); // Throws if invalid
-	  return true;
-	} catch (error) {
-	  return false;
-	}
-  }
+		if (decoded.length !== 32) {
+			return false;
+		}
 
- export function extractAuthorizedSolanaAddress(text:string) {
-	const pattern = /I authorize my tokens to be claimed at the following Solana address:\s*([1-9A-HJ-NP-Za-km-z]{32,44})/;
-	const match = text.match(pattern);
-  
-	if (match) {
-	  const address = match[1]; // The captured address
-	  try {
-		// Validate the address using Solana's PublicKey utility
 		new PublicKey(address); // Throws if invalid
-		return address;
-	  } catch {
-		return null; // Invalid address
-	  }
+		return true;
+	} catch (error) {
+		return false;
+	}
+}
+
+export function extractAuthorizedSolanaAddress(text: string) {
+	const pattern =
+		/I authorize my tokens to be claimed at the following Solana address:\s*([1-9A-HJ-NP-Za-km-z]{32,44})/;
+	const match = text.match(pattern);
+
+	if (match) {
+		const address = match[1]; // The captured address
+		try {
+			// Validate the address using Solana's PublicKey utility
+			new PublicKey(address); // Throws if invalid
+			return address;
+		} catch {
+			return null; // Invalid address
+		}
 	}
 	return null; // No match found
-  }
+}
