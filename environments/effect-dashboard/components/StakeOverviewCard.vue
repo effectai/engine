@@ -36,7 +36,8 @@
                                 unstakeDays || 0 }} Days</span></div>
                     <div class="flex justify-between" v-if="reflectionAccount?.totalWeightedAmount"><span
                             class="text-gray-400">Total
-                            Staked</span><span class="font-medium">{{ formatAmountToBalance(reflectionAccount.totalWeightedAmount)
+                            Staked</span><span class="font-medium">{{
+                                formatAmountToBalance(reflectionAccount.totalWeightedAmount)
                             }}
                             EFFECT</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">Expected APY</span><span
@@ -93,7 +94,7 @@ const { data: reflectionAccount } = useGetReflectionAccount();
 const { data: rewardAccount } = useGetRewardAccount(stakeAccount);
 const { mutateAsync: claimRewards } = useClaimRewards();
 const pendingRewards = computed(() => {
-    
+
     if (!rewardAccount.value || !reflectionAccount.value) return 0;
 
     const reward =

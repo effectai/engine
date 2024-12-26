@@ -73,7 +73,7 @@ const amountDue = computed(() => {
 
 const progress = computed(() => {
     if (!balance.value || !amountDue.value) return 100
-    return formatAmountToBalance(amountDue.value) / balance.value.value
+    return formatAmountToBalance(amountDue.value) / balance.value.value * 100
 })
 
 const calculateDue = (

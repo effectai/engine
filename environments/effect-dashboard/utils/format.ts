@@ -9,7 +9,7 @@ export const sliceBoth = (str: string) => {
 };
 
 export const formatAmountToBalance = (amount: BN) => {
-	return amount.toNumber() / 10 ** 6;
+	return amount.div(new BN(10 ** 6)).toNumber(); // 6 decimals
 };
 
 export const formatBalanceToAmount = (balance: number): BN => {
