@@ -2,6 +2,7 @@ import { Keypair, PublicKey, type TokenAmount } from "@solana/web3.js";
 import {
 	useMutation,
 	useQuery,
+	useQueryClient,
 	type UseQueryReturnType,
 } from "@tanstack/vue-query";
 
@@ -38,6 +39,8 @@ export const useMigrationProgram = () => {
 	const { rewardsProgram } = useStakingProgram();
 	const { stakeProgram } = useStakingProgram();
 
+	const queryClient = useQueryClient();
+
 	const migrationProgram = computed(() => {
 		return new anchor.Program(
 			EffectMigrationIdl as Idl,
@@ -47,7 +50,7 @@ export const useMigrationProgram = () => {
 
 	const useGetMigrationVaultBalance = (migrationAccount: MigrationClaimAccount['account']) => {
 		return useQuery({
-			queryKey: ["claims", "vault-balance", publicKey.value],
+			queryKey: ["claim", "vault-balance", publicKey.value],
 			queryFn: async () => {
 				if (!publicKey.value) {
 					throw new Error("Missing required data");
@@ -55,7 +58,7 @@ export const useMigrationProgram = () => {
 
 				const {vaultAccount} = useDeriveMigrationAccounts({
 					mint: new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT),
-					foreignPublicKey: migrationAccount.foreignPublicKey,
+					foreignAddress: migrationAccount.foreignAddress,
 					programId: migrationProgram.value.programId,
 				});
 
@@ -74,8 +77,8 @@ export const useMigrationProgram = () => {
 	> => {
 		return useQuery({
 			queryKey: [
-				"claims",
-				"claim-accounts",
+				"claim",
+				"accounts",
 				publicKey.value,
 				foreignPublicKey.value,
 			],
@@ -87,7 +90,7 @@ export const useMigrationProgram = () => {
 
 				const { migrationAccount } = useDeriveMigrationAccounts({
 					mint: new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT),
-					foreignPublicKey: foreignPublicKey.value,
+					foreignAddress: foreignPublicKey.value,
 					programId: migrationProgram.value.programId,
 				});
 
@@ -101,6 +104,13 @@ export const useMigrationProgram = () => {
 
 	const useClaim = () =>
 		useMutation({
+			onSuccess: () => {
+				queryClient.invalidateQueries({
+					predicate: (query) => {
+						return query.queryKey.includes("claim");
+					},
+				});
+			},
 			mutationFn: async ({
 				foreignPublicKey,
 				signature,
@@ -134,11 +144,9 @@ export const useMigrationProgram = () => {
 				]);
 
 				if (stakingAccounts.length === 0) {
-					console.log("No staking account found, creating one");
 					stakingAccount = Keypair.generate();
 					signers.push(stakingAccount);
 				} else {
-					console.log("Staking account found");
 					stakingAccount = stakingAccounts[0];
 				}
 
@@ -149,7 +157,7 @@ export const useMigrationProgram = () => {
 
 				const {migrationAccount} = useDeriveMigrationAccounts({
 					mint,
-					foreignPublicKey,
+					foreignAddress: foreignPublicKey,
 					programId: migrationProgram.value.programId,
 				})
 

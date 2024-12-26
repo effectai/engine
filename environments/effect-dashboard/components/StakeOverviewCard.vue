@@ -34,9 +34,9 @@
                     <div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span
                             class="font-medium">{{
                                 unstakeDays || 0 }} Days</span></div>
-                    <div class="flex justify-between" v-if="reflectionAccount?.totalXefx"><span
+                    <div class="flex justify-between" v-if="reflectionAccount?.totalWeightedAmount"><span
                             class="text-gray-400">Total
-                            Staked</span><span class="font-medium">{{ formatAmountToBalance(reflectionAccount.totalXefx)
+                            Staked</span><span class="font-medium">{{ formatAmountToBalance(reflectionAccount.totalWeightedAmount)
                             }}
                             EFFECT</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">Expected APY</span><span
@@ -71,11 +71,12 @@ const { publicKey } = useWallet();
  * Stake age Logic
  */
 const { data: stakeAccount, unstakeDays, amountFormatted: stakeAmount } = useGetStakeAccount();
+
 const stakeAge = computed(() => {
-    if (!stakeAccount.value?.account.stakeStartTime) return 0;
-    const time = currentTime.value - stakeAccount.value.account.stakeStartTime.toNumber()
-    return time;
+    if (!stakeAccount.value?.account.stakeStartTime || !currentTime.value) return 0;
+    return calculateStakeAge(stakeAccount.value.account.stakeStartTime.toNumber())
 });
+
 const currentTime = ref(new Date().getTime() / 1000);
 onMounted(() => {
     const interval = setInterval(() => {
@@ -89,10 +90,12 @@ onMounted(() => {
  * Reward Logic
  */
 const { data: reflectionAccount } = useGetReflectionAccount();
-const { data: rewardAccount } = useGetRewardAccount();
+const { data: rewardAccount } = useGetRewardAccount(stakeAccount);
 const { mutateAsync: claimRewards } = useClaimRewards();
 const pendingRewards = computed(() => {
+    
     if (!rewardAccount.value || !reflectionAccount.value) return 0;
+
     const reward =
         rewardAccount.value?.reflection.div(reflectionAccount.value?.rate).sub(rewardAccount.value?.weightedAmount)
 

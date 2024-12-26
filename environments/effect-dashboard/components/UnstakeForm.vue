@@ -1,15 +1,14 @@
 <template>
     <UCard class="flex flex-col">
         <form @submit.prevent="handleSubmit" class="space-y-6">
-        <div class="dark:!bg-[#1C1A1F] p-6 rounded-xl">
+            <div class="dark:!bg-[#1C1A1F] p-6 rounded-xl">
                 <h3 class="text-lg font-semibold mb-6">Unstake Tokens</h3>
                 <div class="space-y-6">
                     <div><label class="block text-gray-400 mb-2">Amount to Unstake</label>
                         <div class="relative"><input type="text" v-model="unstakeAmount"
                                 class="w-full bg-white/5 border border-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-700"
                                 placeholder="0.00">
-                            <UButton @click="setMaxAmount"
-                            color="black"
+                            <UButton @click="setMaxAmount" color="black"
                                 class="absolute bg-brand-highlight right-2 top-1/2 -translate-y-1/2 px-4 py-1 bg-gray-800 rounded-md text-sm">
                                 MAX</UButton>
                         </div>
@@ -19,13 +18,14 @@
                                 Tokens</span><span>{{ stakeAmount }} EFFECT</span></div>
                         <div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span>30
                                 Days</span>
-            
+
                         </div>
                         <div class="flex justify-between"><span class="text-gray-400">Unstake Delay
-                                </span><span>7 Days</span></div>
-                      
+                            </span><span>7 Days</span></div>
+
                     </div>
-                    <UButton :loading="isPending" @click="handleSubmit" color="white" class="flex justify-center w-full">Unstake</UButton>
+                    <UButton :loading="isPending" @click="handleSubmit" color="white"
+                        class="flex justify-center w-full">Unstake</UButton>
                 </div>
             </div>
 
@@ -46,7 +46,7 @@ const setMaxAmount = () => {
 }
 
 const handleSubmit = async () => {
-    if (!stakeAccount.value){
+    if (!stakeAccount.value) {
         throw new Error('No stake account found');
     }
 

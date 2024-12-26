@@ -20,6 +20,10 @@
                     @click="claimTokens">
                     Claim {{ formatAmountToBalance(amountDue).toFixed(2) }} EFFECT
                 </UButton>
+                <UButton v-else-if="progress == 100" color="gray" variant="solid" size="sm" icon="i-heroicons-gift"
+                    @click="closeVestingHandler">
+                    Close
+                </UButton>
                 <p>{{ progress.toFixed(2) }}% completed</p>
             </div>
         </div>
@@ -32,7 +36,6 @@
 <script setup lang="ts">
 import { BN } from '@coral-xyz/anchor';
 import { useDeriveVestingAccounts } from '@effectai/utils';
-import type { PublicKey } from '@solana/web3.js';
 
 const { vestingProgram, useClaim } = useVestingProgram()
 
@@ -44,7 +47,7 @@ const { useGetTokenAccountBalanceQuery } = useSolanaWallet()
 
 const { vestingVaultAccount } = useDeriveVestingAccounts({
     vestingAccount: props.vestingAccount.publicKey,
-    programId: vestingProgram.programId,
+    programId: vestingProgram.value.programId,
 })
 
 const { data: balance } = useGetTokenAccountBalanceQuery(vestingVaultAccount)
@@ -81,10 +84,19 @@ const calculateDue = (
 ): number => {
     // get now as a unix timestamp
     const now = Math.floor(new Date().getTime() / 1000);
+
+    if(now < startTime) {
+        return 0;
+    }
+
     const poolAmount = (now - startTime) * releaseRate;
     const amountDue = poolAmount - distributedTokens;
 
     return Math.min(amountDue, amountAvailable * 1_000_000);
+}
+
+const closeVestingHandler = async () => {
+    console.log('close vesting account')
 }
 </script>
 

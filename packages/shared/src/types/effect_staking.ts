@@ -566,6 +566,11 @@ export type EffectStaking = {
       "name": "stakeMinimumAmount",
       "type": "u64",
       "value": "0"
+    },
+    {
+      "name": "unstakeDelayDays",
+      "type": "u64",
+      "value": "0"
     }
   ]
 };

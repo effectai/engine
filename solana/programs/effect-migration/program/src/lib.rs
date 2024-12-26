@@ -5,8 +5,9 @@ mod instructions;
 mod macros;
 mod state;
 mod utils;
+mod security;
 
-use effect_migration_common::{EFFECT_MIGRATION};
+use effect_migration_common::EFFECT_MIGRATION;
 pub use instructions::*;
 
 declare_id!(EFFECT_MIGRATION);

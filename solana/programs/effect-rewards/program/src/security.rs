@@ -10,6 +10,6 @@ security_txt! {
     name: "Effect Rewards",
     project_url: "https://effect.ai",
     contacts: "email:security@effect.ai",
-    policy: "https://github.com/nosana-ci/nosana-programs/blob/main/SECURITY.md",
-    source_code: "https://github.com/effectai/effect-tasks"
+    policy: "https://github.com/effectai/effect-tasks/blob/main/solana/SECURITY.md",
+    source_code: "https://github.com/effectai/effect-tasks/solana"
 }

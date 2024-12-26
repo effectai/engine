@@ -9,11 +9,8 @@ crate-type = ["cdylib", "lib"]
 name = "effect_migration"
 
 [features]
-default = ["mainnet"]
-mainnet = []
-devnet = []
-test = []
 cpi = ["no-entrypoint"]
+testing = []
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []

@@ -560,6 +560,11 @@ export const effect_staking = {
       "name": "STAKE_MINIMUM_AMOUNT",
       "type": "u64",
       "value": "0"
+    },
+    {
+      "name": "UNSTAKE_DELAY_DAYS",
+      "type": "u64",
+      "value": "0"
     }
   ]
 } as const;

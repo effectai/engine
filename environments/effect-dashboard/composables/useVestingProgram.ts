@@ -2,9 +2,10 @@ import { PublicKey } from "@solana/web3.js";
 import { useWallet } from "solana-wallets-vue";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program, Idl } from "@coral-xyz/anchor";
-import { useMutation, useQuery } from "@tanstack/vue-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { EffectVestingIdl, type EffectVesting } from "@effectai/shared";
+import { useDeriveVestingAccounts } from "@effectai/utils";
 
 export type EffectVestingProgramAccounts = anchor.IdlAccounts<EffectVesting>;
 export type VestingAccount = anchor.ProgramAccount<
@@ -18,14 +19,19 @@ export const useVestingProgram = () => {
 
 	const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
 
-	const vestingProgram = new anchor.Program(
-		EffectVestingIdl as Idl,
-		provider,
-	) as unknown as Program<EffectVesting>;
+	const queryClient = useQueryClient();
+
+	const vestingProgram = computed(
+		() =>
+			new anchor.Program(
+				EffectVestingIdl as Idl,
+				provider.value || undefined,
+			) as unknown as Program<EffectVesting>,
+	);
 
 	const useGetVestingAccounts = () => {
 		return useQuery({
-			queryKey: ["vestingAccounts", publicKey.value, "unstake"],
+			queryKey: ["vestingAccounts", publicKey.value, "unstake", "claim"],
 			queryFn: async () => {
 				if (!publicKey.value) {
 					throw new Error("Could not get public key");
@@ -33,7 +39,7 @@ export const useVestingProgram = () => {
 
 				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
-				return await vestingProgram.account.vestingAccount.all([
+				return await vestingProgram.value.account.vestingAccount.all([
 					{
 						memcmp: {
 							offset: 8 + 32,
@@ -48,6 +54,21 @@ export const useVestingProgram = () => {
 
 	const useClaim = () => {
 		return useMutation({
+			onSuccess: ({ publicKey }) => {
+				const { vestingVaultAccount } = useDeriveVestingAccounts({
+					vestingAccount: publicKey,
+					programId: vestingProgram.value.programId,
+				});
+
+				queryClient.invalidateQueries({
+					predicate: (query) => {
+						return (
+							query.queryKey.includes("claim") ||
+							query.queryKey.includes(vestingVaultAccount.toBase58())
+						);
+					},
+				});
+			},
 			mutationFn: async ({
 				address,
 				vestingAccount,
@@ -59,14 +80,15 @@ export const useVestingProgram = () => {
 					throw new Error("Could not get public key");
 				}
 
-				return await vestingProgram.methods
-					.claimTransfer()
+				const tx = await vestingProgram.value.methods
+					.claim()
 					.accounts({
 						vestingAccount: address,
 						authority: publicKey.value,
-						vaultTokenAccount: vestingAccount.account.vaultTokenAccount,
 					})
 					.rpc();
+
+				return vestingAccount;
 			},
 		});
 	};

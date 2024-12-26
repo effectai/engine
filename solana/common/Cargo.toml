@@ -13,13 +13,12 @@ crate-type = ["cdylib", "lib"]
 name = "effect_common"
 
 [features]
-default = ["local"]
-mainnet = []
-local = []
+#default = ["mainnet"]
 no-entrypoint = []
 cpi = ["no-entrypoint"]
+mainnet = []
+testing = []
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
-
 
 [dependencies]
 anchor-lang = "0.30.1"

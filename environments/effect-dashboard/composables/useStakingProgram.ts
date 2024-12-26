@@ -39,7 +39,6 @@ export function useStakingProgram() {
 		) as unknown as Program<EffectStaking>;
 	});
 
-	const { vestingProgram } = useVestingProgram();
 	const { rewardsProgram } = useRewardProgram();
 
 	const queryClient = useQueryClient();
@@ -165,6 +164,8 @@ export function useStakingProgram() {
 						.rpc();
 				} catch (e) {
 					console.log(e);
+
+					throw e;
 				}
 			},
 		});

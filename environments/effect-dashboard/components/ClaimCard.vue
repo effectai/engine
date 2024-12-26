@@ -3,7 +3,7 @@
         <template #header>
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-semibold text-gray-900">Migration Vault</h3>
-                <UBadge color="gray" variant="subtle" v-if="vaultBalance">Active</UBadge>
+                <UBadge color="gray" variant="subtle" v-if="balance">Active</UBadge>
                 <UBadge color="red" variant="subtle" v-else>Claimed</UBadge>
             </div>
         </template>
@@ -49,14 +49,12 @@
 </template>
 
 <script setup lang="ts">
-
 const props = defineProps<{
     migrationAccount: EffectMigrationProgramAccounts['migrationAccount']
     signature: Uint8Array | null,
     foreignPublicKey: Uint8Array | null | undefined,
     message: Uint8Array | null
 }>()
-
 
 const { useGetMigrationVaultBalance, useClaim } = useMigrationProgram()
 const { data: vaultBalance } = useGetMigrationVaultBalance(props.migrationAccount)
@@ -70,6 +68,7 @@ const canClaim = computed(() => {
 const emit = defineEmits<(e: 'claim', transactionId: string) => void>()
 const toast = useToast()
 const { mutateAsync: claimTokens, isPending } = useClaim()
+const router = useRouter()
 const handleClaim = async () => {
     try {
 
@@ -81,6 +80,8 @@ const handleClaim = async () => {
         const transactionId = await claimTokens({ signature: props.signature, foreignPublicKey: props.foreignPublicKey, message: props.message })
         emit('claim', transactionId)
         toast.add({ title: 'Success', description: 'Claimed tokens successfully', color: 'green' })
+
+        router.push('/stake')
     } catch (e) {
         console.log(e)
         toast.add({ title: 'Error', description: "Something went wrong", color: 'red' })

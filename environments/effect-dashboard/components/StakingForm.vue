@@ -19,7 +19,9 @@
 						<div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span>30
 								Days</span></div>
 					</div>
-					<UButton :loading="isPending" @click="handleSubmit" color="white"
+					<UButton :loading="isPending"
+					:disabled="!isValid"
+					@click="handleSubmit" color="white"
 						class="flex justify-center w-full">Stake</UButton>
 				</div>
 			</div>
@@ -66,6 +68,7 @@ const setMaxAmount = () => {
 const { mutateAsync: stake, isPending } = useStake();
 const { mutateAsync: topup } = useTopUp();
 const toast = useToast();
+
 const handleSubmit = async () => {
 	if (!isValid.value || !unstakeDays.value) {
 		error.value = "Invalid stake amount";

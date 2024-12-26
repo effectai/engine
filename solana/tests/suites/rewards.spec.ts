@@ -7,14 +7,11 @@ import { mintToAccount, setup } from "../../utils/spl.js";
 import {
 	useDeriveRewardAccounts, useDeriveStakingRewardAccount
 } from "@effectai/utils";
-import type { EffectVesting } from "../../target/types/effect_vesting.js";
 import type { EffectStaking } from "../../target/types/effect_staking.js";
 const SECONDS_PER_DAY = 24 * 60 * 60;
 
 describe("Effect Reward Program", async () => {
 	const program = anchor.workspace.EffectRewards as Program<EffectRewards>;
-	const vestingProgram = anchor.workspace
-		.EffectVesting as Program<EffectVesting>;
 	const stakingProgram = anchor.workspace
 		.EffectStaking as Program<EffectStaking>;
 	const { provider, payer } = useAnchor();
@@ -37,7 +34,6 @@ describe("Effect Reward Program", async () => {
 				.rpc();
 
 			const {
-				reflectionAccount,
 				reflectionVaultAccount,
 				intermediaryReflectionVaultAccount,
 			} = useDeriveRewardAccounts({

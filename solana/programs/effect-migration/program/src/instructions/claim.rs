@@ -1,8 +1,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use effect_common::close_vault;
+use effect_common::constants::CLAIM_START_TIME;
 use effect_common::cpi;
-use effect_common::id::AUTHORITY;
+use effect_common::id::ADMIN_AUTHORITY;
 use effect_migration_common::{MigrationAccount, MigrationProgram};
 use effect_staking::{cpi::accounts::GenesisStake, program::EffectStaking};
 use effect_staking_common::StakeAccount;
@@ -54,7 +55,7 @@ pub struct ClaimStake<'info> {
     )]
     pub stake_vault_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut, address = AUTHORITY)]
+    #[account(mut, address = ADMIN_AUTHORITY)]
     pub rent_receiver: SystemAccount<'info>,
 
     pub rent: Sysvar<'info, Rent>,
@@ -66,11 +67,10 @@ pub struct ClaimStake<'info> {
 }
 
 pub fn handler(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>) -> Result<()> {
-    #[cfg(feature = "mainnet")]{
-        let now = Clock::get()?.unix_timestamp;
-        if now < 1635729200 {
-            return Err(MigrationError::ClaimingNotStarted.into());
-        }
+    let now = Clock::get()?.unix_timestamp;
+
+    if now < CLAIM_START_TIME {
+        return Err(MigrationError::ClaimingNotStarted.into());
     }
 
     // check if we are dealing with an ethereum or eos account

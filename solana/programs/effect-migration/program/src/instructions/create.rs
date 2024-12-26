@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::TokenAccount;
 use anchor_spl::token::{Mint, Token};
-use effect_common::id::AUTHORITY;
+use effect_common::id::ADMIN_AUTHORITY;
 use effect_common::transfer_tokens_to_vault;
 use effect_migration_common::MigrationAccount;
 use effect_common::cpi;
@@ -30,7 +30,7 @@ pub struct Create<'info> {
 
     pub mint: Account<'info, Mint>,
 
-    #[account(mut, address = AUTHORITY)]
+    #[account(mut, address = ADMIN_AUTHORITY)]
     pub authority: Signer<'info>,
 
     #[account(

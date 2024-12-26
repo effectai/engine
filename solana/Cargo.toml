@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "common",
+    
     "programs/effect-migration/common",
     "programs/effect-migration/program",
 

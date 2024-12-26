@@ -4,7 +4,7 @@ import { EffectRewardsIdl, type EffectRewards } from "@effectai/shared";
 import { useMutation, useQuery } from "@tanstack/vue-query";
 import type { StakingAccount } from "./useStakingProgram";
 import { useWallet } from "solana-wallets-vue";
-import { useDeriveRewardAccounts } from "@effectai/utils";
+import { useDeriveRewardAccounts, useDeriveStakingRewardAccount } from "@effectai/utils";
 import { createAssociatedTokenAccountIdempotentInstructionWithDerivation, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 
@@ -86,21 +86,26 @@ export const useRewardProgram = () => {
 		});
 
 
-	const useGetRewardAccount = () => {
+	const useGetRewardAccount = (stakeAccount: Ref<StakingAccount | undefined>) => {
 		return useQuery({
 			queryKey: ["rewardAccount", publicKey.value],
+			enabled: computed(() => !!stakeAccount.value),
 			queryFn: async () => {
 				if (!publicKey.value) {
 					throw new Error("Could not get public key");
 				}
 
-				const { rewardAccount } = useDeriveRewardAccounts({
-					mint,
+				if(!stakeAccount.value) {
+					throw new Error("Stake account is not defined");
+				}
+
+				const { stakingRewardAccount } = useDeriveStakingRewardAccount({
+					stakingAccount: stakeAccount.value.publicKey,
 					programId: rewardsProgram.value.programId,
-				});
+				})
 
 				const account =
-					await rewardsProgram.value.account.rewardAccount.fetch(rewardAccount);
+					await rewardsProgram.value.account.rewardAccount.fetch(stakingRewardAccount);
 
 				return account;
 			},
