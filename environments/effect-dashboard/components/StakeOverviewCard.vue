@@ -34,12 +34,7 @@
                     <div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span
                             class="font-medium">{{
                                 unstakeDays || 0 }} Days</span></div>
-                    <div class="flex justify-between" v-if="reflectionAccount?.totalWeightedAmount"><span
-                            class="text-gray-400">Total
-                            Staked</span><span class="font-medium">{{
-                                formatAmountToBalance(reflectionAccount.totalWeightedAmount)
-                            }}
-                            EFFECT</span></div>
+                   
                     <div class="flex justify-between"><span class="text-gray-400">Expected APY</span><span
                             class="font-medium">30%</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">Pending Rewards</span><span
