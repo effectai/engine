@@ -91,7 +91,7 @@ No, the claim portal will be open and working for a very long time; there’s no
 
 ---
 
-## 6. I have my tokens in Trust / TokenPocket / Wombat / Anchor wallet, can i use the migration portal with them ?
+## 6. I have my tokens in Trust / TokenPocket / Wombat / Anchor wallet, can I use the migration portal with them?
 
 Yes, as long as you have access to your wallet, you can use them to connect to the migration portal and migrate them to Solana. We recommend <a href="https://www.greymass.com/anchor" target="_blank">**Anchor wallet**</a> for the smoothest experience.
 
