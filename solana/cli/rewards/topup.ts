@@ -39,16 +39,7 @@ export const rewardsAddFee: CommandModule<unknown, { mint: string, amount:number
 			programId: rewardProgram.programId,
 		})
 
-		// send tokens to intermediary reflection vault
-		await mintToAccount({
-			payer,
-			mint: mintKey,
-			destination: intermediaryReflectionVaultAccount,
-			amount,
-			mintAuthority: payer,
-			provider
-		})
-
+		
 		const result = await rewardProgram.methods
 			.topup()
 			.accounts({
