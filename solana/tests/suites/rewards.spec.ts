@@ -5,7 +5,8 @@ import type { Program } from "@coral-xyz/anchor";
 import type { EffectRewards } from "../../target/types/effect_rewards.js";
 import { mintToAccount, setup } from "../../utils/spl.js";
 import {
-	useDeriveRewardAccounts, useDeriveStakingRewardAccount
+	useDeriveRewardAccounts,
+	useDeriveStakingRewardAccount,
 } from "@effectai/utils";
 import type { EffectStaking } from "../../target/types/effect_staking.js";
 const SECONDS_PER_DAY = 24 * 60 * 60;
@@ -28,18 +29,24 @@ describe("Effect Reward Program", async () => {
 			// create reflection
 			await program.methods
 				.init()
+				.postInstructions([
+					await program.methods
+						.initIntermediaryVault()
+						.accounts({
+							mint,
+						})
+						.instruction(),
+				])
 				.accounts({
 					mint,
 				})
 				.rpc();
 
-			const {
-				reflectionVaultAccount,
-				intermediaryReflectionVaultAccount,
-			} = useDeriveRewardAccounts({
-				mint,
-				programId: program.programId,
-			});
+			const { reflectionVaultAccount, intermediaryReflectionVaultAccount } =
+				useDeriveRewardAccounts({
+					mint,
+					programId: program.programId,
+				});
 
 			// send tokens to intermediary reflection vault
 			await mintToAccount({
@@ -130,8 +137,17 @@ describe("Effect Reward Program", async () => {
 		it.concurrent("should correctly enter a reward account", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
+			// create reflection
 			await program.methods
 				.init()
+				.postInstructions([
+					await program.methods
+						.initIntermediaryVault()
+						.accounts({
+							mint,
+						})
+						.instruction(),
+				])
 				.accounts({
 					mint,
 				})
@@ -175,12 +191,20 @@ describe("Effect Reward Program", async () => {
 		it.concurrent("should correctly topup", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
+			// create reflection
 			await program.methods
 				.init()
+				.postInstructions([
+					await program.methods
+						.initIntermediaryVault()
+						.accounts({
+							mint,
+						})
+						.instruction(),
+				])
 				.accounts({
 					mint,
 				})
-				.signers([payer])
 				.rpc();
 
 			const {
@@ -211,10 +235,13 @@ describe("Effect Reward Program", async () => {
 			});
 
 			// enter reward acccount
-			await program.methods.enter().accounts({
-				mint,
-				stakeAccount: stakeAccount.publicKey,
-			}).rpc()
+			await program.methods
+				.enter()
+				.accounts({
+					mint,
+					stakeAccount: stakeAccount.publicKey,
+				})
+				.rpc();
 
 			// call topup
 			await program.methods

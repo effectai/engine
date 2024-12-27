@@ -348,7 +348,7 @@ export type EffectRewards = {
           }
         },
         {
-          "name": "intermediateRewardVaultTokenAccount",
+          "name": "rewardVaultTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -360,13 +360,86 @@ export type EffectRewards = {
           }
         },
         {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initIntermediaryVault",
+      "discriminator": [
+        136,
+        233,
+        11,
+        94,
+        192,
+        117,
+        195,
+        255
+      ],
+      "accounts": [
+        {
+          "name": "reflectionAccount",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
           "name": "rewardVaultTokenAccount",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "reflectionAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "intermediateRewardVaultTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "intermediateRewardVaultTokenAccount"
+                "path": "rewardVaultTokenAccount"
               }
             ]
           }

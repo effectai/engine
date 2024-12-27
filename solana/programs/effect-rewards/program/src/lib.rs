@@ -24,6 +24,10 @@ pub mod effect_rewards {
         ctx.accounts.handler()
     }
 
+    pub fn init_intermediary_vault(ctx: Context<InitIntermediaryVault>) -> Result<()> {
+        ctx.accounts.handler()
+    }
+
     /// Topup the [ReflectionAccount](#reflection-account) and [VaultAccount](#vault_token_account-account).
     pub fn topup(ctx: Context<Topup>) -> Result<()> {
         ctx.accounts.handler()

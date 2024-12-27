@@ -4,8 +4,6 @@ import chalk from "chalk";
 import { loadProvider } from "../../utils/provider";
 
 import type { CommandModule } from "yargs";
-import { createKeypairFromFile } from "@effectai/utils";
-import { PublicKey } from "@solana/web3.js";
 
 export const rewardsInitCommand: CommandModule<unknown, { mint: string }> = {
 	describe: "Initializizes the reflection account",
@@ -26,19 +24,23 @@ export const rewardsInitCommand: CommandModule<unknown, { mint: string }> = {
 			provider,
 		) as unknown as anchor.Program<EffectRewards>;
 
-		const signer = await createKeypairFromFile("./tests/keys/devEs8EACCACJqJxJb2jBTRVsmrtsPobvJvMpD33mht.json");
+		// create reflection
+		// await rewardProgram.methods
+		// 	.init()
+		// 	.accounts({
+		// 		mint,
+		// 	})
+		// 	.rpc();
 
-		const result = await rewardProgram.methods
-			.init()
+		await rewardProgram.methods
+			.initVaults()
 			.accounts({
-				authority: signer.publicKey,
-				mint: new PublicKey(mint),
+				mint,
 			})
-			.signers([signer])
-			.rpc()
-
+			.rpc();
+			
 		console.log(
-			chalk.green.bold(`Reflection account initialized, tx: ${result}`),
+			chalk.green.bold(`Reflection account initialized for mint ${mint}`),
 		);
 	},
-}
+};

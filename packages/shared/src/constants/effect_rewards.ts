@@ -342,7 +342,7 @@ export const effect_rewards = {
           }
         },
         {
-          "name": "intermediate_reward_vault_token_account",
+          "name": "reward_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -354,13 +354,86 @@ export const effect_rewards = {
           }
         },
         {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "init_intermediary_vault",
+      "discriminator": [
+        136,
+        233,
+        11,
+        94,
+        192,
+        117,
+        195,
+        255
+      ],
+      "accounts": [
+        {
+          "name": "reflection_account",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
           "name": "reward_vault_token_account",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "reflection_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "intermediate_reward_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "intermediate_reward_vault_token_account"
+                "path": "reward_vault_token_account"
               }
             ]
           }

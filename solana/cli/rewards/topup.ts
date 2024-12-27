@@ -7,6 +7,7 @@ import type { CommandModule } from "yargs";
 import { createKeypairFromFile, useDeriveRewardAccounts } from "@effectai/utils";
 import { PublicKey } from "@solana/web3.js";
 import { mintToAccount } from "../../utils/spl";
+import { getAssociatedTokenAddressSync, transfer } from "@solana/spl-token";
 
 export const rewardsAddFee: CommandModule<unknown, { mint: string, amount:number }> = {
 	describe: "Top up the reflection account",
@@ -39,7 +40,15 @@ export const rewardsAddFee: CommandModule<unknown, { mint: string, amount:number
 			programId: rewardProgram.programId,
 		})
 
-		
+		// get ata for the mint
+		const ata = getAssociatedTokenAddressSync(
+			mintKey,
+			payer.publicKey,
+		)
+
+		// transfer the tokens to the reflection account
+		await transfer(provider.connection, payer, ata, intermediaryReflectionVaultAccount, payer, amount);
+
 		const result = await rewardProgram.methods
 			.topup()
 			.accounts({
