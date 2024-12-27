@@ -1,5 +1,5 @@
 export const effect_staking = {
-  "address": "5f7WaR7jC3metyDTSq7YGAyq1HfCuoGMUVf9NHP578Dm",
+  "address": "6EQ532strjkZpAvqd4JhtJxMppinnDJi7kynvBWut7C2",
   "metadata": {
     "name": "effect_staking",
     "version": "0.1.0",
@@ -187,7 +187,7 @@ export const effect_staking = {
         },
         {
           "name": "migration_program",
-          "address": "WkXR6Wnz1wXr48vw18Q8t7GYm9h3JFUXzAJWDjZopK7"
+          "address": "mkBkDyshkoJ3c1TdjNxwM4jUkA6qBbtSQHeMjr4atxH"
         },
         {
           "name": "system_program",
@@ -358,11 +358,11 @@ export const effect_staking = {
         },
         {
           "name": "reward_program",
-          "address": "BPSquzLynBvygnkRDmE91ShzpL5SNmNjvXi85uRVuJdk"
+          "address": "8zDpE7y8FNUVgPKr4RBY64v6tifC6nvZL8ovi5SdPNDB"
         },
         {
           "name": "vesting_program",
-          "address": "DBTKwjzLfABb1vAX2GijQ6SVDFQPJiBYyHvSXHMFzyHv"
+          "address": "DexJUgYMgjpePPakuMU4aLYuQ7N9ttBEWJs4SPR2hgZr"
         },
         {
           "name": "rent",

@@ -1,5 +1,5 @@
 export const effect_vesting = {
-  "address": "DBTKwjzLfABb1vAX2GijQ6SVDFQPJiBYyHvSXHMFzyHv",
+  "address": "DexJUgYMgjpePPakuMU4aLYuQ7N9ttBEWJs4SPR2hgZr",
   "metadata": {
     "name": "effect_vesting",
     "version": "0.1.0",

@@ -57,6 +57,7 @@ const seed = async () => {
 		provider.wallet.publicKey,
 		1000000000000,
 	);
+	
 	const tx = await provider.connection.requestAirdrop(
 		new PublicKey("dumQVNHZ1KNcLmzjMaDPEA5vFCzwHEEcQmZ8JHmmCNH"),
 		1000000000000,
@@ -66,7 +67,7 @@ const seed = async () => {
 	const wallet = provider.wallet;
 	const payer = (wallet as anchor.Wallet).payer;
 
-	const mintKeypair = await createKeypairFromFile("./tests/keys/mintVBpStVcXHgTmMh5ga1L3YKsqtaRyZ4eE5Lgjc8x.json");
+	const mintKeypair = await createKeypairFromFile("./tests/keys/mint2SFE86T1WHSL7WhSRXzaeMMaUhRjhVvZWYNh918.json");
 
 	const { mint, ata } = await setup({ payer, provider, amount: 5000_000_000, mintKeypair });
 

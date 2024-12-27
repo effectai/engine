@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-pub const EFFECT_VESTING: Pubkey = pubkey!("DBTKwjzLfABb1vAX2GijQ6SVDFQPJiBYyHvSXHMFzyHv");
+pub const EFFECT_VESTING: Pubkey = pubkey!("DexJUgYMgjpePPakuMU4aLYuQ7N9ttBEWJs4SPR2hgZr");
 
 declare_id!(EFFECT_VESTING);
 

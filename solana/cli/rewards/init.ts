@@ -9,7 +9,7 @@ import { PublicKey } from "@solana/web3.js";
 
 export const rewardsInitCommand: CommandModule<unknown, { mint: string }> = {
 	describe: "Initializizes the reflection account",
-	command: "rewards init",
+	command: "rewards-init",
 	builder: (yargs) =>
 		yargs
 			.option("mint", {

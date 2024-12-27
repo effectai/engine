@@ -88,7 +88,7 @@ export type EffectMigration = {
         },
         {
           "name": "migrationProgram",
-          "address": "WkXR6Wnz1wXr48vw18Q8t7GYm9h3JFUXzAJWDjZopK7"
+          "address": "mkBkDyshkoJ3c1TdjNxwM4jUkA6qBbtSQHeMjr4atxH"
         },
         {
           "name": "tokenProgram",
@@ -100,7 +100,7 @@ export type EffectMigration = {
         },
         {
           "name": "stakingProgram",
-          "address": "5f7WaR7jC3metyDTSq7YGAyq1HfCuoGMUVf9NHP578Dm"
+          "address": "6EQ532strjkZpAvqd4JhtJxMppinnDJi7kynvBWut7C2"
         }
       ],
       "args": [
