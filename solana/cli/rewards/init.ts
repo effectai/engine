@@ -24,16 +24,15 @@ export const rewardsInitCommand: CommandModule<unknown, { mint: string }> = {
 			provider,
 		) as unknown as anchor.Program<EffectRewards>;
 
-		// create reflection
-		// await rewardProgram.methods
-		// 	.init()
-		// 	.accounts({
-		// 		mint,
-		// 	})
-		// 	.rpc();
+		await rewardProgram.methods
+			.init()
+			.accounts({
+				mint,
+			})
+			.rpc();
 
 		await rewardProgram.methods
-			.initVaults()
+			.initIntermediaryVault()
 			.accounts({
 				mint,
 			})

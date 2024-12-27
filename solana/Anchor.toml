@@ -6,7 +6,7 @@ skip-lint = false
 
 [programs.localnet]
 effect_vesting = "DexJUgYMgjpePPakuMU4aLYuQ7N9ttBEWJs4SPR2hgZr"
-effect_rewards = "8zDpE7y8FNUVgPKr4RBY64v6tifC6nvZL8ovi5SdPNDB"
+effect_rewards = "DA2dSgEzNZ9vHbVwYGp4iLUfNjqBMHG7D7Vk1NdKWbSY"
 effect_staking = "6EQ532strjkZpAvqd4JhtJxMppinnDJi7kynvBWut7C2"
 effect_migration = "mkBkDyshkoJ3c1TdjNxwM4jUkA6qBbtSQHeMjr4atxH"
 
