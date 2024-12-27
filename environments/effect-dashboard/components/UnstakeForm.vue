@@ -24,7 +24,7 @@
                             </span><span>7 Days</span></div>
 
                     </div>
-                    <UButton :loading="isPending" @click="handleSubmit" color="white"
+                    <UButton :loading="isPending" :disabled="!isValid" @click="handleSubmit" color="white"
                         class="flex justify-center w-full">Unstake</UButton>
                 </div>
             </div>
@@ -44,6 +44,14 @@ const unstakeAmount = ref<number>(0);
 const setMaxAmount = () => {
     unstakeAmount.value = stakeAmount.value;
 }
+
+const isValid = computed(() => {
+    if (!unstakeAmount.value || !stakeAmount.value) {
+        return false;
+    }
+    const amount = unstakeAmount.value;
+    return amount > 0 && amount <= stakeAmount.value;
+});
 
 const handleSubmit = async () => {
     if (!stakeAccount.value) {

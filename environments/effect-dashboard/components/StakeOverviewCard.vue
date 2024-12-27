@@ -98,10 +98,8 @@ const pendingRewards = computed(() => {
 
     if (!reflection || !rate || !weightedAmount) return 0;
 
-    if (!BN.isBN(reflection) || !BN.isBN(rate) || !BN.isBN(weightedAmount)) {
-        console.error('Invalid BN instance in reward calculation.');
-        return 0;
-    }
+    // check if rate is 0
+    if (rate.eq(new BN(0))) return 0;
 
     try {
         console.log('Calculating pending rewards:', reflection, rate, weightedAmount);
