@@ -89,14 +89,21 @@ const { data: reflectionAccount } = useGetReflectionAccount();
 const { data: rewardAccount } = useGetRewardAccount(stakeAccount);
 const { mutateAsync: claimRewards } = useClaimRewards();
 const pendingRewards = computed(() => {
-
     if (!rewardAccount.value || !reflectionAccount.value) return 0;
 
-    const reward =
-        rewardAccount.value?.reflection.div(reflectionAccount.value?.rate).sub(rewardAccount.value?.weightedAmount)
+    const reflection = rewardAccount.value.reflection;
+    const rate = reflectionAccount.value.rate;
+    const weightedAmount = rewardAccount.value.weightedAmount;
 
-    if (!reward) return 0;
-    return +(reward.toNumber() / 1e6).toFixed(4);
+    if (!reflection || !rate || !weightedAmount) return 0;
+
+    try {
+        const reward = reflection.div(rate).sub(weightedAmount);
+        return +(reward.toNumber() / 1e6).toFixed(4); 
+    } catch (error) {
+        console.error('Error calculating pending rewards:', error);
+        return 0; 
+    }
 });
 const handleSubmit = async () => {
     if (!stakeAccount.value) {
