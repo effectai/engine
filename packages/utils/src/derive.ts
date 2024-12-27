@@ -57,13 +57,13 @@ export const useDeriveRewardAccounts = ({
 		programId
 	);
 
-	const [intermediaryReflectionVaultAccount] = PublicKey.findProgramAddressSync(
+	const [reflectionVaultAccount] = PublicKey.findProgramAddressSync(
 		[reflectionAccount.toBuffer()],
 		programId
 	);
 
-	const [reflectionVaultAccount] = PublicKey.findProgramAddressSync(
-		[intermediaryReflectionVaultAccount.toBuffer()],
+	const [intermediaryReflectionVaultAccount] = PublicKey.findProgramAddressSync(
+		[reflectionVaultAccount.toBuffer()],
 		programId
 	);
 
