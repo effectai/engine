@@ -26,7 +26,6 @@ impl ReflectionAccount {
     }
 
     pub fn topup(&mut self, weighted_amount: u128) -> Result<()> {
-
         // dont allow a topup if the total_reflection = 0
         if self.total_reflection == 0 {
             return Err(RewardErrors::ReflectionInvalid.into());

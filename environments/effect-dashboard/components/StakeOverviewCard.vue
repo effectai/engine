@@ -20,7 +20,7 @@
                     <div>
                         <p class="text-sm text-gray-400">Stake Age</p>
                         <AnimatedNumber easing="easeInOutCubic" :value="stakeAge" :format="formatNumber"
-                            class="text-2xl font-bold flex relative">{{ (stakeAge).toFixed(4) }}
+                            class="text-2xl font-bold flex relative">{{ stakeAge }}
                         </AnimatedNumber>
                     </div>
                 </div>

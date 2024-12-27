@@ -36,46 +36,13 @@ export const formatPercent = (decimal: number): string => {
 	return `${(decimal * 100).toFixed(1)}%`;
 };
 
-export const formatNumber = (num: number) => {
+export const formatNumber = (num: number, digits?: number) => {
 	return new Intl.NumberFormat("en-US", {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
+		minimumFractionDigits: digits ?? 2, 
+		maximumFractionDigits: digits ?? 2,
 	}).format(num);
 };
 
 export const formatTimestampToTimeAgo = (timestamp: number) => {
 	return formatDistanceToNow(timestamp, { addSuffix: true });
 };
-
-export function isValidSolanaAddress(address: string) {
-	try {
-		const decoded = bs58.decode(address);
-
-		if (decoded.length !== 32) {
-			return false;
-		}
-
-		new PublicKey(address); // Throws if invalid
-		return true;
-	} catch (error) {
-		return false;
-	}
-}
-
-export function extractAuthorizedSolanaAddress(text: string) {
-	const pattern =
-		/I authorize my tokens to be claimed at the following Solana address:\s*([1-9A-HJ-NP-Za-km-z]{32,44})/;
-	const match = text.match(pattern);
-
-	if (match) {
-		const address = match[1]; // The captured address
-		try {
-			// Validate the address using Solana's PublicKey utility
-			new PublicKey(address); // Throws if invalid
-			return address;
-		} catch {
-			return null; // Invalid address
-		}
-	}
-	return null; // No match found
-}
