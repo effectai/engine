@@ -1,5 +1,5 @@
 export const effect_rewards = {
-  "address": "8zDpE7y8FNUVgPKr4RBY64v6tifC6nvZL8ovi5SdPNDB",
+  "address": "DA2dSgEzNZ9vHbVwYGp4iLUfNjqBMHG7D7Vk1NdKWbSY",
   "metadata": {
     "name": "effect_rewards",
     "version": "0.1.0",

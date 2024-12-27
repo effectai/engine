@@ -364,7 +364,7 @@ export type EffectStaking = {
         },
         {
           "name": "rewardProgram",
-          "address": "8zDpE7y8FNUVgPKr4RBY64v6tifC6nvZL8ovi5SdPNDB"
+          "address": "DA2dSgEzNZ9vHbVwYGp4iLUfNjqBMHG7D7Vk1NdKWbSY"
         },
         {
           "name": "vestingProgram",
