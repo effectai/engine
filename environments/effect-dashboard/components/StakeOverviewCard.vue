@@ -34,7 +34,7 @@
                     <div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span
                             class="font-medium">{{
                                 unstakeDays || 0 }} Days</span></div>
-                   
+
                     <div class="flex justify-between"><span class="text-gray-400">Expected APY</span><span
                             class="font-medium">30%</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">Pending Rewards</span><span
@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+import { BN } from "@coral-xyz/anchor";
 import { useWallet } from "solana-wallets-vue";
 
 const {
@@ -97,22 +98,37 @@ const pendingRewards = computed(() => {
 
     if (!reflection || !rate || !weightedAmount) return 0;
 
-    try {
-        const reward = reflection.div(rate).sub(weightedAmount);
-        return +(reward.toNumber() / 1e6).toFixed(4); 
-    } catch (error) {
-        console.error('Error calculating pending rewards:', error);
-        return 0; 
-    }
-});
-const handleSubmit = async () => {
-    if (!stakeAccount.value) {
-        throw new Error('No stake account found');
+    if (!BN.isBN(reflection) || !BN.isBN(rate) || !BN.isBN(weightedAmount)) {
+        console.error('Invalid BN instance in reward calculation.');
+        return 0;
     }
 
-    const tx = await claimRewards({
-        stakeAccount: stakeAccount.value,
-    });
+    try {
+        console.log('Calculating pending rewards:', reflection, rate, weightedAmount);
+        const reward = reflection.div(rate).sub(weightedAmount);
+        return +(reward.toNumber() / 1e6).toFixed(4);
+    } catch (error) {
+        console.error('Error calculating pending rewards:', error);
+        return 0;
+    }
+});
+const toast = useToast();
+const handleSubmit = async () => {
+    try {
+
+        if (!stakeAccount.value) {
+            throw new Error('No stake account found');
+        }
+
+        const tx = await claimRewards({
+            stakeAccount: stakeAccount.value,
+        });
+
+        toast.add({ title: 'Success', description: 'Claimed rewards', color: 'green' });
+    } catch (e) {
+        console.error(e);
+        toast.add({ title: 'Error', description: 'Something went wrong', color: 'red' });
+    }
 };
 </script>
 
