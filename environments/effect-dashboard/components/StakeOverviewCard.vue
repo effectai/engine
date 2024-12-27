@@ -102,7 +102,6 @@ const pendingRewards = computed(() => {
     if (rate.eq(new BN(0))) return 0;
 
     try {
-        console.log('Calculating pending rewards:', reflection, rate, weightedAmount);
         const reward = reflection.div(rate).sub(weightedAmount);
         return +(reward.toNumber() / 1e6).toFixed(4);
     } catch (error) {

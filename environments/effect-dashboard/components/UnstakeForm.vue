@@ -34,7 +34,6 @@
 </template>
 
 <script setup lang="ts">
-
 const { useUnstake, useGetStakeAccount } = useStakingProgram();
 const { amountFormatted: stakeAmount, data: stakeAccount } = useGetStakeAccount()
 const { mutateAsync: unstake, isPending } = useUnstake();
