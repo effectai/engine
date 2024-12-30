@@ -65,7 +65,7 @@
 export default {
     props: ["title"],
     data: () => ({
-        target: new Date("2025-01-01T00:00:00Z"), 
+        target: new Date("2025-01-01T12:00:00Z"), 
         showDays: 0,
         showHours: 0,
         showMinutes: 0,
