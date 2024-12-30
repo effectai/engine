@@ -1,11 +1,33 @@
-# Settlement
-The Effect AI Protocol is a peer-to-peer (P2P) system leveraging Solana as its settlement layer. This design ensures that all tasks are executed in a decentralized P2P manner, while settlements occur on-chain, delivering the necessary proof and transparency for payments.
+# On-Chain Settlement
+The Effect AI Protocol ensures the integrity, transparency, and fairness of task execution through a robust on-chain settlement process. Leveraging cryptographic methods, the protocol validates completed tasks and distributes rewards, while keeping a focus on maintaining decentralization and efficiency.
 
-## Settlement Process
-After the lifecycle of a task is completed, the task provider gives the final confirmation that the batch has been completed to their satisfaction. And the manager node can initiate the settlement process. The settlement process involves the distribution of rewards to the worker nodes and the manager node based on the completion of tasks and the quality of work. The manager node does this by attaching a signature to the task results and posting them on-chain for transparency and accountability.
+### ZK-Rollup Integration
 
-## Reward Distribution
-The rewards are distributed to the worker nodes and the manager node based on the completion of tasks and the quality of work. The manager node is responsible for validating the work completed by worker nodes and ensuring that the tasks are done accurately and meet the quality standards set by the provider. Once the batch is validated, the manager node handles the reward distribution to both the workers and itself. The rewards are distributed based on the completion of tasks and the quality of work.
+The protocol uses cutting-edge ZK-Rollups (Zero-Knowledge Rollups) for on-chain settlement. This allows the network to batch multiple completed tasks into a single proof, dramatically reducing the computational and storage demands on the blockchain. With zk-rollups, the network achieves:
 
-## On-chain Verification
-Once the rewards are distributed, the completion record is posted on-chain for transparency and accountability. This ensures that all completed tasks are recorded on the blockchain and can be verified by all participants in the network. The on-chain verification process ensures that the rewards are distributed fairly and that the completion record is accurate and transparent.
+**Scalability:** A single proof can represent the validity of thousands of tasks, reducing the need for extensive on-chain interactions.
+
+
+**Security**: The cryptographic nature of zk-rollups ensures that only valid tasks are settled on-chain.
+
+**Cost-Effectiveness:** By batching tasks, transaction fees / network congestion is minimized, making the process economically viable for all participants.
+
+### Proof of Work Submission
+
+Each task completed by a worker node generates a proof of work, encapsulating task completion details and validation metrics. These proofs are aggregated by the manager node, forming a single submission that is included in the zk-rollup proof. This process guarantees that:
+
+Tasks have been completed according to the requirements set by the provider node.
+Validations are accurate and meet the protocol's standards.
+
+### On-Chain Posting and Reward Distribution
+Once the zk-rollup proof is verified on-chain:
+
+A transparent, immutable record of task completion is added to the blockchain.
+Rewards are distributed from the provider node's escrow account to the participating worker and manager nodes based on their contributions and task quality. This ensures a trustless and fair reward system.
+
+### Validation and Dispute Resolution
+The use of zero-knowledge proofs and decentralized validation minimizes the likelihood of disputes. However, if discrepancies arise, the protocol allows for:
+
+Further validation rounds to confirm the accuracy of disputed tasks.
+Escrowed funds to be held until disputes are resolved, ensuring all parties are incentivized to act honestly.
+

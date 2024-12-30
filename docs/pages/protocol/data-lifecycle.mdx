@@ -1,7 +1,7 @@
 
 ## Effect AI Protocol: Data Lifecycle
 
-![image](../../../diagrams/sequence.png)(Image Source: Effect Network)
+![image](../../../diagrams/sequence.png)
 
 ## 1.Task creation
 Task creation is the first stage in the data lifecycle of the network.
@@ -11,10 +11,10 @@ In order to create tasks, a provider node must first define a template for the t
 The second stage in the data lifecycle is task delegation.
 Once a batch of tasks is reserved by a manager node, the manager node can decrypt the task details and start delegating tasks to worker nodes. The manager node uses a peer-to-peer (p2p) connection to assign individual tasks to available worker nodes in the network. It manages the distribution of tasks, ensuring that workers are provided with the right jobs based on their skills, availability, and demand. Worker nodes complete tasks via an interface, like a web form, and submit them back for validation. The manager node checks and confirms the work, ensuring accuracy. Once tasks are validated, rewards are distributed to both managers and workers, and the completion record is posted on-chain for transparency.
 
-## 3.Task validation
+## 3.Task Execution and Validation
 The third stage in the lifecycle of a batch is task validation.
 depending on the required validation rate of the batch, manager nodes are responsible for achieving the required validation rate on the batch. This involves (re)delegating the completed tasks to other worker nodes for validation.
 
-## 4.Task Results
-The final stage in the data lifecycle is result posting.
+## 4.Task Completion
+The final stage in the data lifecycle is task completion.
 Once all the tasks in a batch are validated, rewards are distributed to both managers and workers, and the completion record is posted on-chain for transparency. This ensures that all completed tasks are recorded on the blockchain and can be verified by all participants in the network. 

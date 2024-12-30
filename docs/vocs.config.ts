@@ -33,7 +33,7 @@ export default defineConfig({
 			items: [
 				{
 					text: "Core Concepts",
-					link: "/protocol/key-concepts",
+					link: "/protocol/core-concepts",
 				},
 
 				{
