@@ -6,30 +6,26 @@ import { secp256k1 } from "@noble/curves/secp256k1";
 import { privateKeyToAccount } from "viem/accounts";
 
 import {
-	extractEosPublicKeyBytes,
-	useDeriveStakeAccounts,
+	extractEosPublicKeyBytes
 } from "@effectai/utils";
 
-import { Action, PrivateKey, Transaction, TransactionHeader } from "@wharfkit/antelope";
+import { PrivateKey } from "@wharfkit/antelope";
 
 import type { EffectMigration } from "../../target/types/effect_migration.js";
 import type { EffectStaking } from "../../target/types/effect_staking.js";
 
 import { expect, describe, it } from "vitest";
-import { SECONDS_PER_DAY, useAnchor } from "../helpers.js";
+import { useAnchor } from "../helpers.js";
 import { setup } from "../../utils/spl.js";
 import {
 	claimMigration,
 	createMigrationClaim,
 } from "../../utils/migration.js";
-import { createStake } from "../../utils/stake.js";
 import { useErrorsIDL } from "../../utils/idl.js";
 
 import { effect_migration } from "@effectai/shared";
 
 import { createDummyEosTransactionWithMemo } from "../../utils/eos.js";
-import { ABICache, Session } from "@wharfkit/session";
-import { WalletPluginPrivateKey } from "@wharfkit/wallet-plugin-privatekey";
 
 describe("Migration Program", async () => {
 	const program = anchor.workspace.EffectMigration as Program<EffectMigration>;
@@ -78,7 +74,7 @@ describe("Migration Program", async () => {
 			if (!publicKey) {
 				throw new Error("Invalid public key");
 			}
-
+ 
 			const { migrationAccount } = await createMigrationClaim({
 				mint,
 				userTokenAccount: ata,
@@ -351,7 +347,7 @@ describe("Migration Program", async () => {
 						program,
 					});
 
-				const {stakeAccount, migrationAccount, stakeVaultAccount} = await claimMigration({
+				const {stakeAccount, stakeVaultAccount} = await claimMigration({
 					migrationProgram: program,
 					stakeProgram,
 					ata,
