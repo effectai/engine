@@ -1,12 +1,12 @@
 
 # Manager Nodes
-Manager nodes play a central role in the Effect Tasks network, acting as orchestrators of the entire task flow. Anyone with a sufficient stake in the network can spin up a manager node, which allows them to participate in the process of selecting, delegating, and validating tasks.
+Manager nodes play a central role in the Effect AI Protocol, acting as orchestrators of the entire task flow. Anyone with a sufficient stake in the network can spin up a manager node, which allows them to participate in the process of selecting, delegating, and validating tasks.
 
 When provider nodes post encrypted job collections (batches) on-chain, manager nodes are responsible for selecting and reserving these batches by performing a transaction. Once a batch is reserved, a handshake between the provider and manager node is required to decrypt the job details. This ensures both parties are in sync before tasks are delegated.
 
 Once decrypted, the manager node uses a peer-to-peer (p2p) connection to assign individual tasks to available worker nodes in the network. It manages the distribution of tasks, ensuring that workers are provided with the right jobs based on their skills, availability, and demand.
 
-In addition to delegating tasks, manager nodes are also responsible for validating the work completed by worker nodes. This ensures that the tasks are done accurately and meet the quality standards set by the provider. Once the batch is validated, the manager node handles the reward distribution to both the workers and itself. Finally, verification of the completed jobs is posted on-chain to maintain transparency and accountability.
+In addition to delegating tasks, manager nodes are also responsible for validating the work completed by worker nodes. This ensures that the tasks are done accurately and meet the quality standards set by the provider. Once the batch is validated, the manager node handles the reward distribution to both the workers and itself.
 
 Overall, manager nodes serve as the backbone of task management, ensuring that the right jobs are distributed to the right workers, that tasks are completed accurately, and that rewards are fairly distributed in a decentralized and efficient manner.
 

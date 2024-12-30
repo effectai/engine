@@ -70,7 +70,7 @@ impl<'info> GenesisStake<'info> {
             self.migration_vault_token_account.to_account_info(),
             self.stake_vault_token_account.to_account_info(),
             self.migration_vault_token_account.to_account_info(),
-            &[&vault_seed!(self.stake_account.key())],
+            &[],
             amount,
         )
     }

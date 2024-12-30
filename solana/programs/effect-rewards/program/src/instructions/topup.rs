@@ -4,7 +4,6 @@ use crate::*;
 
 #[derive(Accounts)]
 pub struct Topup<'info> {
-
     #[account(mut)]
     pub mint: Account<'info, Mint>,
 
@@ -18,20 +17,20 @@ pub struct Topup<'info> {
     #[account(
         mut,
         token::mint = mint,
-        token::authority = intermediate_reward_vault_token_account,
+        token::authority = reward_vault_token_account,
         seeds = [ reflection_account.key().as_ref() ],
         bump,
     )]
-    pub intermediate_reward_vault_token_account: Account<'info, TokenAccount>,
+    pub reward_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(
         mut,
         token::mint = mint,
-        token::authority = reward_vault_token_account,
-        seeds = [ intermediate_reward_vault_token_account.key().as_ref() ],
+        token::authority = intermediate_reward_vault_token_account,
+        seeds = [ reward_vault_token_account.key().as_ref() ],
         bump,
     )]
-    pub reward_vault_token_account: Account<'info, TokenAccount>,
+    pub intermediate_reward_vault_token_account: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
 }
@@ -49,13 +48,14 @@ impl<'info> Topup<'info> {
             self,
             intermediate_reward_vault_token_account,
             reward_vault_token_account,
-            &[&intermediary_vault_seed!(self.reflection_account.key().as_ref())],
+            &[&intermediary_vault_seed!(self
+                .reward_vault_token_account
+                .key()
+                .as_ref())],
             amount
         );
 
-        self.reflection_account.topup(
-            amount.try_into().unwrap(),
-        )?;
+        self.reflection_account.topup(amount.try_into().unwrap())?;
 
         Ok(())
     }

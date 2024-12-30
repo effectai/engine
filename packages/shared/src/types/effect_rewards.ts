@@ -58,7 +58,8 @@ export type EffectRewards = {
           }
         },
         {
-          "name": "intermediateRewardVaultTokenAccount",
+          "name": "rewardVaultTokenAccount",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -69,13 +70,12 @@ export type EffectRewards = {
           }
         },
         {
-          "name": "rewardVaultTokenAccount",
-          "writable": true,
+          "name": "intermediateRewardVaultTokenAccount",
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "intermediateRewardVaultTokenAccount"
+                "path": "rewardVaultTokenAccount"
               }
             ]
           }
@@ -596,7 +596,7 @@ export type EffectRewards = {
           }
         },
         {
-          "name": "intermediateRewardVaultTokenAccount",
+          "name": "rewardVaultTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -608,13 +608,13 @@ export type EffectRewards = {
           }
         },
         {
-          "name": "rewardVaultTokenAccount",
+          "name": "intermediateRewardVaultTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "intermediateRewardVaultTokenAccount"
+                "path": "rewardVaultTokenAccount"
               }
             ]
           }

@@ -13,21 +13,21 @@ pub struct Claim<'info> {
         bump,
     )]
     pub reflection_account: Account<'info, ReflectionAccount>,
+
+    #[account(
+        mut,
+        seeds = [reflection_account.key().as_ref()],
+        bump
+    )]
+    pub reward_vault_token_account: Account<'info, TokenAccount>,
   
     #[account(
         token::mint = recipient_token_account.mint.key(),
         token::authority = intermediate_reward_vault_token_account,
-        seeds = [ reflection_account.key().as_ref() ],
+        seeds = [ reward_vault_token_account.key().as_ref() ],
         bump,
     )]
     pub intermediate_reward_vault_token_account: Account<'info, TokenAccount>,
-
-    #[account(
-        mut,
-        seeds = [intermediate_reward_vault_token_account.key().as_ref()],
-        bump
-    )]
-    pub reward_vault_token_account: Account<'info, TokenAccount>,
 
     #[account(
         mut,
@@ -83,7 +83,7 @@ impl<'info> Claim<'info> {
             self,
             reward_vault_token_account,
             recipient_token_account,
-            &[&vault_seed!(self.intermediate_reward_vault_token_account.key().as_ref())],
+            &[&vault_seed!(self.reflection_account.key().as_ref())],
             amount.try_into().unwrap()
         )
     }

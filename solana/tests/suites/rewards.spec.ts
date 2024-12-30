@@ -127,13 +127,32 @@ describe("Effect Reward Program", async () => {
 			// get ata balance
 			const ataBalance = await provider.connection.getTokenAccountBalance(ata);
 
+			// expect to have claimed 50% of 10_000_000 so 5_000_000
 			expect(ataBalance.value.uiAmount).toEqual(5);
 			expect(rewardAccountVault.value.uiAmount).toEqual(5);
+
+			// claim reward for another stake account
+			await program.methods
+				.claim()
+				.accounts({
+					stakeAccount: anotherStakeAccount.publicKey,
+					recipientTokenAccount: ata,
+				})
+				.rpc();
+
+			const rewardAccountVault2 =
+				await provider.connection.getTokenAccountBalance(
+					reflectionVaultAccount,
+				);
+
+			// get ata balance
+			const ataBalance2 = await provider.connection.getTokenAccountBalance(ata);
+			expect(ataBalance2.value.uiAmount).toEqual(10);
+			expect(rewardAccountVault2.value.uiAmount).toEqual(0);
 		});
 	});
 
 	describe("Reward Enter", async () => {
-		// create a stake
 		it.concurrent("should correctly enter a reward account", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
@@ -155,6 +174,7 @@ describe("Effect Reward Program", async () => {
 
 			const stakeAccount = new anchor.web3.Keypair();
 
+			// create a stake
 			await stakingProgram.methods
 				.stake(new anchor.BN(10 ** 6), new anchor.BN(30 * SECONDS_PER_DAY))
 				.accounts({

@@ -278,7 +278,6 @@ describe("Staking Program", async () => {
 	});
 
 	describe("Stake Close", async () => {
-
 		it.concurrent("should correctly close a stake account", async () => {
 			const { mint, ata } = await setup({ payer, provider });
 			

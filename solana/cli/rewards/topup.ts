@@ -6,7 +6,6 @@ import { loadProvider } from "../../utils/provider";
 import type { CommandModule } from "yargs";
 import { createKeypairFromFile, useDeriveRewardAccounts } from "@effectai/utils";
 import { PublicKey } from "@solana/web3.js";
-import { mintToAccount } from "../../utils/spl";
 import { getAssociatedTokenAddressSync, transfer } from "@solana/spl-token";
 
 export const rewardsAddFee: CommandModule<unknown, { mint: string, amount:number }> = {

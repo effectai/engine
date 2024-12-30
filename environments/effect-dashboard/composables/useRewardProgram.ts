@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import type { Program, Idl } from "@coral-xyz/anchor";
 import { EffectRewardsIdl, type EffectRewards } from "@effectai/shared";
-import { useMutation, useQuery } from "@tanstack/vue-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import type { StakingAccount } from "./useStakingProgram";
 import { useWallet } from "solana-wallets-vue";
 import { useDeriveRewardAccounts, useDeriveStakingRewardAccount } from "@effectai/utils";
@@ -22,6 +22,8 @@ export const useRewardProgram = () => {
 
     const appConfig = useRuntimeConfig();
     const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
+
+	const queryClient = useQueryClient();
 
 	const useGetReflectionAccount = () => {
 		return useQuery({
@@ -48,6 +50,13 @@ export const useRewardProgram = () => {
 
 	const useClaimRewards = () =>
 		useMutation({
+			onSuccess: () => {
+				queryClient.invalidateQueries({
+					predicate: (query) => {
+						return query.queryKey.includes("claim")
+					},
+				});
+			},
 			mutationFn: async ({
 				stakeAccount,
 			}: {
@@ -56,11 +65,6 @@ export const useRewardProgram = () => {
 				if (!publicKey.value) {
 					throw new Error("Could not get public key");
 				}
-
-				const { reflectionAccount } = useDeriveRewardAccounts({
-					mint,
-					programId: rewardsProgram.value.programId,
-				});
 
 				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
@@ -88,7 +92,7 @@ export const useRewardProgram = () => {
 
 	const useGetRewardAccount = (stakeAccount: Ref<StakingAccount | undefined>) => {
 		return useQuery({
-			queryKey: ["rewardAccount", publicKey.value],
+			queryKey: ["rewardAccount", publicKey.value, "claim"],
 			enabled: computed(() => !!stakeAccount.value),
 			queryFn: async () => {
 				if (!publicKey.value) {

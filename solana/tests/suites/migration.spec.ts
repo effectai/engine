@@ -170,7 +170,7 @@ describe("Migration Program", async () => {
 		it.concurrent("correctly signs with keccak256", async () => {
 			const { mint, ata } = await setup({ provider, payer });
 
-			const { migrationAccount } = await createMigrationClaim({
+			await createMigrationClaim({
 				mint,
 				userTokenAccount: ata,
 				publicKey: toBytes(ethPublicKey),

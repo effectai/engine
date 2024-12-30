@@ -52,7 +52,8 @@ export const effect_rewards = {
           }
         },
         {
-          "name": "intermediate_reward_vault_token_account",
+          "name": "reward_vault_token_account",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -63,13 +64,12 @@ export const effect_rewards = {
           }
         },
         {
-          "name": "reward_vault_token_account",
-          "writable": true,
+          "name": "intermediate_reward_vault_token_account",
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "intermediate_reward_vault_token_account"
+                "path": "reward_vault_token_account"
               }
             ]
           }
@@ -590,7 +590,7 @@ export const effect_rewards = {
           }
         },
         {
-          "name": "intermediate_reward_vault_token_account",
+          "name": "reward_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -602,13 +602,13 @@ export const effect_rewards = {
           }
         },
         {
-          "name": "reward_vault_token_account",
+          "name": "intermediate_reward_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "intermediate_reward_vault_token_account"
+                "path": "reward_vault_token_account"
               }
             ]
           }
