@@ -9,6 +9,7 @@
                                 <span v-if="walletMeta.icon">
                                     <img :src="walletMeta.icon" class="h-5 w-5 inline-block mr-1" />
                                 </span>
+                                <p class="max-w-sm">{{ foreignPublicKey }}</p>
                                 {{ walletMeta.name }}
                             </span>
                             <div class="flex items-center justify-between" v-if="address">
