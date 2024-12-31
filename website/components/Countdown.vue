@@ -43,17 +43,6 @@
                         </div>
                     </div>
                     <div class="column">
-                        <nuxt-link v-if="!expired" class="mx-2 is-flex is-justify-content-center"
-                            to="https://pancakeswap.finance/?inputCurrency=BNB&outputCurrency=0xC51Ef828319b131B595b7ec4B28210eCf4d05aD0"
-                            target="_blank" exact-active-class="is-active">
-                            <button class="button is-black is-rounded is-outlined is-flex is-medium"
-                                style="gap:12px">Buy EFX
-                                <span class="icon">
-                                    <img class="image ml-2" src="/img/pancakeswap-cake-logo.svg">
-                                </span>
-                            </button>
-                        </nuxt-link>
-
                     </div>
                 </div>
             </div>

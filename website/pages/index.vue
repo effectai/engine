@@ -229,7 +229,6 @@ useSeoMeta({
     description: "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
 })
 
-
 </script>
 
 <style lang="scss" scoped>
