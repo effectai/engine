@@ -15,28 +15,24 @@ As a worker node, you are scored on 6 different criteria of cognitive abilities 
 - **Evaluating**
 - **Creating**
 
-All active participants in the pool [**earn a base rate of EFFECT**](/protocol/incentives#static-income), which depends on your current worker node level This value is a numeric representation based on four key factors:
+All active participants in the pool [**earn a base rate of EFFECT**](/protocol/incentives#static-income), the amount of which is determined by a contribution score that is calculated based on the following factors:
 
-1. **Cognitive Ability Level**
-2. **Experience**
-3. **Uniqueness**
-4. **Current Demand for your skill set**
-
-Each of these factors is then combined into a weighted sum:
-
-##### C = Cognitive Ability Index
+##### 1. C = Cognitive Ability Index
 A numeric value representing your worker node level based on your total tasks completed and the number of skills you have obtained.
 
-##### U = Uniqueness
+##### 2. E = Experience 
+A score from 0 to 10, indicating your experience level within the network.
+
+##### 3. U = Uniqueness
 A score from 0 to 1, indicating how unique your skills are compared to other worker nodes in the pool.
 
-##### D = Demand
+##### 4. D = Demand
 A score from 0 to 1, representing the current demand for your skills (e.g., the number of pending jobs that require your specific skill set).
 
-These factors are aggregated into a composite score `V` using the formula:
+These factors are aggregated into a weighted contribution score `V` using the formula:
 
 
 ![image](../../../worker-node-formula.png)
 
 
-Where `V` represents your worker node’s core contribution score, which directly determines your base earning rate within the network.
+Where `V` represents your worker node’s core contribution score, which directly determines your *base earning rate* within the network.

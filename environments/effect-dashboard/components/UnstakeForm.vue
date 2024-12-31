@@ -16,7 +16,7 @@
                     <div class="bg-white/5 rounded-lg py-4 px-2 space-y-2">
                         <div class="flex justify-between"><span class="text-gray-400">Total Staked
                                 Tokens</span><span>{{ stakeAmount }} EFFECT</span></div>
-                        <div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span>30
+                        <div class="flex justify-between"><span class="text-gray-400">Unlock Period</span><span>30
                                 Days</span>
 
                         </div>

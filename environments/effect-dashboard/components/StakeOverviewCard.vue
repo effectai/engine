@@ -6,9 +6,23 @@
                     <div class="p-3 bg-gray-800 text-white rounded-lg flex">
                         <UIcon name="lucide:wallet" class="" />
                     </div>
-                    <div>
-                        <p class="text-sm text-gray-400">Total Staked</p>
-                        <p class="text-2xl font-bold">{{ stakeAmount || "0" }} EFFECT</p>
+                    <div class="flex-grow flex justify-between">
+                        <div>
+                            <div class="flex items-center">
+                                <p class="text-sm text-gray-400">Total Staked</p>
+                            </div>
+                            <p class="text-2xl font-bold">{{ stakeAmount || "0" }} EFFECT</p>
+                        </div>
+                        <div v-if="stakeAmount">
+                            <UTooltip :ui="{ width: 'max-w-md' }"
+                                text="Staked tokens in January 2025 get a 2.5x reward ratio">
+                                <UBadge label="BOOSTED" class="rainbow-border ml-2" color="gray">
+                                    <template #trailing>
+                                        <UIcon name="i-heroicons-fire" class="h-6 w-6 text-lg" size="lg"  />
+                                    </template>
+                                </UBadge>
+                            </UTooltip>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -129,4 +143,25 @@ const handleSubmit = async () => {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.rainbow-border {
+    --angle: 0deg;
+    border: 1px solid;
+    border-radius: 0.375rem;
+    border-image: conic-gradient(from var(--angle), red, yellow, lime, aqua, blue, magenta, red) 1;
+    background: none;
+    animation: 10s rotate linear infinite;
+}
+
+@keyframes rotate {
+    to {
+        --angle: 360deg;
+    }
+}
+
+@property --angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+</style>

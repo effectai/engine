@@ -67,7 +67,7 @@ const seed = async () => {
 	const wallet = provider.wallet;
 	const payer = (wallet as anchor.Wallet).payer;
 
-	const mintKeypair = await createKeypairFromFile("./tests/keys/mint2SFE86T1WHSL7WhSRXzaeMMaUhRjhVvZWYNh918.json");
+	const mintKeypair = await createKeypairFromFile("./tests/keys/mint44RzfitV8sqFGrLnh6sLNAS2jxaw1KhaSsYGT3P.json");
 
 	const { mint, ata } = await setup({ payer, provider, amount: 5000_000_000, mintKeypair });
 

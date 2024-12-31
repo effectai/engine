@@ -73,7 +73,6 @@ export const createMigrationClaimCommand: CommandModule<
 			provider,
 		) as unknown as anchor.Program<EffectMigration>;
 
-
 		const ata = getAssociatedTokenAddressSync(
 			new PublicKey(mint),
 			payer.publicKey,
@@ -89,8 +88,10 @@ export const createMigrationClaimCommand: CommandModule<
 		let publicKeyBytes = null;
 
 		if (username) {
-			const eosPublicKey = await extractKeyFromEosUsername(username);
+			const eosPublicKey = await extractKeyFromEosUsername(username, "active");
 			publicKeyBytes = extractEosPublicKeyBytes(eosPublicKey);
+			console.log("found eos public key", eosPublicKey);
+			console.log("public key bytes", publicKeyBytes);
 		} else if (publicKey) {
 			publicKeyBytes = toBytes(publicKey);
 		}
@@ -98,6 +99,8 @@ export const createMigrationClaimCommand: CommandModule<
 		if (!publicKeyBytes) {
 			throw new Error("Invalid public key");
 		}
+
+
 
 		const { migrationAccount } = await createMigrationClaim({
 			program: migrationProgram,

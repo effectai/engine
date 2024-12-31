@@ -2,7 +2,7 @@
     <UCard class="max-w-md mx-auto bg-gray-50">
         <template #header>
             <div class="flex items-center justify-between">
-                <h3 class="text-xl font-semibold text-gray-900">Migration Vault</h3>
+                <h3 class="text-xl font-semibold">Migration Vault</h3>
                 <UBadge color="gray" variant="subtle" v-if="balance">Active</UBadge>
                 <UBadge color="red" variant="subtle" v-else>Claimed</UBadge>
             </div>
@@ -10,8 +10,8 @@
 
         <div class="space-y-4">
             <div class="text-center">
-                <p class="text-sm text-gray-600">Available Balance</p>
-                <p class="text-3xl font-bold text-gray-900" v-if="balance">{{ balance }}</p>
+                <p class="text-sm ">Available Balance</p>
+                <p class="text-3xl font-bold" v-if="balance">{{ balance }}</p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
