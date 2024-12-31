@@ -24,7 +24,7 @@
                     @click="closeVestingHandler">
                     Close
                 </UButton>
-                <p>{{ progress.toFixed(2) }}% completed</p>
+                <p>{{ progress }}% completed</p>
             </div>
         </div>
         <div>
@@ -90,8 +90,8 @@ const calculateDue = (
     }
 
     const poolAmount = (now - startTime) * releaseRate;
-    const amountDue = poolAmount - distributedTokens;
 
+    const amountDue = poolAmount - distributedTokens;
     return Math.min(amountDue, amountAvailable * 1_000_000);
 }
 

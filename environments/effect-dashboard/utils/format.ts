@@ -9,11 +9,8 @@ export const sliceBoth = (str: string) => {
 };
 
 export const formatAmountToBalance = (amount: BN) => {
-	const result = amount.div(new BN(10 ** 6));
-	if (result.gt(new BN(Number.MAX_SAFE_INTEGER))) {
-		throw new Error("Value exceeds JavaScript safe integer limit.");
-	}
-	return result.toNumber()// 6 decimals
+	const result = amount.toNumber() / 10 ** 6;
+	return result
 };
 
 export const formatBalanceToAmount = (balance: number): BN => {
