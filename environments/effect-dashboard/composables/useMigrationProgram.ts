@@ -79,12 +79,11 @@ export const useMigrationProgram = () => {
 			queryKey: [
 				"claim",
 				"accounts",
-				publicKey.value,
 				foreignPublicKey.value,
 			],
 			queryFn: async () => {
 				
-				if (!publicKey.value || !foreignPublicKey.value) {
+				if (!foreignPublicKey.value) {
 					throw new Error("Missing required data");
 				}
 
@@ -98,7 +97,7 @@ export const useMigrationProgram = () => {
 					migrationAccount,
 				);
 			},
-			enabled: computed(() => !!publicKey.value && !!foreignPublicKey.value),
+			enabled: computed(() => !!foreignPublicKey.value),
 		});
 	};
 

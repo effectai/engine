@@ -9,7 +9,6 @@
                                 <span v-if="walletMeta.icon">
                                     <img :src="walletMeta.icon" class="h-5 w-5 inline-block mr-1" />
                                 </span>
-                                <p class="max-w-sm">{{ foreignPublicKey }}</p>
                                 {{ walletMeta.name }}
                             </span>
                             <div class="flex items-center justify-between" v-if="address">
@@ -137,7 +136,7 @@ const message: Ref<Uint8Array | null> = ref(null)
 const signature: Ref<Uint8Array | null> = ref(null)
 const manualForeignPublicKey: Ref<Uint8Array | null> = ref(null)
 
-const computedForeignPublicKey: Ref<Uint8Array | null | undefined> = computed(() => manualForeignPublicKey.value || foreignPublicKey.value)
+const computedForeignPublicKey: Ref<Uint8Array | null> = computed(() => manualForeignPublicKey.value || foreignPublicKey.value || null)
 
 // try to load state from url
 onMounted(() => {
