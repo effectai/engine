@@ -24,7 +24,7 @@
                     @click="closeVestingHandler">
                     Close
                 </UButton>
-                <p>{{ progress }}% completed</p>
+                <p>{{ progress.toFixed(2) }}% completed</p>
             </div>
         </div>
         <div>
