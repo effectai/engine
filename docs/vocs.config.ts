@@ -87,13 +87,14 @@ export default defineConfig({
 					text: "Governance",
 					items: [
 						{
+							text: "Proposals",
+							link: "/protocol/governance#proposals",
+						},
+						{
 							text: "Dispute Resolution",
 							link: "/protocol/governance#dispute-resolution",
 						},
-						{
-							text: "Voting",
-							link: "/protocol/governance#voting",
-						},
+					
 					],
 				},
 				
