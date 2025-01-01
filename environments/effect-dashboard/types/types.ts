@@ -25,12 +25,15 @@ export type WalletBase = {
     getNativeBalance: () => Promise<FormattedBalanceReturnType>
     useGetNativeBalanceQuery?: () => UseQueryReturnType<FormattedBalanceReturnType, Error>;
 
+    getBalance: (address: string) => Promise<FormattedBalanceReturnType>
+
     connect: () => void;
     disconnect: () => void;
 }
 
 // Target Chain Wallet Adapter Type (solana) 
 export type TargetWalletAdapter = WalletBase & {
+    useGetBalanceQuery: (account?: Ref<PublicKey | null | string>) => UseQueryReturnType<FormattedBalanceReturnType, Error>;
     useGetTokenAccountBalanceQuery: (account: PublicKey) => UseQueryReturnType<FormattedBalanceReturnType, Error>;
 }
 

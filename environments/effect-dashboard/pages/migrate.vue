@@ -32,27 +32,34 @@
                 <div>
                     <!-- step 2 show claim / select / connect solana wallet  -->
                     <p>Next, we'll need your solana address, this is the address you will receive your new EFFECT tokens
-                        on. Make sure this address has a small amount of SOL to cover the transaction fee.</p>
+                        on. </p>
 
                     <div v-if="!destinationAddress">
-                        <div class="flex flex-wrap justify-center items-center gap-2 my-8">
-                            <span class="flex gap-2 items-center" v-if="$device.isDesktop">
-                                <WalletMultiButton /> or
-                            </span> <a class="text-sm text-red-500 cursor-pointer"
-                                @click="toggleAddress = !toggleAddress">Manually
-                                enter your address</a>
+                        <div v-if="hasSolana">
+                            <div class="flex flex-wrap justify-center items-center gap-2 my-8">
+                                <span class="flex gap-2 items-center" >
+                                    <WalletMultiButton /> or
+                                </span> <a class="text-sm text-red-500 cursor-pointer"
+                                    @click="toggleAddress = !toggleAddress">Manually
+                                    enter your address</a>
+                            </div>
                         </div>
-                        <div class="flex w-full" v-show="toggleAddress">
+                        <div class="flex w-full" v-show="!hasSolana || toggleAddress">
                             <UInput placeholder="Your solana address" v-model="manualAddressInput" type="text"
                                 class="flex-grow h-full flex items-center justify-center" />
                             <UButton color="black" size="sm" @click="selectAddress" label="Confirm" />
                         </div>
                     </div>
 
-                    <div v-else class="flex justify-center mt-5 items-center gap-1">
+                    <div class="justify-center mt-5 items-center gap-1" v-if="destinationAddress">
                         <b>Chosen address:</b>
+                        <div class="flex justify-center gap-2">
                         <BlockchainAddress :address="destinationAddress" /> | <a class="cursor-pointer text-red-500"
                             @click="logout">Switch</a>
+                        </div>
+                        <div v-if="balanceLow">
+                            <p class="text-red-500 mt-3">Your SOL balance is low, please top up your account.</p>
+                        </div>
                     </div>
                 </div>
             </template>
@@ -104,6 +111,7 @@
                             </div>
                         </div>
                         <div v-else-if="!solanaWalletAddress">
+                            <p>Please connect your solana wallet.</p>
                             <WalletMultiButton />
                         </div>
                         <div v-else>
@@ -164,10 +172,12 @@ const disconnectSourceWallets = async () => {
 const toggleAddress = ref(false)
 const manualAddress: Ref<string | null> = ref(null)
 const manualAddressInput: Ref<string> = ref('')
-const { address: solanaWalletAddress } = useSolanaWallet()
+const { address: solanaWalletAddress, useGetBalanceQuery } = useSolanaWallet()
 const destinationAddress = computed(() => {
     return solanaWalletAddress.value || manualAddress.value
 })
+const { data: solanaDestinationBalance } = useGetBalanceQuery(destinationAddress)
+const balanceLow = computed(() => solanaDestinationBalance.value && solanaDestinationBalance.value.value < 0.005)
 const { disconnect: disconnectSolana } = useWallet()
 const logout = () => {
     message.value = null
@@ -247,6 +257,7 @@ const authorize = async () => {
         signature.value = result.signature
     }
 }
+
 
 const steps = ref([
     {

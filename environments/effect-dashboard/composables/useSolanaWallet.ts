@@ -1,8 +1,8 @@
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import type { PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { useQuery } from "@tanstack/vue-query";
 import { useWallet } from "solana-wallets-vue";
-import type { TargetWalletAdapter, WalletMeta } from "~/types/types";
+import type { TargetWalletAdapter, WalletConnectionMeta } from "~/types/types";
 
 export const useSolanaWallet = (): TargetWalletAdapter => {
 	const { connection } = useGlobalState();
@@ -10,7 +10,7 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
 
 	const address = computed(() => publicKey.value?.toBase58());
 
-	const walletMeta: Ref<WalletMeta | undefined | null> = computed(
+	const walletMeta: Ref<WalletConnectionMeta | undefined | null> = computed(
 		() =>
 			wallet.value && {
 				name: wallet.value.adapter.name,
@@ -20,23 +20,36 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
 
 	const isConnected = computed(() => publicKey.value !== null);
 
-	const useGetBalanceQuery = () =>
-		useQuery({
-			queryKey: ["solana-balance", publicKey.value],
-			enabled: computed(() => publicKey.value !== null),
+	const useGetBalanceQuery = (account: Ref<PublicKey | string | null>) => {
+
+		const accountToUse = computed(() => {
+			if (typeof account.value === "string") {
+				return new PublicKey(account.value);
+			}
+			return account.value;
+		})
+
+		return useQuery({
+			queryKey: ["solana-balance", accountToUse],
+			enabled: computed(() => !!accountToUse !== null),
 			queryFn: async () => {
-				if (!publicKey.value) {
+				if (!accountToUse.value) {
 					throw new Error("No public key");
 				}
 
-				const data = await connection.getBalance(publicKey.value);
+				console.log("accountToUse", accountToUse.value.toBase58());
+
+				const data = await connection.getBalance(accountToUse.value);
 
 				return {
 					value: data / 10 ** 9,
 					symbol: "SOL",
 				};
 			},
+			
 		});
+	}
+		
 
 	const useGetEfxBalanceQuery = () => {
 		const { mint } = useGlobalState();
@@ -103,6 +116,7 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
 
 		// queries
 		useGetBalanceQuery,
+
 		useGetEfxBalanceQuery,
 		useGetTokenAccountBalanceQuery,
 
