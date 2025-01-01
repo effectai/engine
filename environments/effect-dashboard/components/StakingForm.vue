@@ -13,6 +13,7 @@
 								MAX</UButton>
 						</div>
 					</div>
+				
 					<div class="bg-white/5 rounded-lg py-4 px-2 space-y-2">
 						<div class="flex justify-between"><span class="text-gray-400">Available
 								Balance</span><span>{{ availableBalance?.value }} EFFECT</span></div>

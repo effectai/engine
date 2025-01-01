@@ -5,19 +5,15 @@
                 <div>
                     <div v-if="isCompleted">
                         <div class="flex-col flex items-center justify-center gap-3 mt-5" v-if="walletMeta">
-                            <span class="text-sm capitalize">
-                                <span v-if="walletMeta.icon">
-                                    <img :src="walletMeta.icon" class="h-5 w-5 inline-block mr-1" />
-                                </span>
-                                {{ walletMeta.name }}
-                            </span>
-                            <div class="flex items-center justify-between" v-if="address">
-                                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Address:</span>
-                                <BlockchainAddress class="text-sm" :address="address" />
-                            </div>
+                            <WalletCard 
+                                v-if="address && walletMeta"
+                                :address="address" 
+                                :balance-query="useGetNativeBalanceQuery" 
+                                :efx-balance-query="useGetEfxBalanceQuery" 
+                                :walletMeta="walletMeta" 
+                                :onDisconnect="disconnectSourceWallets"
+                                />
                         </div>
-                        <UButton class="mt-5" @click="disconnectSourceWallets" color="black" variant="outline">
-                            Disconnect</UButton>
                     </div>
                     <div v-else>
                         <div class="my-5">
@@ -36,7 +32,7 @@
                 <div>
                     <!-- step 2 show claim / select / connect solana wallet  -->
                     <p>Next, we'll need your solana address, this is the address you will receive your new EFFECT tokens
-                        on.</p>
+                        on. Make sure this address has a small amount of SOL to cover the transaction fee.</p>
 
                     <div v-if="!destinationAddress">
                         <div class="flex flex-wrap justify-center items-center gap-2 my-8">
@@ -76,7 +72,7 @@
                 <div>
                     <div v-if="!migrationAccount" class="flex flex-col items-center">
                         <BlockchainAddress v-if="address" :address="address" />
-                        <p>No Active claims found for this account.</p>
+                        <p>No active claims found for this account.</p>
                         <UButton class="mt-5" @click="disconnectSourceWallets" color="black" variant="outline">
                             Disconnect</UButton>
                     </div>
@@ -111,10 +107,7 @@
                             <WalletMultiButton />
                         </div>
                         <div v-else>
-                            <div id="confetti-container" class="max-w-[50px] mx-auto w-full h-1">
-                                <ConfettiExplosion v-if="txHash" :particleCount="200" :force="0.3" />
-                            </div>
-
+                        
                             <p class="my-5">Claim your new EFFECT tokens on Solana.</p>
 
                             <ClaimCard :foreign-public-key="computedForeignPublicKey" :message="message"
@@ -130,7 +123,6 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query';
 import { WalletMultiButton, useWallet } from 'solana-wallets-vue';
-import ConfettiExplosion from "vue-confetti-explosion";
 
 const message: Ref<Uint8Array | null> = ref(null)
 const signature: Ref<Uint8Array | null> = ref(null)
@@ -159,7 +151,7 @@ onMounted(() => {
 const config = useRuntimeConfig();
 const snapshotDate = new Date(config.public.EFFECT_SNAPSHOT_DATE as string);
 
-const { walletMeta, useGetForeignPublicKeyQuery, disconnect, authorizeTokenClaim, address } = useSourceWallet();
+const { walletMeta, useGetForeignPublicKeyQuery, disconnect, authorizeTokenClaim, address, useGetEfxBalanceQuery, useGetNativeBalanceQuery } = useSourceWallet();
 const { data: foreignPublicKey } = useGetForeignPublicKeyQuery()
 
 const client = useQueryClient()

@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/vue-query";
 import {
 	ABICache,
 	Action,
@@ -8,23 +7,21 @@ import {
 	TransactionHeader,
 	type Session,
 } from "@wharfkit/session";
-import type { SourceWalletAdapter, WalletMeta } from "~/types/types";
+import type {
+	SourceWallet,
+	WalletConnectionMeta
+} from "~/types/types";
 import { extractEosPublicKeyBytes } from "@effectai/utils";
 
 import { SessionKit } from "@wharfkit/session";
 import { WebRenderer } from "@wharfkit/web-renderer";
 import { WalletPluginAnchor } from "@effectai/wallet-plugin-anchor";
-
-// import { WalletPluginCleos } from "@wharfkit/wallet-plugin-cleos";
-// import { WalletPluginScatter } from "@wharfkit/wallet-plugin-scatter"
 import { WalletPluginWombat } from "@wharfkit/wallet-plugin-wombat";
 import { WalletPluginTokenPocket } from "@wharfkit/wallet-plugin-tokenpocket";
 
 const session: Ref<Session | null | undefined> = ref(null);
 
-export const useEosWallet = (): SourceWalletAdapter => {
-
-
+export const useEosWallet = (): SourceWallet => {
 	const sessionKit = reactive(
 		new SessionKit({
 			appName: "Effect Migration Portal",
@@ -42,17 +39,18 @@ export const useEosWallet = (): SourceWalletAdapter => {
 			],
 		}),
 	);
-	
 
 	const address = computed(
 		() => session.value?.actor.toString() as string | undefined,
 	);
 
-	const walletMeta: Ref<WalletMeta | undefined | null> = computed(
+	const walletMeta: Ref<WalletConnectionMeta | undefined | null> = computed(
 		() =>
 			session.value && {
 				name: session.value.walletPlugin.metadata.name,
 				icon: session.value.walletPlugin.metadata.logo?.light,
+				permission: session.value.permission.toString(),
+				chain: "EOS",
 			},
 	);
 
@@ -68,70 +66,61 @@ export const useEosWallet = (): SourceWalletAdapter => {
 		return await sessionKit.logout();
 	};
 
-	const useGetBalanceQuery = () => {
-		return useQuery({
-			queryKey: ["balance", session.value?.actor],
-			queryFn: async () => {
-				if (!session.value?.client) {
-					throw new Error("No client found");
-				}
+	const getNativeBalance = async () => {
+		if (!session.value?.client) {
+			throw new Error("No client found");
+		}
 
-				const res = await session.value.client.v1.chain.get_currency_balance(
-					"eosio.token",
-					session.value.actor,
-					"EOS",
-				);
+		const res = await session.value.client.v1.chain.get_currency_balance(
+			"eosio.token",
+			session.value.actor,
+			"EOS",
+		);
 
-				if (res.length === 0) {
-					return {
-						value: 0,
-						symbol: "EOS",
-					};
-				}
+		if (res.length === 0) {
+			return {
+				value: 0,
+				symbol: "EOS",
+			};
+		}
 
-				return {
-					value: res[0].value,
-					symbol: "EOS",
-				};
-			},
-		});
+		return {
+			value: res[0].value,
+			symbol: "EOS",
+		};
 	};
 
-	const useGetEfxBalanceQuery = () => {
-		return useQuery({
-			queryKey: ["efx-balance", session.value?.actor],
-			queryFn: async () => {
-				if (!session.value?.client) {
-					throw new Error("No client found");
-				}
+	const getEfxBalance = async () => {
+		if (!session.value?.client) {
+			throw new Error("No client found");
+		}
 
-				const res = await session.value.client.v1.chain.get_currency_balance(
-					"effecttokens",
-					session.value.actor,
-					"EFX",
-				);
+		const res = await session.value.client.v1.chain.get_currency_balance(
+			"effecttokens",
+			session.value.actor,
+			"EFX",
+		);
 
-				if (res.length === 0) {
-					return {
-						value: 0,
-						symbol: "EFX",
-					};
-				}
+		if (res.length === 0) {
+			return {
+				value: 0,
+				symbol: "EFX",
+			};
+		}
 
-				return {
-					value: res[0].value,
-					symbol: "EFX",
-				};
-			},
-		});
+		return {
+			value: res[0].value,
+			symbol: "EFX",
+		};
 	};
 
-	const authorizeTokenClaim = async (destinationAddress:string): Promise<{
+	const authorizeTokenClaim = async (
+		destinationAddress: string,
+	): Promise<{
 		foreignPublicKey: Uint8Array;
 		signature: Uint8Array;
 		message: Uint8Array;
 	}> => {
-
 		const originalMessage = `Effect.AI: I authorize my tokens to be claimed at the following Solana address:${destinationAddress}`;
 
 		if (!session.value?.client) {
@@ -216,7 +205,6 @@ export const useEosWallet = (): SourceWalletAdapter => {
 	};
 
 	return {
-
 		address,
 		walletMeta,
 		isConnected,
@@ -227,9 +215,8 @@ export const useEosWallet = (): SourceWalletAdapter => {
 
 		authorizeTokenClaim,
 
-		// Queries
-		useGetEfxBalanceQuery,
-		useGetBalanceQuery,
+		getNativeBalance,
+		getEfxBalance,
 
 		getForeignPublicKey,
 	};

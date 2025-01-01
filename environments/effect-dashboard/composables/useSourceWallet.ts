@@ -10,18 +10,18 @@ export const useSourceWallet = (): SourceWalletAdapter => {
         address: eosAddress,
         authorizeTokenClaim: _authorizeEos,
         walletMeta: eosWalletMeta,
-        useGetBalanceQuery: eosBalanceQuery,
-        useGetEfxBalanceQuery: eosEfxBalanceQuery,
         getForeignPublicKey:  eosGetForeignPublicKey,
         authorizeTokenClaim: authorizeEos,
+        getNativeBalance: eosBalance,
+        getEfxBalance: eosEfxBalance,
     } = useEosWallet();
     
     const {
         address: bscAddress,
         walletMeta: bscWalletMeta,
         isConnected: isConnectedBsc,
-        useGetBalanceQuery: bscBalanceQuery,
-        useGetEfxBalanceQuery: bscEfxBalanceQuery,
+        getNativeBalance: bscBalance,
+        getEfxBalance: bscEfxBalance,
         authorizeTokenClaim: authorizeBsc,
         disconnect: disconnectBsc,
         getForeignPublicKey:bscGetForeignPublicKey,
@@ -45,35 +45,48 @@ export const useSourceWallet = (): SourceWalletAdapter => {
         return undefined;
     })
 
-    const efxBalanceQuery = computed(() => {
-        if (isConnectedEos.value) return eosEfxBalanceQuery();
-        return bscEfxBalanceQuery();
-    })
-
-    const balanceQuery = computed(() => {
-        if (isConnectedEos.value) return eosBalanceQuery();
-        return bscBalanceQuery();
-    })
-
-    const getForeignPublicKey = async () => {
-        if (isConnectedEos.value) return eosGetForeignPublicKey();
-        return bscGetForeignPublicKey();
-    }
-
-    const useGetForeignPublicKeyQuery = () => {
+    const useGetEfxBalanceQuery = () => {
         return useQuery({
-            queryKey: ["foreign-public-key", address.value],
+            queryKey: ["efx-balance", address.value],
             queryFn: async () => {
-                return getForeignPublicKey();
+                if (isConnectedEos.value) return eosEfxBalance();
+                if (isConnectedBsc.value) return bscEfxBalance();
+                throw new Error("No wallet connected");
             },
             enabled: computed(() => isConnectedEos.value || isConnectedBsc.value),
         })
     }
 
+    const useGetNativeBalanceQuery = () => {
+        return useQuery({
+            queryKey: ["balance", address.value],
+            queryFn: async () => {
+                if (isConnectedEos.value) return eosBalance();
+                if(isConnectedBsc.value) return bscBalance();
+                throw new Error("No wallet connected");
+
+            },
+            enabled: computed(() => isConnectedEos.value || isConnectedBsc.value),
+        })
+    }
+    
+    const useGetForeignPublicKeyQuery = () => {
+        return useQuery({
+            queryKey: ["foreign-public-key", address.value],
+            queryFn: async () => {
+                if (isConnectedEos.value) return eosGetForeignPublicKey();
+                if (isConnectedBsc.value) return bscGetForeignPublicKey();
+                throw new Error("No wallet connected");
+            },
+            enabled: computed(() => isConnectedEos.value || isConnectedBsc.value),
+        })
+    }
+
+
     return {
         useGetForeignPublicKeyQuery,
-        useGetBalanceQuery: () => balanceQuery.value,
-        useGetEfxBalanceQuery: () => efxBalanceQuery.value,
+        useGetNativeBalanceQuery,
+        useGetEfxBalanceQuery,
         authorizeTokenClaim: authorize,
         address,
         walletMeta,

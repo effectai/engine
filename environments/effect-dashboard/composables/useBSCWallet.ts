@@ -1,10 +1,14 @@
-import type { SourceWalletAdapter, WalletMeta } from "~/types/types";
+import type {
+	SourceWallet,
+	SourceWalletAdapter,
+	WalletMeta,
+} from "~/types/types";
 import { useAccount, useConnect, useDisconnect, useConfig } from "@wagmi/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { getBalance, signMessage } from "@wagmi/core";
 import { toBytes } from "viem";
 
-export const useBscWallet = (): SourceWalletAdapter => {
+export const useBscWallet = (): SourceWallet => {
 	const { address, isConnected, connector } = useAccount();
 	const config = useConfig();
 
@@ -16,51 +20,45 @@ export const useBscWallet = (): SourceWalletAdapter => {
 			connector.value && {
 				name: connector.value.name,
 				icon: connector.value.icon,
+				chain: "BSC",
 			},
 	);
 
-	const useGetBalanceQuery = () => {
-		return useQuery({
-			queryKey: ["balance", address.value],
-			queryFn: async () => {
-				if (!address.value) {
-					throw new Error("No address found");
-				}
+	const getEfxBalance = async () => {
+		if (!address.value) {
+			throw new Error("No address found");
+		}
 
-				const balance = await getBalance(config, {
-					address: address.value,
-				});
-
-				return {
-					symbol: "BNB",
-					value: Number(balance.formatted),
-				};
-			},
+		const balance = await getBalance(config, {
+			address: address.value,
+			token: "0xC51Ef828319b131B595b7ec4B28210eCf4d05aD0",
 		});
+
+		return {
+			symbol: "EFX",
+			value: Number(balance.formatted),
+		};
 	};
 
-	const useGetEfxBalanceQuery = () => {
-		return useQuery({
-			queryKey: ["efx-balance", address.value],
-			queryFn: async () => {
-				if (!address.value) {
-					throw new Error("No address found");
-				}
+	const getNativeBalance = async () => {
 
-				const balance = await getBalance(config, {
-					address: address.value,
-					token: "0xC51Ef828319b131B595b7ec4B28210eCf4d05aD0",
-				});
+		if (!address.value) {
+			throw new Error("No address found");
+		}
 
-				return {
-					symbol: "EFX",
-					value: Number(balance.formatted),
-				};
-			},
+		const balance = await getBalance(config, {
+			address: address.value,
 		});
+
+		return {
+			symbol: "BNB",
+			value: Number(balance.formatted),
+		};
 	};
 
-	const authorizeTokenClaim = async (destinationAddress:string): Promise<{
+	const authorizeTokenClaim = async (
+		destinationAddress: string,
+	): Promise<{
 		foreignPublicKey: Uint8Array;
 		signature: Uint8Array;
 		message: Uint8Array;
@@ -97,11 +95,10 @@ export const useBscWallet = (): SourceWalletAdapter => {
 		isConnected,
 		walletMeta,
 
-		useGetBalanceQuery,
-		useGetEfxBalanceQuery,
+		getEfxBalance,
+		getNativeBalance,
 
 		authorizeTokenClaim,
-
 		getForeignPublicKey,
 
 		connect,

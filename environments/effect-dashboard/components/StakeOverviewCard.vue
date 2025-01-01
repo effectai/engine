@@ -1,5 +1,11 @@
 <template>
     <UCard class="flex flex-col" v-if="publicKey">
+
+        <div id="confetti-container" class="max-w-[50px] mx-auto w-full h-full">
+			<ConfettiExplosion v-if="triggerConfetti" :particleCount="200" :force="0.3" />
+		</div>
+
+
         <div class="flex flex-col gap-5">
             <div class="bg-white/5 p-6 rounded-xl border border-gray-800">
                 <div class="flex items-center gap-4">
@@ -70,6 +76,7 @@
 <script setup lang="ts">
 import { BN } from "@coral-xyz/anchor";
 import { useWallet } from "solana-wallets-vue";
+import ConfettiExplosion from "vue-confetti-explosion";
 
 const {
     useGetStakeAccount,
@@ -141,6 +148,19 @@ const handleSubmit = async () => {
         toast.add({ title: 'Error', description: 'Something went wrong', color: 'red' });
     }
 };
+
+
+const triggerConfetti = ref(false);
+// check if ?confetti=true is in the URL
+onMounted(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('confetti')) {
+        triggerConfetti.value = true;
+        // remove the query param from the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+});
+
 </script>
 
 <style scoped>

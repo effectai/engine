@@ -71,7 +71,6 @@ const { mutateAsync: claimTokens, isPending } = useClaim()
 const router = useRouter()
 const handleClaim = async () => {
     try {
-
         if (!props.signature || !props.foreignPublicKey || !props.message) {
             console.warn('missing signature, foreignPublicKey or message')
             return
@@ -81,7 +80,7 @@ const handleClaim = async () => {
         emit('claim', transactionId)
         toast.add({ title: 'Success', description: 'Claimed tokens successfully', color: 'green' })
 
-        router.push('/stake')
+        router.push('/stake?confetti=true')
     } catch (e) {
         console.log(e)
         toast.add({ title: 'Error', description: "Something went wrong", color: 'red' })
