@@ -12,6 +12,8 @@ export type WalletConnectionMeta = {
     chain: string
     permission?: string
     chainId?: string
+    // flag to indicate if the wallet has a different permission than the active permission.
+    hasDifferentPermissions?: boolean
 }
 
 export type WalletBase = {

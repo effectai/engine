@@ -14,6 +14,9 @@
                                 :onDisconnect="disconnectSourceWallets"
                                 />
                         </div>
+                        <div v-if="walletMeta?.permission && walletMeta.hasDifferentPermissions">
+                            Warning: Your wallet is connected through the {{ walletMeta.permission }} permission. Please switch to the active permission to claim your tokens.
+                        </div>
                     </div>
                     <div v-else>
                         <div class="my-5">
@@ -257,7 +260,6 @@ const authorize = async () => {
         signature.value = result.signature
     }
 }
-
 
 const steps = ref([
     {

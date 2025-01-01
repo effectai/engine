@@ -44,12 +44,30 @@ export const useEosWallet = (): SourceWallet => {
 		() => session.value?.actor.toString() as string | undefined,
 	);
 
+	const hasDifferentPermissions = ref(false)
+	watchEffect(async () => {
+		if(!session.value || session.value.permission.toString() !== 'active') {
+			hasDifferentPermissions.value = false
+			return;
+		}
+
+		const account = await session.value.client.v1.chain.get_account(
+			session.value.actor,
+		);
+		
+		const activePermission = account.getPermission("active");
+		const currentPermission	= account.getPermission(session.value.permission.toString())
+
+		hasDifferentPermissions.value = activePermission.required_auth.keys[0].key !== currentPermission.required_auth.keys[0].key
+	})
+
 	const walletMeta: Ref<WalletConnectionMeta | undefined | null> = computed(
 		() =>
 			session.value && {
 				name: session.value.walletPlugin.metadata.name,
 				icon: session.value.walletPlugin.metadata.logo?.light,
 				permission: session.value.permission.toString(),
+				hasDifferentPermissions: hasDifferentPermissions.value,
 				chain: "EOS",
 			},
 	);
