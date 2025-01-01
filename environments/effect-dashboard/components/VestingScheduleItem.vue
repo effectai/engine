@@ -17,7 +17,7 @@
                     Locked
                 </UBadge>
                 <UButton v-else-if="amountDue" color="gray" variant="solid" size="sm" icon="i-heroicons-gift"
-                    @click="claimTokens">
+                    @click="">
                     Claim {{ formatAmountToBalance(amountDue) }} EFFECT
                 </UButton>
                 <UButton v-else-if="progress == 100" color="gray" variant="solid" size="sm" icon="i-heroicons-gift"

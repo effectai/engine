@@ -82,14 +82,14 @@
                     </div>
 
                     <div v-else class="text-center flex flex-col justify-center my-5">
-                        <div v-if="$device.isMobileOrTablet">
+                        <div v-if="!hasSolana && $device.isMobileOrTablet">
                             <h2 class="text-xl my-3 font-bold">Authentication and authorization via your mobile wallet
                                 were successful! 🎉</h2>
 
                             To claim your tokens, we need to establish a connection to the Solana blockchain.
-                            Unfortunately, this can't be done in your current browser or app.
+                            Unfortunately, your current browser or app doesn’t support this process.
 
-                            Please open the link below on a desktop device, to continue where you've left off.
+                            Please open the link below on a desktop browser or within an in-app browser of a Solana mobile wallet to continue where you left off.
 
                             <div class="">
                                 <div class="w-full">
@@ -137,6 +137,8 @@ const signature: Ref<Uint8Array | null> = ref(null)
 const manualForeignPublicKey: Ref<Uint8Array | null> = ref(null)
 
 const computedForeignPublicKey: Ref<Uint8Array | null> = computed(() => manualForeignPublicKey.value || foreignPublicKey.value || null)
+
+const hasSolana = computed(() => !!window.solana)
 
 // try to load state from url
 onMounted(() => {
