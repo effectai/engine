@@ -3,13 +3,13 @@ import { SECONDS_PER_DAY, useAnchor, useStakeTestHelpers } from "../helpers.js";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
 import type { EffectStaking } from "../../target/types/effect_staking.js";
-import { setup } from "../../utils/spl.js";
+import { createTokenAccount, mintToAccount, setup } from "../../utils/spl.js";
 import { useConstantsIDL, useErrorsIDL } from "../../utils/idl.js";
 import stakingIDLJson from "../../target/idl/effect_staking.json";
 import { effect_staking } from "@effectai/shared";
-import { BN } from "bn.js";
+import { BN, min } from "bn.js";
 import { useBankRunProvider } from "../helpers.js";
-import { AccountLayout } from "@solana/spl-token";
+import { AccountLayout, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import type { EffectVesting } from "../../target/types/effect_vesting.js";
 import type { EffectRewards } from "../../target/types/effect_rewards.js";
 import {
@@ -103,6 +103,64 @@ describe("Staking Program", async () => {
 	});
 
 	describe("Stake Unstake", async () => {
+		it.concurrent('cannot unstake someone else\'s stake account', async () => {
+			const { mint, ata } = await setup({ payer, provider });
+			const { UNAUTHORIZED } = useErrorsIDL(effect_staking);
+
+			const stakeAccount = new anchor.web3.Keypair();
+			const stakeAuthority = new anchor.web3.Keypair();
+			const stakeAuthAta = getAssociatedTokenAddressSync(
+				mint, 
+				stakeAuthority.publicKey
+			)
+			// airdrop some sol to authority
+			const tx = await provider.connection.requestAirdrop(stakeAuthority.publicKey, 3000000000);
+
+			// wait for the airdrop to confirm
+			await provider.connection.confirmTransaction(tx);
+
+			await createTokenAccount({provider, mint, owner: stakeAuthority.publicKey, payer:stakeAuthority});
+
+			// send 5 tokens to the authority
+			await mintToAccount({
+				mint,
+				mintAuthority: payer,
+				amount: 5_000_000,
+				destination: stakeAuthAta,
+				payer: payer,
+				provider: provider,
+			})
+
+			await program.methods
+			.stake(new BN(5_000_000), new BN(30 * SECONDS_PER_DAY))
+			.accounts({
+				mint,
+				authority: stakeAuthority.publicKey,
+				stakeAccount: stakeAccount.publicKey,
+				userTokenAccount: stakeAuthAta,
+			})
+			.signers([stakeAuthority, stakeAccount])
+			.rpc();
+
+			const vestingAccount = new anchor.web3.Keypair();
+
+			expectAnchorError(
+				async () => {
+					await program.methods
+						.unstake(new BN(5_000_000))
+						.accounts({
+							mint,
+							stakeAccount: stakeAccount.publicKey,
+							vestingAccount: vestingAccount.publicKey,
+							recipientTokenAccount: stakeAuthAta,
+						})
+						.signers([vestingAccount])
+						.rpc();
+				},
+				UNAUTHORIZED
+			);
+		});
+
 		it.concurrent("cannot unstake with an open reward account", async () => {
 			const { mint, ata } = await setup({ payer, provider });
 
@@ -156,7 +214,7 @@ describe("Staking Program", async () => {
 		it.concurrent("should correctly unstake a stake account", async () => {
 			const { mint, ata } = await setup({ payer, provider });
 
-			const { stakeAccount, vaultAccount } = await useCreateStake({
+			const { stakeAccount } = await useCreateStake({
 				authority: wallet.publicKey,
 				mint,
 				userTokenAccount: ata,
@@ -199,6 +257,7 @@ describe("Staking Program", async () => {
 				await vestingProgram.account.vestingAccount.fetch(
 					vestingAccount.publicKey,
 				);
+
 			expect(vestingAccountData).to.be.not.null;
 
 			// expect to have balance in the vesting vault account

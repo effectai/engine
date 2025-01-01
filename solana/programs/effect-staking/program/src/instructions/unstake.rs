@@ -36,10 +36,11 @@ pub struct Unstake<'info> {
     pub reward_account: SystemAccount<'info>,
 
     #[account(
+        signer,
         mut, 
         constraint = vesting_account.data_is_empty() @ StakingErrors::InvalidVestingAccount,
     )]
-    pub vesting_account: Signer<'info>,
+    pub vesting_account: SystemAccount<'info>,
 
     #[account(
         mut,
