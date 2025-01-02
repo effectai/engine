@@ -22,9 +22,6 @@
 		"docs:dev": "pnpm --filter docs run dev",
 		"test": "vitest"
 	},
-	"dependencies": {
-		"@effectai/task-core": "workspace:*"
-	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
 		"turbo": "2.2.3",

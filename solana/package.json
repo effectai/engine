@@ -21,6 +21,7 @@
     "yargs": "17.7.2"
   },
   "devDependencies": {
+    "csvtojson": "2.0.10",
     "@noble/curves": "1.6.0",
     "@solana/spl-token": "0.4.9",
     "@solana/web3.js": "1.95.5",

@@ -29,7 +29,7 @@ export const createMigrationClaimCommand: CommandModule<
 	unknown,
 	MigrationClaimOptions
 > = {
-	command: "migration create",
+	command: "create",
 	describe: "Create a new migration claim",
 	builder: (yargs) =>
 		yargs
