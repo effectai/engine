@@ -21,7 +21,7 @@
                         </div>
                         <div v-if="stakeAmount">
                             <UTooltip :ui="{ width: 'max-w-md' }"
-                                text="Staked tokens in January 2025 get a 2.5x reward ratio">
+                                text="Staked tokens in January 2025 get a 20% increased reward ratio">
                                 <UBadge label="BOOSTED" class="rainbow-border ml-2" color="gray">
                                     <template #trailing>
                                         <UIcon name="i-heroicons-fire" class="h-6 w-6 text-lg" size="lg"  />
@@ -38,7 +38,7 @@
                         <UIcon name="lucide:chart-spline" />
                     </div>
                     <div>
-                        <p class="text-sm text-gray-400">Stake Age</p>
+                        <p class="text-sm text-gray-400">Stake Age Score</p>
                         <AnimatedNumber easing="easeInOutCubic" :value="stakeAge" :format="formatNumber"
                             class="text-2xl font-bold flex relative">{{ stakeAge }}
                         </AnimatedNumber>

@@ -30,7 +30,7 @@
             <div class="bg-gray-100 p-3 rounded-lg">
                 <div class="flex justify-between items-center">
                     <div>
-                        <p class="text-sm text-gray-600 text-left">Stake Age</p>
+                        <p class="text-sm text-gray-600 text-left">Stake Age Score</p>
                         <p class="font-medium text-gray-900">{{
                             formatNumber(calculateStakeAge(migrationAccount.stakeStartTime.toNumber())) }}</p>
                     </div>
