@@ -1,6 +1,6 @@
 <template>
     <div class="text-center max-w-sm md:max-w-md lg:max-w-lg mx-auto scroll-container" v-if="config">
-        <Stepper :currentStep="currentStep" :items="steps">
+        <Stepper v-if="currentStep !== undefined" :currentStep="currentStep" :items="steps">
             <template #authenticate="{ isCompleted }">
                 <div>
                     <div v-if="isCompleted">
@@ -220,7 +220,6 @@ const authorizeUrl = computed(() => {
 const toast = useToast()
 
 const { share, isSupported } = useShare({})
-
 const { copy } = useCopyToClipboard()
 const copyAuthorize = () => {
     copy(authorizeUrl.value)
@@ -254,6 +253,11 @@ const getAuthorizeUrl = ({
 }
 
 const authorize = async () => {
+    if(!destinationAddress.value) {
+        console.warn('No destination address')
+        return
+    }
+
     const result = await authorizeTokenClaim(destinationAddress.value)
     if (result) {
         message.value = result.message

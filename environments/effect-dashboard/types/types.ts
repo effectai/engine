@@ -50,7 +50,7 @@ export type SourceWallet = WalletBase & {
 
 // Source Chain Wallet Adapter Type (eos, bsc)
 export type SourceWalletAdapter = SourceWallet & {
-    useGetBalanceQuery: () => UseQueryReturnType<FormattedBalanceReturnType, Error>;
+    useGetNativeBalanceQuery: () => UseQueryReturnType<FormattedBalanceReturnType, Error>;
     useGetEfxBalanceQuery: () => UseQueryReturnType<FormattedBalanceReturnType, Error>
     useGetForeignPublicKeyQuery: () => UseQueryReturnType<Uint8Array, Error>;
     authorizeTokenClaim: (destinationAddress: string) => Promise<{

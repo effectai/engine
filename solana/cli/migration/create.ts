@@ -90,8 +90,6 @@ export const createMigrationClaimCommand: CommandModule<
 		if (username) {
 			const eosPublicKey = await extractKeyFromEosUsername(username, "active");
 			publicKeyBytes = extractEosPublicKeyBytes(eosPublicKey);
-			console.log("found eos public key", eosPublicKey);
-			console.log("public key bytes", publicKeyBytes);
 		} else if (publicKey) {
 			publicKeyBytes = toBytes(publicKey);
 		}
@@ -99,8 +97,6 @@ export const createMigrationClaimCommand: CommandModule<
 		if (!publicKeyBytes) {
 			throw new Error("Invalid public key");
 		}
-
-
 
 		const { migrationAccount } = await createMigrationClaim({
 			program: migrationProgram,

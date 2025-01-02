@@ -1,16 +1,13 @@
 // deploy script for local environment
 import * as anchor from "@coral-xyz/anchor";
 import { mintToAccount, setup } from "../utils/spl";
-import { toBytes } from "viem";
 import { PublicKey } from "@solana/web3.js";
 import { createAssociatedTokenAccount } from "@solana/spl-token";
 import rewardIDL from "../target/idl/effect_rewards.json";
 import type { EffectRewards } from "../target/types/effect_rewards";
 import type { Program } from "@coral-xyz/anchor";
 import { spawn } from "child_process";
-import { createKeypairFromFile, extractEosPublicKeyBytes, useDeriveMigrationAccounts } from "@effectai/utils";
-import { createMigrationClaim } from "../utils/migration";
-import type { EffectMigration } from "../target/types/effect_migration";
+import { createKeypairFromFile } from "@effectai/utils";
 
 const createReflectionAcount = async ({
 	mint,
@@ -53,15 +50,11 @@ const seed = async () => {
 	
 	const provider = anchor.AnchorProvider.local();
 
-	await provider.connection.requestAirdrop(
+	const tx = await provider.connection.requestAirdrop(
 		provider.wallet.publicKey,
 		1000000000000,
 	);
 	
-	const tx = await provider.connection.requestAirdrop(
-		new PublicKey("dumQVNHZ1KNcLmzjMaDPEA5vFCzwHEEcQmZ8JHmmCNH"),
-		1000000000000,
-	);
 	await provider.connection.confirmTransaction(tx);
 
 	const wallet = provider.wallet;
@@ -94,30 +87,6 @@ const seed = async () => {
 		mint,
 		ata,
 	});
-
-	const ethereumPublicKey = "0xA03E94548C26E85DBd81d93ca782A3449564C27f";
-	const eosPublicKey = "EOS64vP1Y18ZJXP7KSGoQG8pgR3imaAWoBhzH77kYmYXuVnwzGaDf";
-	const eosPublicKeyBytes = extractEosPublicKeyBytes(eosPublicKey);
-
-	if(!eosPublicKeyBytes) {
-		throw new Error("Invalid eos public key");
-	}
-
-	const program = anchor.workspace.EffectMigration as Program<EffectMigration>;
-
-
-	const dateOneYearAgo = new Date().getTime() / 1000 - 365 * 24 * 60 * 60;
-	
-	await createMigrationClaim({
-		program,
-		publicKey: toBytes(ethereumPublicKey),
-		mint,
-		amount: 250_000_000,
-		userTokenAccount: ata,
-		stakeStartTime: dateOneYearAgo,
-	});
-
-	console.log("mint", mint.toBase58());
 };
 
 // deploy
