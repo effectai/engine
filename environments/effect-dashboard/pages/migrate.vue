@@ -14,7 +14,7 @@
                                 :onDisconnect="disconnectSourceWallets"
                                 />
                         </div>
-                        <div v-if="walletMeta?.permission && walletMeta.hasDifferentPermissions">
+                        <div class="text-red-500" v-if="walletMeta?.permission && walletMeta.hasDifferentPermissions">
                             Warning: Your wallet is connected through the {{ walletMeta.permission }} permission. Please switch to the active permission to claim your tokens.
                         </div>
                     </div>
@@ -47,9 +47,9 @@
                                     enter your address</a>
                             </div>
                         </div>
-                        <div class="flex w-full" v-show="!hasSolana || toggleAddress">
+                        <div class="flex w-full mt-3" v-show="!hasSolana || toggleAddress">
                             <UInput placeholder="Your solana address" v-model="manualAddressInput" type="text"
-                                class="flex-grow h-full flex items-center justify-center" />
+                                class="flex-grow h-full flex items-center justify-center min-h-[37px]" />
                             <UButton color="black" size="sm" @click="selectAddress" label="Confirm" />
                         </div>
                     </div>
