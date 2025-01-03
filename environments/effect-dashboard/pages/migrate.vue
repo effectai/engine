@@ -1,7 +1,7 @@
 <template>
     <div class="max-w-sm md:max-w-md lg:max-w-xl mx-auto scroll-container" v-if="config">
 
-        <div class="prose dark:text-white mt-12">
+        <div class="prose dark:text-white mt-12" id="step-intro">
 
             <h2 class="dark:text-white">Migrate Your $EFX Tokens to Solana</h2>
 
@@ -46,10 +46,10 @@
                 <div>
                     <div v-if="isCompleted">
                         <div class="flex-col flex items-center justify-center gap-3 mt-5" v-if="walletMeta">
-                                <WalletCard v-if="address && walletMeta" :address="address"
-                                    :balance-query="useGetNativeBalanceQuery" :efx-balance-query="useGetEfxBalanceQuery"
-                                    :walletMeta="walletMeta" :onDisconnect="disconnectSourceWallets" />
-                            </div>
+                            <WalletCard v-if="address && walletMeta" :address="address"
+                                :balance-query="useGetNativeBalanceQuery" :efx-balance-query="useGetEfxBalanceQuery"
+                                :walletMeta="walletMeta" :onDisconnect="disconnectSourceWallets" />
+                        </div>
                     </div>
                     <div v-else>
                         <div v-if="!computedForeignPublicKey">
@@ -368,7 +368,12 @@ const currentStep = computed(() => {
 
 watch(currentStep, async (newVal) => {
     await new Promise(resolve => setTimeout(resolve, 10))
-    const el = document.getElementById(`step-${newVal}`)
+    let el = null;
+    if (newVal === 0) {
+         el = document.getElementById("step-intro")
+    } else {
+         el = document.getElementById(`step-${newVal}`)
+    }
     if (el) {
         await nextTick();
         el.scrollIntoView({ behavior: 'smooth', block: 'center' })
