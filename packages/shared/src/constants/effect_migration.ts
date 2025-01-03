@@ -1,5 +1,5 @@
 export const effect_migration = {
-  "address": "mkBkDyshkoJ3c1TdjNxwM4jUkA6qBbtSQHeMjr4atxH",
+  "address": "6YPaGWd3o9cuz3Kn62zHg7BcMvt5wd2dKSDirxrcEa39",
   "metadata": {
     "name": "effect_migration",
     "version": "0.1.0",
@@ -82,7 +82,7 @@ export const effect_migration = {
         },
         {
           "name": "migration_program",
-          "address": "mkBkDyshkoJ3c1TdjNxwM4jUkA6qBbtSQHeMjr4atxH"
+          "address": "6YPaGWd3o9cuz3Kn62zHg7BcMvt5wd2dKSDirxrcEa39"
         },
         {
           "name": "token_program",
@@ -94,7 +94,7 @@ export const effect_migration = {
         },
         {
           "name": "staking_program",
-          "address": "6EQ532strjkZpAvqd4JhtJxMppinnDJi7kynvBWut7C2"
+          "address": "9JFP8tiZkCgBEbwTuP7XqBtRzCwzHmwGzp4JXsZZ2bD2"
         }
       ],
       "args": [

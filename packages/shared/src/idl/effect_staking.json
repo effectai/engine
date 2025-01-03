@@ -1,5 +1,5 @@
 {
-  "address": "6EQ532strjkZpAvqd4JhtJxMppinnDJi7kynvBWut7C2",
+  "address": "9JFP8tiZkCgBEbwTuP7XqBtRzCwzHmwGzp4JXsZZ2bD2",
   "metadata": {
     "name": "effect_staking",
     "version": "0.1.0",
@@ -187,7 +187,7 @@
         },
         {
           "name": "migration_program",
-          "address": "mkBkDyshkoJ3c1TdjNxwM4jUkA6qBbtSQHeMjr4atxH"
+          "address": "6YPaGWd3o9cuz3Kn62zHg7BcMvt5wd2dKSDirxrcEa39"
         },
         {
           "name": "system_program",
@@ -358,11 +358,11 @@
         },
         {
           "name": "reward_program",
-          "address": "DA2dSgEzNZ9vHbVwYGp4iLUfNjqBMHG7D7Vk1NdKWbSY"
+          "address": "CHiJWRYW3Cb4jiDhNr4dZkS4qYYSrKRmGCoJCJsY1wLz"
         },
         {
           "name": "vesting_program",
-          "address": "DexJUgYMgjpePPakuMU4aLYuQ7N9ttBEWJs4SPR2hgZr"
+          "address": "ubydJbUXumJsNhgThmgr2UcExSnxpRS43A1Ed2DDicy"
         },
         {
           "name": "rent",

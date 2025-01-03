@@ -1,5 +1,5 @@
 export const effect_rewards = {
-  "address": "DA2dSgEzNZ9vHbVwYGp4iLUfNjqBMHG7D7Vk1NdKWbSY",
+  "address": "CHiJWRYW3Cb4jiDhNr4dZkS4qYYSrKRmGCoJCJsY1wLz",
   "metadata": {
     "name": "effect_rewards",
     "version": "0.1.0",
@@ -196,7 +196,7 @@ export const effect_rewards = {
         },
         {
           "name": "stake_program",
-          "address": "6EQ532strjkZpAvqd4JhtJxMppinnDJi7kynvBWut7C2"
+          "address": "9JFP8tiZkCgBEbwTuP7XqBtRzCwzHmwGzp4JXsZZ2bD2"
         }
       ],
       "args": []
@@ -289,7 +289,7 @@ export const effect_rewards = {
         },
         {
           "name": "stake_program",
-          "address": "6EQ532strjkZpAvqd4JhtJxMppinnDJi7kynvBWut7C2"
+          "address": "9JFP8tiZkCgBEbwTuP7XqBtRzCwzHmwGzp4JXsZZ2bD2"
         },
         {
           "name": "system_program",
@@ -537,7 +537,7 @@ export const effect_rewards = {
         },
         {
           "name": "stake_program",
-          "address": "6EQ532strjkZpAvqd4JhtJxMppinnDJi7kynvBWut7C2"
+          "address": "9JFP8tiZkCgBEbwTuP7XqBtRzCwzHmwGzp4JXsZZ2bD2"
         }
       ],
       "args": []
