@@ -45,7 +45,11 @@
             <template #authenticate="{ isCompleted }">
                 <div>
                     <div v-if="isCompleted">
-
+                        <div class="flex-col flex items-center justify-center gap-3 mt-5" v-if="walletMeta">
+                                <WalletCard v-if="address && walletMeta" :address="address"
+                                    :balance-query="useGetNativeBalanceQuery" :efx-balance-query="useGetEfxBalanceQuery"
+                                    :walletMeta="walletMeta" :onDisconnect="disconnectSourceWallets" />
+                            </div>
                     </div>
                     <div v-else>
                         <div v-if="!computedForeignPublicKey">
