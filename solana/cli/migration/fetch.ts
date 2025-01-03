@@ -3,30 +3,8 @@ import { loadProvider } from "../../utils/provider";
 import type { EffectMigration } from "../../target/types/effect_migration";
 import EffectMigrationIdl from "../../target/idl/effect_migration.json";
 import * as anchor from "@coral-xyz/anchor";
-import chalk from "chalk";
-import { BN } from "bn.js";
-import {
-	getAssociatedTokenAddress,
-	getAssociatedTokenAddressSync,
-} from "@solana/spl-token";
-const csv = require("csvtojson");
-import readline from "node:readline";
-import { writeFileSync } from "fs";
 import { PublicKey } from "@solana/web3.js";
-import { extractEosPublicKeyBytes } from "@effectai/utils";
-
-interface ParsedRow {
-	account: string;
-	tag: string;
-	last_claim_time: string;
-	last_claim_age: number;
-	type: string;
-	efx: number;
-	nfx: number;
-	staked_efx: number;
-	staked_nfx: number;
-	claim_amount: number;
-}
+const csv = require("csvtojson");
 
 export const fetchMigrationAccount: CommandModule<
 	unknown,
@@ -41,11 +19,8 @@ export const fetchMigrationAccount: CommandModule<
 			provider,
 		) as unknown as anchor.Program<EffectMigration>;
 
-		const data = await migrationProgram.account.migrationAccount.fetch(new PublicKey("J9dtkFPXXHPDes62s42dGU3z4NtUogEkXjDYfQfsD1LQ"));
+		const data = await migrationProgram.account.migrationAccount.fetch(new PublicKey("GneurrJ9hyJYnw1662sUWGfBhBTYsiv2yvqo1ds7SjGp"));
 		
-		// convert address to string
-		PublicKey.toString(data.foreignAddress);
-		
-		console.log(data.foreignAddress)
+		console.log(data)
 	},
 };

@@ -6,15 +6,21 @@ import * as anchor from "@coral-xyz/anchor";
 import chalk from "chalk";
 import { BN } from "bn.js";
 import {
-	getAssociatedTokenAddress,
-	getAssociatedTokenAddressSync,
+	getAssociatedTokenAddressSync
 } from "@solana/spl-token";
-const csv = require("csvtojson");
 import readline from "node:readline";
 import { writeFileSync, readFileSync } from "fs";
-import { KeyType, PublicKey } from "@wharfkit/antelope";
 import { extractEosPublicKeyBytes } from "@effectai/utils";
 import { toBytes } from "viem";
+const csv = require("csvtojson");
+
+type DistributionRow = {
+	foreign_key: string;
+	stake_age: string;
+	amount: string;
+	status: number;
+	tx?: string;
+};
 
 export const distributeMigrationCommand: CommandModule<
 	unknown,
@@ -43,6 +49,10 @@ export const distributeMigrationCommand: CommandModule<
 
 		const mintKey = new anchor.web3.PublicKey(mint);
 		const sourceAta = getAssociatedTokenAddressSync(mintKey, payer.publicKey);
+
+		// get balance 
+		const balance = await provider.connection.getTokenAccountBalance(sourceAta);
+
 		let chosen_distribution_file = distribution_file;
 
 		if (!chosen_distribution_file) {
@@ -63,12 +73,13 @@ export const distributeMigrationCommand: CommandModule<
 		}
 
 		// read the distribution file
-		const rows = JSON.parse(readFileSync(chosen_distribution_file, "utf-8"));
+		const rows: DistributionRow[] = JSON.parse(readFileSync(chosen_distribution_file, "utf-8"));
 
 		// wait for input from the user
 		const claimsLeft = rows.filter((r) => r.status === 0);
+		
 		const confirmed = await askForConfirmation(
-			`Distribute (${claimsLeft.length}/${rows.length}) claims on ${provider.connection.rpcEndpoint} totalling ${claimsLeft.reduce((acc, row) => acc + Number.parseFloat(row.amount), 0)} EFFECT`,
+			`Distribute (${claimsLeft.length}/${rows.length}) claims on ${provider.connection.rpcEndpoint} totalling ${(claimsLeft.reduce((acc, row) => acc + Number.parseFloat(row.amount), 0)).toFixed(2)}/${balance.value.uiAmount} EFFECT`,
 		);
 
 		if (!confirmed) {
@@ -76,9 +87,9 @@ export const distributeMigrationCommand: CommandModule<
 			return;
 		}
 
-		const delay = 1000 / 6; // 6 TPS
+		const delay = 1000 / 4.5; // 6 TPS
 
-		for (const row of rows.filter((row) => row.status === 0)) {
+		for (const row of rows.filter((row: DistributionRow) => row.status === 0)) {
 			console.log(
 				chalk.green(`Distributing ${row.amount} EFFECT to ${row.foreign_key}`),
 			);
@@ -99,7 +110,7 @@ export const distributeMigrationCommand: CommandModule<
 			migrationProgram.methods
 				.createStakeClaim(
 					Buffer.from(foreignKeyBytes),
-					new BN(row.stake_age_timestamp),
+					new BN(row.stake_age),
 					new BN(Number.parseFloat(row.amount) * 1_000_000),
 				)
 				.accounts({
@@ -116,12 +127,27 @@ export const distributeMigrationCommand: CommandModule<
 						JSON.stringify(rows, null, 2),
 					);
 				})
-				.catch((e) => {
-					console.log(
-						chalk.red(
-							`Error distributing ${row.amount} EFFECT to ${row.foreign_key}`,
-						),
-					);
+				.catch((e: Error) => {
+					// check if error message contains 0x0
+					if (e.message.includes("0x0")) {
+						console.log(
+							chalk.red(
+								`Error distributing ${row.amount} EFFECT to ${row.foreign_key} (ALREADY EXISTS)`,
+							),
+						);
+						row.status = 1;
+						writeFileSync(
+							chosen_distribution_file,
+							JSON.stringify(rows, null, 2),
+						);
+					} else {
+						console.log(
+							chalk.red(
+								`Error distributing ${row.amount} EFFECT to ${row.foreign_key}`,
+							),
+						);
+						console.log(chalk.red(e.message))
+					}
 				});
 
 			// wait 100ms
@@ -157,7 +183,7 @@ const createDistributionFile = async (
 					const timestamp = Math.floor(Date.now() / 1000);
 					const chosen_distribution_file = `${outputDir}/distribution-${timestamp}.json`;
 					const data = rows.map((row) => ({
-						foreign_key: row.foreign_key,
+						foreign_key: row.key,
 						stake_age: row.stake_age_timestamp,
 						amount: row.claim_amount,
 						status: 0,

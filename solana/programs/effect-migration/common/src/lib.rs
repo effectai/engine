@@ -30,24 +30,26 @@ pub enum MigrationError {
 
 impl MigrationAccount {
     pub fn initialize(&mut self, foreign_address: Vec<u8>, stake_start_time: i64) -> Result<()> {
-        // check if the foreign public key is valid
-        if foreign_address.len() != 20 && foreign_address.len() != 32 {
+        // Validate the foreign public key length
+        if ![20, 32].contains(&foreign_address.len()) {
             return Err(MigrationError::InvalidForeignAddress.into());
         }
 
         let now = Clock::get()?.unix_timestamp;
 
-        // if the stake start time is not set, set it to the current time
-        if stake_start_time <= 0 {
-            self.stake_start_time = now;
-        }
-
-        // if the stake start time is in the future, return an error
+        // Validate the stake start time
         if stake_start_time > now {
             return Err(MigrationError::InvalidStakeStartTime.into());
         }
 
-        self.stake_start_time = stake_start_time;
+        // Set the stake start time to the provided value or default to current time
+        self.stake_start_time = if stake_start_time > 0 {
+            stake_start_time
+        } else {
+            now
+        };
+
+        // Set the foreign address
         self.foreign_address = foreign_address;
 
         Ok(())

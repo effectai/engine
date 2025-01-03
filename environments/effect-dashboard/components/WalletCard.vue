@@ -34,6 +34,10 @@
           <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Address:</span>
           <BlockchainAddress class="text-sm" :address="address" />
         </div>
+        <div class="flex items-center justify-between" v-if="walletMeta.permission">
+          <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Permission:</span>
+          <BlockchainAddress class="text-sm" :address="walletMeta.permission" />
+        </div>
         <div class="flex items-center justify-between">
           <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{balance?.symbol}} Balance:</span>
           <span class="text-sm text-gray-600 dark:text-gray-400">{{ balance && formatNumber(balance.value) || "-"}}</span>
