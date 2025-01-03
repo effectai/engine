@@ -108,7 +108,6 @@ export const distributeMigrationCommand: CommandModule<
 				})
 				.rpc();
 
-
 			row.tx = tx;
 
 			// save the distribution to a file

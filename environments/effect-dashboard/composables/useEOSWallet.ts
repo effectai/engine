@@ -211,15 +211,13 @@ export const useEosWallet = (): SourceWallet => {
 			session.value.actor,
 		);
 
-		const activePermission = res.getPermission("active");
+		const activePermission = res.getPermission(session.value.permission.toString());
 		const publicKey = activePermission.required_auth.keys[0].key.toString();
 		const compressedPk = extractEosPublicKeyBytes(publicKey);
 
 		if (!compressedPk) {
 			throw new Error("Could not compress public key");
 		}
-
-		console.log(compressedPk);
 
 		return compressedPk;
 	};

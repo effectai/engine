@@ -43,6 +43,9 @@ export const fetchMigrationAccount: CommandModule<
 
 		const data = await migrationProgram.account.migrationAccount.fetch(new PublicKey("8Ko7dCJsojyWMZsQLGh8CT4dtkBUgC5DujdFdbKawBRA"));
 	
+		const owner = extractEosPublicKeyBytes("EOS64vP1Y18ZJXP7KSGoQG8pgR3imaAWoBhzH77kYmYXuVnwzGaDf")
+
+		console.log(owner)
 		console.log(data.foreignAddress)
 	},
 };
