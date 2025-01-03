@@ -76,17 +76,6 @@ impl StakeAccount {
 
         self.stake_start_time =
             StakeAccount::dilute_stake_time(capped_stake_start, self.amount, new_time, amount);
-        
-        // //cap stake start to max_stake_Days
-        // if diluted_stake_start
-        //     < Clock::get().unwrap().unix_timestamp
-        //         - STAKE_AGE_MAX_DAYS as i64 * SECONDS_PER_DAY as i64
-        // {
-        //     self.stake_start_time = Clock::get().unwrap().unix_timestamp
-        //         - STAKE_AGE_MAX_DAYS as i64 * SECONDS_PER_DAY as i64;
-        // } else {
-        //     self.stake_start_time = diluted_stake_start;
-        // }        
 
         self.amount += amount;
         self.update_weighted_amount();

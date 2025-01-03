@@ -62,25 +62,9 @@ const seed = async () => {
 
 	const mintKeypair = await createKeypairFromFile("./tests/keys/mint44RzfitV8sqFGrLnh6sLNAS2jxaw1KhaSsYGT3P.json");
 
-	const { mint, ata } = await setup({ payer, provider, amount: 5000_000_000, mintKeypair });
+	const { mint, ata } = await setup({ payer, provider, amount: 50000000_000_000, mintKeypair });
 
 	// also mint some tokens to the dummy account for staking
-	const dummyAta = await createAssociatedTokenAccount(
-		provider.connection,
-		payer,
-		mint,
-		new PublicKey("dumQVNHZ1KNcLmzjMaDPEA5vFCzwHEEcQmZ8JHmmCNH"),
-	);
-
-	// mint some tokens to the dummy account
-	await mintToAccount({
-		payer,
-		provider,
-		mint,
-		destination: dummyAta,
-		mintAuthority: payer,
-		amount: 1500_000_000,
-	});
 
 	// create reflection account
 	const [reflectionAccount, reflectionVault] = await createReflectionAcount({

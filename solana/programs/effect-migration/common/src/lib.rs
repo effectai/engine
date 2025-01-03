@@ -38,9 +38,9 @@ impl MigrationAccount {
         let now = Clock::get()?.unix_timestamp;
 
         // Validate the stake start time
-        if stake_start_time > now {
-            return Err(MigrationError::InvalidStakeStartTime.into());
-        }
+        // if stake_start_time > now {
+        //     return Err(MigrationError::InvalidStakeStartTime.into());
+        // }
 
         // Set the stake start time to the provided value or default to current time
         self.stake_start_time = if stake_start_time > 0 {
