@@ -1,5 +1,5 @@
 <template>
-    <UCard class="max-w-md mx-auto bg-gray-50">
+    <UCard class="max-w-md bg-gray-50">
         <template #header>
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-semibold">Migration Vault</h3>

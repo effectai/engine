@@ -184,9 +184,7 @@
                             <WalletMultiButton />
                         </div>
                         <div v-else>
-
                             <p class="my-5">Claim your new EFFECT tokens on Solana.</p>
-
                             <ClaimCard :foreign-public-key="computedForeignPublicKey" :message="message"
                                 :signature="signature" :migrationAccount="migrationAccount" />
                         </div>
