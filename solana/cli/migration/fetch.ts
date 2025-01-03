@@ -41,11 +41,11 @@ export const fetchMigrationAccount: CommandModule<
 			provider,
 		) as unknown as anchor.Program<EffectMigration>;
 
-		const data = await migrationProgram.account.migrationAccount.fetch(new PublicKey("8Ko7dCJsojyWMZsQLGh8CT4dtkBUgC5DujdFdbKawBRA"));
-	
-		const owner = extractEosPublicKeyBytes("EOS64vP1Y18ZJXP7KSGoQG8pgR3imaAWoBhzH77kYmYXuVnwzGaDf")
-
-		console.log(owner)
+		const data = await migrationProgram.account.migrationAccount.fetch(new PublicKey("J9dtkFPXXHPDes62s42dGU3z4NtUogEkXjDYfQfsD1LQ"));
+		
+		// convert address to string
+		PublicKey.toString(data.foreignAddress);
+		
 		console.log(data.foreignAddress)
 	},
 };

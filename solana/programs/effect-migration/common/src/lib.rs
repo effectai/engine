@@ -1,6 +1,6 @@
-use anchor_lang::{prelude::*, solana_program::stake};
+use anchor_lang::prelude::*;
 
-pub const EFFECT_MIGRATION: Pubkey = pubkey!("mkBkDyshkoJ3c1TdjNxwM4jUkA6qBbtSQHeMjr4atxH");
+pub const EFFECT_MIGRATION: Pubkey = pubkey!("6YPaGWd3o9cuz3Kn62zHg7BcMvt5wd2dKSDirxrcEa39");
 
 declare_id!(EFFECT_MIGRATION);
 

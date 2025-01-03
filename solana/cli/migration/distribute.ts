@@ -13,20 +13,8 @@ const csv = require("csvtojson");
 import readline from "node:readline";
 import { writeFileSync, readFileSync } from "fs";
 import { KeyType, PublicKey } from "@wharfkit/antelope";
-
-interface ParsedRow {
-	account: string;
-	foreign_key: string;
-	tag: string;
-	last_claim_time: string;
-	last_claim_age: number;
-	type: string;
-	efx: number;
-	nfx: number;
-	staked_efx: number;
-	staked_nfx: number;
-	claim_amount: number;
-}
+import { extractEosPublicKeyBytes } from "@effectai/utils";
+import { toBytes } from "viem";
 
 export const distributeMigrationCommand: CommandModule<
 	unknown,
@@ -60,11 +48,11 @@ export const distributeMigrationCommand: CommandModule<
 		if (!chosen_distribution_file) {
 			try {
 				chosen_distribution_file = await createDistributionFile(
-					"./cli/migration/claims-demo.csv",
+					"./cli/migration/claims.csv",
 					"./cli/migration",
 				);
 			} catch (e) {
-				console.log(chalk.red("Error creating distribution file" , e));
+				console.log(chalk.red("Error creating distribution file", e));
 				return;
 			}
 		}
@@ -78,8 +66,9 @@ export const distributeMigrationCommand: CommandModule<
 		const rows = JSON.parse(readFileSync(chosen_distribution_file, "utf-8"));
 
 		// wait for input from the user
+		const claimsLeft = rows.filter((r) => r.status === 0);
 		const confirmed = await askForConfirmation(
-			`Distribute ${rows.length} claims on ${provider.connection.rpcEndpoint} totaling ${rows.reduce((acc, row) => acc + Number.parseFloat(row.amount), 0)} EFFECT`,
+			`Distribute (${claimsLeft.length}/${rows.length}) claims on ${provider.connection.rpcEndpoint} totalling ${claimsLeft.reduce((acc, row) => acc + Number.parseFloat(row.amount), 0)} EFFECT`,
 		);
 
 		if (!confirmed) {
@@ -87,34 +76,56 @@ export const distributeMigrationCommand: CommandModule<
 			return;
 		}
 
-		for (const row of rows) {
+		const delay = 1000 / 6; // 6 TPS
+
+		for (const row of rows.filter((row) => row.status === 0)) {
 			console.log(
-				chalk.green(
-					`Distributing ${row.amount} EFFECT to ${row.foreign_key}`,
-				),
+				chalk.green(`Distributing ${row.amount} EFFECT to ${row.foreign_key}`),
 			);
 
-			const convertedPublicKey = PublicKey.from(row.foreign_key)
+			const foreignKeyBytes = row.foreign_key.startsWith("0x")
+			? toBytes(row.foreign_key)
+			: extractEosPublicKeyBytes(row.foreign_key);
 
-			const tx = await migrationProgram.methods
+			if (!foreignKeyBytes) {
+				console.log(
+					chalk.red(
+						`Error distributing ${row.amount} EFFECT to ${row.foreign_key}`,
+					),
+				);
+				continue;
+			}
+
+			migrationProgram.methods
 				.createStakeClaim(
-					Buffer.from(convertedPublicKey.data.array.slice(1, 33)),
-					new BN(row.stake_age),
+					Buffer.from(foreignKeyBytes),
+					new BN(row.stake_age_timestamp),
 					new BN(Number.parseFloat(row.amount) * 1_000_000),
 				)
 				.accounts({
 					mint: mintKey,
 					userTokenAccount: sourceAta,
 				})
-				.rpc();
+				.rpc()
+				.then((tx) => {
+					// Mark row as sent
+					row.status = 1;
+					row.tx = tx;
+					writeFileSync(
+						chosen_distribution_file,
+						JSON.stringify(rows, null, 2),
+					);
+				})
+				.catch((e) => {
+					console.log(
+						chalk.red(
+							`Error distributing ${row.amount} EFFECT to ${row.foreign_key}`,
+						),
+					);
+				});
 
-			row.tx = tx;
-
-			// save the distribution to a file
-			writeFileSync(
-				chosen_distribution_file,
-				JSON.stringify(rows, null, 2),
-			);
+			// wait 100ms
+			await new Promise((resolve) => setTimeout(resolve, delay));
 		}
 	},
 };
@@ -147,10 +158,9 @@ const createDistributionFile = async (
 					const chosen_distribution_file = `${outputDir}/distribution-${timestamp}.json`;
 					const data = rows.map((row) => ({
 						foreign_key: row.foreign_key,
-						stake_age: row.last_claim_age,
+						stake_age: row.stake_age_timestamp,
 						amount: row.claim_amount,
-						tx: undefined,
-						confirmed: false,
+						status: 0,
 					}));
 					writeFileSync(
 						chosen_distribution_file,
