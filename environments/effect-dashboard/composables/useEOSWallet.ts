@@ -219,6 +219,8 @@ export const useEosWallet = (): SourceWallet => {
 			throw new Error("Could not compress public key");
 		}
 
+		console.log(compressedPk);
+
 		return compressedPk;
 	};
 

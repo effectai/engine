@@ -53,7 +53,7 @@ impl<'info> Topup<'info> {
                 .key()
                 .as_ref())],
             amount
-        );
+        )?;
 
         self.reflection_account.topup(amount.try_into().unwrap())?;
 

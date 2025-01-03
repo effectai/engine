@@ -7,7 +7,7 @@ import type { CommandModule } from "yargs";
 
 export const rewardsInitCommand: CommandModule<unknown, { mint: string }> = {
 	describe: "Initializizes the reflection account",
-	command: "rewards-init",
+	command: "init",
 	builder: (yargs) =>
 		yargs
 			.option("mint", {

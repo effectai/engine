@@ -41,8 +41,8 @@ export const fetchMigrationAccount: CommandModule<
 			provider,
 		) as unknown as anchor.Program<EffectMigration>;
 
-		const data = await migrationProgram.account.migrationAccount.fetch(new PublicKey("F671XhTLq2WAgPmy7FgMsoVmvjChKWvWZ1xziDE93vxD"));
+		const data = await migrationProgram.account.migrationAccount.fetch(new PublicKey("8Ko7dCJsojyWMZsQLGh8CT4dtkBUgC5DujdFdbKawBRA"));
 	
-		console.log(data)
+		console.log(data.foreignAddress)
 	},
 };

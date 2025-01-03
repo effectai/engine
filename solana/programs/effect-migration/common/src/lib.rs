@@ -1,4 +1,4 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, solana_program::stake};
 
 pub const EFFECT_MIGRATION: Pubkey = pubkey!("mkBkDyshkoJ3c1TdjNxwM4jUkA6qBbtSQHeMjr4atxH");
 
@@ -37,8 +37,9 @@ impl MigrationAccount {
 
         let now = Clock::get()?.unix_timestamp;
 
-        if stake_start_time < 0 {
-            return Err(MigrationError::InvalidStakeStartTime.into());
+        // if the stake start time is not set, set it to the current time
+        if stake_start_time <= 0 {
+            self.stake_start_time = now;
         }
 
         // if the stake start time is in the future, return an error

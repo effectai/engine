@@ -1,0 +1,2 @@
+account, foreign_key, tag, last_claim_time, last_claim_age, type, efx, nfx, staked_efx, staked_nfx, claim_amount
+jeffreyhamer, EOS64vP1Y18ZJXP7KSGoQG8pgR3imaAWoBhzH77kYmYXuVnwzGaDf, ok, 1710926494, 0, eos, 3714.9460, 0.0000, 25000.0000, 0.0000, 28714.9460

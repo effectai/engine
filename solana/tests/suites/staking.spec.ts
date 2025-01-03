@@ -309,7 +309,7 @@ describe("Staking Program", async () => {
 			);
 
 			// wait 30 days
-			await useTimeTravel(30);
+			await useTimeTravel(2000);
 
 			await bankrunProgram.methods
 				.topup(new BN(1_000_000))
@@ -323,11 +323,17 @@ describe("Staking Program", async () => {
 			const account2 = await bankrunProgram.account.stakeAccount.fetch(
 				stakeAccount.publicKey,
 			);
-
+		
 			// expect stake age to be diluted
 			expect(account.stakeStartTime.toNumber()).to.be.lessThan(
 				account2.stakeStartTime.toNumber(),
 			);
+
+			const dateAfter2000Days = (Date.now() / 1000) + 2000 * 24 * 60 * 60;
+			const s_stakeAge = (dateAfter2000Days - account2.stakeStartTime.toNumber());
+
+			// expect stakeAge to be around 500 days +- 1 day
+			expect(s_stakeAge / SECONDS_PER_DAY).to.be.within(499, 501);
 
 			const balance = await provider.connection.getAccountInfo(vaultAccount);
 			if (!balance) throw new Error("Balance not found");
