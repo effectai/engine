@@ -193,7 +193,7 @@ export type EffectStaking = {
         },
         {
           "name": "migrationProgram",
-          "address": "BnZJhBe9mUChoFyAdBsmzfPG9wUCE33ZaNNsLUe8dGnJ"
+          "address": "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
         },
         {
           "name": "systemProgram",
@@ -364,11 +364,11 @@ export type EffectStaking = {
         },
         {
           "name": "rewardProgram",
-          "address": "CHiJWRYW3Cb4jiDhNr4dZkS4qYYSrKRmGCoJCJsY1wLz"
+          "address": "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi"
         },
         {
           "name": "vestingProgram",
-          "address": "ubydJbUXumJsNhgThmgr2UcExSnxpRS43A1Ed2DDicy"
+          "address": "effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S"
         },
         {
           "name": "rent",
@@ -570,7 +570,7 @@ export type EffectStaking = {
     {
       "name": "unstakeDelayDays",
       "type": "u64",
-      "value": "0"
+      "value": "7"
     }
   ]
 };

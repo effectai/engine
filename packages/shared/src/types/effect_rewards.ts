@@ -202,7 +202,7 @@ export type EffectRewards = {
         },
         {
           "name": "stakeProgram",
-          "address": "mHBL5sjd4PHogmKXT5v84BUNzZQoXqq6XKtokE6aZ5M"
+          "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
         }
       ],
       "args": []
@@ -295,7 +295,7 @@ export type EffectRewards = {
         },
         {
           "name": "stakeProgram",
-          "address": "mHBL5sjd4PHogmKXT5v84BUNzZQoXqq6XKtokE6aZ5M"
+          "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
         },
         {
           "name": "systemProgram",
@@ -543,7 +543,7 @@ export type EffectRewards = {
         },
         {
           "name": "stakeProgram",
-          "address": "mHBL5sjd4PHogmKXT5v84BUNzZQoXqq6XKtokE6aZ5M"
+          "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
         }
       ],
       "args": []

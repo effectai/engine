@@ -1,5 +1,5 @@
 {
-  "address": "BnZJhBe9mUChoFyAdBsmzfPG9wUCE33ZaNNsLUe8dGnJ",
+  "address": "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR",
   "metadata": {
     "name": "effect_migration",
     "version": "0.1.0",
@@ -74,7 +74,7 @@
         {
           "name": "rent_receiver",
           "writable": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
         },
         {
           "name": "rent",
@@ -82,7 +82,7 @@
         },
         {
           "name": "migration_program",
-          "address": "BnZJhBe9mUChoFyAdBsmzfPG9wUCE33ZaNNsLUe8dGnJ"
+          "address": "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
         },
         {
           "name": "token_program",
@@ -94,7 +94,7 @@
         },
         {
           "name": "staking_program",
-          "address": "mHBL5sjd4PHogmKXT5v84BUNzZQoXqq6XKtokE6aZ5M"
+          "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
         }
       ],
       "args": [
@@ -156,7 +156,7 @@
           "name": "authority",
           "writable": true,
           "signer": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
         },
         {
           "name": "user_token_account",

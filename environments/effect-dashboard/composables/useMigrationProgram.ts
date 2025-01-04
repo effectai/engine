@@ -161,9 +161,6 @@ export const useMigrationProgram = () => {
 				})
 
 				// convert signature to string and log it
-				console.log("signature string", Buffer.from(signature));
-				console.log("message", Buffer.from(message));
-
 				return await migrationProgram.value.methods
 					.claimStake(
 						Buffer.from(signature),

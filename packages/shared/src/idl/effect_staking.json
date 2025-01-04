@@ -1,5 +1,5 @@
 {
-  "address": "mHBL5sjd4PHogmKXT5v84BUNzZQoXqq6XKtokE6aZ5M",
+  "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e",
   "metadata": {
     "name": "effect_staking",
     "version": "0.1.0",
@@ -187,7 +187,7 @@
         },
         {
           "name": "migration_program",
-          "address": "BnZJhBe9mUChoFyAdBsmzfPG9wUCE33ZaNNsLUe8dGnJ"
+          "address": "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
         },
         {
           "name": "system_program",
@@ -358,11 +358,11 @@
         },
         {
           "name": "reward_program",
-          "address": "CHiJWRYW3Cb4jiDhNr4dZkS4qYYSrKRmGCoJCJsY1wLz"
+          "address": "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi"
         },
         {
           "name": "vesting_program",
-          "address": "ubydJbUXumJsNhgThmgr2UcExSnxpRS43A1Ed2DDicy"
+          "address": "effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S"
         },
         {
           "name": "rent",
@@ -564,7 +564,7 @@
     {
       "name": "UNSTAKE_DELAY_DAYS",
       "type": "u64",
-      "value": "0"
+      "value": "7"
     }
   ]
 }

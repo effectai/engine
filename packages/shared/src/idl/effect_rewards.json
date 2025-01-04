@@ -1,5 +1,5 @@
 {
-  "address": "CHiJWRYW3Cb4jiDhNr4dZkS4qYYSrKRmGCoJCJsY1wLz",
+  "address": "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi",
   "metadata": {
     "name": "effect_rewards",
     "version": "0.1.0",
@@ -196,7 +196,7 @@
         },
         {
           "name": "stake_program",
-          "address": "mHBL5sjd4PHogmKXT5v84BUNzZQoXqq6XKtokE6aZ5M"
+          "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
         }
       ],
       "args": []
@@ -289,7 +289,7 @@
         },
         {
           "name": "stake_program",
-          "address": "mHBL5sjd4PHogmKXT5v84BUNzZQoXqq6XKtokE6aZ5M"
+          "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
         },
         {
           "name": "system_program",
@@ -537,7 +537,7 @@
         },
         {
           "name": "stake_program",
-          "address": "mHBL5sjd4PHogmKXT5v84BUNzZQoXqq6XKtokE6aZ5M"
+          "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
         }
       ],
       "args": []

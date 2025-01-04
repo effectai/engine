@@ -5,17 +5,17 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-effect_vesting = "ubydJbUXumJsNhgThmgr2UcExSnxpRS43A1Ed2DDicy"
-effect_rewards = "CHiJWRYW3Cb4jiDhNr4dZkS4qYYSrKRmGCoJCJsY1wLz"
-effect_staking = "mHBL5sjd4PHogmKXT5v84BUNzZQoXqq6XKtokE6aZ5M"
-effect_migration = "BnZJhBe9mUChoFyAdBsmzfPG9wUCE33ZaNNsLUe8dGnJ"
+effect_vesting = "effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S"
+effect_rewards = "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi"
+effect_staking = "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
+effect_migration = "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
-wallet = "./tests/keys/authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV.json"
+cluster = "https://mainnet.helius-rpc.com/?api-key=b6add14a-698c-4516-83e2-e102dc23b36e"
+wallet = "~/keys/effect-prod-deployment.json"
 
 [workspace]
 members = ["programs/effect-migration/program", "programs/effect-staking/program", "programs/effect-rewards/program", "programs/effect-vesting/program"]

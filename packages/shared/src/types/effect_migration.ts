@@ -80,7 +80,7 @@ export type EffectMigration = {
         {
           "name": "rentReceiver",
           "writable": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
         },
         {
           "name": "rent",
@@ -88,7 +88,7 @@ export type EffectMigration = {
         },
         {
           "name": "migrationProgram",
-          "address": "BnZJhBe9mUChoFyAdBsmzfPG9wUCE33ZaNNsLUe8dGnJ"
+          "address": "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
         },
         {
           "name": "tokenProgram",
@@ -100,7 +100,7 @@ export type EffectMigration = {
         },
         {
           "name": "stakingProgram",
-          "address": "mHBL5sjd4PHogmKXT5v84BUNzZQoXqq6XKtokE6aZ5M"
+          "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
         }
       ],
       "args": [
@@ -162,7 +162,7 @@ export type EffectMigration = {
           "name": "authority",
           "writable": true,
           "signer": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
         },
         {
           "name": "userTokenAccount",
