@@ -4,8 +4,6 @@
         <div class="prose dark:text-white mt-12" id="step-intro">
 
             <h2 class="dark:text-white">Migrate Your $EFX Tokens to Solana</h2>
-
-
             <p>Welcome to the official $EFX to $EFFECT token migration portal!</p>
             <p>
                 As you may know by now, Effect AI is migrating its native token to the <u>Solana</u> Blockchain
