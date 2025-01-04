@@ -2,6 +2,7 @@ import {
 	ABICache,
 	Action,
 	PlaceholderAuth,
+	PublicKey,
 	Signature,
 	Transaction,
 	TransactionHeader,
@@ -127,6 +128,18 @@ export const useEosWallet = (): SourceWallet => {
 			throw new Error("No client found");
 		}
 
+		const res = await session.value.client.v1.chain.get_account(
+			session.value.actor,
+		);
+
+		const activePermission = res.getPermission(session.value.permission.toString());
+		const publicKey = activePermission.required_auth.keys[0].key.toString();
+		const compressedPk = extractEosPublicKeyBytes(publicKey);
+
+		if (!compressedPk) {
+			throw new Error("Could not compress public key");
+		}
+
 		const abi = new ABICache(session.value?.client);
 		const eosAbi = await abi.getAbi("effecttokens");
 
@@ -157,28 +170,28 @@ export const useEosWallet = (): SourceWallet => {
 		});
 
 		const transaction = await session.value.transact(tx, { broadcast: false });
-
-		const signature = transaction.signatures[0];
 		const serializedTxBytes = transaction.resolved?.signingData;
-		const sig = Signature.from(signature);
+
+
 		if (!serializedTxBytes) {
 			throw new Error("Could not serialize transaction");
 		}
 
-		const res = await session.value.client.v1.chain.get_account(
-			session.value.actor,
-		);
+		let sigToUse = null;
+		for(const signature of transaction.signatures) {
+			const sig = Signature.from(signature);
+			if(sig.verifyMessage(serializedTxBytes, PublicKey.from(publicKey))){
+				sigToUse = sig;
+				break;
+			}
+		}
 
-		const activePermission = res.getPermission(session.value.permission.toString());
-		const publicKey = activePermission.required_auth.keys[0].key.toString();
-		const compressedPk = extractEosPublicKeyBytes(publicKey);
-
-		if (!compressedPk) {
-			throw new Error("Could not compress public key");
+		if(!sigToUse){
+			throw new Error("Could not verify signature");
 		}
 
 		return {
-			signature: sig.data.array,
+			signature: sigToUse.data.array,
 			message: serializedTxBytes?.array,
 			foreignPublicKey: compressedPk,
 		};

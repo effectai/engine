@@ -102,7 +102,7 @@
                     <div v-if="!destinationAddress">
                         <div>
                             <div class="flex flex-wrap justify-left items-center gap-2 my-8">
-                                <span v-if="!$device.isMobileOrTablet" class="flex gap-2 items-center">
+                                <span v-if="hasSolana && !$device.isIos" class="flex gap-2 items-center">
                                     <WalletMultiButton /> or
                                 </span> <a class="text-sm text-red-500 cursor-pointer"
                                     @click="toggleAddress = !toggleAddress">Manually
@@ -154,7 +154,7 @@
                     </div>
 
                     <div v-else class="flex flex-col my-5">
-                        <div v-if="$device.isMobileOrTablet">
+                        <div v-if="$device.isMobileOrTablet && !hasSolana || $device.isIos">
                             <h2 class="text-xl my-3 font-bold">Authentication and authorization via your mobile wallet
                                 were successful! 🎉</h2>
 
@@ -371,9 +371,9 @@ watch(currentStep, async (newVal) => {
     await new Promise(resolve => setTimeout(resolve, 10))
     let el = null;
     if (newVal === 0) {
-         el = document.getElementById("step-intro")
+        el = document.getElementById("step-intro")
     } else {
-         el = document.getElementById(`step-${newVal}`)
+        el = document.getElementById(`step-${newVal}`)
     }
     if (el) {
         await nextTick();
