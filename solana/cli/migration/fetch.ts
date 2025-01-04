@@ -4,6 +4,7 @@ import type { EffectMigration } from "../../target/types/effect_migration";
 import EffectMigrationIdl from "../../target/idl/effect_migration.json";
 import * as anchor from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
+import { extractEosPublicKeyBytes } from "@effectai/utils";
 const csv = require("csvtojson");
 
 export const fetchMigrationAccount: CommandModule<
@@ -19,8 +20,13 @@ export const fetchMigrationAccount: CommandModule<
 			provider,
 		) as unknown as anchor.Program<EffectMigration>;
 
-		const data = await migrationProgram.account.migrationAccount.fetch(new PublicKey("GneurrJ9hyJYnw1662sUWGfBhBTYsiv2yvqo1ds7SjGp"));
+		const data = await migrationProgram.account.migrationAccount.fetch(new PublicKey("HHff83VXaS6sm3MqNULro6YWbcvjR78LUu6Q3ee6zVid"));
 		
-		console.log(data)
+
+		const pkBytes = extractEosPublicKeyBytes("EOS64vP1Y18ZJXP7KSGoQG8pgR3imaAWoBhzH77kYmYXuVnwzGaDf")
+		console.log(pkBytes)
+
+		console.log(data.foreignAddress)
+		console.log(data.stakeStartTime.toNumber())
 	},
 };

@@ -5,9 +5,7 @@ import { keccak256, toBytes } from "viem";
 import { secp256k1 } from "@noble/curves/secp256k1";
 import { privateKeyToAccount } from "viem/accounts";
 
-import {
-	extractEosPublicKeyBytes
-} from "@effectai/utils";
+import { extractEosPublicKeyBytes } from "@effectai/utils";
 
 import { PrivateKey } from "@wharfkit/antelope";
 
@@ -17,10 +15,7 @@ import type { EffectStaking } from "../../target/types/effect_staking.js";
 import { expect, describe, it } from "vitest";
 import { useAnchor } from "../helpers.js";
 import { setup } from "../../utils/spl.js";
-import {
-	claimMigration,
-	createMigrationClaim,
-} from "../../utils/migration.js";
+import { claimMigration, createMigrationClaim } from "../../utils/migration.js";
 import { useErrorsIDL } from "../../utils/idl.js";
 
 import { effect_migration } from "@effectai/shared";
@@ -74,7 +69,7 @@ describe("Migration Program", async () => {
 			if (!publicKey) {
 				throw new Error("Invalid public key");
 			}
- 
+
 			const { migrationAccount } = await createMigrationClaim({
 				mint,
 				userTokenAccount: ata,
@@ -269,26 +264,26 @@ describe("Migration Program", async () => {
 				message: originalMessage,
 			});
 
-			const { vaultAccount: claimVaultAccount } =
-				await createMigrationClaim({
-					mint,
-					userTokenAccount: ata,
-					publicKey: toBytes(ethPublicKey),
-					amount: 100_000_000,
-					stakeStartTime,
-					program,
-				});
-
-			const { stakeAccount, stakeVaultAccount, migrationAccount } = await claimMigration({
-				migrationProgram: program,
-				stakeProgram,
-				ata,
-				foreignAddress: toBytes(ethPublicKey),
+			const { vaultAccount: claimVaultAccount } = await createMigrationClaim({
 				mint,
-				payer,
-				signature: Buffer.from(toBytes(signature)),
-				message: Buffer.from(message),
+				userTokenAccount: ata,
+				publicKey: toBytes(ethPublicKey),
+				amount: 100_000_000,
+				stakeStartTime,
+				program,
 			});
+
+			const { stakeAccount, stakeVaultAccount, migrationAccount } =
+				await claimMigration({
+					migrationProgram: program,
+					stakeProgram,
+					ata,
+					foreignAddress: toBytes(ethPublicKey),
+					mint,
+					payer,
+					signature: Buffer.from(toBytes(signature)),
+					message: Buffer.from(message),
+				});
 
 			// check if the stake account was created
 			const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
@@ -309,11 +304,12 @@ describe("Migration Program", async () => {
 
 			// check if claim vault is closed
 			await expect(() =>
-			    provider.connection.getTokenAccountBalance(claimVaultAccount)
-			).rejects.toThrowError('could not find account');
+				provider.connection.getTokenAccountBalance(claimVaultAccount),
+			).rejects.toThrowError("could not find account");
 
 			// check if migration account is closed
-			expect(provider.connection.getAccountInfo(migrationAccount)).resolves.toBeNull;
+			expect(provider.connection.getAccountInfo(migrationAccount)).resolves
+				.toBeNull;
 		});
 
 		it.concurrent(
@@ -337,17 +333,16 @@ describe("Migration Program", async () => {
 					message: originalMessage,
 				});
 
-				const { vaultAccount: claimVaultAccount } =
-					await createMigrationClaim({
-						mint,
-						userTokenAccount: ata,
-						publicKey: toBytes(ethPublicKey),
-						amount: 100_000_000,
-						stakeStartTime,
-						program,
-					});
+				const { vaultAccount: claimVaultAccount } = await createMigrationClaim({
+					mint,
+					userTokenAccount: ata,
+					publicKey: toBytes(ethPublicKey),
+					amount: 100_000_000,
+					stakeStartTime,
+					program,
+				});
 
-				const {stakeAccount, stakeVaultAccount} = await claimMigration({
+				const { stakeAccount, stakeVaultAccount } = await claimMigration({
 					migrationProgram: program,
 					stakeProgram,
 					ata,
@@ -375,10 +370,11 @@ describe("Migration Program", async () => {
 
 				// check if claim vault is created and emptied out
 				await expect(() =>
-				    provider.connection.getTokenAccountBalance(claimVaultAccount)
-				).rejects.toThrowError('could not find account');
+					provider.connection.getTokenAccountBalance(claimVaultAccount),
+				).rejects.toThrowError("could not find account");
 			},
 		);
+
 
 		it.concurrent(
 			"correctly throws a INVALID MESSAGE error when the message is incorrect",
@@ -458,5 +454,6 @@ describe("Migration Program", async () => {
 				}, PUBLIC_KEY_MISMATCH);
 			},
 		);
+	
 	});
 });
