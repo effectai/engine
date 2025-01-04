@@ -154,11 +154,14 @@ export const useMigrationProgram = () => {
 					programId: rewardsProgram.value.programId,
 				});
 
-				const {migrationAccount} = useDeriveMigrationAccounts({
+				const { migrationAccount } = useDeriveMigrationAccounts({
 					mint,
 					foreignAddress: foreignPublicKey,
 					programId: migrationProgram.value.programId,
 				})
+
+				console.log("signature", signature);
+				console.log("message", message);
 
 				return await migrationProgram.value.methods
 					.claimStake(
