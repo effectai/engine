@@ -25,6 +25,7 @@
                 <ul>
                     <li>Access to the BSC or EOS account holding your $EFX tokens.</li>
                     <li>A Solana-compatible wallet (e.g., Phantom, Backpack).</li>
+                    <li>A small amount of SOL to make the claim</li>
                     <li>A few minutes to complete the process.</li>
                 </ul>
             </div>
@@ -99,9 +100,9 @@
                         on. </p>
 
                     <div v-if="!destinationAddress">
-                        <div v-if="hasSolana">
+                        <div>
                             <div class="flex flex-wrap justify-left items-center gap-2 my-8">
-                                <span class="flex gap-2 items-center">
+                                <span v-if="!$device.isMobileOrTablet" class="flex gap-2 items-center">
                                     <WalletMultiButton /> or
                                 </span> <a class="text-sm text-red-500 cursor-pointer"
                                     @click="toggleAddress = !toggleAddress">Manually
@@ -153,7 +154,7 @@
                     </div>
 
                     <div v-else class="flex flex-col my-5">
-                        <div v-if="!hasSolana && $device.isMobileOrTablet">
+                        <div v-if="$device.isMobileOrTablet">
                             <h2 class="text-xl my-3 font-bold">Authentication and authorization via your mobile wallet
                                 were successful! 🎉</h2>
 
