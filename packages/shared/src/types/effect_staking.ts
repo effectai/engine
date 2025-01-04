@@ -193,7 +193,7 @@ export type EffectStaking = {
         },
         {
           "name": "migrationProgram",
-          "address": "6YPaGWd3o9cuz3Kn62zHg7BcMvt5wd2dKSDirxrcEa39"
+          "address": "BnZJhBe9mUChoFyAdBsmzfPG9wUCE33ZaNNsLUe8dGnJ"
         },
         {
           "name": "systemProgram",

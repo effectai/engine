@@ -1,5 +1,5 @@
 export const effect_migration = {
-  "address": "6YPaGWd3o9cuz3Kn62zHg7BcMvt5wd2dKSDirxrcEa39",
+  "address": "BnZJhBe9mUChoFyAdBsmzfPG9wUCE33ZaNNsLUe8dGnJ",
   "metadata": {
     "name": "effect_migration",
     "version": "0.1.0",
@@ -82,7 +82,7 @@ export const effect_migration = {
         },
         {
           "name": "migration_program",
-          "address": "6YPaGWd3o9cuz3Kn62zHg7BcMvt5wd2dKSDirxrcEa39"
+          "address": "BnZJhBe9mUChoFyAdBsmzfPG9wUCE33ZaNNsLUe8dGnJ"
         },
         {
           "name": "token_program",
