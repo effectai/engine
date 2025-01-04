@@ -5,7 +5,6 @@
 			<ConfettiExplosion v-if="triggerConfetti" :particleCount="200" :force="0.3" />
 		</div>
 
-
         <div class="flex flex-col gap-5">
             <div class="bg-white/5 p-6 rounded-xl border border-gray-800">
                 <div class="flex items-center gap-4">

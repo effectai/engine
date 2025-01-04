@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="!isConnected" class="gap-5 flex justify-center mt-6 items-center">
+        <div v-if="!isConnected" class="gap-5 flex justify-left mt-6 items-center">
             <UButton @click="connectEos()" color="black" variant="outline">
                 <span class="w-3">
                     <img src="@/assets/img/eos-logo.svg" alt="EOS" />
