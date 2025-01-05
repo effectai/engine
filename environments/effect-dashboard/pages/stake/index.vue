@@ -4,7 +4,7 @@
             <div class="flex items-center flex-col justify-center h-96">
                 <div class="gap-5 flex flex-col items-center justify-center">
                     <div class="text-center space-y-2">
-                        <h2 class="text-4xl">Hello There 👋</h2>
+                        <h2 class="text-4xl">Welcome 🌇</h2>
                         <h1 class="text-2xl">Please connect your solana wallet.</h1>
                     </div>
                     <ClientOnly>
