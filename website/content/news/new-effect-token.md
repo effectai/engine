@@ -2,7 +2,7 @@
 title: "The New $EFFECT Token"
 description: "We are excited to share that the EFFECT token will be publicly tradable on Solana on the 10th of January 2025. If you’ve been holding $EFX during the snapshot, the time has come to claim your new $EFFECT allocation through the official portal."
 image:
-  src: "/img/news/announcement-alt.png"
+  src: "/img/news/token-blog-header.jpg"
 author: "Effect.AI"
 head:
   meta:
