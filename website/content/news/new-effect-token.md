@@ -32,10 +32,12 @@ _In Summary_
 ## Claiming your EFFECT tokens
 
 The snapshot has been taken on January 1st, and all $EFX on EOS and
-BSC are no longer tradeable nor carry any utility. Starting today, you
-can claim your EFFECT tokens via the official Claim Portal at  <a href="https://portal.effect.ai/migrate" target="_blank">portal.effect.ai</a>. This is the only
-authorized portal for claiming your tokens—beware of imposter sites
-that try to scam users.
+BSC should not be sold/bought and they carry no utility. Starting
+today, you can claim your EFFECT tokens via the official Claim Portal
+at <a href="https://portal.effect.ai/migrate"
+target="_blank">portal.effect.ai</a>. This is the only authorized
+portal for claiming your tokens—beware of imposter sites that try to
+scam users.
 
 _Supported wallets_
 
