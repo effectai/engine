@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use effect_common::close_vault;
+use effect_common::close_migration_vault;
 use effect_common::constants::CLAIM_START_TIME;
 use effect_common::cpi;
 use effect_common::id::ADMIN_AUTHORITY;
@@ -88,7 +88,7 @@ pub fn handler(ctx: Context<ClaimStake>, signature: Vec<u8>, message: Vec<u8>) -
     // topup the stake account
     genesis_stake!(ctx.accounts, &[&vault_seed!(ctx.accounts.migration_account.key(), *ctx.program_id)[..]])?;
 
-    close_vault!(
+    close_migration_vault!(
 	ctx.accounts,
 	migration_vault_token_account,
 	&[&vault_seed!(ctx.accounts.migration_account.key(), *ctx.program_id)[..]]

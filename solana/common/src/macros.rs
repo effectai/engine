@@ -41,6 +41,19 @@ macro_rules! transfer_tokens_from_vault {
 }
 
 #[macro_export]
+macro_rules! close_migration_vault {
+    ($accounts: expr, $vault_account: ident, $seeds: expr) => {
+        cpi::close_token_account(
+            $accounts.token_program.to_account_info(),
+            $accounts.$vault_account.to_account_info(),
+            $accounts.rent_receiver.to_account_info(),
+            $accounts.$vault_account.to_account_info(),
+            $seeds,
+        )
+    };
+}
+
+#[macro_export]
 macro_rules! close_vault {
     ($accounts: expr, $vault_account: ident, $seeds: expr) => {
         cpi::close_token_account(

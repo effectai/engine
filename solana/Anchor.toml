@@ -14,8 +14,8 @@ effect_migration = "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "https://mainnet.helius-rpc.com/?api-key=b6add14a-698c-4516-83e2-e102dc23b36e"
-wallet = "~/keys/effect-prod-deployment.json"
+cluster = "localnet"
+wallet = "./tests/keys/authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV.json"
 
 [workspace]
 members = ["programs/effect-migration/program", "programs/effect-staking/program", "programs/effect-rewards/program", "programs/effect-vesting/program"]
