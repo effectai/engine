@@ -8,13 +8,11 @@ import type {
 } from "@coral-xyz/anchor";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { useAnchorProvider } from "./useAnchorProvider";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { ComputeBudgetProgram, Keypair, PublicKey } from "@solana/web3.js";
 import { EffectStakingIdl, type EffectStaking } from "@effectai/shared";
 
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import {
-	useDeriveStakingRewardAccount,
-} from "@effectai/utils";
+import { useDeriveStakingRewardAccount } from "@effectai/utils";
 
 const SECONDS_PER_DAY = 86400;
 
@@ -28,7 +26,7 @@ export function useStakingProgram() {
 	const { connection } = useGlobalState();
 	const { publicKey } = useWallet();
 	const { provider } = useAnchorProvider();
-	
+
 	const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
 
 	const stakeProgram = computed(() => {
@@ -47,7 +45,10 @@ export function useStakingProgram() {
 			onSuccess: () => {
 				queryClient.invalidateQueries({
 					predicate: (query) => {
-						return query.queryKey.includes("stake") || query.queryKey.includes("unstake");
+						return (
+							query.queryKey.includes("stake") ||
+							query.queryKey.includes("unstake")
+						);
 					},
 				});
 			},
@@ -66,12 +67,17 @@ export function useStakingProgram() {
 					programId: rewardsProgram.value.programId,
 				});
 
+				const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+					microLamports: 100_000,
+				});
+
 				// create a new pubkey for unstake vestment
 				const vestmentAccount = Keypair.generate();
 
 				return await stakeProgram.value.methods
 					.unstake(new anchor.BN(amount * 1000000))
 					.preInstructions([
+						addPriorityFee,
 						...((await connection.getAccountInfo(stakingRewardAccount))
 							? [
 									await rewardsProgram.value.methods
@@ -234,15 +240,16 @@ export function useStakingProgram() {
 					throw new Error("Could not get public key");
 				}
 
-				const stakingAccounts = await stakeProgram.value.account.stakeAccount.all([
-					{
-						memcmp: {
-							offset: 8 + 8,
-							encoding: "base58",
-							bytes: publicKey.value.toBase58(),
+				const stakingAccounts =
+					await stakeProgram.value.account.stakeAccount.all([
+						{
+							memcmp: {
+								offset: 8 + 8,
+								encoding: "base58",
+								bytes: publicKey.value.toBase58(),
+							},
 						},
-					},
-				]);
+					]);
 
 				return stakingAccounts[0];
 			},
