@@ -12,6 +12,7 @@ import readline from "node:readline";
 import { writeFileSync, readFileSync } from "fs";
 import { extractEosPublicKeyBytes } from "@effectai/utils";
 import { toBytes } from "viem";
+import { ComputeBudgetProgram } from "@solana/web3.js";
 const csv = require("csvtojson");
 
 type DistributionRow = {
@@ -107,12 +108,17 @@ export const distributeMigrationCommand: CommandModule<
 				continue;
 			}
 
+			const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+				microLamports: 20000,
+			});
+
 			migrationProgram.methods
 				.createStakeClaim(
 					Buffer.from(foreignKeyBytes),
 					new BN(row.stake_age),
 					new BN(Number.parseFloat(row.amount) * 1_000_000),
 				)
+				.preInstructions([addPriorityFee])
 				.accounts({
 					mint: mintKey,
 					userTokenAccount: sourceAta,
