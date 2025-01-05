@@ -6,5 +6,6 @@
         "libgudev"
         "coreutils"
         "bash"
+	"findutils"
         "nss-certs"
         "sed"))
