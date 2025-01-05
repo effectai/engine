@@ -69,13 +69,13 @@ age, and, starting from the 10th of January, will generate rewards.
 
 _Unstake Release Schedule_
 
-If you decide to unstake a part of your tokens, this part will be
-returned to you slowly over a period of time. After unstaking, the
-tokens will first be locked for 7 days, during which they are not
-transferable and do not generate rewards. After 7 days, tokens will
-stream back to your wallet linearly over a period of 30 days. To
+If you decide to unstake some of your tokens, this part will be
+returned to you slowly over a period of time. For every unstake, the
+tokens will be locked for 7 days, during which they are not
+transferable and do not generate rewards. After 7 days, they will
+begin streaming back to your wallet over a period of 30 days. To
 illustrate: it will take 37 days for all of your unstaked tokens to be
-available in your wallet, with half of your tokens becoming available
+available in your wallet, and half of your tokens will become available
 after 22 days.
 
 **Note**: unstaking is not reversable; once initiated, you will have
