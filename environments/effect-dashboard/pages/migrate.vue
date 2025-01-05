@@ -37,7 +37,13 @@
             </UButton>
 
             <p class="text-xs mt-10 italic">If you have questions or encounter issues during the migration, our support
-                team is here to help. Simply reach out through our telegram / discord</p>
+                team is here to help. Simply reach out through our <a href="https://t.me/effectai">telegram</a> / <a href="https://discord.gg/effectnetwork">discord</a>
+            
+            
+            </p>
+            <p class="mt-1 text-xs italic">
+                <b>IMPORTANT</b>: When you reach out for support, expect private messages from <u>scammers</u> pretending to be support agents. We will never DM you first, And will never ask for your private keys or seed phrases. Please be cautious.
+            </p>
         </div>
 
         <Stepper v-if="currentStep !== undefined" :currentStep="currentStep" :items="steps">
