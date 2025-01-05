@@ -5,7 +5,7 @@
                 <div class="gap-5 flex flex-col items-center justify-center">
                     <div class="text-center space-y-2">
                         <h2 class="text-4xl">Welcome 🌇</h2>
-                        <h1 class="text-2xl">Please connect your solana wallet.</h1>
+                        <h1 class="text-2xl">Please connect your Solana wallet.</h1>
                     </div>
                     <ClientOnly>
                         <WalletMultiButton />
