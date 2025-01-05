@@ -37,8 +37,6 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
 					throw new Error("No public key");
 				}
 
-				console.log("accountToUse", accountToUse.value.toBase58());
-
 				const data = await connection.getBalance(accountToUse.value);
 
 				return {
