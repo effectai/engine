@@ -21,7 +21,7 @@ published: true
 
 This blog will guide you through the process, provide key security tips, and ensure a smooth transition to the new token. Although the EFFECT token will only be tradable on the 10th of January, you can already prepare your token claim. Let’s dive into the details and get you ready to claim!
 
-_TL;DR_
+_In Summary_
 
 - $EFFECT will be tradable on Solana on January 10th
 - Snapshot holders can claim their allocation through the Claim Portal starting today
