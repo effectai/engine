@@ -1,4 +1,4 @@
-import { Keypair, PublicKey, type TokenAmount } from "@solana/web3.js";
+import { ComputeBudgetProgram, Keypair, PublicKey, type TokenAmount } from "@solana/web3.js";
 import {
 	useMutation,
 	useQuery,
@@ -160,6 +160,10 @@ export const useMigrationProgram = () => {
 					programId: migrationProgram.value.programId,
 				})
 
+				const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+					microLamports: 20000,
+				});
+
 				// convert signature to string and log it
 				return await migrationProgram.value.methods
 					.claimStake(
@@ -167,6 +171,7 @@ export const useMigrationProgram = () => {
 						Buffer.from(message),
 					)
 					.preInstructions([
+						addPriorityFee,
 						...((await connection.getAccountInfo(ata))
 							? []
 							: [
