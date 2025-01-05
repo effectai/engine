@@ -161,7 +161,7 @@ export const useMigrationProgram = () => {
 				})
 
 				const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-					microLamports: 20000,
+					microLamports: 40000,
 				});
 
 				// convert signature to string and log it
