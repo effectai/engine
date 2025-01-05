@@ -14,29 +14,64 @@
                         </div>
                     </div>
                     <div class="bg-white/5 rounded-lg py-4 px-2 space-y-2">
-                    
+
                         <div class="flex justify-between"><span class="text-gray-400">Unlock Period</span><span>30
                                 Days</span>
 
                         </div>
-                      
+
                         <div class="flex justify-between"><span class="text-gray-400">Unstake Delay
                             </span><span>7 Days</span></div>
 
-                            <div class="flex justify-between"><span class="text-gray-400">Total Staked
+                        <div class="flex justify-between"><span class="text-gray-400">Total Staked
                                 Tokens</span><span>{{ stakeAmount }} EFFECT</span></div>
-                                <div class="flex justify-between"><span class="text-gray-400">January Stake Bonus</span><span>20
+                        <div class="flex justify-between"><span class="text-gray-400">January Stake Bonus</span><span>20
                                 %</span>
                         </div>
 
                     </div>
 
-                    <span v-if="unstakeAmount > 0" class="text-center flex justify-center items-center gap-2">
-                        <UIcon name="heroicons-information-circle" class="h-6 w-6 text-lg" size="lg" />
-                        By unstaking, you lose your 20% increased staking bonus for those tokens.</span>
+                    <div>
+                        <span v-if="unstakeAmount > 0"
+                            class="text-center font-bold flex justify-center items-center gap-2">
+                            <div class="">
+                                By unstaking these tokens you will:
 
+                                <ul class="text-red-500 mt-2 font-medium space-y-2 ">
+                                    <li class="">
+                                        <div class="flex justify-center items-center space-x-1">
+                                            <UIcon class="flex-none" name="lucide:x" />
+                                            <div>Lock your tokens for <u>7 days</u> after which they will be linearly
+                                                released over a period of <u>30 days.</u></div>
+                                        </div>
+                                    </li>
+                                    <li class="">
+                                        <div class="flex justify-center items-center space-x-1">
+                                            <UIcon name="lucide:x" />
+                                            <div>Lose your Stake Age</div>
+                                        </div>
+
+                                    </li>
+                                    <li class="">
+
+                                        <div class="flex justify-center items-center space-x-1">
+                                            <UIcon name="lucide:x" />
+                                            <div>Miss out on the increased reward bonus in January</div>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </span>
+                    </div>
                     <UButton :loading="isPending" :disabled="!isValid" @click="handleSubmit" color="white"
-                        class="flex justify-center w-full">Unstake</UButton>
+                        class="flex justify-center w-full">
+                        <span v-if="unstakeAmount > 0">
+                            I understand, unstake my tokens.
+                        </span>
+                        <span v-else>
+                            Unstake
+                        </span>
+                    </UButton>
                 </div>
             </div>
 
@@ -64,7 +99,7 @@ const isValid = computed(() => {
 });
 
 const handleSubmit = async () => {
-    
+
     if (!stakeAccount.value) {
         throw new Error('No stake account found');
     }

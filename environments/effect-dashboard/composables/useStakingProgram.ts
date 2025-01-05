@@ -13,7 +13,6 @@ import { EffectStakingIdl, type EffectStaking } from "@effectai/shared";
 
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import {
-	useDeriveRewardAccounts,
 	useDeriveStakingRewardAccount,
 } from "@effectai/utils";
 
