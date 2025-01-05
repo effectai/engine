@@ -88,6 +88,15 @@ will be. This score will be beneficial for voting and rewards once the
 Effect DAO is launched. The Stake Age of the $EFX tokens you held on
 EOS is automatically transferred to the new tokens.
 
+## Rewards
+
+Starting January 10th staked tokens will generate rewards. These
+rewards are distributed continuously and can be claimed at any time.
+Extra rewards will be distributed to those that have tokens staked on
+the 10th of January. The APY generated from a stake can be viewed in
+the Portal, please not that it is dynamic and subject to change. More
+details on the rewards will be released in the coming days.
+
 ## Security tips and support
 
 Never share your private keys or seed phrases, and always ensure you’re using the official portal link. Bookmark the site to avoid phishing scams, and verify the URL before entering any details.
