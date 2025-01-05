@@ -14,11 +14,7 @@
                         </div>
                     </div>
                     <div class="bg-white/5 rounded-lg py-4 px-2 space-y-2">
-                        <div class="flex justify-between"><span class="text-gray-400">Total Staked
-                                Tokens</span><span>{{ stakeAmount }} EFFECT</span></div>
-                                <div class="flex justify-between"><span class="text-gray-400">January Stake Bonus</span><span>20
-                                %</span>
-                        </div>
+                    
                         <div class="flex justify-between"><span class="text-gray-400">Unlock Period</span><span>30
                                 Days</span>
 
@@ -26,6 +22,12 @@
                       
                         <div class="flex justify-between"><span class="text-gray-400">Unstake Delay
                             </span><span>7 Days</span></div>
+
+                            <div class="flex justify-between"><span class="text-gray-400">Total Staked
+                                Tokens</span><span>{{ stakeAmount }} EFFECT</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">January Stake Bonus</span><span>20
+                                %</span>
+                        </div>
 
                     </div>
 

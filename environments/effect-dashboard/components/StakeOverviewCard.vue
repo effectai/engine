@@ -54,26 +54,33 @@
                             class="font-medium">{{
                                 unstakeDays || 0 }} Days</span></div>
 
+                    <UButton v-if="pendingRewards > 0" @click="handleSubmit" color="white"
+                        class="flex justify-center w-full">
+                        Claimable January 10th
+                    </UButton>
+                </div>
+
+                <h3 class="text-lg font-semibold mb-4 mt-4">Rewards</h3>
+                <div class="space-y-4">
                     <div class="flex justify-between"><span class="text-gray-400">Expected APY</span><span
-                            class="font-medium">30%</span></div>
+                            class="font-medium">TBD</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">Pending Rewards</span><span
                             class="font-medium">{{
                                 pendingRewards || 0 }} EFFECT</span></div>
 
-                    <UButton v-if="pendingRewards > 0" @click="handleSubmit" color="white"
-                        class="flex justify-center w-full">Claim
+
+                    <UButton :disabled="true" @click="handleSubmit" color="white"
+                        class="flex justify-center w-full">
+                        Claimable January 10th
                     </UButton>
                 </div>
             </div>
 
-            <div class="flex w-full gap-5">
-            </div>
         </div>
     </UCard>
 </template>
 
 <script setup lang="ts">
-import { BN } from "@coral-xyz/anchor";
 import { useWallet } from "solana-wallets-vue";
 import ConfettiExplosion from "vue-confetti-explosion";
 
@@ -106,29 +113,38 @@ onMounted(() => {
 /**
  * Reward Logic
  */
-const { data: reflectionAccount } = useGetReflectionAccount();
+const { data: reflectionData } = useGetReflectionAccount();
+const reflectionAccount = computed(() => {
+    if (!reflectionData.value) return null;
+    return reflectionData.value.reflectionAccont;
+});
+const reflectionVaultAccount = computed(() => {
+    if (!reflectionData.value) return null;
+    return reflectionData.value.vaultAccount;
+});
 const { data: rewardAccount } = useGetRewardAccount(stakeAccount);
 const { mutateAsync: claimRewards } = useClaimRewards();
+
+const expectedApy = computed(() => {
+    if (!rewardAccount.value || !reflectionAccount.value) return 0;
+
+    return calculateApy({
+        yourStake: rewardAccount.value.weightedAmount.toNumber(),
+        totalStaked: reflectionAccount.value.totalWeightedAmount.toNumber(), 
+        totalRewards: 50_000_000,
+    })
+})
+
 const pendingRewards = computed(() => {
     if (!rewardAccount.value || !reflectionAccount.value) return 0;
 
-    const reflection = rewardAccount.value.reflection;
-    const rate = reflectionAccount.value.rate;
-    const weightedAmount = rewardAccount.value.weightedAmount;
-
-    if (!reflection || !rate || !weightedAmount) return 0;
-
-    // check if rate is 0
-    if (rate.eq(new BN(0))) return 0;
-
-    try {
-        const reward = reflection.div(rate).sub(weightedAmount);
-        return +(reward.toNumber() / 1e6).toFixed(4);
-    } catch (error) {
-        console.error('Error calculating pending rewards:', error);
-        return 0;
-    }
+    return calculatePendingRewards({
+        reflection: rewardAccount.value.reflection,
+        rate: reflectionAccount.value.rate,
+        weightedAmount: rewardAccount.value.weightedAmount,
+    })
 });
+
 const toast = useToast();
 const handleSubmit = async () => {
     try {
@@ -137,7 +153,7 @@ const handleSubmit = async () => {
             throw new Error('No stake account found');
         }
 
-        const tx = await claimRewards({
+        await claimRewards({
             stakeAccount: stakeAccount.value,
         });
 

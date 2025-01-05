@@ -8,7 +8,6 @@ import { useDeriveRewardAccounts, useDeriveStakingRewardAccount } from "@effecta
 import { createAssociatedTokenAccountIdempotentInstructionWithDerivation, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 
-
 export const useRewardProgram = () => {
 	const { provider } = useAnchorProvider();
     const { publicKey } = useWallet();
@@ -33,7 +32,7 @@ export const useRewardProgram = () => {
 					throw new Error("Could not get public key");
 				}
 
-				const { reflectionAccount } = useDeriveRewardAccounts({
+				const { reflectionAccount, reflectionVaultAccount } = useDeriveRewardAccounts({
 					mint,
 					programId: rewardsProgram.value.programId,
 				});
@@ -43,7 +42,11 @@ export const useRewardProgram = () => {
 						reflectionAccount,
 					);
 
-				return account;
+				const vaultAccount = connection.getTokenAccountBalance(
+					reflectionVaultAccount,
+				)
+
+				return {reflectionAccont: account, vaultAccount};
 			},
 		});
 	};

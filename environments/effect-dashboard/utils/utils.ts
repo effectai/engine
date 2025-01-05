@@ -1,3 +1,4 @@
+import type { BN } from "@coral-xyz/anchor";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { PublicKey } from "@solana/web3.js";
 
@@ -38,4 +39,29 @@ export function extractAuthorizedSolanaAddress(text: string) {
 		}
 	}
 	return null; // No match found
+}
+
+export function calculateApy({yourStake, totalStaked, totalRewards} : {
+	yourStake: number,
+	totalStaked: number,
+	totalRewards: number
+}) {
+    const yourStakePercentage = yourStake / totalStaked;
+    const yourTotalRewards = (yourStakePercentage / 100) * totalRewards;
+    const totalApy = yourTotalRewards / yourStake;
+
+    return totalApy.toFixed(2);
+}
+
+export function calculatePendingRewards({
+	reflection,
+	rate,
+	weightedAmount
+}: {
+	reflection: BN,
+	rate: BN,
+	weightedAmount: BN
+}) {
+	const reward = reflection.div(rate).sub(weightedAmount);
+	return +(reward.toNumber() / 1e6).toFixed(4);
 }
