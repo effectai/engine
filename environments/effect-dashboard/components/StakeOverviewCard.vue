@@ -2,8 +2,8 @@
     <UCard class="flex flex-col" v-if="publicKey">
 
         <div id="confetti-container" class="max-w-[50px] mx-auto w-full h-full">
-			<ConfettiExplosion v-if="triggerConfetti" :particleCount="200" :force="0.3" />
-		</div>
+            <ConfettiExplosion v-if="triggerConfetti" :particleCount="200" :force="0.3" />
+        </div>
 
         <div class="flex flex-col gap-5">
             <div class="bg-white/5 p-6 rounded-xl border border-gray-800">
@@ -23,7 +23,7 @@
                                 text="Staked tokens in January 2025 get a 20% increased reward ratio">
                                 <UBadge label="BOOSTED" class="rainbow-border ml-2" color="gray">
                                     <template #trailing>
-                                        <UIcon name="i-heroicons-fire" class="h-6 w-6 text-lg" size="lg"  />
+                                        <UIcon name="i-heroicons-fire" class="h-6 w-6 text-lg" size="lg" />
                                     </template>
                                 </UBadge>
                             </UTooltip>
@@ -63,14 +63,13 @@
                 <h3 class="text-lg font-semibold mb-4 mt-4">Rewards</h3>
                 <div class="space-y-4">
                     <div class="flex justify-between"><span class="text-gray-400">Expected APY</span><span
-                            class="font-medium">TBD</span></div>
+                            class="font-medium">{{ expectedApy }}%</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">Pending Rewards</span><span
                             class="font-medium">{{
                                 pendingRewards || 0 }} EFFECT</span></div>
 
 
-                    <UButton :disabled="true" @click="handleSubmit" color="white"
-                        class="flex justify-center w-full">
+                    <UButton :disabled="true" @click="handleSubmit" color="white" class="flex justify-center w-full">
                         Claimable January 10th
                     </UButton>
                 </div>
@@ -81,6 +80,7 @@
 </template>
 
 <script setup lang="ts">
+import { BN } from "@coral-xyz/anchor";
 import { useWallet } from "solana-wallets-vue";
 import ConfettiExplosion from "vue-confetti-explosion";
 
@@ -129,9 +129,9 @@ const expectedApy = computed(() => {
     if (!rewardAccount.value || !reflectionAccount.value) return 0;
 
     return calculateApy({
-        yourStake: rewardAccount.value.weightedAmount.toNumber(),
-        totalStaked: reflectionAccount.value.totalWeightedAmount.toNumber(), 
-        totalRewards: 50_000_000,
+        yourStake: rewardAccount.value.weightedAmount,
+        totalStaked: reflectionAccount.value.totalWeightedAmount,
+        totalRewards: 21_600_000,
     })
 })
 

@@ -1,4 +1,4 @@
-import type { BN } from "@coral-xyz/anchor";
+import { BN } from "@coral-xyz/anchor";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { PublicKey } from "@solana/web3.js";
 
@@ -42,15 +42,18 @@ export function extractAuthorizedSolanaAddress(text: string) {
 }
 
 export function calculateApy({yourStake, totalStaked, totalRewards} : {
-	yourStake: number,
-	totalStaked: number,
+	yourStake: BN,
+	totalStaked: BN,
 	totalRewards: number
 }) {
-    const yourStakePercentage = yourStake / totalStaked;
-    const yourTotalRewards = (yourStakePercentage / 100) * totalRewards;
-    const totalApy = yourTotalRewards / yourStake;
+	const parsedStake = yourStake.div(new BN(1e6)).toNumber();
+	const parsedTotalStaked = totalStaked.div(new BN(1e6)).toNumber();
 
-    return totalApy.toFixed(2);
+	const yourStakePercentage = (parsedStake / parsedTotalStaked);
+    const yourTotalRewards = yourStakePercentage * totalRewards;
+    const totalApy = yourTotalRewards / parsedStake * 100;
+
+    return totalApy.toFixed(2)
 }
 
 export function calculatePendingRewards({
