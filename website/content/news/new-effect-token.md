@@ -73,10 +73,10 @@ If you decide to unstake a part of your tokens, this part will be
 returned to you slowly over a period of time. After unstaking, the
 tokens will first be locked for 7 days, during which they are not
 transferable and do not generate rewards. After 7 days, tokens will
-stream back to your wallet linearly over a period of 30 days. For
-example: it will take 37 days for all of the unstaked tokens to be
-available in you wallet, and after 22 days you will have have half of
-your tokens in your wallet.
+stream back to your wallet linearly over a period of 30 days. To
+illustrate: it will take 37 days for all of your unstaked tokens to be
+available in your wallet, with half of your tokens becoming available
+after 22 days.
 
 **Note**: unstaking is not reversable; once initiated, you will have
 to wait for the full unstake release period.
