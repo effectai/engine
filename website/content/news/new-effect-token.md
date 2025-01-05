@@ -90,11 +90,11 @@ EOS is automatically transferred to the new tokens.
 
 ## Rewards
 
-Starting January 10th staked tokens will generate rewards. These
+Starting January 10th, staked tokens will generate rewards. These
 rewards are distributed continuously and can be claimed at any time.
-Extra rewards will be distributed to those that have tokens staked on
-the 10th of January. The APY generated from a stake can be viewed in
-the Portal, please not that it is dynamic and subject to change. More
+Extra rewards will be distributed to those who have tokens staked on
+January 10th. The APY generated from a stake can be viewed in the
+Portal. Please note that it is dynamic and subject to change. More
 details on the rewards will be released in the coming days.
 
 ## Security tips and support
