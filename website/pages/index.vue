@@ -63,6 +63,20 @@
         </HeroSection>
     </div>
 
+    <SimpleSection class="is-flex is-justify-content-center is-flex-direction-column">
+        <div class="container">
+            <div class="is-flex is-justify-content-center is-flex-direction-column">
+                <h2 class="is-flex is-justify-content-center is-size-3 has-text-weight-medium has-text-primary has-text-left">The New $EFFECT Token</h2>
+                <p class="is-justify-content-center my-5 has-text-centered">Starting today, you can claim your EFFECT tokens via the official Claim Portal at <a href="https://portal.effect.ai">portal.effect.ai</a>.</p>
+                <nuxt-link class="is-flex is-justify-content-center" to="https://portal.effect.ai" exact-active-class="is-active">
+                    <button class="button is-black is-rounded is-flex is-medium" style="gap:10px">
+                        Go to Portal
+                    </button>
+                </nuxt-link>
+            </div>
+        </div>
+    </SimpleSection>
+
 
     <SimpleSection class="has-text-light has-background-dark">
         <div class="container">
