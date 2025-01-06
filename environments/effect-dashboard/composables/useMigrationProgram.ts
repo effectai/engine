@@ -164,7 +164,6 @@ export const useMigrationProgram = () => {
 					microLamports: 100_000,
 				});
 
-				// convert signature to string and log it
 				return await migrationProgram.value.methods
 					.claimStake(
 						Buffer.from(signature),

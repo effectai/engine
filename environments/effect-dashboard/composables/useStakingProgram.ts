@@ -233,7 +233,7 @@ export function useStakingProgram() {
 
 	const useGetStakeAccount = () => {
 		const query = useQuery({
-			queryKey: ["stake", publicKey.value],
+			queryKey: ["stake", publicKey.value, "claim"],
 			retry: 0,
 			queryFn: async () => {
 				if (!publicKey.value) {
