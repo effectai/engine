@@ -158,7 +158,7 @@
                     </div>
 
                     <div v-else class="flex flex-col my-5">
-                        <div v-if="$device.isMobileOrTablet && !hasSolana || $device.isIos">
+                        <div v-if="$device.isMobileOrTablet && !hasSolana">
                             <h2 class="text-xl my-3 font-bold">Authentication and authorization via your mobile wallet
                                 were successful! 🎉</h2>
 
