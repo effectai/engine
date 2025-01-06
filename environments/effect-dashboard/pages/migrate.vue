@@ -106,14 +106,14 @@
                     <div v-if="!destinationAddress">
                         <div>
                             <div class="flex flex-wrap justify-left items-center gap-2 my-8">
-                                <span v-if="hasSolana && !$device.isIos" class="flex gap-2 items-center">
+                                <span v-if="hasSolanaWalletInstalled" class="flex gap-2 items-center">
                                     <WalletMultiButton /> or
                                 </span> <a class="text-sm text-red-500 cursor-pointer"
                                     @click="toggleAddress = !toggleAddress">Manually
                                     enter your address</a>
                             </div>
                         </div>
-                        <div class="flex w-full mt-3" v-show="!hasSolana || toggleAddress">
+                        <div class="flex w-full mt-3" v-show="!hasSolanaWalletInstalled || toggleAddress">
                             <UInput placeholder="Your solana address" v-model="manualAddressInput" type="text"
                                 class="flex-grow h-full flex items-center justify-center min-h-[37px]" />
                             <UButton color="black" size="sm" @click="selectAddress" label="Confirm" />
@@ -158,7 +158,7 @@
                     </div>
 
                     <div v-else class="flex flex-col my-5">
-                        <div v-if="$device.isMobileOrTablet && !hasSolana">
+                        <div v-if="$device.isMobileOrTablet && !hasSolanaWalletInstalled">
                             <h2 class="text-xl my-3 font-bold">Authentication and authorization via your mobile wallet
                                 were successful! 🎉</h2>
 
@@ -210,7 +210,8 @@ const manualForeignPublicKey: Ref<Uint8Array | null> = ref(null)
 
 const computedForeignPublicKey: Ref<Uint8Array | null> = computed(() => manualForeignPublicKey.value || foreignPublicKey.value || null)
 
-const hasSolana = computed(() => !!window.solana)
+const { wallets } = useWallet()
+const hasSolanaWalletInstalled = computed(() => !!wallets.value.find(w => w.readyState == 'Installed' || w.readyState == 'Detected'))
 // try to load state from url
 onMounted(() => {
     const url = new URL(window.location.href)
