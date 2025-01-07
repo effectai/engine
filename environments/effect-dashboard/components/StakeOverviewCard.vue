@@ -16,7 +16,8 @@
                             <div class="flex items-center">
                                 <p class="text-sm text-gray-400">Total Staked</p>
                             </div>
-                            <p class="text-2xl font-bold">{{ formatNumber(stakeAmount) || "0" }} EFFECT</p>
+                            <p v-if="isLoading" class="text-2xl font-bold">...</p>
+                            <p v-else class="text-2xl font-bold">{{ formatNumber(stakeAmount) || "0" }} EFFECT</p>
                         </div>
                         <div v-if="stakeAmount">
                             <UTooltip  :ui="{ width: 'max-w-md' }"
@@ -38,7 +39,8 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-400">Stake Age Score</p>
-                        <AnimatedNumber easing="easeInOutCubic" :value="stakeAge" :format="formatNumber"
+                        <p v-if="isLoading" class="text-2xl font-bold">...</p>
+                        <AnimatedNumber v-else easing="easeInOutCubic" :value="stakeAge" :format="formatNumber"
                             class="text-2xl font-bold flex relative">{{ stakeAge }}
                         </AnimatedNumber>
                     </div>
@@ -93,7 +95,7 @@ const { publicKey } = useWallet();
 /**
  * Stake age Logic
  */
-const { data: stakeAccount, unstakeDays, amountFormatted: stakeAmount } = useGetStakeAccount();
+const { data: stakeAccount, isLoading, unstakeDays, amountFormatted: stakeAmount } = useGetStakeAccount();
 
 const stakeAge = computed(() => {
     if (!stakeAccount.value?.account.stakeStartTime || !currentTime.value) return 0;
