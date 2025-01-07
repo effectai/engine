@@ -16,12 +16,12 @@
                             <div class="flex items-center">
                                 <p class="text-sm text-gray-400">Total Staked</p>
                             </div>
-                            <p class="text-2xl font-bold">{{ stakeAmount || "0" }} EFFECT</p>
+                            <p class="text-2xl font-bold">{{ formatNumber(stakeAmount) || "0" }} EFFECT</p>
                         </div>
                         <div v-if="stakeAmount">
-                            <UTooltip :ui="{ width: 'max-w-md' }"
+                            <UTooltip  :ui="{ width: 'max-w-md' }"
                                 text="Staked tokens in January 2025 get a 20% increased reward ratio">
-                                <UBadge label="BOOSTED" class="rainbow-border ml-2" color="gray">
+                                <UBadge style="border-radius:0;" label="BOOSTED" class="rainbow-border ml-2" color="gray">
                                     <template #trailing>
                                         <UIcon name="i-heroicons-fire" class="h-6 w-6 text-lg" size="lg" />
                                     </template>
@@ -80,7 +80,6 @@
 </template>
 
 <script setup lang="ts">
-import { BN } from "@coral-xyz/anchor";
 import { useWallet } from "solana-wallets-vue";
 import ConfettiExplosion from "vue-confetti-explosion";
 
