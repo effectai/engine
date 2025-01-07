@@ -233,12 +233,14 @@ export function useStakingProgram() {
 
 	const useGetStakeAccount = () => {
 		const query = useQuery({
-			queryKey: ["stake", publicKey.value, "claim"],
+			queryKey: ["stake", publicKey, "claim"],
 			retry: 0,
 			queryFn: async () => {
 				if (!publicKey.value) {
 					throw new Error("Could not get public key");
 				}
+
+				console.log("publicKey.value", publicKey.value.toBase58());
 
 				const stakingAccounts =
 					await stakeProgram.value.account.stakeAccount.all([

@@ -37,7 +37,7 @@
             </UButton>
 
             <p class="text-xs mt-10 italic">If you have questions or encounter issues during the migration, our support
-                team is here to help. Simply reach out through our <a href="https://t.me/effectai">telegram</a> / <a href="https://discord.gg/effectnetwork">discord</a>
+                team is here to help. Simply reach out through our <a class="dark:text-white" href="https://t.me/effectai">telegram</a> / <a class="dark:text-white" href="https://discord.gg/effectnetwork">discord</a>
             
             
             </p>

@@ -50,7 +50,7 @@ export const useMigrationProgram = () => {
 
 	const useGetMigrationVaultBalance = (migrationAccount: MigrationClaimAccount['account']) => {
 		return useQuery({
-			queryKey: ["claim", "vault-balance", publicKey.value],
+			queryKey: ["claim", "vault-balance", publicKey],
 			queryFn: async () => {
 				if (!publicKey.value) {
 					throw new Error("Missing required data");

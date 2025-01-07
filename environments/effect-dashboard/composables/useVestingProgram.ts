@@ -31,7 +31,7 @@ export const useVestingProgram = () => {
 
 	const useGetVestingAccounts = () => {
 		return useQuery({
-			queryKey: ["vestingAccounts", publicKey.value, "unstake", "claim"],
+			queryKey: ["vestingAccounts", publicKey, "unstake", "claim"],
 			queryFn: async () => {
 				if (!publicKey.value) {
 					throw new Error("Could not get public key");
