@@ -570,7 +570,7 @@ export type EffectStaking = {
     {
       "name": "unstakeDelayDays",
       "type": "u64",
-      "value": "0"
+      "value": "7"
     }
   ]
 };

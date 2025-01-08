@@ -74,7 +74,7 @@ export const effect_migration = {
         {
           "name": "rent_receiver",
           "writable": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
         },
         {
           "name": "rent",
@@ -156,7 +156,7 @@ export const effect_migration = {
           "name": "authority",
           "writable": true,
           "signer": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
         },
         {
           "name": "user_token_account",
@@ -226,7 +226,7 @@ export const effect_migration = {
           "name": "authority",
           "writable": true,
           "signer": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
         },
         {
           "name": "user_token_account",
