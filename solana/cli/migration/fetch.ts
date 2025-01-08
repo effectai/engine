@@ -1,10 +1,12 @@
 import type { CommandModule } from "yargs";
 import { loadProvider } from "../../utils/provider";
 import type { EffectMigration } from "../../target/types/effect_migration";
-import EffectMigrationIdl from "../../target/idl/effect_migration.json";
+
 import * as anchor from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { extractEosPublicKeyBytes, useDeriveMigrationAccounts } from "@effectai/utils";
+import { EffectMigrationIdl } from "@effectai/shared";
+import { toBytes } from "viem";
 const csv = require("csvtojson");
 
 export const fetchMigrationAccount: CommandModule<
@@ -20,22 +22,15 @@ export const fetchMigrationAccount: CommandModule<
 			provider,
 		) as unknown as anchor.Program<EffectMigration>;
 
-		const mint = new PublicKey("EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E");
 
-		// const data = await migrationProgram.account.migrationAccount.fetch(new PublicKey("HHff83VXaS6sm3MqNULro6YWbcvjR78LUu6Q3ee6zVid"));
-		const pkBytes = extractEosPublicKeyBytes("EOS7b2mqiesVwbbcKYBRbyHYPZw3HhddMY9fnay4E9ww79CygexHb")
-		
-		if(!pkBytes) {
-			console.log("Invalid public key")
-			return
-		}
-
-		const { migrationAccount } = useDeriveMigrationAccounts({
-			mint,
-			foreignAddress: pkBytes,
+		const {migrationAccount} = useDeriveMigrationAccounts({
+			foreignAddress: toBytes("0xf4b4a3136fd1A9709A427F94a42c23387dFa2e2b"),
+			mint: new PublicKey("EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E"),
 			programId: migrationProgram.programId,
 		})
 
 		console.log(migrationAccount.toBase58())
+
+		//   convert bytes to eos public KEy
 	},
 };

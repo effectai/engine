@@ -6,14 +6,18 @@ import * as anchor from "@coral-xyz/anchor";
 import chalk from "chalk";
 import { BN } from "bn.js";
 import {
-	getAssociatedTokenAddressSync
+	createTransferCheckedInstruction,
+	getAssociatedTokenAddressSync,
+	transferCheckedWithFee,
 } from "@solana/spl-token";
 import readline from "node:readline";
 import { writeFileSync, readFileSync } from "fs";
-import { extractEosPublicKeyBytes } from "@effectai/utils";
+import {
+	extractEosPublicKeyBytes,
+	useDeriveMigrationAccounts,
+} from "@effectai/utils";
 import { toBytes } from "viem";
-import { ComputeBudgetProgram } from "@solana/web3.js";
-const csv = require("csvtojson");
+import { ComputeBudgetProgram, Transaction } from "@solana/web3.js";
 
 type DistributionRow = {
 	foreign_key: string;
@@ -37,6 +41,7 @@ export const distributeMigrationCommand: CommandModule<
 				description: "The mint address of the token to distribute",
 			})
 			.option("distribution_file", {
+				demandOption: true,
 				type: "string",
 				description: "The path to the distribution file",
 			});
@@ -51,34 +56,22 @@ export const distributeMigrationCommand: CommandModule<
 		const mintKey = new anchor.web3.PublicKey(mint);
 		const sourceAta = getAssociatedTokenAddressSync(mintKey, payer.publicKey);
 
-		// get balance 
+		// get balance
 		const balance = await provider.connection.getTokenAccountBalance(sourceAta);
 
-		let chosen_distribution_file = distribution_file;
-
-		if (!chosen_distribution_file) {
-			try {
-				chosen_distribution_file = await createDistributionFile(
-					"./cli/migration/claims.csv",
-					"./cli/migration",
-				);
-			} catch (e) {
-				console.log(chalk.red("Error creating distribution file", e));
-				return;
-			}
-		}
-
-		if (!chosen_distribution_file) {
+		if (!distribution_file) {
 			console.log(chalk.red("No distribution file found."));
 			return;
 		}
 
 		// read the distribution file
-		const rows: DistributionRow[] = JSON.parse(readFileSync(chosen_distribution_file, "utf-8"));
+		const rows: DistributionRow[] = JSON.parse(
+			readFileSync(distribution_file, "utf-8"),
+		);
+
+		const claimsLeft = rows.filter((r) => r.status === 0);
 
 		// wait for input from the user
-		const claimsLeft = rows.filter((r) => r.status === 0);
-		
 		const confirmed = await askForConfirmation(
 			`Distribute (${claimsLeft.length}/${rows.length}) claims on ${provider.connection.rpcEndpoint} totalling ${(claimsLeft.reduce((acc, row) => acc + Number.parseFloat(row.amount), 0)).toFixed(2)}/${balance.value.uiAmount} EFFECT`,
 		);
@@ -88,16 +81,14 @@ export const distributeMigrationCommand: CommandModule<
 			return;
 		}
 
-		const delay = 1000 / 4.5; // 6 TPS
-
 		for (const row of rows.filter((row: DistributionRow) => row.status === 0)) {
 			console.log(
 				chalk.green(`Distributing ${row.amount} EFFECT to ${row.foreign_key}`),
 			);
 
 			const foreignKeyBytes = row.foreign_key.startsWith("0x")
-			? toBytes(row.foreign_key)
-			: extractEosPublicKeyBytes(row.foreign_key);
+				? toBytes(row.foreign_key)
+				: extractEosPublicKeyBytes(row.foreign_key);
 
 			if (!foreignKeyBytes) {
 				console.log(
@@ -108,56 +99,104 @@ export const distributeMigrationCommand: CommandModule<
 				continue;
 			}
 
+			if(!row.stake_age) {
+				console.log(
+					chalk.red(
+						`Error distributing ${row.amount} EFFECT to ${row.foreign_key} (INVALID STAKE_AGE)`,
+					),
+				);
+				continue;
+			}
+
 			const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-				microLamports: 20000,
+				microLamports: 50_000,
 			});
 
-			migrationProgram.methods
-				.createStakeClaim(
-					Buffer.from(foreignKeyBytes),
-					new BN(row.stake_age),
-					new BN(Number.parseFloat(row.amount) * 1_000_000),
-				)
-				.preInstructions([addPriorityFee])
-				.accounts({
-					mint: mintKey,
-					userTokenAccount: sourceAta,
-				})
-				.rpc()
-				.then((tx) => {
-					// Mark row as sent
-					row.status = 1;
-					row.tx = tx;
-					writeFileSync(
-						chosen_distribution_file,
-						JSON.stringify(rows, null, 2),
-					);
-				})
-				.catch((e: Error) => {
-					// check if error message contains 0x0
-					if (e.message.includes("0x0")) {
+			try {
+				const tx = await migrationProgram.methods
+					.createStakeClaim(
+						Buffer.from(foreignKeyBytes),
+						new BN(row.stake_age),
+						new BN(Number.parseFloat(row.amount) * 1_000_000),
+					)
+					.preInstructions([addPriorityFee])
+					.accounts({
+						mint: mintKey,
+						userTokenAccount: sourceAta,
+					})
+					.rpc();
+
+				row.status = 2;
+				row.tx = tx;
+				writeFileSync(distribution_file, JSON.stringify(rows, null, 2));
+			} catch (e: unknown) {
+				if (e instanceof Error) {
+					if (e.message.includes("0x0") && e.message.includes("Instruction: CreateStakeClaim") && e.message.includes("already in use")) {
 						console.log(
 							chalk.red(
 								`Error distributing ${row.amount} EFFECT to ${row.foreign_key} (ALREADY EXISTS)`,
 							),
 						);
-						row.status = 1;
-						writeFileSync(
-							chosen_distribution_file,
-							JSON.stringify(rows, null, 2),
+
+						// ask to do a topup instead
+						const confirmed = await askForConfirmation(
+							`Do you want to topup ${row.foreign_key} with ${row.amount} EFFECT?`,
 						);
+
+						if (confirmed) {
+							const { vaultAccount } = useDeriveMigrationAccounts({
+								mint: mintKey,
+								foreignAddress: foreignKeyBytes,
+								programId: migrationProgram.programId,
+							});
+
+							console.log(
+								`Topping up ${row.foreign_key} with ${row.amount} EFFECT...`,
+							);
+
+							const priorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+								microLamports: 50_000,
+							});
+
+							try {
+								const topupTransaction = new Transaction().add(
+									priorityFee,
+									createTransferCheckedInstruction(
+										sourceAta,
+										mintKey,
+										vaultAccount,
+										payer.publicKey,
+										// amount
+										new BN(Number.parseFloat(row.amount) * 1_000_000).toNumber(),
+										// mint decimals
+										6,
+									),
+								);
+
+								topupTransaction.recentBlockhash = (await provider.connection.getLatestBlockhash()).blockhash;
+								topupTransaction.feePayer = payer.publicKey;
+								row.tx = await provider.sendAndConfirm(topupTransaction, [payer]);
+								row.status = 3; // mark as topped up
+								writeFileSync(distribution_file, JSON.stringify(rows, null, 2));
+							} catch (e: unknown) {
+								if (e instanceof Error) {
+									console.log(
+										`Error topping up ${row.foreign_key} with ${row.amount} EFFECT`,
+									);
+									console.log(chalk.red(e.message));
+								}
+							}
+						}
 					} else {
 						console.log(
 							chalk.red(
 								`Error distributing ${row.amount} EFFECT to ${row.foreign_key}`,
 							),
 						);
-						console.log(chalk.red(e.message))
+						console.log(chalk.red(e.message));
 					}
-				});
-
-			// wait 100ms
-			await new Promise((resolve) => setTimeout(resolve, delay));
+				}
+			}
 		}
 	},
 };
@@ -175,34 +214,3 @@ function askForConfirmation(question: string): Promise<boolean> {
 		});
 	});
 }
-
-const createDistributionFile = async (
-	csvFilePath: string,
-	outputDir: string,
-): Promise<string> => {
-	return new Promise((resolve, reject) => {
-		csv()
-			.fromFile(csvFilePath)
-			.then((rows) => {
-				try {
-					console.log(chalk.green("Creating new distribution file..."));
-					const timestamp = Math.floor(Date.now() / 1000);
-					const chosen_distribution_file = `${outputDir}/distribution-${timestamp}.json`;
-					const data = rows.map((row) => ({
-						foreign_key: row.key,
-						stake_age: row.stake_age_timestamp,
-						amount: row.claim_amount,
-						status: 0,
-					}));
-					writeFileSync(
-						chosen_distribution_file,
-						JSON.stringify(data, null, 2),
-					);
-					resolve(chosen_distribution_file); // Resolve with the file path
-				} catch (error) {
-					reject(error); // Reject if there's an error
-				}
-			})
-			.catch(reject); // Catch CSV parsing errors
-	});
-};

@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { createMigrationClaim } from "../../utils/migration";
-import EffectMigrationIdl from '../../target/idl/effect_migration.json'
 import { toBytes } from "viem";
 import {
 	createAssociatedTokenAccount,
@@ -16,6 +15,7 @@ import {
 	extractKeyFromEosUsername,
 } from "@effectai/utils";
 import type { EffectMigration } from "../../target/types/effect_migration";
+import { EffectMigrationIdl } from "@effectai/shared";
 
 interface MigrationClaimOptions {
 	mint: string;
