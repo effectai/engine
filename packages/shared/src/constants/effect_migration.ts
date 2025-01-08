@@ -74,7 +74,7 @@ export const effect_migration = {
         {
           "name": "rent_receiver",
           "writable": true,
-          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
+          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
         },
         {
           "name": "rent",
@@ -156,7 +156,7 @@ export const effect_migration = {
           "name": "authority",
           "writable": true,
           "signer": true,
-          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
+          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
         },
         {
           "name": "user_token_account",
@@ -189,6 +189,63 @@ export const effect_migration = {
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "destroy_claim",
+      "discriminator": [
+        223,
+        1,
+        238,
+        215,
+        51,
+        229,
+        149,
+        94
+      ],
+      "accounts": [
+        {
+          "name": "migration_account",
+          "writable": true
+        },
+        {
+          "name": "claim_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "migration_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [

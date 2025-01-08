@@ -564,7 +564,7 @@ export const effect_staking = {
     {
       "name": "UNSTAKE_DELAY_DAYS",
       "type": "u64",
-      "value": "7"
+      "value": "0"
     }
   ]
 } as const;

@@ -375,7 +375,6 @@ describe("Migration Program", async () => {
 			},
 		);
 
-
 		it.concurrent(
 			"correctly throws a INVALID MESSAGE error when the message is incorrect",
 			async () => {
@@ -454,6 +453,49 @@ describe("Migration Program", async () => {
 				}, PUBLIC_KEY_MISMATCH);
 			},
 		);
-	
+	});
+
+	describe("Migration Contract: Destroy", () => {
+		it("can destroy a migration account", async () => {
+			const { mint, ata } = await setup({ provider, payer });
+
+			const { migrationAccount } = await createMigrationClaim({
+				stakeStartTime: lastYear,
+				mint,
+				userTokenAccount: ata,
+				publicKey: toBytes(ethPublicKey),
+				amount: 100_000_000,
+				program,
+			});
+
+			const balanceBefore =
+				await provider.connection.getTokenAccountBalance(ata);
+
+			if (!balanceBefore.value.uiAmount) {
+				throw new Error("Could not get balance");
+			}
+
+			await program.methods
+				.destroyClaim()
+				.accounts({
+				 	mint,
+					userTokenAccount: ata,
+					migrationAccount,
+				})
+				.rpc();
+
+			const migrationAccountData =
+				await provider.connection.getAccountInfo(migrationAccount);
+			expect(migrationAccountData).toBeNull();
+
+			// expect to have received the tokens back on the ATA
+			const balanceAfter =
+				await provider.connection.getTokenAccountBalance(ata);
+
+			// expect the balance after to be +100_000_000
+			expect(balanceAfter.value.uiAmount).to.equal(
+				balanceBefore.value.uiAmount + 100,
+			);
+		});
 	});
 });
