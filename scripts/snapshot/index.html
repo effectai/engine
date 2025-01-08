@@ -1,4 +1,4 @@
-<!DOCTYPE html><html><head><meta charset="utf-8" /><meta content="width=device-width, initial-scale=1.0, user-scalable=yes" name="viewport" /><meta content="Effect AI" name="author" /><title>EFFECT Migration Blueprint</title><style type="text/css">/* http://meyerweb.com/eric/tools/css/reset/ 
+<!DOCTYPE html><html><head><meta charset="utf-8" /><meta content="width=device-width, initial-scale=1.0, user-scalable=yes" name="viewport" /><meta content="Effect AI" name="author" /><title>EFFECT Migration Blueprint</title><style type="text/css">/* http://meyerweb.com/eric/tools/css/reset/
    v2.0 | 20110126
    License: none (public domain)
 */
@@ -12,8 +12,8 @@ b, u, i, center,
 dl, dt, dd, ol, ul, li,
 fieldset, form, label, legend,
 table, caption, tbody, tfoot, thead, tr, th, td,
-article, aside, canvas, details, embed, 
-figure, figcaption, footer, header, hgroup, 
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
 menu, nav, output, ruby, section, summary,
 time, mark, audio, video {
 	/*margin: 0;*/
@@ -24,7 +24,7 @@ time, mark, audio, video {
 	vertical-align: baseline;
 }
 /* HTML5 display-role reset for older browsers */
-article, aside, details, figcaption, figure, 
+article, aside, details, figcaption, figure,
 footer, header, hgroup, menu, nav, section {
 	display: block;
 }
@@ -194,7 +194,7 @@ table {
 
 th, td {
   border: var(--border-thickness) solid var(--text-color);
-  padding: 
+  padding:
     calc((var(--line-height) / 2))
     calc(1ch - var(--border-thickness) / 2)
     calc((var(--line-height) / 2) - (var(--border-thickness)))
@@ -323,7 +323,7 @@ ul ul {
   padding: 0 0 0 3ch;
   margin: 0;
 }
-ol li:before { 
+ol li:before {
   content: counters(item, ".") ". ";
   counter-increment: item;
   font-weight: var(--font-weight-medium);
@@ -344,7 +344,7 @@ li::marker {
 
 input, button, textarea {
   border: var(--border-thickness) solid var(--text-color);
-  padding: 
+  padding:
     calc(var(--line-height) / 2 - var(--border-thickness))
     calc(1ch - var(--border-thickness));
   margin: 0;
@@ -505,30 +505,30 @@ label input {
 .debug-toggle-label {
   text-align: right;
 }
-</style>
-<script src='https://cdn.jsdelivr.net/npm/vega@5.17.0'></script>
-<script src='https://cdn.jsdelivr.net/npm/vega-lite@4.17.0'></script>
-<script src='https://cdn.jsdelivr.net/npm/vega-embed@6.12.2'></script></head><body><h1 style="margin-bottom: 0;">Effect Migration Blueprint</h1><p style="margin-top: 0; margin-bottom: calc(var(--line-height) * 2)">V0.1,  Status: DRAFT</p><p>Effect AI will migrate it&apos;s ecosystem to Solana, powered by the
+</style><script src="https://cdn.jsdelivr.net/npm/vega@5.17.0"></script><script src="https://cdn.jsdelivr.net/npm/vega-lite@4.17.0"></script><script src="https://cdn.jsdelivr.net/npm/vega-embed@6.12.2"></script></head><body><h1 style="margin-bottom: 0;">Effect Migration Blueprint</h1><p style="margin-top: 0; margin-bottom: calc(var(--line-height) * 2)">Data from: 2024-11-14 19:00, V0.1,  Status: DRAFT</p><table><tr><th>Snapshot date</th><td>2025-01-01 12:00:00 UTC</td></tr><tr><th>Distribution date</th><td>2025-01-05</td></tr><tr><th>EFX on EOS &amp; BSC</th><td>1:1 migration</td></tr><tr><th>Solana ticker</th><td>EFFECT</td></tr><tr><th>Token address </th><td>TBD</td></tr></table><nav><h2>Contents</h2><ul><li><a href="#data">Introduction</a></li><li><a href="#data">Key Data</a></li><li><a href="#intro">The EFFECT Token</a></li><li><a href="#stake">Staking</a></li><li><a href="#stake">NFG Migration</a></li><li><a href="#migrate">Migration</a></li><li><a href="#rewards">Staking Rewards</a></li></ul></nav><h2 id="data">Introduction</h2><p>Effect AI will migrate it&apos;s ecosystem to Solana, powered by the
        EFFECT token. The new token will be automatically distributed
        to EFX holders on EOS and BSC via a claim portal. The portal
-       will be made available on the distribution date.</p><table><tr><th>Snapshot date</th><td>2025-01-01 12:00:00 UTC</td></tr><tr><th>Distribution date</th><td>2025-01-05</td></tr><tr><th>EFX on EOS &amp; BSC</th><td>1:1 migration, no action required</td></tr><tr><th>Solana ticker</th><td>EFFECT</td></tr><tr><th>Token address </th><td>TBD</td></tr></table><nav><h2>Contents</h2><ul><li><a href="#data">Introduction</a></li><li><a href="#data">Key Data</a></li><li><a href="#intro">The EFFECT Token</a></li><li><a href="#stake">Staking</a></li><li><a href="#stake">NFG Migration</a></li><li><a href="#migrate">Migration</a></li><li><a href="#rewards">Staking Rewards</a></li></ul></nav><h2 id="data">Introduction</h2><p>Effect AI will migrate to the Solana ecosystem. Step is is
-     the movement of our token EFX to a new token EFFECT which is described
-     in this document.</p><p>After the snapshot date, EFFECT is the official
-     Effect Network token. </p><ul><li><strong>Total Supply: </strong>600,000,000 EFFECT</li><li><strong>Token Type: </strong>Solana SPL</li><li><strong>Decimals: </strong>6</li></ul><p>EFX token holders will receive EFFECT token in 1:1
-      distribution. The total supply of tokens will be filled in
-      according to the details below.</p><hr /><p>The EFX tokens are currently distributed as follows:</p><ul class="tree"><p style="margin: 0"><strong>Total holders: </strong></p><ul class="incremental"><li>EOS<ul class="incremental"><li>Token Holders</li><li>Staked</li><li>DAO Treasury</li><li>Effect Foundation</li></ul></li><li>BSC<ul class="incremental"><li>Token Holders</li><li>PancakeSwap</li></ul></li></ul></ul><h2 id="stake">$EFFECT distribution</h2><table><tr><td>EFX Holders</td><td> 200,000,000</td></tr><tr><td>NFX Reimbursement</td><td>  50,000,000</td></tr><tr><td>Staking Incentives</td><td>  50,000,000</td></tr><tr><td>DAO Treasury</td><td> 120,000,000</td></tr><tr><td>Effect Network Foundation</td><td> 120,000,000</td></tr></table><div id="vis" style="width: 100%;"></div><h2 id="stake">EOS &amp; BSC EFX Tokens</h2><p>EFFECT tokens are distributed 1:1 to EFX holders.</p><p>EOS has an advanced account system. A single EOS account can
+       will be made available on the distribution date.</p><p>This document describes the rules that are applied for the
+     creation of the Snapshot and the distribution of the $EFFECT
+     token.</p><p>After the snapshot date, EFFECT is the official
+     Effect Network token. </p><ul><li><strong>Total Supply: </strong>530,000,000 EFFECT<li><strong>Token Type: </strong>Solana SPL</li></li><li><strong>Decimals: </strong>6</li></ul><hr /><h2 id="stake">$EFFECT distribution</h2><p>The new token will use the following distribution, the rules
+     for each are discussed further in the document:</p><div><table><tr><th>Allocation<br /><span style="font-size: 12px; font-weight: 400;">Designation of token allocation</span></th><th>$EFFECT<br /><span style="font-size: 12px; font-weight: 400;">Tokens allocated</span></th><th>Vesting<br /><span style="font-size: 12px; font-weight: 400;">Lock + linear</span></th></tr><tr><td>EFX Holders</td><td> 185,509,140</td><td>7 + 30 days</td></tr><tr><td>NFX Reimbursement</td><td>  60,636,287</td><td>7 + 30 days</td></tr><tr><td>Staking Incentives</td><td>  50,000,000</td><td>TBD</td></tr><tr><td><span>DAO Treasury<span style="font-size: 12px; font-weight: 400;"> [1]</span></span></td><td>  49,048,383</td><td>TBD</td></tr><tr><td>Liquidity &amp; Partnerships</td><td>  68,437,032</td><td>0</td></tr><tr><td>Development Fund</td><td> 100,000,000</td><td>0 + 4 years</td></tr><tr><td><span>Reserve<span style="font-size: 12px; font-weight: 400;"> [2]</span></span></td><td>  16,369,158</td><td>0</td></tr></table><div><strong>Total $EFFECT:  530,000,000</strong></div><span style="font-size: 12px; font-weight: 400;">[1] Vesting dstarts after new DAO is instantiated.</span><span style="font-size: 12px; font-weight: 400;"><br /></span><span style="font-size: 12px; font-weight: 400;">[2] Unforseen migration requirements, rounding of supply.</span><span style="font-size: 12px; font-weight: 400;"><br /></span></div><div id="vis" style="width: 100%;"></div><h2 id="stake">EFX Holders (EOS &amp; BSC)</h2><p>EFFECT tokens are distributed 1:1 to EFX holders.</p><p>EOS has an advanced account system. A single EOS account can
       have multiple key pairs associated with it. In 97% of the cases,
       the EFFECT claim portal can reliably map the first key in the
       account&apos;s active permission to the claim. In the remaining
-      cases claim portal will still accomodate a migration.</p><p>The following accounts are not included in the snapshot:</p><ul><li>x.ptokens</li><li>bitbnsglobal</li><li>kucoinrise11</li><li>stakepool.efx</li></ul><p>Accounts with less than 5 EFX will
+      cases claim portal will still accomodate a migration.</p><p>Binance Smart Chain maps every normal account to a single key
+      pair. This means that all tokens on BSC can be easily claimed in
+      the portal.</p><p>The following rules are followed in the creation of the
+     snapshot. Some are migrated in an alternative way.</p><em>1. Special accounts</em><p>The following special accounts are not included:</p><div class="grid"><ul><li>x.ptokens</li><li>bitbnsglobal</li><li>kucoinrise11</li><li>stakepool.efx</li><li>therealforce</li><li>efx</li><li>efxliquidity</li></ul><ul><li>xeth.ptokens</li><li>deposit.pro</li><li>withdraw.pro</li><li>efxstakepool</li><li>treasury.efx</li><li>bsc.efx</li><li>daoproposals</li></ul><ul><li>realeffectai</li></ul></div><em>2. Low balances</em><p>Accounts with less than 5 EFX will
      not be included in the snapshot. This threshold avoids a lot of
      complicated account structures and experimental accounts that are
      hard to migrate. To include a low EFX balance in the migration it
-     is necessary to acquire an EFX balance of 5 or higher.</p><p>Binance Smart Chain maps every normal account to a single key
-      pair. This means that all tokens on BSC can be easily claimed in
-      the portal.</p><h2 id="lsp">Liquidity Pools</h2><p>Users that supply liquidity in a liquidity platform should
-      remove their LP before the snapshot, on both EOS and BSC. This
-      includes Defibox, NewDex, and PancakeSwap.</p><h2 id="lsp">NFX MIGRATION</h2><p>The NFX governance token will be discontinued after the
+     is necessary to acquire an EFX balance of 5 or higher.</p><em>3. Large balances</em><p>The migrations is capped at 20M $EFFECT tokens per user. At
+     the time of writing no accounts come close to this limit.</p><em>4. Exchanges</em><p>EFX tokens stored on centralized exchanges are not included in the snapshot.</p><em>5. Liquidity Pools</em><p>Liquidity Providers have to remove their liquidity before the
+      snapshot. Although the EFX balance of LP providers will be
+      included in the snapshot at a best effort basis, EFX loses its
+      main utility at the snapshot, which means the quote asset of the
+      liquidity will get lost.</p><h2 id="burn">Unmigrated tokens</h2><p><a href="https://dao.effect.network/proposals/211">Ref #211</a></p><p>Unmigrated tokens are burned</p><h2 id="lsp">NFX MIGRATION</h2><p><a href="https://dao.effect.network/proposals/186">Ref #186</a>, <a href="https://dao.effect.network/proposals/179">Ref #179</a>. </p><p>The NFX governance token will be discontinued after the
       snapshot. NFX token holders will be reimbursed with EFFECT
       tokens on Solana, which can also be retrieved through the claim
-      portal.</p><h2 id="stake">Staking Rewards</h2></body></html>
+      portal.</p><h2 id="stake">Staking Rewards</h2><p><a href="https://dao.effect.network/proposals/184">Ref #184</a>, <a href="https://dao.effect.network/proposals/195">Ref #195</a></p><p></p><h2 id="stake">DAO Treasury</h2><h2 id="stake">Development Fund</h2><h2 id="stake">Reserve</h2></body></html>
