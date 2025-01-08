@@ -1,6 +1,7 @@
 <template>
     <div>
-        <HeroSection id="main-hero" :style="`margin-top: -75px; padding-top: 5rem; background-image: url('./img/hero-background.png')`">
+        <HeroSection id="main-hero"
+            :style="`margin-top: -75px; padding-top: 5rem; background-image: url('./img/hero-background.png')`">
             <template #title>
                 <h1 class="title mb-6 is-size-1-tablet is-size-3
                 has-text-dark
@@ -37,11 +38,13 @@
                                         style="gap:14px; font-weight: 400;">Launch app
                                         <span class="icon">
                                             <i class="icon">
-					    <svg width="14" height="15" viewBox="0 0 14 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-					    <path fill-rule="evenodd" clip-rule="evenodd" d="M7.34098 0.5L12.7387 6.22566L12.7395 6.22474L13.9984 7.56009L13.9975 7.56102L14 7.56362L12.7411 8.89898L12.7387 8.89638L7.33939 14.6237L6.08052 13.2884L10.6135 8.47991H0V6.64471H10.616L6.08211 1.83536L7.34098 0.5Z" fill="#1C1A1F"/>
-					    </svg>
-
-					    </i>
+                                                <svg width="14" height="15" viewBox="0 0 14 15" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <path fill-rule="evenodd" clip-rule="evenodd"
+                                                        d="M7.34098 0.5L12.7387 6.22566L12.7395 6.22474L13.9984 7.56009L13.9975 7.56102L14 7.56362L12.7411 8.89898L12.7387 8.89638L7.33939 14.6237L6.08052 13.2884L10.6135 8.47991H0V6.64471H10.616L6.08211 1.83536L7.34098 0.5Z"
+                                                        fill="#1C1A1F" />
+                                                </svg>
+                                            </i>
                                         </span>
                                     </button>
                                 </nuxt-link>
@@ -54,12 +57,25 @@
                                 </button>
                             </nuxt-link>
                         </div>
-
                     </div>
                 </div>
             </template>
         </HeroSection>
     </div>
+
+    <SimpleSection class="is-flex is-justify-content-center is-flex-direction-column">
+        <div class="container">
+            <div class="is-flex is-justify-content-center is-flex-direction-column">
+                <h2 class="is-flex is-justify-content-center is-size-3 has-text-weight-medium has-text-primary has-text-left">The New $EFFECT Token</h2>
+                <p class="is-justify-content-center my-5 has-text-centered">Starting today, you can claim your EFFECT tokens via the official Claim Portal at <a href="https://portal.effect.ai">portal.effect.ai</a>.</p>
+                <nuxt-link class="is-flex is-justify-content-center" to="https://portal.effect.ai" exact-active-class="is-active">
+                    <button class="button is-black is-rounded is-flex is-medium" style="gap:10px">
+                        Go to Portal
+                    </button>
+                </nuxt-link>
+            </div>
+        </div>
+    </SimpleSection>
 
 
     <SimpleSection class="has-text-light has-background-dark">
@@ -221,7 +237,6 @@ useSeoMeta({
     description: "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
 })
 
-
 </script>
 
 <style lang="scss" scoped>
@@ -229,6 +244,7 @@ useSeoMeta({
 
 .effect-box {
     padding: 2rem;
+
     h2 {
         margin-bottom: 8rem;
     }
@@ -258,7 +274,7 @@ useSeoMeta({
 
 .be-part-of {
     @include mixins.mobile {
-       margin-bottom: 3rem;
+        margin-bottom: 3rem;
     }
 }
 
@@ -310,6 +326,6 @@ useSeoMeta({
 }
 
 .button.is-outlined:hover {
-  --bulma-button-border-width: max(1px, 0.0625em);
+    --bulma-button-border-width: max(1px, 0.0625em);
 }
 </style>

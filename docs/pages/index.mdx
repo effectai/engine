@@ -1,21 +1,23 @@
----
-layout: landing
-authors: 
-  - "[Jeffrieh](https://github.io/jeffrieh)"
-date: 2024-11-01
----
+# Effect AI Protocol
+The Effect AI protocol is a permissionless protocol used to supply, assign and execute human-driven AI tasks across a distributed network. Designed with versatility in mind, the protocol shines as a *human middleware layer*, integrating with **AI Agents & Pipelines** to substantially improve the quality of their outputs, using **ZK-rollups** to deliver secure & efficient on-chain settlement.
 
-import { HomePage } from 'vocs/components'
- 
-<HomePage.Root>
-  <HomePage.Logo />
-  <HomePage.Tagline>Effect AI Task Protocol</HomePage.Tagline>
-  <HomePage.InstallPackage name="@effectai/protocol" type="add" />
-  <HomePage.Description>
-Welcome to the Effect AI documentation! Here you'll find everything you need to know about our **Effect AI Task Protocol**, including how it works, how to get started, and how to contribute.
-</HomePage.Description>
-  <HomePage.Buttons>
-    <HomePage.Button href="/introduction/project-overview" variant="accent">Get started</HomePage.Button>
-    <HomePage.Button href="https://github.com/effectai">GitHub</HomePage.Button>
-  </HomePage.Buttons>
-</HomePage.Root>
+## How It Works
+At its core, the Effect AI Protocol is a network of three primary node types: **Provider Nodes**, **Manager Nodes**, and **Worker Nodes**. These nodes work together to supply, assign and execute human driven AI tasks.
+
+- **Provider Nodes** broadcast a series of tasks to the network. These tasks are bundled into batches, each with a unique ID, description, and reward. Provider nodes are responsible for funding these batches and verifying the results once they are completed.
+
+- **Manager Nodes** reserve these batches, and start managing them, delegating each tasks to available worker nodes in the network, once the task is completed, the manager node is responsible for verifying the task accuracy and distributing rewards to the worker nodes.
+
+- **Worker Nodes** receive tasks from manager nodes, complete them, and submit the results back to the manager nodes for validation. 
+
+## Core Use Cases
+
+The Effect AI Protocol is designed to support a wide range of use cases, including:
+
+- **AI Pipeline**: The protocol can be implemented across various stages of an AI workflow, including data preprocessing, model training, post-processing, verifying GPT-4/LLM outputs, and evaluating vision model results.
+- **Middleware for AI Agents**: The protocol can act as a middleware layer for AI agents, providing human-in-the-loop capabilities to improve the quality of AI outputs.
+- **Content Moderation**: The protocol can be used as a content moderation tool, allowing providers to outsource moderation tasks to a distributed network of workers.
+- **Data Labeling**: The protocol can be used for data labeling tasks, such as image annotation, text classification, and sentiment analysis.
+
+
+**Many more** use cases are possible, depending on the needs of provider nodes and the capabilities of the network. 

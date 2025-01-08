@@ -1,11 +1,11 @@
 import yargs from "yargs";
-import { createMigrationClaimCommand } from "./migration/create";
-import { rewardsInitCommand } from "./rewards/init";
 import { hideBin } from "yargs/helpers";
+import {MigrationCommand} from './migration'
+import { RewardCommands } from "./rewards";
 
 yargs(hideBin(process.argv))
 	.scriptName("effect-cli")
-	.command(createMigrationClaimCommand)
-    .command(rewardsInitCommand)
+    .command(MigrationCommand)
+    .command(RewardCommands)
     .help()
     .argv;

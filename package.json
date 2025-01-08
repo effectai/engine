@@ -13,7 +13,8 @@
 	"scripts": {
 		"purge": "rm -rf node_modules pnpm-lock.yaml && pnpm recursive exec -- rm -rf node_modules dist",
 		"dev": "pnpm turbo dev",
-		"dashboard:generate": "pnpm --filter effect-dashboard run generate",
+		"dashboard:generate-staging": "pnpm --filter effect-dashboard run generate-staging",
+		"dashboard:generate-prod": "pnpm --filter effect-dashboard run generate-prod",
 		"website:generate": "pnpm --filter effect-website run generate",
 		"manager:start": "pnpm --filter @effectai/task-manager run start",
 		"relay:start": "pnpm --filter @effectai/task-relay run start",
@@ -21,9 +22,6 @@
 		"provider:start": "pnpm --filter @effectai/task-provider run start",
 		"docs:dev": "pnpm --filter docs run dev",
 		"test": "vitest"
-	},
-	"dependencies": {
-		"@effectai/task-core": "workspace:*"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

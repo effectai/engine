@@ -1,25 +1,28 @@
 import * as anchor from "@coral-xyz/anchor";
 import type { Program, Idl } from "@coral-xyz/anchor";
 import { EffectRewardsIdl, type EffectRewards } from "@effectai/shared";
-import { useMutation, useQuery } from "@tanstack/vue-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import type { StakingAccount } from "./useStakingProgram";
 import { useWallet } from "solana-wallets-vue";
-import { useDeriveRewardAccounts } from "@effectai/utils";
+import { useDeriveRewardAccounts, useDeriveStakingRewardAccount } from "@effectai/utils";
 import { createAssociatedTokenAccountIdempotentInstructionWithDerivation, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 
-
 export const useRewardProgram = () => {
 	const { provider } = useAnchorProvider();
-    const {publicKey} = useWallet();
+    const { publicKey } = useWallet();
 
-	const rewardsProgram = new anchor.Program(
-		EffectRewardsIdl as Idl,
-		provider,
-	) as unknown as Program<EffectRewards>;
+	const rewardsProgram = computed(() => {
+		return new anchor.Program(
+			EffectRewardsIdl as Idl,
+			provider.value || undefined
+		) as unknown as Program<EffectRewards>;
+	});
 
     const appConfig = useRuntimeConfig();
     const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
+
+	const queryClient = useQueryClient();
 
 	const useGetReflectionAccount = () => {
 		return useQuery({
@@ -29,23 +32,34 @@ export const useRewardProgram = () => {
 					throw new Error("Could not get public key");
 				}
 
-				const { reflectionAccount } = useDeriveRewardAccounts({
-					authority: publicKey.value,
-					programId: rewardsProgram.programId,
+				const { reflectionAccount, reflectionVaultAccount } = useDeriveRewardAccounts({
+					mint,
+					programId: rewardsProgram.value.programId,
 				});
 
 				const account =
-					await rewardsProgram.account.reflectionAccount.fetch(
+					await rewardsProgram.value.account.reflectionAccount.fetch(
 						reflectionAccount,
 					);
 
-				return account;
+				const vaultAccount = connection.getTokenAccountBalance(
+					reflectionVaultAccount,
+				)
+
+				return {reflectionAccont: account, vaultAccount};
 			},
 		});
 	};
 
 	const useClaimRewards = () =>
 		useMutation({
+			onSuccess: () => {
+				queryClient.invalidateQueries({
+					predicate: (query) => {
+						return query.queryKey.includes("claim")
+					},
+				});
+			},
 			mutationFn: async ({
 				stakeAccount,
 			}: {
@@ -55,14 +69,9 @@ export const useRewardProgram = () => {
 					throw new Error("Could not get public key");
 				}
 
-				const { reflectionAccount, rewardAccount } = useDeriveRewardAccounts({
-					authority: publicKey.value,
-					programId: rewardsProgram.programId,
-				});
-
 				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
-				return await rewardsProgram.methods
+				return await rewardsProgram.value.methods
 					.claim()
 					.preInstructions([
 						...((await connection.getAccountInfo(ata))
@@ -76,31 +85,34 @@ export const useRewardProgram = () => {
 								]),
 					])
 					.accounts({
-						stake: stakeAccount.publicKey,
-						reward: rewardAccount,
-						reflection: reflectionAccount,
-						user: ata,
+						stakeAccount: stakeAccount.publicKey,
+						recipientTokenAccount: ata,
 					})
 					.rpc();
 			},
 		});
 
 
-	const useGetRewardAccount = () => {
+	const useGetRewardAccount = (stakeAccount: Ref<StakingAccount | undefined>) => {
 		return useQuery({
-			queryKey: ["rewardAccount", publicKey.value],
+			queryKey: ["rewardAccount", publicKey.value, "claim"],
+			enabled: computed(() => !!stakeAccount.value),
 			queryFn: async () => {
 				if (!publicKey.value) {
 					throw new Error("Could not get public key");
 				}
 
-				const { rewardAccount } = useDeriveRewardAccounts({
-					authority: publicKey.value,
-					programId: rewardsProgram.programId,
-				});
+				if(!stakeAccount.value) {
+					throw new Error("Stake account is not defined");
+				}
+
+				const { stakingRewardAccount } = useDeriveStakingRewardAccount({
+					stakingAccount: stakeAccount.value.publicKey,
+					programId: rewardsProgram.value.programId,
+				})
 
 				const account =
-					await rewardsProgram.account.rewardAccount.fetch(rewardAccount);
+					await rewardsProgram.value.account.rewardAccount.fetch(stakingRewardAccount);
 
 				return account;
 			},

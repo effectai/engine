@@ -1,4 +1,6 @@
 import { BN } from "@coral-xyz/anchor";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import { PublicKey } from "@solana/web3.js";
 import { format, formatDistanceToNow } from "date-fns";
 
 export const sliceBoth = (str: string) => {
@@ -7,7 +9,8 @@ export const sliceBoth = (str: string) => {
 };
 
 export const formatAmountToBalance = (amount: BN) => {
-	return amount.toNumber() / 10 ** 6;
+	const result = amount.toNumber() / 10 ** 6;
+	return result
 };
 
 export const formatBalanceToAmount = (balance: number): BN => {
@@ -30,9 +33,13 @@ export const formatPercent = (decimal: number): string => {
 	return `${(decimal * 100).toFixed(1)}%`;
 };
 
-export const formatNumber = (num: number) => {
+export const formatNumber = (num: number, digits?: number) => {
 	return new Intl.NumberFormat("en-US", {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
+		minimumFractionDigits: digits ?? 2, 
+		maximumFractionDigits: digits ?? 2,
 	}).format(num);
+};
+
+export const formatTimestampToTimeAgo = (timestamp: number) => {
+	return formatDistanceToNow(timestamp, { addSuffix: true });
 };

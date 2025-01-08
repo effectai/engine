@@ -1,14 +1,34 @@
 <template>
     <UCard class="flex flex-col" v-if="publicKey">
+
+        <div id="confetti-container" class="max-w-[50px] mx-auto w-full h-full">
+            <ConfettiExplosion v-if="triggerConfetti" :particleCount="200" :force="0.3" />
+        </div>
+
         <div class="flex flex-col gap-5">
             <div class="bg-white/5 p-6 rounded-xl border border-gray-800">
                 <div class="flex items-center gap-4">
                     <div class="p-3 bg-gray-800 text-white rounded-lg flex">
                         <UIcon name="lucide:wallet" class="" />
                     </div>
-                    <div>
-                        <p class="text-sm text-gray-400">Total Staked</p>
-                        <p class="text-2xl font-bold">{{ stakeAmount || "0" }} EFFECT</p>
+                    <div class="flex-grow flex justify-between">
+                        <div>
+                            <div class="flex items-center">
+                                <p class="text-sm text-gray-400">Total Staked</p>
+                            </div>
+                            <p v-if="isLoading" class="text-2xl font-bold">...</p>
+                            <p v-else class="text-2xl font-bold">{{ formatNumber(stakeAmount) || "0" }} EFFECT</p>
+                        </div>
+                        <div v-if="stakeAmount">
+                            <UTooltip  :ui="{ width: 'max-w-md' }"
+                                text="Staked tokens in January 2025 get a 20% increased reward ratio">
+                                <UBadge style="border-radius:0;" label="BOOSTED" class="rainbow-border ml-2" color="gray">
+                                    <template #trailing>
+                                        <UIcon name="i-heroicons-fire" class="h-6 w-6 text-lg" size="lg" />
+                                    </template>
+                                </UBadge>
+                            </UTooltip>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -18,9 +38,10 @@
                         <UIcon name="lucide:chart-spline" />
                     </div>
                     <div>
-                        <p class="text-sm text-gray-400">Stake Age</p>
-                        <AnimatedNumber easing="easeInOutCubic" :value="stakeAge" :format="formatNumber"
-                            class="text-2xl font-bold flex relative">{{ (stakeAge).toFixed(4) }}
+                        <p class="text-sm text-gray-400">Stake Age Score</p>
+                        <p v-if="isLoading" class="text-2xl font-bold">...</p>
+                        <AnimatedNumber v-else easing="easeInOutCubic" :value="stakeAge" :format="formatNumber"
+                            class="text-2xl font-bold flex relative">{{ stakeAge }}
                         </AnimatedNumber>
                     </div>
                 </div>
@@ -34,31 +55,35 @@
                     <div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span
                             class="font-medium">{{
                                 unstakeDays || 0 }} Days</span></div>
-                    <div class="flex justify-between" v-if="reflectionAccount?.totalXefx"><span
-                            class="text-gray-400">Total
-                            Staked</span><span class="font-medium">{{ formatAmountToBalance(reflectionAccount.totalXefx)
-                            }}
-                            EFFECT</span></div>
+
+                    <UButton v-if="pendingRewards > 0" @click="handleSubmit" color="white"
+                        class="flex justify-center w-full">
+                        Claimable January 10th
+                    </UButton>
+                </div>
+
+                <h3 class="text-lg font-semibold mb-4 mt-4">Rewards</h3>
+                <div class="space-y-4">
                     <div class="flex justify-between"><span class="text-gray-400">Expected APY</span><span
-                            class="font-medium">30%</span></div>
+                            class="font-medium">{{ expectedApy }}%</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">Pending Rewards</span><span
                             class="font-medium">{{
                                 pendingRewards || 0 }} EFFECT</span></div>
 
-                    <UButton v-if="pendingRewards > 0" @click="handleSubmit" color="white"
-                        class="flex justify-center w-full">Claim
+
+                    <UButton :disabled="true" @click="handleSubmit" color="white" class="flex justify-center w-full">
+                        Claimable January 10th
                     </UButton>
                 </div>
             </div>
 
-            <div class="flex w-full gap-5">
-            </div>
         </div>
     </UCard>
 </template>
 
 <script setup lang="ts">
 import { useWallet } from "solana-wallets-vue";
+import ConfettiExplosion from "vue-confetti-explosion";
 
 const {
     useGetStakeAccount,
@@ -70,12 +95,13 @@ const { publicKey } = useWallet();
 /**
  * Stake age Logic
  */
-const { data: stakeAccount, unstakeDays, amountFormatted: stakeAmount } = useGetStakeAccount();
+const { data: stakeAccount, isLoading, unstakeDays, amountFormatted: stakeAmount } = useGetStakeAccount();
+
 const stakeAge = computed(() => {
-    if (!stakeAccount.value?.account.stakeStartTime) return 0;
-    const time = currentTime.value - stakeAccount.value.account.stakeStartTime.toNumber()
-    return time;
+    if (!stakeAccount.value?.account.stakeStartTime || !currentTime.value) return 0;
+    return calculateStakeAge(stakeAccount.value.account.stakeStartTime.toNumber())
 });
+
 const currentTime = ref(new Date().getTime() / 1000);
 onMounted(() => {
     const interval = setInterval(() => {
@@ -88,24 +114,90 @@ onMounted(() => {
 /**
  * Reward Logic
  */
-const { data: reflectionAccount } = useGetReflectionAccount();
-const { data: rewardAccount } = useGetRewardAccount();
-const { mutateAsync: claimRewards } = useClaimRewards();
-const pendingRewards = computed(() => {
-    const reward =
-        rewardAccount.value?.reflection / reflectionAccount.value?.rate -
-        rewardAccount.value?.xefx;
-    return +(reward / 1e6).toFixed(4);
+const { data: reflectionData } = useGetReflectionAccount();
+const reflectionAccount = computed(() => {
+    if (!reflectionData.value) return null;
+    return reflectionData.value.reflectionAccont;
 });
-const handleSubmit = async () => {
-    if (!stakeAccount.value) {
-        throw new Error('No stake account found');
-    }
+const reflectionVaultAccount = computed(() => {
+    if (!reflectionData.value) return null;
+    return reflectionData.value.vaultAccount;
+});
+const { data: rewardAccount } = useGetRewardAccount(stakeAccount);
+const { mutateAsync: claimRewards } = useClaimRewards();
 
-    const tx = await claimRewards({
-        stakeAccount: stakeAccount.value,
-    });
+const expectedApy = computed(() => {
+    if (!rewardAccount.value || !reflectionAccount.value) return 0;
+
+    return calculateApy({
+        yourStake: rewardAccount.value.weightedAmount,
+        totalStaked: reflectionAccount.value.totalWeightedAmount,
+        totalRewards: 21_600_000,
+    })
+})
+
+const pendingRewards = computed(() => {
+    if (!rewardAccount.value || !reflectionAccount.value) return 0;
+
+    return calculatePendingRewards({
+        reflection: rewardAccount.value.reflection,
+        rate: reflectionAccount.value.rate,
+        weightedAmount: rewardAccount.value.weightedAmount,
+    })
+});
+
+const toast = useToast();
+const handleSubmit = async () => {
+    try {
+
+        if (!stakeAccount.value) {
+            throw new Error('No stake account found');
+        }
+
+        await claimRewards({
+            stakeAccount: stakeAccount.value,
+        });
+
+        toast.add({ title: 'Success', description: 'Claimed rewards', color: 'green' });
+    } catch (e) {
+        console.error(e);
+        toast.add({ title: 'Error', description: 'Something went wrong', color: 'red' });
+    }
 };
+
+
+const triggerConfetti = ref(false);
+// check if ?confetti=true is in the URL
+onMounted(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('confetti')) {
+        triggerConfetti.value = true;
+        // remove the query param from the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+});
+
 </script>
 
-<style scoped></style>
+<style scoped>
+.rainbow-border {
+    --angle: 0deg;
+    border: 1px solid;
+    border-radius: 0.375rem;
+    border-image: conic-gradient(from var(--angle), red, yellow, lime, aqua, blue, magenta, red) 1;
+    background: none;
+    animation: 10s rotate linear infinite;
+}
+
+@keyframes rotate {
+    to {
+        --angle: 360deg;
+    }
+}
+
+@property --angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+</style>

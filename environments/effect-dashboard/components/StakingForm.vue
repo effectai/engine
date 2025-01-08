@@ -13,13 +13,14 @@
 								MAX</UButton>
 						</div>
 					</div>
+				
 					<div class="bg-white/5 rounded-lg py-4 px-2 space-y-2">
 						<div class="flex justify-between"><span class="text-gray-400">Available
 								Balance</span><span>{{ availableBalance?.value }} EFFECT</span></div>
 						<div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span>30
 								Days</span></div>
 					</div>
-					<UButton :loading="isPending" @click="handleSubmit" color="white"
+					<UButton :loading="isPending" :disabled="!isValid" @click="handleSubmit" color="white"
 						class="flex justify-center w-full">Stake</UButton>
 				</div>
 			</div>
@@ -66,15 +67,16 @@ const setMaxAmount = () => {
 const { mutateAsync: stake, isPending } = useStake();
 const { mutateAsync: topup } = useTopUp();
 const toast = useToast();
+
 const handleSubmit = async () => {
-	if (!isValid.value || !unstakeDays.value) {
-		error.value = "Invalid stake amount";
-		return;
-	}
-
-	error.value = "";
-
 	try {
+		if (!isValid.value || !unstakeDays.value) {
+			error.value = "Invalid stake amount";
+			return;
+		}
+
+		error.value = "";
+
 		const txId = stakeAccount.value
 			? await topup({
 				stakeAccount: stakeAccount.value,

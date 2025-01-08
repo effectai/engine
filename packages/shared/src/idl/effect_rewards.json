@@ -1,5 +1,5 @@
 {
-  "address": "HJR3op52N7tNycXqQnVu8cDnxH7udp4pYi1ps9S1hdBz",
+  "address": "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi",
   "metadata": {
     "name": "effect_rewards",
     "version": "0.1.0",
@@ -24,90 +24,88 @@
       ],
       "accounts": [
         {
-          "name": "user",
-          "writable": true
-        },
-        {
-          "name": "vault_token_account",
+          "name": "reflection_account",
           "writable": true,
-          "relations": [
-            "reflection"
-          ]
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "recipient_token_account.mint",
+                "account": "TokenAccount"
+              }
+            ]
+          }
         },
         {
-          "name": "reflection",
+          "name": "reward_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "reflection_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "intermediate_reward_vault_token_account",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "reward_vault_token_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_account",
           "writable": true
         },
         {
-          "name": "reward",
-          "writable": true
+          "name": "reward_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake_account"
+              }
+            ]
+          }
         },
         {
-          "name": "stake"
+          "name": "recipient_token_account",
+          "writable": true
         },
         {
           "name": "authority",
           "writable": true,
           "signer": true,
           "relations": [
-            "reward",
-            "stake"
+            "stake_account",
+            "reward_account"
           ]
         },
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "claim_stream",
-      "discriminator": [
-        157,
-        247,
-        164,
-        226,
-        240,
-        158,
-        183,
-        36
-      ],
-      "accounts": [
-        {
-          "name": "reflection",
-          "writable": true
-        },
-        {
-          "name": "vault_token_account",
-          "writable": true,
-          "relations": [
-            "reflection"
-          ]
-        },
-        {
-          "name": "vesting_vault_token_account",
-          "writable": true
-        },
-        {
-          "name": "vesting_account",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "signer": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
-        },
-        {
-          "name": "vesting_program",
-          "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
         }
       ],
       "args": []
@@ -129,20 +127,76 @@
       ],
       "accounts": [
         {
-          "name": "reflection",
+          "name": "reflection_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stake_vault_token_account.mint",
+                "account": "TokenAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "reward_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_account",
           "writable": true
         },
         {
-          "name": "reward",
-          "writable": true
+          "name": "stake_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake_account"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "stake_program"
+            }
+          }
         },
         {
           "name": "authority",
           "writable": true,
           "signer": true,
           "relations": [
-            "reward"
+            "stake_account"
           ]
+        },
+        {
+          "name": "stake_program",
+          "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
         }
       ],
       "args": []
@@ -164,20 +218,60 @@
       ],
       "accounts": [
         {
-          "name": "reflection",
+          "name": "reflection_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_account",
           "writable": true
         },
         {
-          "name": "stake"
-        },
-        {
-          "name": "reward",
+          "name": "stake_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "stake"
+                "path": "stake_account"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "stake_program"
+            }
+          }
+        },
+        {
+          "name": "reward_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake_account"
               }
             ]
           }
@@ -187,8 +281,15 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "stake"
+            "stake_account"
           ]
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "stake_program",
+          "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
         },
         {
           "name": "system_program",
@@ -214,11 +315,7 @@
       ],
       "accounts": [
         {
-          "name": "mint",
-          "writable": true
-        },
-        {
-          "name": "reflection",
+          "name": "reflection_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -236,24 +333,22 @@
                   111,
                   110
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
               }
             ]
           }
         },
         {
-          "name": "vault_token_account",
+          "name": "reward_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
-                "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
-                ]
+                "kind": "account",
+                "path": "reflection_account"
               }
             ]
           }
@@ -261,8 +356,95 @@
         {
           "name": "authority",
           "writable": true,
-          "signer": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "signer": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "init_intermediary_vault",
+      "discriminator": [
+        136,
+        233,
+        11,
+        94,
+        192,
+        117,
+        195,
+        255
+      ],
+      "accounts": [
+        {
+          "name": "reflection_account",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "reward_vault_token_account",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "reflection_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "intermediate_reward_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "reward_vault_token_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint"
         },
         {
           "name": "system_program",
@@ -296,15 +478,144 @@
       ],
       "accounts": [
         {
-          "name": "reward",
+          "name": "stake_account"
+        },
+        {
+          "name": "reward_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_vault_token_account",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake_account"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "stake_program"
+            }
+          }
+        },
+        {
+          "name": "reflection_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stake_vault_token_account.mint",
+                "account": "TokenAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_program",
+          "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "topup",
+      "docs": [
+        "Topup the [ReflectionAccount](#reflection-account) and [VaultAccount](#vault_token_account-account)."
+      ],
+      "discriminator": [
+        126,
+        42,
+        49,
+        78,
+        225,
+        151,
+        99,
+        77
+      ],
+      "accounts": [
+        {
+          "name": "mint",
           "writable": true
         },
         {
-          "name": "stake"
+          "name": "reflection_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
         },
         {
-          "name": "reflection",
-          "writable": true
+          "name": "reward_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "reflection_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "intermediate_reward_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "reward_vault_token_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -349,41 +660,43 @@
         192,
         255
       ]
-    },
-    {
-      "name": "VestingAccount",
-      "discriminator": [
-        102,
-        73,
-        10,
-        233,
-        200,
-        188,
-        228,
-        216
-      ]
     }
   ],
   "errors": [
     {
       "code": 6000,
+      "name": "ReflectionInvalid",
+      "msg": "This account has an invalid reflection."
+    },
+    {
+      "code": 6001,
       "name": "InvalidVault",
       "msg": "This account has an invalid vault."
     },
     {
-      "code": 6001,
+      "code": 6002,
       "name": "Unauthorized",
       "msg": "This account is not authorized to perform this action."
     },
     {
-      "code": 6002,
+      "code": 6003,
       "name": "AlreadyUnstaked",
       "msg": "This stake is already unstaked."
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "Decreased",
       "msg": "This stake is not allowed to decrease."
+    },
+    {
+      "code": 6005,
+      "name": "NoClaimableRewards",
+      "msg": "No Claimable Rewards"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidMint",
+      "msg": "Invalid Mint"
     }
   ],
   "types": [
@@ -404,25 +717,14 @@
             "type": "u128"
           },
           {
-            "name": "total_xefx",
+            "name": "total_weighted_amount",
             "type": "u128"
-          },
-          {
-            "name": "vault_token_account",
-            "type": "pubkey"
-          },
-          {
-            "name": "vault_bump",
-            "type": "u8"
           }
         ]
       }
     },
     {
       "name": "RewardAccount",
-      "docs": [
-        "The `RewardAccount` struct holds all the information for any given user account."
-      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -435,7 +737,7 @@
             "type": "u128"
           },
           {
-            "name": "xefx",
+            "name": "weighted_amount",
             "type": "u128"
           }
         ]
@@ -463,61 +765,12 @@
             "type": "i64"
           },
           {
-            "name": "vault_token_account",
-            "type": "pubkey"
-          },
-          {
-            "name": "xefx",
+            "name": "weighted_amount",
             "type": "u128"
-          }
-        ]
-      }
-    },
-    {
-      "name": "VestingAccount",
-      "type": {
-        "kind": "struct",
-        "fields": [
+          },
           {
-            "name": "authority",
+            "name": "mint",
             "type": "pubkey"
-          },
-          {
-            "name": "recipient_token_account",
-            "type": "pubkey"
-          },
-          {
-            "name": "distributed_tokens",
-            "type": "u64"
-          },
-          {
-            "name": "is_closeable",
-            "type": "bool"
-          },
-          {
-            "name": "release_rate",
-            "type": "u64"
-          },
-          {
-            "name": "start_time",
-            "type": "i64"
-          },
-          {
-            "name": "vault_token_account",
-            "type": "pubkey"
-          },
-          {
-            "name": "is_publicly_claimable",
-            "type": "bool"
-          },
-          {
-            "name": "tag",
-            "type": {
-              "array": [
-                "u8",
-                8
-              ]
-            }
           }
         ]
       }

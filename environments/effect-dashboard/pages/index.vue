@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-navigateTo('/stake');
+navigateTo('/migrate');
 </script>
 
 <style lang="scss" scoped>

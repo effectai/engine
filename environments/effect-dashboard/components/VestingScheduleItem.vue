@@ -18,7 +18,11 @@
                 </UBadge>
                 <UButton v-else-if="amountDue" color="gray" variant="solid" size="sm" icon="i-heroicons-gift"
                     @click="claimTokens">
-                    Claim {{ formatAmountToBalance(amountDue).toFixed(2) }} EFFECT
+                    Claim {{ formatAmountToBalance(amountDue) }} EFFECT
+                </UButton>
+                <UButton v-else-if="progress == 100" color="gray" variant="solid" size="sm" icon="i-heroicons-gift"
+                    @click="closeVestingHandler">
+                    Close
                 </UButton>
                 <p>{{ progress.toFixed(2) }}% completed</p>
             </div>
@@ -31,7 +35,7 @@
 
 <script setup lang="ts">
 import { BN } from '@coral-xyz/anchor';
-import type { PublicKey } from '@solana/web3.js';
+import { useDeriveVestingAccounts } from '@effectai/utils';
 
 const { vestingProgram, useClaim } = useVestingProgram()
 
@@ -40,7 +44,13 @@ const props = defineProps<{
 }>()
 
 const { useGetTokenAccountBalanceQuery } = useSolanaWallet()
-const { data: balance } = useGetTokenAccountBalanceQuery(props.vestingAccount.account.vaultTokenAccount)
+
+const { vestingVaultAccount } = useDeriveVestingAccounts({
+    vestingAccount: props.vestingAccount.publicKey,
+    programId: vestingProgram.value.programId,
+})
+
+const { data: balance } = useGetTokenAccountBalanceQuery(vestingVaultAccount)
 
 const scheduleStarted = (timestamp: BN) => {
     return Date.now() > timestamp.toNumber() * 1000
@@ -63,7 +73,7 @@ const amountDue = computed(() => {
 
 const progress = computed(() => {
     if (!balance.value || !amountDue.value) return 100
-    return formatAmountToBalance(amountDue.value) / balance.value.value
+    return formatAmountToBalance(amountDue.value.add(props.vestingAccount.account.distributedTokens)) / balance.value.value * 100
 })
 
 const calculateDue = (
@@ -72,15 +82,21 @@ const calculateDue = (
     distributedTokens: number,
     amountAvailable: number
 ): number => {
-
     // get now as a unix timestamp
     const now = Math.floor(new Date().getTime() / 1000);
+
+    if(now < startTime) {
+        return 0;
+    }
 
     const poolAmount = (now - startTime) * releaseRate;
 
     const amountDue = poolAmount - distributedTokens;
-
     return Math.min(amountDue, amountAvailable * 1_000_000);
+}
+
+const closeVestingHandler = async () => {
+    console.log('close vesting account')
 }
 </script>
 

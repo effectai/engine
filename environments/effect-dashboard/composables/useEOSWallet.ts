@@ -1,53 +1,57 @@
-import { useQuery } from "@tanstack/vue-query";
 import {
 	ABICache,
 	Action,
 	PlaceholderAuth,
+	PublicKey,
+	Signature,
 	Transaction,
 	TransactionHeader,
 	type Session,
 } from "@wharfkit/session";
-import type { SourceWalletAdapter, WalletMeta } from "~/types/types";
+import type {
+	SourceWallet,
+	WalletConnectionMeta
+} from "~/types/types";
 import { extractEosPublicKeyBytes } from "@effectai/utils";
 
 import { SessionKit } from "@wharfkit/session";
 import { WebRenderer } from "@wharfkit/web-renderer";
 import { WalletPluginAnchor } from "@effectai/wallet-plugin-anchor";
-import type { PublicKey } from "@solana/web3.js";
-
-// import { WalletPluginCleos } from "@wharfkit/wallet-plugin-cleos";
-// import { WalletPluginScatter } from "@wharfkit/wallet-plugin-scatter"
-// import { WalletPluginWombat } from "@wharfkit/wallet-plugin-wombat"
-// import { WalletPluginTokenPocket } from "@wharfkit/wallet-plugin-tokenpocket"
+import { WalletPluginWombat } from "@wharfkit/wallet-plugin-wombat";
+import { WalletPluginTokenPocket } from "@wharfkit/wallet-plugin-tokenpocket";
 
 const session: Ref<Session | null | undefined> = ref(null);
 
-const sessionKit = reactive(
-	new SessionKit({
-		appName: "Effect Migration Portal",
-		chains: [
-			{
-				id: "aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906",
-				url: "https://eos.greymass.com",
-			},
-		],
-		ui: new WebRenderer(),
-		walletPlugins: [
-			new WalletPluginAnchor({}),
-		],
-	}),
-);
+export const useEosWallet = (): SourceWallet => {
+	const sessionKit = reactive(
+		new SessionKit({
+			appName: "Effect Migration Portal",
+			chains: [
+				{
+					id: "aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906",
+					url: "https://eos.greymass.com",
+				},
+			],
+			ui: new WebRenderer(),
+			walletPlugins: [
+				new WalletPluginAnchor(),
+				new WalletPluginWombat(),
+				new WalletPluginTokenPocket(),
+			],
+		}),
+	);
 
-export const useEosWallet = (): SourceWalletAdapter => {
 	const address = computed(
 		() => session.value?.actor.toString() as string | undefined,
 	);
 
-	const walletMeta: Ref<WalletMeta | undefined | null> = computed(
+	const walletMeta: Ref<WalletConnectionMeta | undefined | null> = computed(
 		() =>
 			session.value && {
 				name: session.value.walletPlugin.metadata.name,
 				icon: session.value.walletPlugin.metadata.logo?.light,
+				permission: session.value.permission.toString(),
+				chain: "EOS",
 			},
 	);
 
@@ -63,69 +67,77 @@ export const useEosWallet = (): SourceWalletAdapter => {
 		return await sessionKit.logout();
 	};
 
-	const useGetBalanceQuery = () => {
-		return useQuery({
-			queryKey: ["balance", session.value?.actor],
-			queryFn: async () => {
-				if (!session.value?.client) {
-					throw new Error("No client found");
-				}
+	const getNativeBalance = async () => {
+		if (!session.value?.client) {
+			throw new Error("No client found");
+		}
 
-				const res = await session.value.client.v1.chain.get_currency_balance(
-					"eosio.token",
-					session.value.actor,
-					"EOS",
-				);
+		const res = await session.value.client.v1.chain.get_currency_balance(
+			"eosio.token",
+			session.value.actor,
+			"EOS",
+		);
 
-				if (res.length === 0) {
-					return 0;
-				}
+		if (res.length === 0) {
+			return {
+				value: 0,
+				symbol: "EOS",
+			};
+		}
 
-				return {
-					value: res[0].value,
-					symbol: "EOS",
-				};
-			},
-		});
+		return {
+			value: res[0].value,
+			symbol: "EOS",
+		};
 	};
 
-	const useGetEfxBalanceQuery = () => {
-		return useQuery({
-			queryKey: ["efx-balance", session.value?.actor],
-			queryFn: async () => {
-				if (!session.value?.client) {
-					throw new Error("No client found");
-				}
+	const getEfxBalance = async () => {
+		if (!session.value?.client) {
+			throw new Error("No client found");
+		}
 
-				const res = await session.value.client.v1.chain.get_currency_balance(
-					"effecttokens",
-					session.value.actor,
-					"EFX",
-				);
+		const res = await session.value.client.v1.chain.get_currency_balance(
+			"effecttokens",
+			session.value.actor,
+			"EFX",
+		);
 
-				if (res.length === 0) {
-					return 0;
-				}
+		if (res.length === 0) {
+			return {
+				value: 0,
+				symbol: "EFX",
+			};
+		}
 
-				return {
-					value: res[0].value,
-					symbol: "EFX",
-				};
-			},
-		});
+		return {
+			value: res[0].value,
+			symbol: "EFX",
+		};
 	};
 
-	const authorizeTokenClaim = async (): Promise<{
+	const authorizeTokenClaim = async (
+		destinationAddress: string,
+	): Promise<{
 		foreignPublicKey: Uint8Array;
 		signature: Uint8Array;
 		message: Uint8Array;
 	}> => {
-		const { address } = useSolanaWallet();
-
-		const originalMessage = `Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: ${address.value}`;
+		const originalMessage = `Effect.AI: I authorize my tokens to be claimed at the following Solana address:${destinationAddress}`;
 
 		if (!session.value?.client) {
 			throw new Error("No client found");
+		}
+
+		const res = await session.value.client.v1.chain.get_account(
+			session.value.actor,
+		);
+
+		const activePermission = res.getPermission(session.value.permission.toString());
+		const publicKey = activePermission.required_auth.keys[0].key.toString();
+		const compressedPk = extractEosPublicKeyBytes(publicKey);
+
+		if (!compressedPk) {
+			throw new Error("Could not compress public key");
 		}
 
 		const abi = new ABICache(session.value?.client);
@@ -158,18 +170,43 @@ export const useEosWallet = (): SourceWalletAdapter => {
 		});
 
 		const transaction = await session.value.transact(tx, { broadcast: false });
-		const signature = transaction.signatures[0];
 		const serializedTxBytes = transaction.resolved?.signingData;
+
 
 		if (!serializedTxBytes) {
 			throw new Error("Could not serialize transaction");
+		}
+
+		let sigToUse = null;
+		for(const signature of transaction.signatures) {
+			const sig = Signature.from(signature);
+			if(sig.verifyMessage(serializedTxBytes, PublicKey.from(publicKey))){
+				sigToUse = sig;
+				break;
+			}
+		}
+
+		if(!sigToUse){
+			throw new Error("Could not verify signature");
+		}
+
+		return {
+			signature: sigToUse.data.array,
+			message: serializedTxBytes?.array,
+			foreignPublicKey: compressedPk,
+		};
+	};
+
+	const getForeignPublicKey = async () => {
+		if (!session.value?.client) {
+			throw new Error("No client found");
 		}
 
 		const res = await session.value.client.v1.chain.get_account(
 			session.value.actor,
 		);
 
-		const activePermission = res.getPermission("active");
+		const activePermission = res.getPermission(session.value.permission.toString());
 		const publicKey = activePermission.required_auth.keys[0].key.toString();
 		const compressedPk = extractEosPublicKeyBytes(publicKey);
 
@@ -177,11 +214,7 @@ export const useEosWallet = (): SourceWalletAdapter => {
 			throw new Error("Could not compress public key");
 		}
 
-		return {
-			signature: signature.data.array,
-			message: serializedTxBytes?.array,
-			foreignPublicKey: compressedPk,
-		};
+		return compressedPk;
 	};
 
 	return {
@@ -195,8 +228,9 @@ export const useEosWallet = (): SourceWalletAdapter => {
 
 		authorizeTokenClaim,
 
-		// Queries
-		useGetEfxBalanceQuery,
-		useGetBalanceQuery,
+		getNativeBalance,
+		getEfxBalance,
+
+		getForeignPublicKey,
 	};
 };

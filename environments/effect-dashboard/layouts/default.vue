@@ -113,6 +113,14 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const sidebarOpen = ref(false)
+
+useSeoMeta({
+  title: 'Effect AI | Portal',
+  ogTitle: 'Effect AI | Portal',
+  description: 'The Effect AI Portal',
+  ogDescription: 'The Effect AI Portal',
+  ogImage: "/img/effect-logo-black.png",
+})
 </script>
 
 <style scoped></style>

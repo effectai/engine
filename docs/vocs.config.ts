@@ -2,7 +2,7 @@ import { defineConfig } from "vocs";
 
 export default defineConfig({
 	rootDir: __dirname,
-	basePath: "/docs/",
+	logoUrl: { light: "/logo-dark.svg", dark: "/logo-light.svg" },
 	theme: {
 		variables: {
 			fontFamily: {
@@ -15,8 +15,8 @@ export default defineConfig({
 			text: "Introduction",
 			items: [
 				{
-					text: "Project overview",
-					link: "/introduction/project-overview",
+					text: "Overview",
+					link: "/",
 				},
 				{
 					text: "Our Mission",
@@ -32,101 +32,88 @@ export default defineConfig({
 			text: "Protocol",
 			items: [
 				{
-					text: "Entities and Roles",
-					collapsed: true,
-					link: "/network-architecture/entities",
+					text: "Core Concepts",
+					link: "/protocol/core-concepts",
+				},
+
+				{
+					text: "Nodes",
 					items: [
 						{
 							text: "Provider",
-							link: "/network-architecture/entities/provider-node",
+							link: "/protocol/nodes/provider-node",
 						},
 						{
 							text: "Manager",
-							link: "/network-architecture/entities/manager-node",
+							link: "/protocol/nodes/manager-node",
 						},
 						{
 							text: "Worker",
-							link: "/network-architecture/entities/worker-node",
+							link: "/protocol/nodes/worker-node",
 						},
 					],
 				},
 				{
-					text: "Task Lifecycle",
-					link: "/network-architecture/task-lifecycle",
-					items: [
-						{
-							text: "Creation",
-						},
-						{
-							text: "Delegation",
-						},
-						{
-							text: "Execution",
-						},
-						{
-							text: "Validation",
-						},
-						{
-							text: "Completion",
-						},
-					],
+					text: "Data Lifecycle",
+					link: "/protocol/data-lifecycle",
+				},
+				{
+					text: "Settlements",
+					link: "/protocol/settlements",
 				},
 				{
 					text: "Incentives",
+					link: "/protocol/incentives",
 					items: [
 						{
-							text: "Universal Static Income",
+							text: "Static Income",
+							link: "/protocol/incentives#static-income",
 						},
 						{
 							text: "Penalties",
+							link: "/protocol/incentives#penalties",
 						},
 						{
 							text: "Staking",
+							link: "/protocol/incentives#staking",
 						},
 						{
 							text: "Fees",
-						}
-					]
+							link: "/protocol/incentives#fees",
+						},
+					],
 				},
 				{
-					text: "Consensus",
+					text: "Governance",
+					items: [
+						{
+							text: "Proposals",
+							link: "/protocol/governance#proposals",
+						},
+						{
+							text: "Dispute Resolution",
+							link: "/protocol/governance#dispute-resolution",
+						},
+					
+					],
 				},
-			],
-		},
-		{
-			text: "Governance",
-			items: [
-				{
-					text: "DAO",
-					link: "/governance/dao",
-				},
-				{
-					text: "Dispute Resolution",
-					link: "/governance/governance-token",
-				},
-				{
-					text: "Voting",
-					link: "/governance/voting",
-				},
+				
 			],
 		},
 		{
 			text: "Setting up Nodes",
 			items: [
 				{
-					text: "Worker Node",
-					link: "/node-setup/worker-nodes",
+					text: "Provider Node",
 				},
 				{
 					text: "Manager Node",
-					link: "/node-setup/manager-nodes",
 				},
 				{
-					text: "Task Provider",
-					link: "/node-setup/task-providers",
+					text: "Worker Node",
 				},
 			],
 		},
 	],
-	title: "Effect AI: Docs",
+	title: "Effect AI",
 });

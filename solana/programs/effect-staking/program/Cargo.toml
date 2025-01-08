@@ -1,0 +1,29 @@
+[package]
+name = "effect-staking"
+version = "0.1.0"
+description = "Effect Staking Program."
+edition = "2021"
+homepage = "https://effect.ai/"
+authors = ["effect"]
+license = "MIT"
+keywords = ["solana", "effect",  "staking", "anchor"]
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "effect_staking"
+
+[features]
+no-entrypoint = []
+cpi = ["no-entrypoint"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+testing = []
+
+[dependencies]
+anchor-lang = { version = "0.30.1" }
+anchor-spl = "0.30.1"
+effect-common = { path = "../../../common" }
+effect-staking-common = { path = "../common"}
+effect-migration-common = { path = "../../effect-migration/common"}
+effect-rewards-common = { path = "../../effect-rewards/common"}
+effect-vesting = { path = "../../effect-vesting/program", features = ["cpi"] }
+

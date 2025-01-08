@@ -1,15 +1,14 @@
-import type { SourceWalletAdapter, WalletMeta } from "~/types/types";
-import {
-	useAccount,
-	useConnect,
-	useDisconnect,
-	useConfig,
-} from "@wagmi/vue";
+import type {
+	SourceWallet,
+	SourceWalletAdapter,
+	WalletMeta,
+} from "~/types/types";
+import { useAccount, useConnect, useDisconnect, useConfig } from "@wagmi/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { getBalance, signMessage } from "@wagmi/core";
-import { toBytes } from 'viem'
+import { toBytes } from "viem";
 
-export const useBscWallet = (): SourceWalletAdapter => {
+export const useBscWallet = (): SourceWallet => {
 	const { address, isConnected, connector } = useAccount();
 	const config = useConfig();
 
@@ -21,76 +20,74 @@ export const useBscWallet = (): SourceWalletAdapter => {
 			connector.value && {
 				name: connector.value.name,
 				icon: connector.value.icon,
+				chain: "BSC",
 			},
 	);
 
-	const useGetBalanceQuery = () => {
-		return useQuery({
-			queryKey: ["balance", address.value],
-			queryFn: async () => {
-				if (!address.value) {
-					throw new Error("No address found");
-				}
+	const getEfxBalance = async () => {
+		if (!address.value) {
+			throw new Error("No address found");
+		}
 
-				const balance = await getBalance(config, {
-					address: address.value,
-				});
-
-				return {
-					symbol: "BNB",
-					value: Number(balance.formatted),
-				};
-			},
+		const balance = await getBalance(config, {
+			address: address.value,
+			token: "0xC51Ef828319b131B595b7ec4B28210eCf4d05aD0",
 		});
+
+		return {
+			symbol: "EFX",
+			value: Number(balance.formatted),
+		};
 	};
 
-	const useGetEfxBalanceQuery = () => {
-		return useQuery({
-			queryKey: ["efx-balance", address.value],
-			queryFn: async () => {
-				if (!address.value) {
-					throw new Error("No address found");
-				}
+	const getNativeBalance = async () => {
 
-				const balance = await getBalance(config, {
-					address: address.value,
-					token: "0xC51Ef828319b131B595b7ec4B28210eCf4d05aD0",
-				});
+		if (!address.value) {
+			throw new Error("No address found");
+		}
 
-				return {
-					symbol: "EFX",
-					value: Number(balance.formatted),
-				};
-			},
+		const balance = await getBalance(config, {
+			address: address.value,
 		});
+
+		return {
+			symbol: "BNB",
+			value: Number(balance.formatted),
+		};
 	};
 
-	const authorizeTokenClaim = async (): Promise<{
+	const authorizeTokenClaim = async (
+		destinationAddress: string,
+	): Promise<{
 		foreignPublicKey: Uint8Array;
 		signature: Uint8Array;
 		message: Uint8Array;
 	}> => {
-		const { address: solanaAddress } = useSolanaWallet()
-
 		if (!address.value) {
 			throw new Error("No public key");
 		}
 
-		const originalMessage = `Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: ${solanaAddress.value}`;
+		const originalMessage = `Effect.AI: I authorize my tokens to be claimed at the following Solana address:${destinationAddress}`;
 		const prefix = `\x19Ethereum Signed Message:\n${originalMessage.length}`;
 		const message = Buffer.from(prefix + originalMessage);
 		const signature = await signMessage(config, { message: originalMessage });
 
-		if(!address.value){
+		if (!address.value) {
 			throw new Error("No address found");
 		}
 
 		return {
 			foreignPublicKey: toBytes(address.value),
 			signature: toBytes(signature),
-			message
-		}
+			message,
+		};
+	};
 
+	const getForeignPublicKey = async () => {
+		if (!address.value) {
+			throw new Error("No address found");
+		}
+		return toBytes(address.value);
 	};
 
 	return {
@@ -98,10 +95,11 @@ export const useBscWallet = (): SourceWalletAdapter => {
 		isConnected,
 		walletMeta,
 
-		useGetBalanceQuery,
-		useGetEfxBalanceQuery,
+		getEfxBalance,
+		getNativeBalance,
 
 		authorizeTokenClaim,
+		getForeignPublicKey,
 
 		connect,
 		disconnect,

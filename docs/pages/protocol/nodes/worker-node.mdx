@@ -1,0 +1,38 @@
+
+# Worker Nodes
+Worker nodes are essential to the functionality of the Effect AI protocol, serving as the execution layer for tasks. They peform the heavy lifting by actively processing and completing tasks that range from data labeling, to audio transcribing, to verifying AI generated content. Each task must be completed within the framework set by the provider node, with manager nodes overseeing the entire process to ensure quality and accuracy. Once a task is submitted by a worker, it is validated by the manager node, and rewards are distributed accordingly.
+
+### Worker Node Pool
+The worker node pool is a decentralized network of individuals who contribute their cognitive abilities to the Effect AI Protocol. The Worker must join the pool by authenticating with their wallet address, once a worker is in the pool, they will start to receive an passive stream of tokens based on their cognitive abilities, the amount of tasks the worker has completed, and the demand for their skill set. The worker node pool is a dynamic environment that adapts to the needs of the network, with workers earning rewards based on their performance and the demand for their skills.
+
+### Worker Node Scoring System
+As a worker node, you are scored on 6 different criteria of cognitive abilities according to [Bloom’s Taxonomy](https://pmc.ncbi.nlm.nih.gov/articles/PMC4511057/):
+
+- **Remembering**
+- **Understanding**
+- **Applying**
+- **Analyzing**
+- **Evaluating**
+- **Creating**
+
+All active participants in the pool [**earn a base rate of EFFECT**](/protocol/incentives#static-income), the amount of which is determined by a contribution score that is calculated based on the following factors:
+
+##### 1. C = Cognitive Ability Index
+A numeric value representing your worker node level based on your total tasks completed and the number of skills you have obtained.
+
+##### 2. E = Experience 
+A score from 0 to 10, indicating your experience level within the network.
+
+##### 3. U = Uniqueness
+A score from 0 to 1, indicating how unique your skills are compared to other worker nodes in the pool.
+
+##### 4. D = Demand
+A score from 0 to 1, representing the current demand for your skills (e.g., the number of pending jobs that require your specific skill set).
+
+These factors are aggregated into a weighted contribution score `V` using the formula:
+
+
+![image](../../../worker-node-formula.png)
+
+
+Where `V` represents your worker node’s core contribution score, which directly determines your *base earning rate* within the network.

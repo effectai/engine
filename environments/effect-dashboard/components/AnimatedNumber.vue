@@ -47,7 +47,7 @@ const animateValue = (start: number, end: number) => {
         const progress = Math.min((timestamp - startTimestamp) / props.duration, 1)
         const easedProgress = easing(progress)
 
-        animatedValue.value = props.format(start + (end - start) * easedProgress)
+        animatedValue.value = props.format(start + (end - start) * easedProgress, 3)
 
         if (progress < 1) {
             window.requestAnimationFrame(step)

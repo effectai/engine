@@ -1,5 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
-import { expect, inject } from "vitest";
+import type { PublicKey } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 
 import { type Idl, Program } from "@coral-xyz/anchor";
@@ -9,6 +8,7 @@ import {
 	useDeriveStakeAccounts
 } from "@effectai/utils";
 import type { EffectStaking } from "../target/types/effect_staking.js";
+import { expect } from "vitest";
 
 export const SECONDS_PER_DAY = 24 * 60 * 60;
 
@@ -23,18 +23,18 @@ export const useStakeTestHelpers = (program: Program<EffectStaking>) => {
 		authority: PublicKey;
 		mint: PublicKey;
 		userTokenAccount: PublicKey;
-		amount?: number;
+		amount: number;
 		lockTimeInDays?: number;
 	}) => {
 		const stakeAccount = new anchor.web3.Keypair();
 
 		await program.methods
 			.stake(
-				new anchor.BN(amount || 50_000_000),
+				new anchor.BN(amount),
 				new anchor.BN(lockTimeInDays || 30 * SECONDS_PER_DAY),
 			)
 			.accounts({
-				stake: stakeAccount.publicKey,
+				stakeAccount: stakeAccount.publicKey,
 				authority,
 				userTokenAccount,
 				mint: mint,
@@ -75,8 +75,8 @@ export const useAnchor = () => {
 				expect(e.error.errorCode.code.toUpperCase()).toBe(
 					expectedAnchorError.name.toUpperCase(),
 				);
-				expect(e.error.errorCode.number).toBe(expectedAnchorError.code);
-				expect(e.error.errorMessage).toBe(expectedAnchorError.msg);
+				expect(e.error.errorCode.number).toStrictEqual(expectedAnchorError.code);
+				expect(e.error.errorMessage).toStrictEqual(expectedAnchorError.msg);
 				return;
 			}
 			throw e;

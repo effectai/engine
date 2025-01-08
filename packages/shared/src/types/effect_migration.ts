@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/effect_migration.json`.
  */
 export type EffectMigration = {
-  "address": "BraRBZAVsUaxs46ob4gY5o9JvDHTGppChigyz7qwJm9g",
+  "address": "effectmigration",
   "metadata": {
     "name": "effectMigration",
     "version": "0.1.0",
@@ -42,12 +42,20 @@ export type EffectMigration = {
           "writable": true
         },
         {
-          "name": "claimAccount",
+          "name": "migrationAccount",
           "writable": true
         },
         {
-          "name": "vaultTokenAccount",
-          "writable": true
+          "name": "migrationVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "migrationAccount"
+              }
+            ]
+          }
         },
         {
           "name": "stakeAccount",
@@ -55,11 +63,32 @@ export type EffectMigration = {
         },
         {
           "name": "stakeVaultTokenAccount",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stakeAccount"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "stakingProgram"
+            }
+          }
+        },
+        {
+          "name": "rentReceiver",
+          "writable": true,
+          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
         },
         {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "migrationProgram",
+          "address": "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
         },
         {
           "name": "tokenProgram",
@@ -71,69 +100,12 @@ export type EffectMigration = {
         },
         {
           "name": "stakingProgram",
-          "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw"
+          "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
         }
       ],
       "args": [
         {
-          "name": "sig",
-          "type": "bytes"
-        },
-        {
-          "name": "message",
-          "type": "bytes"
-        }
-      ]
-    },
-    {
-      "name": "claimTokens",
-      "discriminator": [
-        108,
-        216,
-        210,
-        231,
-        0,
-        212,
-        42,
-        64
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "signer": true
-        },
-        {
-          "name": "recipientTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "mint",
-          "writable": true
-        },
-        {
-          "name": "claimAccount",
-          "writable": true
-        },
-        {
-          "name": "vaultAccount",
-          "writable": true
-        },
-        {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
-        },
-        {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "sig",
+          "name": "signature",
           "type": "bytes"
         },
         {
@@ -156,18 +128,29 @@ export type EffectMigration = {
       ],
       "accounts": [
         {
-          "name": "claimAccount",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "vaultAccount",
+          "name": "migrationAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "claimAccount"
+                "path": "mint"
+              },
+              {
+                "kind": "arg",
+                "path": "foreignAddress"
+              }
+            ]
+          }
+        },
+        {
+          "name": "claimVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "migrationAccount"
               }
             ]
           }
@@ -176,13 +159,13 @@ export type EffectMigration = {
           "name": "mint"
         },
         {
-          "name": "payer",
+          "name": "authority",
           "writable": true,
           "signer": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
         },
         {
-          "name": "payerTokens",
+          "name": "userTokenAccount",
           "writable": true
         },
         {
@@ -200,7 +183,7 @@ export type EffectMigration = {
       ],
       "args": [
         {
-          "name": "foreignPublicKey",
+          "name": "foreignAddress",
           "type": "bytes"
         },
         {
@@ -212,87 +195,20 @@ export type EffectMigration = {
           "type": "u64"
         }
       ]
-    },
-    {
-      "name": "createTokenClaim",
-      "discriminator": [
-        47,
-        10,
-        98,
-        54,
-        100,
-        58,
-        22,
-        12
-      ],
-      "accounts": [
-        {
-          "name": "claimAccount",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "vaultAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "claimAccount"
-              }
-            ]
-          }
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
-        },
-        {
-          "name": "payerTokens",
-          "writable": true
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "foreignPublicKey",
-          "type": "bytes"
-        },
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
     }
   ],
   "accounts": [
     {
-      "name": "claimAccount",
+      "name": "migrationAccount",
       "discriminator": [
-        113,
-        109,
-        47,
-        96,
-        242,
-        219,
-        61,
-        165
+        129,
+        168,
+        118,
+        35,
+        238,
+        212,
+        16,
+        172
       ]
     },
     {
@@ -357,53 +273,33 @@ export type EffectMigration = {
     },
     {
       "code": 6009,
-      "name": "invalidForeignPublicKey",
-      "msg": "Invalid Foreign Public Key"
+      "name": "invalidForeignAddress",
+      "msg": "Invalid Foreign Address"
     },
     {
       "code": 6010,
       "name": "invalidStakeStartTime",
       "msg": "Invalid Stake Start Time"
+    },
+    {
+      "code": 6011,
+      "name": "claimingNotStarted",
+      "msg": "Claming not started yet."
     }
   ],
   "types": [
     {
-      "name": "claimAccount",
+      "name": "migrationAccount",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "foreignPublicKey",
+            "name": "foreignAddress",
             "type": "bytes"
           },
           {
-            "name": "claimType",
-            "type": {
-              "defined": {
-                "name": "claimType"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "claimType",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "token",
-            "fields": []
-          },
-          {
-            "name": "stake",
-            "fields": [
-              {
-                "name": "stakeStartTime",
-                "type": "i64"
-              }
-            ]
+            "name": "stakeStartTime",
+            "type": "i64"
           }
         ]
       }
@@ -430,12 +326,12 @@ export type EffectMigration = {
             "type": "i64"
           },
           {
-            "name": "vaultTokenAccount",
-            "type": "pubkey"
+            "name": "weightedAmount",
+            "type": "u128"
           },
           {
-            "name": "xefx",
-            "type": "u128"
+            "name": "mint",
+            "type": "pubkey"
           }
         ]
       }
@@ -445,7 +341,7 @@ export type EffectMigration = {
     {
       "name": "expectedMessage",
       "type": "string",
-      "value": "\"Effect.AI: I confirm that I authorize my tokens to be claimed at the following Solana address: \""
+      "value": "\"Effect.AI: I authorize my tokens to be claimed at the following Solana address\""
     }
   ]
 };

@@ -1,5 +1,5 @@
 export const effect_staking = {
-  "address": "3FPg1CgXQAL6Va3EJ9W14R44cEGqHpATw6ADgkUwSspw",
+  "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e",
   "metadata": {
     "name": "effect_staking",
     "version": "0.1.0",
@@ -24,26 +24,31 @@ export const effect_staking = {
       ],
       "accounts": [
         {
-          "name": "user_token_account",
+          "name": "recipient_token_account",
           "writable": true
         },
         {
-          "name": "stake",
+          "name": "stake_account",
           "writable": true
         },
         {
-          "name": "vault_token_account",
+          "name": "stake_vault_token_account",
           "writable": true,
-          "relations": [
-            "stake"
-          ]
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake_account"
+              }
+            ]
+          }
         },
         {
           "name": "authority",
           "writable": true,
           "signer": true,
           "relations": [
-            "stake"
+            "stake_account"
           ]
         },
         {
@@ -75,18 +80,18 @@ export const effect_staking = {
           "writable": true
         },
         {
-          "name": "stake",
+          "name": "stake_account",
           "writable": true,
           "signer": true
         },
         {
-          "name": "vault_token_account",
+          "name": "stake_vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "stake"
+                "path": "stake_account"
               }
             ]
           }
@@ -135,38 +140,54 @@ export const effect_staking = {
       "accounts": [
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "stake"
-          ]
+          "signer": true
         },
         {
-          "name": "mint",
-          "writable": true
+          "name": "mint"
         },
         {
           "name": "user_token_account",
           "writable": true
         },
         {
-          "name": "stake",
+          "name": "stake_account",
           "writable": true
         },
         {
-          "name": "vault_token_account",
+          "name": "stake_vault_token_account",
           "writable": true,
-          "relations": [
-            "stake"
-          ]
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake_account"
+              }
+            ]
+          }
         },
         {
-          "name": "claim_vault",
-          "writable": true,
-          "signer": true
+          "name": "migration_account"
         },
         {
-          "name": "claim_account",
-          "writable": true
+          "name": "migration_vault_token_account",
+          "writable": true,
+          "signer": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "migration_account"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "migration_program"
+            }
+          }
+        },
+        {
+          "name": "migration_program",
+          "address": "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
         },
         {
           "name": "system_program",
@@ -213,21 +234,26 @@ export const effect_staking = {
           "writable": true
         },
         {
-          "name": "vault_token_account",
-          "writable": true,
-          "relations": [
-            "stake"
-          ]
+          "name": "stake_account",
+          "writable": true
         },
         {
-          "name": "stake",
-          "writable": true
+          "name": "stake_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake_account"
+              }
+            ]
+          }
         },
         {
           "name": "authority",
           "signer": true,
           "relations": [
-            "stake"
+            "stake_account"
           ]
         },
         {
@@ -259,20 +285,43 @@ export const effect_staking = {
       ],
       "accounts": [
         {
-          "name": "stake",
-          "writable": true
-        },
-        {
-          "name": "vault_token_account",
-          "writable": true
-        },
-        {
           "name": "authority",
           "writable": true,
           "signer": true,
           "relations": [
-            "stake"
+            "stake_account"
           ]
+        },
+        {
+          "name": "stake_account",
+          "writable": true
+        },
+        {
+          "name": "stake_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "reward_account",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stake_account"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "reward_program"
+            }
+          }
         },
         {
           "name": "vesting_account",
@@ -280,20 +329,24 @@ export const effect_staking = {
           "signer": true
         },
         {
-          "name": "reward_account",
-          "writable": true
-        },
-        {
-          "name": "vesting_vault_account",
-          "writable": true
+          "name": "vesting_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vesting_account"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "vesting_program"
+            }
+          }
         },
         {
           "name": "recipient_token_account",
           "writable": true
-        },
-        {
-          "name": "vesting_program",
-          "address": "GSzDavs4yP5jqnVTnjjmJ9DJ5yUQ6AB7vBTNv2BBmaSe"
         },
         {
           "name": "system_program",
@@ -304,11 +357,19 @@ export const effect_staking = {
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "mint"
+          "name": "reward_program",
+          "address": "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi"
+        },
+        {
+          "name": "vesting_program",
+          "address": "effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S"
         },
         {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "mint"
         }
       ],
       "args": [
@@ -320,6 +381,19 @@ export const effect_staking = {
     }
   ],
   "accounts": [
+    {
+      "name": "MigrationAccount",
+      "discriminator": [
+        129,
+        168,
+        118,
+        35,
+        238,
+        212,
+        16,
+        172
+      ]
+    },
     {
       "name": "StakeAccount",
       "discriminator": [
@@ -407,11 +481,37 @@ export const effect_staking = {
     },
     {
       "code": 6014,
+      "name": "InvalidVestingAccount",
+      "msg": "Invalid vesting account."
+    },
+    {
+      "code": 6015,
       "name": "StakeNotEmpty",
       "msg": "Stake acount is not empty."
+    },
+    {
+      "code": 6016,
+      "name": "InvalidMint",
+      "msg": "Invalid Mint"
     }
   ],
   "types": [
+    {
+      "name": "MigrationAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "foreign_address",
+            "type": "bytes"
+          },
+          {
+            "name": "stake_start_time",
+            "type": "i64"
+          }
+        ]
+      }
+    },
     {
       "name": "StakeAccount",
       "type": {
@@ -434,12 +534,12 @@ export const effect_staking = {
             "type": "i64"
           },
           {
-            "name": "vault_token_account",
-            "type": "pubkey"
+            "name": "weighted_amount",
+            "type": "u128"
           },
           {
-            "name": "xefx",
-            "type": "u128"
+            "name": "mint",
+            "type": "pubkey"
           }
         ]
       }
@@ -460,6 +560,11 @@ export const effect_staking = {
       "name": "STAKE_MINIMUM_AMOUNT",
       "type": "u64",
       "value": "0"
+    },
+    {
+      "name": "UNSTAKE_DELAY_DAYS",
+      "type": "u64",
+      "value": "7"
     }
   ]
 } as const;
