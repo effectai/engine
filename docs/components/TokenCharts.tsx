@@ -31,6 +31,6 @@ export const data = {
   ],
 };
 
-export function PieChart() {
+export function TokenDistributionPieChart() {
   return <Pie data={data} />;
 }

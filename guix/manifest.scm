@@ -8,4 +8,5 @@
         "bash"
 	"findutils"
         "nss-certs"
-        "sed"))
+        "sed"
+	"git"))

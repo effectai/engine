@@ -26,6 +26,10 @@ export default defineConfig({
 					text: "Glossary",
 					link: "/introduction/glossary",
 				},
+				{
+					text: "Token",
+					link: "/introduction/token",
+				},
 			],
 		},
 		{
