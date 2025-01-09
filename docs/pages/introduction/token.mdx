@@ -12,15 +12,15 @@ following address:
 | Token Address | `EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E` |
 | Standard      | Solana (SPL)                                   |
 | Total Supply  | `520,000,000`                                  |
-| Ticket        | `EFFECT`                                       |
+| Ticker        | `EFFECT`                                       |
 | Decimals      | 6                                              |
 
 ## Snapshot
 
 The EFFECT token was created on 1-1-2025 and is a consolidation of the
-deprecated EFX and NFX network tokens. Anybody that holds more than 5
+deprecated EFX and NFX network tokens. Anybody that held more than 5
 tokens on the 1st of January 2025 at 12PM UTC will have a claimable
-EFFECT token allocation. For information on the claim process please
+EFFECT token allocation on Solana. For information on the claim process please
 read the announcement:
 
 https://effect.ai/news/new-effect-token
@@ -59,7 +59,7 @@ following way:
 (el, idx) => {
   return [<h3 class="vocs_H3 vocs_Heading">{el[0]}</h3>,
   <strong class="vocs_Strong">Amount: </strong>,
-  <span> {Math.floor(data.datasets[0].data[idx]/1000000)}M, {Math.round(data.datasets[0].data[idx]/520000000.0 * 100)}%</span>,
+  <span> {Math.floor(data.datasets[0].data[idx]/1000000)}M ({Math.round(data.datasets[0].data[idx]/520000000.0 * 100)}%)</span>,
   <div>{el[1]}</div>]
   })
 }
