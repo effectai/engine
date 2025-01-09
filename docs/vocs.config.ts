@@ -100,7 +100,7 @@ export default defineConfig({
 			items: [
 				{
 					text: 'Socials',
-					link: '/community/social-media',
+					link: '/community/socials',
 				},
 				{
 					text: 'Community Guidelines',
