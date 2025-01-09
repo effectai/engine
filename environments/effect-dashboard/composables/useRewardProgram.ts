@@ -7,6 +7,7 @@ import { useWallet } from "solana-wallets-vue";
 import { useDeriveRewardAccounts, useDeriveStakingRewardAccount } from "@effectai/utils";
 import { createAssociatedTokenAccountIdempotentInstructionWithDerivation, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import type { VestingAccount } from "./useVestingProgram";
 
 export const useRewardProgram = () => {
 	const { provider } = useAnchorProvider();
@@ -21,6 +22,7 @@ export const useRewardProgram = () => {
 
     const appConfig = useRuntimeConfig();
     const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
+	const {vestingProgram} = useVestingProgram();
 
 	const queryClient = useQueryClient();
 
@@ -45,6 +47,7 @@ export const useRewardProgram = () => {
 				const vaultAccount = connection.getTokenAccountBalance(
 					reflectionVaultAccount,
 				)
+				
 
 				return {reflectionAccont: account, vaultAccount};
 			},
@@ -62,7 +65,9 @@ export const useRewardProgram = () => {
 			},
 			mutationFn: async ({
 				stakeAccount,
+				vestingRewardAccount
 			}: {
+				vestingRewardAccount: VestingAccount;
 				stakeAccount: StakingAccount;
 			}) => {
 				if (!publicKey.value) {
@@ -74,6 +79,16 @@ export const useRewardProgram = () => {
 				return await rewardsProgram.value.methods
 					.claim()
 					.preInstructions([
+						// claim vestment
+						(await vestingProgram.value.methods.claim().accounts({
+							vestingAccount: vestingRewardAccount.publicKey,
+						}).instruction()),
+
+						// topup rewards
+						(await rewardsProgram.value.methods.topup().accounts({
+							mint: mint,
+						}).instruction()),
+
 						...((await connection.getAccountInfo(ata))
 							? []
 							: [
@@ -95,7 +110,7 @@ export const useRewardProgram = () => {
 
 	const useGetRewardAccount = (stakeAccount: Ref<StakingAccount | undefined>) => {
 		return useQuery({
-			queryKey: ["rewardAccount", publicKey.value, "claim"],
+			queryKey: ["rewardAccount", publicKey, "claim"],
 			enabled: computed(() => !!stakeAccount.value),
 			queryFn: async () => {
 				if (!publicKey.value) {
@@ -119,9 +134,14 @@ export const useRewardProgram = () => {
 		});
 	};
 
+	const {intermediaryReflectionVaultAccount} = useDeriveRewardAccounts({
+		programId: rewardsProgram.value.programId,
+		mint: mint,
+	})
 
 	return {
 		rewardsProgram,
+		intermediaryReflectionVaultAccount,
 		useClaimRewards,
         useGetRewardAccount,
         useGetReflectionAccount

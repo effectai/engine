@@ -54,7 +54,7 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
 		const { publicKey } = useWallet();
 
 		return useQuery({
-			queryKey: ["efx-balance", publicKey.value, "stake"],
+			queryKey: ["efx-balance", publicKey, "stake"],
 			enabled: computed(() => !!publicKey.value !== null),
 			queryFn: async () => {
 
@@ -80,17 +80,21 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
 		});
 	};
 
-	const useGetTokenAccountBalanceQuery = (account: PublicKey) => {
+	const useGetTokenAccountBalanceQuery = (account: Ref<PublicKey | undefined>) => {
 		return useQuery({
-			queryKey: ["token-account-balance", account.toBase58( )],
-			enabled: computed(() => !!account !== null),
+			queryKey: ["token-account-balance", account, account.value?.toBase58()],
+			enabled: computed(() => !!account.value !== null),
 			queryFn: async () => {
 				if (!publicKey.value) {
 					throw new Error("No public key");
 				}
 
+				if(!account.value) {
+					throw new Error("No account");
+				}
+
 				try {
-					const balance = await connection.getTokenAccountBalance(account);
+					const balance = await connection.getTokenAccountBalance(account.value);
 					return {
 						value: balance.value.uiAmount || 0,
 						symbol: "EFFECT",

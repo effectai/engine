@@ -50,7 +50,7 @@ const { vestingVaultAccount } = useDeriveVestingAccounts({
     programId: vestingProgram.value.programId,
 })
 
-const { data: balance } = useGetTokenAccountBalanceQuery(vestingVaultAccount)
+const { data: balance } = useGetTokenAccountBalanceQuery(ref(vestingVaultAccount))
 
 const scheduleStarted = (timestamp: BN) => {
     return Date.now() > timestamp.toNumber() * 1000

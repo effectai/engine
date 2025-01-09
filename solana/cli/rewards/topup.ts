@@ -4,27 +4,16 @@ import chalk from "chalk";
 import { loadProvider } from "../../utils/provider";
 
 import type { CommandModule } from "yargs";
-import {
-	createKeypairFromFile,
-	useDeriveRewardAccounts,
-} from "@effectai/utils";
 import { PublicKey } from "@solana/web3.js";
-import { getAssociatedTokenAddressSync, transfer } from "@solana/spl-token";
 
 export const rewardsAddFee: CommandModule<
 	unknown,
 	{ mint: string; amount: number }
 > = {
 	describe: "Top up the reflection account",
-	command: "rewards topup",
+	command: "topup",
 	builder: (yargs) =>
 		yargs
-			.option("amount", {
-				type: "number",
-				requiresArg: true,
-				description:
-					"The amount of tokens to be sent to the reflection account",
-			})
 			.option("mint", {
 				type: "string",
 				requiresArg: true,
@@ -34,46 +23,10 @@ export const rewardsAddFee: CommandModule<
 	handler: async ({ mint, amount }) => {
 		const { payer, provider } = await loadProvider();
 
-		const mintKey = new PublicKey(mint);
-
 		const rewardProgram = new anchor.Program(
 			EffectRewardsIdl as anchor.Idl,
 			provider,
 		) as unknown as anchor.Program<EffectRewards>;
-
-		const { intermediaryReflectionVaultAccount } = useDeriveRewardAccounts({
-			mint: mintKey,
-			programId: rewardProgram.programId,
-		});
-
-		// get ata for the mint
-		const ata = getAssociatedTokenAddressSync(mintKey, payer.publicKey);
-
-		// check if intermediary reflection vault exists
-		const ataInfo = await provider.connection.getAccountInfo(
-			intermediaryReflectionVaultAccount,
-		);
-		if (!ataInfo) {
-			// create
-			await rewardProgram.methods
-				.initIntermediaryVault()
-				.accounts({
-					mint,
-				})
-				.rpc();
-		}
-
-		// transfer the tokens to the reflection account
-		await transfer(
-			provider.connection,
-			payer,
-			ata,
-			intermediaryReflectionVaultAccount,
-			payer,
-			amount,
-		);
-
-		console.log("Tokens transferred to reflection account");
 
 		const result = await rewardProgram.methods
 			.topup()
@@ -82,6 +35,6 @@ export const rewardsAddFee: CommandModule<
 			})
 			.rpc();
 
-		console.log(chalk.green.bold(`topup successfull tx: ${result}`));
+		console.log(chalk.green.bold(`topup tx: ${result}`));
 	},
 };

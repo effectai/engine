@@ -93,9 +93,38 @@ export const useVestingProgram = () => {
 		});
 	};
 
+	const useGetActiveRewardVestingAccount = () => {
+		return useQuery({
+			queryKey: ["activeRewardVestingAccount"],
+			queryFn: async () => {
+				const config = useRuntimeConfig();
+				const ACTIVE_REWARD_VESTING_ACCOUNT = new PublicKey(
+					config.public.EFFECT_ACTIVE_REWARD_VESTING_ACCOUNT,
+				);
+				const data = await vestingProgram.value.account.vestingAccount.fetch(
+					ACTIVE_REWARD_VESTING_ACCOUNT,
+				);
+
+				const {vestingVaultAccount} = useDeriveVestingAccounts({
+					vestingAccount: ACTIVE_REWARD_VESTING_ACCOUNT,
+					programId: vestingProgram.value.programId,
+				});
+
+				return {
+					vestingVaultAccount,
+					account: data,
+					publicKey: ACTIVE_REWARD_VESTING_ACCOUNT,
+				};
+			},
+		});
+
+
+	};
+
 	return {
 		useClaim,
 		useGetVestingAccounts,
 		vestingProgram,
+		useGetActiveRewardVestingAccount,
 	};
 };

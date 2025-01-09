@@ -3,17 +3,17 @@
         <HeroSection id="main-hero"
             :style="`margin-top: -75px; padding-top: 5rem; background-image: url('./img/hero-background.png')`">
             <template #title>
-                <h1 class="title mb-6 is-size-1-tablet is-size-3
+                <h1 class="title mb-6 is-size-2-tablet is-size-3
                 has-text-dark
                 has-text-weight-light is-auto-phrase">
                     <span>
-                        Unleashing
+                        Supercharging
                     </span>
                     <span>
-                        Decentralized
+                        AI Agents
                     </span>
                     <span>
-                        Intelligence
+                        with Human Intelligence
                     </span>
                 </h1>
             </template>
@@ -21,9 +21,8 @@
             <template #subtitle>
                 <p class="subtitle mb-5 has-text-dark">
                     <span class="pr-6">
-                        Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.
-                        Worker nodes, manager nodes, provider nodes—plug in, get tasks done, and thrive in a trustless
-                        network.
+                        Effect AI is a permissionless protocol designed to supply, assign,
+                        and execute human-driven AI tasks, supercharging <b>AI agents</b> & <b>LLM models</b> to achieve next-level performance and accuracy.
                     </span>
                 </p>
             </template>
@@ -33,9 +32,9 @@
                     <div class="columns is-mobile is-vcentered is-multiline">
                         <div class="column">
                             <div class="">
-                                <nuxt-link class="is-flex" to="https://app.effect.ai/" exact-active-class="is-active">
+                                <nuxt-link class="is-flex" to="https://docs.effect.ai/" exact-active-class="is-active">
                                     <button class="button is-black is-rounded is-outlined is-flex is-medium"
-                                        style="gap:14px; font-weight: 400;">Launch app
+                                        style="gap:14px; font-weight: 400;">Documentation
                                         <span class="icon">
                                             <i class="icon">
                                                 <svg width="14" height="15" viewBox="0 0 14 15" fill="none"
@@ -52,7 +51,7 @@
                         </div>
                         <div class="column">
                             <nuxt-link class="is-flex" to="https://dao.effect.network" exact-active-class="is-active">
-                                <button class="button is-black is-rounded is-flex is-medium" style="gap:10px">DAO
+                                <button class="button is-black is-rounded is-flex is-medium" style="gap:10px">
                                     Governance
                                 </button>
                             </nuxt-link>
@@ -67,7 +66,7 @@
         <div class="container">
             <div class="is-flex is-justify-content-center is-flex-direction-column">
                 <h2 class="is-flex is-justify-content-center is-size-3 has-text-weight-medium has-text-primary has-text-left">The New $EFFECT Token</h2>
-                <p class="is-justify-content-center my-5 has-text-centered">Starting today, you can claim your EFFECT tokens via the official Claim Portal at <a href="https://portal.effect.ai">portal.effect.ai</a>.</p>
+                <p class="is-justify-content-center my-5 has-text-centered">Starting January 5th 2025, you can claim your EFFECT tokens via the official Claim Portal at <a href="https://portal.effect.ai">portal.effect.ai</a>.</p>
                 <nuxt-link class="is-flex is-justify-content-center" to="https://portal.effect.ai" exact-active-class="is-active">
                     <button class="button is-black is-rounded is-flex is-medium" style="gap:10px">
                         Go to Portal

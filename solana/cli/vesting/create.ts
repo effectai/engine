@@ -7,8 +7,12 @@ import { createVesting } from "../../utils/vesting";
 import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
 
 import { askForConfirmation } from "../utils";
-import { createTransferCheckedInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import {
+	createTransferCheckedInstruction,
+	getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
 import { BN } from "bn.js";
+import chalk from "chalk";
 
 export const vestingCreateCommand: CommandModule<
 	unknown,
@@ -69,6 +73,8 @@ export const vestingCreateCommand: CommandModule<
 - starts on: ${startTimeReadable}
 - until:  ${durationReadable}
 - tokens released per second: ${amount / duration}
+- tokens released per hour: ${amount / (duration / 3600)}
+- tokens released per day: ${amount / (duration / 86400)}
 
 Please confirm`,
 		);
@@ -106,10 +112,10 @@ Please confirm`,
 			microLamports: 100_000,
 		});
 
-        const ata = getAssociatedTokenAddressSync(
-            new PublicKey(mint),
-            payer.publicKey,
-        )
+		const ata = getAssociatedTokenAddressSync(
+			new PublicKey(mint),
+			payer.publicKey,
+		);
 
 		const topupTransaction = new Transaction().add(
 			priorityFee,
@@ -133,6 +139,8 @@ Please confirm`,
 			await provider.connection.getLatestBlockhash()
 		).blockhash;
 		topupTransaction.feePayer = payer.publicKey;
-		await provider.sendAndConfirm(topupTransaction, [payer]);
+		const topupTx = await provider.sendAndConfirm(topupTransaction, [payer]);
+
+		console.log(chalk.green(`Topup successful, tx: ${topupTx}`));
 	},
 };

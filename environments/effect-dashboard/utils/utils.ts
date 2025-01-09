@@ -68,3 +68,22 @@ export function calculatePendingRewards({
 	const reward = reflection.div(rate).sub(weightedAmount);
 	return +(reward.toNumber() / 1e6).toFixed(4);
 }
+
+export const calculateDue = (
+    startTime: number,
+    releaseRate: number,
+    distributedTokens: number,
+    amountAvailable: number
+): number => {
+    // get now as a unix timestamp
+    const now = Math.floor(new Date().getTime() / 1000);
+
+    if(now < startTime) {
+        return 0;
+    }
+
+    const poolAmount = (now - startTime) * releaseRate;
+
+    const amountDue = poolAmount - distributedTokens;
+    return Math.min(amountDue, amountAvailable * 1_000_000);
+}

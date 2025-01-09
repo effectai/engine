@@ -99,7 +99,6 @@ const isValid = computed(() => {
 });
 
 const handleSubmit = async () => {
-
     if (!stakeAccount.value) {
         throw new Error('No stake account found');
     }
