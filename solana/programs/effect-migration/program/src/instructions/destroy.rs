@@ -31,6 +31,7 @@ pub struct Destroy<'info> {
     #[account(
         mut,
         token::mint = mint,
+        token::authority = ADMIN_AUTHORITY,
     )]
     pub user_token_account: Account<'info, TokenAccount>,
 
