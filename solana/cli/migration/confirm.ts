@@ -4,13 +4,6 @@ import type { EffectMigration } from "../../target/types/effect_migration";
 import EffectMigrationIdl from "../../target/idl/effect_migration.json";
 import * as anchor from "@coral-xyz/anchor";
 import chalk from "chalk";
-import { BN } from "bn.js";
-import {
-	getAssociatedTokenAddress,
-	getAssociatedTokenAddressSync,
-} from "@solana/spl-token";
-const csv = require("csvtojson");
-import readline from "node:readline";
 import { writeFileSync, readFileSync } from "fs";
 import { PublicKey as SolanaPublicKey } from "@solana/web3.js";
 import {
@@ -18,23 +11,10 @@ import {
 	useDeriveMigrationAccounts,
 } from "@effectai/utils";
 import { toBytes } from "viem";
-interface ParsedRow {
-	account: string;
-	foreign_key: string;
-	tag: string;
-	last_claim_time: string;
-	last_claim_age: number;
-	type: string;
-	efx: number;
-	nfx: number;
-	staked_efx: number;
-	staked_nfx: number;
-	claim_amount: number;
-}
 
 export const confirmMigrationCommand: CommandModule<
 	unknown,
-	{ distribution_file: string }
+	{ distribution_file: string, mint: string }
 > = {
 	describe: "Distributes the migration accounts based on a csv file",
 	command: "confirm",
@@ -46,12 +26,13 @@ export const confirmMigrationCommand: CommandModule<
 				description: "The mint address of the token to distribute",
 			})
 			.option("distribution_file", {
+				demandOption: true,
 				type: "string",
 				description: "The path to the distribution file",
 			});
 	},
 	handler: async ({ mint, distribution_file }) => {
-		const { payer, provider } = await loadProvider();
+		const { provider } = await loadProvider();
 
 		const migrationProgram = new anchor.Program(
 			EffectMigrationIdl as anchor.Idl,

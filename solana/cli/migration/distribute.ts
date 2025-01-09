@@ -151,11 +151,11 @@ export const distributeMigrationCommand: CommandModule<
 							});
 
 							console.log(
-								`Topping up ${row.foreign_key} with ${row.amount} EFFECT...`,
+								`Topping up ${vaultAccount.toBase58()} with ${row.amount} EFFECT...`,
 							);
 
 							const priorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-								microLamports: 50_000,
+								microLamports: 100_000,
 							});
 
 							try {
@@ -180,6 +180,14 @@ export const distributeMigrationCommand: CommandModule<
 								writeFileSync(distribution_file, JSON.stringify(rows, null, 2));
 							} catch (e: unknown) {
 								if (e instanceof Error) {
+									if(e.message.includes("Transaction was not confirmed in")){
+										const signature = extractSignatureFromMessage(e.message);
+										if(signature) {
+											row.tx = signature;
+											row.status = 1; // mark as to be confirmed
+											writeFileSync(distribution_file, JSON.stringify(rows, null, 2));
+										}
+									}
 									console.log(
 										`Error topping up ${row.foreign_key} with ${row.amount} EFFECT`,
 									);
@@ -200,6 +208,14 @@ export const distributeMigrationCommand: CommandModule<
 		}
 	},
 };
+
+function extractSignatureFromMessage(message: string): string | null {
+	// Regular expression to find a base58-like signature (e.g., Solana transaction signatures)
+	const signatureRegex = /Check signature (\w+)/;
+	const match = message.match(signatureRegex);
+	return match ? match[1] : null;
+}
+  
 
 function askForConfirmation(question: string): Promise<boolean> {
 	const rl = readline.createInterface({
