@@ -20,12 +20,6 @@ The data lifecycle of the Effect AI protocol consists of four main stages: batch
 - **Task Execution**: The third stage in the lifecycle of a task. Worker nodes receive tasks from manager nodes, complete them, and submit the results back to the manager nodes for validation.
 - **Task Completion**: The final stage in the data lifecycle. Once all tasks in a batch are validated and completed, rewards are distributed to both managers and workers, and the protocol settles the batch on-chain using ZK-rollups.
 
-For a more detailed explanation and visual representation of the data lifecycle, check out a more detailed explanation [here](/protocol/data-lifecycle.mdx).
-
-## Settlement
-The protocol uses cutting-edge ZK-Rollups (Zero-Knowledge Rollups) for on-chain settlement. This allows the network to batch multiple completed tasks into a single proof, dramatically reducing the computational and storage demands on the blockchain.
-
-Each task completed by a worker node generates a proof of work, encapsulating task completion details and validation metrics. These proofs are aggregated by the manager node, forming a single submission that is included in the zk-rollup proof. This process guarantees that: Tasks have been completed according to the requirements set by the provider node. Validations are accurate and meet the protocol's standards. Workers are rewarded accurately and payment is openly verifiable. For a deeper dive into the settlement process, check out the detailed explanation [here](/protocol/settlements.mdx).
-
+![image](../../../diagrams/sequence.png)
 
 
