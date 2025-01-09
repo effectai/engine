@@ -28,17 +28,24 @@ const createReflectionAcount = async ({
 		})
 		.rpc();
 
-	const [reflectionVault] = PublicKey.findProgramAddressSync(
-		[Buffer.from("vault")],
-		program.programId,
-	);
+	await program.methods.initIntermediaryVault().accounts({mint}).rpc();
 
 	const [reflectionAccount] = PublicKey.findProgramAddressSync(
-		[Buffer.from("reflection")],
+		[Buffer.from("reflection"), mint.toBuffer()],
 		program.programId,
 	);
 
-	return [reflectionAccount, reflectionVault];
+	const [reflectionVault] = PublicKey.findProgramAddressSync(
+		[reflectionAccount.toBuffer()],
+		program.programId,
+	);
+
+	const [intermediaryReflectionVaultAccount] = PublicKey.findProgramAddressSync(
+		[reflectionVault.toBuffer()],
+		program.programId,
+	);
+
+	return [reflectionAccount, reflectionVault, intermediaryReflectionVaultAccount];
 };
 
 const seed = async () => {
@@ -67,10 +74,13 @@ const seed = async () => {
 	// also mint some tokens to the dummy account for staking
 
 	// create reflection account
-	const [reflectionAccount, reflectionVault] = await createReflectionAcount({
+	const [reflectionAccount, reflectionVault, intermediaryReflectionVaultAccount] = await createReflectionAcount({
 		mint,
 		ata,
 	});
+
+	console.log("reflection account", reflectionAccount.toBase58());
+	console.log("intermediaryReflectionVaultAccount", intermediaryReflectionVaultAccount.toBase58());
 };
 
 // deploy

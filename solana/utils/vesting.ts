@@ -1,9 +1,7 @@
 import { Keypair, type PublicKey } from "@solana/web3.js";
 import type * as anchor from "@coral-xyz/anchor";
 import { BN } from "bn.js";
-import { SECONDS_PER_DAY } from "../tests/helpers";
-import type { EffectStaking } from "../target/types/effect_staking";
-import { EffectVesting } from "../target/types/effect_vesting";
+import type { EffectVesting } from "../target/types/effect_vesting";
 import { useDeriveVestingAccounts } from "@effectai/utils";
 
 export const createVesting = async ({
