@@ -80,7 +80,13 @@ export function useStakingProgram() {
 						addPriorityFee,
 						...((await connection.getAccountInfo(stakingRewardAccount))
 							? [
-									await rewardsProgram.value.methods.claim().instruction(),
+									await rewardsProgram.value.methods
+										.claim()
+										.accounts({
+											stakeAccount: stakeAccount.publicKey,
+											recipientTokenAccount: ata,
+										})
+										.instruction(),
 									await rewardsProgram.value.methods
 										.close()
 										.accounts({
