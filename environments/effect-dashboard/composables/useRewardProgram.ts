@@ -6,7 +6,7 @@ import type { StakingAccount } from "./useStakingProgram";
 import { useWallet } from "solana-wallets-vue";
 import { useDeriveRewardAccounts, useDeriveStakingRewardAccount } from "@effectai/utils";
 import { createAssociatedTokenAccountIdempotentInstructionWithDerivation, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
+import { ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
 import type { VestingAccount } from "./useVestingProgram";
 
 export const useRewardProgram = () => {
@@ -76,9 +76,14 @@ export const useRewardProgram = () => {
 
 				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
+				const priorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+					microLamports: 100_000,
+				});
+
 				return await rewardsProgram.value.methods
 					.claim()
 					.preInstructions([
+						priorityFee,
 						// claim vestment
 						(await vestingProgram.value.methods.claim().accounts({
 							vestingAccount: vestingRewardAccount.publicKey,

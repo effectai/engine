@@ -155,6 +155,7 @@ const { data: balance } = useGetTokenAccountBalanceQuery(vestingVaultAccount);
 const { data: intermediaryVaultBalance } = useGetTokenAccountBalanceQuery(
 	ref(intermediaryReflectionVaultAccount),
 );
+
 const pendingRewards = computed(() => {
 	if (!rewardAccount.value || !reflectionAccount.value) return 0;
 

@@ -1,4 +1,4 @@
-import { Keypair, type PublicKey } from "@solana/web3.js";
+import { ComputeBudgetProgram, Keypair, type PublicKey } from "@solana/web3.js";
 import type * as anchor from "@coral-xyz/anchor";
 import { BN } from "bn.js";
 import type { EffectVesting } from "../target/types/effect_vesting";
@@ -31,6 +31,10 @@ export const createVesting = async ({
 		programId: program.programId,
 	})
 
+	const priorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+		microLamports: 100_000,
+	});
+
 	await program.methods
 		.open(
 			new BN(releaseRate),
@@ -38,6 +42,9 @@ export const createVesting = async ({
 			isClosable,
 			Array.from(tag).map((c) => c.charCodeAt(0)),
 		)
+		.preInstructions([
+			priorityFee
+		])
 		.accounts({
 			vestingAccount: vestingAccount.publicKey,
 			authority: payer.publicKey,

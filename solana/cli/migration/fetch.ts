@@ -24,7 +24,7 @@ export const fetchMigrationAccount: CommandModule<
 
 
 		const {migrationAccount} = useDeriveMigrationAccounts({
-			foreignAddress: toBytes("0xf4b4a3136fd1A9709A427F94a42c23387dFa2e2b"),
+			foreignAddress: toBytes("0xc94e55f616fc144087093ada3924b4af5ee4d5cf"),
 			mint: new PublicKey("EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E"),
 			programId: migrationProgram.programId,
 		})
