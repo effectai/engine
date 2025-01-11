@@ -26,10 +26,7 @@ export default defineConfig({
 					text: "Glossary",
 					link: "/introduction/glossary",
 				},
-				{
-					text: "Token",
-					link: "/introduction/token",
-				},
+				
 			],
 		},
 		{
@@ -39,85 +36,82 @@ export default defineConfig({
 					text: "Core Concepts",
 					link: "/protocol/core-concepts",
 				},
-
 				{
-					text: "Nodes",
-					items: [
-						{
-							text: "Provider",
-							link: "/protocol/nodes/provider-node",
-						},
-						{
-							text: "Manager",
-							link: "/protocol/nodes/manager-node",
-						},
-						{
-							text: "Worker",
-							link: "/protocol/nodes/worker-node",
-						},
-					],
+					text: "Token",
+					link: "/token",
 				},
 				{
-					text: "Data Lifecycle",
-					link: "/protocol/data-lifecycle",
+					text: "Staking",
+					link: "/protocol/staking",
 				},
-				{
-					text: "Settlements",
-					link: "/protocol/settlements",
-				},
-				{
-					text: "Incentives",
-					link: "/protocol/incentives",
-					items: [
-						{
-							text: "Static Income",
-							link: "/protocol/incentives#static-income",
-						},
-						{
-							text: "Penalties",
-							link: "/protocol/incentives#penalties",
-						},
-						{
-							text: "Staking",
-							link: "/protocol/incentives#staking",
-						},
-						{
-							text: "Fees",
-							link: "/protocol/incentives#fees",
-						},
-					],
-				},
+				// {
+				// 	text: "Nodes",
+				// 	items: [
+				// 		{
+				// 			text: "Provider",
+				// 			link: "/protocol/nodes/provider-node",
+				// 		},
+				// 		{
+				// 			text: "Manager",
+				// 			link: "/protocol/nodes/manager-node",
+				// 		},
+				// 		{
+				// 			text: "Worker",
+				// 			link: "/protocol/nodes/worker-node",
+				// 		},
+				// 	],
+				// },
+				// {
+				// 	text: "Data Lifecycle",
+				// 	link: "/protocol/data-lifecycle",
+				// },
+				
+				// {
+				// 	text: "Incentives",
+				// 	link: "/protocol/incentives",
+				// 	items: [
+				// 		{
+				// 			text: "Static Income",
+				// 			link: "/protocol/incentives#static-income",
+				// 		},
+				// 		{
+				// 			text: "Penalties",
+				// 			link: "/protocol/incentives#penalties",
+				// 		},
+				// 		{
+				// 			text: "Staking",
+				// 			link: "/protocol/incentives#staking",
+				// 		},
+				// 		{
+				// 			text: "Fees",
+				// 			link: "/protocol/incentives#fees",
+				// 		},
+				// 	],
+				// },
 				{
 					text: "Governance",
-					items: [
-						{
-							text: "Proposals",
-							link: "/protocol/governance#proposals",
-						},
-						{
-							text: "Dispute Resolution",
-							link: "/protocol/governance#dispute-resolution",
-						},
-					
-					],
+					link: "/protocol/governance",
 				},
 				
 			],
 		},
 		{
-			text: "Setting up Nodes",
+			text: 'Community',
 			items: [
 				{
-					text: "Provider Node",
+					text: 'Socials',
+					link: '/community/socials',
 				},
 				{
-					text: "Manager Node",
+					text: 'Community Guidelines',
+					link: '/community/guidelines',
 				},
 				{
-					text: "Worker Node",
+					text: 'Contributing',
+					link: '/community/contributing',
 				},
 			],
-		},
+		}
 	],
 	title: "Effect AI",
 });

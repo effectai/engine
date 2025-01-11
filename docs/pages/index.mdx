@@ -1,22 +1,26 @@
 # Effect AI Overview
-Effect AI is a permissionless protocol used to supply, assign and execute human-driven AI tasks across a distributed network. Designed with versatility in mind, the protocol shines as a *human middleware layer*, integrating with **AI Agents** & **Pipelines** to substantially improve the quality and reliability of their outputs.
+Effect AI is a permissionless protocol used to supply, assign and execute human-driven AI tasks across a distributed network. Designed with versatility in mind, the protocol shines as a *human middleware layer*, integrating with **AI Agents** & **LLM Pipelines** to substantially improve the quality and reliability of their outputs.
 
-Now that AI agents have officially entered our realm, the importance of human input is more important than ever. In recent years the role of human input has shifted drastically, where it was first required to create training datasets and enhance digital signals produced by AI, human input is now gravitating towards 3 verticals:
+Now that AI agents have officially entered our realm, human input is now more important than ever. In recent years the role of human input has shifted drastically, where it was first required to create training datasets and enhance digital signals produced by AI, human input is now gravitating towards 3 different verticals:
 
-1. **Safety**. AI agents are often driven by statistical models with an imperfect representation of our world. Many real-world applications can not operate on the uncertainty that these models bring, and require validation. 
-2. **Fine-tuning** and **Prompting**. Domain experts are able to improve the output of AI models by fine tuning them on specific datasets and using specific ways of prompting.
-3. **Embodiment**. Agents are not able to operate in the real world - they do not own credit cards, do not own hardware, and are not citizens. Human input is required for agents to operate and to realize goals in the physical world.
+1. **Safety and Reliability**. AI agents are driven by statistical models that often struggle with uncertainty or incomplete data, which can lead to faulty decisions. Many real-world applications demand validation to ensure reliability and prevent errors. Incorporating a human-in-the-loop approach—where agents can seek clarification or confirm uncertainties—can significantly improve both 
+safety and accuracy.
+
+2. **Enhancing Outputs**. Domain experts are able to improve the output of AI models by fine tuning them on specific datasets and using specific ways of prompting.
+
+3. **Real-World Limitations**. While AI agents are designed to operate independently and collaborate with other agents, they lack the physical presence and legal standing needed to act in the real world. They cannot own credit cards, hardware, or citizenship. Human input is crucial for bridging this gap, allowing agents to achieve physical-world goals and execute tasks beyond their inherent limitations.
+
+
 
 ## How It Works
 At its core, the Effect AI Protocol is a network of three primary node types: **Provider Nodes**, **Manager Nodes**, and **Worker Nodes**. These nodes work together to supply, assign and execute human driven AI tasks.
 
-- **Provider Nodes** broadcast a series of tasks to the network. These tasks are bundled into batches, each with a unique ID, description, and reward. Provider nodes are responsible for funding these batches and verifying the results once they are completed.
+- **Provider Nodes** are the source of tasks flowing into the network, these are tasks coming from AI agents, LLMs, or any other source that requires human input. Provider nodes are responsible for creating task batches, creating escrows on chain, and distributing them to the network.
 
 - **Manager Nodes** reserve these batches, and start managing them, delegating each tasks to available worker nodes in the network, once the task is completed, the manager node is responsible for verifying the task accuracy and distributing rewards to the worker nodes.
 
 - **Worker Nodes** receive tasks from manager nodes, complete them, and submit the results back to the manager nodes for validation. 
 
-Effect AI delivers a powerful network where the value of human input is clearly represented. It is the intersection where humans and AI can operate together safely and for mutual benefit.
 
 ## Core Use Cases
 

@@ -36,7 +36,7 @@ export type WalletBase = {
 // Target Chain Wallet Adapter Type (solana) 
 export type TargetWalletAdapter = WalletBase & {
     useGetBalanceQuery: (account?: Ref<PublicKey | null | string>) => UseQueryReturnType<FormattedBalanceReturnType, Error>;
-    useGetTokenAccountBalanceQuery: (account: PublicKey) => UseQueryReturnType<FormattedBalanceReturnType, Error>;
+    useGetTokenAccountBalanceQuery: (account: Ref<PublicKey | null | undefined>) => UseQueryReturnType<FormattedBalanceReturnType, Error>;
 }
 
 export type SourceWallet = WalletBase & {

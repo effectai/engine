@@ -81,6 +81,13 @@ export function useStakingProgram() {
 						...((await connection.getAccountInfo(stakingRewardAccount))
 							? [
 									await rewardsProgram.value.methods
+										.claim()
+										.accounts({
+											stakeAccount: stakeAccount.publicKey,
+											recipientTokenAccount: ata,
+										})
+										.instruction(),
+									await rewardsProgram.value.methods
 										.close()
 										.accounts({
 											stakeAccount: stakeAccount.publicKey,
@@ -186,10 +193,8 @@ export function useStakingProgram() {
 			},
 			mutationFn: async ({
 				amount,
-				unstakeDays,
 			}: {
 				amount: number;
-				unstakeDays: number;
 			}) => {
 				if (!publicKey.value) {
 					throw new Error("Could not get public key");
@@ -239,8 +244,6 @@ export function useStakingProgram() {
 				if (!publicKey.value) {
 					throw new Error("Could not get public key");
 				}
-
-				console.log("publicKey.value", publicKey.value.toBase58());
 
 				const stakingAccounts =
 					await stakeProgram.value.account.stakeAccount.all([

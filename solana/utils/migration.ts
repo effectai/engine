@@ -3,6 +3,7 @@ import {
 	type PublicKey,
 	SystemProgram,
 	SYSVAR_RENT_PUBKEY,
+	ComputeBudgetProgram,
 } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "bn.js";
@@ -92,11 +93,13 @@ export const createMigrationClaim = async ({
 	amount: number;
 	stakeStartTime: number;
 }) => {
-	const claimAccount = new Keypair();
-
 	if (!stakeStartTime) {
 		throw new Error("stakeStartTime is required for stake");
 	}
+
+	const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+		microLamports: 100_000,
+	});
 
 	await program.methods
 		.createStakeClaim(
@@ -104,6 +107,9 @@ export const createMigrationClaim = async ({
 			new BN(stakeStartTime),
 			new BN(amount),
 		)
+		.preInstructions([
+			addPriorityFee
+		])
 		.accounts({
 			userTokenAccount,
 			mint,

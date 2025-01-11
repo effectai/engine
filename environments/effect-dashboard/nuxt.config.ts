@@ -15,6 +15,7 @@ export default defineNuxtConfig({
       EFFECT_SPL_TOKEN_MINT: process.env.EFFECT_SPL_TOKEN_MINT,
       EFFECT_SNAPSHOT_DATE: process.env.EFFECT_SNAPSHOT_DATE,
       EFFECT_SOLANA_RPC_NODE_URL: process.env.EFFECT_SOLANA_RPC_NODE_URL,
+      EFFECT_ACTIVE_REWARD_VESTING_ACCOUNT: process.env.EFFECT_ACTIVE_REWARD_VESTING_ACCOUNT,
     }
   },
   devtools: { enabled: false },

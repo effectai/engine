@@ -5,7 +5,7 @@ import { Pie } from 'react-chartjs-2';
 ChartJS.register(ArcElement, Tooltip, Legend, Colors);
 
 export const data = {
-  labels: ['EFX Holders', 'NFX Holders', 'Staking Incentives', 'DAO Treasury', 'Liquidity & Parnterships', 'Development Fund', 'Migration Reserve'],
+  labels: ['EFX Holders', 'NFX Holders', 'Staking Incentives', 'DAO Treasury', 'Liquidity & Partnerships', 'Development Fund', 'Migration Reserve'],
   datasets: [
     {
       label: 'Tokens',

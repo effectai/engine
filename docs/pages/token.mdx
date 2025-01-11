@@ -1,4 +1,4 @@
-import { TokenDistributionPieChart, data } from '../../components/TokenCharts.tsx'
+import { TokenDistributionPieChart, data } from '../components/TokenCharts.tsx'
 
 # Token
 
@@ -58,8 +58,8 @@ following way:
   ['Migration Reserve',
    'These tokens are reserved to manage any unforeseen migration expenses.']].map(
 (el, idx) => {
-  return [<h3 class="vocs_H3 vocs_Heading">{el[0]}</h3>,
-  <strong class="vocs_Strong">Amount: </strong>,
+  return [<h3 className="vocs_H3 vocs_Heading">{el[0]}</h3>,
+  <strong className="vocs_Strong">Amount: </strong>,
   <span> {Math.floor(data.datasets[0].data[idx]/1000000)}M ({Math.round(data.datasets[0].data[idx]/520000000.0 * 100)}%)</span>,
   <div>{el[1]}</div>]
   })
