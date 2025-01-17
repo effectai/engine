@@ -1,9 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
-import { createMigrationClaim } from "../../utils/migration";
-import { toBytes } from "viem";
 import {
-	createAssociatedTokenAccount,
-	getAssociatedTokenAddressSync,
+	getAssociatedTokenAddressSync
 } from "@solana/spl-token";
 import { ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
 import { loadProvider } from "../../utils/provider";
