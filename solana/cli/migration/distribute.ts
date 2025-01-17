@@ -1,7 +1,6 @@
 import type { CommandModule } from "yargs";
 import { loadProvider } from "../../utils/provider";
 import type { EffectMigration } from "../../target/types/effect_migration";
-import EffectMigrationIdl from "../../target/idl/effect_migration.json";
 import * as anchor from "@coral-xyz/anchor";
 import chalk from "chalk";
 import { BN } from "bn.js";
@@ -18,6 +17,7 @@ import {
 } from "@effectai/utils";
 import { toBytes } from "viem";
 import { ComputeBudgetProgram, Transaction } from "@solana/web3.js";
+import { EffectMigrationIdl } from "@effectai/shared";
 
 type DistributionRow = {
 	foreign_key: string;
@@ -25,11 +25,12 @@ type DistributionRow = {
 	amount: string;
 	status: number;
 	tx?: string;
+	topup?: boolean;
 };
 
 export const distributeMigrationCommand: CommandModule<
 	unknown,
-	{ mint: string; distribution_file?: string }
+	{ mint: string; distribution_file: string }
 > = {
 	describe: "Distributes the migration accounts based on a csv file",
 	command: "distribute",
@@ -109,7 +110,7 @@ export const distributeMigrationCommand: CommandModule<
 			}
 
 			const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-				microLamports: 50_000,
+				microLamports: 200_000,
 			});
 
 			try {
@@ -155,7 +156,7 @@ export const distributeMigrationCommand: CommandModule<
 							);
 
 							const priorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-								microLamports: 100_000,
+								microLamports: 200_000,
 							});
 
 							try {
@@ -176,6 +177,7 @@ export const distributeMigrationCommand: CommandModule<
 								topupTransaction.recentBlockhash = (await provider.connection.getLatestBlockhash()).blockhash;
 								topupTransaction.feePayer = payer.publicKey;
 								row.tx = await provider.sendAndConfirm(topupTransaction, [payer]);
+								row.topup = true;
 								row.status = 3; // mark as topped up
 								writeFileSync(distribution_file, JSON.stringify(rows, null, 2));
 							} catch (e: unknown) {
@@ -184,6 +186,7 @@ export const distributeMigrationCommand: CommandModule<
 										const signature = extractSignatureFromMessage(e.message);
 										if(signature) {
 											row.tx = signature;
+											row.topup = true;
 											row.status = 1; // mark as to be confirmed
 											writeFileSync(distribution_file, JSON.stringify(rows, null, 2));
 										}

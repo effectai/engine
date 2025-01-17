@@ -4,6 +4,8 @@ import { createMigrationClaimCommand } from "./create";
 import { fetchMigrationAccount } from "./fetch";
 import { confirmMigrationCommand } from "./confirm";
 import { createDistributionFileCommand } from "./create-distribution";
+import { destroyMigrationClaimCommand } from "./destroy";
+import { recreateMigrationClaimCommand } from "./recreate";
 
 export const MigrationCommand: CommandModule = {
 	command: "migration <command>",
@@ -13,7 +15,9 @@ export const MigrationCommand: CommandModule = {
     .command(createMigrationClaimCommand)
     .command(fetchMigrationAccount)
     .command(confirmMigrationCommand)
-    .command(createDistributionFileCommand),
+    .command(createDistributionFileCommand)
+    .command(destroyMigrationClaimCommand)
+    .command(recreateMigrationClaimCommand),
 	handler: () => {
         // This should never be called
         console.error("Please provide a valid command");
