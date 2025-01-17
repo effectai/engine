@@ -30,4 +30,8 @@ pub mod effect_migration {
         create::handler(ctx, foreign_address, stake_start_time, amount)
     }
 
+    pub fn destroy_claim(ctx: Context<Destroy>) -> Result<()> {
+        destroy::handler(ctx)
+    }
+
 }

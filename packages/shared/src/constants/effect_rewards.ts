@@ -64,17 +64,6 @@ export const effect_rewards = {
           }
         },
         {
-          "name": "intermediate_reward_vault_token_account",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "reward_vault_token_account"
-              }
-            ]
-          }
-        },
-        {
           "name": "stake_account",
           "writable": true
         },

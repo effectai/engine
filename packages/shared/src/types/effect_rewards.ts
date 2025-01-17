@@ -70,17 +70,6 @@ export type EffectRewards = {
           }
         },
         {
-          "name": "intermediateRewardVaultTokenAccount",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "rewardVaultTokenAccount"
-              }
-            ]
-          }
-        },
-        {
           "name": "stakeAccount",
           "writable": true
         },

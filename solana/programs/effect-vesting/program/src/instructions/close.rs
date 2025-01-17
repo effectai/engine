@@ -1,6 +1,6 @@
 use crate::*;
 use anchor_spl::token::{Token, TokenAccount};
-use effect_common::{cpi};
+use effect_common::cpi;
 use effect_vesting_common::VestingAccount;
 
 #[derive(Accounts)]

@@ -22,14 +22,6 @@ pub struct Claim<'info> {
     pub reward_vault_token_account: Account<'info, TokenAccount>,
   
     #[account(
-        token::mint = recipient_token_account.mint.key(),
-        token::authority = intermediate_reward_vault_token_account,
-        seeds = [ reward_vault_token_account.key().as_ref() ],
-        bump,
-    )]
-    pub intermediate_reward_vault_token_account: Account<'info, TokenAccount>,
-
-    #[account(
         mut,
         has_one = authority @ RewardErrors::Unauthorized,
         constraint = stake_account.weighted_amount >= reward_account.weighted_amount @ RewardErrors::Decreased,

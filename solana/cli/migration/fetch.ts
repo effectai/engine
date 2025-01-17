@@ -7,7 +7,6 @@ import { PublicKey } from "@solana/web3.js";
 import { extractEosPublicKeyBytes, useDeriveMigrationAccounts } from "@effectai/utils";
 import { EffectMigrationIdl } from "@effectai/shared";
 import { toBytes } from "viem";
-const csv = require("csvtojson");
 
 export const fetchMigrationAccount: CommandModule<
 	unknown,
@@ -24,7 +23,7 @@ export const fetchMigrationAccount: CommandModule<
 
 
 		const {migrationAccount} = useDeriveMigrationAccounts({
-			foreignAddress: toBytes("0xc94e55f616fc144087093ada3924b4af5ee4d5cf"),
+			foreignAddress: toBytes("0x5242de4127aeEf904008B9Bfd779406Df51D9fD4"),
 			mint: new PublicKey("EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E"),
 			programId: migrationProgram.programId,
 		})

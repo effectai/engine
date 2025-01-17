@@ -80,7 +80,7 @@ export type EffectMigration = {
         {
           "name": "rentReceiver",
           "writable": true,
-          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
+          "address": "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"
         },
         {
           "name": "rent",
@@ -162,7 +162,7 @@ export type EffectMigration = {
           "name": "authority",
           "writable": true,
           "signer": true,
-          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
+          "address": "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"
         },
         {
           "name": "userTokenAccount",
@@ -195,6 +195,63 @@ export type EffectMigration = {
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "destroyClaim",
+      "discriminator": [
+        223,
+        1,
+        238,
+        215,
+        51,
+        229,
+        149,
+        94
+      ],
+      "accounts": [
+        {
+          "name": "migrationAccount",
+          "writable": true
+        },
+        {
+          "name": "claimVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "migrationAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "address": "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"
+        },
+        {
+          "name": "userTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
