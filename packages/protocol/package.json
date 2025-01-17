@@ -1,0 +1,52 @@
+{
+	"name": "@effectai/protocol",
+	"private": true,
+	"sideEffects": false,
+	"packageManager": "pnpm@8.15.6",
+	"type": "module",
+	"version": "1.0.0",
+	"scripts": {
+		"test": "vitest"
+	},
+	"dependencies": {
+		"interface-datastore": "8.3.1",
+		"nanoid": "5.0.7",
+		"@multiformats/multiaddr-matcher": "1.3.0",
+		"@libp2p/kad-dht": "14.0.2",
+		"@chainsafe/libp2p-gossipsub": "14.1.0",
+		"@libp2p/bootstrap": "11.0.9",
+		"@libp2p/webrtc-star": "7.0.0",
+		"@libp2p/circuit-relay-v2": "^3.1.0",
+		"@chainsafe/libp2p-noise": "^16.0.0",
+		"@libp2p/pubsub-peer-discovery": "11.0.0",
+		"@chainsafe/libp2p-yamux": "^7.0.1",
+		"@libp2p/mplex": "^11.0.8",
+		"@multiformats/multiaddr": "12.3.1",
+		"@libp2p/interface": "^2.2.0",
+		"@libp2p/peer-id": "5.0.6",
+		"@libp2p/webrtc-direct": "^6.0.0",
+		"@libp2p/webrtc": "^5.0.14",
+		"@libp2p/websockets": "^9.0.8",
+		"@libp2p/webtransport": "5.0.13",
+		"@libp2p/echo": "2.1.0",
+		"@libp2p/mdns": "11.0.17",	
+		"@libp2p/tcp": "10.0.15",
+		"@libp2p/identify": "3.0.9",
+		"libp2p": "^2.1.10",
+		"@libp2p/crypto": "^5.0.5",
+		"@libp2p/interface-internal": "^2.0.10",
+		"uint8arraylist": "2.4.8",
+		"uint8arrays": "5.1.0",
+		"protons-runtime": "5.5.0",
+		"@libp2p/peer-store": "11.0.10"
+	},
+	"devDependencies": {
+		"typescript": "^5.7.3",
+		"@biomejs/biome": "1.9.4",
+		"turbo": "2.2.3",
+		"vitest": "^2.1.3"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	}
+}

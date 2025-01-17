@@ -21,9 +21,15 @@ export const fetchMigrationAccount: CommandModule<
 			provider,
 		) as unknown as anchor.Program<EffectMigration>;
 
+		const publicKey = toBytes("0x6194Cc27681f0Fc188E3C81E2b0220Ba0A645046")
+
+		if(!publicKey) {
+			console.error("Invalid public key")
+			return
+		}
 
 		const {migrationAccount} = useDeriveMigrationAccounts({
-			foreignAddress: toBytes("0x5242de4127aeEf904008B9Bfd779406Df51D9fD4"),
+			foreignAddress: publicKey,
 			mint: new PublicKey("EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E"),
 			programId: migrationProgram.programId,
 		})

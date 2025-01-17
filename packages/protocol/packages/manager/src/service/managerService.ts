@@ -4,13 +4,10 @@ import {
 	type PeerStore,
 	type ConnectionManager,
 	type Registrar,
-	Batch,
-	Uint8ArrayList,
-	TypedEventEmitter,
+	Batch, TypedEventEmitter,
 	handleMessage,
 	type BatchMessage,
-	type TaskMessage,
-	TaskStatus,
+	type TaskMessage
 } from "@effectai/task-core";
 
 export interface ManagerServiceComponents {
@@ -47,8 +44,6 @@ export class ManagerService extends TypedEventEmitter<ManagerServiceEvents> {
 	}
 
 	private _initialize() {
-		console.log("Initializing worker service..");
-
 		this.components.registrar.handle(
 			"/effect-ai/batch/1.0.0",
 			async (streamData) => {

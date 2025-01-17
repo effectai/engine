@@ -26,20 +26,10 @@ export const createBootstrapRelayerServer = async () => {
 		},
 		connectionEncrypters: [noise()],
 		peerDiscovery: [
-			pubsubPeerDiscovery({
-				
-			})
-			// pubSubPeerDiscovery({
-			// 	type: PeerType.Relay,
-			// 	topics: ["provider-manager-discovery", "manager-worker-discovery"],
-			// }),
+			pubsubPeerDiscovery({})
 		],
 		streamMuxers: [yamux()],
 		services: {
-			kadDHT: kadDHT({
-				clientMode: false,
-				protocol: "ipfs/kad/1.0.0",
-			}),
 			pubsub: gossipsub({
 				allowPublishToZeroTopicPeers: true,
 			}),

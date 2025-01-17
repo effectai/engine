@@ -16,6 +16,7 @@ import {
 } from "@effectai/utils";
 import type { EffectMigration } from "../../target/types/effect_migration";
 import { EffectMigrationIdl } from "@effectai/shared";
+import { askForConfirmation } from "../utils";
 
 interface MigrationClaimOptions {
 	mint: string;
@@ -58,14 +59,7 @@ export const createMigrationClaimCommand: CommandModule<
 				return true;
 			})
 			.demandOption(["mint", "amount", "stakeStartTime"]),
-	handler: async ({
-		mint,
-		publicKey,
-		amount,
-		type,
-		stakeStartTime,
-		username,
-	}) => {
+	handler: async ({ mint, publicKey, amount, stakeStartTime, username }) => {
 		const { payer, provider } = await loadProvider();
 
 		const migrationProgram = new anchor.Program(
@@ -82,7 +76,12 @@ export const createMigrationClaimCommand: CommandModule<
 		const ataInfo = await provider.connection.getAccountInfo(ata);
 		if (!ataInfo) {
 			// create ata
-			await createAssociatedTokenAccount(provider.connection, payer, new PublicKey(mint), payer.publicKey);
+			await createAssociatedTokenAccount(
+				provider.connection,
+				payer,
+				new PublicKey(mint),
+				payer.publicKey,
+			);
 		}
 
 		let publicKeyBytes = null;
@@ -91,11 +90,22 @@ export const createMigrationClaimCommand: CommandModule<
 			const eosPublicKey = await extractKeyFromEosUsername(username, "active");
 			publicKeyBytes = extractEosPublicKeyBytes(eosPublicKey);
 		} else if (publicKey) {
-			publicKeyBytes = toBytes(publicKey);
+			publicKeyBytes = publicKey.startsWith("0x")
+				? toBytes(publicKey)
+				: extractEosPublicKeyBytes(publicKey);
 		}
 
 		if (!publicKeyBytes) {
 			throw new Error("Invalid public key");
+		}
+
+		const confirm = await askForConfirmation(
+			`Are you sure you want to create a migration claim for: ${publicKey} with amount: ${amount} and stake start time: ${stakeStartTime} (${new Date(stakeStartTime * 1000).toLocaleDateString()})?`,
+		);
+
+		if (!confirm) {
+			console.log(chalk.red.bold("Migration claim creation cancelled"));
+			return;
 		}
 
 		const { migrationAccount } = await createMigrationClaim({
@@ -104,11 +114,14 @@ export const createMigrationClaimCommand: CommandModule<
 			mint: new anchor.web3.PublicKey(mint),
 			userTokenAccount: ata,
 			amount: amount * 10 ** 6,
-			stakeStartTime
+			stakeStartTime,
 		});
 
 		console.log(
-			chalk.green.bold("Migration claim created at", migrationAccount.toString()),
+			chalk.green.bold(
+				"Migration claim created at",
+				migrationAccount.toString(),
+			),
 		);
 	},
 };

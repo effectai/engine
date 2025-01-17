@@ -1,19 +1,17 @@
 import * as anchor from "@coral-xyz/anchor";
-import {
-	getAssociatedTokenAddressSync
-} from "@solana/spl-token";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
 import { loadProvider } from "../../utils/provider";
-import chalk from "chalk";
 
 import type { CommandModule } from "yargs";
 
 import type { EffectMigration } from "../../target/types/effect_migration";
 import { EffectMigrationIdl } from "@effectai/shared";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
 interface MigrationClaimOptions {
 	account: string;
-    mint: string;
+	mint: string;
 }
 
 export const destroyMigrationClaimCommand: CommandModule<
@@ -36,39 +34,49 @@ export const destroyMigrationClaimCommand: CommandModule<
 			})
 			.demandOption(["account"]),
 	handler: async ({ mint, account }) => {
-		const { payer, provider } = await loadProvider();
+		const { provider } = await loadProvider();
 
 		const migrationProgram = new anchor.Program(
 			EffectMigrationIdl as anchor.Idl,
 			provider,
 		) as unknown as anchor.Program<EffectMigration>;
 
-        const mintKey = new PublicKey(mint);
+		const mintKey = new PublicKey(mint);
 
 		const ata = getAssociatedTokenAddressSync(
 			new PublicKey(mint),
-			payer.publicKey,
+			new PublicKey("nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"),
+			true,
 		);
 
-        const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-            microLamports: 100_000,
-        });
+		const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+			microLamports: 200_000,
+		});
 
-        await migrationProgram.methods.destroyClaim()
-        .preInstructions([
-            addPriorityFee,
-        ])
-        .accounts({
-            migrationAccount: new PublicKey(account),
-            mint: mintKey,
-            userTokenAccount: ata,
-        }).rpc()
+		const transaction = await migrationProgram.methods
+			.destroyClaim()
+			.preInstructions([addPriorityFee])
+			.accounts({
+				migrationAccount: new PublicKey(account),
+				mint: mintKey,
+				userTokenAccount: ata,
+			})
+			.transaction();
 
-		console.log(
-			chalk.green.bold(
-				"migration claim destroyed for account: ",
-				account.toString(),
-			),
-		);
+		// add recent blockhash
+		transaction.recentBlockhash = (
+			await provider.connection.getLatestBlockhash()
+		).blockhash;
+		transaction.feePayer = provider.wallet.publicKey;
+
+		// sign transaction
+		const serializedTx = transaction.serialize({
+			requireAllSignatures: false,
+		});
+
+
+
+
+		console.log(bs58.encode(serializedTx));
 	},
 };
