@@ -6,8 +6,7 @@
 	"type": "module",
 	"version": "1.0.0",
 	"scripts": {
-		"test": "vitest",
-		"build": "pnpm turbo build"	
+		"test": "vitest"
 	},
 	"dependencies": {
 		"interface-datastore": "8.3.1",
