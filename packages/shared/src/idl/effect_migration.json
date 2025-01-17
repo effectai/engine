@@ -74,7 +74,7 @@
         {
           "name": "rent_receiver",
           "writable": true,
-          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
+          "address": "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"
         },
         {
           "name": "rent",
@@ -156,7 +156,7 @@
           "name": "authority",
           "writable": true,
           "signer": true,
-          "address": "admnVasr46cumirLqEXb5JderZEv3BMMcFnZwyK4Lo3"
+          "address": "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"
         },
         {
           "name": "user_token_account",
@@ -189,6 +189,63 @@
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "destroy_claim",
+      "discriminator": [
+        223,
+        1,
+        238,
+        215,
+        51,
+        229,
+        149,
+        94
+      ],
+      "accounts": [
+        {
+          "name": "migration_account",
+          "writable": true
+        },
+        {
+          "name": "claim_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "migration_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "address": "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
