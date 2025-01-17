@@ -17,7 +17,7 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
-    "@effectai/task-core": "workspace:*",
+    "libp2p": "^2.1.10",
     "uint8arraylist": "2.4.8"
   }
 }

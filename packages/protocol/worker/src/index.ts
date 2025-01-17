@@ -43,11 +43,6 @@ export const createWorkerNode = async (bootstrapNodes: string[] = []) => {
 		connectionEncrypters: [noise()],
 		streamMuxers: [yamux()],
 		services: {
-			kadDHT: kadDHT({
-				allowQueryWithZeroPeers: true,
-				clientMode: false,
-				protocol: "ipfs/kad/1.0.0",
-			}),
 			worker: workerService(),
 			identify: identify({}),
 			pubsub: gossipsub({

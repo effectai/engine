@@ -22,6 +22,11 @@ export class Task {
 	data: Record<string, any>;
 	result: string | null = null;
 
+	constructor(id: string, template: string, data: Record<string, any>) {
+		this.id = id;
+		this.template = template;
+		this.data = data;
+	}
 	// override equals method
 	equals(other: Task) {
 		return this.id === other.id;
@@ -42,12 +47,6 @@ export class Task {
 			timestamp: Date.now(),
 			d: task.data
 		};
-	}
-
-	constructor(id: string, template: string, data: Record<string, any>) {
-		this.id = id;
-		this.template = template;
-		this.data = data;
 	}
 
 	toJSON() {

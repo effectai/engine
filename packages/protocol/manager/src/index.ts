@@ -6,16 +6,8 @@ import {
 	noise,
 	yamux,
 	identify,
-	filters,
-	pubSubPeerDiscovery,
-	bootstrap,
-	gossipsub,
-	distributedNodeQueueService,
-	PeerType,
-	peerIdFromString,
-	Buffer,
-	type PeerId,
-	kadDHT,
+	filters, bootstrap,
+	gossipsub, kadDHT,
 	pubsubPeerDiscovery
 } from "@effectai/task-core";
 import { managerService } from "./service/managerService.js";
@@ -38,9 +30,7 @@ export const createManagerNode = async (bootstrapNodes: string[] = []) => {
 			// 	type: PeerType.Manager,
 			// 	topics: ["manager-worker-discovery", "provider-manager-discovery"],
 			// }),
-			pubsubPeerDiscovery({
-				
-			}),
+			pubsubPeerDiscovery({}),
 			bootstrap({
 				list: bootstrapNodes,
 			}),
