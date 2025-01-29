@@ -3,7 +3,10 @@
         <div class="flex items-center justify-between w-full">
             <div>
                 <p class="font-medium gap-1 flex">
-                    <span>{{ balance?.value }}</span>
+                    <span v-if="balance">{{ formatAmountToBalance(vestingAccount.account.distributedTokens.add(new
+                        BN(balance.value * 1e6)))
+                        }}</span>
+                    <span v-else>...</span>
                     <span>EFFECT</span>
                 </p>
                 <div class="flex gap-1 text-sm text-gray-400">
@@ -73,7 +76,7 @@ const amountDue = computed(() => {
 
 const progress = computed(() => {
     if (!balance.value || !amountDue.value) return 100
-    return formatAmountToBalance(amountDue.value.add(props.vestingAccount.account.distributedTokens)) / balance.value.value * 100
+    return formatAmountToBalance(amountDue.value.add(props.vestingAccount.account.distributedTokens)) / formatAmountToBalance(props.vestingAccount.account.distributedTokens.add(new BN(balance.value.value * 1e6))) * 100
 })
 
 const calculateDue = (
@@ -85,7 +88,7 @@ const calculateDue = (
     // get now as a unix timestamp
     const now = Math.floor(new Date().getTime() / 1000);
 
-    if(now < startTime) {
+    if (now < startTime) {
         return 0;
     }
 
