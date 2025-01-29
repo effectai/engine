@@ -93,10 +93,16 @@ export const useVestingProgram = () => {
         preInstructions.push(addPriorityFee);
 
         const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
+        let ataExists = false;
         try {
-          await vestingProgram.value.provider.connection.getAccountInfo(ata);
+          ataExists =
+            !!(await vestingProgram.value.provider.connection.getAccountInfo(
+              ata
+            ));
         } catch (error) {
           console.log("ATA doesnt exists", ata.toString());
+        }
+        if (!ataExists) {
           try {
             preInstructions.push(
               createAssociatedTokenAccountInstruction(
