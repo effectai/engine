@@ -7,7 +7,6 @@
           data-aos="fade-up"
           :data-aos-delay="300 + i * 250"
         >
-          {{ console.log(items) }}
           <NewsCard class="news-card is-fullheight" :news="item" />
         </div>
       </div>
