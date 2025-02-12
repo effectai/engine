@@ -16,7 +16,7 @@
 				
 					<div class="bg-white/5 rounded-lg py-4 px-2 space-y-2">
 						<div class="flex justify-between"><span class="text-gray-400">Total Staked
-                                Tokens</span><span>{{ stakeAmountFormatted }} EFFECT</span></div>
+                                Tokens</span><span>{{ formatNumber(stakeAmountFormatted) || 0}} EFFECT</span></div>
 						<div class="flex justify-between"><span class="text-gray-400">Available
 								Balance</span><span>{{ availableBalance?.value }} EFFECT</span></div>
 						<div class="flex justify-between"><span class="text-gray-400">Lock Period</span><span>30
@@ -42,9 +42,8 @@ const { useStake, useTopUp, useGetStakeAccount } = useStakingProgram();
 
 const {
 	data: stakeAccount,
-	error: stakeError,
 	amountFormatted: stakeAmountFormatted,
-	refetch
+	refetch,
 } = useGetStakeAccount();
 
 const stakeAmount: Ref<number> = ref(0);
@@ -82,16 +81,17 @@ const handleSubmit = async () => {
 
 		stakeAccount.value
 			? await topup({
-				stakeAccount: stakeAccount.value,
-				amount: Number(stakeAmount.value),
-			}) : await stake({
-				amount: Number(stakeAmount.value),
-			});
+					stakeAccount: stakeAccount.value,
+					amount: Number(stakeAmount.value),
+				})
+			: await stake({
+					amount: Number(stakeAmount.value),
+				});
 
 		toast.add({
 			title: "Transaction submitted",
 			description: "Your transaction has been submitted to the network.",
-		})
+		});
 
 		// refetch the stake account
 		refetch();
