@@ -1,12 +1,17 @@
 import {
-	ComponentLogger,
-	Libp2pEvents,
-	PeerId,
+	type ComponentLogger,
+	type Libp2pEvents,
+	type PeerId,
 	TypedEventEmitter,
-	TypedEventTarget,
+	type TypedEventTarget,
 } from "@libp2p/interface";
-import { Datastore, Key } from "interface-datastore";
-import { Task } from "../../protocol/task/task.js";
+import { type Datastore, Key } from "interface-datastore";
+import { Task } from "../../protobufs/task/task.js";
+
+export type TaskInfo = {
+	task: Task;
+	peer: PeerId;
+};
 
 export interface TaskStoreComponents {
 	datastore: Datastore;
@@ -16,8 +21,7 @@ export interface TaskStoreComponents {
 
 export class TaskStore extends TypedEventEmitter<Libp2pEvents> {
 	private readonly datastore: Datastore;
-
-	private readonly taskSenderMap: Map<string, PeerId> = new Map();
+	private readonly taskPeerMap: Map<string, PeerId> = new Map();
 
 	constructor(dataStore: Datastore) {
 		super();
@@ -36,7 +40,7 @@ export class TaskStore extends TypedEventEmitter<Libp2pEvents> {
 		await this.datastore.put(new Key(task.id), Task.encode(task));
 
 		// Track which peer sent this task
-		this.taskSenderMap.set(task.id, sender);
+		this.taskPeerMap.set(task.id, sender);
 
 		// Emit event for listeners
 		// this.safeDispatchEvent("taskStored", { task, sender });
@@ -45,7 +49,7 @@ export class TaskStore extends TypedEventEmitter<Libp2pEvents> {
 	}
 
 	/** Retrieve the sender of a given task */
-	getTaskSender(taskId: string): PeerId | undefined {
-		return this.taskSenderMap.get(taskId);
+	getTaskPeer(taskId: string): PeerId | undefined {
+		return this.taskPeerMap.get(taskId);
 	}
 }

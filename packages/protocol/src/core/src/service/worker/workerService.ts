@@ -1,13 +1,9 @@
 import { pbStream } from "it-protobuf-stream";
-
-import { type PeerStore, TypedEventEmitter } from "@libp2p/interface";
-
-import type { Registrar, ConnectionManager } from "@libp2p/interface-internal";
-
-import { Task } from "../../protocol/task/task.js";
-import { TaskStore } from "../store/task.js";
-
-import { Datastore } from "interface-datastore";
+import { PeerId, type PeerStore, TypedEventEmitter } from "@libp2p/interface";
+import type { ConnectionManager, Registrar } from "@libp2p/interface-internal";
+import { Task } from "../../protobufs/task/task.js";
+import { type TaskInfo, TaskStore } from "../store/task.js";
+import type { Datastore } from "interface-datastore";
 
 export interface TaskManagerComponents {
 	registrar: Registrar;
@@ -17,9 +13,9 @@ export interface TaskManagerComponents {
 }
 
 export interface WorkerServiceEvents {
-	"task:received": string;
+	"task:received": CustomEvent<TaskInfo>;
+	"task:completed": CustomEvent<TaskInfo>;
 	"task:accepted": string;
-	"task:completed": string;
 	"task:rejected": string;
 }
 
@@ -42,57 +38,70 @@ export class WorkerService extends TypedEventEmitter<WorkerServiceEvents> {
 				const stream = pbStream(streamData.stream).pb(Task);
 				const data = await stream.read();
 
-				//put task in taskStore
-				await this.taskStore.put(data, streamData.connection.remotePeer);
+				this.safeDispatchEvent("task:received", {
+					detail: { task: data, peer: streamData.connection.remotePeer },
+				});
 			},
 			{ runOnLimitedConnection: false },
 		);
+
+		this.addEventListener("task:received", async (taskInfo) => {
+			await this.taskStore.put(taskInfo.detail.task, taskInfo.detail.peer);
+		});
+
+		this.addEventListener("task:completed", async (taskInfo) => {
+			//check for active connection
+			const [connection] = this.components.connectionManager.getConnections(
+				taskInfo.detail.peer,
+			);
+
+			if (!connection) {
+				//TODO:: make a connection to the sender if none exists..
+				throw new Error("No active connection to the sender");
+			}
+
+			const existingStream = connection.streams.find(
+				(s) =>
+					s.protocol === "/effect-ai/task/1.0.0" &&
+					s.direction === "outbound" &&
+					s.status === "open",
+			);
+
+			const pb = existingStream
+				? pbStream(existingStream).pb(Task)
+				: pbStream(await connection.newStream("/effect-ai/task/1.0.0")).pb(
+						Task,
+					);
+
+			try {
+				await pb.write(taskInfo.detail.task);
+			} catch (e) {
+				console.error(
+					`Error sending task ${
+						taskInfo.detail.task.id
+					} result to ${taskInfo.detail.peer.toString()}`,
+				);
+			}
+		});
 	}
 
 	public async completeTask(taskId: string, result: string) {
-		//get task from the taskStore
 		const task = await this.taskStore.get(taskId);
-		const sender = this.taskStore.getTaskSender(taskId);
+		const peer = this.taskStore.getTaskPeer(taskId);
 
-		if (!task || !sender) {
-			throw new Error("Task not found, or has no sender");
+		if (!task || !peer) {
+			throw new Error("Task not found, or has no peer..");
 		}
 
 		//set the result
 		task.result = result;
 
 		//save the task in the taskStore
-		await this.taskStore.put(task, sender);
+		await this.taskStore.put(task, peer);
 
-		// ---- Send result to sender (manager) -----
-
-		//check for active connection
-		const [connection] =
-			this.components.connectionManager.getConnections(sender);
-
-		if (!connection) {
-			throw new Error("No active connection to the sender");
-		}
-
-		const existingStream = connection.streams.find(
-			(s) =>
-				s.protocol === "/effect-ai/task/1.0.0" &&
-				s.direction === "outbound" &&
-				s.status === "open",
-		);
-
-		const pb = existingStream
-			? pbStream(existingStream).pb(Task)
-			: pbStream(await connection.newStream("/effect-ai/task/1.0.0")).pb(Task);
-
-		try {
-			await pb.write(task);
-			console.log(`Task ${taskId} result sent to ${sender.toString()}`);
-		} catch (e) {
-			console.error(
-				`Error sending task ${taskId} result to ${sender.toString()}`,
-			);
-		}
+		this.safeDispatchEvent("task:completed", {
+			detail: { task, peer },
+		});
 	}
 }
 

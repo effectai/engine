@@ -10,25 +10,32 @@ import {
 } from "@libp2p/interface";
 
 import type { Registrar, ConnectionManager } from "@libp2p/interface-internal";
-import { Task } from "../../protocol/task/task.js";
+import { Task } from "../../protobufs/task/task.js";
+import { type TaskInfo, TaskStore } from "../store/task.js";
+import type { Datastore } from "interface-datastore";
 
 export interface ManagerServiceComponents {
 	registrar: Registrar;
+  peerRouting: PeerRouting;
 	peerStore: PeerStore;
 	connectionManager: ConnectionManager;
+	datastore: Datastore;
 }
 
 export interface ManagerServiceEvents {
-	task: (streamData: IncomingStreamData) => void;
+	"task:received": CustomEvent<TaskInfo>;
 }
 
 export class ManagerService extends TypedEventEmitter<ManagerServiceEvents> {
 	private components: ManagerServiceComponents;
+	batchStore: TaskStore;
+  peerQueue: PeerId[] = [];
 
 	constructor(components: ManagerServiceComponents) {
 		super();
-
 		this.components = components;
+
+		this.batchStore = new TaskStore(components.datastore);
 		this._initialize();
 	}
 
@@ -38,10 +45,19 @@ export class ManagerService extends TypedEventEmitter<ManagerServiceEvents> {
 			async (streamData) => {
 				const stream = pbStream(streamData.stream).pb(Task);
 				const data = await stream.read();
-				console.log("Manager: Received task", data);
+
+				this.safeDispatchEvent("task:received", { detail: data });
 			},
 			{ runOnLimitedConnection: false },
 		);
+
+		this.addEventListener("task:received", async (taskInfo) => {
+			//we received a task from a worker peer.
+		});
+
+    this.components.registrar.("peer:discovered", (peerInfo) => {
+      this.peerQueue.push(peerInfo.peerId);
+    }
 	}
 
 	public async sendTask(peerId: PeerId, task: Task) {
@@ -51,9 +67,12 @@ export class ManagerService extends TypedEventEmitter<ManagerServiceEvents> {
 		const stream = await connection.newStream("/effect-ai/task/1.0.0");
 
 		const pb = pbStream(stream).pb(Task);
-
 		await pb.write(task);
 	}
+
+	public async processTask(task: Task, repetitions: number) {
+     
+  }
 }
 
 export function managerService(): (
