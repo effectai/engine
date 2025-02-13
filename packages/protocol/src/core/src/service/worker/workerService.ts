@@ -1,107 +1,81 @@
-import { pbStream } from "it-protobuf-stream";
-import { PeerId, type PeerStore, TypedEventEmitter } from "@libp2p/interface";
+import {
+	ComponentLogger,
+	type Libp2pEvents,
+	Logger,
+	type PeerStore,
+	Startable,
+	TypedEventEmitter,
+	type TypedEventTarget,
+} from "@libp2p/interface";
 import type { ConnectionManager, Registrar } from "@libp2p/interface-internal";
-import { Task } from "../../protobufs/task/task.js";
-import { type TaskInfo, TaskStore } from "../store/task.js";
-import type { Datastore } from "interface-datastore";
+import type { Task } from "../../protocols/task/pb/task.js";
+import type { TaskStore } from "../store/task.js";
+import type { TaskProtocol } from "../../protocols/task/task.js";
+import { peerIdFromString } from "@libp2p/peer-id";
 
 export interface TaskManagerComponents {
 	registrar: Registrar;
 	peerStore: PeerStore;
-	datastore: Datastore;
+	taskStore: TaskStore;
+	task: TaskProtocol;
 	connectionManager: ConnectionManager;
+	events: TypedEventTarget<Libp2pEvents>;
+	logger: ComponentLogger;
 }
 
 export interface WorkerServiceEvents {
-	"task:received": CustomEvent<TaskInfo>;
-	"task:completed": CustomEvent<TaskInfo>;
 	"task:accepted": string;
 	"task:rejected": string;
 }
 
-export class WorkerService extends TypedEventEmitter<WorkerServiceEvents> {
+export class WorkerService
+	extends TypedEventEmitter<WorkerServiceEvents>
+	implements Startable
+{
 	private components: TaskManagerComponents;
-	public taskStore: TaskStore;
+	private log: Logger;
 
 	constructor(components: TaskManagerComponents) {
 		super();
 		this.components = components;
-		this.taskStore = new TaskStore(components.datastore);
-		this._initialize();
+		this.log = components.logger.forComponent("WorkerService");
 	}
 
-	private _initialize() {
-		// handle incoming task messages
-		this.components.registrar.handle(
-			"/effect-ai/task/1.0.0",
-			async (streamData) => {
-				const stream = pbStream(streamData.stream).pb(Task);
-				const data = await stream.read();
-
-				this.safeDispatchEvent("task:received", {
-					detail: { task: data, peer: streamData.connection.remotePeer },
-				});
-			},
-			{ runOnLimitedConnection: false },
-		);
-
-		this.addEventListener("task:received", async (taskInfo) => {
-			await this.taskStore.put(taskInfo.detail.task, taskInfo.detail.peer);
-		});
-
-		this.addEventListener("task:completed", async (taskInfo) => {
-			//check for active connection
-			const [connection] = this.components.connectionManager.getConnections(
-				taskInfo.detail.peer,
-			);
-
-			if (!connection) {
-				//TODO:: make a connection to the sender if none exists..
-				throw new Error("No active connection to the sender");
-			}
-
-			const existingStream = connection.streams.find(
-				(s) =>
-					s.protocol === "/effect-ai/task/1.0.0" &&
-					s.direction === "outbound" &&
-					s.status === "open",
-			);
-
-			const pb = existingStream
-				? pbStream(existingStream).pb(Task)
-				: pbStream(await connection.newStream("/effect-ai/task/1.0.0")).pb(
-						Task,
-					);
-
-			try {
-				await pb.write(taskInfo.detail.task);
-			} catch (e) {
-				console.error(
-					`Error sending task ${
-						taskInfo.detail.task.id
-					} result to ${taskInfo.detail.peer.toString()}`,
-				);
-			}
+	start(): void | Promise<void> {
+		this.components.task.addEventListener("task:received", async (taskInfo) => {
+			this.acceptTask(taskInfo.detail);
 		});
 	}
 
-	public async completeTask(taskId: string, result: string) {
-		const task = await this.taskStore.get(taskId);
-		const peer = this.taskStore.getTaskPeer(taskId);
+	stop(): void | Promise<void> {
+		throw new Error("Method not implemented.");
+	}
 
-		if (!task || !peer) {
-			throw new Error("Task not found, or has no peer..");
+	async acceptTask(task: Task) {
+		await this.components.taskStore.put(task);
+		this.safeDispatchEvent("task:accepted", { detail: task.id });
+	}
+
+	async rejectTask(taskId: string) {
+		throw new Error("Method not implemented.");
+	}
+
+	async completeTask(taskId: string, result: string) {
+		//get the task from the store
+		const task = await this.components.taskStore.get(taskId);
+
+		if (!task) {
+			throw new Error("Task not found in the store");
 		}
 
 		//set the result
 		task.result = result;
 
 		//save the task in the taskStore
-		await this.taskStore.put(task, peer);
+		await this.components.taskStore.put(task);
 
-		this.safeDispatchEvent("task:completed", {
-			detail: { task, peer },
-		});
+		//send the result to the manager peer
+		await this.components.task.sendTask(peerIdFromString(task.manager), task);
 	}
 }
 

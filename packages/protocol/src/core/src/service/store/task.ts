@@ -6,26 +6,26 @@ import {
 	type TypedEventTarget,
 } from "@libp2p/interface";
 import { type Datastore, Key } from "interface-datastore";
-import { Task } from "../../protobufs/task/task.js";
-
-export type TaskInfo = {
-	task: Task;
-	peer: PeerId;
-};
+import { Task } from "../../protocols/task/pb/task.js";
 
 export interface TaskStoreComponents {
 	datastore: Datastore;
-	events: TypedEventTarget<Libp2pEvents>;
 	logger: ComponentLogger;
+	events: TypedEventTarget<Libp2pEvents>;
 }
 
-export class TaskStore extends TypedEventEmitter<Libp2pEvents> {
-	private readonly datastore: Datastore;
-	private readonly taskPeerMap: Map<string, PeerId> = new Map();
+export interface TaskStoreEvents {
+	"task:stored": CustomEvent<Task>;
+}
 
-	constructor(dataStore: Datastore) {
+export class TaskStore extends TypedEventEmitter<TaskStoreEvents> {
+	private readonly components: TaskStoreComponents;
+	private readonly datastore: Datastore;
+
+	constructor(components: TaskStoreComponents) {
 		super();
-		this.datastore = dataStore;
+		this.components = components;
+		this.datastore = this.components.datastore;
 	}
 
 	async has(taskId: string): Promise<boolean> {
@@ -36,20 +36,13 @@ export class TaskStore extends TypedEventEmitter<Libp2pEvents> {
 		return Task.decode(await this.datastore.get(new Key(taskId)));
 	}
 
-	async put(task: Task, sender: PeerId): Promise<Task> {
+	async put(task: Task): Promise<Task> {
 		await this.datastore.put(new Key(task.id), Task.encode(task));
-
-		// Track which peer sent this task
-		this.taskPeerMap.set(task.id, sender);
-
-		// Emit event for listeners
-		// this.safeDispatchEvent("taskStored", { task, sender });
-
+		this.safeDispatchEvent("task:stored", { detail: task });
 		return task;
 	}
+}
 
-	/** Retrieve the sender of a given task */
-	getTaskPeer(taskId: string): PeerId | undefined {
-		return this.taskPeerMap.get(taskId);
-	}
+export function taskStore(): (components: TaskStoreComponents) => TaskStore {
+	return (components: TaskStoreComponents) => new TaskStore(components);
 }

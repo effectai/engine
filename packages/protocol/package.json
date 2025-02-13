@@ -15,6 +15,7 @@
 		"@chainsafe/libp2p-yamux": "^7.0.1",
 		"@libp2p/bootstrap": "11.0.9",
 		"@libp2p/circuit-relay-v2": "^3.1.0",
+		"@libp2p/kad-dht": "^14.2.4",
 		"@libp2p/crypto": "^5.0.5",
 		"@libp2p/echo": "2.1.0",
 		"@libp2p/identify": "3.0.9",

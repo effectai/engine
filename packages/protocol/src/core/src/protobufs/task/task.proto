@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-message Task {
-  string id = 1;                   // Unique identifier for the task
-  string template = 2;             // Template used in the task
-  map<string, string> data = 3;    // Arbitrary key-value pairs for task data
-  string result = 4;               // Result of the task, can be null (optional field)
-}

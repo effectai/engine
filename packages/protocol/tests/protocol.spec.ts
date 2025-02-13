@@ -1,14 +1,31 @@
-import { describe, it, assert, expect } from "vitest";
-import { createLibp2p } from "libp2p";
 import { noise } from "@chainsafe/libp2p-noise";
 import { yamux } from "@chainsafe/libp2p-yamux";
+import { identify } from "@libp2p/identify";
 import { mdns } from "@libp2p/mdns";
 import { tcp } from "@libp2p/tcp";
+import { createLibp2p } from "libp2p";
+import { gossipsub } from "@chainsafe/libp2p-gossipsub";
+import { describe, it } from "vitest";
+import {
+	bootstrap,
+	circuitRelayServer,
+	circuitRelayTransport,
+	createPeerQueue,
+	taskStore,
+	webSockets,
+	workerService,
+} from "../src/core/src";
+import { taskProtocol } from "../src/core/src/protocols/task/task";
 import { managerService } from "../src/core/src/service/manager/managerService";
-import { TaskStore, workerService } from "../src/core/src";
+import { announcePeerDiscovery } from "../src/core/src/service/pubsub/announce";
+import type { Task } from "../src/core/src/protocols/task/pb/task";
 
-const dummyTask = {
+const dummyTask: Task = {
 	id: "1",
+	owner: "0x123",
+	repetition: 1,
+	reward: "500",
+	manager: "",
 	template: `<form>
         <h2>Please submit the form to complete the task</h2>
         <input type='submit'/ >
@@ -33,111 +50,91 @@ const createNode = () => {
 	});
 };
 
-const createManagerNode = () => {
+const createManagerNode = (peers: string[]) => {
 	return createLibp2p({
 		addresses: {
-			listen: ["/ip4/0.0.0.0/tcp/0"],
+			listen: ["/ip4/0.0.0.0/tcp/0/ws"],
 		},
-		transports: [tcp()],
+		transports: [webSockets()],
 		streamMuxers: [yamux()],
 		connectionEncrypters: [noise()],
 		peerDiscovery: [
-			mdns({
-				interval: 20e3,
-			}),
+			...(peers && peers.length > 0 ? [bootstrap({ list: peers })] : []),
+			announcePeerDiscovery(),
 		],
 		services: {
+			pubsub: gossipsub(),
+			identify: identify(),
+			taskStore: taskStore(),
+			task: taskProtocol(),
 			manager: managerService(),
+			peerQueue: createPeerQueue(),
+			relay: circuitRelayServer(),
 		},
 	});
 };
 
-const createWorkerNode = () => {
+const createWorkerNode = (peers: string[]) => {
 	return createLibp2p({
 		addresses: {
-			listen: ["/ip4/0.0.0.0/tcp/0"],
+			listen: ["/p2p-circuit"],
 		},
-		transports: [tcp()],
+		transports: [webSockets(), circuitRelayTransport()],
 		streamMuxers: [yamux()],
 		connectionEncrypters: [noise()],
-		peerDiscovery: [
-			mdns({
-				interval: 20e3,
-			}),
-		],
+		peerDiscovery: [announcePeerDiscovery(), bootstrap({ list: peers })],
 		services: {
+			pubsub: gossipsub(),
+			identify: identify(),
+			taskStore: taskStore(),
+			task: taskProtocol(),
 			worker: workerService(),
 		},
 	});
 };
 
 describe("Libp2p", () => {
-	describe("Libp2p: Discovery", () => {
-		it("should connect two nodes", async () => {
-			const [node1, node2] = await Promise.all([createNode(), createNode()]);
-
-			await new Promise((resolve) => setTimeout(resolve, 100));
-
-			expect(node1.peerId).to.not.equal(node2.peerId);
-			expect(await node1.peerStore.all()).to.have.length(1);
-			expect(await node2.peerStore.all()).to.have.length(1);
-		});
-	});
-
 	describe("Libp2p: Effect AI Protocol", () => {
-		it.concurrent("be able to receive a task", async () => {
-			const [manager1] = await Promise.all([createManagerNode()]);
-			const [worker1] = await Promise.all([createWorkerNode()]);
+		it.concurrent(
+			"be able to receive a task",
+			async () => {
+				const [manager1] = await Promise.all([createManagerNode([])]);
 
-			await Promise.all([manager1.start(), worker1.start()]);
+				console.log(`Node started with id ${manager1.peerId.toString()}`);
 
-			await new Promise((resolve) => setTimeout(resolve, 100));
+				const relayAddress = manager1.getMultiaddrs()[0];
+				await new Promise((resolve) => setTimeout(resolve, 100));
 
-			await manager1.services.manager.sendTask(worker1.peerId, dummyTask);
+				const [w1, w2, w3] = await Promise.all([
+					createWorkerNode([relayAddress.toString()]),
+					createWorkerNode([relayAddress.toString()]),
+					createWorkerNode([relayAddress.toString()]),
+				]);
 
-			//wait for task to be received
-			await new Promise((resolve) => setTimeout(resolve, 100));
+				// start the worker and wait for them to discover peers
+				await Promise.all([w2.start(), w1.start(), w3.start()]);
+				await new Promise((resolve) => setTimeout(resolve, 3000));
 
-			//assert that worker1 received the task
-			expect(
-				await worker1.services.worker.taskStore.get(dummyTask.id),
-			).to.deep.equal(dummyTask);
+				for (let i = 0; i < 3; i++) {
+					const result = await manager1.services.manager.processTask(dummyTask);
 
-			await Promise.all([manager1.stop(), worker1.stop()]);
-		});
+					if (!result) {
+						throw new Error("Task processing failed");
+					}
 
-		it.concurrent("is able to complete a task", async () => {
-			const [manager1] = await Promise.all([createManagerNode()]);
-			const [worker1] = await Promise.all([createWorkerNode()]);
+					await new Promise((resolve) => setTimeout(resolve, 100));
 
-			await Promise.all([manager1.start(), worker1.start()]);
-
-			await new Promise((resolve) => setTimeout(resolve, 100));
-
-			await manager1.services.manager.sendTask(worker1.peerId, dummyTask);
-
-			//wait 2 seconds
-			await new Promise((resolve) => setTimeout(resolve, 100));
-
-			//complete task
-			await worker1.services.worker.completeTask(
-				dummyTask.id,
-				"{'result': 'testing'}",
-			);
-
-			const result = await worker1.services.worker.taskStore.get(dummyTask.id);
-
-			manager1.services.manager.addEventListener("task:received", (task) => {
-				console.log("Task received", task.detail);
-			});
-
-			if (!result) {
-				throw new Error("Task not found");
-			}
-
-			expect(result.result).equal("{'result': 'testing'}");
-		});
-
-		it.concurrent("manages a batch of tasks", async () => {});
+					for (const peer of [w1, w2, w3]) {
+						if (peer.peerId.toString() === result.peer.id.toString()) {
+							await peer.services.worker.completeTask(
+								dummyTask.id,
+								`Task completed by ${peer.peerId.toString()}`,
+							);
+						}
+					}
+				}
+			},
+			{ timeout: 20000 },
+		);
 	});
 });

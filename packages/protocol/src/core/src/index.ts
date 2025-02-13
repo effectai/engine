@@ -42,7 +42,7 @@ export { persistentPeerStore } from "@libp2p/peer-store";
 export * from "./service/store/task.js";
 export * from "./service/worker/workerService.js";
 export * from "./service/manager/managerService.js";
-
+export * from "./service/queue/peer.js";
 export * from "./utils.js";
 
 export { fromString } from "uint8arrays/from-string";
