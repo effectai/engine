@@ -23,7 +23,6 @@ import type { Task } from "../src/core/src/protocols/task/pb/task";
 const dummyTask: Task = {
 	id: "1",
 	owner: "0x123",
-	repetition: 1,
 	reward: "500",
 	manager: "",
 	template: `<form>
@@ -32,22 +31,6 @@ const dummyTask: Task = {
         </form>`,
 	data: new Map(),
 	result: "",
-};
-
-const createNode = () => {
-	return createLibp2p({
-		addresses: {
-			listen: ["/ip4/0.0.0.0/tcp/0"],
-		},
-		transports: [tcp()],
-		streamMuxers: [yamux()],
-		connectionEncrypters: [noise()],
-		peerDiscovery: [
-			mdns({
-				interval: 20e3,
-			}),
-		],
-	});
 };
 
 const createManagerNode = (peers: string[]) => {

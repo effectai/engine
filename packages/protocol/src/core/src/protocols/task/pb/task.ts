@@ -11,7 +11,6 @@ export interface Task {
   id: string
   owner: string
   manager: string
-  repetition: number
   reward: string
   template: string
   data: Map<string, string>
@@ -114,11 +113,6 @@ export namespace Task {
           w.string(obj.manager)
         }
 
-        if ((obj.repetition != null && obj.repetition !== 0)) {
-          w.uint32(24)
-          w.int32(obj.repetition)
-        }
-
         if ((obj.reward != null && obj.reward !== '')) {
           w.uint32(34)
           w.string(obj.reward)
@@ -149,7 +143,6 @@ export namespace Task {
           id: '',
           owner: '',
           manager: '',
-          repetition: 0,
           reward: '',
           template: '',
           data: new Map<string, string>(),
@@ -172,10 +165,6 @@ export namespace Task {
             }
             case 2: {
               obj.manager = reader.string()
-              break
-            }
-            case 3: {
-              obj.repetition = reader.int32()
               break
             }
             case 4: {

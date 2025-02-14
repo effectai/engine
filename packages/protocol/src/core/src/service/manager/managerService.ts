@@ -60,6 +60,14 @@ export class ManagerService
 		// throw new Error("Method not implemented.");
 	}
 
+	public async acceptTask(task: Task) {
+		if (!this.components.taskStore) {
+			throw new Error("TaskStore is required to accept tasks");
+		}
+
+		await this.components.taskStore.put(task);
+	}
+
 	public async processTask(task: Task) {
 		//check if taskStore is available  and peerQueue is available
 		if (!this.components.taskStore || !this.components.peerQueue) {
@@ -73,7 +81,7 @@ export class ManagerService
 		const peerString = this.components.peerQueue.dequeue();
 
 		if (!peerString) {
-			console.log("No peers available to process task");
+			console.log("No peers available to process task..");
 			return;
 		}
 
@@ -86,7 +94,6 @@ export class ManagerService
 			return;
 		}
 
-		console.log("Sending task to peer", peer.id.toString());
 		task.manager = this.components.peerId.toString();
 		//send the task to the peer
 		await this.components.task.sendTask(peer.id, task);

@@ -4,7 +4,6 @@ message Task {
   string id = 0;                   // Unique identifier for the task
   string owner = 1;                // Owner of the task
   string manager = 2;              // Manager of the task
-  int32 repetition = 3;           // Repetition of the task (n times)
   string reward = 4;               // Reward for the task
   string template = 5;             // Template used in the task
   map<string, string> data = 6;    // Arbitrary key-value pairs for task data
