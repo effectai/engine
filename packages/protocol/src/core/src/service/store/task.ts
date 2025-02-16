@@ -41,6 +41,11 @@ export class TaskStore extends TypedEventEmitter<TaskStoreEvents> {
 		this.safeDispatchEvent("task:stored", { detail: task });
 		return task;
 	}
+
+	async all(): Promise<Task[]> {
+		const tasks = await this.datastore.query({ prefix: new Key("task") });
+		return Promise.all(tasks.map(async (task) => Task.decode(task.value)));
+	}
 }
 
 export function taskStore(): (components: TaskStoreComponents) => TaskStore {

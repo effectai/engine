@@ -1,0 +1,23 @@
+{
+	"name": "nuxt-app",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "nuxt build",
+		"dev": "nuxt dev",
+		"generate": "nuxt generate",
+		"preview": "nuxt preview",
+		"postinstall": "nuxt prepare"
+	},
+	"devDependencies": {
+		"vite-plugin-node-polyfills": "0.22.0",
+		"@effectai/protocol": "workspace:*",
+		"@nuxt/devtools": "latest",
+		"@nuxt/ui": "^2.21.0",
+		"nuxt": "^3.15.4",
+		"vue": "latest"
+	},
+	"dependencies": {
+		"buffer": "^6.0.3"
+	}
+}

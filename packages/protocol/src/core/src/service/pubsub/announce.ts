@@ -76,6 +76,7 @@ export class AnnouncePeerDiscovery
 				this.safeDispatchEvent<PeerInfo>("peer", {
 					detail: {
 						id: peerId,
+						//@ts-ignore
 						multiaddrs: peer.addrs.map((b) => multiaddr(b)),
 					},
 				});
@@ -113,7 +114,7 @@ export class AnnouncePeerDiscovery
 			type: Type.WORKER,
 			addrs: this.components.addressManager
 				.getAddresses()
-				.map((ma) => ma.bytes),
+				.map((ma: any) => ma.bytes),
 		};
 
 		const encodedPeer = PBPeer.encode(peer);

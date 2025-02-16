@@ -48,7 +48,7 @@ export class WorkerService
 	}
 
 	stop(): void | Promise<void> {
-		throw new Error("Method not implemented.");
+		console.log("stop!");
 	}
 
 	async acceptTask(task: Task) {
