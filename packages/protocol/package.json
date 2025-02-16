@@ -5,8 +5,14 @@
 	"packageManager": "pnpm@8.15.6",
 	"type": "module",
 	"version": "1.0.0",
+	"exports": {
+		".": {
+			"import": "./dist/index.js"
+		}
+	},
 	"scripts": {
 		"test": "vitest",
+		"build": "tsc",
 		"generate": "protons ./src/core/protocol/task/task.proto"
 	},
 	"dependencies": {

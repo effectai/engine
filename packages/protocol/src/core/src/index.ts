@@ -16,10 +16,7 @@ export { noise } from "@chainsafe/libp2p-noise";
 export { yamux } from "@chainsafe/libp2p-yamux";
 export { bootstrap } from "@libp2p/bootstrap";
 export { gossipsub } from "@chainsafe/libp2p-gossipsub";
-export {
-	pubSubPeerDiscovery,
-	PeerType,
-} from "./service/discovery/pubsub/index.js";
+export { PeerType } from "./service/discovery/pubsub/index.js";
 export { Uint8ArrayList } from "uint8arraylist";
 export {
 	circuitRelayTransport,

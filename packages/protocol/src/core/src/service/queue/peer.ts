@@ -4,17 +4,23 @@ import {
 	type PeerStore,
 	type TypedEventTarget,
 } from "@libp2p/interface";
+import { TypedEventEmitter } from "../../index.js";
 
 export interface PeerQueueComponents {
 	peerStore: PeerStore;
 	events: TypedEventTarget<Libp2pEvents>;
 }
 
-export class PeerQueue {
+export interface PeerQueueEvents {
+	"peer:added": CustomEvent<Peer>;
+}
+
+export class PeerQueue extends TypedEventEmitter<PeerQueueEvents> {
 	private queue: string[] = []; // Stores peerIds in a queue
 	private components: PeerQueueComponents;
 
 	constructor(components: PeerQueueComponents) {
+		super();
 		this.components = components;
 		this._initialize();
 	}
@@ -26,7 +32,6 @@ export class PeerQueue {
 		for (const peer of peers) {
 			//only add peers that support the task protocol
 			//cons
-			console.log(peer.protocols);
 			peer.protocols.includes("effectai/task/1.0.0") &&
 				this.enqueue(peer.id.toString());
 		}
@@ -44,9 +49,14 @@ export class PeerQueue {
 					!this.queue.includes(detail.peer.id.toString())
 				) {
 					this.enqueue(detail.peer.id.toString());
+					this.safeDispatchEvent("peer:added", { detail: detail.peer });
 				}
 			},
 		);
+
+		this.components.events.addEventListener("peer:disconnect", ({ detail }) => {
+			detail && this.remove(detail.toString());
+		});
 	}
 
 	// Add a peer to the end of the queue

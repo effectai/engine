@@ -36,7 +36,6 @@ export interface ManagerServiceComponents {
 
 export interface ManagerServiceEvents {
 	"task:received": CustomEvent<Task>;
-	"peer:discovered": CustomEvent<PeerInfo>;
 }
 
 export class ManagerService
@@ -52,7 +51,13 @@ export class ManagerService
 
 	start(): void | Promise<void> {
 		this.components.task.addEventListener("task:received", async (taskInfo) => {
-			console.log("Task received", taskInfo.detail);
+			//get the task from our store and sync it.
+			//TODO:: only sync if checks are correct and valid
+			await this.components.taskStore?.put(taskInfo.detail);
+
+			if (taskInfo.detail.result) {
+				console.log("Task completed successfully");
+			}
 		});
 	}
 

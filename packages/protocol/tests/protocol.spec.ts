@@ -83,8 +83,6 @@ describe("Libp2p", () => {
 			async () => {
 				const [manager1] = await Promise.all([createManagerNode([])]);
 
-				console.log(`Node started with id ${manager1.peerId.toString()}`);
-
 				const relayAddress = manager1.getMultiaddrs()[0];
 				await new Promise((resolve) => setTimeout(resolve, 100));
 
