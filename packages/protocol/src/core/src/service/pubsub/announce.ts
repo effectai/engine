@@ -3,11 +3,11 @@ import {
 	publicKeyToProtobuf,
 } from "@libp2p/crypto/keys";
 import {
-	NodeInfo,
-	PeerDiscoveryEvents,
+	type NodeInfo,
+	type PeerDiscoveryEvents,
 	type PeerId,
 	type PeerInfo,
-	PeerStore,
+	type PeerStore,
 	type PubSub,
 	type Startable,
 	TypedEventEmitter,
@@ -15,7 +15,7 @@ import {
 import type { AddressManager } from "@libp2p/interface-internal";
 import { peerIdFromPublicKey } from "@libp2p/peer-id";
 import { multiaddr } from "@multiformats/multiaddr";
-import { Peer as PBPeer, Type } from "./../../protocols/announce/announce.js";
+import { Peer as PBPeer, Type } from "../../protocols/announce/pb/announce.js";
 
 export interface AnnouncePeerDiscoveryComponents {
 	peerId: PeerId;

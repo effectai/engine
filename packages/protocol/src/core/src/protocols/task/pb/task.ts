@@ -4,13 +4,37 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-boolean-literal-compare */
 /* eslint-disable @typescript-eslint/no-empty-interface */
 
-import { type Codec, decodeMessage, type DecodeOptions, encodeMessage, MaxSizeError, message } from 'protons-runtime'
+import { type Codec, decodeMessage, type DecodeOptions, encodeMessage, enumeration, MaxSizeError, message } from 'protons-runtime'
 import type { Uint8ArrayList } from 'uint8arraylist'
 
+export enum TaskStatus {
+  CREATED = 'CREATED',
+  ASSIGNED = 'ASSIGNED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  CANCELLED = 'CANCELLED',
+  COMPLETED = 'COMPLETED'
+}
+
+enum __TaskStatusValues {
+  CREATED = 0,
+  ASSIGNED = 1,
+  IN_PROGRESS = 4,
+  CANCELLED = 3,
+  COMPLETED = 2
+}
+
+export namespace TaskStatus {
+  export const codec = (): Codec<TaskStatus> => {
+    return enumeration<TaskStatus>(__TaskStatusValues)
+  }
+}
 export interface Task {
   id: string
   owner: string
   manager: string
+  created: string
+  signature: string
+  status: TaskStatus
   reward: string
   template: string
   data: Map<string, string>
@@ -113,25 +137,40 @@ export namespace Task {
           w.string(obj.manager)
         }
 
-        if ((obj.reward != null && obj.reward !== '')) {
+        if ((obj.created != null && obj.created !== '')) {
+          w.uint32(26)
+          w.string(obj.created)
+        }
+
+        if ((obj.signature != null && obj.signature !== '')) {
           w.uint32(34)
+          w.string(obj.signature)
+        }
+
+        if (obj.status != null && __TaskStatusValues[obj.status] !== 0) {
+          w.uint32(40)
+          TaskStatus.codec().encode(obj.status, w)
+        }
+
+        if ((obj.reward != null && obj.reward !== '')) {
+          w.uint32(50)
           w.string(obj.reward)
         }
 
         if ((obj.template != null && obj.template !== '')) {
-          w.uint32(42)
+          w.uint32(58)
           w.string(obj.template)
         }
 
         if (obj.data != null && obj.data.size !== 0) {
           for (const [key, value] of obj.data.entries()) {
-            w.uint32(50)
+            w.uint32(66)
             Task.Task$dataEntry.codec().encode({ key, value }, w)
           }
         }
 
         if ((obj.result != null && obj.result !== '')) {
-          w.uint32(58)
+          w.uint32(74)
           w.string(obj.result)
         }
 
@@ -143,6 +182,9 @@ export namespace Task {
           id: '',
           owner: '',
           manager: '',
+          created: '',
+          signature: '',
+          status: TaskStatus.CREATED,
           reward: '',
           template: '',
           data: new Map<string, string>(),
@@ -167,15 +209,27 @@ export namespace Task {
               obj.manager = reader.string()
               break
             }
+            case 3: {
+              obj.created = reader.string()
+              break
+            }
             case 4: {
-              obj.reward = reader.string()
+              obj.signature = reader.string()
               break
             }
             case 5: {
-              obj.template = reader.string()
+              obj.status = TaskStatus.codec().decode(reader)
               break
             }
             case 6: {
+              obj.reward = reader.string()
+              break
+            }
+            case 7: {
+              obj.template = reader.string()
+              break
+            }
+            case 8: {
               if (opts.limits?.data != null && obj.data.size === opts.limits.data) {
                 throw new MaxSizeError('Decode error - map field "data" had too many elements')
               }
@@ -184,7 +238,7 @@ export namespace Task {
               obj.data.set(entry.key, entry.value)
               break
             }
-            case 7: {
+            case 9: {
               obj.result = reader.string()
               break
             }

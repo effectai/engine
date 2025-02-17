@@ -3,6 +3,9 @@ import {
 	TypedEventEmitter,
 	type IncomingStreamData,
 	type Startable,
+	Ed25519PrivateKey,
+	KeyType,
+	PrivateKey,
 } from "@libp2p/interface";
 import { pbStream } from "it-protobuf-stream";
 import { Task } from "./pb/task.js";
@@ -12,6 +15,7 @@ import {
 	MULTICODEC_TASK_PROTOCOL_NAME,
 	MULTICODEC_TASK_PROTOCOL_VERSION,
 } from "./consts.js";
+import { peerIdFromString } from "@libp2p/peer-id";
 
 export interface TaskProtocolEvents {
 	"task:received": CustomEvent<Task>;
@@ -55,19 +59,39 @@ export class TaskProtocol
 		// throw new Error("Method not implemented.");
 	}
 
-	async sendTask(peerId: PeerId, task: Task): Promise<void> {
+	async sendTask(peerId: string, task: Task): Promise<void> {
 		//TODO:: check if connection already exists
-		const connection =
-			await this.components.connectionManager.openConnection(peerId);
+		try {
+			console.log(peerId);
+			const peer = peerIdFromString(peerId);
 
-		const stream = await connection.newStream(
-			`/${MULTICODEC_TASK_PROTOCOL_NAME}/${MULTICODEC_TASK_PROTOCOL_VERSION}`,
-		);
+			const connections =
+				this.components.connectionManager.getConnections(peer);
 
-		const pb = pbStream(stream).pb(Task);
-		await pb.write(task);
+			let connection = connections.find((c) => c.direction === "outbound");
+			if (!connection) {
+				connection =
+					await this.components.connectionManager.openConnection(peer);
+			}
 
-		this.safeDispatchEvent("task:sent", { detail: task });
+			const stream = await connection.newStream(
+				`/${MULTICODEC_TASK_PROTOCOL_NAME}/${MULTICODEC_TASK_PROTOCOL_VERSION}`,
+			);
+
+			const pb = pbStream(stream).pb(Task);
+			await pb.write(task);
+
+			this.safeDispatchEvent("task:sent", { detail: task });
+		} catch (e) {
+			console.error("Error sending task", e);
+		}
+	}
+
+	async signTask(task: Task, privateKey: PrivateKey): Promise<Task> {
+		const message = Buffer.from(task.result);
+		const signature = await privateKey.sign(message);
+		task.signature = Buffer.from(signature).toString("hex");
+		return task;
 	}
 }
 

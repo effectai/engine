@@ -16,6 +16,8 @@
 		"generate": "protons ./src/core/protocol/task/task.proto"
 	},
 	"dependencies": {
+		"chalk": "^5.0.0",
+		"express": "4.21.2",
 		"@chainsafe/libp2p-gossipsub": "14.1.0",
 		"@chainsafe/libp2p-noise": "^16.0.0",
 		"@chainsafe/libp2p-yamux": "^7.0.1",

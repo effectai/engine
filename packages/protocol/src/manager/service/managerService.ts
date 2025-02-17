@@ -2,6 +2,7 @@ import {
 	type Libp2pEvents,
 	type PeerId,
 	type PeerStore,
+	PrivateKey,
 	type Startable,
 	TypedEventEmitter,
 	type TypedEventTarget,
@@ -11,11 +12,13 @@ import { peerIdFromString } from "@libp2p/peer-id";
 
 import type { Registrar, ConnectionManager } from "@libp2p/interface-internal";
 import type { Datastore } from "interface-datastore";
-import type {
-	PeerQueue,
-	TaskStore,
-	TaskProtocol,
-	Task,
+import {
+	type PeerQueue,
+	type TaskStore,
+	type TaskProtocol,
+	type Task,
+	extractPeerIdFromTaskResults,
+	TaskStatus,
 } from "../../core/src/index.js";
 
 export interface ManagerServiceComponents {
@@ -28,6 +31,7 @@ export interface ManagerServiceComponents {
 	taskStore?: TaskStore;
 	task: TaskProtocol;
 	peerId: PeerId;
+	privateKey: PrivateKey;
 }
 
 export interface ManagerServiceEvents {
@@ -53,6 +57,8 @@ export class ManagerService
 
 			if (taskInfo.detail.result) {
 				console.log("Task completed successfully");
+				//TODO:: give worker an ack response with signature for payout ?
+				this.ackTask(taskInfo.detail);
 			}
 		});
 	}
@@ -67,6 +73,31 @@ export class ManagerService
 		}
 
 		await this.components.taskStore.put(task);
+
+		//TODO:: check if task is valid and can be processed
+		await this.processTask(task);
+	}
+
+	public async ackTask(task: Task) {
+		if (!this.components.taskStore) {
+			throw new Error("TaskStore is required to accept tasks");
+		}
+
+		const { peerId } = extractPeerIdFromTaskResults(task.result);
+
+		const result = await this.components.task.signTask(
+			task,
+			this.components.privateKey,
+		);
+		result.status = TaskStatus.COMPLETED;
+
+		//send the signed task back to the worker
+
+		//sync task
+		await this.components.taskStore.put(result);
+
+		this.components.task.sendTask(peerId, result);
+		console.log("Task signed and acked", result);
 	}
 
 	public async processTask(task: Task) {
@@ -74,9 +105,6 @@ export class ManagerService
 		if (!this.components.taskStore || !this.components.peerQueue) {
 			throw new Error("TaskStore and PeerQueue are required to process tasks");
 		}
-
-		//store the task in the taskStore
-		await this.components.taskStore.put(task);
 
 		//get the fist peer from the queue
 		const peerString = this.components.peerQueue.dequeue();
@@ -97,7 +125,7 @@ export class ManagerService
 
 		task.manager = this.components.peerId.toString();
 		//send the task to the peer
-		await this.components.task.sendTask(peer.id, task);
+		await this.components.task.sendTask(peerString, task);
 
 		// put the peer back in the queue
 		this.components.peerQueue.enqueue(peerString);

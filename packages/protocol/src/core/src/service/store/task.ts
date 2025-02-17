@@ -29,22 +29,22 @@ export class TaskStore extends TypedEventEmitter<TaskStoreEvents> {
 	}
 
 	async has(taskId: string): Promise<boolean> {
-		return this.datastore.has(new Key(taskId));
+		return this.datastore.has(new Key(`/tasks/${taskId}`));
 	}
 
 	async get(taskId: string): Promise<Task | undefined> {
-		return Task.decode(await this.datastore.get(new Key(taskId)));
+		return Task.decode(await this.datastore.get(new Key(`/tasks/${taskId}`)));
 	}
 
 	async put(task: Task): Promise<Task> {
-		await this.datastore.put(new Key(task.id), Task.encode(task));
+		await this.datastore.put(new Key(`/tasks/${task.id}`), Task.encode(task));
 		this.safeDispatchEvent("task:stored", { detail: task });
 		return task;
 	}
 
 	async all(): Promise<Task[]> {
 		const tasks = [];
-		for await (const entry of this.datastore.query({})) {
+		for await (const entry of this.datastore.query({ prefix: "/tasks/" })) {
 			tasks.push(Task.decode(entry.value));
 		}
 		return tasks;

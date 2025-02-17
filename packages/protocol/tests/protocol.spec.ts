@@ -1,27 +1,12 @@
-import { noise } from "@chainsafe/libp2p-noise";
-import { yamux } from "@chainsafe/libp2p-yamux";
-import { identify } from "@libp2p/identify";
-import { mdns } from "@libp2p/mdns";
-import { tcp } from "@libp2p/tcp";
-import { createLibp2p } from "libp2p";
-import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 import { describe, it } from "vitest";
 import {
-	bootstrap,
-	circuitRelayServer,
-	circuitRelayTransport,
-	createPeerQueue,
-	taskStore,
-	webSockets,
-	workerService,
-} from "../src/core/src";
-import { taskProtocol } from "../src/core/src/protocols/task/task";
-import { managerService } from "../src/core/src/service/manager/managerService";
-import { announcePeerDiscovery } from "../src/core/src/service/pubsub/announce";
-import type { Task } from "../src/core/src/protocols/task/pb/task";
+	createManagerNode,
+	createWorkerNode,
+	type Task,
+} from "./../src/index.js";
 
-const dummyTask: Task = {
-	id: "1",
+const dummyTask = (id: string) => ({
+	id,
 	owner: "0x123",
 	reward: "500",
 	manager: "",
@@ -31,50 +16,7 @@ const dummyTask: Task = {
         </form>`,
 	data: new Map(),
 	result: "",
-};
-
-const createManagerNode = (peers: string[]) => {
-	return createLibp2p({
-		addresses: {
-			listen: ["/ip4/0.0.0.0/tcp/0/ws"],
-		},
-		transports: [webSockets()],
-		streamMuxers: [yamux()],
-		connectionEncrypters: [noise()],
-		peerDiscovery: [
-			...(peers && peers.length > 0 ? [bootstrap({ list: peers })] : []),
-			announcePeerDiscovery(),
-		],
-		services: {
-			pubsub: gossipsub(),
-			identify: identify(),
-			taskStore: taskStore(),
-			task: taskProtocol(),
-			manager: managerService(),
-			peerQueue: createPeerQueue(),
-			relay: circuitRelayServer(),
-		},
-	});
-};
-
-const createWorkerNode = (peers: string[]) => {
-	return createLibp2p({
-		addresses: {
-			listen: ["/p2p-circuit"],
-		},
-		transports: [webSockets(), circuitRelayTransport()],
-		streamMuxers: [yamux()],
-		connectionEncrypters: [noise()],
-		peerDiscovery: [announcePeerDiscovery(), bootstrap({ list: peers })],
-		services: {
-			pubsub: gossipsub(),
-			identify: identify(),
-			taskStore: taskStore(),
-			task: taskProtocol(),
-			worker: workerService(),
-		},
-	});
-};
+});
 
 describe("Libp2p", () => {
 	describe("Libp2p: Effect AI Protocol", () => {
@@ -97,7 +39,9 @@ describe("Libp2p", () => {
 				await new Promise((resolve) => setTimeout(resolve, 3000));
 
 				for (let i = 0; i < 3; i++) {
-					const result = await manager1.services.manager.processTask(dummyTask);
+					const dtask = dummyTask(i.toString());
+
+					const result = await manager1.services.manager.processTask(dtask);
 
 					if (!result) {
 						throw new Error("Task processing failed");
@@ -108,12 +52,17 @@ describe("Libp2p", () => {
 					for (const peer of [w1, w2, w3]) {
 						if (peer.peerId.toString() === result.peer.id.toString()) {
 							await peer.services.worker.completeTask(
-								dummyTask.id,
+								dtask.id,
 								`Task completed by ${peer.peerId.toString()}`,
 							);
 						}
 					}
 				}
+
+				//wait 1 second
+				await new Promise((resolve) => setTimeout(resolve, 1000));
+				const tasks = await manager1.services.taskStore.all();
+				console.log(tasks);
 			},
 			{ timeout: 20000 },
 		);

@@ -1,8 +1,8 @@
-import {
-	type Libp2pEvents,
+import type {
+	Libp2pEvents,
 	Peer,
-	type PeerStore,
-	type TypedEventTarget,
+	PeerStore,
+	TypedEventTarget,
 } from "@libp2p/interface";
 import { TypedEventEmitter } from "../../index.js";
 

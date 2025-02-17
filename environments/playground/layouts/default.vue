@@ -1,5 +1,6 @@
 <template>
   <div>
+    <UModals />
     <slot />
   </div>
 </template>

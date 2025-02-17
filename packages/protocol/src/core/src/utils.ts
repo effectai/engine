@@ -26,3 +26,9 @@ export const handleMessage = async (streamData: IncomingStreamData) => {
 
 	return JSON.parse(new TextDecoder().decode(data.subarray()));
 };
+
+export const extractPeerIdFromTaskResults = (taskResults: string) => {
+	console.log("taskResults:", taskResults);
+	const results = JSON.parse(taskResults);
+	return { peerId: results.worker };
+};

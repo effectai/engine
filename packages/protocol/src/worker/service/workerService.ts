@@ -10,7 +10,12 @@ import {
 } from "@libp2p/interface";
 import type { ConnectionManager, Registrar } from "@libp2p/interface-internal";
 import { peerIdFromString } from "@libp2p/peer-id";
-import type { TaskStore, TaskProtocol, Task } from "../../core/src/index.js";
+import {
+	type TaskStore,
+	type TaskProtocol,
+	type Task,
+	TaskStatus,
+} from "../../core/src/index.js";
 
 export interface TaskManagerComponents {
 	peerId: PeerId;
@@ -43,7 +48,7 @@ export class WorkerService
 
 	start(): void | Promise<void> {
 		this.components.task.addEventListener("task:received", async (taskInfo) => {
-			this.acceptTask(taskInfo.detail);
+			await this.components.taskStore.put(taskInfo.detail);
 		});
 	}
 
@@ -54,6 +59,7 @@ export class WorkerService
 	}
 
 	async acceptTask(task: Task) {
+		task.status = TaskStatus.IN_PROGRESS;
 		await this.components.taskStore.put(task);
 		this.safeDispatchEvent("task:accepted", { detail: task.id });
 	}
@@ -77,7 +83,7 @@ export class WorkerService
 		await this.components.taskStore.put(task);
 
 		//send the result to the manager peer
-		await this.components.task.sendTask(peerIdFromString(task.manager), task);
+		await this.components.task.sendTask(task.manager, task);
 	}
 }
 

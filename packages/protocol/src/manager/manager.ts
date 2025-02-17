@@ -2,7 +2,7 @@ import { noise } from "@chainsafe/libp2p-noise";
 import { yamux } from "@chainsafe/libp2p-yamux";
 import { webSockets } from "@libp2p/websockets";
 import { createLibp2p } from "libp2p";
-import { announcePeerDiscovery } from "../core/src/service/pubsub/announce.js";
+import { announcePeerDiscovery } from "../core/src/protocols/announce/announce.js";
 import { bootstrap } from "@libp2p/bootstrap";
 import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 import { circuitRelayServer } from "@libp2p/circuit-relay-v2";
