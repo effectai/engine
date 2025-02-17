@@ -14,6 +14,7 @@
 		"purge": "rm -rf node_modules pnpm-lock.yaml && pnpm recursive exec -- rm -rf node_modules dist",
 		"dev": "pnpm turbo dev",
 		"dashboard:generate-staging": "pnpm --filter effect-dashboard run generate-staging",
+		"format": "pnpm prettier -w . && pnpm biome format --write .",
 		"dashboard:generate-prod": "pnpm --filter effect-dashboard run generate-prod",
 		"website:generate": "pnpm --filter effect-website run generate",
 		"manager:start": "pnpm --filter @effectai/task-manager run start",
