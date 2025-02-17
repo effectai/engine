@@ -2,30 +2,48 @@
   <div v-if="!publicKey">
     <wallet-multi-button></wallet-multi-button>
   </div>
-  <div v-else>
-    <div class="text-center my-5">
-      <h1 class="text-2xl font-bold">Effect AI Protocol</h1>
-      <h2 class="text-mono text-sm">Worker / Alpha v0.0.1</h2>
-      <div class="text-sm flex gap-1 mt-2 justify-center">
-        <label class="font-bold">Status</label>
-        <span class="text-green-500">Connected</span>
+  <div v-else class="">
+    <div class="flex justify-between space-x-12 mt-5 items-center">
+      <div class="my-5">
+        <h1 class="text-4xl font-bold">Effect AI Protocol</h1>
+        <h2 class="text-mono text-sm text-xl">Worker / Alpha v0.0.1</h2>
+        <div class="text-sm flex gap-1 mt-2">
+          <label class="font-bold">Status:</label>
+          <span class="text-green-500">Connected</span>
+        </div>
+        <div class="text-sm flex gap-1">
+          <label class="font-bold">Wallet:</label>
+          <span class="text-black">{{ publicKey }}</span>
+        </div>
+        <div class="text-sm flex gap-1">
+          <label class="font-bold">Node:</label>
+          <span class="text-black">{{ key.publicKey }}</span>
+        </div>
+        <UButton color="black" @click="disconnect" class="button mt-5"
+          >Disconnect</UButton
+        >
       </div>
-      <div class="text-sm flex gap-1 justify-center">
-        <label class="font-bold">Wallet</label>
-        <span class="text-black">{{ publicKey }}</span>
-      </div>
-      <div class="text-sm flex gap-1 justify-center">
-        <label class="font-bold">Node</label>
-        <span class="text-black">{{ key.publicKey }}</span>
-      </div>
-      <UButton @click="disconnect" class="button mt-5">Disconnect</UButton>
+
+      <UptimeCard
+        :total-uptime-in-seconds="4500"
+        :last-ping="1000"
+        :total-manager-uptime-in-seconds="2300"
+      />
     </div>
-    <div>
+    <div class="my-5">
       <div>
         <UModal v-if="activeTask" v-model="isOpen">
           <div class="p-4">
             <form @submit.prevent="handleSubmit">
-              <div v-html="activeTask.template"></div>
+              <div
+                id="template"
+                class="prose"
+                v-html="activeTask.template"
+              ></div>
+
+              <UButton type="submit" class="button mt-5" value="Submit">
+                Submit
+              </UButton>
             </form>
           </div>
         </UModal>
@@ -112,6 +130,14 @@ const actions = (row) => [
 				console.log("reject", row);
 			},
 		},
+		{
+			label: "Payout",
+			disabled: true,
+			icon: "i-heroicons-currency-dollar-20-solid",
+			onClick: () => {
+				console.log("complete", row);
+			},
+		},
 	],
 ];
 
@@ -121,7 +147,7 @@ localStorage.setItem("seed", seed);
 const key = await generateKeyPairFromSeed("Ed25519", Buffer.from(seed, "hex"));
 const worker = await createWorkerNode(
 	[
-		"/ip4/127.0.0.1/tcp/39823/ws/p2p/12D3KooWEbPPJ1bEVu6cPo7duMYx52NmtKZd1fLw1bxCoQ53cvdq",
+		"/ip4/127.0.0.1/tcp/38527/ws/p2p/12D3KooWKGHizkLwpG13QgtPgHXFZqgynQ1JPBgD7njeExpn21qH",
 	],
 	key,
 );
@@ -141,4 +167,11 @@ onBeforeUnmount(async () => {
 });
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+#template input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.25rem;
+}
+</style>

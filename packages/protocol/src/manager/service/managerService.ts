@@ -91,8 +91,6 @@ export class ManagerService
 		);
 		result.status = TaskStatus.COMPLETED;
 
-		//send the signed task back to the worker
-
 		//sync task
 		await this.components.taskStore.put(result);
 

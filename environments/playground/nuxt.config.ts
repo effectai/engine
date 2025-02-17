@@ -7,6 +7,7 @@ export default defineNuxtConfig({
 	modules: ["@nuxt/ui"],
 	plugins: ["~/plugins/wallets.ts"],
 	compatibilityDate: "2025-02-16",
+	css: ["~/assets/css/main.css"],
 	vite: {
 		plugins: [nodePolyfills()],
 	},
