@@ -5,6 +5,7 @@ export default defineNuxtConfig({
 	devtools: { enabled: true },
 	ssr: false,
 	modules: ["@nuxt/ui"],
+	plugins: ["~/plugins/wallets.ts"],
 	compatibilityDate: "2025-02-16",
 	vite: {
 		plugins: [nodePolyfills()],

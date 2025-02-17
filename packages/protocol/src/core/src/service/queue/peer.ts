@@ -30,8 +30,6 @@ export class PeerQueue extends TypedEventEmitter<PeerQueueEvents> {
 		const peers = await this.components.peerStore.all();
 
 		for (const peer of peers) {
-			//only add peers that support the task protocol
-			//cons
 			peer.protocols.includes("effectai/task/1.0.0") &&
 				this.enqueue(peer.id.toString());
 		}
@@ -50,23 +48,23 @@ export class PeerQueue extends TypedEventEmitter<PeerQueueEvents> {
 				) {
 					this.enqueue(detail.peer.id.toString());
 					this.safeDispatchEvent("peer:added", { detail: detail.peer });
+					console.log("Peer added to queue: ", detail.peer.id.toString());
 				}
 			},
 		);
 
 		this.components.events.addEventListener("peer:disconnect", ({ detail }) => {
-			detail && this.remove(detail.toString());
+			console.log("Peer disconnected: ", detail.toString());
+			this.remove(detail.toString());
 		});
 	}
 
-	// Add a peer to the end of the queue
 	enqueue(peerId: string) {
 		if (!this.queue.includes(peerId)) {
 			this.queue.push(peerId);
 		}
 	}
 
-	// Get the next peer and move it to the end of the queue
 	dequeue(): string | undefined {
 		if (this.queue.length === 0) return undefined;
 		const peer = this.queue.shift(); // Remove from the front
@@ -74,12 +72,10 @@ export class PeerQueue extends TypedEventEmitter<PeerQueueEvents> {
 		return peer;
 	}
 
-	// Remove a peer from the queue (e.g., if it disconnects)
 	remove(peerId: string) {
 		this.queue = this.queue.filter((id) => id !== peerId);
 	}
 
-	// Get the current queue state
 	getQueue() {
 		return [...this.queue];
 	}

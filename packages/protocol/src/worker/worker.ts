@@ -7,9 +7,11 @@ import { identify } from "@libp2p/identify";
 import { webRTC } from "@libp2p/webrtc";
 import { webSockets } from "@libp2p/websockets";
 import { createLibp2p } from "libp2p";
-import { filters, taskStore, workerService } from "../core/src/index.js";
+import { taskStore } from "../core/src/index.js";
 import { taskProtocol } from "../core/src/protocols/task/task.js";
+import * as filters from "@libp2p/websockets/filters";
 import { announcePeerDiscovery } from "../core/src/service/pubsub/announce.js";
+import { workerService } from "./service/workerService.js";
 
 export const createWorkerNode = (peers: string[]) => {
 	return createLibp2p({

@@ -1,19 +1,19 @@
 import {
-	ComponentLogger,
+	type ComponentLogger,
 	type Libp2pEvents,
-	Logger,
+	type Logger,
+	type PeerId,
 	type PeerStore,
-	Startable,
+	type Startable,
 	TypedEventEmitter,
 	type TypedEventTarget,
 } from "@libp2p/interface";
 import type { ConnectionManager, Registrar } from "@libp2p/interface-internal";
-import type { Task } from "../../protocols/task/pb/task.js";
-import type { TaskStore } from "../store/task.js";
-import type { TaskProtocol } from "../../protocols/task/task.js";
 import { peerIdFromString } from "@libp2p/peer-id";
+import type { TaskStore, TaskProtocol, Task } from "../../core/src/index.js";
 
 export interface TaskManagerComponents {
+	peerId: PeerId;
 	registrar: Registrar;
 	peerStore: PeerStore;
 	taskStore: TaskStore;
@@ -48,7 +48,9 @@ export class WorkerService
 	}
 
 	stop(): void | Promise<void> {
-		console.log("stop!");
+		this.components.events.safeDispatchEvent("peer:disconnect", {
+			detail: this.components.peerStore.get(this.components.peerId),
+		});
 	}
 
 	async acceptTask(task: Task) {

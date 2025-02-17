@@ -1,12 +1,6 @@
-import { Uint8ArrayList } from "uint8arraylist";
-import { pbStream } from "it-protobuf-stream";
-
 import {
 	type Libp2pEvents,
-	NodeInfo,
-	Peer,
 	type PeerId,
-	type PeerInfo,
 	type PeerStore,
 	type Startable,
 	TypedEventEmitter,
@@ -16,11 +10,13 @@ import {
 import { peerIdFromString } from "@libp2p/peer-id";
 
 import type { Registrar, ConnectionManager } from "@libp2p/interface-internal";
-import type { Task } from "../../protocols/task/pb/task.js";
-import type { TaskStore } from "../store/task.js";
 import type { Datastore } from "interface-datastore";
-import type { PeerQueue } from "../queue/peer.js";
-import type { TaskProtocol } from "../../protocols/task/task.js";
+import type {
+	PeerQueue,
+	TaskStore,
+	TaskProtocol,
+	Task,
+} from "../../core/src/index.js";
 
 export interface ManagerServiceComponents {
 	registrar: Registrar;

@@ -43,8 +43,11 @@ export class TaskStore extends TypedEventEmitter<TaskStoreEvents> {
 	}
 
 	async all(): Promise<Task[]> {
-		const tasks = await this.datastore.query({ prefix: new Key("task") });
-		return Promise.all(tasks.map(async (task) => Task.decode(task.value)));
+		const tasks = [];
+		for await (const entry of this.datastore.query({})) {
+			tasks.push(Task.decode(entry.value));
+		}
+		return tasks;
 	}
 }
 

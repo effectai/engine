@@ -1,5 +1,4 @@
 import { createManagerNode } from "./../dist/manager/manager.js";
-import { createWorkerNode } from "./../dist/worker/worker.js";
 
 console.log("Starting manager node...");
 
@@ -20,8 +19,10 @@ manager.addEventListener("peer:discovery", ({ detail }) => {
 });
 
 //report some info every 10 seconds
-//
 setInterval(() => {
 	const queue = manager.services.peerQueue.getQueue();
 	console.log(`Queue size: ${queue.length}`);
+
+	const peers = manager.getPeers();
+	console.log(`Peers: ${peers.length}`);
 }, 10000);
