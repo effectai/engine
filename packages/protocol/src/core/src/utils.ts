@@ -1,20 +1,22 @@
 import type { IncomingStreamData, PeerId } from "@libp2p/interface";
+import { ConnectionManager } from "@libp2p/interface-internal";
 import type { Libp2p } from "libp2p";
 import { Uint8ArrayList } from "uint8arraylist";
 
-export const getOpenOutboundConnections = (node: Libp2p, peerId?: PeerId) => {
-	const connections = node.getConnections(peerId);
+export const getOpenOutboundConnections = (
+	connectionManager: ConnectionManager,
+	peerId: PeerId,
+) => {
+	const connections = connectionManager.getConnections(peerId);
 	return connections.filter((conn) => conn.status === "open");
 };
 
-export const getActiveOutBoundStreams = async (
-	node: Libp2p,
-	peerId?: PeerId,
+export const getActiveOutBoundConnections = async (
+	connectionManager: ConnectionManager,
+	peerId: PeerId,
 ) => {
-	const connections = getOpenOutboundConnections(node, peerId);
-	const streams = connections.map((conn) => conn.streams);
-	console.log("streams:", streams);
-	return streams.flat();
+	const connections = getOpenOutboundConnections(connectionManager, peerId);
+	return connections.filter((conn) => conn.direction === "outbound");
 };
 
 export const handleMessage = async (streamData: IncomingStreamData) => {
@@ -28,7 +30,6 @@ export const handleMessage = async (streamData: IncomingStreamData) => {
 };
 
 export const extractPeerIdFromTaskResults = (taskResults: string) => {
-	console.log("taskResults:", taskResults);
 	const results = JSON.parse(taskResults);
 	return { peerId: results.worker };
 };

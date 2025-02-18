@@ -6,7 +6,7 @@
     <div class="flex justify-between space-x-12 mt-5 items-center">
       <div class="my-5">
         <h1 class="text-4xl font-bold">Effect AI Protocol</h1>
-        <h2 class="text-mono text-sm text-xl">Worker / Alpha v0.0.1</h2>
+        <h2 class="text-mono text-sm text-xl">Worker Node / Alpha v0.0.1</h2>
         <div class="text-sm flex gap-1 mt-2">
           <label class="font-bold">Status:</label>
           <span class="text-green-500">Connected</span>
@@ -60,13 +60,19 @@
         class="w-full"
         :columns="[
           { key: 'id', label: 'ID' },
-          { key: 'manager', label: 'Manager' },
+          { key: 'manager', label: 'Managed by' },
+          { key: 'created', label: 'Created' },
           { key: 'status', label: 'Status' },
           { key: 'reward', label: 'Reward' },
-          { key: 'created', label: 'Created At' },
           { key: 'actions', label: 'Actions' },
         ]"
       >
+        <template #created-data="{ row }">
+          <span>{{ new Date(row.created).toLocaleString() }}</span>
+        </template>
+        <template #manager-data="{ row }">
+          <span>{{ trimAddress(row.manager) }}</span>
+        </template>
         <template #actions-data="{ row }">
           <UDropdown :items="actions(row)">
             <UButton
@@ -147,7 +153,7 @@ localStorage.setItem("seed", seed);
 const key = await generateKeyPairFromSeed("Ed25519", Buffer.from(seed, "hex"));
 const worker = await createWorkerNode(
 	[
-		"/ip4/127.0.0.1/tcp/38527/ws/p2p/12D3KooWKGHizkLwpG13QgtPgHXFZqgynQ1JPBgD7njeExpn21qH",
+		"/ip4/127.0.0.1/tcp/34859/ws/p2p/12D3KooWFFNkqu7bETMX2qfdyi9t9T3fEYtqQXMTKtSt8Yw9jz5b",
 	],
 	key,
 );
@@ -168,10 +174,10 @@ onBeforeUnmount(async () => {
 </script>
 
 <style lang="scss" scoped>
-#template input {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.25rem;
-}
+  #template input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.25rem;
+  }
 </style>

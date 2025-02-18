@@ -1,12 +1,10 @@
 import {
-	type PeerId,
 	TypedEventEmitter,
 	type IncomingStreamData,
 	type Startable,
-	Ed25519PrivateKey,
-	KeyType,
-	PrivateKey,
+	type PrivateKey,
 } from "@libp2p/interface";
+
 import { pbStream } from "it-protobuf-stream";
 import { Task } from "./pb/task.js";
 import type { ConnectionManager, Registrar } from "@libp2p/interface-internal";
@@ -16,6 +14,7 @@ import {
 	MULTICODEC_TASK_PROTOCOL_VERSION,
 } from "./consts.js";
 import { peerIdFromString } from "@libp2p/peer-id";
+import { getActiveOutBoundConnections } from "../../utils.js";
 
 export interface TaskProtocolEvents {
 	"task:received": CustomEvent<Task>;
@@ -60,15 +59,14 @@ export class TaskProtocol
 	}
 
 	async sendTask(peerId: string, task: Task): Promise<void> {
-		//TODO:: check if connection already exists
 		try {
-			console.log(peerId);
 			const peer = peerIdFromString(peerId);
 
-			const connections =
-				this.components.connectionManager.getConnections(peer);
+			let [connection] = await getActiveOutBoundConnections(
+				this.components.connectionManager,
+				peer,
+			);
 
-			let connection = connections.find((c) => c.direction === "outbound");
 			if (!connection) {
 				connection =
 					await this.components.connectionManager.openConnection(peer);
@@ -88,6 +86,7 @@ export class TaskProtocol
 	}
 
 	async signTask(task: Task, privateKey: PrivateKey): Promise<Task> {
+		//TODO:: we are signing the result here, but we should sign the entire task ?
 		const message = Buffer.from(task.result);
 		const signature = await privateKey.sign(message);
 		task.signature = Buffer.from(signature).toString("hex");

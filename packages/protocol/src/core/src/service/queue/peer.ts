@@ -48,7 +48,6 @@ export class PeerQueue extends TypedEventEmitter<PeerQueueEvents> {
 				) {
 					this.enqueue(detail.peer.id.toString());
 					this.safeDispatchEvent("peer:added", { detail: detail.peer });
-					console.log("Peer added to queue: ", detail.peer.id.toString());
 				}
 			},
 		);

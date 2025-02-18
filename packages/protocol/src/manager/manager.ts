@@ -12,11 +12,13 @@ import { taskProtocol } from "../core/src/protocols/task/task.js";
 import * as filters from "@libp2p/websockets/filters";
 import { createPeerQueue } from "../core/src/service/queue/peer.js";
 import { managerService } from "./service/managerService.js";
+import type { PrivateKey } from "@libp2p/interface";
 
-export const createManagerNode = (peers: string[]) => {
+export const createManagerNode = (peers: string[], privateKey?: PrivateKey) => {
 	return createLibp2p({
+		...(privateKey && { privateKey }),
 		addresses: {
-			listen: ["/ip4/0.0.0.0/tcp/0/ws"],
+			listen: ["/ip4/0.0.0.0/tcp/34859/ws"],
 		},
 		transports: [webSockets({ filter: filters.all })],
 		streamMuxers: [yamux()],

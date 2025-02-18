@@ -9,7 +9,7 @@ import {
 	type TypedEventTarget,
 } from "@libp2p/interface";
 import type { ConnectionManager, Registrar } from "@libp2p/interface-internal";
-import { peerIdFromString } from "@libp2p/peer-id";
+
 import {
 	type TaskStore,
 	type TaskProtocol,
@@ -62,6 +62,8 @@ export class WorkerService
 		task.status = TaskStatus.IN_PROGRESS;
 		await this.components.taskStore.put(task);
 		this.safeDispatchEvent("task:accepted", { detail: task.id });
+		//send ack back to the manager
+		await this.components.task.sendTask(task.manager, task);
 	}
 
 	async rejectTask(taskId: string) {

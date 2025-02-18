@@ -3,9 +3,9 @@ syntax = "proto3";
 enum TaskStatus {
   CREATED = 0;
   ASSIGNED = 1;
-  IN_PROGRESS = 4;
-  CANCELLED = 3;
   COMPLETED = 2;
+  CANCELLED = 3;
+  IN_PROGRESS = 4;
 }
 
 message Task {
@@ -13,8 +13,8 @@ message Task {
   string manager = 1;              // Manager peerId of the task
   string created = 2;              // Creation time 
   string reward = 3;               // Reward for the task
-  string template = 4;             // Template used in the task
-  string result = 5;               // Result of the task, can be null (optional field)
+  string template = 4;             // Template being used in the task
+  string result = 5;               // Result of the task
   string signature = 6;            // Signature of the task
   TaskStatus status = 8;           // Status of the task
 }

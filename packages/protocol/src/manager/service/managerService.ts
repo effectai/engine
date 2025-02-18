@@ -2,7 +2,7 @@ import {
 	type Libp2pEvents,
 	type PeerId,
 	type PeerStore,
-	PrivateKey,
+	type PrivateKey,
 	type Startable,
 	TypedEventEmitter,
 	type TypedEventTarget,
@@ -91,11 +91,11 @@ export class ManagerService
 		);
 		result.status = TaskStatus.COMPLETED;
 
-		//sync task
+		//sync task with store
 		await this.components.taskStore.put(result);
 
 		this.components.task.sendTask(peerId, result);
-		console.log("Task signed and acked", result);
+		console.log("Task signed and acknowledged", result);
 	}
 
 	public async processTask(task: Task) {
@@ -122,6 +122,7 @@ export class ManagerService
 		}
 
 		task.manager = this.components.peerId.toString();
+
 		//send the task to the peer
 		await this.components.task.sendTask(peerString, task);
 
