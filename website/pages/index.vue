@@ -297,7 +297,7 @@ import { dapps } from "~/constants/dapps.js";
 const { data: news } = await useAsyncData("news", async () => {
 	const data = await queryContent("/news")
 		.where({ published: true })
-		.limit(3)
+		.limit(5)
 		.sort({ created: -1 })
 		.find();
 
