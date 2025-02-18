@@ -9,12 +9,12 @@ enum TaskStatus {
 }
 
 message Task {
-  string id = 0;                   // Unique identifier (uuid) for the task
-  string manager = 1;              // Manager peerId of the task
-  string created = 2;              // Creation time 
-  string reward = 3;               // Reward for the task
-  string template = 4;             // Template being used in the task
-  string result = 5;               // Result of the task
-  string signature = 6;            // Signature of the task
-  TaskStatus status = 8;           // Status of the task
+  string id = 0;
+  string manager = 1;
+  string created = 2;
+  string reward = 3;
+  string template = 4;
+  string result = 5;
+  string signature = 6;
+  TaskStatus status = 8;
 }

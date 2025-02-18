@@ -2,14 +2,17 @@ import { describe, it } from "vitest";
 import {
 	createManagerNode,
 	createWorkerNode,
+	TaskStatus,
 	type Task,
 } from "./../src/index.js";
 
 const dummyTask = (id: string) => ({
 	id,
-	owner: "0x123",
 	reward: "500",
 	manager: "",
+	created: new Date().toISOString(),
+	signature: "",
+	status: TaskStatus.CREATED,
 	template: `<form>
         <h2>Please submit the form to complete the task</h2>
         <input type='submit'/ >

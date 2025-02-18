@@ -19,9 +19,14 @@
           <label class="font-bold">Node:</label>
           <span class="text-black">{{ key.publicKey }}</span>
         </div>
-        <UButton color="black" @click="disconnect" class="button mt-5"
-          >Disconnect</UButton
-        >
+        <div class="flex gap-2">
+          <UButton color="black" @click="disconnect" class="button mt-5"
+            >Disconnect</UButton
+          >
+          <UButton color="black" @click="disconnect" class="button mt-5"
+            >Export private key</UButton
+          >
+        </div>
       </div>
 
       <UptimeCard
