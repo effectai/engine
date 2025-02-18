@@ -2,7 +2,7 @@
 title: "Empowering AI Agents with Human Insight"
 description: "Artificial intelligence is transforming industries by speeding up decision-making and streamlining processes. At Effect AI, we are taking a bold step forward by connecting AI agents with human intelligence. Our approach fuses advanced algorithms with a nuanced understanding of human expertise, resulting in AI systems that learn, adapt, and serve people better."
 image:
-  src: "/img/news/BlogBG-03.jpg"
+  src: "/img/news/announcement-alt.png"
 author: "Rochelle"
 head:
   meta:
@@ -16,6 +16,7 @@ lastUpdated: "2025-02-18"
 created: "2025-02-18"
 published: true
 ---
+
 Artificial intelligence is transforming industries by speeding up decision-making and streamlining processes. At Effect AI, we are taking a bold step forward by connecting AI agents with human intelligence. Our approach fuses advanced algorithms with a nuanced understanding of human expertise, resulting in AI systems that learn, adapt, and serve people better.
 
 A key challenge with traditional AI agents lies in their inability to handle ambiguous situations or adapt to unexpected inputs. Human feedback enriches the learning process, ensuring that every decision an AI agent makes is informed by real-world insights. Real-time human input fuels continuous improvement, helping AI systems refine their outputs and better align with human expectations.

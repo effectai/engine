@@ -297,7 +297,7 @@ import { dapps } from "~/constants/dapps.js";
 const { data: news } = await useAsyncData("news", async () => {
 	const data = await queryContent("/news")
 		.where({ published: true })
-		.limit(5)
+		.limit(3)
 		.sort({ created: -1 })
 		.find();
 
@@ -408,4 +408,3 @@ useSeoMeta({
   --bulma-button-border-width: max(1px, 0.0625em);
 }
 </style>
-
