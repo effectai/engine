@@ -1,62 +1,67 @@
 import {
-	Connection,
-	Keypair,
-	type PublicKey,
-	SystemProgram,
-	Transaction,
+  Connection,
+  Keypair,
+  type PublicKey,
+  SystemProgram,
+  Transaction,
 } from "@solana/web3.js";
 import {
-	TOKEN_PROGRAM_ID,
-	MintLayout,
-	createInitializeMintInstruction,
-	getAssociatedTokenAddress,
-	createAssociatedTokenAccountInstruction,
-	createMintToInstruction,
+  TOKEN_PROGRAM_ID,
+  MintLayout,
+  createInitializeMintInstruction,
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction,
+  createMintToInstruction,
 } from "@solana/spl-token";
 import type { Provider } from "@coral-xyz/anchor";
 
-export const setup = async ({payer, provider, amount, mintKeypair} : {
-    payer: Keypair;
-    provider: Provider;
-	amount?: number;
-	mintKeypair?: Keypair;
+export const setup = async ({
+  payer,
+  provider,
+  amount,
+  mintKeypair,
+}: {
+  payer: Keypair;
+  provider: Provider;
+  amount?: number;
+  mintKeypair?: Keypair;
 }) => {
-    const connection = new Connection('http://localhost:8899');
+  const connection = new Connection("http://localhost:8899");
 
-	const finalMintKeypair = mintKeypair || Keypair.generate();
+  const finalMintKeypair = mintKeypair || Keypair.generate();
 
-	const mint = await createMint({
-		mint: finalMintKeypair,
-        connection,
-        payer,
-        decimals: 6,
-        provider,
-        mintAuthority: payer.publicKey,
-    });
+  const mint = await createMint({
+    mint: finalMintKeypair,
+    connection,
+    payer,
+    decimals: 6,
+    provider,
+    mintAuthority: payer.publicKey,
+  });
 
-	// create associated token account
-	const ata = await createTokenAccount({
-        payer,
-        mint,
-        owner: payer.publicKey,
-        provider,
-	});
+  // create associated token account
+  const ata = await createTokenAccount({
+    payer,
+    mint,
+    owner: payer.publicKey,
+    provider,
+  });
 
-	// mint some tokens to the associated token account
-	await mintToAccount({
-        payer,
-        mint,
-        destination: ata,
-        provider,
-        mintAuthority: payer,
-        amount: amount || 100_000_000_000,
-    });
+  // mint some tokens to the associated token account
+  await mintToAccount({
+    payer,
+    mint,
+    destination: ata,
+    provider,
+    mintAuthority: payer,
+    amount: amount || 100_000_000_000,
+  });
 
-	return {
-		payer,
-		mint,
-		ata,
-	};
+  return {
+    payer,
+    mint,
+    ata,
+  };
 };
 
 /**
@@ -68,48 +73,48 @@ export const setup = async ({payer, provider, amount, mintKeypair} : {
  * @returns The public key of the newly created mint
  */
 export async function createMint({
-	connection,
-	payer,
-	mintAuthority,
-	decimals,
-	provider,
-	mint,
+  connection,
+  payer,
+  mintAuthority,
+  decimals,
+  provider,
+  mint,
 }: {
-	mint: Keypair;
-	connection: Connection;
-	payer: Keypair;
-	mintAuthority: PublicKey;
-	decimals: number;
-	provider: Provider;
+  mint: Keypair;
+  connection: Connection;
+  payer: Keypair;
+  mintAuthority: PublicKey;
+  decimals: number;
+  provider: Provider;
 }): Promise<PublicKey> {
-	const lamports = await connection.getMinimumBalanceForRentExemption(
-		MintLayout.span,
-	);
+  const lamports = await connection.getMinimumBalanceForRentExemption(
+    MintLayout.span
+  );
 
-	const transaction = new Transaction().add(
-		SystemProgram.createAccount({
-			fromPubkey: payer.publicKey,
-			newAccountPubkey: mint.publicKey,
-			space: MintLayout.span,
-			lamports,
-			programId: TOKEN_PROGRAM_ID,
-		}),
-		createInitializeMintInstruction(
-			mint.publicKey,
-			decimals,
-			mintAuthority,
-			null,
-			TOKEN_PROGRAM_ID,
-		),
-	);
+  const transaction = new Transaction().add(
+    SystemProgram.createAccount({
+      fromPubkey: payer.publicKey,
+      newAccountPubkey: mint.publicKey,
+      space: MintLayout.span,
+      lamports,
+      programId: TOKEN_PROGRAM_ID,
+    }),
+    createInitializeMintInstruction(
+      mint.publicKey,
+      decimals,
+      mintAuthority,
+      null,
+      TOKEN_PROGRAM_ID
+    )
+  );
 
-	if (!provider.sendAndConfirm) {
-		throw new Error("sendAndConfirm not implemented");
-	}
+  if (!provider.sendAndConfirm) {
+    throw new Error("sendAndConfirm not implemented");
+  }
 
-	await provider.sendAndConfirm(transaction, [payer, mint]);
+  await provider.sendAndConfirm(transaction, [payer, mint]);
 
-	return mint.publicKey;
+  return mint.publicKey;
 }
 
 /**
@@ -121,34 +126,34 @@ export async function createMint({
  * @returns The public key of the associated token account
  */
 export async function createTokenAccount({
-	payer,
-	mint,
-	owner,
-	provider,
+  payer,
+  mint,
+  owner,
+  provider,
 }: {
-	payer: Keypair;
-	mint: PublicKey;
-	owner: PublicKey;
-	provider: Provider;
+  payer: Keypair;
+  mint: PublicKey;
+  owner: PublicKey;
+  provider: Provider;
 }): Promise<PublicKey> {
-	const tokenAccount = await getAssociatedTokenAddress(mint, owner);
+  const tokenAccount = await getAssociatedTokenAddress(mint, owner);
 
-	const transaction = new Transaction().add(
-		createAssociatedTokenAccountInstruction(
-			payer.publicKey,
-			tokenAccount,
-			owner,
-			mint,
-		),
-	);
+  const transaction = new Transaction().add(
+    createAssociatedTokenAccountInstruction(
+      payer.publicKey,
+      tokenAccount,
+      owner,
+      mint
+    )
+  );
 
-	if (!provider.sendAndConfirm) {
-		throw new Error("sendAndConfirm not implemented");
-	}
+  if (!provider.sendAndConfirm) {
+    throw new Error("sendAndConfirm not implemented");
+  }
 
-	await provider.sendAndConfirm(transaction, [payer]);
+  await provider.sendAndConfirm(transaction, [payer]);
 
-	return tokenAccount;
+  return tokenAccount;
 }
 
 /**
@@ -161,38 +166,34 @@ export async function createTokenAccount({
  * @param amount - The amount of tokens to mint (in smallest units based on mint decimals)
  */
 export async function mintToAccount({
-	payer,
-	mint,
-	destination,
-	mintAuthority,
-	amount,
-    provider,
+  payer,
+  mint,
+  destination,
+  mintAuthority,
+  amount,
+  provider,
 }: {
-	payer: Keypair;
-	mint: PublicKey;
-	destination: PublicKey;
-	mintAuthority: Keypair;
-	amount: number;
-    provider: Provider;
+  payer: Keypair;
+  mint: PublicKey;
+  destination: PublicKey;
+  mintAuthority: Keypair;
+  amount: number;
+  provider: Provider;
 }): Promise<void> {
-	const transaction = new Transaction().add(
-		createMintToInstruction(
-			mint,
-			destination,
-			mintAuthority.publicKey,
-			amount,
-			[],
-			TOKEN_PROGRAM_ID,
-		),
-	);
+  const transaction = new Transaction().add(
+    createMintToInstruction(
+      mint,
+      destination,
+      mintAuthority.publicKey,
+      amount,
+      [],
+      TOKEN_PROGRAM_ID
+    )
+  );
 
-    if(!provider.sendAndConfirm){
-        throw new Error('sendAndConfirm not implemented')
-    }
+  if (!provider.sendAndConfirm) {
+    throw new Error("sendAndConfirm not implemented");
+  }
 
-	await provider.sendAndConfirm(transaction, [
-		payer,
-		mintAuthority,
-	]);
+  await provider.sendAndConfirm(transaction, [payer, mintAuthority]);
 }
- 

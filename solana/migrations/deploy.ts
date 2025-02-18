@@ -9,5 +9,4 @@ module.exports = async (provider) => {
   anchor.setProvider(provider);
 
   // Add your deploy script here.
-  
 };

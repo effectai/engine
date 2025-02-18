@@ -7,52 +7,58 @@ export const foreignPublicKey = ref<Uint8Array | null>(null);
 
 const config = useRuntimeConfig();
 const rpcUrl = config.public.EFFECT_SOLANA_RPC_NODE_URL;
-export const connection = new Connection(rpcUrl, 'confirmed');
+export const connection = new Connection(rpcUrl, "confirmed");
 
 export const publicKeyString = ref<string | null>(null);
 
 export const useGlobalState = () => {
-    const config = useRuntimeConfig();
+  const config = useRuntimeConfig();
 
-    if(!config.public.EFFECT_SPL_TOKEN_MINT){
-        throw new Error('EFFECT_SPL_TOKEN_MINT not set. Please set it in your .env file');
-    }
-    
-    const mint = new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT);
-    
-    const { publicKey } = useWallet();
+  if (!config.public.EFFECT_SPL_TOKEN_MINT) {
+    throw new Error(
+      "EFFECT_SPL_TOKEN_MINT not set. Please set it in your .env file"
+    );
+  }
 
-    const clear = () => {
-        signature.value = null;
-        message.value = null;
-        foreignPublicKey.value = null;
-    };
+  const mint = new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT);
 
-    const set = (sig: Uint8Array, msg: Uint8Array, pk: Uint8Array, pkString: string) => {
-        signature.value = sig;
-        message.value = msg;
-        foreignPublicKey.value = pk;
-        publicKeyString.value = pkString;
-    };
+  const { publicKey } = useWallet();
 
-    const canClaim = computed(() => {
-		return signature.value && message.value && publicKey.value;
-	});
+  const clear = () => {
+    signature.value = null;
+    message.value = null;
+    foreignPublicKey.value = null;
+  };
 
+  const set = (
+    sig: Uint8Array,
+    msg: Uint8Array,
+    pk: Uint8Array,
+    pkString: string
+  ) => {
+    signature.value = sig;
+    message.value = msg;
+    foreignPublicKey.value = pk;
+    publicKeyString.value = pkString;
+  };
 
-    return {
-        signature,
-        message,
-        foreignPublicKey,
+  const canClaim = computed(() => {
+    return signature.value && message.value && publicKey.value;
+  });
 
-        // methods
-        clear,
-        set,
+  return {
+    signature,
+    message,
+    foreignPublicKey,
 
-        // state computeds
-        canClaim,
+    // methods
+    clear,
+    set,
 
-        connection,
-        mint
-    };
-}
+    // state computeds
+    canClaim,
+
+    connection,
+    mint,
+  };
+};

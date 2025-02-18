@@ -12,7 +12,7 @@
         "sourceMap": true,
         "strict": true,
         "target": "es2020",
-        "resolveJsonModule": true,
+        "resolveJsonModule": true
     },
     "include": ["src/**/*"]
 }

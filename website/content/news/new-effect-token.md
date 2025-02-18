@@ -17,7 +17,7 @@ created: "2025-01-05"
 published: true
 ---
 
-## After a successful snapshot, we are excited to share that the new token will be publicly tradable on the 10th of January 2025. If you’ve been holding tokens during the snapshot, the time has come to claim your new allocation through the official portal.  
+## After a successful snapshot, we are excited to share that the new token will be publicly tradable on the 10th of January 2025. If you’ve been holding tokens during the snapshot, the time has come to claim your new allocation through the official portal.
 
 This blog will guide you through the process, provide key security tips, and ensure a smooth transition to the new token. Although the EFFECT token will only be tradable on the 10th of January, you can already prepare your token claim. Let’s dive into the details and get you ready to claim!
 
@@ -26,8 +26,7 @@ _In Summary_
 - $EFFECT will be tradable on Solana on January 10th
 - Snapshot holders can claim their allocation through the Claim Portal starting today
 - Claimed tokens are staked and subject to an unstaking period
-- Follow the claim process described in this post! 
-
+- Follow the claim process described in this post!
 
 ## Claiming your EFFECT tokens
 
@@ -58,8 +57,8 @@ _Claiming process_
 The process is simple when using your EOS or BSC wallet:
 
 - Visit the official Claim Portal at <a href="https://portal.effect.ai/migrate" target="_blank">portal.effect.ai</a>
-- Connect your EOS or BSC wallet to the portal, connect the Solana wallet where you want to receive the $EFFECT tokens, and confirm the migration. 
-- Be sure to double-check all wallet addresses before finalizing the transaction. 
+- Connect your EOS or BSC wallet to the portal, connect the Solana wallet where you want to receive the $EFFECT tokens, and confirm the migration.
+- Be sure to double-check all wallet addresses before finalizing the transaction.
 
 <!-- ![Screenshot of portal](/img/news/the-new-effect-token--portal--dark.png) -->
 
@@ -106,5 +105,3 @@ Never share your private keys or seed phrases, and always ensure you’re using 
 _Stay Updated and Get Support_
 
 For the latest updates and announcements, follow us on Twitter at [@effectaix](https://twitter.com/effectaix). If you have any questions or need help, our community is here for you on [Discord](https://discord.gg/effectnetwork) and [Telegram](https://t.me/effectai).
-
-

@@ -1,32 +1,35 @@
 import { spawn } from "child_process";
 
 type SpawnProcessResult = {
-	promise: Promise<void>; // For awaiting the process completion
-	stdout: NodeJS.ReadableStream; // To handle stdout
-	stderr: NodeJS.ReadableStream; // To handle stderr
+  promise: Promise<void>; // For awaiting the process completion
+  stdout: NodeJS.ReadableStream; // To handle stdout
+  stderr: NodeJS.ReadableStream; // To handle stderr
 };
 
-export const spawnProcess = (command: string, args: string[]): SpawnProcessResult => {
-	const deploy = spawn(command, args);
+export const spawnProcess = (
+  command: string,
+  args: string[]
+): SpawnProcessResult => {
+  const deploy = spawn(command, args);
 
-	const promise = new Promise<void>((resolve, reject) => {
-		deploy.on("close", (code) => {
-			if (code === 0) {
-				resolve();
-			} else {
-				reject(new Error(`child process exited with code ${code}`));
-			}
-		});
+  const promise = new Promise<void>((resolve, reject) => {
+    deploy.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`child process exited with code ${code}`));
+      }
+    });
 
-		deploy.on("error", (err) => {
-			reject(err); // In case spawn fails to start the process
-		});
-	});
+    deploy.on("error", (err) => {
+      reject(err); // In case spawn fails to start the process
+    });
+  });
 
-	// Return the promise along with stdout and stderr streams
-	return {
-		promise,
-		stdout: deploy.stdout,
-		stderr: deploy.stderr,
-	};
+  // Return the promise along with stdout and stderr streams
+  return {
+    promise,
+    stdout: deploy.stdout,
+    stderr: deploy.stderr,
+  };
 };

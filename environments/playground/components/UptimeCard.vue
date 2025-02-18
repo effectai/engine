@@ -31,62 +31,62 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-	totalUptimeInSeconds: number;
-	totalManagerUptimeInSeconds: number;
-	lastPing: number;
-}>();
+  const props = defineProps<{
+    totalUptimeInSeconds: number;
+    totalManagerUptimeInSeconds: number;
+    lastPing: number;
+  }>();
 
-const totalUptime = useUptime(props.totalUptimeInSeconds);
-const totalManagerUptime = useUptime(props.totalManagerUptimeInSeconds);
+  const totalUptime = useUptime(props.totalUptimeInSeconds);
+  const totalManagerUptime = useUptime(props.totalManagerUptimeInSeconds);
 
-function useUptime(initialTime: number) {
-	const totalTimeInSeconds = ref(initialTime);
+  function useUptime(initialTime: number) {
+    const totalTimeInSeconds = ref(initialTime);
 
-	const formattedTime = computed(() => {
-		const seconds = totalTimeInSeconds.value;
-		const hours = Math.floor(seconds / 3600);
-		const minutes = Math.floor((seconds % 3600) / 60);
-		const remainingSeconds = seconds % 60;
+    const formattedTime = computed(() => {
+      const seconds = totalTimeInSeconds.value;
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const remainingSeconds = seconds % 60;
 
-		return `${hours}h ${minutes}m ${remainingSeconds}s`;
-	});
+      return `${hours}h ${minutes}m ${remainingSeconds}s`;
+    });
 
-	let interval: ReturnType<typeof setInterval> | null = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
 
-	onMounted(() => {
-		interval = setInterval(() => {
-			totalTimeInSeconds.value += 1;
-		}, 1000);
-	});
+    onMounted(() => {
+      interval = setInterval(() => {
+        totalTimeInSeconds.value += 1;
+      }, 1000);
+    });
 
-	onUnmounted(() => {
-		if (interval) clearInterval(interval);
-	});
+    onUnmounted(() => {
+      if (interval) clearInterval(interval);
+    });
 
-	return { totalTimeInSeconds, formattedTime };
-}
+    return { totalTimeInSeconds, formattedTime };
+  }
 
-const baseEffectEarned = computed(() => {
-	return totalUptime.totalTimeInSeconds.value * 0.2;
-});
+  const baseEffectEarned = computed(() => {
+    return totalUptime.totalTimeInSeconds.value * 0.2;
+  });
 
-const totalTime = computed(() => {
-	const seconds = totalTimeInSeconds.value;
-	const hours = Math.floor(seconds / 3600);
-	const minutes = Math.floor((seconds % 3600) / 60);
-	const remainingSeconds = seconds % 60;
+  const totalTime = computed(() => {
+    const seconds = totalTimeInSeconds.value;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
 
-	return `${hours}h ${minutes}m ${remainingSeconds}s`;
-});
+    return `${hours}h ${minutes}m ${remainingSeconds}s`;
+  });
 
-let interval: ReturnType<typeof setInterval> | null = null;
+  let interval: ReturnType<typeof setInterval> | null = null;
 
-onMounted(() => {
-	interval = setInterval(() => {
-		totalTimeInSeconds.value += 1;
-	}, 1000);
-});
+  onMounted(() => {
+    interval = setInterval(() => {
+      totalTimeInSeconds.value += 1;
+    }, 1000);
+  });
 </script>
 
 <style lang="scss" scoped></style>

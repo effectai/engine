@@ -15,26 +15,26 @@ import { managerService } from "./service/managerService.js";
 import type { PrivateKey } from "@libp2p/interface";
 
 export const createManagerNode = (peers: string[], privateKey?: PrivateKey) => {
-	return createLibp2p({
-		...(privateKey && { privateKey }),
-		addresses: {
-			listen: ["/ip4/0.0.0.0/tcp/34859/ws"],
-		},
-		transports: [webSockets({ filter: filters.all })],
-		streamMuxers: [yamux()],
-		connectionEncrypters: [noise()],
-		peerDiscovery: [
-			...(peers && peers.length > 0 ? [bootstrap({ list: peers })] : []),
-			announcePeerDiscovery(),
-		],
-		services: {
-			pubsub: gossipsub(),
-			identify: identify(),
-			taskStore: taskStore(),
-			task: taskProtocol(),
-			manager: managerService(),
-			peerQueue: createPeerQueue(),
-			relay: circuitRelayServer(),
-		},
-	});
+  return createLibp2p({
+    ...(privateKey && { privateKey }),
+    addresses: {
+      listen: ["/ip4/0.0.0.0/tcp/34859/ws"],
+    },
+    transports: [webSockets({ filter: filters.all })],
+    streamMuxers: [yamux()],
+    connectionEncrypters: [noise()],
+    peerDiscovery: [
+      ...(peers && peers.length > 0 ? [bootstrap({ list: peers })] : []),
+      announcePeerDiscovery(),
+    ],
+    services: {
+      pubsub: gossipsub(),
+      identify: identify(),
+      taskStore: taskStore(),
+      task: taskProtocol(),
+      manager: managerService(),
+      peerQueue: createPeerQueue(),
+      relay: circuitRelayServer(),
+    },
+  });
 };

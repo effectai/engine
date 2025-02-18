@@ -15,31 +15,31 @@ import { workerService } from "./service/workerService.js";
 import type { Ed25519PrivateKey } from "@libp2p/interface";
 
 export const createWorkerNode = (
-	peers: string[],
-	privateKey?: Ed25519PrivateKey,
+  peers: string[],
+  privateKey?: Ed25519PrivateKey
 ) => {
-	return createLibp2p({
-		...(privateKey && { privateKey }),
-		addresses: {
-			listen: ["/p2p-circuit", "/webrtc"],
-		},
-		transports: [
-			webSockets({ filter: filters.all }),
-			webRTC(),
-			circuitRelayTransport(),
-		],
-		streamMuxers: [yamux()],
-		connectionEncrypters: [noise()],
-		peerDiscovery: [
-			...(peers && peers.length > 0 ? [bootstrap({ list: peers })] : []),
-			announcePeerDiscovery(),
-		],
-		services: {
-			pubsub: gossipsub(),
-			identify: identify(),
-			taskStore: taskStore(),
-			task: taskProtocol(),
-			worker: workerService(),
-		},
-	});
+  return createLibp2p({
+    ...(privateKey && { privateKey }),
+    addresses: {
+      listen: ["/p2p-circuit", "/webrtc"],
+    },
+    transports: [
+      webSockets({ filter: filters.all }),
+      webRTC(),
+      circuitRelayTransport(),
+    ],
+    streamMuxers: [yamux()],
+    connectionEncrypters: [noise()],
+    peerDiscovery: [
+      ...(peers && peers.length > 0 ? [bootstrap({ list: peers })] : []),
+      announcePeerDiscovery(),
+    ],
+    services: {
+      pubsub: gossipsub(),
+      identify: identify(),
+      taskStore: taskStore(),
+      task: taskProtocol(),
+      worker: workerService(),
+    },
+  });
 };

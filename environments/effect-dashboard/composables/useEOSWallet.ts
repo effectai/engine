@@ -1,17 +1,14 @@
 import {
-	ABICache,
-	Action,
-	PlaceholderAuth,
-	PublicKey,
-	Signature,
-	Transaction,
-	TransactionHeader,
-	type Session,
+  ABICache,
+  Action,
+  PlaceholderAuth,
+  PublicKey,
+  Signature,
+  Transaction,
+  TransactionHeader,
+  type Session,
 } from "@wharfkit/session";
-import type {
-	SourceWallet,
-	WalletConnectionMeta
-} from "~/types/types";
+import type { SourceWallet, WalletConnectionMeta } from "~/types/types";
 import { extractEosPublicKeyBytes } from "@effectai/utils";
 
 import { SessionKit } from "@wharfkit/session";
@@ -23,214 +20,217 @@ import { WalletPluginTokenPocket } from "@wharfkit/wallet-plugin-tokenpocket";
 const session: Ref<Session | null | undefined> = ref(null);
 
 export const useEosWallet = (): SourceWallet => {
-	const sessionKit = reactive(
-		new SessionKit({
-			appName: "Effect Migration Portal",
-			chains: [
-				{
-					id: "aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906",
-					url: "https://eos.greymass.com",
-				},
-			],
-			ui: new WebRenderer(),
-			walletPlugins: [
-				new WalletPluginAnchor(),
-				new WalletPluginWombat(),
-				new WalletPluginTokenPocket(),
-			],
-		}),
-	);
+  const sessionKit = reactive(
+    new SessionKit({
+      appName: "Effect Migration Portal",
+      chains: [
+        {
+          id: "aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906",
+          url: "https://eos.greymass.com",
+        },
+      ],
+      ui: new WebRenderer(),
+      walletPlugins: [
+        new WalletPluginAnchor(),
+        new WalletPluginWombat(),
+        new WalletPluginTokenPocket(),
+      ],
+    })
+  );
 
-	const address = computed(
-		() => session.value?.actor.toString() as string | undefined,
-	);
+  const address = computed(
+    () => session.value?.actor.toString() as string | undefined
+  );
 
-	const walletMeta: Ref<WalletConnectionMeta | undefined | null> = computed(
-		() =>
-			session.value && {
-				name: session.value.walletPlugin.metadata.name,
-				icon: session.value.walletPlugin.metadata.logo?.light,
-				permission: session.value.permission.toString(),
-				chain: "EOS",
-			},
-	);
+  const walletMeta: Ref<WalletConnectionMeta | undefined | null> = computed(
+    () =>
+      session.value && {
+        name: session.value.walletPlugin.metadata.name,
+        icon: session.value.walletPlugin.metadata.logo?.light,
+        permission: session.value.permission.toString(),
+        chain: "EOS",
+      }
+  );
 
-	const isConnected = computed(() => !!session.value);
+  const isConnected = computed(() => !!session.value);
 
-	const connect = async () => {
-		const result = await sessionKit.login();
-		session.value = result.session;
-	};
+  const connect = async () => {
+    const result = await sessionKit.login();
+    session.value = result.session;
+  };
 
-	const disconnect = async () => {
-		session.value = null;
-		return await sessionKit.logout();
-	};
+  const disconnect = async () => {
+    session.value = null;
+    return await sessionKit.logout();
+  };
 
-	const getNativeBalance = async () => {
-		if (!session.value?.client) {
-			throw new Error("No client found");
-		}
+  const getNativeBalance = async () => {
+    if (!session.value?.client) {
+      throw new Error("No client found");
+    }
 
-		const res = await session.value.client.v1.chain.get_currency_balance(
-			"eosio.token",
-			session.value.actor,
-			"EOS",
-		);
+    const res = await session.value.client.v1.chain.get_currency_balance(
+      "eosio.token",
+      session.value.actor,
+      "EOS"
+    );
 
-		if (res.length === 0) {
-			return {
-				value: 0,
-				symbol: "EOS",
-			};
-		}
+    if (res.length === 0) {
+      return {
+        value: 0,
+        symbol: "EOS",
+      };
+    }
 
-		return {
-			value: res[0].value,
-			symbol: "EOS",
-		};
-	};
+    return {
+      value: res[0].value,
+      symbol: "EOS",
+    };
+  };
 
-	const getEfxBalance = async () => {
-		if (!session.value?.client) {
-			throw new Error("No client found");
-		}
+  const getEfxBalance = async () => {
+    if (!session.value?.client) {
+      throw new Error("No client found");
+    }
 
-		const res = await session.value.client.v1.chain.get_currency_balance(
-			"effecttokens",
-			session.value.actor,
-			"EFX",
-		);
+    const res = await session.value.client.v1.chain.get_currency_balance(
+      "effecttokens",
+      session.value.actor,
+      "EFX"
+    );
 
-		if (res.length === 0) {
-			return {
-				value: 0,
-				symbol: "EFX",
-			};
-		}
+    if (res.length === 0) {
+      return {
+        value: 0,
+        symbol: "EFX",
+      };
+    }
 
-		return {
-			value: res[0].value,
-			symbol: "EFX",
-		};
-	};
+    return {
+      value: res[0].value,
+      symbol: "EFX",
+    };
+  };
 
-	const authorizeTokenClaim = async (
-		destinationAddress: string,
-	): Promise<{
-		foreignPublicKey: Uint8Array;
-		signature: Uint8Array;
-		message: Uint8Array;
-	}> => {
-		const originalMessage = `Effect.AI: I authorize my tokens to be claimed at the following Solana address:${destinationAddress}`;
+  const authorizeTokenClaim = async (
+    destinationAddress: string
+  ): Promise<{
+    foreignPublicKey: Uint8Array;
+    signature: Uint8Array;
+    message: Uint8Array;
+  }> => {
+    const originalMessage = `Effect.AI: I authorize my tokens to be claimed at the following Solana address:${destinationAddress}`;
 
-		if (!session.value?.client) {
-			throw new Error("No client found");
-		}
+    if (!session.value?.client) {
+      throw new Error("No client found");
+    }
 
-		const res = await session.value.client.v1.chain.get_account(
-			session.value.actor,
-		);
+    const res = await session.value.client.v1.chain.get_account(
+      session.value.actor
+    );
 
-		const activePermission = res.getPermission(session.value.permission.toString());
-		const publicKey = activePermission.required_auth.keys[0].key.toString();
-		const compressedPk = extractEosPublicKeyBytes(publicKey);
+    const activePermission = res.getPermission(
+      session.value.permission.toString()
+    );
+    const publicKey = activePermission.required_auth.keys[0].key.toString();
+    const compressedPk = extractEosPublicKeyBytes(publicKey);
 
-		if (!compressedPk) {
-			throw new Error("Could not compress public key");
-		}
+    if (!compressedPk) {
+      throw new Error("Could not compress public key");
+    }
 
-		const abi = new ABICache(session.value?.client);
-		const eosAbi = await abi.getAbi("effecttokens");
+    const abi = new ABICache(session.value?.client);
+    const eosAbi = await abi.getAbi("effecttokens");
 
-		const action = Action.from(
-			{
-				account: "effecttokens",
-				name: "issue",
-				authorization: [PlaceholderAuth],
-				data: {
-					to: "effectai",
-					quantity: "0 EFX",
-					memo: originalMessage,
-				},
-			},
-			eosAbi,
-		);
+    const action = Action.from(
+      {
+        account: "effecttokens",
+        name: "issue",
+        authorization: [PlaceholderAuth],
+        data: {
+          to: "effectai",
+          quantity: "0 EFX",
+          memo: originalMessage,
+        },
+      },
+      eosAbi
+    );
 
-		const txHeader = TransactionHeader.from({
-			expiration: 0,
-			ref_block_num: 0,
-			ref_block_prefix: 0,
-			delay_sec: 0,
-		});
+    const txHeader = TransactionHeader.from({
+      expiration: 0,
+      ref_block_num: 0,
+      ref_block_prefix: 0,
+      delay_sec: 0,
+    });
 
-		const tx = Transaction.from({
-			actions: [action],
-			...txHeader,
-		});
+    const tx = Transaction.from({
+      actions: [action],
+      ...txHeader,
+    });
 
-		const transaction = await session.value.transact(tx, { broadcast: false });
-		const serializedTxBytes = transaction.resolved?.signingData;
+    const transaction = await session.value.transact(tx, { broadcast: false });
+    const serializedTxBytes = transaction.resolved?.signingData;
 
+    if (!serializedTxBytes) {
+      throw new Error("Could not serialize transaction");
+    }
 
-		if (!serializedTxBytes) {
-			throw new Error("Could not serialize transaction");
-		}
+    let sigToUse = null;
+    for (const signature of transaction.signatures) {
+      const sig = Signature.from(signature);
+      if (sig.verifyMessage(serializedTxBytes, PublicKey.from(publicKey))) {
+        sigToUse = sig;
+        break;
+      }
+    }
 
-		let sigToUse = null;
-		for(const signature of transaction.signatures) {
-			const sig = Signature.from(signature);
-			if(sig.verifyMessage(serializedTxBytes, PublicKey.from(publicKey))){
-				sigToUse = sig;
-				break;
-			}
-		}
+    if (!sigToUse) {
+      throw new Error("Could not verify signature");
+    }
 
-		if(!sigToUse){
-			throw new Error("Could not verify signature");
-		}
+    return {
+      signature: sigToUse.data.array,
+      message: serializedTxBytes?.array,
+      foreignPublicKey: compressedPk,
+    };
+  };
 
-		return {
-			signature: sigToUse.data.array,
-			message: serializedTxBytes?.array,
-			foreignPublicKey: compressedPk,
-		};
-	};
+  const getForeignPublicKey = async () => {
+    if (!session.value?.client) {
+      throw new Error("No client found");
+    }
 
-	const getForeignPublicKey = async () => {
-		if (!session.value?.client) {
-			throw new Error("No client found");
-		}
+    const res = await session.value.client.v1.chain.get_account(
+      session.value.actor
+    );
 
-		const res = await session.value.client.v1.chain.get_account(
-			session.value.actor,
-		);
+    const activePermission = res.getPermission(
+      session.value.permission.toString()
+    );
+    const publicKey = activePermission.required_auth.keys[0].key.toString();
+    const compressedPk = extractEosPublicKeyBytes(publicKey);
 
-		const activePermission = res.getPermission(session.value.permission.toString());
-		const publicKey = activePermission.required_auth.keys[0].key.toString();
-		const compressedPk = extractEosPublicKeyBytes(publicKey);
+    if (!compressedPk) {
+      throw new Error("Could not compress public key");
+    }
 
-		if (!compressedPk) {
-			throw new Error("Could not compress public key");
-		}
+    return compressedPk;
+  };
 
-		return compressedPk;
-	};
+  return {
+    address,
+    walletMeta,
+    isConnected,
 
-	return {
-		address,
-		walletMeta,
-		isConnected,
+    // Methods
+    disconnect,
+    connect,
 
-		// Methods
-		disconnect,
-		connect,
+    authorizeTokenClaim,
 
-		authorizeTokenClaim,
+    getNativeBalance,
+    getEfxBalance,
 
-		getNativeBalance,
-		getEfxBalance,
-
-		getForeignPublicKey,
-	};
+    getForeignPublicKey,
+  };
 };

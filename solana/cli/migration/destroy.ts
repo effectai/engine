@@ -10,73 +10,70 @@ import { EffectMigrationIdl } from "@effectai/shared";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
 interface MigrationClaimOptions {
-	account: string;
-	mint: string;
+  account: string;
+  mint: string;
 }
 
 export const destroyMigrationClaimCommand: CommandModule<
-	unknown,
-	MigrationClaimOptions
+  unknown,
+  MigrationClaimOptions
 > = {
-	command: "destroy",
-	describe: "Destroy a migration claim",
-	builder: (yargs) =>
-		yargs
-			.option("mint", {
-				type: "string",
-				requiresArg: true,
-				description: "The mint of the token",
-			})
-			.option("account", {
-				type: "string",
-				requiresArg: true,
-				description: "The account to be destroyed",
-			})
-			.demandOption(["account"]),
-	handler: async ({ mint, account }) => {
-		const { provider } = await loadProvider();
+  command: "destroy",
+  describe: "Destroy a migration claim",
+  builder: (yargs) =>
+    yargs
+      .option("mint", {
+        type: "string",
+        requiresArg: true,
+        description: "The mint of the token",
+      })
+      .option("account", {
+        type: "string",
+        requiresArg: true,
+        description: "The account to be destroyed",
+      })
+      .demandOption(["account"]),
+  handler: async ({ mint, account }) => {
+    const { provider } = await loadProvider();
 
-		const migrationProgram = new anchor.Program(
-			EffectMigrationIdl as anchor.Idl,
-			provider,
-		) as unknown as anchor.Program<EffectMigration>;
+    const migrationProgram = new anchor.Program(
+      EffectMigrationIdl as anchor.Idl,
+      provider
+    ) as unknown as anchor.Program<EffectMigration>;
 
-		const mintKey = new PublicKey(mint);
+    const mintKey = new PublicKey(mint);
 
-		const ata = getAssociatedTokenAddressSync(
-			new PublicKey(mint),
-			new PublicKey("nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"),
-			true,
-		);
+    const ata = getAssociatedTokenAddressSync(
+      new PublicKey(mint),
+      new PublicKey("nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"),
+      true
+    );
 
-		const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-			microLamports: 200_000,
-		});
+    const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+      microLamports: 200_000,
+    });
 
-		const transaction = await migrationProgram.methods
-			.destroyClaim()
-			.preInstructions([addPriorityFee])
-			.accounts({
-				migrationAccount: new PublicKey(account),
-				mint: mintKey,
-				userTokenAccount: ata,
-			})
-			.transaction();
+    const transaction = await migrationProgram.methods
+      .destroyClaim()
+      .preInstructions([addPriorityFee])
+      .accounts({
+        migrationAccount: new PublicKey(account),
+        mint: mintKey,
+        userTokenAccount: ata,
+      })
+      .transaction();
 
-		// add recent blockhash
-		transaction.recentBlockhash = (
-			await provider.connection.getLatestBlockhash()
-		).blockhash;
-		transaction.feePayer = provider.wallet.publicKey;
+    // add recent blockhash
+    transaction.recentBlockhash = (
+      await provider.connection.getLatestBlockhash()
+    ).blockhash;
+    transaction.feePayer = provider.wallet.publicKey;
 
-		// sign transaction
-		const serializedTx = transaction.serialize({
-			requireAllSignatures: false,
-		});
+    // sign transaction
+    const serializedTx = transaction.serialize({
+      requireAllSignatures: false,
+    });
 
-
-
-
-		console.log(bs58.encode(serializedTx));
-	},
+    console.log(bs58.encode(serializedTx));
+  },
 };

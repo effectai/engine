@@ -1,29 +1,29 @@
 {
-	"name": "nuxt-app",
-	"private": true,
-	"type": "module",
-	"scripts": {
-		"build": "nuxt build",
-		"dev": "nuxt dev",
-		"generate": "nuxt generate",
-		"preview": "nuxt preview",
-		"postinstall": "nuxt prepare"
-	},
-	"devDependencies": {
-		"vite-plugin-node-polyfills": "0.22.0",
-		"@effectai/protocol": "workspace:*",
-		"@nuxt/devtools": "latest",
-		"@nuxt/ui": "^2.21.0",
-		"nuxt": "^3.15.4",
-		"vue": "latest"
-	},
-	"dependencies": {
-		"buffer": "^6.0.3",
-		"solana-wallets-vue": "0.7.1",
-		"@solana/wallet-adapter-wallets": "^0.19.32",
-		"@libp2p/crypto": "^5.0.11",
-		"@libp2p/peer-id-factory": "^4.2.4",
-		"@libp2p/keychain": "^5.0.14",
-		"@libp2p/peer-id": "^5.0.12"
-	}
+  "name": "nuxt-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "devDependencies": {
+    "vite-plugin-node-polyfills": "0.22.0",
+    "@effectai/protocol": "workspace:*",
+    "@nuxt/devtools": "latest",
+    "@nuxt/ui": "^2.21.0",
+    "nuxt": "^3.15.4",
+    "vue": "latest"
+  },
+  "dependencies": {
+    "buffer": "^6.0.3",
+    "solana-wallets-vue": "0.7.1",
+    "@solana/wallet-adapter-wallets": "^0.19.32",
+    "@libp2p/crypto": "^5.0.11",
+    "@libp2p/peer-id-factory": "^4.2.4",
+    "@libp2p/keychain": "^5.0.14",
+    "@libp2p/peer-id": "^5.0.12"
+  }
 }

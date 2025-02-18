@@ -1,5 +1,4 @@
-
-## General 
+## General
 
 **Common packages**  
 All contracts now have their own **common package** that includes structs and struct logic.
@@ -12,16 +11,17 @@ another alternative is to build better support for this into anchor through open
 
 https://github.com/coral-xyz/anchor/issues/3285#issuecomment-2380573058
 
-**Renamed fields to be more descriptive**  
- - renamed data accounts to always end on _account for example:
- 
-	stake -> stake_account.  
-	reward -> reward_account.  
+**Renamed fields to be more descriptive**
 
- - renamed token accounts to always end on _token_account, and prefix it with the type of token_account:  
-	 vault -> staking_vault_token_account  
-	 vault -> vesting_vault_token_account  
-	 user -> user_token_account  
+- renamed data accounts to always end on \_account for example:
+
+  stake -> stake_account.  
+  reward -> reward_account.
+
+- renamed token accounts to always end on \_token_account, and prefix it with the type of token_account:  
+   vault -> staking_vault_token_account  
+   vault -> vesting_vault_token_account  
+   user -> user_token_account
 
 this is especially useful in instructions where multiple vault accounts were being called.
 
@@ -31,7 +31,7 @@ old contracts included mint constraints on both the **reflection** and **staking
 **removed bumps**
 old contracts had bumps stored into almost every data account, this is odd, as bumps using seeds are derivable, we've removed these and updated all the seed macro's accordingly.
 
-## Staking Contract  
+## Staking Contract
 
 **Added Vested unstake**  
 unstakes now open a vesting contract with a built in delay of 10 days (configurable) and release linearly over a period of 30 days (configurable)
@@ -48,19 +48,19 @@ calling a topup instruction now dilutes the stake accounts `stake_start_time` fi
 **removed unused instructions**  
 removed extend, slash, restake, update_settings, withdraw instructions
 
-
 ## Vesting Contract
 
 - added a 1 byte discriminator tag into the `vesting_account` used for clients to distinguish between different types of vesting contracts (e.g. unstakes, normal vesting etc.)
 
 - removed the reward dependency from the vesting contracts
 
-## Reward  Contract
+## Reward Contract
+
 - a reward account is now derived from the seeds of a stake account, making their relation 1:1
 
 - a reflection account now has two vaults an `intermediary_reward_vault` and a normal `reward_vault` all vestments/streams can be pointed to the `intermediary_reward_vault` and using a `topup` instruction the reflection account transfers funds between these 2 vaults
 
-- renamed xnos to `weighted_amount` 
+- renamed xnos to `weighted_amount`
 
 - removed multiplier when calculating `weighted_amount`
 

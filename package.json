@@ -1,40 +1,40 @@
 {
-	"name": "effect-tasks",
-	"private": true,
-	"sideEffects": false,
-	"packageManager": "pnpm@8.15.6",
-	"type": "module",
-	"version": "1.0.0",
-	"exports": {
-		".": {
-			"import": "./dist/index.js"
-		}
-	},
-	"scripts": {
-		"purge": "rm -rf node_modules pnpm-lock.yaml && pnpm recursive exec -- rm -rf node_modules dist",
-		"dev": "pnpm turbo dev",
-		"dashboard:generate-staging": "pnpm --filter effect-dashboard run generate-staging",
-		"format": "pnpm prettier -w . && pnpm biome format --write .",
-		"dashboard:generate-prod": "pnpm --filter effect-dashboard run generate-prod",
-		"website:generate": "pnpm --filter effect-website run generate",
-		"manager:start": "pnpm --filter @effectai/task-manager run start",
-		"relay:start": "pnpm --filter @effectai/task-relay run start",
-		"packages:build": "pnpm turbo build --filter @effectai/*",
-		"provider:start": "pnpm --filter @effectai/task-provider run start",
-		"docs:dev": "pnpm --filter docs run dev",
-		"test": "vitest"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
-		"turbo": "2.2.3",
-		"vitest": "^2.1.3"
-	},
-	"engines": {
-		"node": ">=20.0.0"
-	},
-	"pnpm": {
-		"overrides": {
-			"@vue/devtools": "7.6.4"
-		}
-	}
+  "name": "effect-tasks",
+  "private": true,
+  "sideEffects": false,
+  "packageManager": "pnpm@8.15.6",
+  "type": "module",
+  "version": "1.0.0",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "purge": "rm -rf node_modules pnpm-lock.yaml && pnpm recursive exec -- rm -rf node_modules dist",
+    "dev": "pnpm turbo dev",
+    "dashboard:generate-staging": "pnpm --filter effect-dashboard run generate-staging",
+    "format": "pnpm prettier -w . && pnpm biome format --write .",
+    "dashboard:generate-prod": "pnpm --filter effect-dashboard run generate-prod",
+    "website:generate": "pnpm --filter effect-website run generate",
+    "manager:start": "pnpm --filter @effectai/task-manager run start",
+    "relay:start": "pnpm --filter @effectai/task-relay run start",
+    "packages:build": "pnpm turbo build --filter @effectai/*",
+    "provider:start": "pnpm --filter @effectai/task-provider run start",
+    "docs:dev": "pnpm --filter docs run dev",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "turbo": "2.2.3",
+    "vitest": "^2.1.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@vue/devtools": "7.6.4"
+    }
+  }
 }

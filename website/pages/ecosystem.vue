@@ -1,5 +1,3 @@
 <template>
-    <div>
-        Ecosystem Page
-    </div>
+  <div>Ecosystem Page</div>
 </template>

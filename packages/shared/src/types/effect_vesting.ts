@@ -5,348 +5,289 @@
  * IDL can be found at `target/idl/effect_vesting.json`.
  */
 export type EffectVesting = {
-  "address": "effectvesting",
-  "metadata": {
-    "name": "effectVesting",
-    "version": "0.1.0",
-    "spec": "0.1.0",
-    "description": "Effect Vesting."
-  },
-  "instructions": [
+  address: "effectvesting";
+  metadata: {
+    name: "effectVesting";
+    version: "0.1.0";
+    spec: "0.1.0";
+    description: "Effect Vesting.";
+  };
+  instructions: [
     {
-      "name": "claim",
-      "docs": [
+      name: "claim";
+      docs: [
         "Claim emission from a [PoolAccount](#pool-account) with claim type [`0`](#claim-type)"
-      ],
-      "discriminator": [
-        62,
-        198,
-        214,
-        193,
-        213,
-        159,
-        108,
-        210
-      ],
-      "accounts": [
+      ];
+      discriminator: [62, 198, 214, 193, 213, 159, 108, 210];
+      accounts: [
         {
-          "name": "vestingAccount",
-          "writable": true
+          name: "vestingAccount";
+          writable: true;
         },
         {
-          "name": "vestingVaultTokenAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
+          name: "vestingVaultTokenAccount";
+          writable: true;
+          pda: {
+            seeds: [
               {
-                "kind": "account",
-                "path": "vestingAccount"
+                kind: "account";
+                path: "vestingAccount";
               }
-            ]
-          }
+            ];
+          };
         },
         {
-          "name": "recipientTokenAccount",
-          "writable": true,
-          "relations": [
-            "vestingAccount"
-          ]
+          name: "recipientTokenAccount";
+          writable: true;
+          relations: ["vestingAccount"];
         },
         {
-          "name": "authority",
-          "writable": true,
-          "signer": true
+          name: "authority";
+          writable: true;
+          signer: true;
         },
         {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          name: "tokenProgram";
+          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
         }
-      ],
-      "args": []
+      ];
+      args: [];
     },
     {
-      "name": "close",
-      "docs": [
+      name: "close";
+      docs: [
         "Close a [PoolAccount](#pool-account) and [VaultAccount](#vault-account)."
-      ],
-      "discriminator": [
-        98,
-        165,
-        201,
-        177,
-        108,
-        65,
-        206,
-        96
-      ],
-      "accounts": [
+      ];
+      discriminator: [98, 165, 201, 177, 108, 65, 206, 96];
+      accounts: [
         {
-          "name": "vestingAccount",
-          "writable": true
+          name: "vestingAccount";
+          writable: true;
         },
         {
-          "name": "vestingVaultTokenAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
+          name: "vestingVaultTokenAccount";
+          writable: true;
+          pda: {
+            seeds: [
               {
-                "kind": "account",
-                "path": "vestingAccount"
+                kind: "account";
+                path: "vestingAccount";
               }
-            ]
-          }
+            ];
+          };
         },
         {
-          "name": "recipientTokenAccount",
-          "writable": true
+          name: "recipientTokenAccount";
+          writable: true;
         },
         {
-          "name": "authority",
-          "writable": true,
-          "signer": true,
-          "relations": [
-            "vestingAccount"
-          ]
+          name: "authority";
+          writable: true;
+          signer: true;
+          relations: ["vestingAccount"];
         },
         {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          name: "tokenProgram";
+          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
         }
-      ],
-      "args": []
+      ];
+      args: [];
     },
     {
-      "name": "open",
-      "docs": [
+      name: "open";
+      docs: [
         "Open a [PoolAccount](#pool-account) and [VaultAccount](#vault-account)."
-      ],
-      "discriminator": [
-        228,
-        220,
-        155,
-        71,
-        199,
-        189,
-        60,
-        45
-      ],
-      "accounts": [
+      ];
+      discriminator: [228, 220, 155, 71, 199, 189, 60, 45];
+      accounts: [
         {
-          "name": "vestingAccount",
-          "writable": true,
-          "signer": true
+          name: "vestingAccount";
+          writable: true;
+          signer: true;
         },
         {
-          "name": "vestingVaultTokenAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
+          name: "vestingVaultTokenAccount";
+          writable: true;
+          pda: {
+            seeds: [
               {
-                "kind": "account",
-                "path": "vestingAccount"
+                kind: "account";
+                path: "vestingAccount";
               }
-            ]
-          }
+            ];
+          };
         },
         {
-          "name": "recipientTokenAccount"
+          name: "recipientTokenAccount";
         },
         {
-          "name": "authority",
-          "writable": true,
-          "signer": true
+          name: "authority";
+          writable: true;
+          signer: true;
         },
         {
-          "name": "mint"
+          name: "mint";
         },
         {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
+          name: "systemProgram";
+          address: "11111111111111111111111111111111";
         },
         {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          name: "tokenProgram";
+          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
         },
         {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
+          name: "rent";
+          address: "SysvarRent111111111111111111111111111111111";
         }
-      ],
-      "args": [
+      ];
+      args: [
         {
-          "name": "releaseRate",
-          "type": "u64"
+          name: "releaseRate";
+          type: "u64";
         },
         {
-          "name": "startTime",
-          "type": "i64"
+          name: "startTime";
+          type: "i64";
         },
         {
-          "name": "isClosable",
-          "type": "bool"
+          name: "isClosable";
+          type: "bool";
         },
         {
-          "name": "tag",
-          "type": {
-            "option": {
-              "array": [
-                "u8",
-                1
-              ]
-            }
-          }
+          name: "tag";
+          type: {
+            option: {
+              array: ["u8", 1];
+            };
+          };
         }
-      ]
+      ];
     },
     {
-      "name": "updateRecipient",
-      "docs": [
-        "Update the beneficiary in a [PoolAccount](#pool-account)."
-      ],
-      "discriminator": [
-        55,
-        190,
-        61,
-        121,
-        131,
-        132,
-        8,
-        54
-      ],
-      "accounts": [
+      name: "updateRecipient";
+      docs: ["Update the beneficiary in a [PoolAccount](#pool-account)."];
+      discriminator: [55, 190, 61, 121, 131, 132, 8, 54];
+      accounts: [
         {
-          "name": "recipientTokenAccount",
-          "relations": [
-            "vestingAccount"
-          ]
+          name: "recipientTokenAccount";
+          relations: ["vestingAccount"];
         },
         {
-          "name": "newRecipientTokenAccount"
+          name: "newRecipientTokenAccount";
         },
         {
-          "name": "vestingAccount",
-          "writable": true
+          name: "vestingAccount";
+          writable: true;
         },
         {
-          "name": "authority",
-          "writable": true,
-          "signer": true
+          name: "authority";
+          writable: true;
+          signer: true;
         },
         {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          name: "tokenProgram";
+          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
         }
-      ],
-      "args": []
+      ];
+      args: [];
     }
-  ],
-  "accounts": [
+  ];
+  accounts: [
     {
-      "name": "vestingAccount",
-      "discriminator": [
-        102,
-        73,
-        10,
-        233,
-        200,
-        188,
-        228,
-        216
-      ]
+      name: "vestingAccount";
+      discriminator: [102, 73, 10, 233, 200, 188, 228, 216];
     }
-  ],
-  "errors": [
+  ];
+  errors: [
     {
-      "code": 6000,
-      "name": "unauthorized",
-      "msg": "unauthorized"
+      code: 6000;
+      name: "unauthorized";
+      msg: "unauthorized";
     },
     {
-      "code": 6001,
-      "name": "notStarted",
-      "msg": "This pool has not started yet."
+      code: 6001;
+      name: "notStarted";
+      msg: "This pool has not started yet.";
     },
     {
-      "code": 6002,
-      "name": "underfunded",
-      "msg": "This pool does not have enough funds."
+      code: 6002;
+      name: "underfunded";
+      msg: "This pool does not have enough funds.";
     },
     {
-      "code": 6003,
-      "name": "notCloseable",
-      "msg": "This pool is not closeable."
+      code: 6003;
+      name: "notCloseable";
+      msg: "This pool is not closeable.";
     },
     {
-      "code": 6004,
-      "name": "wrongClaimType",
-      "msg": "This pool has a different claim type."
+      code: 6004;
+      name: "wrongClaimType";
+      msg: "This pool has a different claim type.";
     },
     {
-      "code": 6005,
-      "name": "wrongBeneficiary",
-      "msg": "This pool does not match the beneficiary."
+      code: 6005;
+      name: "wrongBeneficiary";
+      msg: "This pool does not match the beneficiary.";
     },
     {
-      "code": 6006,
-      "name": "invalidTokenAccount",
-      "msg": "This pool has an invalid token account."
+      code: 6006;
+      name: "invalidTokenAccount";
+      msg: "This pool has an invalid token account.";
     },
     {
-      "code": 6007,
-      "name": "invalidVault",
-      "msg": "Invalid vault"
+      code: 6007;
+      name: "invalidVault";
+      msg: "Invalid vault";
     },
     {
-      "code": 6008,
-      "name": "claimFailed",
-      "msg": "Claim failed"
+      code: 6008;
+      name: "claimFailed";
+      msg: "Claim failed";
     }
-  ],
-  "types": [
+  ];
+  types: [
     {
-      "name": "vestingAccount",
-      "type": {
-        "kind": "struct",
-        "fields": [
+      name: "vestingAccount";
+      type: {
+        kind: "struct";
+        fields: [
           {
-            "name": "authority",
-            "type": "pubkey"
+            name: "authority";
+            type: "pubkey";
           },
           {
-            "name": "recipientTokenAccount",
-            "type": "pubkey"
+            name: "recipientTokenAccount";
+            type: "pubkey";
           },
           {
-            "name": "distributedTokens",
-            "type": "u64"
+            name: "distributedTokens";
+            type: "u64";
           },
           {
-            "name": "releaseRate",
-            "type": "u64"
+            name: "releaseRate";
+            type: "u64";
           },
           {
-            "name": "startTime",
-            "type": "i64"
+            name: "startTime";
+            type: "i64";
           },
           {
-            "name": "isCloseable",
-            "type": "bool"
+            name: "isCloseable";
+            type: "bool";
           },
           {
-            "name": "isRestrictedClaim",
-            "type": "bool"
+            name: "isRestrictedClaim";
+            type: "bool";
           },
           {
-            "name": "tag",
-            "type": {
-              "array": [
-                "u8",
-                1
-              ]
-            }
+            name: "tag";
+            type: {
+              array: ["u8", 1];
+            };
           }
-        ]
-      }
+        ];
+      };
     }
-  ]
+  ];
 };

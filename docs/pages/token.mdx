@@ -1,4 +1,4 @@
-import { TokenDistributionPieChart, data } from '../components/TokenCharts.tsx'
+import { TokenDistributionPieChart, data } from "../components/TokenCharts.tsx";
 
 # Token
 
@@ -8,7 +8,7 @@ quality of participants. The token is registered on Solana at the
 following address:
 
 |               |                                                |
-|---------------|------------------------------------------------|
+| ------------- | ---------------------------------------------- |
 | Token Address | `EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E` |
 | Standard      | Solana (SPL)                                   |
 | Total Supply  | `520,000,000`                                  |
@@ -27,38 +27,40 @@ read the announcement:
 https://effect.ai/news/new-effect-token
 
 ## Distribution
+
 The initial allocation of **EFFECT** tokens was distributed in the
 following way:
 
-<div style={{margin: "0 auto", maxWidth: "450px"}}>
+<div style={{ margin: "0 auto", maxWidth: "450px" }}>
   <TokenDistributionPieChart />
-  <br/>
+  <br />
 </div>
 
 <div>
 
 {[['EFX Holders',
-   'Holders of EFX during the snapshot can convert them 1:1 to EFFECT. Claimed tokens are automatically staked with a 7 day lock and 30 day linear release.'],
+'Holders of EFX during the snapshot can convert them 1:1 to EFFECT. Claimed tokens are automatically staked with a 7 day lock and 30 day linear release.'],
 
-  ['NFX Holders',
-   'Holders of NFX during the snapshot can convert them for 1:8 to EFFECT. Claimed tokens are automatically staked with a 7 day lock and 30 day linear release.'],
+['NFX Holders',
+'Holders of NFX during the snapshot can convert them for 1:8 to EFFECT. Claimed tokens are automatically staked with a 7 day lock and 30 day linear release.'],
 
-  ['Staking Incentives',
-   'Staking incentives were allocated by the DAO in proposal 184 and 195. They are used to provide a base staking incentive reward. '],
+['Staking Incentives',
+'Staking incentives were allocated by the DAO in proposal 184 and 195. They are used to provide a base staking incentive reward. '],
 
-  ['DAO Treasury',
-   'DAO Treasury tokens are locked until the Effect DAO has been instantiated on Solana.'],
+['DAO Treasury',
+'DAO Treasury tokens are locked until the Effect DAO has been instantiated on Solana.'],
 
-  ['Liquidity, Partnerships, Marketing',
-   'These tokens will be deployed for providing $EFFECT liquidity, and for promotion and growth of the network.'],
+['Liquidity, Partnerships, Marketing',
+'These tokens will be deployed for providing $EFFECT liquidity, and for promotion and growth of the network.'],
 
-  ['Development Fund',
-   'Funds reserved for the future development of the network. Tokens are linearly vested over a period of 4 years.'],
+['Development Fund',
+'Funds reserved for the future development of the network. Tokens are linearly vested over a period of 4 years.'],
 
-  ['Migration Reserve',
-   'These tokens are reserved to manage any unforeseen migration expenses.']].map(
+['Migration Reserve',
+'These tokens are reserved to manage any unforeseen migration expenses.']].map(
 (el, idx) => {
-  return [<h3 className="vocs_H3 vocs_Heading">{el[0]}</h3>,
+return [<h3 className="vocs_H3 vocs_Heading">{el[0]}</h3>,
+
   <strong className="vocs_Strong">Amount: </strong>,
   <span> {Math.floor(data.datasets[0].data[idx]/1000000)}M ({Math.round(data.datasets[0].data[idx]/520000000.0 * 100)}%)</span>,
   <div>{el[1]}</div>]
