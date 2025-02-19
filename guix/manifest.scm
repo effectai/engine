@@ -1,3 +1,4 @@
+
 (specifications->manifest
   (list "node"
         "python"
@@ -9,4 +10,5 @@
 	"findutils"
         "nss-certs"
         "sed"
+	"node-pnpm"
 	"git"))
