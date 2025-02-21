@@ -208,6 +208,9 @@ importers:
 
   packages/protocol:
     dependencies:
+      '@chainsafe/libp2p-gossipsub':
+        specifier: ^14.1.0
+        version: 14.1.0
       '@chainsafe/libp2p-noise':
         specifier: ^16.0.0
         version: 16.0.3
@@ -2124,6 +2127,26 @@ packages:
 
   /@chainsafe/is-ip@2.1.0:
     resolution: {integrity: sha512-KIjt+6IfysQ4GCv66xihEitBjvhU/bixbbbFxdJ1sqCp4uJ0wuZiYBPhksZoy4lfaF0k9cwNzY5upEW/VWdw3w==}
+    dev: false
+
+  /@chainsafe/libp2p-gossipsub@14.1.0:
+    resolution: {integrity: sha512-nzFBbHOoRFa/bXUSzmJaXOgHI+EttTldhLJ33yWcM0DxnWhLKychHkCDLoJO3THa1+dnzrDJoxj3N3/V0WoPVw==}
+    engines: {npm: '>=8.7.0'}
+    dependencies:
+      '@libp2p/crypto': 5.0.12
+      '@libp2p/interface': 2.6.0
+      '@libp2p/interface-internal': 2.3.2
+      '@libp2p/peer-id': 5.0.13
+      '@libp2p/pubsub': 10.1.1
+      '@multiformats/multiaddr': 12.4.0
+      denque: 2.1.0
+      it-length-prefixed: 9.1.1
+      it-pipe: 3.0.1
+      it-pushable: 3.2.3
+      multiformats: 13.3.2
+      protons-runtime: 5.5.0
+      uint8arraylist: 2.4.8
+      uint8arrays: 5.1.0
     dev: false
 
   /@chainsafe/libp2p-noise@16.0.3:
@@ -4120,6 +4143,24 @@ packages:
       mortice: 3.0.6
       multiformats: 13.3.2
       protons-runtime: 5.5.0
+      uint8arraylist: 2.4.8
+      uint8arrays: 5.1.0
+    dev: false
+
+  /@libp2p/pubsub@10.1.1:
+    resolution: {integrity: sha512-RBE4tDE2+H091oylrfxZdOCP40aid2UWsSEpQ/NIVLpwhMto1ESNJQkzHZcCwyCN9pcuDrD9KoGDxlNw94bsGQ==}
+    dependencies:
+      '@libp2p/crypto': 5.0.12
+      '@libp2p/interface': 2.6.0
+      '@libp2p/interface-internal': 2.3.2
+      '@libp2p/peer-collections': 6.0.18
+      '@libp2p/peer-id': 5.0.13
+      '@libp2p/utils': 6.5.2
+      it-length-prefixed: 10.0.1
+      it-pipe: 3.0.1
+      it-pushable: 3.2.3
+      multiformats: 13.3.2
+      p-queue: 8.1.0
       uint8arraylist: 2.4.8
       uint8arrays: 5.1.0
     dev: false

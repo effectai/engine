@@ -2,6 +2,7 @@ import { noise } from "@chainsafe/libp2p-noise";
 import { yamux } from "@chainsafe/libp2p-yamux";
 import { bootstrap } from "@libp2p/bootstrap";
 import { circuitRelayTransport } from "@libp2p/circuit-relay-v2";
+import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 import { identify } from "@libp2p/identify";
 import { webRTC } from "@libp2p/webrtc";
 import { webSockets } from "@libp2p/websockets";
@@ -9,7 +10,11 @@ import { createLibp2p } from "libp2p";
 import * as filters from "@libp2p/websockets/filters";
 import { workerService } from "./service/workerService.js";
 import type { Ed25519PrivateKey } from "@libp2p/interface";
-import { taskProtocol, taskStore } from "@effectai/protocol-core";
+import {
+	taskProtocol,
+	taskStore,
+	announcePeerDiscovery,
+} from "@effectai/protocol-core";
 
 export const createWorkerNode = (
 	peers: string[],
@@ -29,9 +34,10 @@ export const createWorkerNode = (
 		connectionEncrypters: [noise()],
 		peerDiscovery: [
 			...(peers && peers.length > 0 ? [bootstrap({ list: peers })] : []),
-			// announcePeerDiscovery(),
+			announcePeerDiscovery(),
 		],
 		services: {
+			pubsub: gossipsub(),
 			identify: identify(),
 			taskStore: taskStore(),
 			task: taskProtocol(),
