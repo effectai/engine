@@ -1,2 +1,2 @@
 export * from "./worker.js";
-export * from "./service/workerService.js";
+export * from "./service.js";
