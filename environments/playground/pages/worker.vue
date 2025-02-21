@@ -93,92 +93,89 @@
 </template>
 
 <script setup lang="ts">
-  import { type Task, createWorkerNode } from "@effectai/protocol";
-  import { WalletMultiButton, useWallet } from "solana-wallets-vue";
-  import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
+import { type Task, createWorkerNode } from "@effectai/protocol";
+import { WalletMultiButton, useWallet } from "solana-wallets-vue";
+import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 
-  const { publicKey, disconnect } = useWallet();
-  const taskStore: Ref<Task[] | null> = ref(null);
-  const activeTask = ref<Task | null>(null);
-  const isOpen = ref(false);
+const { publicKey, disconnect } = useWallet();
+const taskStore: Ref<Task[] | null> = ref(null);
+const activeTask = ref<Task | null>(null);
+const isOpen = ref(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+	e.preventDefault();
 
-    if (!activeTask.value) return;
+	if (!activeTask.value) return;
 
-    await worker.services.worker.completeTask(
-      activeTask.value.id,
-      JSON.stringify({ worker: worker.peerId.toString(), result: "completed" })
-    );
+	await worker.services.worker.completeTask(
+		activeTask.value.id,
+		JSON.stringify({ worker: worker.peerId.toString(), result: "completed" }),
+	);
 
-    isOpen.value = false;
-    activeTask.value = null;
-  };
+	isOpen.value = false;
+	activeTask.value = null;
+};
 
-  const actions = (row) => [
-    [
-      {
-        label: "View",
-        icon: "i-heroicons-eye-20-solid",
-        click: () => {
-          activeTask.value = row;
-          isOpen.value = true;
-        },
-      },
-      {
-        label: "Accept",
-        icon: "i-heroicons-check-20-solid",
-        click: async () => {
-          await worker.services.worker.acceptTask(row);
-        },
-      },
-      {
-        label: "Reject",
-        disabled: true,
-        icon: "i-heroicons-x-20-solid",
-        onClick: () => {
-          console.log("reject", row);
-        },
-      },
-      {
-        label: "Payout",
-        disabled: true,
-        icon: "i-heroicons-currency-dollar-20-solid",
-        onClick: () => {
-          console.log("complete", row);
-        },
-      },
-    ],
-  ];
+const actions = (row) => [
+	[
+		{
+			label: "View",
+			icon: "i-heroicons-eye-20-solid",
+			click: () => {
+				activeTask.value = row;
+				isOpen.value = true;
+			},
+		},
+		{
+			label: "Accept",
+			icon: "i-heroicons-check-20-solid",
+			click: async () => {
+				await worker.services.worker.acceptTask(row);
+			},
+		},
+		{
+			label: "Reject",
+			disabled: true,
+			icon: "i-heroicons-x-20-solid",
+			onClick: () => {
+				console.log("reject", row);
+			},
+		},
+		{
+			label: "Payout",
+			disabled: true,
+			icon: "i-heroicons-currency-dollar-20-solid",
+			onClick: () => {
+				console.log("complete", row);
+			},
+		},
+	],
+];
 
-  // get private key from localStorage or create it
-  const seed = localStorage.getItem("seed") || generateSeed().toString("hex");
-  localStorage.setItem("seed", seed);
-  const key = await generateKeyPairFromSeed(
-    "Ed25519",
-    Buffer.from(seed, "hex")
-  );
-  const worker = await createWorkerNode(
-    [
-      "/ip4/127.0.0.1/tcp/34859/ws/p2p/12D3KooWFFNkqu7bETMX2qfdyi9t9T3fEYtqQXMTKtSt8Yw9jz5b",
-    ],
-    key
-  );
+// get private key from localStorage or create it
+const seed = localStorage.getItem("seed") || generateSeed().toString("hex");
+localStorage.setItem("seed", seed);
+const key = await generateKeyPairFromSeed("Ed25519", Buffer.from(seed, "hex"));
+const worker = await createWorkerNode(
+	[
+		"/ip4/127.0.0.1/tcp/34859/ws/p2p/12D3KooWFFNkqu7bETMX2qfdyi9t9T3fEYtqQXMTKtSt8Yw9jz5b",
+	],
+	key,
+);
 
-  worker.services.taskStore.addEventListener("task:stored", async () => {
-    taskStore.value = await worker.services.taskStore.all();
-    console.log("task stored", taskStore.value);
-  });
+worker.services.taskStore.addEventListener("task:stored", async () => {
+	taskStore.value = await worker.services.taskStore.all();
+	console.log("task stored", taskStore.value);
+});
 
-  worker.services.task.addEventListener("task:received", ({ detail }) => {
-    console.log("task received", detail);
-  });
+worker.services.task.addEventListener("task:received", ({ detail }) => {
+	console.log("task received", detail);
+});
 
-  onBeforeUnmount(async () => {
-    console.log("stopping worker");
-    await worker.stop();
-  });
+onBeforeUnmount(async () => {
+	console.log("stopping worker");
+	await worker.stop();
+});
 </script>
 
 <style lang="scss" scoped>

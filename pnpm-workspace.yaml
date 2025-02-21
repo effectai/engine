@@ -1,6 +1,7 @@
 packages:
   # all packages in direct subdirs of packages/
   - "packages/*"
+  - "packages/*/packages/*"
   - "patches/*"
   - "environments/*"
   - "docs"
@@ -8,6 +9,3 @@ packages:
   - "solana"
   # exclude packages that are inside test directories
   - "!**/test/**"
-
-hoist-pattern:
-  - "@vue/devtools-api"

@@ -1,0 +1,112 @@
+/* eslint-disable import/export */
+/* eslint-disable complexity */
+/* eslint-disable @typescript-eslint/no-namespace */
+/* eslint-disable @typescript-eslint/no-unnecessary-boolean-literal-compare */
+/* eslint-disable @typescript-eslint/no-empty-interface */
+
+import { type Codec, decodeMessage, type DecodeOptions, encodeMessage, enumeration, MaxLengthError, message } from 'protons-runtime'
+import { alloc as uint8ArrayAlloc } from 'uint8arrays/alloc'
+import type { Uint8ArrayList } from 'uint8arraylist'
+
+export enum Type {
+  WORKER = 'WORKER',
+  MANAGER = 'MANAGER'
+}
+
+enum __TypeValues {
+  WORKER = 0,
+  MANAGER = 1
+}
+
+export namespace Type {
+  export const codec = (): Codec<Type> => {
+    return enumeration<Type>(__TypeValues)
+  }
+}
+export interface Pool {
+  publicKey: Uint8Array
+  addrs: Uint8Array[]
+  type: Type
+}
+
+export namespace Pool {
+  let _codec: Codec<Pool>
+
+  export const codec = (): Codec<Pool> => {
+    if (_codec == null) {
+      _codec = message<Pool>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.publicKey != null && obj.publicKey.byteLength > 0)) {
+          w.uint32(10)
+          w.bytes(obj.publicKey)
+        }
+
+        if (obj.addrs != null) {
+          for (const value of obj.addrs) {
+            w.uint32(18)
+            w.bytes(value)
+          }
+        }
+
+        if (obj.type != null && __TypeValues[obj.type] !== 0) {
+          w.uint32(24)
+          Type.codec().encode(obj.type, w)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          publicKey: uint8ArrayAlloc(0),
+          addrs: [],
+          type: Type.WORKER
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.publicKey = reader.bytes()
+              break
+            }
+            case 2: {
+              if (opts.limits?.addrs != null && obj.addrs.length === opts.limits.addrs) {
+                throw new MaxLengthError('Decode error - map field "addrs" had too many elements')
+              }
+
+              obj.addrs.push(reader.bytes())
+              break
+            }
+            case 3: {
+              obj.type = Type.codec().decode(reader)
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<Pool>): Uint8Array => {
+    return encodeMessage(obj, Pool.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<Pool>): Pool => {
+    return decodeMessage(buf, Pool.codec(), opts)
+  }
+}
