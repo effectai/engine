@@ -12,7 +12,16 @@
       "docs": [
         "Claim rewards from a [RewardsAccount](#rewards-account) and [VaultAccount](#vault-account)."
       ],
-      "discriminator": [62, 198, 214, 193, 213, 159, 108, 210],
+      "discriminator": [
+        62,
+        198,
+        214,
+        193,
+        213,
+        159,
+        108,
+        210
+      ],
       "accounts": [
         {
           "name": "reflection_account",
@@ -21,7 +30,18 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [114, 101, 102, 108, 101, 99, 116, 105, 111, 110]
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -67,7 +87,10 @@
           "name": "authority",
           "writable": true,
           "signer": true,
-          "relations": ["stake_account", "reward_account"]
+          "relations": [
+            "stake_account",
+            "reward_account"
+          ]
         },
         {
           "name": "token_program",
@@ -78,8 +101,19 @@
     },
     {
       "name": "close",
-      "docs": ["Close a [RewardsAccount](#rewards-account)."],
-      "discriminator": [98, 165, 201, 177, 108, 65, 206, 96],
+      "docs": [
+        "Close a [RewardsAccount](#rewards-account)."
+      ],
+      "discriminator": [
+        98,
+        165,
+        201,
+        177,
+        108,
+        65,
+        206,
+        96
+      ],
       "accounts": [
         {
           "name": "reflection_account",
@@ -88,7 +122,18 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [114, 101, 102, 108, 101, 99, 116, 105, 111, 110]
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -134,7 +179,9 @@
           "name": "authority",
           "writable": true,
           "signer": true,
-          "relations": ["stake_account"]
+          "relations": [
+            "stake_account"
+          ]
         },
         {
           "name": "stake_program",
@@ -145,8 +192,19 @@
     },
     {
       "name": "enter",
-      "docs": ["Initialize a [RewardsAccount](#rewards-account)."],
-      "discriminator": [139, 49, 209, 114, 88, 91, 77, 134],
+      "docs": [
+        "Initialize a [RewardsAccount](#rewards-account)."
+      ],
+      "discriminator": [
+        139,
+        49,
+        209,
+        114,
+        88,
+        91,
+        77,
+        134
+      ],
       "accounts": [
         {
           "name": "reflection_account",
@@ -155,7 +213,18 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [114, 101, 102, 108, 101, 99, 116, 105, 111, 110]
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -200,7 +269,9 @@
           "name": "authority",
           "writable": true,
           "signer": true,
-          "relations": ["stake_account"]
+          "relations": [
+            "stake_account"
+          ]
         },
         {
           "name": "mint"
@@ -221,7 +292,16 @@
       "docs": [
         "Initialize the [ReflectionAccount](#reflection-account) and [VaultAccount](#vault_token_account-account)."
       ],
-      "discriminator": [220, 59, 207, 236, 108, 250, 47, 100],
+      "discriminator": [
+        220,
+        59,
+        207,
+        236,
+        108,
+        250,
+        47,
+        100
+      ],
       "accounts": [
         {
           "name": "reflection_account",
@@ -230,7 +310,18 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [114, 101, 102, 108, 101, 99, 116, 105, 111, 110]
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -276,7 +367,16 @@
     },
     {
       "name": "init_intermediary_vault",
-      "discriminator": [136, 233, 11, 94, 192, 117, 195, 255],
+      "discriminator": [
+        136,
+        233,
+        11,
+        94,
+        192,
+        117,
+        195,
+        255
+      ],
       "accounts": [
         {
           "name": "reflection_account",
@@ -284,7 +384,18 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [114, 101, 102, 108, 101, 99, 116, 105, 111, 110]
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -341,8 +452,19 @@
     },
     {
       "name": "sync",
-      "docs": ["Re-calculate reflection points."],
-      "discriminator": [4, 219, 40, 164, 21, 157, 189, 88],
+      "docs": [
+        "Re-calculate reflection points."
+      ],
+      "discriminator": [
+        4,
+        219,
+        40,
+        164,
+        21,
+        157,
+        189,
+        88
+      ],
       "accounts": [
         {
           "name": "stake_account"
@@ -381,7 +503,18 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [114, 101, 102, 108, 101, 99, 116, 105, 111, 110]
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -403,7 +536,16 @@
       "docs": [
         "Topup the [ReflectionAccount](#reflection-account) and [VaultAccount](#vault_token_account-account)."
       ],
-      "discriminator": [126, 42, 49, 78, 225, 151, 99, 77],
+      "discriminator": [
+        126,
+        42,
+        49,
+        78,
+        225,
+        151,
+        99,
+        77
+      ],
       "accounts": [
         {
           "name": "mint",
@@ -416,7 +558,18 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [114, 101, 102, 108, 101, 99, 116, 105, 111, 110]
+                "value": [
+                  114,
+                  101,
+                  102,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -460,15 +613,42 @@
   "accounts": [
     {
       "name": "ReflectionAccount",
-      "discriminator": [205, 153, 160, 54, 239, 26, 219, 188]
+      "discriminator": [
+        205,
+        153,
+        160,
+        54,
+        239,
+        26,
+        219,
+        188
+      ]
     },
     {
       "name": "RewardAccount",
-      "discriminator": [225, 81, 31, 253, 84, 234, 171, 129]
+      "discriminator": [
+        225,
+        81,
+        31,
+        253,
+        84,
+        234,
+        171,
+        129
+      ]
     },
     {
       "name": "StakeAccount",
-      "discriminator": [80, 158, 67, 124, 50, 189, 192, 255]
+      "discriminator": [
+        80,
+        158,
+        67,
+        124,
+        50,
+        189,
+        192,
+        255
+      ]
     }
   ],
   "errors": [

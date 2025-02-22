@@ -5,501 +5,572 @@
  * IDL can be found at `target/idl/effect_staking.json`.
  */
 export type EffectStaking = {
-  address: "effectstaking";
-  metadata: {
-    name: "effectStaking";
-    version: "0.1.0";
-    spec: "0.1.0";
-    description: "Effect Staking Program.";
-  };
-  instructions: [
+  "address": "effectstaking",
+  "metadata": {
+    "name": "effectStaking",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Effect Staking Program."
+  },
+  "instructions": [
     {
-      name: "close";
-      docs: [
+      "name": "close",
+      "docs": [
         "Close a [StakeAccount](#stake-account) and [VaultAccount](#vault-account)."
-      ];
-      discriminator: [98, 165, 201, 177, 108, 65, 206, 96];
-      accounts: [
+      ],
+      "discriminator": [
+        98,
+        165,
+        201,
+        177,
+        108,
+        65,
+        206,
+        96
+      ],
+      "accounts": [
         {
-          name: "recipientTokenAccount";
-          writable: true;
+          "name": "recipientTokenAccount",
+          "writable": true
         },
         {
-          name: "stakeAccount";
-          writable: true;
+          "name": "stakeAccount",
+          "writable": true
         },
         {
-          name: "stakeVaultTokenAccount";
-          writable: true;
-          pda: {
-            seeds: [
+          "name": "stakeVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
               {
-                kind: "account";
-                path: "stakeAccount";
+                "kind": "account",
+                "path": "stakeAccount"
               }
-            ];
-          };
+            ]
+          }
         },
         {
-          name: "authority";
-          writable: true;
-          signer: true;
-          relations: ["stakeAccount"];
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "stakeAccount"
+          ]
         },
         {
-          name: "tokenProgram";
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
-      ];
-      args: [];
+      ],
+      "args": []
     },
     {
-      name: "stake";
-      discriminator: [206, 176, 202, 18, 200, 209, 179, 108];
-      accounts: [
+      "name": "stake",
+      "discriminator": [
+        206,
+        176,
+        202,
+        18,
+        200,
+        209,
+        179,
+        108
+      ],
+      "accounts": [
         {
-          name: "mint";
-          writable: true;
+          "name": "mint",
+          "writable": true
         },
         {
-          name: "userTokenAccount";
-          writable: true;
+          "name": "userTokenAccount",
+          "writable": true
         },
         {
-          name: "stakeAccount";
-          writable: true;
-          signer: true;
+          "name": "stakeAccount",
+          "writable": true,
+          "signer": true
         },
         {
-          name: "stakeVaultTokenAccount";
-          writable: true;
-          pda: {
-            seeds: [
+          "name": "stakeVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
               {
-                kind: "account";
-                path: "stakeAccount";
+                "kind": "account",
+                "path": "stakeAccount"
               }
-            ];
-          };
+            ]
+          }
         },
         {
-          name: "authority";
-          writable: true;
-          signer: true;
+          "name": "authority",
+          "writable": true,
+          "signer": true
         },
         {
-          name: "systemProgram";
-          address: "11111111111111111111111111111111";
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
         },
         {
-          name: "tokenProgram";
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          name: "rent";
-          address: "SysvarRent111111111111111111111111111111111";
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         }
-      ];
-      args: [
+      ],
+      "args": [
         {
-          name: "amount";
-          type: "u64";
+          "name": "amount",
+          "type": "u64"
         },
         {
-          name: "duration";
-          type: "u128";
+          "name": "duration",
+          "type": "u128"
         }
-      ];
+      ]
     },
     {
-      name: "stakeGenesis";
-      discriminator: [254, 31, 23, 18, 216, 245, 224, 83];
-      accounts: [
+      "name": "stakeGenesis",
+      "discriminator": [
+        254,
+        31,
+        23,
+        18,
+        216,
+        245,
+        224,
+        83
+      ],
+      "accounts": [
         {
-          name: "authority";
-          signer: true;
+          "name": "authority",
+          "signer": true
         },
         {
-          name: "mint";
+          "name": "mint"
         },
         {
-          name: "userTokenAccount";
-          writable: true;
+          "name": "userTokenAccount",
+          "writable": true
         },
         {
-          name: "stakeAccount";
-          writable: true;
+          "name": "stakeAccount",
+          "writable": true
         },
         {
-          name: "stakeVaultTokenAccount";
-          writable: true;
-          pda: {
-            seeds: [
+          "name": "stakeVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
               {
-                kind: "account";
-                path: "stakeAccount";
+                "kind": "account",
+                "path": "stakeAccount"
               }
-            ];
-          };
+            ]
+          }
         },
         {
-          name: "migrationAccount";
+          "name": "migrationAccount"
         },
         {
-          name: "migrationVaultTokenAccount";
-          writable: true;
-          signer: true;
-          pda: {
-            seeds: [
+          "name": "migrationVaultTokenAccount",
+          "writable": true,
+          "signer": true,
+          "pda": {
+            "seeds": [
               {
-                kind: "account";
-                path: "migrationAccount";
+                "kind": "account",
+                "path": "migrationAccount"
               }
-            ];
-            program: {
-              kind: "account";
-              path: "migrationProgram";
-            };
-          };
+            ],
+            "program": {
+              "kind": "account",
+              "path": "migrationProgram"
+            }
+          }
         },
         {
-          name: "migrationProgram";
-          address: "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR";
+          "name": "migrationProgram",
+          "address": "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
         },
         {
-          name: "systemProgram";
-          address: "11111111111111111111111111111111";
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
         },
         {
-          name: "tokenProgram";
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          name: "rent";
-          address: "SysvarRent111111111111111111111111111111111";
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         }
-      ];
-      args: [
+      ],
+      "args": [
         {
-          name: "amount";
-          type: "u64";
+          "name": "amount",
+          "type": "u64"
         },
         {
-          name: "stakeStartTime";
-          type: "i64";
+          "name": "stakeStartTime",
+          "type": "i64"
         }
-      ];
+      ]
     },
     {
-      name: "topup";
-      docs: [
+      "name": "topup",
+      "docs": [
         "Top-up `amount` of [NOS](/tokens/token) of a [StakeAccount](#stake-account)."
-      ];
-      discriminator: [126, 42, 49, 78, 225, 151, 99, 77];
-      accounts: [
+      ],
+      "discriminator": [
+        126,
+        42,
+        49,
+        78,
+        225,
+        151,
+        99,
+        77
+      ],
+      "accounts": [
         {
-          name: "userTokenAccount";
-          writable: true;
+          "name": "userTokenAccount",
+          "writable": true
         },
         {
-          name: "stakeAccount";
-          writable: true;
+          "name": "stakeAccount",
+          "writable": true
         },
         {
-          name: "stakeVaultTokenAccount";
-          writable: true;
-          pda: {
-            seeds: [
+          "name": "stakeVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
               {
-                kind: "account";
-                path: "stakeAccount";
+                "kind": "account",
+                "path": "stakeAccount"
               }
-            ];
-          };
-        },
-        {
-          name: "authority";
-          signer: true;
-          relations: ["stakeAccount"];
-        },
-        {
-          name: "tokenProgram";
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
-        }
-      ];
-      args: [
-        {
-          name: "amount";
-          type: "u64";
-        }
-      ];
-    },
-    {
-      name: "unstake";
-      docs: ["Start the unstake duration."];
-      discriminator: [90, 95, 107, 42, 205, 124, 50, 225];
-      accounts: [
-        {
-          name: "authority";
-          writable: true;
-          signer: true;
-          relations: ["stakeAccount"];
-        },
-        {
-          name: "stakeAccount";
-          writable: true;
-        },
-        {
-          name: "stakeVaultTokenAccount";
-          writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: "account";
-                path: "stakeAccount";
-              }
-            ];
-          };
-        },
-        {
-          name: "rewardAccount";
-          pda: {
-            seeds: [
-              {
-                kind: "account";
-                path: "stakeAccount";
-              }
-            ];
-            program: {
-              kind: "account";
-              path: "rewardProgram";
-            };
-          };
-        },
-        {
-          name: "vestingAccount";
-          writable: true;
-          signer: true;
-        },
-        {
-          name: "vestingVaultTokenAccount";
-          writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: "account";
-                path: "vestingAccount";
-              }
-            ];
-            program: {
-              kind: "account";
-              path: "vestingProgram";
-            };
-          };
-        },
-        {
-          name: "recipientTokenAccount";
-          writable: true;
-        },
-        {
-          name: "systemProgram";
-          address: "11111111111111111111111111111111";
-        },
-        {
-          name: "tokenProgram";
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
-        },
-        {
-          name: "rewardProgram";
-          address: "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi";
-        },
-        {
-          name: "vestingProgram";
-          address: "effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S";
-        },
-        {
-          name: "rent";
-          address: "SysvarRent111111111111111111111111111111111";
-        },
-        {
-          name: "mint";
-        }
-      ];
-      args: [
-        {
-          name: "amount";
-          type: "u64";
-        }
-      ];
-    }
-  ];
-  accounts: [
-    {
-      name: "migrationAccount";
-      discriminator: [129, 168, 118, 35, 238, 212, 16, 172];
-    },
-    {
-      name: "stakeAccount";
-      discriminator: [80, 158, 67, 124, 50, 189, 192, 255];
-    }
-  ];
-  errors: [
-    {
-      code: 6000;
-      name: "invalidVault";
-      msg: "This account has an invalid vault.";
-    },
-    {
-      code: 6001;
-      name: "unauthorized";
-      msg: "This account is not authorized to perform this action.";
-    },
-    {
-      code: 6002;
-      name: "alreadyUnstaked";
-      msg: "This stake is already unstaked.";
-    },
-    {
-      code: 6003;
-      name: "decreased";
-      msg: "This stake is not allowed to decrease.";
-    },
-    {
-      code: 6004;
-      name: "notUnstaked";
-      msg: "This stake is not yet unstaked.";
-    },
-    {
-      code: 6005;
-      name: "locked";
-      msg: "This stake is still locked.";
-    },
-    {
-      code: 6006;
-      name: "vaultNotEmpty";
-      msg: "This vault is not empty.";
-    },
-    {
-      code: 6007;
-      name: "durationTooLong";
-      msg: "The stake duration is too long.";
-    },
-    {
-      code: 6008;
-      name: "durationTooShort";
-      msg: "The stake duration is too short.";
-    },
-    {
-      code: 6009;
-      name: "vaultAuthorityMismatch";
-      msg: "The vault authority does not match.";
-    },
-    {
-      code: 6010;
-      name: "amountNotEnough";
-      msg: "The stake amount is not enough.";
-    },
-    {
-      code: 6011;
-      name: "alreadyStaked";
-      msg: "This stake is already staked.";
-    },
-    {
-      code: 6012;
-      name: "invalidRewardAccount";
-      msg: "Invalid reward account.";
-    },
-    {
-      code: 6013;
-      name: "invalidStakeAccount";
-      msg: "Invalid stake account.";
-    },
-    {
-      code: 6014;
-      name: "invalidVestingAccount";
-      msg: "Invalid vesting account.";
-    },
-    {
-      code: 6015;
-      name: "stakeNotEmpty";
-      msg: "Stake acount is not empty.";
-    },
-    {
-      code: 6016;
-      name: "invalidMint";
-      msg: "Invalid Mint";
-    }
-  ];
-  types: [
-    {
-      name: "migrationAccount";
-      type: {
-        kind: "struct";
-        fields: [
-          {
-            name: "foreignAddress";
-            type: "bytes";
-          },
-          {
-            name: "stakeStartTime";
-            type: "i64";
+            ]
           }
-        ];
-      };
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "stakeAccount"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
     },
     {
-      name: "stakeAccount";
-      type: {
-        kind: "struct";
-        fields: [
-          {
-            name: "amount";
-            type: "u64";
-          },
-          {
-            name: "authority";
-            type: "pubkey";
-          },
-          {
-            name: "lockDuration";
-            type: "u64";
-          },
-          {
-            name: "stakeStartTime";
-            type: "i64";
-          },
-          {
-            name: "weightedAmount";
-            type: "u128";
-          },
-          {
-            name: "mint";
-            type: "pubkey";
+      "name": "unstake",
+      "docs": [
+        "Start the unstake duration."
+      ],
+      "discriminator": [
+        90,
+        95,
+        107,
+        42,
+        205,
+        124,
+        50,
+        225
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "stakeAccount"
+          ]
+        },
+        {
+          "name": "stakeAccount",
+          "writable": true
+        },
+        {
+          "name": "stakeVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stakeAccount"
+              }
+            ]
           }
-        ];
-      };
+        },
+        {
+          "name": "rewardAccount",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "stakeAccount"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "rewardProgram"
+            }
+          }
+        },
+        {
+          "name": "vestingAccount",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vestingVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vestingAccount"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "vestingProgram"
+            }
+          }
+        },
+        {
+          "name": "recipientTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rewardProgram",
+          "address": "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi"
+        },
+        {
+          "name": "vestingProgram",
+          "address": "effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "mint"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
     }
-  ];
-  constants: [
+  ],
+  "accounts": [
     {
-      name: "stakeDurationMax";
-      type: "u128";
-      value: "31536000";
+      "name": "migrationAccount",
+      "discriminator": [
+        129,
+        168,
+        118,
+        35,
+        238,
+        212,
+        16,
+        172
+      ]
     },
     {
-      name: "stakeDurationMin";
-      type: "u128";
-      value: "2592000";
-    },
-    {
-      name: "stakeMinimumAmount";
-      type: "u64";
-      value: "0";
-    },
-    {
-      name: "unstakeDelayDays";
-      type: "u64";
-      value: "7";
+      "name": "stakeAccount",
+      "discriminator": [
+        80,
+        158,
+        67,
+        124,
+        50,
+        189,
+        192,
+        255
+      ]
     }
-  ];
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "invalidVault",
+      "msg": "This account has an invalid vault."
+    },
+    {
+      "code": 6001,
+      "name": "unauthorized",
+      "msg": "This account is not authorized to perform this action."
+    },
+    {
+      "code": 6002,
+      "name": "alreadyUnstaked",
+      "msg": "This stake is already unstaked."
+    },
+    {
+      "code": 6003,
+      "name": "decreased",
+      "msg": "This stake is not allowed to decrease."
+    },
+    {
+      "code": 6004,
+      "name": "notUnstaked",
+      "msg": "This stake is not yet unstaked."
+    },
+    {
+      "code": 6005,
+      "name": "locked",
+      "msg": "This stake is still locked."
+    },
+    {
+      "code": 6006,
+      "name": "vaultNotEmpty",
+      "msg": "This vault is not empty."
+    },
+    {
+      "code": 6007,
+      "name": "durationTooLong",
+      "msg": "The stake duration is too long."
+    },
+    {
+      "code": 6008,
+      "name": "durationTooShort",
+      "msg": "The stake duration is too short."
+    },
+    {
+      "code": 6009,
+      "name": "vaultAuthorityMismatch",
+      "msg": "The vault authority does not match."
+    },
+    {
+      "code": 6010,
+      "name": "amountNotEnough",
+      "msg": "The stake amount is not enough."
+    },
+    {
+      "code": 6011,
+      "name": "alreadyStaked",
+      "msg": "This stake is already staked."
+    },
+    {
+      "code": 6012,
+      "name": "invalidRewardAccount",
+      "msg": "Invalid reward account."
+    },
+    {
+      "code": 6013,
+      "name": "invalidStakeAccount",
+      "msg": "Invalid stake account."
+    },
+    {
+      "code": 6014,
+      "name": "invalidVestingAccount",
+      "msg": "Invalid vesting account."
+    },
+    {
+      "code": 6015,
+      "name": "stakeNotEmpty",
+      "msg": "Stake acount is not empty."
+    },
+    {
+      "code": 6016,
+      "name": "invalidMint",
+      "msg": "Invalid Mint"
+    }
+  ],
+  "types": [
+    {
+      "name": "migrationAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "foreignAddress",
+            "type": "bytes"
+          },
+          {
+            "name": "stakeStartTime",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "stakeAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "lockDuration",
+            "type": "u64"
+          },
+          {
+            "name": "stakeStartTime",
+            "type": "i64"
+          },
+          {
+            "name": "weightedAmount",
+            "type": "u128"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "stakeDurationMax",
+      "type": "u128",
+      "value": "31536000"
+    },
+    {
+      "name": "stakeDurationMin",
+      "type": "u128",
+      "value": "2592000"
+    },
+    {
+      "name": "stakeMinimumAmount",
+      "type": "u64",
+      "value": "0"
+    },
+    {
+      "name": "unstakeDelayDays",
+      "type": "u64",
+      "value": "7"
+    }
+  ]
 };

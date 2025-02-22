@@ -1,352 +1,398 @@
 export const effect_migration = {
-  address: "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR",
-  metadata: {
-    name: "effect_migration",
-    version: "0.1.0",
-    spec: "0.1.0",
-    description: "Created with Anchor",
+  "address": "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR",
+  "metadata": {
+    "name": "effect_migration",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
   },
-  instructions: [
+  "instructions": [
     {
-      name: "claim_stake",
-      discriminator: [62, 145, 133, 242, 244, 59, 53, 139],
-      accounts: [
-        {
-          name: "authority",
-          signer: true,
-          relations: ["stake_account"],
-        },
-        {
-          name: "recipient_token_account",
-          writable: true,
-        },
-        {
-          name: "mint",
-          writable: true,
-        },
-        {
-          name: "migration_account",
-          writable: true,
-        },
-        {
-          name: "migration_vault_token_account",
-          writable: true,
-          pda: {
-            seeds: [
-              {
-                kind: "account",
-                path: "migration_account",
-              },
-            ],
-          },
-        },
-        {
-          name: "stake_account",
-          writable: true,
-        },
-        {
-          name: "stake_vault_token_account",
-          writable: true,
-          pda: {
-            seeds: [
-              {
-                kind: "account",
-                path: "stake_account",
-              },
-            ],
-            program: {
-              kind: "account",
-              path: "staking_program",
-            },
-          },
-        },
-        {
-          name: "rent_receiver",
-          writable: true,
-          address: "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx",
-        },
-        {
-          name: "rent",
-          address: "SysvarRent111111111111111111111111111111111",
-        },
-        {
-          name: "migration_program",
-          address: "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR",
-        },
-        {
-          name: "token_program",
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-        },
-        {
-          name: "system_program",
-          address: "11111111111111111111111111111111",
-        },
-        {
-          name: "staking_program",
-          address: "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e",
-        },
+      "name": "claim_stake",
+      "discriminator": [
+        62,
+        145,
+        133,
+        242,
+        244,
+        59,
+        53,
+        139
       ],
-      args: [
+      "accounts": [
         {
-          name: "signature",
-          type: "bytes",
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "stake_account"
+          ]
         },
         {
-          name: "message",
-          type: "bytes",
+          "name": "recipient_token_account",
+          "writable": true
         },
-      ],
-    },
-    {
-      name: "create_stake_claim",
-      discriminator: [209, 124, 209, 232, 131, 66, 118, 116],
-      accounts: [
         {
-          name: "migration_account",
-          writable: true,
-          pda: {
-            seeds: [
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "migration_account",
+          "writable": true
+        },
+        {
+          "name": "migration_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
               {
-                kind: "account",
-                path: "mint",
-              },
+                "kind": "account",
+                "path": "migration_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_account",
+          "writable": true
+        },
+        {
+          "name": "stake_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
               {
-                kind: "arg",
-                path: "foreign_address",
-              },
+                "kind": "account",
+                "path": "stake_account"
+              }
             ],
-          },
+            "program": {
+              "kind": "account",
+              "path": "staking_program"
+            }
+          }
         },
         {
-          name: "claim_vault_token_account",
-          writable: true,
-          pda: {
-            seeds: [
+          "name": "rent_receiver",
+          "writable": true,
+          "address": "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "migration_program",
+          "address": "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "staking_program",
+          "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
+        }
+      ],
+      "args": [
+        {
+          "name": "signature",
+          "type": "bytes"
+        },
+        {
+          "name": "message",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "create_stake_claim",
+      "discriminator": [
+        209,
+        124,
+        209,
+        232,
+        131,
+        66,
+        118,
+        116
+      ],
+      "accounts": [
+        {
+          "name": "migration_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
               {
-                kind: "account",
-                path: "migration_account",
+                "kind": "account",
+                "path": "mint"
               },
-            ],
-          },
-        },
-        {
-          name: "mint",
-        },
-        {
-          name: "authority",
-          writable: true,
-          signer: true,
-          address: "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx",
-        },
-        {
-          name: "user_token_account",
-          writable: true,
-        },
-        {
-          name: "system_program",
-          address: "11111111111111111111111111111111",
-        },
-        {
-          name: "token_program",
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-        },
-        {
-          name: "rent",
-          address: "SysvarRent111111111111111111111111111111111",
-        },
-      ],
-      args: [
-        {
-          name: "foreign_address",
-          type: "bytes",
-        },
-        {
-          name: "stake_start_time",
-          type: "i64",
-        },
-        {
-          name: "amount",
-          type: "u64",
-        },
-      ],
-    },
-    {
-      name: "destroy_claim",
-      discriminator: [223, 1, 238, 215, 51, 229, 149, 94],
-      accounts: [
-        {
-          name: "migration_account",
-          writable: true,
-        },
-        {
-          name: "claim_vault_token_account",
-          writable: true,
-          pda: {
-            seeds: [
               {
-                kind: "account",
-                path: "migration_account",
-              },
-            ],
-          },
+                "kind": "arg",
+                "path": "foreign_address"
+              }
+            ]
+          }
         },
         {
-          name: "mint",
+          "name": "claim_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "migration_account"
+              }
+            ]
+          }
         },
         {
-          name: "authority",
-          writable: true,
-          signer: true,
-          address: "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx",
+          "name": "mint"
         },
         {
-          name: "user_token_account",
-          writable: true,
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "address": "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"
         },
         {
-          name: "system_program",
-          address: "11111111111111111111111111111111",
+          "name": "user_token_account",
+          "writable": true
         },
         {
-          name: "token_program",
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         },
         {
-          name: "rent",
-          address: "SysvarRent111111111111111111111111111111111",
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
       ],
-      args: [],
+      "args": [
+        {
+          "name": "foreign_address",
+          "type": "bytes"
+        },
+        {
+          "name": "stake_start_time",
+          "type": "i64"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
     },
+    {
+      "name": "destroy_claim",
+      "discriminator": [
+        223,
+        1,
+        238,
+        215,
+        51,
+        229,
+        149,
+        94
+      ],
+      "accounts": [
+        {
+          "name": "migration_account",
+          "writable": true
+        },
+        {
+          "name": "claim_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "migration_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "address": "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    }
   ],
-  accounts: [
+  "accounts": [
     {
-      name: "MigrationAccount",
-      discriminator: [129, 168, 118, 35, 238, 212, 16, 172],
+      "name": "MigrationAccount",
+      "discriminator": [
+        129,
+        168,
+        118,
+        35,
+        238,
+        212,
+        16,
+        172
+      ]
     },
     {
-      name: "StakeAccount",
-      discriminator: [80, 158, 67, 124, 50, 189, 192, 255],
-    },
+      "name": "StakeAccount",
+      "discriminator": [
+        80,
+        158,
+        67,
+        124,
+        50,
+        189,
+        192,
+        255
+      ]
+    }
   ],
-  errors: [
+  "errors": [
     {
-      code: 6000,
-      name: "MessageInvalid",
-      msg: "Invalid message provided.",
+      "code": 6000,
+      "name": "MessageInvalid",
+      "msg": "Invalid message provided."
     },
     {
-      code: 6001,
-      name: "InvalidSignature",
-      msg: "Invalid signature provided.",
+      "code": 6001,
+      "name": "InvalidSignature",
+      "msg": "Invalid signature provided."
     },
     {
-      code: 6002,
-      name: "PublicKeyMismatch",
-      msg: "Public key does not match the foreign public key.",
+      "code": 6002,
+      "name": "PublicKeyMismatch",
+      "msg": "Public key does not match the foreign public key."
     },
     {
-      code: 6003,
-      name: "InvalidClaimAccount",
-      msg: "Invalid claim account provided.",
+      "code": 6003,
+      "name": "InvalidClaimAccount",
+      "msg": "Invalid claim account provided."
     },
     {
-      code: 6004,
-      name: "InvalidRecoveryId",
-      msg: "Invalid recovery id.",
+      "code": 6004,
+      "name": "InvalidRecoveryId",
+      "msg": "Invalid recovery id."
     },
     {
-      code: 6005,
-      name: "InvalidActions",
-      msg: "Invalid action provided.",
+      "code": 6005,
+      "name": "InvalidActions",
+      "msg": "Invalid action provided."
     },
     {
-      code: 6006,
-      name: "MemoMismatch",
-      msg: "The memo in the transaction does not match the expected value.",
+      "code": 6006,
+      "name": "MemoMismatch",
+      "msg": "The memo in the transaction does not match the expected value."
     },
     {
-      code: 6007,
-      name: "MemoNotFound",
-      msg: "Memo field not found in actions.",
+      "code": 6007,
+      "name": "MemoNotFound",
+      "msg": "Memo field not found in actions."
     },
     {
-      code: 6008,
-      name: "InvalidMint",
-      msg: "Invalid mint provided.",
+      "code": 6008,
+      "name": "InvalidMint",
+      "msg": "Invalid mint provided."
     },
     {
-      code: 6009,
-      name: "InvalidForeignAddress",
-      msg: "Invalid Foreign Address",
+      "code": 6009,
+      "name": "InvalidForeignAddress",
+      "msg": "Invalid Foreign Address"
     },
     {
-      code: 6010,
-      name: "InvalidStakeStartTime",
-      msg: "Invalid Stake Start Time",
+      "code": 6010,
+      "name": "InvalidStakeStartTime",
+      "msg": "Invalid Stake Start Time"
     },
     {
-      code: 6011,
-      name: "ClaimingNotStarted",
-      msg: "Claming not started yet.",
-    },
+      "code": 6011,
+      "name": "ClaimingNotStarted",
+      "msg": "Claming not started yet."
+    }
   ],
-  types: [
+  "types": [
     {
-      name: "MigrationAccount",
-      type: {
-        kind: "struct",
-        fields: [
+      "name": "MigrationAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
-            name: "foreign_address",
-            type: "bytes",
+            "name": "foreign_address",
+            "type": "bytes"
           },
           {
-            name: "stake_start_time",
-            type: "i64",
-          },
-        ],
-      },
+            "name": "stake_start_time",
+            "type": "i64"
+          }
+        ]
+      }
     },
     {
-      name: "StakeAccount",
-      type: {
-        kind: "struct",
-        fields: [
+      "name": "StakeAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
-            name: "amount",
-            type: "u64",
+            "name": "amount",
+            "type": "u64"
           },
           {
-            name: "authority",
-            type: "pubkey",
+            "name": "authority",
+            "type": "pubkey"
           },
           {
-            name: "lock_duration",
-            type: "u64",
+            "name": "lock_duration",
+            "type": "u64"
           },
           {
-            name: "stake_start_time",
-            type: "i64",
+            "name": "stake_start_time",
+            "type": "i64"
           },
           {
-            name: "weighted_amount",
-            type: "u128",
+            "name": "weighted_amount",
+            "type": "u128"
           },
           {
-            name: "mint",
-            type: "pubkey",
-          },
-        ],
-      },
-    },
+            "name": "mint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    }
   ],
-  constants: [
+  "constants": [
     {
-      name: "EXPECTED_MESSAGE",
-      type: "string",
-      value:
-        '"Effect.AI: I authorize my tokens to be claimed at the following Solana address"',
-    },
-  ],
+      "name": "EXPECTED_MESSAGE",
+      "type": "string",
+      "value": "\"Effect.AI: I authorize my tokens to be claimed at the following Solana address\""
+    }
+  ]
 } as const;

@@ -18,7 +18,7 @@ cluster = "localnet"
 wallet = "./tests/keys/authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV.json"
 
 [workspace]
-members = ["programs/effect-migration/program", "programs/effect-staking/program", "programs/effect-rewards/program", "programs/effect-vesting/program"]
+members = ["programs/effect-payment/program","programs/effect-migration/program", "programs/effect-staking/program", "programs/effect-rewards/program", "programs/effect-vesting/program"]
 
 [scripts]
 test = "npx tsx scripts/export-IDL.ts && pnpm vitest run"
