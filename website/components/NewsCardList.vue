@@ -1,28 +1,39 @@
 <template>
     <div class="" id="latest">
       <div class="columns is-multiline is-flex is-flex-direction-column">
-        <div
-          class="column is-full-mobile"
-          v-for="(item, i) in items"
-          data-aos="fade-up"
-          :data-aos-delay="300 + i * 250"
-        >
-          <NewsCard class="news-card is-fullheight" :news="item" />
-        </div>
+        <NewsCard
+          class="new-card"
+          v-for="news in paginatedNews"
+          :news="news"
+        />
       </div>
+        <Pagination
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          @pageChanged="handlePageChange"
+        />
     </div>
   </template>
   
   <script setup lang="ts">
+  import { ref, computed } from 'vue'
+
   const props = defineProps<{
-    items: News[];
-  }>();
-  </script>
-  
-  <style lang="scss" scoped>
-  .news-card {
-    transition: transform 0.3s ease-in-out;
-    cursor: pointer;
-    padding-bottom:20px;
+    items: News[]
+  }>()
+
+  const currentPage = ref(1)
+  const perPage = 3
+
+  const totalPages = computed(() => Math.ceil(props.items.length / perPage))
+
+  const paginatedNews = computed(() => {
+    const start = (currentPage.value - 1) * perPage
+    return props.items.slice(start, start + perPage)
+  })
+
+  function handlePageChange(page: number) {
+    currentPage.value = page
   }
-  </style>
+  
+</script>
