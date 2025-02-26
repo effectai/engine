@@ -45,11 +45,3 @@
     currentPage.value = page
   }
 </script>
-  
-  <style lang="scss" scoped>
-  .news-card {
-    transition: transform 0.3s ease-in-out!important;
-    cursor: pointer;
-    padding-bottom:20px;
-  }
-  </style>
