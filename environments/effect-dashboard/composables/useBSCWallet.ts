@@ -1,8 +1,4 @@
-import type {
-	SourceWallet,
-	SourceWalletAdapter,
-	WalletMeta,
-} from "~/types/types";
+import type { SourceWallet, WalletConnectionMeta } from "~/types/types";
 import { useAccount, useConnect, useDisconnect, useConfig } from "@wagmi/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { getBalance, signMessage } from "@wagmi/core";
@@ -15,7 +11,7 @@ export const useBscWallet = (): SourceWallet => {
 	const { connect } = useConnect();
 	const { disconnect } = useDisconnect();
 
-	const walletMeta: Ref<WalletMeta | undefined | null> = computed(
+	const walletMeta: Ref<WalletConnectionMeta | undefined | null> = computed(
 		() =>
 			connector.value && {
 				name: connector.value.name,
@@ -41,7 +37,6 @@ export const useBscWallet = (): SourceWallet => {
 	};
 
 	const getNativeBalance = async () => {
-
 		if (!address.value) {
 			throw new Error("No address found");
 		}

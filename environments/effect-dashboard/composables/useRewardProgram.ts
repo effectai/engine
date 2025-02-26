@@ -4,25 +4,31 @@ import { EffectRewardsIdl, type EffectRewards } from "@effectai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import type { StakingAccount } from "./useStakingProgram";
 import { useWallet } from "solana-wallets-vue";
-import { useDeriveRewardAccounts, useDeriveStakingRewardAccount } from "@effectai/utils";
-import { createAssociatedTokenAccountIdempotentInstructionWithDerivation, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import {
+	useDeriveRewardAccounts,
+	useDeriveStakingRewardAccount,
+} from "@effectai/utils";
+import {
+	createAssociatedTokenAccountIdempotentInstructionWithDerivation,
+	getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
 import { ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
 import type { VestingAccount } from "./useVestingProgram";
 
 export const useRewardProgram = () => {
 	const { provider } = useAnchorProvider();
-    const { publicKey } = useWallet();
+	const { publicKey } = useWallet();
 
 	const rewardsProgram = computed(() => {
 		return new anchor.Program(
 			EffectRewardsIdl as Idl,
-			provider.value || undefined
+			provider.value || undefined,
 		) as unknown as Program<EffectRewards>;
 	});
 
-    const appConfig = useRuntimeConfig();
-    const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
-	const {vestingProgram} = useVestingProgram();
+	const appConfig = useRuntimeConfig();
+	const mint = new PublicKey(appConfig.public.EFFECT_SPL_TOKEN_MINT);
+	const { vestingProgram } = useVestingProgram();
 
 	const queryClient = useQueryClient();
 
@@ -34,10 +40,11 @@ export const useRewardProgram = () => {
 					throw new Error("Could not get public key");
 				}
 
-				const { reflectionAccount, reflectionVaultAccount } = useDeriveRewardAccounts({
-					mint,
-					programId: rewardsProgram.value.programId,
-				});
+				const { reflectionAccount, reflectionVaultAccount } =
+					useDeriveRewardAccounts({
+						mint,
+						programId: rewardsProgram.value.programId,
+					});
 
 				const account =
 					await rewardsProgram.value.account.reflectionAccount.fetch(
@@ -46,10 +53,9 @@ export const useRewardProgram = () => {
 
 				const vaultAccount = connection.getTokenAccountBalance(
 					reflectionVaultAccount,
-				)
-				
+				);
 
-				return {reflectionAccont: account, vaultAccount};
+				return { reflectionAccont: account, vaultAccount };
 			},
 		});
 	};
@@ -59,13 +65,13 @@ export const useRewardProgram = () => {
 			onSuccess: () => {
 				queryClient.invalidateQueries({
 					predicate: (query) => {
-						return query.queryKey.includes("claim")
+						return query.queryKey.includes("claim");
 					},
 				});
 			},
 			mutationFn: async ({
 				stakeAccount,
-				vestingRewardAccount
+				vestingRewardAccount,
 			}: {
 				vestingRewardAccount: VestingAccount;
 				stakeAccount: StakingAccount;
@@ -80,19 +86,37 @@ export const useRewardProgram = () => {
 					microLamports: 100_000,
 				});
 
+				const { reflectionAccount, reflectionVaultAccount } =
+					useDeriveRewardAccounts({
+						mint,
+						programId: rewardsProgram.value.programId,
+					});
+
+				const { stakingRewardAccount } = useDeriveStakingRewardAccount({
+					stakingAccount: stakeAccount.publicKey,
+					programId: rewardsProgram.value.programId,
+				});
+
 				return await rewardsProgram.value.methods
 					.claim()
 					.preInstructions([
 						priorityFee,
+
 						// claim vestment
-						(await vestingProgram.value.methods.claim().accounts({
-							vestingAccount: vestingRewardAccount.publicKey,
-						}).instruction()),
+						await vestingProgram.value.methods
+							.claim()
+							.accounts({
+								vestingAccount: vestingRewardAccount.publicKey,
+							})
+							.instruction(),
 
 						// topup rewards
-						(await rewardsProgram.value.methods.topup().accounts({
-							mint: mint,
-						}).instruction()),
+						await rewardsProgram.value.methods
+							.topup()
+							.accounts({
+								mint: mint,
+							})
+							.instruction(),
 
 						...((await connection.getAccountInfo(ata))
 							? []
@@ -104,7 +128,10 @@ export const useRewardProgram = () => {
 									),
 								]),
 					])
-					.accounts({
+					.accountsPartial({
+						reflectionAccount: reflectionAccount,
+						rewardAccount: stakingRewardAccount,
+						authority: publicKey.value,
 						stakeAccount: stakeAccount.publicKey,
 						recipientTokenAccount: ata,
 					})
@@ -112,8 +139,9 @@ export const useRewardProgram = () => {
 			},
 		});
 
-
-	const useGetRewardAccount = (stakeAccount: Ref<StakingAccount | undefined>) => {
+	const useGetRewardAccount = (
+		stakeAccount: Ref<StakingAccount | undefined>,
+	) => {
 		return useQuery({
 			queryKey: ["rewardAccount", publicKey, "claim"],
 			enabled: computed(() => !!stakeAccount.value),
@@ -122,33 +150,35 @@ export const useRewardProgram = () => {
 					throw new Error("Could not get public key");
 				}
 
-				if(!stakeAccount.value) {
+				if (!stakeAccount.value) {
 					throw new Error("Stake account is not defined");
 				}
 
 				const { stakingRewardAccount } = useDeriveStakingRewardAccount({
 					stakingAccount: stakeAccount.value.publicKey,
 					programId: rewardsProgram.value.programId,
-				})
+				});
 
 				const account =
-					await rewardsProgram.value.account.rewardAccount.fetch(stakingRewardAccount);
+					await rewardsProgram.value.account.rewardAccount.fetch(
+						stakingRewardAccount,
+					);
 
 				return account;
 			},
 		});
 	};
 
-	const {intermediaryReflectionVaultAccount} = useDeriveRewardAccounts({
+	const { intermediaryReflectionVaultAccount } = useDeriveRewardAccounts({
 		programId: rewardsProgram.value.programId,
 		mint: mint,
-	})
+	});
 
 	return {
 		rewardsProgram,
 		intermediaryReflectionVaultAccount,
 		useClaimRewards,
-        useGetRewardAccount,
-        useGetReflectionAccount
+		useGetRewardAccount,
+		useGetReflectionAccount,
 	};
 };

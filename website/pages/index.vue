@@ -1,330 +1,408 @@
 <template>
-    <div>
-        <HeroSection id="main-hero"
-            :style="`margin-top: -75px; padding-top: 5rem; background-image: url('./img/hero-background.png')`">
-            <template #title>
-                <h1 class="title mb-6 is-size-2-tablet is-size-3
-                has-text-dark
-                has-text-weight-light is-auto-phrase">
-                    <span>
-                        Supercharging
-                    </span>
-                    <span>
-                        AI Agents
-                    </span>
-                    <span>
-                        with Human Intelligence
-                    </span>
-                </h1>
-            </template>
+  <div>
+    <HeroSection
+      id="main-hero"
+      :style="`margin-top: -75px; padding-top: 5rem; background-image: url('./img/hero-background.png')`"
+    >
+      <template #title>
+        <h1
+          class="title mb-6 is-size-2-tablet is-size-3 has-text-dark has-text-weight-light is-auto-phrase"
+        >
+          <span> Supercharging </span>
+          <span> AI Agents </span>
+          <span> with Human Intelligence </span>
+        </h1>
+      </template>
 
-            <template #subtitle>
-                <p class="subtitle mb-5 has-text-dark">
-                    <span class="pr-6">
-                        Effect AI is a permissionless protocol designed to supply, assign,
-                        and execute human-driven AI tasks, supercharging <b>AI agents</b> & <b>LLM models</b> to achieve next-level performance and accuracy.
+      <template #subtitle>
+        <p class="subtitle mb-5 has-text-dark">
+          <span class="pr-6">
+            Effect AI is a permissionless protocol designed to supply, assign,
+            and execute human-driven AI tasks, supercharging <b>AI agents</b> &
+            <b>LLM models</b> to achieve next-level performance and accuracy.
+          </span>
+        </p>
+      </template>
+
+      <template #footer>
+        <div
+          class="mt-6 is-flex is-size-3 is-align-items-center is-primary has-text-primary is-in-front"
+        >
+          <div class="columns is-mobile is-vcentered is-multiline">
+            <div class="column">
+              <div class="">
+                <nuxt-link
+                  class="is-flex"
+                  to="https://docs.effect.ai/"
+                  exact-active-class="is-active"
+                >
+                  <button
+                    class="button is-black is-rounded is-outlined is-flex is-medium"
+                    style="gap: 14px; font-weight: 400"
+                  >
+                    Documentation
+                    <span class="icon">
+                      <i class="icon">
+                        <svg
+                          width="14"
+                          height="15"
+                          viewBox="0 0 14 15"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            clip-rule="evenodd"
+                            d="M7.34098 0.5L12.7387 6.22566L12.7395 6.22474L13.9984 7.56009L13.9975 7.56102L14 7.56362L12.7411 8.89898L12.7387 8.89638L7.33939 14.6237L6.08052 13.2884L10.6135 8.47991H0V6.64471H10.616L6.08211 1.83536L7.34098 0.5Z"
+                            fill="#1C1A1F"
+                          />
+                        </svg>
+                      </i>
                     </span>
-                </p>
-            </template>
-
-            <template #footer>
-                <div class="mt-6 is-flex is-size-3 is-align-items-center is-primary has-text-primary is-in-front">
-                    <div class="columns is-mobile is-vcentered is-multiline">
-                        <div class="column">
-                            <div class="">
-                                <nuxt-link class="is-flex" to="https://docs.effect.ai/" exact-active-class="is-active">
-                                    <button class="button is-black is-rounded is-outlined is-flex is-medium"
-                                        style="gap:14px; font-weight: 400;">Documentation
-                                        <span class="icon">
-                                            <i class="icon">
-                                                <svg width="14" height="15" viewBox="0 0 14 15" fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg">
-                                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                                        d="M7.34098 0.5L12.7387 6.22566L12.7395 6.22474L13.9984 7.56009L13.9975 7.56102L14 7.56362L12.7411 8.89898L12.7387 8.89638L7.33939 14.6237L6.08052 13.2884L10.6135 8.47991H0V6.64471H10.616L6.08211 1.83536L7.34098 0.5Z"
-                                                        fill="#1C1A1F" />
-                                                </svg>
-                                            </i>
-                                        </span>
-                                    </button>
-                                </nuxt-link>
-                            </div>
-                        </div>
-                        <div class="column">
-                            <nuxt-link class="is-flex" to="https://dao.effect.network" exact-active-class="is-active">
-                                <button class="button is-black is-rounded is-flex is-medium" style="gap:10px">
-                                    Governance
-                                </button>
-                            </nuxt-link>
-                        </div>
-                    </div>
-                </div>
-            </template>
-        </HeroSection>
-    </div>
-
-    <SimpleSection class="is-flex is-justify-content-center is-flex-direction-column">
-        <div class="container">
-            <div class="is-flex is-justify-content-center is-flex-direction-column">
-                <h2 class="is-flex is-justify-content-center is-size-3 has-text-weight-medium has-text-primary has-text-left">The New $EFFECT Token</h2>
-                <p class="is-justify-content-center my-5 has-text-centered">Starting January 5th 2025, you can claim your EFFECT tokens via the official Claim Portal at <a href="https://portal.effect.ai">portal.effect.ai</a>.</p>
-                <nuxt-link class="is-flex is-justify-content-center" to="https://portal.effect.ai" exact-active-class="is-active">
-                    <button class="button is-black is-rounded is-flex is-medium" style="gap:10px">
-                        Go to Portal
-                    </button>
+                  </button>
                 </nuxt-link>
+              </div>
             </div>
+            <div class="column">
+              <nuxt-link
+                class="is-flex"
+                to="https://dao.effect.network"
+                exact-active-class="is-active"
+              >
+                <button
+                  class="button is-black is-rounded is-flex is-medium"
+                  style="gap: 10px"
+                >
+                  Governance
+                </button>
+              </nuxt-link>
+            </div>
+          </div>
         </div>
-    </SimpleSection>
+      </template>
+    </HeroSection>
+  </div>
 
+  <SimpleSection
+    class="is-flex is-justify-content-center is-flex-direction-column"
+  >
+    <div class="container">
+      <div class="is-flex is-justify-content-center is-flex-direction-column">
+        <h2
+          class="is-flex is-justify-content-center is-size-3 has-text-weight-medium has-text-primary has-text-left"
+        >
+          The New $EFFECT Token
+        </h2>
+        <p class="is-justify-content-center my-5 has-text-centered">
+          Starting January 5th 2025, you can claim your EFFECT tokens via the
+          official Claim Portal at
+          <a href="https://portal.effect.ai">portal.effect.ai</a>.
+        </p>
+        <nuxt-link
+          class="is-flex is-justify-content-center"
+          to="https://portal.effect.ai"
+          exact-active-class="is-active"
+        >
+          <button
+            class="button is-black is-rounded is-flex is-medium"
+            style="gap: 10px"
+          >
+            Go to Portal
+          </button>
+        </nuxt-link>
+      </div>
+    </div>
+  </SimpleSection>
 
-    <SimpleSection class="has-text-light has-background-dark">
-        <div class="container">
-            <div class="columns is-mobile is-multiline">
-                <div class="be-part-of column is-full-mobile mb-4-mobile is-one-third-tablet has-text-left">
-                    <p class="is-size-3 has-text-medium">Be part of the <br> AI future:</p>
-                </div>
-                <div class="column is-full-mobile has-text-left has-text-centered-mobile">
-                    <p class="is-size-2 has-text-weight-bold">23</p>
-                    <p class="is-size-5 has-text-grey-light has-text-weight-medium">Apps in Ecosystem</p>
-                </div>
-                <div class="column is-full-mobile has-text-left has-text-centered-mobile">
-                    <p class="is-size-2 has-text-weight-bold">2.1M</p>
-                    <p class="is-size-5 has-text-grey-light has-text-weight-medium">Tasks Completed</p>
-                </div>
-                <div class="column is-full-mobile has-text-left has-text-centered-mobile">
-                    <p class="is-size-2 has-text-weight-bold">205</p>
-                    <p class="is-size-5 has-text-grey-light has-text-weight-medium">Proposals created</p>
-                </div>
-            </div>
+  <SimpleSection class="has-text-light has-background-dark">
+    <div class="container">
+      <div class="columns is-mobile is-multiline">
+        <div
+          class="be-part-of column is-full-mobile mb-4-mobile is-one-third-tablet has-text-left"
+        >
+          <p class="is-size-3 has-text-medium">
+            Be part of the <br />
+            AI future:
+          </p>
         </div>
-    </SimpleSection>
-
-    <SimpleSection :centered="true">
-        <template #subtitle>
-            <div class="container">
-
-                <div class="columns">
-                    <div class="column is-two-fifth">
-                        <div class="columns h-full">
-                            <div class="column is-four-fifths">
-                                <p class="is-size-5 has-text-weight-normal has-text-left">Effect Workforce</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="column quote-text is-two-thirds">
-                        <p class="is-size-3 has-text-left has-text-weight-medium">
-                            Empowering a global human workforce to shape the future of AI, combining blockchain and P2P
-                            technology to deliver smarter, inclusive, and impactful AI solutions.
-                        </p>
-                        <p class="is-size-3 has-text-left has-text-weight-medium"> — you're shaping the future of
-                            technology.</p>
-                    </div>
-                </div>
-            </div>
-        </template>
-    </SimpleSection>
-
-
-    <SimpleSection :centered="true" class="has-background-dark">
-        <template #subtitle>
-            <div class="container">
-
-                <div class="columns">
-                    <div class="column is-radius-medium effect-box has-text-light">
-                        <div>
-                            01
-                            <h2 class="is-size-3 has-text-weight-medium has-text-left">Complete Tasks</h2>
-                            <p class="is-size-5 has-text-weight-normal has-text-left">Complete tasks and earn EFX
-                                directly
-                                to your wallet.</p>
-                            <div class="mt-5 has-text-left">
-                                <button class="button is-white is-rounded is-outlined is-flex is-medium"
-                                    style="gap:10px">Coming soon
-                                    <span class="icon">
-                                        <i class="fas fa-arrow-right"></i>
-                                    </span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="column  is-radius-medium effect-box  has-text-light">
-                        <div>
-                            02
-                            <h2 class="is-size-3 has-text-weight-medium has-text-left">Create Tasks</h2>
-                            <p class="is-size-5 has-text-weight-normal has-text-left">Access a global, on-demand, 24x7
-                                scalable work force.</p>
-                            <div class="mt-5 has-text-left">
-                                <button class="button is-white is-rounded is-outlined is-flex is-medium"
-                                    style="gap:10px">Coming soon
-                                    <span class="icon">
-                                        <i class="fas fa-arrow-right"></i>
-                                    </span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </template>
-    </SimpleSection>
-
-    <SimpleSection>
-        <div class="container">
-            <div class="columns">
-                <div class="column">
-                    <div class="columns is-vcentered h-full">
-                        <div class="column is-four-fifths is-full is-four-fifths-desktop"></div>
-                    </div>
-                </div>
-                <div class="column is-two-thirds">
-                    <h1 class="is-size-3 has-text-weight-medium has-text-primary has-text-left">
-                        Syncing AI and Humanity: <br /> <span class="has-text-grey">Building the Future Together</span>
-                    </h1>
-                </div>
-            </div>
-            <NewsCardList :items="news" class="my-7" />
+        <div
+          class="column is-full-mobile has-text-left has-text-centered-mobile"
+        >
+          <p class="is-size-2 has-text-weight-bold">23</p>
+          <p class="is-size-5 has-text-grey-light has-text-weight-medium">
+            Apps in Ecosystem
+          </p>
         </div>
-    </SimpleSection>
-
-    <section class="fluid-container has-background-dark">
-        <div class="container">
-            <div class="columns is-gapless is-multiline">
-                <div class="column is-one-third">
-                    <p class="is-size-7 has-text-light has-text-weight-medium is-uppercase mb-5">
-                        Some of our partners & dapps
-                    </p>
-                    <div class="is-size-3 has-text-light mb-6">
-                        Explore the Frontier of AI Excellence within the Effect AI Ecosystem
-                    </div>
-                </div>
-                <div class="column">
-                    <div class="grid-container">
-                        <div :key="i" v-for="(dapp, i) in dapps.slice(0, 6)" class="grid-item" :class="`item-${i}`">
-                            <label class="is-size-7">{{ i + 1 }}</label>
-                            <div class="is-flex-center">
-                                <img :src="`/img/ecosystem/${dapp.image_url}`">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div
+          class="column is-full-mobile has-text-left has-text-centered-mobile"
+        >
+          <p class="is-size-2 has-text-weight-bold">2.1M</p>
+          <p class="is-size-5 has-text-grey-light has-text-weight-medium">
+            Tasks Completed
+          </p>
         </div>
-    </section>
+        <div
+          class="column is-full-mobile has-text-left has-text-centered-mobile"
+        >
+          <p class="is-size-2 has-text-weight-bold">205</p>
+          <p class="is-size-5 has-text-grey-light has-text-weight-medium">
+            Proposals created
+          </p>
+        </div>
+      </div>
+    </div>
+  </SimpleSection>
+
+  <SimpleSection :centered="true">
+    <template #subtitle>
+      <div class="container">
+        <div class="columns">
+          <div class="column is-two-fifth">
+            <div class="columns h-full">
+              <div class="column is-four-fifths">
+                <p class="is-size-5 has-text-weight-normal has-text-left">
+                  Effect Workforce
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="column quote-text is-two-thirds">
+            <p class="is-size-3 has-text-left has-text-weight-medium">
+              Empowering a global human workforce to shape the future of AI,
+              combining blockchain and P2P technology to deliver smarter,
+              inclusive, and impactful AI solutions.
+            </p>
+            <p class="is-size-3 has-text-left has-text-weight-medium">
+              — you're shaping the future of technology.
+            </p>
+          </div>
+        </div>
+      </div>
+    </template>
+  </SimpleSection>
+
+  <SimpleSection :centered="true" class="has-background-dark">
+    <template #subtitle>
+      <div class="container">
+        <div class="columns">
+          <div class="column is-radius-medium effect-box has-text-light">
+            <div>
+              01
+              <h2 class="is-size-3 has-text-weight-medium has-text-left">
+                Complete Tasks
+              </h2>
+              <p class="is-size-5 has-text-weight-normal has-text-left">
+                Complete tasks and earn EFX directly to your wallet.
+              </p>
+              <div class="mt-5 has-text-left">
+                <button
+                  class="button is-white is-rounded is-outlined is-flex is-medium"
+                  style="gap: 10px"
+                >
+                  Coming soon
+                  <span class="icon">
+                    <i class="fas fa-arrow-right"></i>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="column is-radius-medium effect-box has-text-light">
+            <div>
+              02
+              <h2 class="is-size-3 has-text-weight-medium has-text-left">
+                Create Tasks
+              </h2>
+              <p class="is-size-5 has-text-weight-normal has-text-left">
+                Access a global, on-demand, 24x7 scalable work force.
+              </p>
+              <div class="mt-5 has-text-left">
+                <button
+                  class="button is-white is-rounded is-outlined is-flex is-medium"
+                  style="gap: 10px"
+                >
+                  Coming soon
+                  <span class="icon">
+                    <i class="fas fa-arrow-right"></i>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </SimpleSection>
+
+  <SimpleSection>
+    <div class="container">
+      <div class="columns">
+        <div class="column">
+          <div class="columns is-vcentered h-full">
+            <div
+              class="column is-four-fifths is-full is-four-fifths-desktop"
+            ></div>
+          </div>
+        </div>
+        <div class="column is-two-thirds">
+          <h1
+            class="is-size-3 has-text-weight-medium has-text-primary has-text-left"
+          >
+            Syncing AI and Humanity: <br />
+            <span class="has-text-grey">Building the Future Together</span>
+          </h1>
+        </div>
+      </div>
+      <NewsCardList :items="news" class="my-7" />
+    </div>
+  </SimpleSection>
+
+  <section class="fluid-container has-background-dark">
+    <div class="container">
+      <div class="columns is-gapless is-multiline">
+        <div class="column is-one-third">
+          <p
+            class="is-size-7 has-text-light has-text-weight-medium is-uppercase mb-5"
+          >
+            Some of our partners & dapps
+          </p>
+          <div class="is-size-3 has-text-light mb-6">
+            Explore the Frontier of AI Excellence within the Effect AI Ecosystem
+          </div>
+        </div>
+        <div class="column">
+          <div class="grid-container">
+            <div
+              :key="i"
+              v-for="(dapp, i) in dapps.slice(0, 6)"
+              class="grid-item"
+              :class="`item-${i}`"
+            >
+              <label class="is-size-7">{{ i + 1 }}</label>
+              <div class="is-flex-center">
+                <img :src="`/img/ecosystem/${dapp.image_url}`" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 </template>
 
 <script setup lang="ts">
-import { dapps } from '~/constants/dapps.js';
+import { dapps } from "~/constants/dapps.js";
 
 //fetch news content and sort by created\
 const { data: news } = await useAsyncData("news", async () => {
     const data = await queryContent("/news")
         .where({ published: true })
-        .limit(4)
         .find();
 
-    //sort on created date
-    return data.sort((a, b) => {
-        return new Date(b.created).getTime() - new Date(a.created).getTime();
-    });
+	//sort on created date
+	return data.sort((a, b) => {
+		return new Date(b.created).getTime() - new Date(a.created).getTime();
+	});
 });
 
 useSeoMeta({
-    ogDescription: "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
-    title: "Effect AI - Decentralized Intelligence",
-    ogImage: "/img/effect-logo-black.png",
-    ogTitle: "Effect AI - Decentralized Intelligence",
-    description: "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
-})
-
+	ogDescription:
+		"Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
+	title: "Effect AI - Decentralized Intelligence",
+	ogImage: "/img/effect-logo-black.png",
+	ogTitle: "Effect AI - Decentralized Intelligence",
+	description:
+		"Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
+});
 </script>
 
 <style lang="scss" scoped>
 @use "bulma/sass/utilities/mixins";
 
 .effect-box {
-    padding: 2rem;
+  padding: 2rem;
 
-    h2 {
-        margin-bottom: 8rem;
-    }
+  h2 {
+    margin-bottom: 8rem;
+  }
 }
 
 #main-hero {
-    background-size: cover;
-    background-repeat: no-repeat;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 .grid-container {
-    margin-right: calc(60% - 50vw);
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-template-rows: auto;
+  margin-right: calc(60% - 50vw);
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: auto;
 }
 
 .fluid-container {
-    width: 100%;
-    overflow: hidden;
-    padding: 8rem 0 8rem 4rem;
+  width: 100%;
+  overflow: hidden;
+  padding: 8rem 0 8rem 4rem;
 
-    @include mixins.desktop {
-        padding: 6rem 0rem;
-    }
+  @include mixins.desktop {
+    padding: 6rem 0rem;
+  }
 }
 
 .be-part-of {
-    @include mixins.mobile {
-        margin-bottom: 3rem;
-    }
+  @include mixins.mobile {
+    margin-bottom: 3rem;
+  }
 }
 
 .effect-box {
-    border: 1px solid #515053;
+  border: 1px solid #515053;
 }
 
 .grid-item {
-    aspect-ratio: 1/1;
-    border: 1px solid #515053;
-    padding: 20px;
-    font-size: 30px;
-    text-align: center;
-    position: relative;
-    grid-column: span 2;
-    grid-row: span 2;
-    display: flex;
-    justify-content: center;
+  aspect-ratio: 1/1;
+  border: 1px solid #515053;
+  padding: 20px;
+  font-size: 30px;
+  text-align: center;
+  position: relative;
+  grid-column: span 2;
+  grid-row: span 2;
+  display: flex;
+  justify-content: center;
 
-    label {
-        color: #D7D7D7;
-        position: absolute;
-        left: 40px;
-        font-size: 12px;
-    }
+  label {
+    color: #d7d7d7;
+    position: absolute;
+    left: 40px;
+    font-size: 12px;
+  }
 
-    img {
-        max-width: 60%;
-        max-height: 60%;
-        object-fit: contain;
-    }
+  img {
+    max-width: 60%;
+    max-height: 60%;
+    object-fit: contain;
+  }
 }
 
 .item-0 {
-    grid-column: 2 / span 2;
-    grid-row: span 2;
+  grid-column: 2 / span 2;
+  grid-row: span 2;
 }
 
 .item-2 {
-    grid-column: 6 / span 2;
-    grid-row: 0;
+  grid-column: 6 / span 2;
+  grid-row: 0;
 }
 
 .quote-text {
-    font-size: 46px;
-    font-weight: 500;
-    line-height: 64.4px;
-    letter-spacing: -0.02em;
+  font-size: 46px;
+  font-weight: 500;
+  line-height: 64.4px;
+  letter-spacing: -0.02em;
 }
 
 .button.is-outlined:hover {
-    --bulma-button-border-width: max(1px, 0.0625em);
+  --bulma-button-border-width: max(1px, 0.0625em);
 }
 </style>
