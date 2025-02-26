@@ -1,6 +1,14 @@
 use anchor_lang::prelude::*;
-// Custom Error
+
+/// Custom error codes
 #[error_code]
-pub enum PaymentError {
-    
+pub enum PaymentErrors {
+    #[msg("Unauthorized.")]
+    Unauthorized,
+
+    #[msg("Signature verification failed.")]
+    SigVerificationFailed,
+
+    #[msg("Invalid Proof")]
+    InvalidProof,
 }

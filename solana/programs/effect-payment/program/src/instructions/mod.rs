@@ -1,7 +1,7 @@
 pub mod claim;
 pub mod create;
-pub mod destroy;
+pub mod init;
 
 pub use claim::*;
-pub use destroy::*;
 pub use create::*;
+pub use init::*;

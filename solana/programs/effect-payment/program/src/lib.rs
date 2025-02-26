@@ -3,10 +3,11 @@ use anchor_lang::prelude::*;
 mod errors;
 mod instructions;
 mod macros;
-mod state;
-mod utils;
 mod security;
+mod utils;
 
+use effect_payment_common::Payment;
+use effect_payment_common::EFFECT_PAYMENT;
 pub use instructions::*;
 
 declare_id!(EFFECT_PAYMENT);
@@ -16,17 +17,24 @@ pub mod effect_payment {
 
     use super::*;
 
-    pub fn claim(ctx: Context<Claim>) -> Result<()> {
-        claim::handler(ctx, signature, message)
+    pub fn claim(
+        ctx: Context<Claim>,
+        payment: Payment,
+        authority: Pubkey,
+        signature: Vec<u8>,
+    ) -> Result<()> {
+        claim::handler(ctx, payment, authority, signature)
     }
 
     pub fn create_payment_pool(
         ctx: Context<Create>,
-        foreign_address: Vec<u8>,
-        stake_start_time: i64,
+        authorities: Vec<Pubkey>,
         amount: u64,
     ) -> Result<()> {
-        create::handler(ctx, foreign_address, stake_start_time, amount)
+        create::handler(ctx, authorities, amount)
     }
 
+    pub fn init(ctx: Context<Init>) -> Result<()> {
+        init::handler(ctx)
+    }
 }
