@@ -4,7 +4,6 @@
         <NewsCard
           class="new-card"
           v-for="news in paginatedNews"
-          :key="news.id"
           :news="news"
         />
       </div>
@@ -18,12 +17,6 @@
   
   <script setup lang="ts">
   import { ref, computed } from 'vue'
-
-  interface News {
-    id: number
-    title: string
-    subtitle: string
-  }
 
   const props = defineProps<{
     items: News[]
@@ -42,4 +35,5 @@
   function handlePageChange(page: number) {
     currentPage.value = page
   }
+  
 </script>
