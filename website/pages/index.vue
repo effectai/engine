@@ -295,9 +295,7 @@ import { dapps } from "~/constants/dapps.js";
 
 //fetch news content and sort by created\
 const { data: news } = await useAsyncData("news", async () => {
-    const data = await queryContent("/news")
-        .where({ published: true })
-        .find();
+	const data = await queryContent("/news").where({ published: true }).find();
 
 	//sort on created date
 	return data.sort((a, b) => {

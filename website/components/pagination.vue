@@ -1,5 +1,9 @@
 <template>
-  <nav class="pagination is-medium is-centered mt-6" role="navigation" aria-label="pagination">
+  <nav
+    class="pagination is-medium is-centered mt-6"
+    role="navigation"
+    aria-label="pagination"
+  >
     <a
       class="pagination-previous"
       :class="{ 'is-disabled': currentPage === 1 }"
@@ -29,40 +33,38 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineProps, defineEmits } from 'vue'
+import { computed, defineProps, defineEmits } from "vue";
 
 const props = defineProps<{
-  currentPage: number
-  totalPages: number
-}>()
+	currentPage: number;
+	totalPages: number;
+}>();
 
 const emit = defineEmits<{
-  (event: 'pageChanged', page: number): void
-}>()
+	(event: "pageChanged", page: number): void;
+}>();
 
 const pages = computed(() => {
-  return Array.from({ length: props.totalPages }, (_, i) => i + 1)
-})
+	return Array.from({ length: props.totalPages }, (_, i) => i + 1);
+});
 
 function selectPage(page: number) {
-  if (page !== props.currentPage) {
-    emit('pageChanged', page)
-  }
-  console.log(props.currentPage === 1)
+	if (page !== props.currentPage) {
+		emit("pageChanged", page);
+	}
 }
 
 function nextPage() {
-  if (props.currentPage < props.totalPages) {
-    emit('pageChanged', props.currentPage + 1)
-  }
+	if (props.currentPage < props.totalPages) {
+		emit("pageChanged", props.currentPage + 1);
+	}
 }
 
 function prevPage() {
-  if (props.currentPage > 1) {
-    emit('pageChanged', props.currentPage - 1)
-  }
+	if (props.currentPage > 1) {
+		emit("pageChanged", props.currentPage - 1);
+	}
 }
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>
