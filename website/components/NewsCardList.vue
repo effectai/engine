@@ -6,8 +6,6 @@
           v-for="news in paginatedNews"
           :key="news.id"
           :news="news"
-          data-aos="fade-up"
-          :data-aos-delay="300 + paginatedNews * 250"
         />
       </div>
         <Pagination
