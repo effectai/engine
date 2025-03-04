@@ -11,8 +11,10 @@ export const createDummyPayments = ({
 	mint,
 	recipient,
 	paymentAccount,
+	amount,
 }: {
 	n: number;
+	amount: number;
 	recipient: string;
 	mint: string;
 	paymentAccount: string;
@@ -21,10 +23,10 @@ export const createDummyPayments = ({
 	for (let i = 0; i < n; i++) {
 		const payment = Payment.encode({
 			id: crypto.randomUUID(),
-			amount: 100,
+			amount,
 			mint,
 			recipient,
-			nonce: BigInt(1),
+			nonce: BigInt(i),
 			signature: "",
 			paymentAccount,
 		});

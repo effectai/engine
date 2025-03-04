@@ -82,6 +82,7 @@ describe("Libp2p", () => {
 
 		const [payment] = createDummyPayments({
 			n: 1,
+			amount: 100,
 			mint: "EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E",
 			recipient: "jeffCRA2yFkRbuw99fBxXaqE5GN3DwjZtmjV18McEDf",
 			paymentAccount: "3pJUvyH1t4dBTyz622epbKkVYELVFk9hB5kU6Kmp3ien",
