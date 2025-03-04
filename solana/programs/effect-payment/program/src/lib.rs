@@ -17,13 +17,8 @@ pub mod effect_payment {
 
     use super::*;
 
-    pub fn claim(
-        ctx: Context<Claim>,
-        payment: Payment,
-        authority: Pubkey,
-        signature: Vec<u8>,
-    ) -> Result<()> {
-        claim::handler(ctx, payment, authority, signature)
+    pub fn claim(ctx: Context<Claim>, payments: Vec<Payment>, authority: Pubkey) -> Result<()> {
+        claim::handler(ctx, payments, authority)
     }
 
     pub fn create_payment_pool(

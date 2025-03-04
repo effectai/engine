@@ -1,40 +1,28 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::keccak::hash;
 use anchor_spl::token::TokenAccount;
 use anchor_spl::token::{Mint, Token};
-use effect_payment_common::{MerkleRootAccount, Payment, PaymentAccount};
-use solana_merkle_tree::merkle_tree::Proof;
-use solana_merkle_tree::MerkleTree;
+use effect_common::cpi;
+use effect_common::transfer_tokens_from_vault;
+use effect_payment_common::{Payment, PaymentAccount, RecipientPaymentDataAccount};
 use solana_program::instruction::Instruction;
 use solana_program::sysvar::instructions::{load_instruction_at_checked, ID as IX_ID};
 
 use crate::errors::PaymentErrors;
 use crate::utils::{sha256, verify_ed25519_ix};
+use crate::{id, vault_seed};
 #[derive(Accounts)]
 pub struct Claim<'info> {
-    #[account(mut)]
+    #[account()]
     pub payment_account: Account<'info, PaymentAccount>,
 
     #[account(mut, seeds = [payment_account.key().as_ref()], bump) ]
     pub payment_vault_token_account: Account<'info, TokenAccount>,
 
-    #[account(
-        init_if_needed,
-        payer = authority, 
-        token::mint = mint, 
-        token::authority = user_payment_vault,
-        seeds = [payment_account.key().as_ref()],
-        bump
-    )]
-    pub user_payment_vault: Account<'info, TokenAccount>,
+    #[account()]
+    pub recipient_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut,
-        seeds = [b"merkle_root_account"],
-        bump
-    )]
-    pub merkle_root_account: Account<'info, MerkleRootAccount>,
-
-    pub system_program: Program<'info, System>,
+    #[account(mut)]
+    pub recipient_payment_data_account: Account<'info, RecipientPaymentDataAccount>,
 
     pub token_program: Program<'info, Token>,
 
@@ -56,44 +44,59 @@ fn serialize_payment_message(payment: &Payment) -> Result<Vec<u8>> {
 
     message.extend_from_slice(&payment.id);
     message.extend_from_slice(&payment.amount.to_le_bytes());
-    message.extend_from_slice(payment.mint.as_ref());
-    message.extend_from_slice(payment.escrow_account.as_ref());
     message.extend_from_slice(payment.recipient_token_account.as_ref());
+    message.extend_from_slice(&payment.nonce.to_le_bytes());
 
     Ok(message)
 }
 
-pub fn handler(
-    ctx: Context<Claim>,
-    payment: Payment,
-    authority: Pubkey,
-    signature: Vec<u8>,
-    proof: Vec<[u8; 32]>
-) -> Result<()> {
+pub fn handler(ctx: Context<Claim>, payments: Vec<Payment>, authority: Pubkey) -> Result<()> {
     //check if authority is part of the payment account authorities
-    if !ctx.accounts.payment_account.is_authorized(&authority) {
-        return Err(PaymentErrors::Unauthorized.into());
-    }
+    require!(
+        ctx.accounts.payment_account.is_authorized(&authority),
+        PaymentErrors::Unauthorized
+    );
 
-    let merkle_root = ctx.accounts.merkle_root_account.merkle_root;
+    let mut highest_nonce = ctx.accounts.recipient_payment_data_account.nonce;
 
-    let leaf = sha256(&payment.id);
-    let merkle_tree = MerkleTree::new(merkle_root, proof);
+    let (msgs, total_amount) =
+        payments
+            .into_iter()
+            .try_fold((Vec::new(), 0u64), |(mut msgs, acc), payment| {
+                require!(payment.amount > 0, PaymentErrors::InvalidPayment);
+                require!(
+                    payment.nonce >= highest_nonce,
+                    PaymentErrors::InvalidPayment
+                );
 
+                highest_nonce = highest_nonce.max(payment.nonce);
+                msgs.push(sha256(&serialize_payment_message(&payment)?));
 
-    let msg = serialize_payment_message(&payment)?;
-    let hashed_msg = sha256(&msg);
+                Ok((msgs, acc + payment.amount))
+            })?;
 
+    // verify the message & signatures
     let ix: Instruction = load_instruction_at_checked(0, &ctx.accounts.ix_sysvar)?;
-
     verify_ed25519_ix(
         &ix,
-        &authority.to_bytes(),
-        &hashed_msg,
-        signature.as_slice(),
+        &[
+            authority.to_bytes().as_slice(),
+            authority.to_bytes().as_slice(),
+        ],
+        &msgs.iter().map(|m| m.as_slice()).collect::<Vec<_>>(),
     )?;
 
-    //open a vesting account for the recipient
+    // update the nonce
+    ctx.accounts.recipient_payment_data_account.nonce = highest_nonce;
+
+    // transfer the tokens to the recipient
+    transfer_tokens_from_vault!(
+        ctx.accounts,
+        payment_vault_token_account,
+        recipient_token_account,
+        &[&vault_seed!(ctx.accounts.payment_account.key(), id())],
+        total_amount
+    )?;
 
     Ok(())
 }

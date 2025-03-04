@@ -14,11 +14,10 @@ impl anchor_lang::Id for PaymentProgram {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub struct Payment {
-    pub id: [u8; 16],
+    pub id: [u8; 4],
     pub amount: u64,
-    pub mint: Pubkey,
-    pub escrow_account: Pubkey,
     pub recipient_token_account: Pubkey,
+    pub nonce: u32,
 }
 
 #[account]
@@ -30,9 +29,8 @@ pub struct PaymentAccount {
 }
 
 #[account]
-pub struct MerkleRootAccount {
-    pub merkle_root: [u8; 32],
-    pub payout_counter: u64,
+pub struct RecipientPaymentDataAccount {
+    pub nonce: u32,
 }
 
 impl PaymentAccount {

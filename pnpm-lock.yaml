@@ -316,6 +316,19 @@ importers:
         version: 2.1.9
 
   packages/protocol/packages/core:
+    dependencies:
+      '@coral-xyz/anchor':
+        specifier: ^0.30.1
+        version: 0.30.1
+      '@effectai/shared':
+        specifier: workspace:*
+        version: link:../../../shared
+      '@noble/curves':
+        specifier: 1.6.0
+        version: 1.6.0
+      uuid:
+        specifier: 11.1.0
+        version: 11.1.0
     devDependencies:
       typescript:
         specifier: ^5.6.3
@@ -365,6 +378,9 @@ importers:
 
   packages/utils:
     dependencies:
+      '@solana/buffer-layout':
+        specifier: 4.0.1
+        version: 4.0.1
       '@solana/web3.js':
         specifier: ^1.95.4
         version: 1.95.5
@@ -563,6 +579,9 @@ importers:
         specifier: 17.7.2
         version: 17.7.2
     devDependencies:
+      '@effectai/protocol':
+        specifier: workspace:*
+        version: link:../packages/protocol/packages/library
       '@noble/curves':
         specifier: 1.6.0
         version: 1.6.0
@@ -20601,7 +20620,7 @@ packages:
     dependencies:
       '@adraffy/ens-normalize': 1.11.0
       '@noble/curves': 1.6.0
-      '@noble/hashes': 1.5.0
+      '@noble/hashes': 1.7.1
       '@scure/bip32': 1.5.0
       '@scure/bip39': 1.4.0
       abitype: 1.0.6(typescript@5.7.3)
@@ -25271,6 +25290,11 @@ packages:
     engines: {node: '>= 0.4.0'}
     dev: false
 
+  /uuid@11.1.0:
+    resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
+    hasBin: true
+    dev: false
+
   /uuid@8.3.2:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
     hasBin: true
@@ -26034,7 +26058,7 @@ packages:
     resolution: {integrity: sha512-EeYD+gmIT80YkSIDb2iWq0lq2zbHo1CxHlQTeJ+KkCILWpVy3zASH3ByD4bopzfk0uCwXxLqKGLqp2W4O28VFA==}
     dependencies:
       '@noble/curves': 1.6.0
-      '@noble/hashes': 1.5.0
+      '@noble/hashes': 1.7.1
 
   /webcrypto-core@1.8.1:
     resolution: {integrity: sha512-P+x1MvlNCXlKbLSOY4cYrdreqPG5hbzkmawbcXLKN/mf6DZW0SdNNkZ+sjwsqVkI4A4Ko2sPZmkZtCKY58w83A==}

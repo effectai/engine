@@ -9,9 +9,11 @@ import type { Uint8ArrayList } from 'uint8arraylist'
 
 export interface Payment {
   id: string
-  amount: string
+  amount: number
+  mint: string
   escrowAccount: string
   recipient: string
+  nonce: bigint
   signature: string
 }
 
@@ -30,23 +32,33 @@ export namespace Payment {
           w.string(obj.id)
         }
 
-        if ((obj.amount != null && obj.amount !== '')) {
-          w.uint32(18)
-          w.string(obj.amount)
+        if ((obj.amount != null && obj.amount !== 0)) {
+          w.uint32(21)
+          w.float(obj.amount)
+        }
+
+        if ((obj.mint != null && obj.mint !== '')) {
+          w.uint32(26)
+          w.string(obj.mint)
         }
 
         if ((obj.escrowAccount != null && obj.escrowAccount !== '')) {
-          w.uint32(26)
+          w.uint32(34)
           w.string(obj.escrowAccount)
         }
 
         if ((obj.recipient != null && obj.recipient !== '')) {
-          w.uint32(34)
+          w.uint32(42)
           w.string(obj.recipient)
         }
 
+        if ((obj.nonce != null && obj.nonce !== 0n)) {
+          w.uint32(48)
+          w.uint64(obj.nonce)
+        }
+
         if ((obj.signature != null && obj.signature !== '')) {
-          w.uint32(42)
+          w.uint32(58)
           w.string(obj.signature)
         }
 
@@ -56,9 +68,11 @@ export namespace Payment {
       }, (reader, length, opts = {}) => {
         const obj: any = {
           id: '',
-          amount: '',
+          amount: 0,
+          mint: '',
           escrowAccount: '',
           recipient: '',
+          nonce: 0n,
           signature: ''
         }
 
@@ -73,18 +87,26 @@ export namespace Payment {
               break
             }
             case 2: {
-              obj.amount = reader.string()
+              obj.amount = reader.float()
               break
             }
             case 3: {
-              obj.escrowAccount = reader.string()
+              obj.mint = reader.string()
               break
             }
             case 4: {
-              obj.recipient = reader.string()
+              obj.escrowAccount = reader.string()
               break
             }
             case 5: {
+              obj.recipient = reader.string()
+              break
+            }
+            case 6: {
+              obj.nonce = reader.uint64()
+              break
+            }
+            case 7: {
               obj.signature = reader.string()
               break
             }

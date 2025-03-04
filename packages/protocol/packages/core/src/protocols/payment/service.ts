@@ -15,20 +15,20 @@ import { peerIdFromString } from "@libp2p/peer-id";
 import { getActiveOutBoundConnections } from "../../utils.js";
 import { Payment } from "./pb/payment.js";
 
-export interface TaskProtocolEvents {}
+export interface PaymentProtocolEvents {}
 
-export interface TaskProtocolComponents {
+export interface PaymentProtocolComponents {
 	registrar: Registrar;
 	connectionManager: ConnectionManager;
 }
 
 export class PaymentProtocolService
-	extends TypedEventEmitter<TaskProtocolEvents>
+	extends TypedEventEmitter<PaymentProtocolEvents>
 	implements Startable
 {
-	private readonly components: TaskProtocolComponents;
+	private readonly components: PaymentProtocolComponents;
 
-	constructor(components: TaskProtocolComponents) {
+	constructor(components: PaymentProtocolComponents) {
 		super();
 		this.components = components;
 	}
@@ -52,8 +52,8 @@ export class PaymentProtocolService
 }
 
 export function paymentProtocol(): (
-	components: TaskProtocolComponents,
+	components: PaymentProtocolComponents,
 ) => PaymentProtocolService {
-	return (components: TaskProtocolComponents) =>
+	return (components: PaymentProtocolComponents) =>
 		new PaymentProtocolService(components);
 }

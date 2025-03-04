@@ -1,0 +1,330 @@
+export const effect_payment = {
+  "address": "76EdaKZCL7vxbUvoV6NLoFSCnohU95fcUwoJNcxwsRvC",
+  "metadata": {
+    "name": "effect_payment",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "claim",
+      "discriminator": [
+        62,
+        198,
+        214,
+        193,
+        213,
+        159,
+        108,
+        210
+      ],
+      "accounts": [
+        {
+          "name": "payment_account",
+          "writable": true
+        },
+        {
+          "name": "payment_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "payment_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipient_token_account",
+          "writable": true
+        },
+        {
+          "name": "recipient_payment_data_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "ix_sysvar",
+          "docs": [
+            "the supplied Sysvar could be anything else.",
+            "The Instruction Sysvar has not been implemented",
+            "in the Anchor framework yet, so this is the safe approach."
+          ],
+          "address": "Sysvar1nstructions1111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "payments",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "Payment"
+              }
+            }
+          }
+        },
+        {
+          "name": "authority",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "create_payment_pool",
+      "discriminator": [
+        39,
+        242,
+        23,
+        233,
+        229,
+        198,
+        28,
+        204
+      ],
+      "accounts": [
+        {
+          "name": "payment_account",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "payment_vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "payment_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "authorities",
+          "type": {
+            "vec": "pubkey"
+          }
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "init",
+      "discriminator": [
+        220,
+        59,
+        207,
+        236,
+        108,
+        250,
+        47,
+        100
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "payment_account",
+          "writable": true
+        },
+        {
+          "name": "recipient_token_account",
+          "writable": true
+        },
+        {
+          "name": "recipient_data_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "recipient_token_account"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "PaymentAccount",
+      "discriminator": [
+        47,
+        239,
+        218,
+        78,
+        43,
+        193,
+        1,
+        61
+      ]
+    },
+    {
+      "name": "RecipientPaymentDataAccount",
+      "discriminator": [
+        254,
+        18,
+        216,
+        153,
+        241,
+        64,
+        229,
+        192
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Unauthorized."
+    },
+    {
+      "code": 6001,
+      "name": "SigVerificationFailed",
+      "msg": "Signature verification failed."
+    },
+    {
+      "code": 6002,
+      "name": "InvalidProof",
+      "msg": "Invalid Proof"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidPayment",
+      "msg": "Invalid Payment"
+    }
+  ],
+  "types": [
+    {
+      "name": "Payment",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "recipient_token_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "nonce",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PaymentAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "authorities",
+            "type": {
+              "vec": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RecipientPaymentDataAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "nonce",
+            "type": "u32"
+          }
+        ]
+      }
+    }
+  ]
+} as const;

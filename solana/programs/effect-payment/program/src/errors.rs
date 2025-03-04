@@ -11,4 +11,7 @@ pub enum PaymentErrors {
 
     #[msg("Invalid Proof")]
     InvalidProof,
+
+    #[msg("Invalid Payment")]
+    InvalidPayment,
 }
