@@ -1,10 +1,14 @@
 import { describe, it } from "vitest";
 import {
-	createManagerNode,
-	createWorkerNode,
 	TaskStatus,
 	type Task,
-} from "./../src/index.js";
+	createDummyPayments,
+	signPayment,
+	Payment,
+} from "../packages/core/src";
+
+import { createManagerNode } from "../packages/manager/src/index.ts";
+import { createWorkerNode } from "../packages/worker/src/index.ts";
 
 const dummyTask = (id: string) => ({
 	id,
@@ -66,8 +70,36 @@ describe("Libp2p", () => {
 				await new Promise((resolve) => setTimeout(resolve, 1000));
 				const tasks = await manager1.services.taskStore.all();
 				console.log(tasks);
+
+				manager1.stop();
 			},
 			{ timeout: 20000 },
 		);
+	});
+
+	it("creates a payment", async () => {
+		const manager = await createManagerNode([]);
+
+		const [payment] = createDummyPayments({
+			n: 1,
+			mint: "EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E",
+			recipient: "jeffCRA2yFkRbuw99fBxXaqE5GN3DwjZtmjV18McEDf",
+			paymentAccount: "blabla",
+		});
+
+		const authority = manager.peerId.publicKey?.raw;
+
+		if (!authority) {
+			throw new Error("Authority not found");
+		}
+
+		const { signature, message, serializedPayment } = await signPayment(
+			payment,
+			authority,
+		);
+
+		console.log("Payment", serializedPayment);
+		console.log("Signature", signature);
+		console.log("Message", message);
 	});
 });

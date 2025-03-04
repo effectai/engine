@@ -10,12 +10,12 @@ export const createDummyPayments = ({
 	n,
 	mint,
 	recipient,
-	escrowAccount,
+	paymentAccount,
 }: {
 	n: number;
 	recipient: string;
 	mint: string;
-	escrowAccount: string;
+	paymentAccount: string;
 }) => {
 	const payments = [];
 	for (let i = 0; i < n; i++) {
@@ -26,7 +26,7 @@ export const createDummyPayments = ({
 			recipient,
 			nonce: BigInt(1),
 			signature: "",
-			escrowAccount,
+			paymentAccount,
 		});
 		payments.push(payment);
 	}
@@ -45,13 +45,13 @@ export const toAnchorPayment = (payment: Payment) => {
 };
 
 export const signPayment = async (payment: Payment, authority: Uint8Array) => {
-	const serializedPayment = serializePayment(payment);
+	const serializedPayment = Payment.encode(payment);
 	const message = hashPayment(serializedPayment);
 	const signature = ed25519.sign(message, authority);
 
 	return {
 		message,
-		payment,
+		serializedPayment,
 		signature,
 	};
 };
@@ -66,10 +66,9 @@ export const serializePayment = (payment: Payment) => {
 		Buffer.from(new Uint8Array([pmnt.nonce])),
 	]);
 
-	console.log("buffer size", buffer.length);
 	return buffer;
 };
 
-export const hashPayment = (serializedPayment: Buffer) => {
+export const hashPayment = (serializedPayment: Uint8Array) => {
 	return crypto.createHash("sha256").update(serializedPayment).digest();
 };

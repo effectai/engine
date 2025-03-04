@@ -11,7 +11,7 @@ export interface Payment {
   id: string
   amount: number
   mint: string
-  escrowAccount: string
+  paymentAccount: string
   recipient: string
   nonce: bigint
   signature: string
@@ -42,9 +42,9 @@ export namespace Payment {
           w.string(obj.mint)
         }
 
-        if ((obj.escrowAccount != null && obj.escrowAccount !== '')) {
+        if ((obj.paymentAccount != null && obj.paymentAccount !== '')) {
           w.uint32(34)
-          w.string(obj.escrowAccount)
+          w.string(obj.paymentAccount)
         }
 
         if ((obj.recipient != null && obj.recipient !== '')) {
@@ -70,7 +70,7 @@ export namespace Payment {
           id: '',
           amount: 0,
           mint: '',
-          escrowAccount: '',
+          paymentAccount: '',
           recipient: '',
           nonce: 0n,
           signature: ''
@@ -95,7 +95,7 @@ export namespace Payment {
               break
             }
             case 4: {
-              obj.escrowAccount = reader.string()
+              obj.paymentAccount = reader.string()
               break
             }
             case 5: {
