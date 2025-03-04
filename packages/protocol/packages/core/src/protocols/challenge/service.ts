@@ -11,9 +11,10 @@ import {
 	MULTICODEC_TASK_PROTOCOL_NAME,
 	MULTICODEC_TASK_PROTOCOL_VERSION,
 } from "./consts.js";
+
+import { Challenge } from "./pb/challenge.js";
 import { peerIdFromString } from "@libp2p/peer-id";
 import { getActiveOutBoundConnections } from "../../utils.js";
-import { Challenge } from "./pb/challenge.js";
 
 export interface ChallengeProtocolEvents {
 	"challenge:received": CustomEvent<Challenge>;
@@ -51,21 +52,31 @@ export class ChallengeProtocol
 	async handleChallenge(data: IncomingStreamData): Promise<void> {
 		const pb = pbStream(data.stream).pb(Challenge);
 		const challenge = await pb.read();
-
-		console.log("Challenge received", challenge);
+		this.safeDispatchEvent("challenge:received", { detail: challenge });
 	}
 
-	async sendChallenge(challenge: Challenge): Promise<void> {
-		//fetch connected workers that are due for a challenge.
-		const workers = "";
+	async sendChallenge(peerId: string, challenge: Challenge): Promise<void> {
+		const peer = peerIdFromString(peerId);
 
-		//generate a challenge (simple math question will do for now)
+		let [connection] = await getActiveOutBoundConnections(
+			this.components.connectionManager,
+			peer,
+		);
 
-		//send challenge to worker
+		if (!connection) {
+			connection = await this.components.connectionManager.openConnection(peer);
+		}
+
+		const stream = await connection.newStream(
+			`/${MULTICODEC_TASK_PROTOCOL_NAME}/${MULTICODEC_TASK_PROTOCOL_VERSION}`,
+		);
+
+		const pb = pbStream(stream).pb(Challenge);
+		await pb.write(challenge);
 	}
 }
 
-export function taskProtocol(): (
+export function challengeProtocol(): (
 	components: ChallengeProtolComponents,
 ) => ChallengeProtocol {
 	return (components: ChallengeProtolComponents) =>
