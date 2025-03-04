@@ -14,6 +14,8 @@ import {
 import { peerIdFromString } from "@libp2p/peer-id";
 import { getActiveOutBoundConnections } from "../../utils.js";
 import { Payment } from "./pb/payment.js";
+import { Task } from "../task/index.js";
+import { publicKeyFromRaw } from "@libp2p/crypto/keys";
 
 export interface PaymentProtocolEvents {}
 
@@ -44,6 +46,37 @@ export class PaymentProtocolService
 			this.handleProtocol.bind(this),
 			{ runOnLimitedConnection: false },
 		);
+	}
+
+	async generatePayment(peerId: string, task: Task) {
+		//generate a payment from a completed task
+
+		//TODO:: checks:
+		// @TaskNotCompleted
+		// @TaskAlreadyPaid
+
+		const pid = peerIdFromString(peerId);
+
+		if (!pid.publicKey) {
+			throw new Error("PeerId does not have a public key");
+		}
+
+		//TODO:: map to solana publicKey
+		const publicKey = publicKeyFromRaw(pid.publicKey.raw);
+
+		//TODO:: figure out what nonce?
+		const nonce = 1;
+
+		const payment = Payment.encode({
+			id: task.id,
+			mint: "EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E",
+			recipient: publicKey.toString(),
+			amount: Number(task.reward),
+			paymentAccount: "dfdfdkfj",
+			nonce: BigInt(nonce),
+		});
+
+		return payment;
 	}
 
 	stop(): void | Promise<void> {

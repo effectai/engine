@@ -18,7 +18,9 @@ import {
 	type TaskProtocolService,
 	type Task,
 	TaskStatus,
+	type ChallengeProtocol,
 	extractPeerIdFromTaskResults,
+	PaymentProtocolService,
 } from "@effectai/protocol-core";
 
 export interface ManagerServiceComponents {
@@ -27,9 +29,10 @@ export interface ManagerServiceComponents {
 	connectionManager: ConnectionManager;
 	datastore: Datastore;
 	events: TypedEventTarget<Libp2pEvents>;
-
+	payment?: PaymentProtocolService;
 	workerQueue?: WorkerQueue;
 	taskStore?: TaskStore;
+	challenge: ChallengeProtocol;
 	task: TaskProtocolService;
 	peerId: PeerId;
 	privateKey: PrivateKey;
@@ -51,6 +54,8 @@ export class ManagerService
 	}
 
 	start(): void | Promise<void> {
+		//check if all mandatory components are available
+
 		this.components.task.addEventListener("task:received", async (taskInfo) => {
 			//get the task from our store and sync it.
 			//TODO:: only sync if checks are correct and valid
@@ -75,6 +80,8 @@ export class ManagerService
 				console.log("Peer discovered", peer);
 			},
 		);
+
+		this.components.ch;
 	}
 
 	stop(): void | Promise<void> {
@@ -146,6 +153,10 @@ export class ManagerService
 			peer,
 			task,
 		};
+	}
+
+	async generatePayment(peerId: string, task: Task) {
+		this.components.payment;
 	}
 }
 

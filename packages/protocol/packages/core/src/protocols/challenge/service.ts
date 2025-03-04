@@ -15,6 +15,7 @@ import {
 import { Challenge } from "./pb/challenge.js";
 import { peerIdFromString } from "@libp2p/peer-id";
 import { getActiveOutBoundConnections } from "../../utils.js";
+import type { ChallengeStore } from "./store.js";
 
 export interface ChallengeProtocolEvents {
 	"challenge:received": CustomEvent<Challenge>;
@@ -24,6 +25,7 @@ export interface ChallengeProtocolEvents {
 export interface ChallengeProtolComponents {
 	registrar: Registrar;
 	connectionManager: ConnectionManager;
+	challengeStore: ChallengeStore;
 }
 
 export class ChallengeProtocol
@@ -52,6 +54,8 @@ export class ChallengeProtocol
 	async handleChallenge(data: IncomingStreamData): Promise<void> {
 		const pb = pbStream(data.stream).pb(Challenge);
 		const challenge = await pb.read();
+
+		//save challenge in the store.
 		this.safeDispatchEvent("challenge:received", { detail: challenge });
 	}
 
