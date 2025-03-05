@@ -19,7 +19,7 @@ published: true
 
 Effect AI is redefining how microtasks are completed, giving individuals the opportunity to contribute while ensuring fair pay, instant payments, and an open marketplace free from corporate control. Traditional platforms take high fees, limit access to tasks, and dictate who gets paid and when. Effect AI operates differently.
 
-We are developing a **decentralized, open-source network** where workers, managers, and providers collaborate seamlessly. Our system allows human intelligence to supercharge AI agents, making them smarter, more accurate, and more effective. With **worker nodes, manager nodes, and provider nodes**, tasks flow through the network efficiently and securely. [**ZK-rollups](https://www.coinbase.com/en-es/learn/crypto-glossary/what-are-zero-knowledge-zk-rollups) power near-instant on-chain settlements**, eliminating payment delays, disputes, and hidden fees.
+We are developing a **decentralized, open-source network** where workers, managers, and providers collaborate seamlessly. Our system allows human intelligence to supercharge AI agents, making them smarter, more accurate, and more effective. With **worker nodes, manager nodes, and provider nodes**, tasks flow through the network efficiently and securely. [ZK-rollups](https://www.coinbase.com/en-es/learn/crypto-glossary/what-are-zero-knowledge-zk-rollups) power near-instant on-chain settlements**, eliminating payment delays, disputes, and hidden fees.
 
 ## **A Smarter Approach to Microtasking**
 
