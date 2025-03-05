@@ -2,7 +2,7 @@
 title: "The Future of Microtasking and AI-Human Collaboration"
 description: "Effect AI is redefining how microtasks are completed, giving individuals the opportunity to contribute while ensuring fair pay, instant payments, and an open marketplace free from corporate control."
 image:
-  src: "/img/news/effectnli.jpg"
+  src: "/img/news/BlogBG-06.jpg"
 author: "Rochelle"
 head:
   meta:
