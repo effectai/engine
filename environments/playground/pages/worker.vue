@@ -163,17 +163,21 @@ const worker = await createWorkerNode(
 	key,
 );
 
-worker.services.taskStore.addEventListener("task:stored", async () => {
-	taskStore.value = await worker.services.taskStore.all();
-	console.log("task stored", taskStore.value);
+worker.services.worker.addEventListener("task:received", async () => {
+	taskStore.value = await worker.services.worker.getTasks();
 });
 
-worker.services.task.addEventListener("task:received", ({ detail }) => {
-	console.log("task received", detail);
+const workerStatus = computed(() => {
+	worker;
 });
+
+const availableManagers = computed(() => {
+	// return worker.services.managerStore.all();
+});
+
+const workerPeers = computed(() => {});
 
 onBeforeUnmount(async () => {
-	console.log("stopping worker");
 	await worker.stop();
 });
 </script>

@@ -9,11 +9,7 @@ import { webSockets } from "@libp2p/websockets";
 import { createLibp2p } from "libp2p";
 import * as filters from "@libp2p/websockets/filters";
 import type { Ed25519PrivateKey } from "@libp2p/interface";
-import {
-	taskProtocol,
-	taskStore,
-	announcePeerDiscovery,
-} from "@effectai/protocol-core";
+import { announcePeerDiscovery } from "@effectai/protocol-core";
 import { workerService } from "./service.js";
 
 export const createWorkerNode = (
@@ -39,8 +35,6 @@ export const createWorkerNode = (
 		services: {
 			pubsub: gossipsub(),
 			identify: identify(),
-			taskStore: taskStore(),
-			task: taskProtocol(),
 			worker: workerService(),
 		},
 	});

@@ -3,6 +3,9 @@ import {
 	type IncomingStreamData,
 	type Startable,
 	type PrivateKey,
+	type ComponentLogger,
+	type Libp2pEvents,
+	type TypedEventTarget,
 } from "@libp2p/interface";
 
 import { pbStream } from "it-protobuf-stream";
@@ -15,28 +18,33 @@ import {
 import { Challenge } from "./pb/challenge.js";
 import { peerIdFromString } from "@libp2p/peer-id";
 import { getActiveOutBoundConnections } from "../../utils.js";
-import type { ChallengeStore } from "./store.js";
+import { ChallengeStore, challengeStore } from "./store.js";
+import type { Datastore } from "interface-datastore";
 
 export interface ChallengeProtocolEvents {
 	"challenge:received": CustomEvent<Challenge>;
 	"challenge:sent": CustomEvent<Challenge>;
 }
 
-export interface ChallengeProtolComponents {
+export interface ChallengeProtocolComponents {
 	registrar: Registrar;
 	connectionManager: ConnectionManager;
-	challengeStore: ChallengeStore;
+	datastore: Datastore;
+	logger: ComponentLogger;
+	events: TypedEventTarget<Libp2pEvents>;
 }
 
-export class ChallengeProtocol
+export class ChallengeProtocolService
 	extends TypedEventEmitter<ChallengeProtocolEvents>
 	implements Startable
 {
-	private readonly components: ChallengeProtolComponents;
+	private readonly components: ChallengeProtocolComponents;
+	private readonly store: ChallengeStore;
 
-	constructor(components: ChallengeProtolComponents) {
+	constructor(components: ChallengeProtocolComponents) {
 		super();
 		this.components = components;
+		this.store = new ChallengeStore(this.components);
 	}
 
 	async start(): Promise<void> {
@@ -81,8 +89,8 @@ export class ChallengeProtocol
 }
 
 export function challengeProtocol(): (
-	components: ChallengeProtolComponents,
-) => ChallengeProtocol {
-	return (components: ChallengeProtolComponents) =>
-		new ChallengeProtocol(components);
+	components: ChallengeProtocolComponents,
+) => ChallengeProtocolService {
+	return (components: ChallengeProtocolComponents) =>
+		new ChallengeProtocolService(components);
 }

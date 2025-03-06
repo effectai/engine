@@ -16,9 +16,9 @@ console.log("connecting on :", relayAddress.toString());
 
 //report some info every 10 seconds
 setInterval(async () => {
-	const queue = manager.services.workerQueue.getQueue();
+	const queue = manager.services.manager.getQueue();
 	const peers = manager.getPeers();
-	const tasks = await manager.services.taskStore.all();
+	const tasks = await manager.services.manager.getTasks();
 
 	console.log(
 		chalk.green(
@@ -31,7 +31,7 @@ const app = express();
 app.use(express.json());
 
 app.get("/tasks", async (req, res) => {
-	const tasks = await manager.services.taskStore.all();
+	const tasks = await manager.services.manager.getTasks();
 	res.json(tasks);
 });
 

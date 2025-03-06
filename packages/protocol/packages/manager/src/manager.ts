@@ -8,12 +8,7 @@ import { identify } from "@libp2p/identify";
 import * as filters from "@libp2p/websockets/filters";
 import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 import type { PrivateKey } from "@libp2p/interface";
-import {
-	taskStore,
-	taskProtocol,
-	workerQueue,
-	announcePeerDiscovery,
-} from "@effectai/protocol-core";
+import { announcePeerDiscovery } from "@effectai/protocol-core";
 import { managerService } from "./service.js";
 
 export const createManagerNode = (peers: string[], privateKey?: PrivateKey) => {
@@ -32,9 +27,6 @@ export const createManagerNode = (peers: string[], privateKey?: PrivateKey) => {
 		services: {
 			pubsub: gossipsub(),
 			identify: identify(),
-			workerQueue: workerQueue(),
-			taskStore: taskStore(),
-			task: taskProtocol(),
 			manager: managerService(),
 			relay: circuitRelayServer(),
 		},

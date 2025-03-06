@@ -3,6 +3,10 @@ import {
 	type IncomingStreamData,
 	type Startable,
 	type PrivateKey,
+	type TypedEventTarget,
+	type Libp2pEvents,
+	type ComponentLogger,
+	PeerStore,
 } from "@libp2p/interface";
 
 import { pbStream } from "it-protobuf-stream";
@@ -15,6 +19,8 @@ import {
 import { peerIdFromString } from "@libp2p/peer-id";
 import { getActiveOutBoundConnections } from "../../utils.js";
 import { TaskStore } from "./store.js";
+import type { Datastore } from "interface-datastore";
+import { WorkerQueue } from "./queue.js";
 
 export interface TaskProtocolEvents {
 	"task:received": CustomEvent<Task>;
@@ -24,7 +30,10 @@ export interface TaskProtocolEvents {
 export interface TaskProtocolComponents {
 	registrar: Registrar;
 	connectionManager: ConnectionManager;
-	taskStore: TaskStore;
+	events: TypedEventTarget<Libp2pEvents>;
+	logger: ComponentLogger;
+	datastore: Datastore;
+	peerStore: PeerStore;
 }
 
 export class TaskProtocolService
@@ -32,10 +41,12 @@ export class TaskProtocolService
 	implements Startable
 {
 	private readonly components: TaskProtocolComponents;
+	private readonly taskStore: TaskStore;
 
 	constructor(components: TaskProtocolComponents) {
 		super();
 		this.components = components;
+		this.taskStore = new TaskStore(this.components);
 	}
 
 	async handleProtocol(data: IncomingStreamData): Promise<void> {
@@ -56,6 +67,19 @@ export class TaskProtocolService
 
 	stop(): void | Promise<void> {
 		// throw new Error("Method not implemented.");
+	}
+
+	async getTasks(): Promise<Task[]> {
+		return await this.taskStore.all();
+	}
+
+	async getTask(taskId: string): Promise<Task | undefined> {
+		return await this.taskStore.get(taskId);
+	}
+
+	async storeTask(task: Task): Promise<Task> {
+		await this.taskStore.put(task);
+		return task;
 	}
 
 	async sendTask(peerId: string, task: Task): Promise<void> {

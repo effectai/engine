@@ -1,23 +1,5 @@
 
 
 > docs@ build /home/jeffrieh/repositories/effect-tasks/docs
-> vocs build
+> vocs build "--scope" "@effectai"
 
-
-
-
-
-
-
-
-
-
-
-
-[1;1H[0J
-  [34m[building][39m [1mvocs[22m@[2mv1.0.0-alpha.57[22m
-
-[?25l[1G[1G[36m⠋[39m building bundles...
-[31mfailed to load config from /home/jeffrieh/repositories/effect-tasks/docs/vocs.config.ts[39m
-[1G[0K[1A[0K[?25h[31m✖[39m bundles failed to build: The service was stopped: write EPIPE
-[?25h[41m[30m ELIFECYCLE [39m[49m [31mCommand failed with exit code 1.[39m

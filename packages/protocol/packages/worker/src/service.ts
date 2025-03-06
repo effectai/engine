@@ -1,7 +1,7 @@
 import {
+	TaskProtocolService,
 	TaskStatus,
 	type Task,
-	type TaskProtocolService,
 	type TaskStore,
 } from "@effectai/protocol-core";
 
@@ -15,37 +15,45 @@ import {
 	type TypedEventTarget,
 } from "@libp2p/interface";
 import type { ConnectionManager, Registrar } from "@libp2p/interface-internal";
+import type { Datastore } from "interface-datastore";
 
-export interface TaskManagerComponents {
+export interface WorkerServiceComponents {
 	peerId: PeerId;
 	registrar: Registrar;
 	peerStore: PeerStore;
-	taskStore: TaskStore;
-	task: TaskProtocolService;
+	datastore: Datastore;
 	connectionManager: ConnectionManager;
 	events: TypedEventTarget<Libp2pEvents>;
 	logger: ComponentLogger;
 }
 
 export interface WorkerServiceEvents {
+	"task:received": string;
 	"task:accepted": string;
 	"task:rejected": string;
+
+	"challenge:received": string;
+	"challenge:accepted": string;
+
+	"payment:received": string;
 }
 
 export class WorkerService
 	extends TypedEventEmitter<WorkerServiceEvents>
 	implements Startable
 {
-	private components: TaskManagerComponents;
+	private components: WorkerServiceComponents;
+	private taskService: TaskProtocolService;
 
-	constructor(components: TaskManagerComponents) {
+	constructor(components: WorkerServiceComponents) {
 		super();
 		this.components = components;
+		this.taskService = new TaskProtocolService(this.components);
 	}
 
 	start(): void | Promise<void> {
-		this.components.task.addEventListener("task:received", async (taskInfo) => {
-			await this.components.taskStore.put(taskInfo.detail);
+		this.taskService.addEventListener("task:received", async (taskInfo) => {
+			await this.taskService.storeTask(taskInfo.detail);
 		});
 	}
 
@@ -57,10 +65,11 @@ export class WorkerService
 
 	async acceptTask(task: Task) {
 		task.status = TaskStatus.IN_PROGRESS;
-		await this.components.taskStore.put(task);
+		await this.taskService.storeTask(task);
 		this.safeDispatchEvent("task:accepted", { detail: task.id });
+
 		//send ack back to the manager
-		await this.components.task.sendTask(task.manager, task);
+		await this.taskService.sendTask(task.manager, task);
 	}
 
 	async rejectTask(taskId: string) {
@@ -69,7 +78,7 @@ export class WorkerService
 
 	async completeTask(taskId: string, result: string) {
 		//get the task from the store
-		const task = await this.components.taskStore.get(taskId);
+		const task = await this.taskService.getTask(taskId);
 
 		if (!task) {
 			throw new Error("Task not found in the store");
@@ -79,16 +88,20 @@ export class WorkerService
 		task.result = result;
 
 		//save the task in the taskStore
-		await this.components.taskStore.put(task);
+		await this.taskService.storeTask(task);
 
 		//send the result to the manager peer
-		await this.components.task.sendTask(task.manager, task);
+		await this.taskService.sendTask(task.manager, task);
+	}
+
+	async getTasks() {
+		return await this.taskService.getTasks();
 	}
 }
 
 export function workerService(): (
 	// init: Partial<TaskManagerInit> = {}
-	components: TaskManagerComponents,
+	components: WorkerServiceComponents,
 ) => WorkerService {
-	return (components: TaskManagerComponents) => new WorkerService(components);
+	return (components: WorkerServiceComponents) => new WorkerService(components);
 }
