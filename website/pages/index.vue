@@ -253,7 +253,7 @@
           </h1>
         </div>
       </div>
-      <NewsCardList :items="news" class="my-7" />
+      <NewsCardList :perPage="3" :items="news" class="my-7" />
     </div>
   </SimpleSection>
 
