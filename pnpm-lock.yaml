@@ -615,9 +615,6 @@ importers:
       '@effectai/protocol':
         specifier: workspace:*
         version: link:../packages/protocol/packages/library
-      '@ethersproject/bignumber':
-        specifier: ^5.8.0
-        version: 5.8.0
       '@noble/curves':
         specifier: 1.6.0
         version: 1.6.0
@@ -3355,11 +3352,13 @@ packages:
       '@ethersproject/bytes': 5.8.0
       '@ethersproject/logger': 5.8.0
       bn.js: 5.2.1
+    dev: false
 
   /@ethersproject/bytes@5.8.0:
     resolution: {integrity: sha512-vTkeohgJVCPVHu5c25XWaWQOZ4v+DkGoC42/TS2ond+PARCxTJvgTFUNDZovyQ/uAQ4EcpqqowKydcdmRKjg7A==}
     dependencies:
       '@ethersproject/logger': 5.8.0
+    dev: false
 
   /@ethersproject/constants@5.7.0:
     resolution: {integrity: sha512-DHI+y5dBNvkpYUMiRQyxRBYBefZkJfo70VUkUAsRjcPs47muV9evftfZ0PJVCXYbAiCgght0DtcF9srFQmIgWA==}
@@ -3453,6 +3452,7 @@ packages:
 
   /@ethersproject/logger@5.8.0:
     resolution: {integrity: sha512-Qe6knGmY+zPPWTC+wQrpitodgBfH7XoceCGL5bJVejmH+yCS3R8jJm8iiWuvWbG76RUmyEG53oqv6GMVWqunjA==}
+    dev: false
 
   /@ethersproject/networks@5.8.0:
     resolution: {integrity: sha512-egPJh3aPVAzbHwq8DD7Po53J4OUSsA1MjQp8Vf/OZPav5rlmWUaFLiq8cvQiGK0Z5K6LYzm29+VA/p4RL1FzNg==}
