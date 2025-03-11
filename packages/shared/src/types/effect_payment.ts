@@ -27,7 +27,39 @@ export type EffectPayment = {
       ],
       "accounts": [
         {
+          "name": "paymentAccount"
+        },
+        {
+          "name": "paymentVaultTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "paymentAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipientTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "recipientPaymentDataAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
           "name": "mint"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
         }
       ],
       "args": [

@@ -17,36 +17,26 @@ use groth16_solana::groth16::Groth16Verifier;
 
 #[derive(Accounts)]
 pub struct Claim<'info> {
-    // #[account()]
-    // pub payment_account: Account<'info, PaymentAccount>,
+    #[account()]
+    pub payment_account: Account<'info, PaymentAccount>,
 
-    // #[account(mut, seeds = [payment_account.key().as_ref()], bump) ]
-    // pub payment_vault_token_account: Account<'info, TokenAccount>,
+    #[account(mut, seeds = [payment_account.key().as_ref()], bump) ]
+    pub payment_vault_token_account: Account<'info, TokenAccount>,
 
-    // #[account()]
-    // pub recipient_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub recipient_token_account: Account<'info, TokenAccount>,
 
-    // #[account(mut)]
-    // pub recipient_payment_data_account: Account<'info, RecipientPaymentDataAccount>,
+    #[account(mut)]
+    pub recipient_payment_data_account: Account<'info, RecipientPaymentDataAccount>,
 
-    // pub token_program: Program<'info, Token>,
+    pub token_program: Program<'info, Token>,
 
     pub mint: Account<'info, Mint>,
 
-    // #[account(mut)]
-    // pub authority: Signer<'info>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
 }
 
-fn serialize_payment_message(payment: &Payment) -> Result<Vec<u8>> {
-    let mut message = Vec::new();
-
-    message.extend_from_slice(&payment.id);
-    message.extend_from_slice(&payment.amount.to_le_bytes());
-    message.extend_from_slice(payment.recipient_token_account.as_ref());
-    message.extend_from_slice(&payment.nonce.to_le_bytes());
-
-    Ok(message)
-}
 
 pub fn handler(
     ctx: Context<Claim>,
@@ -56,9 +46,9 @@ pub fn handler(
     pub_x: [u8; 32],
     pub_y: [u8; 32],
     proof: [u8; 256]
-    // authority: Pubkey
 ) -> Result<()> {
-    // let mut highest_nonce = ctx.accounts.recipient_payment_data_account.nonce;
+    let mut last_nonce = ctx.accounts.recipient_payment_data_account.nonce;
+    // TODO: require min_nonce > last_nonce 
 
     // unpack the snark proof components
     let proof_a: G1 = <G1 as CanonicalDeserialize>::deserialize_uncompressed(
@@ -87,26 +77,25 @@ pub fn handler(
 
     let result = verifier.verify().unwrap();
 
-
-    Ok(())
-
     // update the nonce
-    // ctx.accounts.recipient_payment_data_account.nonce = highest_nonce;
+    ctx.accounts.recipient_payment_data_account.nonce = max_nonce;
 
     // transfer the tokens to the recipient
-    // transfer_tokens_from_vault!(
-    //     ctx.accounts,
-    //     payment_vault_token_account,
-    //     recipient_token_account,
-    //     &[&vault_seed!(ctx.accounts.payment_account.key(), id())],
-    //     total_amount
-    // )?;
+    transfer_tokens_from_vault!(
+        ctx.accounts,
+        payment_vault_token_account,
+        recipient_token_account,
+        &[&vault_seed!(ctx.accounts.payment_account.key(), id())],
+        total_amount
+    )?;
 
     // require!(
     //	result == Ok(true),
     //	PaymentErrors::SigVerificationFailed
     // );
 
+
+    Ok(())
 }
 
 fn u64_to_32_byte_be_array(value: u64) -> [u8; 32] {
