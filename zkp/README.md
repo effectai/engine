@@ -36,7 +36,7 @@ make zkp/setup/pot19_final.ptau
 Or run a smaller ceremony with:
 
 ```
-TAU_SIZE=12 make zkp/setup/pot12_final.ptau
+TAU_SIZE=14 make zkp/setup/pot14_final.ptau
 ```
 
 The goal of larger tau ceremony is to have larger payment batch sizes.
@@ -47,7 +47,7 @@ The main circuit is called PaymentBatch and is located in
 [zkp/circuits/PaymentBatch.circom](zkp/circuits/PaymentBatch.circom).
 
 Make sure to adjust the `(60)` on the last line to reflect the batch
-size you want. For a 2^12 tau size that is around 5.
+size you want. For a 2^14 tau size that is max 1.
 
 Compile the circuit with:
 
@@ -91,15 +91,17 @@ make solana/programs/effect-payment/program/src/verifying_key.rs
 
 The quickest way to get started, is do a small ceremony yourself and
 let the Makefile do all the work. First reduce the batch size in the
-[PaymentBatch.circom](zkp/circuits/PaymentBatch.circom) from 60 to 5,
+[PaymentBatch.circom](zkp/circuits/PaymentBatch.circom) from 60 to 1,
 then run:
 
 ```
-export TAU_SIZE=12
-make solana/programs/effect-payment/program/src/verifying_key.rs
+TAU_SIZE=14 make solana/programs/effect-payment/program/src/verifying_key.rs
 ```
 
 This should take a few minutes and generate all the files for you.
+
+Note, 14 is the smallest tau size we support, and 1 is the largest
+batch size.
 
 ## Testing the Solana contract
 
@@ -109,3 +111,6 @@ Test suite is in [../solana/tests/suites/payment.spec.ts](../solana/tests/suites
 cd ../solana
 anchor test
 ```
+
+Make sure the `batchSize` constant reflects the exact same batch size
+as is used in the circom file.
