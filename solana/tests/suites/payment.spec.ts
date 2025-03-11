@@ -55,7 +55,7 @@ describe("Payment Program", async () => {
 
 		const managerAddress = payer.publicKey.toBuffer();
 
-		const batchSize = 15;
+		const batchSize = 60;
 
 		// Generate dummy payments
 		const nonces = Array.from({length: batchSize}, (value, key) => int2hex(key));
@@ -125,7 +125,7 @@ describe("Payment Program", async () => {
 				recipientTokenAccount: ata,
 			})
 			.rpc();
-	}, 10000);
+	}, 20000);
 
 	it("can redeem mulitple payments", async () => {
 		// const { mint, ata } = await setup({ payer, provider });
