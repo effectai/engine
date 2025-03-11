@@ -36,7 +36,7 @@ make zkp/setup/pot19_final.ptau
 Or run a smaller ceremony with:
 
 ```
-TAU_SIZE=12 make zkp/setup/pot${TAU_SIZE}_final.ptau
+TAU_SIZE=12 make zkp/setup/pot12_final.ptau
 ```
 
 The goal of larger tau ceremony is to have larger payment batch sizes.
