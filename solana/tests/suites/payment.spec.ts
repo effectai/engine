@@ -248,11 +248,10 @@ describe("Payment Program", async () => {
 
 
 function bigIntToBytes32(num) {
-	// Convert BigInt to 32-byte hex string
 	let hex = BigInt(num).toString(16);
-	// Pad to 64 characters (32 bytes)
+
 	hex = hex.padStart(64, '0');
-	// Convert hex string to Uint8Array
+
 	const bytes = new Uint8Array(32);
 	for (let i = 0; i < 32; i++) {
 		bytes[i] = parseInt(hex.slice(i * 2, (i + 1) * 2), 16);

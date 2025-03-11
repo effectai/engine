@@ -20,8 +20,8 @@ pub mod effect_payment {
 
     pub fn claim(
 	ctx: Context<Claim>,
-	min_nonce: u64,
-	max_nonce: u64,
+	min_nonce: u32,
+	max_nonce: u32,
 	total_amount: u64,
 	pub_x: [u8; 32],
 	pub_y: [u8; 32],

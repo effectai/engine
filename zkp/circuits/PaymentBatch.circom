@@ -41,7 +41,7 @@ template VerifyPaymentBatch(n) {
 
 	// We are forcing nonces to be incremental for ease
 	if (i > 0) {
-	    nonceChecker[i-1] = LessThan(12);
+	    nonceChecker[i-1] = LessThan(32);
 	    nonceChecker[i-1].in[0] <== nonce[i-1];
 	    nonceChecker[i-1].in[1] <== nonce[i];
 	    nonceChecker[i-1].out === 1;

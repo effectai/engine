@@ -50,8 +50,8 @@ fn serialize_payment_message(payment: &Payment) -> Result<Vec<u8>> {
 
 pub fn handler(
     ctx: Context<Claim>,
-    min_nonce: u64,
-    max_nonce: u64,
+    min_nonce: u32,
+    max_nonce: u32,
     total_amount: u64,
     pub_x: [u8; 32],
     pub_y: [u8; 32],
@@ -73,8 +73,8 @@ pub fn handler(
     let proof_c: [u8; 64] = proof[192..256].try_into().unwrap();
 
     let public_inputs = [
-	u64_to_32_byte_be_array(min_nonce),
-	u64_to_32_byte_be_array(max_nonce),
+	u32_to_32_byte_be_array(min_nonce),
+	u32_to_32_byte_be_array(max_nonce),
 	u64_to_32_byte_be_array(total_amount),
 	pub_x,
 	pub_y
@@ -113,6 +113,13 @@ fn u64_to_32_byte_be_array(value: u64) -> [u8; 32] {
     let mut result = [0u8; 32];
     let value_bytes = value.to_be_bytes();
     result[24..].copy_from_slice(&value_bytes);
+    result
+}
+
+fn u32_to_32_byte_be_array(value: u32) -> [u8; 32] {
+    let mut result = [0u8; 32];
+    let value_bytes = value.to_be_bytes();
+    result[28..].copy_from_slice(&value_bytes);
     result
 }
 

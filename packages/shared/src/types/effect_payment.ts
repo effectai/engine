@@ -33,11 +33,11 @@ export type EffectPayment = {
       "args": [
         {
           "name": "minNonce",
-          "type": "u64"
+          "type": "u32"
         },
         {
           "name": "maxNonce",
-          "type": "u64"
+          "type": "u32"
         },
         {
           "name": "totalAmount",

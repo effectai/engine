@@ -27,11 +27,11 @@ export const effect_payment = {
       "args": [
         {
           "name": "min_nonce",
-          "type": "u64"
+          "type": "u32"
         },
         {
           "name": "max_nonce",
-          "type": "u64"
+          "type": "u32"
         },
         {
           "name": "total_amount",
