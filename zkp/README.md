@@ -4,8 +4,9 @@
 
 Install the following
 
-- Circom
-- curl (for downloading cached ptau, see below)
+- [Circom](https://docs.circom.io/getting-started/installation/)
+
+Also make sure to run `pnpm install` in the workspace root.
 
 ## Makefile
 
