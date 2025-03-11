@@ -10,7 +10,7 @@ TAU_SIZE ?= 19
 zkp/setup:
 	mkdir -p zkp/setup
 
-# First phase of ceremony
+# Phase 1 of ceremony
 # Outputs general keys for 2^$TAU_SIZE params
 zkp/setup/pot${TAU_SIZE}_final.ptau: | zkp/setup
 	$(SNARKJS) powersoftau new bn128 ${TAU_SIZE} zkp/setup/pot${TAU_SIZE}_0000.ptau -v
@@ -24,7 +24,7 @@ zkp/setup/pot${TAU_SIZE}_final.ptau: | zkp/setup
 # Second phase of ceremony
 # Outputs proving and verifcation key for $CIRCUIT
 zkp/circuits/${CIRCUIT}_0001.zkey: zkp/circuits/${CIRCUIT}.r1cs | zkp/setup/pot${TAU_SIZE}_final.ptau
-	$(SNARKJS) groth16 setup $^ ${CIRCUIT}_0000.zkey
+	$(SNARKJS) groth16 setup $^ $| ${CIRCUIT}_0000.zkey
 	$(SNARKJS) zkey contribute ${CIRCUIT}_0000.zkey ${CIRCUIT}_0001.zkey --name="First" -v -e='random'
 	rm ${CIRCUIT}_0000.zkey
 	mv ${CIRCUIT}_0001.zkey $@
@@ -46,4 +46,4 @@ clean:
 	rm zkp/circuits/${CIRCUIT}_verification.json
 	rm -rf zkp/circuits/${CIRCUIT}_js
 
-.PHONY: clean
+.PHONY: clean download_ptau
