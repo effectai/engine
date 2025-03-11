@@ -66,12 +66,12 @@ describe("Payment Program", async () => {
 
 		const proofInputs = {
 			pubX: eddsa.F.toObject(pubKey[0]),
-    		pubY: eddsa.F.toObject(pubKey[1]),
+			pubY: eddsa.F.toObject(pubKey[1]),
 			nonce: nonces,
 			payAmount: Array(batchSize).fill(int2hex(12)),
-    		R8x: sigs.map((s) => eddsa.F.toObject(s.R8[0])), 
-    		R8y: sigs.map((s) => eddsa.F.toObject(s.R8[1])), 
-    		S: sigs.map((s) => s.S)
+			R8x: sigs.map((s) => eddsa.F.toObject(s.R8[0])), 
+			R8y: sigs.map((s) => eddsa.F.toObject(s.R8[1])), 
+			S: sigs.map((s) => s.S)
 		}
 
 		const { proof, publicSignals } = await snarkjs.groth16.fullProve(
