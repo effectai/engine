@@ -44,7 +44,7 @@ The goal of larger tau ceremony is to have larger payment batch sizes.
 ## Building the circuits
 
 The main circuit is called PaymentBatch and is located in
-[zkp/circuits/Paymentatch.circom](zkp/circuits/Paymentatch.circom).
+[zkp/circuits/PaymentBatch.circom](zkp/circuits/PaymentBatch.circom).
 
 Make sure to adjust the `(60)` on the last line to reflect the batch
 size you want. For a 2^12 tau size that is around 5.
@@ -60,7 +60,7 @@ This will generate:
 - `zkp/circtuis/PaymentBatch.r1cs`: needed to generate proving and
   verifying keys in Phase 2 of the ceremony
 - `zkp/circtuis/PaymentBatch_js/PaymentBatch.wasm`: needed to
-  genenrate proofs using the client using snarkjs
+  generate proofs in the client using snarkjs
   
 ## Ceremony Phase 2
 
@@ -70,7 +70,7 @@ The last part of the ceremony is done with:
 make zkp/circuits/PaymentBatch_0001.zkey
 ```
 
-This `zkey` file is the proving key required byt the client to
+This `zkey` file is the proving key required by the client to
 generate proofs in snarkjs.
 
 ## Verification Key
@@ -89,8 +89,10 @@ make solana/programs/effect-payment/program/src/verifying_key.rs
 
 ## Alternative: quick start
 
-The quickest to get started, is do a small ceremony yourself and let
-the Makefile do all the work:
+The quickest way to get started, is do a small ceremony yourself and
+let the Makefile do all the work. First reduce the batch size in the
+[PaymentBatch.circom](zkp/circuits/PaymentBatch.circom) from 60 to 5,
+then run:
 
 ```
 export TAU_SIZE=12
@@ -101,7 +103,7 @@ This should take a few minutes and generate all the files for you.
 
 ## Testing the Solana contract
 
-Test suite in [../solana/tests/suites/payment.spec.ts]:
+Test suite is in [../solana/tests/suites/payment.spec.ts](../solana/tests/suites/payment.spec.ts):
 
 ```
 cd ../solana
