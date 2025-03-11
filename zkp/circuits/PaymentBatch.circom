@@ -10,6 +10,8 @@ template VerifyPaymentBatch(n) {
     signal output maxNonce;
     signal output totalAmount;
 
+    // TODO: make receiver a public signal, so we can check it in the
+    // solana program
     signal input receiver;
 
     signal input pubX;
