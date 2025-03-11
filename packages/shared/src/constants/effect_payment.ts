@@ -34,6 +34,10 @@ export const effect_payment = {
           "type": "u64"
         },
         {
+          "name": "total_amount",
+          "type": "u64"
+        },
+        {
           "name": "pub_x",
           "type": {
             "array": [

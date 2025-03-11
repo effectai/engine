@@ -40,6 +40,10 @@ export type EffectPayment = {
           "type": "u64"
         },
         {
+          "name": "totalAmount",
+          "type": "u64"
+        },
+        {
           "name": "pubX",
           "type": {
             "array": [

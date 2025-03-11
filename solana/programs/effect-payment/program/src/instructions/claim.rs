@@ -52,14 +52,13 @@ pub fn handler(
     ctx: Context<Claim>,
     min_nonce: u64,
     max_nonce: u64,
+    total_amount: u64,
     pub_x: [u8; 32],
     pub_y: [u8; 32],
     proof: [u8; 256]
     // authority: Pubkey
 ) -> Result<()> {
     // let mut highest_nonce = ctx.accounts.recipient_payment_data_account.nonce;
-
-    let total_amount: u64 = 19291;
 
     // unpack the snark proof components
     let proof_a: G1 = <G1 as CanonicalDeserialize>::deserialize_uncompressed(
@@ -76,6 +75,7 @@ pub fn handler(
     let public_inputs = [
 	u64_to_32_byte_be_array(min_nonce),
 	u64_to_32_byte_be_array(max_nonce),
+	u64_to_32_byte_be_array(total_amount),
 	pub_x,
 	pub_y
     ];

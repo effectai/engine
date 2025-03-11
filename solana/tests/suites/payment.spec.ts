@@ -54,42 +54,42 @@ describe("Payment Program", async () => {
 		const prvKey = randomBytes(32);
 		const pubKey = eddsa.prv2pub(prvKey);
 
-		const otherPrv = randomBytes(32);
-		const otherPub = eddsa.prv2pub(otherPrv);
-		
 		const managerAddress = payer.publicKey.toBuffer();
 
-		const transactionHash = poseidon([
-			int2hex(1),
+		const batchSize = 15;
+
+		// Generate dummy payments
+		const nonces = Array.from({length: batchSize}, (value, key) => int2hex(key));
+		const sigs = nonces.map((n) => eddsa.signPoseidon(prvKey, poseidon([
+			int2hex(n),
 			int2hex(12),
-		]);
-		const signature = eddsa.signPoseidon(prvKey, transactionHash);
+		])));
 
 		const proofInputs = {
 			pubX: eddsa.F.toObject(pubKey[0]),
     		pubY: eddsa.F.toObject(pubKey[1]),
-			nonce: int2hex(1),
-			payAmount: int2hex(12),
-    		R8x: eddsa.F.toObject(signature.R8[0]),
-    		R8y: eddsa.F.toObject(signature.R8[1]),
-    		S: signature.S
+			nonce: nonces,
+			payAmount: Array(batchSize).fill(int2hex(12)),
+    		R8x: sigs.map((s) => eddsa.F.toObject(s.R8[0])), 
+    		R8y: sigs.map((s) => eddsa.F.toObject(s.R8[1])), 
+    		S: sigs.map((s) => s.S)
 		}
-		
+
 		const { proof, publicSignals } = await snarkjs.groth16.fullProve(
 			proofInputs,
 			"../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
 			"../zkp/circuits/PaymentBatch_0001.zkey"      
 		)
 
-		// await program.methods
-		// 	.createPaymentPool([authority1.publicKey], new anchor.BN(10_000_000))
-		// 	.accounts({
-		// 		paymentAccount: paymentAccount.publicKey,
-		// 		mint,
-		// 		userTokenAccount: ata,
-		// 	})
-		// 	.signers([paymentAccount])
-		// 	.rpc();
+		await program.methods
+			.createPaymentPool([authority1.publicKey], new anchor.BN(10_000_000))
+			.accounts({
+				paymentAccount: paymentAccount.publicKey,
+				mint,
+				userTokenAccount: ata,
+			})
+			.signers([paymentAccount])
+			.rpc();
 
 		// const [payment] = createDummyPayments({
 		// 	n: 1,
@@ -146,12 +146,12 @@ describe("Payment Program", async () => {
 		// 		signature: Buffer.from(signature),
 		// 	},
 		// ]);
-		console.log(publicSignals);
 
 		const tx = await program.methods
 			.claim(
-				new BN('1'),
-				new BN('12'),
+				new BN(publicSignals[0]),
+				new BN(publicSignals[1]),
+				new BN(publicSignals[2]),
 				bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
 				bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
 				Array.from(convertProofToBytes(proof))
@@ -163,7 +163,6 @@ describe("Payment Program", async () => {
 				// recipientTokenAccount: ata,
 			})
 			.rpc();
-		console.log("Verified!", tx);
 		
 		// const tx = await program.methods
 		// 	.claim(
