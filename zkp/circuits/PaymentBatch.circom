@@ -10,6 +10,8 @@ template VerifyPaymentBatch(n) {
     signal output maxNonce;
     signal output totalAmount;
 
+    signal input receiver;
+
     signal input pubX;
     signal input pubY;
 
@@ -33,6 +35,7 @@ template VerifyPaymentBatch(n) {
 	payVerifier[i] = VerifyPayment();
 	payVerifier[i].payAmount <== payAmount[i];
 	payVerifier[i].nonce <== nonce[i];
+	payVerifier[i].receiver <== receiver;
 	payVerifier[i].pubX <== pubX;
 	payVerifier[i].pubY <== pubY;
 	payVerifier[i].R8x <== R8x[i];

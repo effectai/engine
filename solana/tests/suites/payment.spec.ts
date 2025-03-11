@@ -57,14 +57,21 @@ describe("Payment Program", async () => {
 
 		const batchSize = 60;
 
-		// Generate dummy payments
+		// Generate dummy payments. Payments consist of: `nonce,
+		// receiver_ata, amount` and are signed by the manager
+		// commited eddsa keypair.
+		//
+		// TODO: we are comitting to the ATA but perhaps better the
+		// worker account?
 		const nonces = Array.from({length: batchSize}, (value, key) => int2hex(key));
 		const sigs = nonces.map((n) => eddsa.signPoseidon(prvKey, poseidon([
 			int2hex(n),
+			int2hex(ata._bn),
 			int2hex(12),
 		])));
 
 		const proofInputs = {
+			receiver: int2hex(ata._bn),
 			pubX: eddsa.F.toObject(pubKey[0]),
 			pubY: eddsa.F.toObject(pubKey[1]),
 			nonce: nonces,
