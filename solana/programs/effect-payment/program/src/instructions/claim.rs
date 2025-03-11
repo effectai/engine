@@ -5,38 +5,36 @@ use effect_common::cpi;
 use effect_common::transfer_tokens_from_vault;
 use effect_payment_common::{Payment, PaymentAccount, RecipientPaymentDataAccount};
 use solana_program::instruction::Instruction;
-use solana_program::sysvar::instructions::{load_instruction_at_checked, ID as IX_ID};
 
 use crate::errors::PaymentErrors;
-use crate::utils::{sha256, verify_ed25519_ix};
 use crate::{id, vault_seed};
+
+use crate::verifying_key::{VERIFYINGKEY};
+type G1 = ark_bn254::g1::G1Affine;
+
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use groth16_solana::groth16::Groth16Verifier;
+
 #[derive(Accounts)]
 pub struct Claim<'info> {
-    #[account()]
-    pub payment_account: Account<'info, PaymentAccount>,
+    // #[account()]
+    // pub payment_account: Account<'info, PaymentAccount>,
 
-    #[account(mut, seeds = [payment_account.key().as_ref()], bump) ]
-    pub payment_vault_token_account: Account<'info, TokenAccount>,
+    // #[account(mut, seeds = [payment_account.key().as_ref()], bump) ]
+    // pub payment_vault_token_account: Account<'info, TokenAccount>,
 
-    #[account()]
-    pub recipient_token_account: Account<'info, TokenAccount>,
+    // #[account()]
+    // pub recipient_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut)]
-    pub recipient_payment_data_account: Account<'info, RecipientPaymentDataAccount>,
+    // #[account(mut)]
+    // pub recipient_payment_data_account: Account<'info, RecipientPaymentDataAccount>,
 
-    pub token_program: Program<'info, Token>,
+    // pub token_program: Program<'info, Token>,
 
     pub mint: Account<'info, Mint>,
 
-    #[account(mut)]
-    pub authority: Signer<'info>,
-
-    /// CHECK: The address check is needed because otherwise
-    /// the supplied Sysvar could be anything else.
-    /// The Instruction Sysvar has not been implemented
-    /// in the Anchor framework yet, so this is the safe approach.
-    #[account(address = IX_ID)]
-    pub ix_sysvar: AccountInfo<'info>,
+    // #[account(mut)]
+    // pub authority: Signer<'info>,
 }
 
 fn serialize_payment_message(payment: &Payment) -> Result<Vec<u8>> {
@@ -50,53 +48,80 @@ fn serialize_payment_message(payment: &Payment) -> Result<Vec<u8>> {
     Ok(message)
 }
 
-pub fn handler(ctx: Context<Claim>, payments: Vec<Payment>, authority: Pubkey) -> Result<()> {
-    //check if authority is part of the payment account authorities
-    require!(
-        ctx.accounts.payment_account.is_authorized(&authority),
-        PaymentErrors::Unauthorized
-    );
+pub fn handler(
+    ctx: Context<Claim>,
+    min_nonce: u64,
+    max_nonce: u64,
+    pub_x: [u8; 32],
+    pub_y: [u8; 32],
+    proof: [u8; 256]
+    // authority: Pubkey
+) -> Result<()> {
+    // let mut highest_nonce = ctx.accounts.recipient_payment_data_account.nonce;
 
-    let mut highest_nonce = ctx.accounts.recipient_payment_data_account.nonce;
+    let total_amount: u64 = 19291;
 
-    let (msgs, total_amount) =
-        payments
-            .into_iter()
-            .try_fold((Vec::new(), 0u64), |(mut msgs, acc), payment| {
-                require!(payment.amount > 0, PaymentErrors::InvalidPayment);
-                require!(
-                    payment.nonce >= highest_nonce,
-                    PaymentErrors::InvalidPayment
-                );
+    // unpack the snark proof components
+    let proof_a: G1 = <G1 as CanonicalDeserialize>::deserialize_uncompressed(
+	&*[&change_endianness(&proof[0..64])[..], &[0u8][..]].concat(),
+    )
+	.unwrap();
+    let mut proof_a_neg = [0u8; 65];
+    <G1 as CanonicalSerialize>::serialize_uncompressed(&-proof_a, &mut proof_a_neg[..])
+	.unwrap();
+    let proof_a: [u8; 64] = change_endianness(&proof_a_neg[..64]).try_into().unwrap();
+    let proof_b: [u8; 128] = proof[64..192].try_into().unwrap();
+    let proof_c: [u8; 64] = proof[192..256].try_into().unwrap();
 
-                highest_nonce = highest_nonce.max(payment.nonce);
-                msgs.push(sha256(&serialize_payment_message(&payment)?));
+    let public_inputs = [
+	u64_to_32_byte_be_array(min_nonce),
+	u64_to_32_byte_be_array(max_nonce),
+	pub_x,
+	pub_y
+    ];
 
-                Ok((msgs, acc + payment.amount))
-            })?;
+    // verify the proof is correct
+    let mut verifier =
+	Groth16Verifier::new(&proof_a, &proof_b, &proof_c, &public_inputs, &VERIFYINGKEY)
+	.unwrap();
 
-    // verify the message & signatures
-    let ix: Instruction = load_instruction_at_checked(0, &ctx.accounts.ix_sysvar)?;
-    verify_ed25519_ix(
-        &ix,
-        &[
-            authority.to_bytes().as_slice(),
-            authority.to_bytes().as_slice(),
-        ],
-        &msgs.iter().map(|m| m.as_slice()).collect::<Vec<_>>(),
-    )?;
+    let result = verifier.verify().unwrap();
 
-    // update the nonce
-    ctx.accounts.recipient_payment_data_account.nonce = highest_nonce;
-
-    // transfer the tokens to the recipient
-    transfer_tokens_from_vault!(
-        ctx.accounts,
-        payment_vault_token_account,
-        recipient_token_account,
-        &[&vault_seed!(ctx.accounts.payment_account.key(), id())],
-        total_amount
-    )?;
 
     Ok(())
+
+    // update the nonce
+    // ctx.accounts.recipient_payment_data_account.nonce = highest_nonce;
+
+    // transfer the tokens to the recipient
+    // transfer_tokens_from_vault!(
+    //     ctx.accounts,
+    //     payment_vault_token_account,
+    //     recipient_token_account,
+    //     &[&vault_seed!(ctx.accounts.payment_account.key(), id())],
+    //     total_amount
+    // )?;
+
+    // require!(
+    //	result == Ok(true),
+    //	PaymentErrors::SigVerificationFailed
+    // );
+
+}
+
+fn u64_to_32_byte_be_array(value: u64) -> [u8; 32] {
+    let mut result = [0u8; 32];
+    let value_bytes = value.to_be_bytes();
+    result[24..].copy_from_slice(&value_bytes);
+    result
+}
+
+fn change_endianness(bytes: &[u8]) -> Vec<u8> {
+    let mut vec = Vec::new();
+    for b in bytes.chunks(32) {
+	for byte in b.iter().rev() {
+	    vec.push(*byte);
+	}
+    }
+    vec
 }

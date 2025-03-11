@@ -27,65 +27,44 @@ export type EffectPayment = {
       ],
       "accounts": [
         {
-          "name": "paymentAccount",
-          "writable": true
-        },
-        {
-          "name": "paymentVaultTokenAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "paymentAccount"
-              }
-            ]
-          }
-        },
-        {
-          "name": "recipientTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "recipientPaymentDataAccount",
-          "writable": true
-        },
-        {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
           "name": "mint"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "ixSysvar",
-          "docs": [
-            "the supplied Sysvar could be anything else.",
-            "The Instruction Sysvar has not been implemented",
-            "in the Anchor framework yet, so this is the safe approach."
-          ],
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
         {
-          "name": "payments",
+          "name": "minNonce",
+          "type": "u64"
+        },
+        {
+          "name": "maxNonce",
+          "type": "u64"
+        },
+        {
+          "name": "pubX",
           "type": {
-            "vec": {
-              "defined": {
-                "name": "payment"
-              }
-            }
+            "array": [
+              "u8",
+              32
+            ]
           }
         },
         {
-          "name": "authority",
-          "type": "pubkey"
+          "name": "pubY",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "proof",
+          "type": {
+            "array": [
+              "u8",
+              256
+            ]
+          }
         }
       ]
     },
@@ -265,35 +244,6 @@ export type EffectPayment = {
     }
   ],
   "types": [
-    {
-      "name": "payment",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "id",
-            "type": {
-              "array": [
-                "u8",
-                16
-              ]
-            }
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "recipientTokenAccount",
-            "type": "pubkey"
-          },
-          {
-            "name": "nonce",
-            "type": "u32"
-          }
-        ]
-      }
-    },
     {
       "name": "paymentAccount",
       "type": {

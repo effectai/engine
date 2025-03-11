@@ -1,3 +1,6 @@
+import { newMemEmptyTrie, buildEddsa, buildPoseidon, buildBabyjub } from 'circomlibjs'
+import { BigNumber } from '@ethersproject/bignumber'
+import { randomBytes } from 'crypto'
 import { describe, it } from "vitest";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
@@ -11,119 +14,183 @@ import {
 	toAnchorPayment,
 } from "@effectai/protocol";
 
+import * as snarkjs from "snarkjs";
+
+const { BN } = anchor;
+
+const int2hex = (i) => '0x' + BigInt(i).toString(16);
+
 describe("Payment Program", async () => {
 	const program = anchor.workspace.EffectPayment as Program<EffectPayment>;
 	const { provider, wallet, payer, expectAnchorError } = useAnchor();
 	const authority1 = anchor.web3.Keypair.generate();
+	const eddsa = await buildEddsa();
 
-	it("can create a payment pool", async () => {
-		const { mint, ata } = await setup({ payer, provider });
+	// it("can create a payment pool", async () => {
+	// 	const { mint, ata } = await setup({ payer, provider });
 
-		const paymentAccount = anchor.web3.Keypair.generate();
+	// 	const paymentAccount = anchor.web3.Keypair.generate();
 
-		await program.methods
-			.createPaymentPool([authority1.publicKey], new anchor.BN(1000))
-			.accounts({
-				paymentAccount: paymentAccount.publicKey,
-				mint,
-				userTokenAccount: ata,
-			})
-			.signers([paymentAccount])
-			.rpc();
-	});
+	// 	await program.methods
+	// 		.createPaymentPool([authority1.publicKey], new anchor.BN(1000000000000000))
+	// 		.accounts({
+	// 			paymentAccount: paymentAccount.publicKey,
+	// 			mint,
+	// 			userTokenAccount: ata,
+	// 		})
+	// 		.signers([paymentAccount])
+	// 		.rpc();
+	// });
 
 	it("can claim a payment", async () => {
 		const { mint, ata } = await setup({ payer, provider });
 
 		const paymentAccount = anchor.web3.Keypair.generate();
 
-		await program.methods
-			.createPaymentPool([authority1.publicKey], new anchor.BN(10_000_000))
-			.accounts({
-				paymentAccount: paymentAccount.publicKey,
-				mint,
-				userTokenAccount: ata,
-			})
-			.signers([paymentAccount])
-			.rpc();
+		const poseidon = await buildPoseidon();
 
-		const [payment] = createDummyPayments({
-			n: 1,
-			mint: mint.toBase58(),
-			recipient: ata.toBase58(),
-			escrowAccount: paymentAccount.publicKey.toBase58(),
-		});
+		// TODO: we need the manager to commit to the following
+		// BabyJubjub key that he uses for signing.
+		const prvKey = randomBytes(32);
+		const pubKey = eddsa.prv2pub(prvKey);
 
-		const { signature, message } = await signPayment(
-			payment,
-			authority1.secretKey.slice(0, 32),
-		);
+		const otherPrv = randomBytes(32);
+		const otherPub = eddsa.prv2pub(otherPrv);
+		
+		const managerAddress = payer.publicKey.toBuffer();
 
-		const anchorPayment = toAnchorPayment(payment);
-
-		const [recipientPaymentDataAccount] =
-			await anchor.web3.PublicKey.findProgramAddress(
-				[
-					new anchor.web3.PublicKey(payment.recipient).toBuffer(),
-					mint.toBuffer(),
-				],
-				program.programId,
-			);
-
-		//check if recipient paymentDataAccount exists
-		await program.methods
-			.init()
-			.accounts({
-				paymentAccount: paymentAccount.publicKey,
-				mint,
-				recipientTokenAccount: ata,
-			})
-			.rpc();
-
-		const verifyIx = createEd25519Instruction([
-			{
-				publicKey: authority1.publicKey.toBuffer(),
-				message: message,
-				signature: Buffer.from(signature),
-			},
-			{
-				publicKey: authority1.publicKey.toBuffer(),
-				message: message,
-				signature: Buffer.from(signature),
-			},
-			{
-				publicKey: authority1.publicKey.toBuffer(),
-				message: message,
-				signature: Buffer.from(signature),
-			},
-			{
-				publicKey: authority1.publicKey.toBuffer(),
-				message: message,
-				signature: Buffer.from(signature),
-			},
+		const transactionHash = poseidon([
+			int2hex(1),
+			int2hex(12),
 		]);
+		const signature = eddsa.signPoseidon(prvKey, transactionHash);
 
-		console.log(verifyIx.data.byteLength);
+		const proofInputs = {
+			pubX: eddsa.F.toObject(pubKey[0]),
+    		pubY: eddsa.F.toObject(pubKey[1]),
+			nonce: int2hex(1),
+			payAmount: int2hex(12),
+    		R8x: eddsa.F.toObject(signature.R8[0]),
+    		R8y: eddsa.F.toObject(signature.R8[1]),
+    		S: signature.S
+		}
+		
+		const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+			proofInputs,
+			"../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
+			"../zkp/circuits/PaymentBatch_0001.zkey"      
+		)
+
+		// await program.methods
+		// 	.createPaymentPool([authority1.publicKey], new anchor.BN(10_000_000))
+		// 	.accounts({
+		// 		paymentAccount: paymentAccount.publicKey,
+		// 		mint,
+		// 		userTokenAccount: ata,
+		// 	})
+		// 	.signers([paymentAccount])
+		// 	.rpc();
+
+		// const [payment] = createDummyPayments({
+		// 	n: 1,
+		// 	mint: mint.toBase58(),
+		// 	recipient: ata.toBase58(),
+		// 	escrowAccount: paymentAccount.publicKey.toBase58(),
+		// });
+
+		// const { signature, message } = await signPayment(
+		// 	payment,
+		// 	authority1.secretKey.slice(0, 32),
+		// );
+
+		// const anchorPayment = toAnchorPayment(payment);
+
+		// const [recipientPaymentDataAccount] =
+		// 	await anchor.web3.PublicKey.findProgramAddress(
+		// 		[
+		// 			new anchor.web3.PublicKey(payment.recipient).toBuffer(),
+		// 			mint.toBuffer(),
+		// 		],
+		// 		program.programId,
+		// 	);
+
+		// //check if recipient paymentDataAccount exists
+		// await program.methods
+		// 	.init()
+		// 	.accounts({
+		// 		paymentAccount: paymentAccount.publicKey,
+		// 		mint,
+		// 		recipientTokenAccount: ata,
+		// 	})
+		// 	.rpc();
+
+		// const verifyIx = createEd25519Instruction([
+		// 	{
+		// 		publicKey: authority1.publicKey.toBuffer(),
+		// 		message: message,
+		// 		signature: Buffer.from(signature),
+		// 	},
+		// 	{
+		// 		publicKey: authority1.publicKey.toBuffer(),
+		// 		message: message,
+		// 		signature: Buffer.from(signature),
+		// 	},
+		// 	{
+		// 		publicKey: authority1.publicKey.toBuffer(),
+		// 		message: message,
+		// 		signature: Buffer.from(signature),
+		// 	},
+		// 	{
+		// 		publicKey: authority1.publicKey.toBuffer(),
+		// 		message: message,
+		// 		signature: Buffer.from(signature),
+		// 	},
+		// ]);
+		console.log(publicSignals);
 
 		const tx = await program.methods
 			.claim(
-				[anchorPayment, anchorPayment, anchorPayment, anchorPayment],
-				authority1.publicKey,
+				new BN('1'),
+				new BN('12'),
+				bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
+				bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
+				Array.from(convertProofToBytes(proof))
 			)
-			.preInstructions([verifyIx])
 			.accounts({
-				recipientPaymentDataAccount: recipientPaymentDataAccount,
-				paymentAccount: paymentAccount.publicKey,
+				// recipaientPaymentDataAccount: recipientPaymentDataAccount,
+				// paymentAccount: paymentAccount.publicKey,
 				mint,
-				recipientTokenAccount: ata,
+				// recipientTokenAccount: ata,
 			})
-			.transaction();
+			.rpc();
+		console.log("Verified!", tx);
+		
+		// const tx = await program.methods
+		// 	.claim(
+		// 		managerAddress,
+		// 		// eddsa.prv2pub(otherKey),
+		// 		Array.from(convertProofToBytes(proof)),
+		// 		authority1.publicKey,
+		// 	)
+		// 	.accounts({
+		// 		// recipaientPaymentDataAccount: recipientPaymentDataAccount,
+		// 		// paymentAccount: paymentAccount.publicKey,
+		// 		// mint,
+		// 		// recipientTokenAccount: ata,
+		// 	})
+		// 	.rpc();
 
-		tx.recentBlockhash = "ChUCpNSjkpodseadJzjW9RcH2APvG6GTJiAU9sDRNMjh";
-		tx.feePayer = payer.publicKey;
+        // const txDetails = await provider.connection.getTransaction(tx, {
+        //     commitment: "confirmed",
+        // });
+        // console.log("Transaction confirmed:", !!txDetails);
 
-		const serialized = tx.serialize({ requireAllSignatures: false });
-		console.log(serialized.byteLength);
+
+		// tx.recentBlockhash = "ChUCpNSjkpodseadJzjW9RcH2APvG6GTJiAU9sDRNMjh";
+		// tx.feePayer = payer.publicKey;
+
+		// const serialized = tx.serialize({ requireAllSignatures: false });
+		// console.log(serialized.byteLength);
 	});
 
 	it("can redeem mulitple payments", async () => {
@@ -179,3 +246,64 @@ describe("Payment Program", async () => {
 		// });
 	});
 });
+
+
+function bigIntToBytes32(num) {
+	// Convert BigInt to 32-byte hex string
+	let hex = BigInt(num).toString(16);
+	// Pad to 64 characters (32 bytes)
+	hex = hex.padStart(64, '0');
+	// Convert hex string to Uint8Array
+	const bytes = new Uint8Array(32);
+	for (let i = 0; i < 32; i++) {
+		bytes[i] = parseInt(hex.slice(i * 2, (i + 1) * 2), 16);
+	}
+	return bytes;
+}
+
+function concatenateUint8Arrays(arrays) {
+	// Calculate total length
+	const totalLength = arrays.reduce((sum, arr) => sum + arr.length, 0);
+	// Create new array with total length
+	const result = new Uint8Array(totalLength);
+	// Copy each array into result
+	let offset = 0;
+	for (const arr of arrays) {
+		result.set(arr, offset);
+		offset += arr.length;
+	}
+	return result;
+}
+
+function convertProofToBytes(proof: { pi_a: any[]; pi_b: any[][]; pi_c: any[]; }) {
+	// Convert pi_a components
+	const pi_a = [
+		bigIntToBytes32(proof.pi_a[0]),
+		bigIntToBytes32(proof.pi_a[1])
+	];
+
+	// Convert pi_b components (note the reversed order within pairs)
+	const pi_b = [
+		// First pair
+		bigIntToBytes32(proof.pi_b[0][1]),  // Reversed order
+		bigIntToBytes32(proof.pi_b[0][0]),
+		// Second pair
+		bigIntToBytes32(proof.pi_b[1][1]),  // Reversed order
+		bigIntToBytes32(proof.pi_b[1][0])
+	];
+
+	// Convert pi_c components
+	const pi_c = [
+		bigIntToBytes32(proof.pi_c[0]),
+		bigIntToBytes32(proof.pi_c[1])
+	];
+
+	// Concatenate all components
+	const allBytes = concatenateUint8Arrays([
+		...pi_a,
+		...pi_b,
+		...pi_c
+	]);
+
+	return allBytes;
+}
