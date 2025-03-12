@@ -6,7 +6,7 @@ import {
 	type TypedEventTarget,
 } from "@libp2p/interface";
 import { type Datastore, Key } from "interface-datastore";
-import { Payment } from "../../protocols/payment/pb/payment.js";
+import { Challenge } from "./pb/challenge.js";
 
 export interface ChallengeStoreComponents {
 	datastore: Datastore;
@@ -27,26 +27,26 @@ export class ChallengeStore {
 		return this.datastore.has(new Key(`/challenges/${taskId}`));
 	}
 
-	async get(taskId: string): Promise<Payment | undefined> {
-		return Payment.decode(
+	async get(taskId: string): Promise<Challenge | undefined> {
+		return Challenge.decode(
 			await this.datastore.get(new Key(`/challenges/${taskId}`)),
 		);
 	}
 
-	async put(task: Payment): Promise<Payment> {
+	async put(task: Challenge): Promise<Challenge> {
 		await this.datastore.put(
 			new Key(`/challenges/${task.id}`),
-			Payment.encode(task),
+			Challenge.encode(task),
 		);
 		return task;
 	}
 
-	async all(): Promise<Payment[]> {
+	async all(): Promise<Challenge[]> {
 		const tasks = [];
 		for await (const entry of this.datastore.query({
 			prefix: "/challenges/",
 		})) {
-			tasks.push(Payment.decode(entry.value));
+			tasks.push(Challenge.decode(entry.value));
 		}
 		return tasks;
 	}

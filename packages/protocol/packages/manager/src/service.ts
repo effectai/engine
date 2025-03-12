@@ -15,15 +15,17 @@ import type { Registrar, ConnectionManager } from "@libp2p/interface-internal";
 import type { Datastore } from "interface-datastore";
 import {
 	PaymentProtocolService,
-	WorkerQueue,
 	type TaskStore,
 	TaskProtocolService,
 	type Task,
 	TaskStatus,
 	extractPeerIdFromTaskResults,
 	ChallengeProtocolService,
-	workerQueue,
+	WorkerTaskQueue,
+	getOrCreateConnection,
+	Payment,
 } from "@effectai/protocol-core";
+import { Challenge } from "../../core/dist/protocols/challenge/pb/challenge.js";
 
 export interface ManagerServiceComponents {
 	registrar: Registrar;
@@ -48,7 +50,7 @@ export class ManagerService
 	private readonly taskService: TaskProtocolService;
 	private readonly challengeService: ChallengeProtocolService;
 	private readonly paymentService: PaymentProtocolService;
-	private readonly workerQueueService: WorkerQueue;
+	private readonly workerQueueService: WorkerTaskQueue;
 
 	constructor(components: ManagerServiceComponents) {
 		super();
@@ -56,19 +58,17 @@ export class ManagerService
 		this.taskService = new TaskProtocolService(this.components);
 		this.challengeService = new ChallengeProtocolService(this.components);
 		this.paymentService = new PaymentProtocolService(this.components);
-		this.workerQueueService = new WorkerQueue(this.components);
+		this.workerQueueService = new WorkerTaskQueue(this.components);
 	}
 
 	start(): void | Promise<void> {
-		//check if all mandatory components are available
-
 		this.taskService.addEventListener("task:received", async (taskInfo) => {
 			//get the task from our store and sync it.
 			//TODO:: only sync if checks are correct and valid
 			await this.taskService.storeTask(taskInfo.detail);
 
 			if (taskInfo.detail.result) {
-				await this.ackTask(taskInfo.detail);
+				await this.acknowledgeTaskCompletion(taskInfo.detail);
 			}
 		});
 
@@ -78,14 +78,47 @@ export class ManagerService
 				//add metadata on when the peer was discovered
 				await this.components.peerStore.merge(detail.id, {
 					metadata: {
+						lastChallengeSent: Buffer.from(new Date().toISOString()),
 						discoveredAt: Buffer.from(new Date().toISOString()),
 					},
 				});
-
-				const peer = await this.components.peerStore.get(detail.id);
-				console.log("Peer discovered", peer);
 			},
 		);
+
+		//every 1 minutes check if connected peers are still available
+		setInterval(async () => {
+			console.log("Checking for connected peers");
+			const peers = await this.components.peerStore.all();
+			for (const peer of peers) {
+				console.log("Checking peer", peer.id.toString());
+				try {
+					//check if last challenge was sent more than 5 minutes ago
+					const pb = await this.components.peerStore.get(peer.id);
+
+					pb.metadata = pb.metadata || {};
+					const lastChallengeSent = new Date(
+						new TextDecoder().decode(pb.metadata.get("lastChallengeSent")),
+					);
+
+					if (lastChallengeSent.getTime() + 60_000 > Date.now()) {
+						console.log("Last challenge sent less than 5 minutes ago");
+
+						//send a challenge
+						const challenge = Challenge.decode(
+							this.challengeService.createChallenge(),
+						);
+						await this.challengeService.sendChallenge(
+							peer.id.toString(),
+							challenge,
+						);
+					}
+				} catch (e) {
+					console.log(e);
+					console.log("Peer not available remove..", peer.id.toString());
+					this.components.peerStore.delete(peer.id);
+				}
+			}
+		}, 5000);
 	}
 
 	stop(): void | Promise<void> {
@@ -98,20 +131,25 @@ export class ManagerService
 		await this.processTask(task);
 	}
 
-	public async ackTask(task: Task) {
+	public async acknowledgeTaskCompletion(task: Task) {
 		const { peerId } = extractPeerIdFromTaskResults(task.result);
+
+		if (!peerId) {
+			throw new Error("PeerId not found in task result");
+		}
 
 		const result = await this.taskService.signTask(
 			task,
 			this.components.privateKey,
 		);
+
 		result.status = TaskStatus.COMPLETED;
-
-		//sync task with store
 		await this.taskService.storeTask(result);
+		await this.taskService.sendTask(peerId, result);
 
-		this.taskService.sendTask(peerId, result);
-		console.log("Task signed and acknowledged", result);
+		const payment = await this.generatePayment(peerId, result);
+		console.log("generated payment:", payment);
+		await this.paymentService.sendPayment(peerId, Payment.decode(payment));
 	}
 
 	public async processTask(task: Task) {
@@ -146,9 +184,12 @@ export class ManagerService
 		};
 	}
 
-	async generatePayment(peerId: string, task: Task) {}
+	async generatePayment(peerId: string, task: Task) {
+		return await this.paymentService.generatePayment(peerId, task);
+	}
 
-	async getQueue() {
+	getQueue() {
+		console.log("Getting queue");
 		return this.workerQueueService.getQueue();
 	}
 

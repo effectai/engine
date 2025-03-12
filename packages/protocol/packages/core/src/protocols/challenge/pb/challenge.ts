@@ -10,6 +10,7 @@ import type { Uint8ArrayList } from 'uint8arraylist'
 export interface Challenge {
   id: string
   task?: Task
+  answer: string
 }
 
 export namespace Challenge {
@@ -32,12 +33,18 @@ export namespace Challenge {
           Task.codec().encode(obj.task, w)
         }
 
+        if ((obj.answer != null && obj.answer !== '')) {
+          w.uint32(26)
+          w.string(obj.answer)
+        }
+
         if (opts.lengthDelimited !== false) {
           w.ldelim()
         }
       }, (reader, length, opts = {}) => {
         const obj: any = {
-          id: ''
+          id: '',
+          answer: ''
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -54,6 +61,10 @@ export namespace Challenge {
               obj.task = Task.codec().decode(reader, reader.uint32(), {
                 limits: opts.limits?.task
               })
+              break
+            }
+            case 3: {
+              obj.answer = reader.string()
               break
             }
             default: {

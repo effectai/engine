@@ -3,6 +3,9 @@ import {
 	type IncomingStreamData,
 	type Startable,
 	type PrivateKey,
+	type ComponentLogger,
+	Libp2pEvents,
+	TypedEventTarget,
 } from "@libp2p/interface";
 
 import { pbStream } from "it-protobuf-stream";
@@ -12,16 +15,24 @@ import {
 	MULTICODEC_TASK_PROTOCOL_VERSION,
 } from "./consts.js";
 import { peerIdFromString } from "@libp2p/peer-id";
-import { getActiveOutBoundConnections } from "../../utils.js";
 import { Payment } from "./pb/payment.js";
-import { Task } from "../task/index.js";
+import type { Task } from "../task/index.js";
 import { publicKeyFromRaw } from "@libp2p/crypto/keys";
+import { PaymentStore } from "./store.js";
+import type { Datastore } from "interface-datastore";
+import { getActiveOutBoundConnections } from "../../utils.js";
 
-export interface PaymentProtocolEvents {}
+export type PaymentProtocolEvents = {
+	"payment:sent": CustomEvent<Payment>;
+	"payment:received": CustomEvent<Payment>;
+};
 
 export interface PaymentProtocolComponents {
 	registrar: Registrar;
 	connectionManager: ConnectionManager;
+	datastore: Datastore;
+	events: TypedEventTarget<Libp2pEvents>;
+	logger: ComponentLogger;
 }
 
 export class PaymentProtocolService
@@ -29,15 +40,19 @@ export class PaymentProtocolService
 	implements Startable
 {
 	private readonly components: PaymentProtocolComponents;
+	private readonly store: PaymentStore;
 
 	constructor(components: PaymentProtocolComponents) {
 		super();
 		this.components = components;
+		this.store = new PaymentStore(this.components);
+		this.start();
 	}
 
 	async handleProtocol(data: IncomingStreamData): Promise<void> {
 		const pb = pbStream(data.stream).pb(Payment);
-		const task = await pb.read();
+		const payment = await pb.read();
+		this.safeDispatchEvent("payment:received", { detail: payment });
 	}
 
 	async start(): Promise<void> {
@@ -77,6 +92,37 @@ export class PaymentProtocolService
 		});
 
 		return payment;
+	}
+
+	async storePayment(payment: Payment): Promise<void> {
+		await this.store.put(payment);
+	}
+
+	async sendPayment(peerId: string, payment: Payment): Promise<void> {
+		try {
+			const peer = peerIdFromString(peerId);
+
+			let [connection] = await getActiveOutBoundConnections(
+				this.components.connectionManager,
+				peer,
+			);
+
+			if (!connection) {
+				connection =
+					await this.components.connectionManager.openConnection(peer);
+			}
+
+			const stream = await connection.newStream(
+				`/${MULTICODEC_TASK_PROTOCOL_NAME}/${MULTICODEC_TASK_PROTOCOL_VERSION}`,
+			);
+
+			const pb = pbStream(stream).pb(Payment);
+			await pb.write(payment);
+
+			this.safeDispatchEvent("payment:sent", { detail: payment });
+		} catch (e) {
+			console.error("Error sending task", e);
+		}
 	}
 
 	stop(): void | Promise<void> {

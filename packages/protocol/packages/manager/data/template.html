@@ -1,0 +1,69 @@
+<div id="app" style="text-align: center">
+  {{ message }}
+  <h1 class="title">{{title}}</h1>
+
+  <hr />
+
+  <!-- Wrap the image or canvas element with a block element (container) -->
+  <div class="mx-auto" style="max-width: 80%">
+    <img
+      id="image"
+      ref="image"
+      :src="imageSource"
+      style="display: block; max-width: 100%"
+    />
+  </div>
+
+  <button
+    @click.prevent="uploadAndSubmit"
+    class="button is-primary is-large"
+    :class="{'is-loading': btnLoading}"
+  >
+    Submit
+  </button>
+</div>
+
+<!-- 📚 Load in resources: [Bulma, Effect Network Styling]  -->
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+<link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+<script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
+<script type="module">
+  import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+  createApp({
+    data() {
+      return {
+        title: "Effect Network Image Labeler 🧐",
+        imageSource: "${image_url}",
+        tmpLabel: "",
+        labels: [],
+        btnLoading: false,
+        ipfsClient: null,
+      };
+    },
+    computed: {},
+    created() {},
+    mounted() {},
+    methods: {
+      async uploadAndSubmit() {
+        this.btnLoading = true;
+        try {
+          // console.log(IpfsApi)
+          parent.postMessage(
+            {
+              task: "submit",
+              values: {
+                data: "completed",
+              },
+            },
+            "*"
+          );
+        } catch (error) {
+          console.error("Failed to upload to IPFS", error);
+        }
+        this.btnLoading = false;
+      },
+    },
+  }).mount("#app");
+</script>

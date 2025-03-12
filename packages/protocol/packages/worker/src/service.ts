@@ -1,4 +1,6 @@
 import {
+	ChallengeProtocolService,
+	PaymentProtocolService,
 	TaskProtocolService,
 	TaskStatus,
 	type Task,
@@ -44,17 +46,42 @@ export class WorkerService
 {
 	private components: WorkerServiceComponents;
 	private taskService: TaskProtocolService;
+	private challengeService: ChallengeProtocolService;
+	private paymentService: PaymentProtocolService;
 
 	constructor(components: WorkerServiceComponents) {
 		super();
 		this.components = components;
 		this.taskService = new TaskProtocolService(this.components);
+		this.challengeService = new ChallengeProtocolService(this.components);
+		this.paymentService = new PaymentProtocolService(this.components);
 	}
 
 	start(): void | Promise<void> {
 		this.taskService.addEventListener("task:received", async (taskInfo) => {
 			await this.taskService.storeTask(taskInfo.detail);
+			this.safeDispatchEvent("task:received", { detail: taskInfo.detail.id });
 		});
+
+		this.paymentService.addEventListener(
+			"payment:received",
+			async (paymentInfo) => {
+				await this.paymentService.storePayment(paymentInfo.detail);
+				this.safeDispatchEvent("payment:received", {
+					detail: paymentInfo.detail.id,
+				});
+			},
+		);
+
+		this.challengeService.addEventListener(
+			"challenge:received",
+			async (challengeInfo) => {
+				await this.challengeService.storeChallenge(challengeInfo.detail);
+				this.safeDispatchEvent("challenge:received", {
+					detail: challengeInfo.detail.id,
+				});
+			},
+		);
 	}
 
 	stop(): void | Promise<void> {
@@ -70,6 +97,10 @@ export class WorkerService
 
 		//send ack back to the manager
 		await this.taskService.sendTask(task.manager, task);
+	}
+
+	async getChallenges() {
+		return await this.challengeService.getChallenges();
 	}
 
 	async rejectTask(taskId: string) {

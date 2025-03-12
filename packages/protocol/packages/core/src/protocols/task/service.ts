@@ -20,7 +20,6 @@ import { peerIdFromString } from "@libp2p/peer-id";
 import { getActiveOutBoundConnections } from "../../utils.js";
 import { TaskStore } from "./store.js";
 import type { Datastore } from "interface-datastore";
-import { WorkerQueue } from "./queue.js";
 
 export interface TaskProtocolEvents {
 	"task:received": CustomEvent<Task>;
@@ -36,10 +35,7 @@ export interface TaskProtocolComponents {
 	peerStore: PeerStore;
 }
 
-export class TaskProtocolService
-	extends TypedEventEmitter<TaskProtocolEvents>
-	implements Startable
-{
+export class TaskProtocolService extends TypedEventEmitter<TaskProtocolEvents> {
 	private readonly components: TaskProtocolComponents;
 	private readonly taskStore: TaskStore;
 
@@ -47,6 +43,7 @@ export class TaskProtocolService
 		super();
 		this.components = components;
 		this.taskStore = new TaskStore(this.components);
+		this.start();
 	}
 
 	async handleProtocol(data: IncomingStreamData): Promise<void> {
@@ -70,6 +67,7 @@ export class TaskProtocolService
 	}
 
 	async getTasks(): Promise<Task[]> {
+		console.log("getting tasks...");
 		return await this.taskStore.all();
 	}
 

@@ -20,6 +20,7 @@ import { peerIdFromString } from "@libp2p/peer-id";
 import { getActiveOutBoundConnections } from "../../utils.js";
 import { ChallengeStore, challengeStore } from "./store.js";
 import type { Datastore } from "interface-datastore";
+import { Task, TaskStatus } from "../task/index.js";
 
 export interface ChallengeProtocolEvents {
 	"challenge:received": CustomEvent<Challenge>;
@@ -45,9 +46,11 @@ export class ChallengeProtocolService
 		super();
 		this.components = components;
 		this.store = new ChallengeStore(this.components);
+		this.start();
 	}
 
 	async start(): Promise<void> {
+		console.log("ChallengeProtocolService start");
 		this.components.registrar.handle(
 			`/${MULTICODEC_TASK_PROTOCOL_NAME}/${MULTICODEC_TASK_PROTOCOL_VERSION}`,
 			this.handleChallenge.bind(this),
@@ -62,9 +65,15 @@ export class ChallengeProtocolService
 	async handleChallenge(data: IncomingStreamData): Promise<void> {
 		const pb = pbStream(data.stream).pb(Challenge);
 		const challenge = await pb.read();
-
-		//save challenge in the store.
 		this.safeDispatchEvent("challenge:received", { detail: challenge });
+	}
+
+	async storeChallenge(challenge: Challenge): Promise<void> {
+		await this.store.put(challenge);
+	}
+
+	async getChallenges(): Promise<Challenge[]> {
+		return this.store.all();
 	}
 
 	async sendChallenge(peerId: string, challenge: Challenge): Promise<void> {
@@ -85,6 +94,23 @@ export class ChallengeProtocolService
 
 		const pb = pbStream(stream).pb(Challenge);
 		await pb.write(challenge);
+	}
+
+	createChallenge(): Uint8Array {
+		return Challenge.encode({
+			id: "aa-bb-cc",
+			answer: "7",
+			task: {
+				id: "1234",
+				created: new Date().toISOString(),
+				manager: "",
+				reward: "500",
+				template: "what is 3 + 4?",
+				result: "",
+				signature: "",
+				status: TaskStatus.CREATED,
+			},
+		});
 	}
 }
 

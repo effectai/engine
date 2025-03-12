@@ -22,7 +22,7 @@
       </div>
       <div>
         <div class="flex flex-col">
-          <label class="text-sm">Last Healthcheck: </label
+          <label class="text-sm">Last Challenge: </label
           >{{ totalManagerUptime.formattedTime }}
         </div>
       </div>

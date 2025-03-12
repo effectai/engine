@@ -12,6 +12,8 @@ import type { Ed25519PrivateKey } from "@libp2p/interface";
 import { announcePeerDiscovery } from "@effectai/protocol-core";
 import { workerService } from "./service.js";
 
+export type WorkerNode = ReturnType<typeof createWorkerNode>;
+
 export const createWorkerNode = (
 	peers: string[],
 	privateKey?: Ed25519PrivateKey,

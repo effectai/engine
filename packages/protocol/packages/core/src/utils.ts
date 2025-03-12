@@ -32,3 +32,19 @@ export const extractPeerIdFromTaskResults = (taskResults: string) => {
 	const results = JSON.parse(taskResults);
 	return { peerId: results.worker };
 };
+
+export const getOrCreateConnection = async (
+	connectionManager: ConnectionManager,
+	peerId: PeerId,
+) => {
+	const connections = await getActiveOutBoundConnections(
+		connectionManager,
+		peerId,
+	);
+
+	if (connections.length > 0) {
+		return connections[0];
+	}
+
+	return await connectionManager.openConnection(peerId);
+};

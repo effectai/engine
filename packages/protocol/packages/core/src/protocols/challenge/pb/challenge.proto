@@ -5,7 +5,6 @@ import "../../task/pb/task.proto";
 message Challenge {
   string id = 1;
   Task task = 2;
-
-  //the answer of the challenge that has to match with the result string of the task.
+//the answer of the challenge that has to match with the result string of the task.
   string answer = 3;
 }
