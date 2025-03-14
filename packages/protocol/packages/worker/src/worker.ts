@@ -11,14 +11,20 @@ import * as filters from "@libp2p/websockets/filters";
 import type { Ed25519PrivateKey } from "@libp2p/interface";
 import { announcePeerDiscovery } from "@effectai/protocol-core";
 import { workerService } from "./service.js";
+import { IDBDatastore } from "datastore-idb";
 
 export type WorkerNode = ReturnType<typeof createWorkerNode>;
 
-export const createWorkerNode = (
+export const createWorkerNode = async (
 	peers: string[],
 	privateKey?: Ed25519PrivateKey,
 ) => {
+	const datastore = new IDBDatastore("/worker");
+	await datastore.open();
+
 	return createLibp2p({
+		start: false,
+		datastore: datastore,
 		...(privateKey && { privateKey }),
 		addresses: {
 			listen: ["/p2p-circuit", "/webrtc"],

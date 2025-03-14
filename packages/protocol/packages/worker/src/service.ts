@@ -128,6 +128,10 @@ export class WorkerService
 	async getTasks() {
 		return await this.taskService.getTasks();
 	}
+
+	async getPayments() {
+		return await this.paymentService.getPayments();
+	}
 }
 
 export function workerService(): (

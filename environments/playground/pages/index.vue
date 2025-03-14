@@ -22,7 +22,7 @@
       <div class="">
         <UTable
           :loading="taskStore === null"
-          :rows="taskStore || []"
+          :rows="taskStore"
           :loading-state="{
             icon: 'i-heroicons-arrow-path-20-solid',
             label: 'Waiting for tasks...',
@@ -31,7 +31,6 @@
           class="w-full"
           :columns="[
             { key: 'id', label: 'ID' },
-            { key: 'manager', label: 'Managed by' },
             { key: 'created', label: 'Created' },
             { key: 'status', label: 'Status' },
             { key: 'reward', label: 'Reward' },
@@ -60,8 +59,8 @@
 </template>
 
 <script setup lang="ts">
-import { type Task } from "@effectai/protocol";
 import { WalletMultiButton, useWallet } from "solana-wallets-vue";
+import { type Task } from "@effectai/protocol";
 
 definePageMeta({
 	layout: "worker",
@@ -113,14 +112,6 @@ const actions = (row) => [
 			icon: "i-heroicons-x-20-solid",
 			onClick: () => {
 				console.log("reject", row);
-			},
-		},
-		{
-			label: "Payout",
-			disabled: true,
-			icon: "i-heroicons-currency-dollar-20-solid",
-			onClick: () => {
-				console.log("complete", row);
 			},
 		},
 	],

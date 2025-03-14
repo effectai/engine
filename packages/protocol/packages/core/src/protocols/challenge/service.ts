@@ -50,7 +50,6 @@ export class ChallengeProtocolService
 	}
 
 	async start(): Promise<void> {
-		console.log("ChallengeProtocolService start");
 		this.components.registrar.handle(
 			`/${MULTICODEC_TASK_PROTOCOL_NAME}/${MULTICODEC_TASK_PROTOCOL_VERSION}`,
 			this.handleChallenge.bind(this),

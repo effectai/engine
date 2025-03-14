@@ -87,7 +87,6 @@ export class ManagerService
 
 		//every 1 minutes check if connected peers are still available
 		setInterval(async () => {
-			console.log("Checking for connected peers");
 			const peers = await this.components.peerStore.all();
 			for (const peer of peers) {
 				console.log("Checking peer", peer.id.toString());

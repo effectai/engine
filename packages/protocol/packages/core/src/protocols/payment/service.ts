@@ -63,6 +63,10 @@ export class PaymentProtocolService
 		);
 	}
 
+	async getPayments(): Promise<Payment[]> {
+		return await this.store.all();
+	}
+
 	async generatePayment(peerId: string, task: Task) {
 		//generate a payment from a completed task
 
@@ -80,7 +84,7 @@ export class PaymentProtocolService
 		const publicKey = publicKeyFromRaw(pid.publicKey.raw);
 
 		//TODO:: figure out what nonce?
-		const nonce = 1;
+		const nonce = 0;
 
 		const payment = Payment.encode({
 			id: task.id,

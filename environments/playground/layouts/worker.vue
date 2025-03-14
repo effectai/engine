@@ -29,11 +29,13 @@
             </div>
             <div class="text-sm flex gap-1">
               <label class="font-bold">Wallet:</label>
-              <span class="text-black">{{ publicKey }}</span>
+              <span class="text-black" v-if="publicKey">{{
+                trimAddress(publicKey.toString())
+              }}</span>
             </div>
             <div class="text-sm flex gap-1">
               <label class="font-bold">Node:</label>
-              <span class="text-black">{{ nodePublicKey }}</span>
+              <span class="text-black">{{ trimAddress(nodePublicKey) }}</span>
             </div>
             <div class="flex gap-2 items-center">
               <UButton color="black" @click="disconnect" class="button mt-5"
@@ -46,6 +48,8 @@
             :total-uptime-in-seconds="0"
             :total-manager-uptime-in-seconds="0"
           />
+
+          <ProgressCard />
         </div>
         <UModals />
         <div class="mt-5"><slot /></div>
@@ -57,14 +61,26 @@
 <script setup>
 import { useWallet } from "solana-wallets-vue";
 
-const { node, publicKey: nodePublicKey, connected } = await useWorkerNode();
-const { publicKey, disconnect } = useWallet();
+import { useLocalStorage } from "@vueuse/core";
+const {
+	node,
+	publicKey: nodePublicKey,
+	connected,
+	claimablePayments,
+} = await useWorkerNode();
+const { publicKey } = useWallet();
 
+const privateKey = useLocalStorage("privateKey", null);
 watchEffect(() => {
-	if (!publicKey.value) {
+	if (!privateKey) {
 		navigateTo("/login");
 	}
 });
+
+const disconnect = async () => {
+	privateKey.value = null;
+	navigateTo("/login");
+};
 
 node.value.services.worker.addEventListener(
 	"challenge:received",

@@ -48,7 +48,7 @@ export class PaymentStore extends TypedEventEmitter<PaymentStoreEvents> {
 
 	async all(): Promise<Payment[]> {
 		const tasks = [];
-		for await (const entry of this.datastore.query({ prefix: "/tasks/" })) {
+		for await (const entry of this.datastore.query({ prefix: "/payments/" })) {
 			tasks.push(Payment.decode(entry.value));
 		}
 		return tasks;

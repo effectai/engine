@@ -4,9 +4,9 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 export default defineNuxtConfig({
 	devtools: { enabled: true },
 	ssr: false,
-	modules: ["@nuxt/ui"],
+	modules: ["@nuxt/ui", "@vueuse/nuxt"],
 	plugins: ["~/plugins/wallets.ts"],
-	compatibilityDate: "2025-02-17",
+	compatibilityDate: "2024-11-01",
 	css: ["~/assets/css/main.css"],
 	runtimeConfig: {
 		public: {
@@ -17,3 +17,4 @@ export default defineNuxtConfig({
 		plugins: [nodePolyfills()],
 	},
 });
+
