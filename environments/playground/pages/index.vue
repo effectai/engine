@@ -2,19 +2,13 @@
   <div class="">
     <div class="my-5">
       <div>
-        <UModal v-if="activeTask" v-model="isOpen">
+        <UModal v-if="activeChallenge" v-model="isOpen">
           <div class="p-4">
-            <form @submit.prevent="handleSubmit">
-              <div
-                id="template"
-                class="prose"
-                v-html="activeTask.template"
-              ></div>
+            You have an incoming challenge from
 
-              <UButton type="submit" class="button mt-5" value="Submit">
-                Submit
-              </UButton>
-            </form>
+            <UButton type="submit" class="button mt-5" value="Submit">
+              Submit
+            </UButton>
           </div>
         </UModal>
       </div>
@@ -59,35 +53,25 @@
 </template>
 
 <script setup lang="ts">
-import { WalletMultiButton, useWallet } from "solana-wallets-vue";
-import { type Task } from "@effectai/protocol";
+import { Challenge, type Task } from "@effectai/protocol";
+const { node, taskStore, challengeStore } = await useWorkerNode();
 
 definePageMeta({
 	layout: "worker",
 	middleware: "auth",
 });
 
-const activeTask = ref<Task | null>(null);
+node.value.services.worker.addEventListener(
+	"challenge:received",
+	async ({ detail }) => {
+		console.log("Challenge received", detail);
+		activeChallenge.value = detail;
+		isOpen.value = true;
+	},
+);
+
+const activeChallenge = ref<Challenge | null>(null);
 const isOpen = ref(false);
-
-const { node, taskStore, challengeStore } = await useWorkerNode();
-
-const handleSubmit = async (e) => {
-	e.preventDefault();
-
-	if (!activeTask.value || !node.value) return;
-
-	await node.value.services.worker.completeTask(
-		activeTask.value.id,
-		JSON.stringify({
-			worker: node.value.peerId.toString(),
-			result: "completed",
-		}),
-	);
-
-	isOpen.value = false;
-	activeTask.value = null;
-};
 
 const router = useRouter();
 const actions = (row) => [

@@ -76,7 +76,11 @@ export class WorkerService
 		this.challengeService.addEventListener(
 			"challenge:received",
 			async (challengeInfo) => {
-				await this.challengeService.storeChallenge(challengeInfo.detail);
+				await this.challengeService.storeChallenge(
+					this.components.peerId,
+					challengeInfo.detail,
+				);
+
 				this.safeDispatchEvent("challenge:received", {
 					detail: challengeInfo.detail.id,
 				});
@@ -131,6 +135,29 @@ export class WorkerService
 
 	async getPayments() {
 		return await this.paymentService.getPayments();
+	}
+
+	async completeChallenge(challengeId: string, result: string) {
+		const challenge = await this.challengeService.getChallenge(
+			this.components.peerId,
+			challengeId,
+		);
+
+		if (!challenge || !challenge.task) {
+			throw new Error("Challenge not found in the store");
+		}
+
+		challenge.task.result = result;
+
+		await this.challengeService.storeChallenge(
+			this.components.peerId,
+			challenge,
+		);
+
+		await this.challengeService.sendChallenge(
+			challenge.task.manager,
+			challenge,
+		);
 	}
 }
 

@@ -72,6 +72,23 @@ export class ManagerService
 			}
 		});
 
+		this.challengeService.addEventListener(
+			"challenge:received",
+			async (challengeInfo) => {
+				//TODO:: check if the challenge is valid and can be processed
+
+				const result = JSON.parse(challengeInfo.detail.task?.result || "");
+
+				if (result.result === challengeInfo.detail.answer) {
+					//TODO:: handle passed challenge
+					console.log("Challenge passed");
+				} else {
+					//TODO:: handle failed challenge
+					console.log("Challenge failed");
+				}
+			},
+		);
+
 		this.components.events.addEventListener(
 			"peer:discovery",
 			async ({ detail }) => {
@@ -85,39 +102,76 @@ export class ManagerService
 			},
 		);
 
-		//every 1 minutes check if connected peers are still available
 		setInterval(async () => {
-			const peers = await this.components.peerStore.all();
-			for (const peer of peers) {
-				console.log("Checking peer", peer.id.toString());
+			await this.checkChallenges();
+		}, 60000);
+	}
+
+	public dueForChallenge(challenges: Challenge[]) {
+		if (challenges.length === 0) {
+			return true;
+		}
+
+		const lastChallengeEntry = challenges[challenges.length - 1];
+		const lastChallengeSent = new Date(lastChallengeEntry.createdAt); // Assuming the challenge has a timestamp field
+
+		return lastChallengeSent.getTime() + 5 * 60 * 1000 <= Date.now(); // 5 minutes ago
+	}
+
+	public async checkChallenges() {
+		console.log("Checking challenges");
+
+		const peers = await this.components.peerStore.all();
+
+		await Promise.allSettled(
+			peers.map(async (peer) => {
 				try {
-					//check if last challenge was sent more than 5 minutes ago
-					const pb = await this.components.peerStore.get(peer.id);
+					const challenges = await this.challengeService.getChallenges(peer.id);
 
-					pb.metadata = pb.metadata || {};
-					const lastChallengeSent = new Date(
-						new TextDecoder().decode(pb.metadata.get("lastChallengeSent")),
-					);
+					if (!challenges) return; // Handle unexpected null/undefined response
 
-					if (lastChallengeSent.getTime() + 60_000 > Date.now()) {
-						console.log("Last challenge sent less than 5 minutes ago");
+					if (this.dueForChallenge(challenges)) {
+						console.log("Due for challenge", peer.id);
 
-						//send a challenge
+						// Create and send challenge
 						const challenge = Challenge.decode(
 							this.challengeService.createChallenge(),
 						);
+
+						//set manager to current peerId
+
+						if (!challenge.task) {
+							throw new Error("Task not found in challenge");
+						}
+
+						challenge.task.manager = this.components.peerId.toString();
+
 						await this.challengeService.sendChallenge(
 							peer.id.toString(),
 							challenge,
 						);
+					} else if (challenges.length > 0) {
+						// Check last challenge response time
+						const lastChallengeEntry = challenges[challenges.length - 1];
+
+						const CHALLENGE_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+
+						if (
+							!lastChallengeEntry.task?.result &&
+							new Date(lastChallengeEntry.createdAt).getTime() +
+								CHALLENGE_TIMEOUT_MS <=
+								Date.now()
+						) {
+							console.log("Last challenge not responded to in time", peer.id);
+						}
 					}
 				} catch (e) {
-					console.log(e);
-					console.log("Peer not available remove..", peer.id.toString());
+					console.error(`Error processing peer ${peer.id}:`, e);
+					console.log("Removing peer from store:", peer.id);
 					this.components.peerStore.delete(peer.id);
 				}
-			}
-		}, 5000);
+			}),
+		);
 	}
 
 	stop(): void | Promise<void> {
@@ -147,12 +201,11 @@ export class ManagerService
 		await this.taskService.sendTask(peerId, result);
 
 		const payment = await this.generatePayment(peerId, result);
-		console.log("generated payment:", payment);
+
 		await this.paymentService.sendPayment(peerId, Payment.decode(payment));
 	}
 
 	public async processTask(task: Task) {
-		//check if taskStore is available  and peerQueue is available
 		const peerString = this.workerQueueService.dequeue();
 
 		if (!peerString) {

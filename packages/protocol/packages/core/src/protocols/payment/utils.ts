@@ -36,10 +36,7 @@ export const createDummyPayments = ({
 };
 
 export const toAnchorPayment = (payment: Payment) => {
-	const idBytes = Buffer.from(payment.id.replace(/-/g, ""), "hex");
-
 	return {
-		id: Array.from(idBytes),
 		amount: new anchor.BN(payment.amount),
 		recipientTokenAccount: new anchor.web3.PublicKey(payment.recipient),
 		nonce: Number(payment.nonce),
@@ -62,7 +59,6 @@ export const serializePayment = (payment: Payment) => {
 	const pmnt = toAnchorPayment(payment);
 
 	const buffer = Buffer.concat([
-		Buffer.from(pmnt.id),
 		Buffer.from(pmnt.amount.toArrayLike(Buffer, "le", 8)),
 		Buffer.from(pmnt.recipientTokenAccount.toBuffer()),
 		Buffer.from(new Uint8Array([pmnt.nonce])),

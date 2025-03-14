@@ -19,12 +19,15 @@ export const createWorkerNode = async (
 	peers: string[],
 	privateKey?: Ed25519PrivateKey,
 ) => {
-	const datastore = new IDBDatastore("/worker");
-	await datastore.open();
+	let datastore;
+	if (typeof window !== "undefined") {
+		const datastore = new IDBDatastore("/worker");
+		await datastore.open();
+	}
 
 	return createLibp2p({
 		start: false,
-		datastore: datastore,
+		...(typeof window !== "undefined" && { datastore }),
 		...(privateKey && { privateKey }),
 		addresses: {
 			listen: ["/p2p-circuit", "/webrtc"],

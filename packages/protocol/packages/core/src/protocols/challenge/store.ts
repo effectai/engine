@@ -23,28 +23,40 @@ export class ChallengeStore {
 		this.datastore = this.components.datastore;
 	}
 
-	async has(taskId: string): Promise<boolean> {
-		return this.datastore.has(new Key(`/challenges/${taskId}`));
+	async has(peerId: PeerId, challengeId: string): Promise<boolean> {
+		return this.datastore.has(new Key(`/challenges/${peerId}/${challengeId}`));
 	}
 
-	async get(taskId: string): Promise<Challenge | undefined> {
+	async get(
+		peerId: PeerId,
+		challengeId: string,
+	): Promise<Challenge | undefined> {
 		return Challenge.decode(
-			await this.datastore.get(new Key(`/challenges/${taskId}`)),
+			await this.datastore.get(new Key(`/challenges/${peerId}/${challengeId}`)),
 		);
 	}
 
-	async put(task: Challenge): Promise<Challenge> {
+	async put(peerId: PeerId, challenge: Challenge): Promise<Challenge> {
 		await this.datastore.put(
-			new Key(`/challenges/${task.id}`),
-			Challenge.encode(task),
+			new Key(`/challenges/${peerId.toString()}/${challenge.id}`),
+			Challenge.encode(challenge),
 		);
-		return task;
+		return challenge;
 	}
 
-	async all(): Promise<Challenge[]> {
+	async all(peerId?: PeerId): Promise<Challenge[]> {
 		const tasks = [];
+
+		const filters = peerId
+			? [
+					(entry: { key: { toString: () => string } }) =>
+						entry.key.toString().includes(peerId.toString()),
+				]
+			: [];
+
 		for await (const entry of this.datastore.query({
 			prefix: "/challenges/",
+			filters,
 		})) {
 			tasks.push(Challenge.decode(entry.value));
 		}

@@ -6,6 +6,7 @@ import {
 	type ComponentLogger,
 	type Libp2pEvents,
 	type TypedEventTarget,
+	type PeerId,
 } from "@libp2p/interface";
 
 import { pbStream } from "it-protobuf-stream";
@@ -21,6 +22,7 @@ import { getActiveOutBoundConnections } from "../../utils.js";
 import { ChallengeStore, challengeStore } from "./store.js";
 import type { Datastore } from "interface-datastore";
 import { Task, TaskStatus } from "../task/index.js";
+import { randomUUID } from "node:crypto";
 
 export interface ChallengeProtocolEvents {
 	"challenge:received": CustomEvent<Challenge>;
@@ -35,10 +37,7 @@ export interface ChallengeProtocolComponents {
 	events: TypedEventTarget<Libp2pEvents>;
 }
 
-export class ChallengeProtocolService
-	extends TypedEventEmitter<ChallengeProtocolEvents>
-	implements Startable
-{
+export class ChallengeProtocolService extends TypedEventEmitter<ChallengeProtocolEvents> {
 	private readonly components: ChallengeProtocolComponents;
 	private readonly store: ChallengeStore;
 
@@ -57,22 +56,25 @@ export class ChallengeProtocolService
 		);
 	}
 
-	stop(): void | Promise<void> {
-		//TODO:: save store to disk ?
-	}
-
 	async handleChallenge(data: IncomingStreamData): Promise<void> {
 		const pb = pbStream(data.stream).pb(Challenge);
 		const challenge = await pb.read();
 		this.safeDispatchEvent("challenge:received", { detail: challenge });
 	}
 
-	async storeChallenge(challenge: Challenge): Promise<void> {
-		await this.store.put(challenge);
+	async storeChallenge(peerId: PeerId, challenge: Challenge): Promise<void> {
+		await this.store.put(peerId, challenge);
 	}
 
-	async getChallenges(): Promise<Challenge[]> {
-		return this.store.all();
+	async getChallenges(peerId?: PeerId): Promise<Challenge[]> {
+		return this.store.all(peerId);
+	}
+
+	async getChallenge(
+		peerId: PeerId,
+		challengeId: string,
+	): Promise<Challenge | undefined> {
+		return this.store.get(peerId, challengeId);
 	}
 
 	async sendChallenge(peerId: string, challenge: Challenge): Promise<void> {
@@ -93,11 +95,15 @@ export class ChallengeProtocolService
 
 		const pb = pbStream(stream).pb(Challenge);
 		await pb.write(challenge);
+
+		await this.storeChallenge(peer, challenge);
+		this.safeDispatchEvent("challenge:sent", { detail: challenge });
 	}
 
 	createChallenge(): Uint8Array {
 		return Challenge.encode({
-			id: "aa-bb-cc",
+			id: randomUUID(),
+			createdAt: new Date().toISOString(),
 			answer: "7",
 			task: {
 				id: "1234",

@@ -9,6 +9,7 @@ import type { Uint8ArrayList } from 'uint8arraylist'
 
 export interface Challenge {
   id: string
+  createdAt: string
   task?: Task
   answer: string
 }
@@ -28,13 +29,18 @@ export namespace Challenge {
           w.string(obj.id)
         }
 
-        if (obj.task != null) {
+        if ((obj.createdAt != null && obj.createdAt !== '')) {
           w.uint32(18)
+          w.string(obj.createdAt)
+        }
+
+        if (obj.task != null) {
+          w.uint32(26)
           Task.codec().encode(obj.task, w)
         }
 
         if ((obj.answer != null && obj.answer !== '')) {
-          w.uint32(26)
+          w.uint32(34)
           w.string(obj.answer)
         }
 
@@ -44,6 +50,7 @@ export namespace Challenge {
       }, (reader, length, opts = {}) => {
         const obj: any = {
           id: '',
+          createdAt: '',
           answer: ''
         }
 
@@ -58,12 +65,16 @@ export namespace Challenge {
               break
             }
             case 2: {
+              obj.createdAt = reader.string()
+              break
+            }
+            case 3: {
               obj.task = Task.codec().decode(reader, reader.uint32(), {
                 limits: opts.limits?.task
               })
               break
             }
-            case 3: {
+            case 4: {
               obj.answer = reader.string()
               break
             }
