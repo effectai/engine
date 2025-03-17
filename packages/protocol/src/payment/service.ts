@@ -21,6 +21,7 @@ import type { Datastore } from "interface-datastore";
 
 import type { PublicKey } from "@solana/web3.js";
 import { LibP2pPublicKeyToSolanaPublicKey } from "../utils/utils.js";
+import { signPayment } from "./utils.js";
 
 export type PaymentProtocolEvents = {
 	"payment:sent": CustomEvent<SignedPayment>;
@@ -31,6 +32,7 @@ export type PaymentProtocolEvents = {
 };
 
 export interface PaymentProtocolComponents {
+	privateKey: PrivateKey;
 	registrar: Registrar;
 	connectionManager: ConnectionManager;
 	datastore: Datastore;
@@ -89,7 +91,7 @@ export class PaymentProtocolService extends TypedEventEmitter<PaymentProtocolEve
 	async generatePayment(
 		peerId: string,
 		amount: number,
-		nonce: number,
+		nonce: bigint,
 		paymentAccount: PublicKey,
 	): Promise<SignedPayment> {
 		try {
@@ -107,48 +109,24 @@ export class PaymentProtocolService extends TypedEventEmitter<PaymentProtocolEve
 				amount,
 				recipient,
 				paymentAccount: paymentAccount.toBase58(),
-				nonce: BigInt(nonce),
+				nonce,
 			});
 
 			//TODO:: sign the payment here..
 			// payment.signature = await
+			const signature = signPayment(
+				SignedPayment.decode(payment),
+				this.components.privateKey,
+			);
 
 			//store payment after we generate it.
-			await this.storePayment(peerId, payment);
+			await this.storePayment(peerId, SignedPayment.decode(payment));
 
-			return payment;
+			return SignedPayment.decode(payment);
 		} catch (e) {
 			//TODO:: handle error
 			console.error("Error generating payment", e);
 			throw e;
-		}
-	}
-
-	async sendPaymentMessage(
-		peerId: string,
-		paymentMessage: PaymentMessage,
-	): Promise<void> {
-		try {
-			const peer = peerIdFromString(peerId);
-
-			let [connection] = await getActiveOutBoundConnections(
-				this.components.connectionManager,
-				peer,
-			);
-
-			if (!connection) {
-				connection =
-					await this.components.connectionManager.openConnection(peer);
-			}
-
-			const stream = await connection.newStream(
-				`/${MULTICODEC_TASK_PROTOCOL_NAME}/${MULTICODEC_TASK_PROTOCOL_VERSION}`,
-			);
-
-			const pb = pbStream(stream).pb(PaymentMessage);
-			await pb.write(paymentMessage);
-		} catch (e) {
-			console.error("Error sending payment", e);
 		}
 	}
 }

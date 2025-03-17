@@ -19,7 +19,7 @@ export interface PeerQueueEvents {
 	"peer:added": CustomEvent<Peer>;
 }
 
-export class WorkerTaskQueue extends TypedEventEmitter<PeerQueueEvents> {
+export class WorkerQueue extends TypedEventEmitter<PeerQueueEvents> {
 	private queue: string[] = []; // Stores peerIds in a queue
 	private components: PeerQueueComponents;
 
@@ -60,6 +60,6 @@ export class WorkerTaskQueue extends TypedEventEmitter<PeerQueueEvents> {
 export function workerQueue(): (
 	// init: Partial<TaskManagerInit> = {}
 	components: PeerQueueComponents,
-) => WorkerTaskQueue {
+) => WorkerQueue {
 	return (components: PeerQueueComponents) => new WorkerTaskQueue(components);
 }

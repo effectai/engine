@@ -5,11 +5,12 @@ import {
 	buildPoseidon,
 	buildBabyjub,
 } from "circomlibjs";
-import * as anchor from "@coral-xyz/anchor";
-import { Payment } from "./pb/payment.js";
+// import * as anchor from "@coral-xyz/anchor";
+import { SignedPayment } from "./payment.js";
 import { ed25519 } from "@noble/curves/ed25519";
 import { Ed25519PrivateKey, PrivateKey } from "@libp2p/interface";
 import crypto, { randomUUID } from "node:crypto";
+import { PublicKey } from "@solana/web3.js";
 
 export const createDummyPayments = ({
 	n,
@@ -48,15 +49,25 @@ export const toAnchorPayment = (payment: Payment) => {
 	};
 };
 
+const int2hex = (i) => "0x" + BigInt(i).toString(16);
+
 export const signPayment = async (
-	serializedPayment: Uint8Array,
+	payment: SignedPayment,
 	privateKey: PrivateKey,
 ) => {
-	console.log("signing payment..");
-	// const message = hashPayment(serializedPayment);
-	//
-	// //TODO::
-	// const signature = edsa.sign(message, authority);
+	const eddsa = await buildEddsa();
+	const poseidon = await buildPoseidon();
+
+	const signature = await eddsa.signPoseidon(
+		privateKey.raw.slice(0, 32),
+		poseidon([
+			int2hex(payment.nonce),
+			int2hex(new PublicKey(payment.recipient)._bn),
+			int2hex(payment.amount),
+		]),
+	);
+
+	console.log("signature:", signature);
 	//
 	// return {
 	// 	message,

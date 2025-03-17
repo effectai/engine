@@ -22,7 +22,7 @@ message RequestNonce {
 }
 
 message NonceResponse {
-  string nonce = 1;
+  uint64 nonce = 1;
 }
 
 message PaymentAcknowledgment {

@@ -244,7 +244,7 @@ export namespace RequestNonce {
 }
 
 export interface NonceResponse {
-  nonce: string
+  nonce: bigint
 }
 
 export namespace NonceResponse {
@@ -257,9 +257,9 @@ export namespace NonceResponse {
           w.fork()
         }
 
-        if ((obj.nonce != null && obj.nonce !== '')) {
-          w.uint32(10)
-          w.string(obj.nonce)
+        if ((obj.nonce != null && obj.nonce !== 0n)) {
+          w.uint32(8)
+          w.uint64(obj.nonce)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -267,7 +267,7 @@ export namespace NonceResponse {
         }
       }, (reader, length, opts = {}) => {
         const obj: any = {
-          nonce: ''
+          nonce: 0n
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -277,7 +277,7 @@ export namespace NonceResponse {
 
           switch (tag >>> 3) {
             case 1: {
-              obj.nonce = reader.string()
+              obj.nonce = reader.uint64()
               break
             }
             default: {

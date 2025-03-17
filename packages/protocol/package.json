@@ -43,7 +43,8 @@
 		"uint8arraylist": "^2.4.8",
 		"uint8arrays": "^5.1.0",
 		"protons-runtime": "^5.5.0",
-		"@solana/web3.js": "^1.98.0"
+		"@solana/web3.js": "^1.98.0",
+		"circomlibjs": "^0.1.7"
 	},
 	"devDependencies": {
 		"turbo": "^2.4.2",

@@ -66,3 +66,15 @@ export const LibP2pPublicKeyToSolanaPublicKey = (
 
 	return new PublicKey(publicKey);
 };
+
+export const bigIntToUint8Array = (bigint) => {
+	const array = new Uint8Array(8); // 64-bit = 8 bytes
+	const view = new DataView(array.buffer);
+	view.setBigUint64(0, bigint, false); // false = Big-endian (MSB first)
+	return array;
+};
+
+export const uint8ArrayToBigInt = (uint8Array) => {
+	return new DataView(uint8Array.buffer).getBigUint64(0, false); // false = big-endian
+};
+// Convert back

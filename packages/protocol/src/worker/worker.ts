@@ -89,7 +89,11 @@ export class WorkerProtocolService
 		const workerMessage = await pb.read();
 
 		if (workerMessage.payment) {
-			this.handlePaymentMessage(pb, workerMessage.payment);
+			this.handlePaymentMessage(
+				data.connection.remotePeer.toString(),
+				pb,
+				workerMessage.payment,
+			);
 		} else if (workerMessage.task) {
 			this.handleTaskMessage(workerMessage.task);
 		}
@@ -100,6 +104,7 @@ export class WorkerProtocolService
 	}
 
 	async handlePaymentMessage(
+		remotePeer: string,
 		stream: MessageStream<WorkerMessage>,
 		paymentMessage: PaymentMessage,
 	) {
@@ -108,7 +113,7 @@ export class WorkerProtocolService
 			const nonceResponse: WorkerMessage = {
 				payment: {
 					nonceResponse: {
-						nonce: "500",
+						nonce: BigInt(500),
 					},
 				},
 			};
@@ -116,6 +121,12 @@ export class WorkerProtocolService
 			await stream.write(nonceResponse);
 		} else if (paymentMessage.nonceResponse) {
 		} else if (paymentMessage.signedPayment) {
+			console.log("recieved signed payment", paymentMessage.signedPayment);
+			//store payment
+			await this.paymentService.storePayment(
+				remotePeer,
+				paymentMessage.signedPayment,
+			);
 		}
 	}
 

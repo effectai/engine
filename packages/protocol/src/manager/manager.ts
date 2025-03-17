@@ -1,6 +1,6 @@
 import {
 	type ComponentLogger,
-	Connection,
+	type Connection,
 	type Libp2pEvents,
 	type PeerId,
 	type PeerStore,
@@ -26,8 +26,10 @@ import {
 } from "./consts.js";
 import { TaskProtocolService } from "../task/service.js";
 import {
+	bigIntToUint8Array,
 	getActiveOutBoundConnections,
 	getOrCreateConnection,
+	uint8ArrayToBigInt,
 } from "../utils/utils.js";
 import {
 	MULTICODEC_WORKER_PROTOCOL_NAME,
@@ -35,15 +37,17 @@ import {
 } from "../worker/consts.js";
 import { WorkerMessage } from "../worker/workerMessage.js";
 import {
-	PaymentMessage,
+	type PaymentMessage,
 	type Task,
 	ManagerMessage,
 	type TaskMessage,
 	TaskStatus,
 } from "./managerMessage.js";
 import { peerIdFromString } from "@libp2p/peer-id";
-import { WorkerTaskQueue } from "../task/queue.js";
+import { WorkerQueue } from "./queue.js";
 import { RequestNonce } from "../payment/payment.js";
+import { PaymentProtocolService } from "../payment/service.js";
+import { PublicKey } from "@solana/web3.js";
 
 export const int2hex = (i: string | number | bigint | boolean) =>
 	`0x${BigInt(i).toString(16)}`;
@@ -69,12 +73,14 @@ export class ManagerService
 	implements Startable
 {
 	private readonly taskService: TaskProtocolService;
-	private readonly workerQueue: WorkerTaskQueue;
+	private readonly workerQueue: WorkerQueue;
+	private readonly paymentService: PaymentProtocolService;
 
 	constructor(private components: ManagerServiceComponents) {
 		super();
+		this.paymentService = new PaymentProtocolService(components);
 		this.taskService = new TaskProtocolService(components);
-		this.workerQueue = new WorkerTaskQueue(components);
+		this.workerQueue = new WorkerQueue(components);
 	}
 
 	start(): void | Promise<void> {
@@ -102,7 +108,7 @@ export class ManagerService
 					//save nonce in metadata of peer
 					this.components.peerStore.merge(detail.peerId, {
 						metadata: {
-							nonce: Buffer.from(nonce),
+							nonce: bigIntToUint8Array(nonce),
 						},
 					});
 
@@ -116,14 +122,16 @@ export class ManagerService
 		const peer = peerIdFromString(peerId);
 		const peerData = await this.components.peerStore.get(peer);
 		const nonce = peerData.metadata.get("nonce");
-		console.log("nonce", nonce);
-		return null;
+
+		if (!nonce) return null;
+		//convert back to bigint
+		return uint8ArrayToBigInt(new Uint8Array(nonce));
 	}
 
 	async requestNonce(
 		peerId: string,
 		connection: Connection,
-	): Promise<string | null> {
+	): Promise<bigint | null> {
 		try {
 			const stream = await connection.newStream(
 				`/${MULTICODEC_WORKER_PROTOCOL_NAME}/${MULTICODEC_WORKER_PROTOCOL_VERSION}`,
@@ -148,6 +156,7 @@ export class ManagerService
 				console.log(
 					`Received nonce from ${peerId}: ${response.payment.nonceResponse.nonce}`,
 				);
+
 				return response.payment.nonceResponse.nonce;
 			}
 
@@ -175,7 +184,10 @@ export class ManagerService
 		if (message.payment) {
 			this.handlePaymentMessage(message.payment);
 		} else if (message.task) {
-			this.handleTaskMessage(message.task);
+			this.handleTaskMessage(
+				data.connection.remotePeer.toString(),
+				message.task,
+			);
 		}
 	}
 
@@ -202,7 +214,7 @@ export class ManagerService
 		return this.taskService.getTasks();
 	}
 
-	private async handleTaskMessage(taskMessage: TaskMessage) {
+	private async handleTaskMessage(peerId: string, taskMessage: TaskMessage) {
 		//retrieve task from task store
 		const task = await this.taskService.getTask(taskMessage.taskId);
 
@@ -222,13 +234,34 @@ export class ManagerService
 			task.status = TaskStatus.COMPLETED;
 			task.result = taskMessage.taskCompleted.result;
 			//TODO:: generate payment and send it.
-			this.generatePayment(task);
+			this.generatePayment(peerId, task);
 		}
 
 		await this.taskService.storeTask(task);
 	}
 
-	private async generatePayment(task: Task) {}
+	private async generatePayment(peerId: string, task: Task) {
+		//get current nonce for this peerId
+		const nonce = await this.retrieveNonce(peerId);
+
+		const payment = await this.paymentService.generatePayment(
+			peerId,
+			Number.parseFloat(task.reward),
+			nonce ?? BigInt(0),
+			new PublicKey("5cvmp5heVgetZxYhQuqyR6k3NNs8iv6YAChiJdj4dbh7"),
+		);
+
+		//sign the payment
+
+		//send payment to worker
+		const paymentMessage: WorkerMessage = {
+			payment: {
+				signedPayment: payment,
+			},
+		};
+
+		await this.sendWorkerMessage(peerId, paymentMessage);
+	}
 
 	private async handlePaymentMessage(payment: PaymentMessage) {}
 
