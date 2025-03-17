@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+message SignedPayment { 
+  // Amount to be payed out as float
+  float amount = 1;
+
+  // The recipient is the public key of worker node
+  string recipient = 2;
+
+  // The payment account is the public key of the escrow account holding the funds
+  string payment_account = 3;
+
+  // Nonce is a incremental number retrieved from the worker
+  uint64 nonce = 4;
+
+  // The signature is the signed payment data by the manager node
+  string signature = 5;
+}
+
+message RequestNonce {
+  string peerId = 1;
+}
+
+message NonceResponse {
+  string nonce = 1;
+}
+
+message PaymentAcknowledgment {
+  uint64 nonce = 1;
+  bool success = 2;
+}
+
+message PaymentMessage {
+  oneof message {
+    RequestNonce request_nonce = 1;
+    NonceResponse nonce_response = 2;
+    SignedPayment signed_payment = 3;
+    PaymentAcknowledgment payment_ack = 4;
+  }
+}

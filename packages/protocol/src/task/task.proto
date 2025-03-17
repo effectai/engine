@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+enum TaskStatus {
+  CREATED = 0;
+  ASSIGNED = 1;
+  ACCEPTED = 2;  // New status when worker accepts task
+  REJECTED = 3;  // New status when worker rejects task
+  COMPLETED = 4;
+}
+
+message Task {
+  string task_id = 1;
+  string manager = 2;
+  string created = 3;
+  string reward = 4;
+  string template = 5;
+  string result = 6;
+  string signature = 7;
+  TaskStatus status = 8;
+}
+
+message TaskAccepted {
+  string task_id = 1;   // Task being accepted
+  string worker = 2;    // Worker’s peer ID
+  string timestamp = 3; // When it was accepted
+}
+
+message TaskRejected {
+  string task_id = 1;   // Task being rejected
+  string worker = 2;    // Worker’s peer ID
+  string reason = 3;    // Optional reason for rejection
+  string timestamp = 4; // When it was rejected
+}
+
+message TaskCompleted {
+  string task_id = 1;   // Task being completed
+  string worker = 2;    // Worker’s peer ID
+  string result = 3;    // Result of the task
+  string timestamp = 4; // When it was completed
+}
+
+message TaskMessage {
+  string task_id = 1;
+  oneof message {
+    Task task = 2;
+    TaskAccepted task_accepted = 3;
+    TaskRejected task_rejected = 4;
+    TaskCompleted task_completed = 5;
+  }
+}

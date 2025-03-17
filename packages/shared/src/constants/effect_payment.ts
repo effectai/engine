@@ -1,5 +1,5 @@
 export const effect_payment = {
-  "address": "76EdaKZCL7vxbUvoV6NLoFSCnohU95fcUwoJNcxwsRvC",
+  "address": "B8MtDgxNAyiEPTtzMewkLYXKEWorZqP1VTg9yF8DjCDN",
   "metadata": {
     "name": "effect_payment",
     "version": "0.1.0",
@@ -21,8 +21,7 @@ export const effect_payment = {
       ],
       "accounts": [
         {
-          "name": "payment_account",
-          "writable": true
+          "name": "payment_account"
         },
         {
           "name": "payment_vault_token_account",
@@ -55,31 +54,47 @@ export const effect_payment = {
           "name": "authority",
           "writable": true,
           "signer": true
-        },
-        {
-          "name": "ix_sysvar",
-          "docs": [
-            "the supplied Sysvar could be anything else.",
-            "The Instruction Sysvar has not been implemented",
-            "in the Anchor framework yet, so this is the safe approach."
-          ],
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
         {
-          "name": "payments",
+          "name": "min_nonce",
+          "type": "u32"
+        },
+        {
+          "name": "max_nonce",
+          "type": "u32"
+        },
+        {
+          "name": "total_amount",
+          "type": "u64"
+        },
+        {
+          "name": "pub_x",
           "type": {
-            "vec": {
-              "defined": {
-                "name": "Payment"
-              }
-            }
+            "array": [
+              "u8",
+              32
+            ]
           }
         },
         {
-          "name": "authority",
-          "type": "pubkey"
+          "name": "pub_y",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "proof",
+          "type": {
+            "array": [
+              "u8",
+              256
+            ]
+          }
         }
       ]
     },
@@ -259,35 +274,6 @@ export const effect_payment = {
     }
   ],
   "types": [
-    {
-      "name": "Payment",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "id",
-            "type": {
-              "array": [
-                "u8",
-                16
-              ]
-            }
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "recipient_token_account",
-            "type": "pubkey"
-          },
-          {
-            "name": "nonce",
-            "type": "u32"
-          }
-        ]
-      }
-    },
     {
       "name": "PaymentAccount",
       "type": {

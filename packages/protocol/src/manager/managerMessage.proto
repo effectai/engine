@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "../payment/payment.proto";
+import "../task/task.proto";
+
+message ManagerMessage {
+  oneof message {
+    TaskMessage task = 1;
+    PaymentMessage payment = 2;
+  }
+}

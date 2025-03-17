@@ -5,6 +5,7 @@ mod instructions;
 mod macros;
 mod security;
 mod utils;
+mod verifying_key;
 
 use effect_payment_common::Payment;
 use effect_payment_common::EFFECT_PAYMENT;
@@ -17,19 +18,28 @@ pub mod effect_payment {
 
     use super::*;
 
-    pub fn claim(ctx: Context<Claim>, payments: Vec<Payment>, authority: Pubkey) -> Result<()> {
-        claim::handler(ctx, payments, authority)
+    pub fn claim(
+	ctx: Context<Claim>,
+	min_nonce: u32,
+	max_nonce: u32,
+	total_amount: u64,
+	pub_x: [u8; 32],
+	pub_y: [u8; 32],
+	proof: [u8; 256]
+	// authority: Pubkey
+    ) -> Result<()> {
+	claim::handler(ctx, min_nonce, max_nonce, total_amount, pub_x, pub_y, proof)
     }
 
     pub fn create_payment_pool(
-        ctx: Context<Create>,
-        authorities: Vec<Pubkey>,
-        amount: u64,
+	ctx: Context<Create>,
+	authorities: Vec<Pubkey>,
+	amount: u64,
     ) -> Result<()> {
-        create::handler(ctx, authorities, amount)
+	create::handler(ctx, authorities, amount)
     }
 
     pub fn init(ctx: Context<Init>) -> Result<()> {
-        init::handler(ctx)
+	init::handler(ctx)
     }
 }
