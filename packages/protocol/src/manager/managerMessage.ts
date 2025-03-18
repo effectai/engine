@@ -81,7 +81,7 @@ export namespace ManagerMessage {
 }
 
 export interface Payment {
-  amount: number
+  amount: bigint
   recipient: string
   paymentAccount: string
   nonce: bigint
@@ -98,9 +98,9 @@ export namespace Payment {
           w.fork()
         }
 
-        if ((obj.amount != null && obj.amount !== 0)) {
-          w.uint32(13)
-          w.float(obj.amount)
+        if ((obj.amount != null && obj.amount !== 0n)) {
+          w.uint32(8)
+          w.uint64(obj.amount)
         }
 
         if ((obj.recipient != null && obj.recipient !== '')) {
@@ -128,7 +128,7 @@ export namespace Payment {
         }
       }, (reader, length, opts = {}) => {
         const obj: any = {
-          amount: 0,
+          amount: 0n,
           recipient: '',
           paymentAccount: '',
           nonce: 0n
@@ -141,7 +141,7 @@ export namespace Payment {
 
           switch (tag >>> 3) {
             case 1: {
-              obj.amount = reader.float()
+              obj.amount = reader.uint64()
               break
             }
             case 2: {
@@ -336,7 +336,7 @@ export interface ProofRequest {
 export namespace ProofRequest {
   export interface PaymentProof {
     signature?: PaymentSignature
-    amount: number
+    amount: bigint
     nonce: bigint
     recipient: string
   }
@@ -356,9 +356,9 @@ export namespace ProofRequest {
             PaymentSignature.codec().encode(obj.signature, w)
           }
 
-          if ((obj.amount != null && obj.amount !== 0)) {
-            w.uint32(21)
-            w.float(obj.amount)
+          if ((obj.amount != null && obj.amount !== 0n)) {
+            w.uint32(16)
+            w.uint64(obj.amount)
           }
 
           if ((obj.nonce != null && obj.nonce !== 0n)) {
@@ -376,7 +376,7 @@ export namespace ProofRequest {
           }
         }, (reader, length, opts = {}) => {
           const obj: any = {
-            amount: 0,
+            amount: 0n,
             nonce: 0n,
             recipient: ''
           }
@@ -394,7 +394,7 @@ export namespace ProofRequest {
                 break
               }
               case 2: {
-                obj.amount = reader.float()
+                obj.amount = reader.uint64()
                 break
               }
               case 3: {
@@ -1099,7 +1099,7 @@ export interface Task {
   taskId: string
   manager: string
   created: string
-  reward: string
+  reward: bigint
   template: string
   result: string
   signature: string
@@ -1131,9 +1131,9 @@ export namespace Task {
           w.string(obj.created)
         }
 
-        if ((obj.reward != null && obj.reward !== '')) {
-          w.uint32(34)
-          w.string(obj.reward)
+        if ((obj.reward != null && obj.reward !== 0n)) {
+          w.uint32(32)
+          w.uint64(obj.reward)
         }
 
         if ((obj.template != null && obj.template !== '')) {
@@ -1164,7 +1164,7 @@ export namespace Task {
           taskId: '',
           manager: '',
           created: '',
-          reward: '',
+          reward: 0n,
           template: '',
           result: '',
           signature: '',
@@ -1190,7 +1190,7 @@ export namespace Task {
               break
             }
             case 4: {
-              obj.reward = reader.string()
+              obj.reward = reader.uint64()
               break
             }
             case 5: {

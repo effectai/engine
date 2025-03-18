@@ -225,17 +225,45 @@ export class ManagerService
 
 			await stream.write(message);
 		} else if (payment.payoutRequest) {
-			console.log("payoutRequest", payment.payoutRequest);
 			const peer = peerIdFromString(remotePeer);
 			const peerData = await this.components.peerStore.get(peer);
-			const timeSinceLastPayout =
-				peerData.metadata.get("timeSinceLastPayout") ?? 0;
+			const timeSinceLastPayout = peerData.metadata.get("timeSinceLastPayout");
 
-			//convert buffered timestamp to number
-			const recoveredTimestamp = timeSinceLastPayout.readUInt32BE(0);
-			console.log("Recovered Timestamp:", recoveredTimestamp);
+			if (!timeSinceLastPayout) {
+				console.error("No timeSinceLastPayout found");
+				return;
+			}
 
-			console.log("timeSinceLastPayout", timeSinceLastPayout);
+			const recoveredTimestamp = new DataView(
+				new Uint8Array(timeSinceLastPayout).buffer,
+			).getUint32(0, false);
+
+			const payoutTimeInSeconds =
+				Math.floor(new Date().getTime() / 1000) - recoveredTimestamp;
+
+			const payment = await this.generatePayment(
+				remotePeer,
+				BigInt(payoutTimeInSeconds * 1_000_00),
+			);
+
+			const timestamp = Math.floor(new Date().getTime() / 1000);
+			const buffer = Buffer.alloc(4);
+			buffer.writeUInt32BE(timestamp, 0);
+
+			//update last payout time
+			await this.components.peerStore.merge(peer, {
+				metadata: {
+					timeSinceLastPayout: buffer,
+				},
+			});
+
+			if (!payment) {
+				//TODO:: error logging
+				console.error("error generating payment");
+				return;
+			}
+
+			await stream.write(payment);
 		}
 	}
 
@@ -283,22 +311,35 @@ export class ManagerService
 			task.result = taskMessage.taskCompleted.result;
 
 			//TODO:: generate payment and send it.
-			this.generatePayment(peerId, task);
+			const paymentMessage = await this.generatePayment(peerId, task.reward);
+
+			if (!paymentMessage) {
+				//TODO:: LOGGING/ERROR HANDLING
+				console.error("couldnt generate payment..");
+				return;
+			}
+
+			await this.sendWorkerMessage(peerId, paymentMessage);
 		}
 
 		await this.taskService.storeTask(task);
 	}
 
-	private async generatePayment(peerId: string, task: Task) {
+	private async generatePayment(peerId: string, amount: bigint) {
 		//get current nonce for this peerId
 		const nonce = await this.retrieveNonce(peerId);
 
 		const payment = await this.paymentService.generatePayment(
 			peerId,
-			Number.parseFloat(task.reward),
+			amount,
 			nonce ?? BigInt(0),
 			new PublicKey("5cvmp5heVgetZxYhQuqyR6k3NNs8iv6YAChiJdj4dbh7"),
 		);
+
+		if (!nonce) {
+			console.error("No nonce found for worker, skipping payment..");
+			return;
+		}
 
 		// add 1 to worker nonce
 		await this.components.peerStore.merge(peerIdFromString(peerId), {
@@ -314,7 +355,7 @@ export class ManagerService
 			},
 		};
 
-		await this.sendWorkerMessage(peerId, paymentMessage);
+		return paymentMessage;
 	}
 
 	private async generatePaymentProof(message: PaymentMessage["proofRequest"]) {

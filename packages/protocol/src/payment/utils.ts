@@ -50,6 +50,7 @@ export const createDummyPayments = ({
 // };
 
 const int2hex = (i) => "0x" + BigInt(i).toString(16);
+
 export const signPayment = async (payment: Payment, privateKey: PrivateKey) => {
 	const eddsa = await buildEddsa();
 	const poseidon = await buildPoseidon();

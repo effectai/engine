@@ -7,7 +7,7 @@ import { TaskStatus } from "../src/task/task.js";
 
 const dummyTask = (id: string) => ({
 	taskId: id,
-	reward: "500",
+	reward: 5_000_000n,
 	manager: "",
 	created: new Date().toISOString(),
 	signature: "",
@@ -110,7 +110,12 @@ describe("Libp2p", () => {
 				}
 
 				await w1.services.worker.requestPayout(manager1.peerId);
-				await new Promise((resolve) => setTimeout(resolve, 3000));
+				await new Promise((resolve) => setTimeout(resolve, 5000));
+
+				await w1.services.worker.requestPayout(manager1.peerId);
+				await new Promise((resolve) => setTimeout(resolve, 5000));
+
+				await w1.services.worker.requestPayout(manager1.peerId);
 
 				await manager1.stop();
 				await Promise.all([w1.stop()]);

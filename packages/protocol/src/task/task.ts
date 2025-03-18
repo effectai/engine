@@ -32,7 +32,7 @@ export interface Task {
   taskId: string
   manager: string
   created: string
-  reward: string
+  reward: bigint
   template: string
   result: string
   signature: string
@@ -64,9 +64,9 @@ export namespace Task {
           w.string(obj.created)
         }
 
-        if ((obj.reward != null && obj.reward !== '')) {
-          w.uint32(34)
-          w.string(obj.reward)
+        if ((obj.reward != null && obj.reward !== 0n)) {
+          w.uint32(32)
+          w.uint64(obj.reward)
         }
 
         if ((obj.template != null && obj.template !== '')) {
@@ -97,7 +97,7 @@ export namespace Task {
           taskId: '',
           manager: '',
           created: '',
-          reward: '',
+          reward: 0n,
           template: '',
           result: '',
           signature: '',
@@ -123,7 +123,7 @@ export namespace Task {
               break
             }
             case 4: {
-              obj.reward = reader.string()
+              obj.reward = reader.uint64()
               break
             }
             case 5: {

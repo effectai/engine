@@ -2,7 +2,7 @@ syntax = "proto3";
 
 message Payment { 
   // Amount to be payed out as float
-  float amount = 1;
+  uint64 amount = 1;
 
   // The recipient is the public key of worker node
   string recipient = 2;
@@ -30,7 +30,7 @@ message PaymentSignature {
 message ProofRequest {
   message PaymentProof {
     PaymentSignature signature = 1;
-    float amount = 2;
+    uint64 amount = 2;
     uint64 nonce = 3;
     string recipient = 4;
   }

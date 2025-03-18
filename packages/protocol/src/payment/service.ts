@@ -20,11 +20,7 @@ import { PaymentStore } from "./store.js";
 import type { Datastore } from "interface-datastore";
 
 import type { PublicKey } from "@solana/web3.js";
-import {
-	bigIntToUint32Array,
-	bigIntToUint8Array,
-	LibP2pPublicKeyToSolanaPublicKey,
-} from "../utils/utils.js";
+import { LibP2pPublicKeyToSolanaPublicKey } from "../utils/utils.js";
 import { signPayment } from "./utils.js";
 
 export type PaymentProtocolEvents = {
@@ -64,7 +60,7 @@ export class PaymentProtocolService extends TypedEventEmitter<PaymentProtocolEve
 
 	async generatePayment(
 		peerId: string,
-		amount: number,
+		amount: bigint,
 		nonce: bigint,
 		paymentAccount: PublicKey,
 	): Promise<Payment> {
