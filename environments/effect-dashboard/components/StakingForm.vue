@@ -26,7 +26,7 @@
           <div class="bg-white/5 rounded-lg py-4 px-2 space-y-2">
             <div class="flex justify-between">
               <span class="text-gray-400">Total Staked Tokens</span
-              ><span>{{ stakeAmountFormatted }} EFFECT</span>
+              ><span>{{ formatNumber(stakeAmountFormatted) || 0 }} EFFECT</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-400">Available Balance</span
@@ -51,76 +51,75 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed } from "vue";
+import { ref, computed } from "vue";
 
-  const emit = defineEmits(["submit"]);
+const emit = defineEmits(["submit"]);
 
-  const { useGetEfxBalanceQuery } = useSolanaWallet();
-  const { data: availableBalance } = useGetEfxBalanceQuery();
+const { useGetEfxBalanceQuery } = useSolanaWallet();
+const { data: availableBalance } = useGetEfxBalanceQuery();
 
-  const { useStake, useTopUp, useGetStakeAccount } = useStakingProgram();
+const { useStake, useTopUp, useGetStakeAccount } = useStakingProgram();
 
-  const {
-    data: stakeAccount,
-    error: stakeError,
-    amountFormatted: stakeAmountFormatted,
-    refetch,
-  } = useGetStakeAccount();
+const {
+	data: stakeAccount,
+	amountFormatted: stakeAmountFormatted,
+	refetch,
+} = useGetStakeAccount();
 
-  const stakeAmount: Ref<number> = ref(0);
+const stakeAmount: Ref<number> = ref(0);
 
-  type Maybe<T> = T | null | undefined;
-  const unstakeDays: Ref<Maybe<number>> = ref(30);
+type Maybe<T> = T | null | undefined;
+const unstakeDays: Ref<Maybe<number>> = ref(30);
 
-  const error = ref("");
-  const isValid = computed(() => {
-    if (!stakeAmount.value || !availableBalance.value || !unstakeDays.value) {
-      return false;
-    }
-    const amount = stakeAmount.value;
-    return amount > 0 && amount <= availableBalance.value.value;
-  });
+const error = ref("");
+const isValid = computed(() => {
+	if (!stakeAmount.value || !availableBalance.value || !unstakeDays.value) {
+		return false;
+	}
+	const amount = stakeAmount.value;
+	return amount > 0 && amount <= availableBalance.value.value;
+});
 
-  const setMaxAmount = () => {
-    if (!availableBalance.value) return;
-    stakeAmount.value = availableBalance.value.value;
-    error.value = "";
-  };
+const setMaxAmount = () => {
+	if (!availableBalance.value) return;
+	stakeAmount.value = availableBalance.value.value;
+	error.value = "";
+};
 
-  const { mutateAsync: stake, isPending } = useStake();
-  const { mutateAsync: topup } = useTopUp();
-  const toast = useToast();
+const { mutateAsync: stake, isPending } = useStake();
+const { mutateAsync: topup } = useTopUp();
+const toast = useToast();
 
-  const handleSubmit = async () => {
-    try {
-      if (!isValid.value || !unstakeDays.value) {
-        error.value = "Invalid stake amount";
-        return;
-      }
+const handleSubmit = async () => {
+	try {
+		if (!isValid.value || !unstakeDays.value) {
+			error.value = "Invalid stake amount";
+			return;
+		}
 
-      error.value = "";
+		error.value = "";
 
-      stakeAccount.value
-        ? await topup({
-            stakeAccount: stakeAccount.value,
-            amount: Number(stakeAmount.value),
-          })
-        : await stake({
-            amount: Number(stakeAmount.value),
-          });
+		stakeAccount.value
+			? await topup({
+					stakeAccount: stakeAccount.value,
+					amount: Number(stakeAmount.value),
+				})
+			: await stake({
+					amount: Number(stakeAmount.value),
+				});
 
-      toast.add({
-        title: "Transaction submitted",
-        description: "Your transaction has been submitted to the network.",
-      });
+		toast.add({
+			title: "Transaction submitted",
+			description: "Your transaction has been submitted to the network.",
+		});
 
-      // refetch the stake account
-      refetch();
+		// refetch the stake account
+		refetch();
 
-      emit("submit");
-    } catch (err) {
-      console.error(err);
-      error.value = "Failed to stake tokens. Please try again.";
-    }
-  };
+		emit("submit");
+	} catch (err) {
+		console.error(err);
+		error.value = "Failed to stake tokens. Please try again.";
+	}
+};
 </script>

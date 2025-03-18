@@ -26,27 +26,6 @@
                 {{ formatNumber(stakeAmount) || "0" }} EFFECT
               </p>
             </div>
-            <div v-if="stakeAmount">
-              <UTooltip
-                :ui="{ width: 'max-w-md' }"
-                text="Staked tokens in January 2025 get a 20% increased reward ratio"
-              >
-                <UBadge
-                  style="border-radius: 0"
-                  label="BOOSTED"
-                  class="rainbow-border"
-                  color="gray"
-                >
-                  <template #trailing>
-                    <UIcon
-                      name="i-heroicons-fire"
-                      class="h-6 w-6 text-lg"
-                      size="lg"
-                    />
-                  </template>
-                </UBadge>
-              </UTooltip>
-            </div>
           </div>
         </div>
       </div>
@@ -113,151 +92,157 @@
 </template>
 
 <script setup lang="ts">
-  import { BN } from "@coral-xyz/anchor";
-  import { useWallet } from "solana-wallets-vue";
-  import ConfettiExplosion from "vue-confetti-explosion";
+import { BN } from "@coral-xyz/anchor";
+import { useWallet } from "solana-wallets-vue";
+import ConfettiExplosion from "vue-confetti-explosion";
 
-  const { useGetStakeAccount } = useStakingProgram();
+const { useGetStakeAccount } = useStakingProgram();
 
-  const {
-    useGetRewardAccount,
-    useClaimRewards,
-    useGetReflectionAccount,
-    intermediaryReflectionVaultAccount,
-  } = useRewardProgram();
-  const { publicKey } = useWallet();
+const {
+	useGetRewardAccount,
+	useClaimRewards,
+	useGetReflectionAccount,
+	intermediaryReflectionVaultAccount,
+} = useRewardProgram();
+const { publicKey } = useWallet();
 
-  /**
-   * Stake age Logic
-   */
-  const {
-    data: stakeAccount,
-    isLoading,
-    unstakeDays,
-    amountFormatted: stakeAmount,
-  } = useGetStakeAccount();
+/**
+ * Stake age Logic
+ */
+const {
+	data: stakeAccount,
+	isLoading,
+	unstakeDays,
+	amountFormatted: stakeAmount,
+} = useGetStakeAccount();
 
-  const stakeAge = computed(() => {
-    if (!stakeAccount.value?.account.stakeStartTime || !currentTime.value)
-      return 0;
-    return calculateStakeAge(
-      stakeAccount.value.account.stakeStartTime.toNumber()
-    );
-  });
+const stakeAge = computed(() => {
+	if (!stakeAccount.value?.account.stakeStartTime || !currentTime.value)
+		return 0;
+	return calculateStakeAge(
+		stakeAccount.value.account.stakeStartTime.toNumber(),
+	);
+});
 
-  const currentTime = ref(new Date().getTime() / 1000);
-  onMounted(() => {
-    const interval = setInterval(() => {
-      currentTime.value = new Date().getTime() / 1000;
-    }, 5000);
+const currentTime = ref(new Date().getTime() / 1000);
+onMounted(() => {
+	const interval = setInterval(() => {
+		currentTime.value = new Date().getTime() / 1000;
+	}, 5000);
 
-    onUnmounted(() => clearInterval(interval));
-  });
+	onUnmounted(() => clearInterval(interval));
+});
 
-  /**
-   * Reward Logic
-   */
-  const { data: reflectionData } = useGetReflectionAccount();
-  const reflectionAccount = computed(() => {
-    if (!reflectionData.value) return null;
-    return reflectionData.value.reflectionAccont;
-  });
-  const { data: rewardAccount } = useGetRewardAccount(stakeAccount);
-  const { mutateAsync: claimRewards, isPending: isClaimingRewards } =
-    useClaimRewards();
+/**
+ * Reward Logic
+ */
+const { data: reflectionData } = useGetReflectionAccount();
+const reflectionAccount = computed(() => {
+	if (!reflectionData.value) return null;
+	return reflectionData.value.reflectionAccont;
+});
+const { data: rewardAccount } = useGetRewardAccount(stakeAccount);
+const { mutateAsync: claimRewards, isPending: isClaimingRewards } =
+	useClaimRewards();
 
-  const expectedApy = computed(() => {
-    if (!rewardAccount.value || !reflectionAccount.value) return 0;
+const { useGetTokenAccountBalanceQuery } = useSolanaWallet();
+const { useGetActiveRewardVestingAccount } = useVestingProgram();
+const { data: vestingRewardAccount } = useGetActiveRewardVestingAccount();
+const vestingVaultAccount = computed(() => {
+	if (!vestingRewardAccount.value) return undefined;
+	return vestingRewardAccount.value.vestingVaultAccount;
+});
+const { data: balance } = useGetTokenAccountBalanceQuery(vestingVaultAccount);
+const { data: intermediaryVaultBalance } = useGetTokenAccountBalanceQuery(
+	ref(intermediaryReflectionVaultAccount),
+);
 
-    return calculateApy({
-      yourStake: rewardAccount.value.weightedAmount,
-      totalStaked: reflectionAccount.value.totalWeightedAmount,
-      totalRewards: 21_600_000,
-    });
-  });
+const expectedApy = computed(() => {
+	if (!rewardAccount.value || !reflectionAccount.value) return 0;
 
-  const { useGetTokenAccountBalanceQuery } = useSolanaWallet();
-  const { useGetActiveRewardVestingAccount } = useVestingProgram();
-  const { data: vestingRewardAccount } = useGetActiveRewardVestingAccount();
-  const vestingVaultAccount = computed(() => {
-    if (!vestingRewardAccount.value) return undefined;
-    return vestingRewardAccount.value.vestingVaultAccount;
-  });
-  const { data: balance } = useGetTokenAccountBalanceQuery(vestingVaultAccount);
-  const { data: intermediaryVaultBalance } = useGetTokenAccountBalanceQuery(
-    ref(intermediaryReflectionVaultAccount)
-  );
+	const extrapolatedRewards =
+		((vestingRewardAccount.value?.account.releaseRate.toNumber() || 0) *
+			365 *
+			24 *
+			60 *
+			60) /
+		1e6;
 
-  const pendingRewards = computed(() => {
-    if (!rewardAccount.value || !reflectionAccount.value) return 0;
+	return calculateApy({
+		yourStake: rewardAccount.value.weightedAmount,
+		totalStaked: reflectionAccount.value.totalWeightedAmount,
+		totalRewards: extrapolatedRewards,
+	});
+});
 
-    // calculate unclaimed rewards from the vesting account
-    const amountDue =
-      (vestingRewardAccount.value &&
-        calculateDue(
-          vestingRewardAccount.value.account.startTime.toNumber(),
-          vestingRewardAccount.value.account.releaseRate.toNumber(),
-          vestingRewardAccount.value.account.distributedTokens.toNumber(),
-          balance.value?.value || 0
-        )) ||
-      0;
+const pendingRewards = computed(() => {
+	if (!rewardAccount.value || !reflectionAccount.value) return 0;
 
-    return (
-      calculatePendingRewards({
-        reflection: rewardAccount.value.reflection,
-        rate: reflectionAccount.value.rate,
-        weightedAmount: rewardAccount.value.weightedAmount,
-      }) +
-      ((amountDue / 1e6) *
-        rewardAccount.value.weightedAmount.div(new BN(1e6)).toNumber()) /
-        reflectionAccount.value.totalWeightedAmount
-          .div(new BN(1e6))
-          .toNumber() +
-      (intermediaryVaultBalance.value?.value || 0)
-    );
-  });
+	// calculate unclaimed rewards from the vesting account
+	const amountDue =
+		(vestingRewardAccount.value &&
+			calculateDue(
+				vestingRewardAccount.value.account.startTime.toNumber(),
+				vestingRewardAccount.value.account.releaseRate.toNumber(),
+				vestingRewardAccount.value.account.distributedTokens.toNumber(),
+				balance.value?.value || 0,
+			)) ||
+		0;
 
-  const toast = useToast();
-  const handleSubmit = async () => {
-    try {
-      if (!stakeAccount.value) {
-        throw new Error("No stake account found");
-      }
+	return (
+		calculatePendingRewards({
+			reflection: rewardAccount.value.reflection,
+			rate: reflectionAccount.value.rate,
+			weightedAmount: rewardAccount.value.weightedAmount,
+		}) +
+		((amountDue / 1e6) *
+			rewardAccount.value.weightedAmount.div(new BN(1e6)).toNumber()) /
+			reflectionAccount.value.totalWeightedAmount.div(new BN(1e6)).toNumber() +
+		(intermediaryVaultBalance.value?.value || 0)
+	);
+});
 
-      if (!vestingRewardAccount.value) {
-        throw new Error("No vesting reward account found");
-      }
+const toast = useToast();
+const handleSubmit = async () => {
+	try {
+		if (!stakeAccount.value) {
+			throw new Error("No stake account found");
+		}
 
-      await claimRewards({
-        vestingRewardAccount: vestingRewardAccount.value,
-        stakeAccount: stakeAccount.value,
-      });
+		if (!vestingRewardAccount.value) {
+			throw new Error("No vesting reward account found");
+		}
 
-      toast.add({
-        title: "Success",
-        description: "Claimed rewards",
-        color: "green",
-      });
-    } catch (e) {
-      console.error(e);
-      toast.add({
-        title: "Error",
-        description: "Something went wrong",
-        color: "red",
-      });
-    }
-  };
+		await claimRewards({
+			vestingRewardAccount: vestingRewardAccount.value,
+			stakeAccount: stakeAccount.value,
+		});
 
-  const triggerConfetti = ref(false);
-  // check if ?confetti=true is in the URL
-  onMounted(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has("confetti")) {
-      triggerConfetti.value = true;
-      // remove the query param from the URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  });
+		toast.add({
+			title: "Success",
+			description: "Claimed rewards",
+			color: "green",
+		});
+	} catch (e) {
+		console.error(e);
+		toast.add({
+			title: "Error",
+			description: "Something went wrong",
+			color: "red",
+		});
+	}
+};
+
+const triggerConfetti = ref(false);
+// check if ?confetti=true is in the URL
+onMounted(() => {
+	const urlParams = new URLSearchParams(window.location.search);
+	if (urlParams.has("confetti")) {
+		triggerConfetti.value = true;
+		// remove the query param from the URL
+		window.history.replaceState({}, document.title, window.location.pathname);
+	}
+});
 </script>
 
 <style scoped>
