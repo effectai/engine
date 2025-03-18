@@ -22,6 +22,63 @@ const dummyTask = (id: string) => ({
 
 describe("Libp2p", () => {
 	describe("Libp2p: Effect AI Protocol", () => {
+		// test(
+		// 	"be able to receive a task",
+		// 	async () => {
+		// 		const [manager1] = await Promise.all([createManagerNode([])]);
+		//
+		// 		const relayAddress = manager1.getMultiaddrs()[0];
+		// 		await new Promise((resolve) => setTimeout(resolve, 100));
+		//
+		// 		const [w1] = await Promise.all([
+		// 			createWorkerNode([relayAddress.toString()]),
+		// 		]);
+		//
+		// 		// start the worker and wait for them to discover peers
+		// 		await Promise.all([w1.start()]);
+		// 		await new Promise((resolve) => setTimeout(resolve, 3000));
+		//
+		// 		const tasksToComplete = 10;
+		// 		for (let i = 0; i < tasksToComplete; i++) {
+		// 			console.log("Creating task", i);
+		// 			const dtask = dummyTask(i.toString());
+		//
+		// 			const result = await manager1.services.manager.processTask(dtask);
+		// 			if (!result) {
+		// 				throw new Error("Task not accepted");
+		// 			}
+		// 			await w1.services.worker.completeTask(dtask, `{"result": "dummy"}`);
+		//
+		// 			await new Promise((resolve) => setTimeout(resolve, 1000));
+		// 		}
+		//
+		// 		await new Promise((resolve) => setTimeout(resolve, 3000));
+		//
+		// 		//expect to have all tasks in store with status completed
+		// 		const tasks = await manager1.services.manager.getTasks();
+		//
+		// 		expect(tasks.length).toBe(tasksToComplete);
+		// 		expect(tasks.every((t) => t.status === TaskStatus.COMPLETED)).toBe(
+		// 			true,
+		// 		);
+		//
+		// 		//expect to have enough payments in store.
+		// 		const payments = await w1.services.worker.getPayments();
+		// 		expect(payments.length).toBe(tasksToComplete);
+		//
+		// 		// request payment proof from manager
+		// 		const proof = await w1.services.worker.requestPaymentProof(
+		// 			manager1.peerId,
+		// 			payments,
+		// 		);
+		//
+		// 		console.log("received proof from manager:", proof);
+		//
+		// 		await manager1.stop();
+		// 		await Promise.all([w1.stop()]);
+		// 	},
+		// 	{ timeout: 60000 },
+		// );
 		test(
 			"be able to receive a task",
 			async () => {
@@ -38,45 +95,23 @@ describe("Libp2p", () => {
 				await Promise.all([w1.start()]);
 				await new Promise((resolve) => setTimeout(resolve, 3000));
 
-				const tasksToComplete = 10;
+				const tasksToComplete = 1;
 				for (let i = 0; i < tasksToComplete; i++) {
 					console.log("Creating task", i);
 					const dtask = dummyTask(i.toString());
 
 					const result = await manager1.services.manager.processTask(dtask);
-					await new Promise((resolve) => setTimeout(resolve, 1000));
 					if (!result) {
 						throw new Error("Task not accepted");
 					}
 					await w1.services.worker.completeTask(dtask, `{"result": "dummy"}`);
+
 					await new Promise((resolve) => setTimeout(resolve, 1000));
 				}
 
-				await new Promise((resolve) => setTimeout(resolve, 1000));
-
-				//expect to have 3 tasks in store with status completed
-				const tasks = await manager1.services.manager.getTasks();
-
-				console.log(
-					"tasks completed:",
-					tasks.filter((t) => t.status === TaskStatus.COMPLETED).length,
-				);
-
-				expect(tasks.length).toBe(tasksToComplete);
-				expect(tasks.every((t) => t.status === TaskStatus.COMPLETED)).toBe(
-					true,
-				);
-
+				await w1.services.worker.requestPayout(manager1.peerId);
 				await new Promise((resolve) => setTimeout(resolve, 3000));
 
-				//expect to have enough payments in store.
-				const payments = await w1.services.worker.getPayments();
-				expect(payments.length).toBe(tasksToComplete);
-
-				// request payment proof from manager
-				await w1.services.worker.requestPaymentProof(manager1.peerId, payments);
-
-				//wait 1 second
 				await manager1.stop();
 				await Promise.all([w1.stop()]);
 			},

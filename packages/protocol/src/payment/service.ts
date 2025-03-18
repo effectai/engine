@@ -52,33 +52,6 @@ export class PaymentProtocolService extends TypedEventEmitter<PaymentProtocolEve
 		super();
 		this.components = components;
 		this.store = new PaymentStore(this.components);
-		this._initialize();
-	}
-
-	async handleProtocol(data: IncomingStreamData): Promise<void> {
-		const pb = pbStream(data.stream).pb(PaymentMessage);
-		const message = await pb.read();
-
-		if (message.requestNonce) {
-			const manager = message.requestNonce.peerId;
-			this.safeDispatchEvent("payment:nonce-request", { detail: manager });
-		} else if (message.payment) {
-			// const payment = SignedPayment.decode(message.payment);
-			// this.safeDispatchEvent("payment:received", { detail: payment });
-		} else if (message.nonceResponse) {
-			const nonce = message.nonceResponse.nonce;
-			this.safeDispatchEvent("payment:nonce-response", { detail: nonce });
-		} else if (message.paymentAck) {
-			//TODO:: handle paymentAck
-		}
-	}
-
-	async _initialize(): Promise<void> {
-		//retrieve the nonce from the worker on peer discovery
-		this.components.events.addEventListener("peer:identify", async (event) => {
-			//check if this peer has the payment protocol
-			// console.log(event.detail.protocols);
-		});
 	}
 
 	async getPayments(): Promise<Payment[]> {

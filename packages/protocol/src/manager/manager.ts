@@ -10,16 +10,10 @@ import {
 	type TypedEventTarget,
 } from "@libp2p/interface";
 
-import {
-	newMemEmptyTrie,
-	buildEddsa,
-	buildPoseidon,
-	buildBabyjub,
-} from "circomlibjs";
+import { buildEddsa } from "circomlibjs";
 
 import * as snarkjs from "snarkjs";
 import { MessageStream, pbStream } from "it-protobuf-stream";
-import { handshake } from "it-handshake";
 
 import type {
 	Registrar,
@@ -35,9 +29,7 @@ import {
 import { TaskProtocolService } from "../task/service.js";
 import {
 	bigIntToUint8Array,
-	getActiveOutBoundConnections,
 	getOrCreateActiveOutBoundStream,
-	getOrCreateConnection,
 	uint8ArrayToBigInt,
 } from "../utils/utils.js";
 import {
@@ -114,9 +106,13 @@ export class ManagerService
 						return;
 					}
 
+					const timestamp = Math.floor(new Date().getTime() / 1000); // Convert to integer (seconds)
+					const buffer = Buffer.alloc(4); // 4 bytes for a 32-bit integer
+					buffer.writeUInt32BE(timestamp, 0);
 					//save nonce in metadata of peer
 					this.components.peerStore.merge(detail.peerId, {
 						metadata: {
+							timeSinceLastPayout: buffer,
 							nonce: bigIntToUint8Array(nonce),
 						},
 					});
@@ -175,35 +171,6 @@ export class ManagerService
 
 	stop(): void | Promise<void> {}
 
-	private async generatePaymentProof(message: PaymentMessage["proofRequest"]) {
-		const eddsa = await buildEddsa();
-		const pubKey = eddsa.prv2pub(this.components.privateKey.raw.slice(0, 32));
-
-		if (!message) {
-			console.error("No proof request found");
-			return;
-		}
-
-		const proofInputs = {
-			receiver: int2hex(new PublicKey(message.payments[0].recipient)._bn),
-			pubX: eddsa.F.toObject(pubKey[0]),
-			pubY: eddsa.F.toObject(pubKey[1]),
-			nonce: message.payments.map((p) => int2hex(p.nonce)),
-			payAmount: message.payments.map((p) => int2hex(p.amount)),
-			R8x: message.payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_1)),
-			R8y: message.payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_2)),
-			S: message.payments.map((s) => BigInt(s.signature?.S)),
-		};
-
-		const { proof, publicSignals } = await snarkjs.groth16.fullProve(
-			proofInputs,
-			"../../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
-			"../../zkp/circuits/PaymentBatch_0001.zkey",
-		);
-
-		return proof;
-	}
-
 	private async register() {
 		this.components.registrar.handle(
 			`/${MULTICODEC_MANAGER_PROTOCOL_NAME}/${MULTICODEC_MANAGER_PROTOCOL_VERSION}`,
@@ -240,19 +207,6 @@ export class ManagerService
 		if (payment.proofRequest) {
 			const proof = await this.generatePaymentProof(payment.proofRequest);
 
-			console.log(proof);
-			console.log(
-				"Sending proof to worker",
-				proof.pi_b[0][0],
-				proof.pi_b[0][1],
-			);
-			console.log(
-				"Sending proof to worker",
-				proof.pi_b[1][0],
-				proof.pi_b[1][1],
-				proof.pi_b[1][2],
-			);
-
 			const message: WorkerMessage = {
 				payment: {
 					proofResponse: {
@@ -269,8 +223,19 @@ export class ManagerService
 				},
 			};
 
-			console.log("writing..");
 			await stream.write(message);
+		} else if (payment.payoutRequest) {
+			console.log("payoutRequest", payment.payoutRequest);
+			const peer = peerIdFromString(remotePeer);
+			const peerData = await this.components.peerStore.get(peer);
+			const timeSinceLastPayout =
+				peerData.metadata.get("timeSinceLastPayout") ?? 0;
+
+			//convert buffered timestamp to number
+			const recoveredTimestamp = timeSinceLastPayout.readUInt32BE(0);
+			console.log("Recovered Timestamp:", recoveredTimestamp);
+
+			console.log("timeSinceLastPayout", timeSinceLastPayout);
 		}
 	}
 
@@ -350,6 +315,35 @@ export class ManagerService
 		};
 
 		await this.sendWorkerMessage(peerId, paymentMessage);
+	}
+
+	private async generatePaymentProof(message: PaymentMessage["proofRequest"]) {
+		const eddsa = await buildEddsa();
+		const pubKey = eddsa.prv2pub(this.components.privateKey.raw.slice(0, 32));
+
+		if (!message) {
+			console.error("No proof request found");
+			return;
+		}
+
+		const proofInputs = {
+			receiver: int2hex(new PublicKey(message.payments[0].recipient)._bn),
+			pubX: eddsa.F.toObject(pubKey[0]),
+			pubY: eddsa.F.toObject(pubKey[1]),
+			nonce: message.payments.map((p) => int2hex(p.nonce)),
+			payAmount: message.payments.map((p) => int2hex(p.amount)),
+			R8x: message.payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_1)),
+			R8y: message.payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_2)),
+			S: message.payments.map((s) => BigInt(s.signature?.S)),
+		};
+
+		const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+			proofInputs,
+			"../../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
+			"../../zkp/circuits/PaymentBatch_0001.zkey",
+		);
+
+		return proof;
 	}
 
 	private async sendWorkerMessage(peerId: string, message: WorkerMessage) {

@@ -810,6 +810,66 @@ export namespace PaymentAcknowledgment {
   }
 }
 
+export interface PayoutRequest {
+  peerId: string
+}
+
+export namespace PayoutRequest {
+  let _codec: Codec<PayoutRequest>
+
+  export const codec = (): Codec<PayoutRequest> => {
+    if (_codec == null) {
+      _codec = message<PayoutRequest>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.peerId != null && obj.peerId !== '')) {
+          w.uint32(10)
+          w.string(obj.peerId)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          peerId: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.peerId = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<PayoutRequest>): Uint8Array => {
+    return encodeMessage(obj, PayoutRequest.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<PayoutRequest>): PayoutRequest => {
+    return decodeMessage(buf, PayoutRequest.codec(), opts)
+  }
+}
+
 export interface PaymentMessage {
   payment?: Payment
   requestNonce?: RequestNonce
@@ -817,6 +877,7 @@ export interface PaymentMessage {
   paymentAck?: PaymentAcknowledgment
   proofRequest?: ProofRequest
   proofResponse?: ProofResponse
+  payoutRequest?: PayoutRequest
 }
 
 export namespace PaymentMessage {
@@ -857,6 +918,11 @@ export namespace PaymentMessage {
         if (obj.proofResponse != null) {
           w.uint32(50)
           ProofResponse.codec().encode(obj.proofResponse, w)
+        }
+
+        if (obj.payoutRequest != null) {
+          w.uint32(58)
+          PayoutRequest.codec().encode(obj.payoutRequest, w)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -904,6 +970,12 @@ export namespace PaymentMessage {
             case 6: {
               obj.proofResponse = ProofResponse.codec().decode(reader, reader.uint32(), {
                 limits: opts.limits?.proofResponse
+              })
+              break
+            }
+            case 7: {
+              obj.payoutRequest = PayoutRequest.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.payoutRequest
               })
               break
             }

@@ -37,10 +37,7 @@ import {
 import { ManagerMessage } from "../manager/managerMessage.js";
 import { PaymentProtocolService } from "../payment/service.js";
 import { TaskProtocolService } from "../task/service.js";
-import {
-	getActiveOutBoundConnections,
-	getOrCreateActiveOutBoundStream,
-} from "../utils/utils.js";
+import { getOrCreateActiveOutBoundStream } from "../utils/utils.js";
 import { Payment } from "../payment/payment.js";
 
 export interface WorkerProtocolEvents {
@@ -67,7 +64,6 @@ export class WorkerProtocolService
 	private taskService: TaskProtocolService;
 	private paymentService: PaymentProtocolService;
 	private nonce = BigInt(1);
-
 	//TODO::
 	// private challengeService: ChallengeProtocolService;
 
@@ -106,6 +102,42 @@ export class WorkerProtocolService
 		}
 	}
 
+	//request a payment from a manager for time spent on the network.
+	async requestPayout(managerPeerId: PeerId) {
+		try {
+			const stream = await getOrCreateActiveOutBoundStream(
+				managerPeerId.toString(),
+				this.components.connectionManager,
+				`/${MULTICODEC_MANAGER_PROTOCOL_NAME}/${MULTICODEC_MANAGER_PROTOCOL_VERSION}`,
+			);
+
+			const pb = pbStream(stream).pb(ManagerMessage);
+
+			const paymentMessage: ManagerMessage = {
+				payment: {
+					payoutRequest: {
+						peerId: this.components.peerId.toString(),
+					},
+				},
+			};
+
+			await pb.write(paymentMessage);
+
+			// Wait for the manager's response
+			const response = await pb.read();
+
+			// Ensure we received a payment
+			if (response.payment?.payment) {
+				console.log("received payment from manager", response.payment.payment);
+			}
+
+			return null;
+		} catch (error) {
+			console.error(`Failed to request payment from ${managerPeerId}:`, error);
+			return;
+		}
+	}
+
 	async handleTaskMessage(task: Task) {
 		await this.taskService.storeTask(task);
 		this.safeDispatchEvent("task:received", { detail: task });
@@ -117,7 +149,6 @@ export class WorkerProtocolService
 		paymentMessage: PaymentMessage,
 	) {
 		if (paymentMessage.requestNonce) {
-			//send a nonce response
 			const nonceResponse: WorkerMessage = {
 				payment: {
 					nonceResponse: {
@@ -127,7 +158,6 @@ export class WorkerProtocolService
 			};
 
 			await stream.write(nonceResponse);
-		} else if (paymentMessage.nonceResponse) {
 		} else if (paymentMessage.payment) {
 			await this.paymentService.storePayment(
 				remotePeer,
@@ -159,13 +189,15 @@ export class WorkerProtocolService
 
 			await pb.write(paymentProofMessage);
 
-			// Wait for the worker's response
+			// Wait for the manager's response
 			const response = await pb.read();
 
 			// Ensure we received a proof
 			if (response.payment?.proofResponse) {
-				console.log("received proof from manager");
+				//TODO:: store the proof / send it to smart contract.
 				console.log("response", response.payment.proofResponse);
+				await stream.close();
+				return response.payment.proofResponse;
 			}
 
 			return null;
@@ -189,7 +221,23 @@ export class WorkerProtocolService
 		await this.sendManagerMessage(task.manager, managerMessage);
 	}
 
-	async rejectTask(task: Task) {}
+	async rejectTask(task: Task) {
+		task.status = TaskStatus.REJECTED;
+		await this.taskService.storeTask(task);
+		const managerMessage: ManagerMessage = {
+			task: {
+				taskId: task.taskId,
+				taskRejected: {
+					taskId: task.taskId,
+					worker: this.components.peerId.toString(),
+					reason: "Task Rejected",
+					timestamp: Date.now().toString(),
+				},
+			},
+		};
+
+		await this.sendManagerMessage(task.manager, managerMessage);
+	}
 
 	async completeTask(task: Task, result: string) {
 		//retrieve task from store..

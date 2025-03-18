@@ -50,17 +50,25 @@ message ProofResponse {
   string curve = 5;
 }
 
+// RequestNonce is a message to request a nonce from a worker 
 message RequestNonce {
   string peerId = 1;
 }
 
+// NonceResponse is a message to respond to a nonce request
 message NonceResponse {
   uint64 nonce = 1;
 }
 
+// PaymentAcknowledgment is a message to acknowledge a payment
 message PaymentAcknowledgment {
   uint64 nonce = 1;
   bool success = 2;
+}
+
+// PaymentRequest is a message to request a payment from a manager
+message PayoutRequest {
+  string peerId = 1;
 }
 
 message PaymentMessage {
@@ -71,5 +79,6 @@ message PaymentMessage {
     PaymentAcknowledgment payment_ack = 4;
     ProofRequest proof_request = 5;
     ProofResponse proof_response = 6;
+    PayoutRequest payout_request = 7;
   }
 }
