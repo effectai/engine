@@ -24,6 +24,8 @@ template VerifyPaymentBatch(n) {
     signal input R8y[n];
     signal input S[n];
 
+    signal input enabled[n];
+
     component payVerifier[n];
     component nonceChecker[n-1];
 
@@ -35,6 +37,7 @@ template VerifyPaymentBatch(n) {
 
     for (var i = 0; i < n; i++) {
 	payVerifier[i] = VerifyPayment();
+	payVerifier[i].enabled <== enabled[i];
 	payVerifier[i].payAmount <== payAmount[i];
 	payVerifier[i].nonce <== nonce[i];
 	payVerifier[i].receiver <== receiver;
@@ -49,7 +52,7 @@ template VerifyPaymentBatch(n) {
 	    nonceChecker[i-1] = LessThan(32);
 	    nonceChecker[i-1].in[0] <== nonce[i-1];
 	    nonceChecker[i-1].in[1] <== nonce[i];
-	    nonceChecker[i-1].out === 1;
+	    nonceChecker[i-1].out === enabled[i];
 	}
 
 	total[i+1] <== total[i] + payAmount[i];
