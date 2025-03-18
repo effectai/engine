@@ -75,6 +75,7 @@ describe("Payment Program", async () => {
 			pubX: eddsa.F.toObject(pubKey[0]),
 			pubY: eddsa.F.toObject(pubKey[1]),
 			nonce: nonces,
+			enabled: Array(batchSize).fill(1),
 			payAmount: Array(batchSize).fill(int2hex(12)),
 			R8x: sigs.map((s) => eddsa.F.toObject(s.R8[0])), 
 			R8y: sigs.map((s) => eddsa.F.toObject(s.R8[1])), 

@@ -8,6 +8,7 @@ template VerifyPayment() {
     signal input payAmount;
     signal input nonce;
     signal input receiver;
+    signal input enabled;
 
     signal input pubX;
     signal input pubY;
@@ -21,7 +22,7 @@ template VerifyPayment() {
     P.inputs[2] <== payAmount;
 
     component verifier = EdDSAPoseidonVerifier();
-    verifier.enabled <== 1;
+    verifier.enabled <== enabled;
     verifier.Ax <== pubX;
     verifier.Ay <== pubY;
     verifier.R8x <== R8x;
