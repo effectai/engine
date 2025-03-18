@@ -325,6 +325,9 @@ importers:
       protons-runtime:
         specifier: ^5.5.0
         version: 5.5.0
+      snarkjs:
+        specifier: ^0.7.5
+        version: 0.7.5
       uint8arraylist:
         specifier: ^2.4.8
         version: 2.4.8

@@ -6,7 +6,7 @@ import {
 	type TypedEventTarget,
 } from "@libp2p/interface";
 import { type Datastore, Key } from "interface-datastore";
-import { SignedPayment } from "./payment.js";
+import { Payment } from "./payment.js";
 
 export interface PaymentStoreComponents {
 	datastore: Datastore;
@@ -15,7 +15,7 @@ export interface PaymentStoreComponents {
 }
 
 export interface PaymentStoreEvents {
-	"task:stored": CustomEvent<SignedPayment>;
+	"task:stored": CustomEvent<Payment>;
 }
 
 export class PaymentStore extends TypedEventEmitter<PaymentStoreEvents> {
@@ -28,27 +28,24 @@ export class PaymentStore extends TypedEventEmitter<PaymentStoreEvents> {
 		this.datastore = this.components.datastore;
 	}
 
-	async get(
-		peerId: string,
-		paymentId: string,
-	): Promise<SignedPayment | undefined> {
-		return SignedPayment.decode(
+	async get(peerId: string, paymentId: string): Promise<Payment | undefined> {
+		return Payment.decode(
 			await this.datastore.get(new Key(`/payments/${peerId}/${paymentId}`)),
 		);
 	}
 
-	async put(peerId: string, payment: SignedPayment): Promise<SignedPayment> {
+	async put(peerId: string, payment: Payment): Promise<Payment> {
 		await this.datastore.put(
 			new Key(`/payments/${peerId}/${payment.nonce}`),
-			SignedPayment.encode(payment),
+			Payment.encode(payment),
 		);
 		return payment;
 	}
 
-	async all(): Promise<SignedPayment[]> {
+	async all(): Promise<Payment[]> {
 		const tasks = [];
 		for await (const entry of this.datastore.query({ prefix: "/payments/" })) {
-			tasks.push(SignedPayment.decode(entry.value));
+			tasks.push(Payment.decode(entry.value));
 		}
 		return tasks;
 	}

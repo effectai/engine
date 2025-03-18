@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-message SignedPayment { 
+message Payment { 
   // Amount to be payed out as float
   float amount = 1;
 
@@ -14,7 +14,40 @@ message SignedPayment {
   uint64 nonce = 4;
 
   // The signature is the signed payment data by the manager node
-  string signature = 5;
+  PaymentSignature signature = 5;
+}
+
+message PaymentSignature {
+    message R8Pair {
+      bytes R8_1 = 1;
+      bytes R8_2 = 2;
+    }
+
+    R8Pair R8 = 1;
+    string S = 2;
+}
+
+message ProofRequest {
+  message PaymentProof {
+    PaymentSignature signature = 1;
+    float amount = 2;
+    uint64 nonce = 3;
+    string recipient = 4;
+  }
+
+  uint32 batch_size = 1;
+  repeated PaymentProof payments = 2;
+}
+
+message ProofResponse {
+  repeated string pi_a = 1;
+  message Matrix {
+    repeated string row = 1 [packed = true];
+  }
+  repeated Matrix pi_b = 2;
+  repeated string pi_c = 3;
+  string protocol = 4;
+  string curve = 5;
 }
 
 message RequestNonce {
@@ -32,9 +65,11 @@ message PaymentAcknowledgment {
 
 message PaymentMessage {
   oneof message {
-    RequestNonce request_nonce = 1;
-    NonceResponse nonce_response = 2;
-    SignedPayment signed_payment = 3;
+    Payment payment = 1;
+    RequestNonce request_nonce = 2;
+    NonceResponse nonce_response = 3;
     PaymentAcknowledgment payment_ack = 4;
+    ProofRequest proof_request = 5;
+    ProofResponse proof_response = 6;
   }
 }

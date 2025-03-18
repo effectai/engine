@@ -10,7 +10,15 @@ import {
 	type TypedEventTarget,
 } from "@libp2p/interface";
 
-import { pbStream } from "it-protobuf-stream";
+import {
+	newMemEmptyTrie,
+	buildEddsa,
+	buildPoseidon,
+	buildBabyjub,
+} from "circomlibjs";
+
+import * as snarkjs from "snarkjs";
+import { MessageStream, pbStream } from "it-protobuf-stream";
 import { handshake } from "it-handshake";
 
 import type {
@@ -28,6 +36,7 @@ import { TaskProtocolService } from "../task/service.js";
 import {
 	bigIntToUint8Array,
 	getActiveOutBoundConnections,
+	getOrCreateActiveOutBoundStream,
 	getOrCreateConnection,
 	uint8ArrayToBigInt,
 } from "../utils/utils.js";
@@ -94,7 +103,7 @@ export class ManagerService
 						`/${MULTICODEC_WORKER_PROTOCOL_NAME}/${MULTICODEC_WORKER_PROTOCOL_VERSION}`,
 					)
 				) {
-					//request nonce from newly identified worker
+					// request nonce from newly identified worker
 					const nonce = await this.requestNonce(
 						detail.peerId.toString(),
 						detail.connection,
@@ -122,9 +131,7 @@ export class ManagerService
 		const peer = peerIdFromString(peerId);
 		const peerData = await this.components.peerStore.get(peer);
 		const nonce = peerData.metadata.get("nonce");
-
 		if (!nonce) return null;
-		//convert back to bigint
 		return uint8ArrayToBigInt(new Uint8Array(nonce));
 	}
 
@@ -133,6 +140,7 @@ export class ManagerService
 		connection: Connection,
 	): Promise<bigint | null> {
 		try {
+			console.log("requesting nonce from worker", peerId);
 			const stream = await connection.newStream(
 				`/${MULTICODEC_WORKER_PROTOCOL_NAME}/${MULTICODEC_WORKER_PROTOCOL_VERSION}`,
 			);
@@ -153,10 +161,8 @@ export class ManagerService
 
 			// Ensure we received a nonce
 			if (response.payment?.nonceResponse) {
-				console.log(
-					`Received nonce from ${peerId}: ${response.payment.nonceResponse.nonce}`,
-				);
-
+				console.log("nonce response", response.payment.nonceResponse.nonce);
+				await stream.close();
 				return response.payment.nonceResponse.nonce;
 			}
 
@@ -168,6 +174,35 @@ export class ManagerService
 	}
 
 	stop(): void | Promise<void> {}
+
+	private async generatePaymentProof(message: PaymentMessage["proofRequest"]) {
+		const eddsa = await buildEddsa();
+		const pubKey = eddsa.prv2pub(this.components.privateKey.raw.slice(0, 32));
+
+		if (!message) {
+			console.error("No proof request found");
+			return;
+		}
+
+		const proofInputs = {
+			receiver: int2hex(new PublicKey(message.payments[0].recipient)._bn),
+			pubX: eddsa.F.toObject(pubKey[0]),
+			pubY: eddsa.F.toObject(pubKey[1]),
+			nonce: message.payments.map((p) => int2hex(p.nonce)),
+			payAmount: message.payments.map((p) => int2hex(p.amount)),
+			R8x: message.payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_1)),
+			R8y: message.payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_2)),
+			S: message.payments.map((s) => BigInt(s.signature?.S)),
+		};
+
+		const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+			proofInputs,
+			"../../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
+			"../../zkp/circuits/PaymentBatch_0001.zkey",
+		);
+
+		return proof;
+	}
 
 	private async register() {
 		this.components.registrar.handle(
@@ -182,12 +217,60 @@ export class ManagerService
 		const message = await pb.read();
 
 		if (message.payment) {
-			this.handlePaymentMessage(message.payment);
+			await this.handlePaymentMessage(
+				data.connection.remotePeer.toString(),
+				pb,
+				message.payment,
+			);
 		} else if (message.task) {
-			this.handleTaskMessage(
+			await this.handleTaskMessage(
 				data.connection.remotePeer.toString(),
 				message.task,
 			);
+		}
+
+		await data.stream.close();
+	}
+
+	private async handlePaymentMessage(
+		remotePeer: string,
+		stream: MessageStream<ManagerMessage>,
+		payment: PaymentMessage,
+	) {
+		if (payment.proofRequest) {
+			const proof = await this.generatePaymentProof(payment.proofRequest);
+
+			console.log(proof);
+			console.log(
+				"Sending proof to worker",
+				proof.pi_b[0][0],
+				proof.pi_b[0][1],
+			);
+			console.log(
+				"Sending proof to worker",
+				proof.pi_b[1][0],
+				proof.pi_b[1][1],
+				proof.pi_b[1][2],
+			);
+
+			const message: WorkerMessage = {
+				payment: {
+					proofResponse: {
+						piA: proof.pi_a,
+						piB: [
+							{ row: [proof.pi_b[0][0], proof.pi_b[0][1]] },
+							{ row: [proof.pi_b[1][0], proof.pi_b[1][1]] },
+							{ row: [proof.pi_b[2][0], proof.pi_b[2][1]] },
+						],
+						piC: proof.pi_c,
+						protocol: proof.protocol,
+						curve: proof.curve,
+					},
+				},
+			};
+
+			console.log("writing..");
+			await stream.write(message);
 		}
 	}
 
@@ -233,6 +316,7 @@ export class ManagerService
 			//task completed by worker
 			task.status = TaskStatus.COMPLETED;
 			task.result = taskMessage.taskCompleted.result;
+
 			//TODO:: generate payment and send it.
 			this.generatePayment(peerId, task);
 		}
@@ -251,44 +335,39 @@ export class ManagerService
 			new PublicKey("5cvmp5heVgetZxYhQuqyR6k3NNs8iv6YAChiJdj4dbh7"),
 		);
 
-		//sign the payment
+		// add 1 to worker nonce
+		await this.components.peerStore.merge(peerIdFromString(peerId), {
+			metadata: {
+				nonce: bigIntToUint8Array(nonce + BigInt(1)),
+			},
+		});
 
 		//send payment to worker
 		const paymentMessage: WorkerMessage = {
 			payment: {
-				signedPayment: payment,
+				payment: payment,
 			},
 		};
 
 		await this.sendWorkerMessage(peerId, paymentMessage);
 	}
 
-	private async handlePaymentMessage(payment: PaymentMessage) {}
-
 	private async sendWorkerMessage(peerId: string, message: WorkerMessage) {
 		try {
 			// console.log("Sending message to worker", peerId, message);
-			const peer = peerIdFromString(peerId);
-
-			let [connection] = await getActiveOutBoundConnections(
+			const stream = await getOrCreateActiveOutBoundStream(
+				peerId,
 				this.components.connectionManager,
-				peer,
-			);
-
-			if (!connection) {
-				connection =
-					await this.components.connectionManager.openConnection(peer);
-			}
-
-			const stream = await connection.newStream(
 				`/${MULTICODEC_WORKER_PROTOCOL_NAME}/${MULTICODEC_WORKER_PROTOCOL_VERSION}`,
 			);
 
 			const pb = pbStream(stream).pb(WorkerMessage);
 			await pb.write(message);
 
+			await stream.close();
+
 			return {
-				peer,
+				peer: peerId,
 				message,
 			};
 		} catch (e) {

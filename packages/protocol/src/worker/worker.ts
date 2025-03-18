@@ -9,6 +9,7 @@ import {
 	type PeerStore,
 	type PeerId,
 	Stream,
+	Connection,
 } from "@libp2p/interface";
 import { peerIdFromString } from "@libp2p/peer-id";
 
@@ -36,7 +37,11 @@ import {
 import { ManagerMessage } from "../manager/managerMessage.js";
 import { PaymentProtocolService } from "../payment/service.js";
 import { TaskProtocolService } from "../task/service.js";
-import { getActiveOutBoundConnections } from "../utils/utils.js";
+import {
+	getActiveOutBoundConnections,
+	getOrCreateActiveOutBoundStream,
+} from "../utils/utils.js";
+import { Payment } from "../payment/payment.js";
 
 export interface WorkerProtocolEvents {
 	"task:received": CustomEvent<Task>;
@@ -52,6 +57,7 @@ export interface WorkerProtocolComponents {
 	datastore: Datastore;
 	peerStore: PeerStore;
 	peerId: PeerId;
+	privateKey: PrivateKey;
 }
 
 export class WorkerProtocolService
@@ -60,6 +66,7 @@ export class WorkerProtocolService
 {
 	private taskService: TaskProtocolService;
 	private paymentService: PaymentProtocolService;
+	private nonce = BigInt(1);
 
 	//TODO::
 	// private challengeService: ChallengeProtocolService;
@@ -100,6 +107,7 @@ export class WorkerProtocolService
 	}
 
 	async handleTaskMessage(task: Task) {
+		await this.taskService.storeTask(task);
 		this.safeDispatchEvent("task:received", { detail: task });
 	}
 
@@ -113,20 +121,57 @@ export class WorkerProtocolService
 			const nonceResponse: WorkerMessage = {
 				payment: {
 					nonceResponse: {
-						nonce: BigInt(500),
+						nonce: this.nonce,
 					},
 				},
 			};
 
 			await stream.write(nonceResponse);
 		} else if (paymentMessage.nonceResponse) {
-		} else if (paymentMessage.signedPayment) {
-			console.log("recieved signed payment", paymentMessage.signedPayment);
-			//store payment
+		} else if (paymentMessage.payment) {
 			await this.paymentService.storePayment(
 				remotePeer,
-				paymentMessage.signedPayment,
+				paymentMessage.payment,
 			);
+		}
+	}
+
+	//request a payment proof from a manager peer
+	async requestPaymentProof(peerId: PeerId, payments: Payment[]) {
+		try {
+			const connection =
+				this.components.connectionManager.getConnections(peerId)[0];
+
+			const stream = await connection.newStream(
+				`/${MULTICODEC_MANAGER_PROTOCOL_NAME}/${MULTICODEC_MANAGER_PROTOCOL_VERSION}`,
+			);
+
+			const pb = pbStream(stream).pb(ManagerMessage);
+
+			const paymentProofMessage: ManagerMessage = {
+				payment: {
+					proofRequest: {
+						batchSize: payments.length,
+						payments,
+					},
+				},
+			};
+
+			await pb.write(paymentProofMessage);
+
+			// Wait for the worker's response
+			const response = await pb.read();
+
+			// Ensure we received a proof
+			if (response.payment?.proofResponse) {
+				console.log("received proof from manager");
+				console.log("response", response.payment.proofResponse);
+			}
+
+			return null;
+		} catch (error) {
+			console.error(`Failed to request proof from ${peerId}:`, error);
+			return null;
 		}
 	}
 
@@ -147,6 +192,7 @@ export class WorkerProtocolService
 	async rejectTask(task: Task) {}
 
 	async completeTask(task: Task, result: string) {
+		//retrieve task from store..
 		if (!task.manager) {
 			throw new Error("Task does not have a manager");
 		}
@@ -172,26 +218,18 @@ export class WorkerProtocolService
 
 	async sendManagerMessage(peerId: string, message: ManagerMessage) {
 		try {
-			const peer = peerIdFromString(peerId);
-
-			let [connection] = await getActiveOutBoundConnections(
+			const stream = await getOrCreateActiveOutBoundStream(
+				peerId,
 				this.components.connectionManager,
-				peer,
-			);
-
-			if (!connection) {
-				connection =
-					await this.components.connectionManager.openConnection(peer);
-			}
-
-			const stream = await connection.newStream(
 				`/${MULTICODEC_MANAGER_PROTOCOL_NAME}/${MULTICODEC_MANAGER_PROTOCOL_VERSION}`,
 			);
 
 			const pb = pbStream(stream).pb(ManagerMessage);
 			await pb.write(message);
+			await stream.close();
 		} catch (e) {
 			console.error("Error sending payment", e);
+		} finally {
 		}
 	}
 }

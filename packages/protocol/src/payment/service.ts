@@ -15,20 +15,24 @@ import {
 	MULTICODEC_TASK_PROTOCOL_VERSION,
 } from "./consts.js";
 import { peerIdFromString } from "@libp2p/peer-id";
-import { PaymentMessage, SignedPayment } from "./payment.js";
+import { PaymentMessage, Payment } from "./payment.js";
 import { PaymentStore } from "./store.js";
 import type { Datastore } from "interface-datastore";
 
 import type { PublicKey } from "@solana/web3.js";
-import { LibP2pPublicKeyToSolanaPublicKey } from "../utils/utils.js";
+import {
+	bigIntToUint32Array,
+	bigIntToUint8Array,
+	LibP2pPublicKeyToSolanaPublicKey,
+} from "../utils/utils.js";
 import { signPayment } from "./utils.js";
 
 export type PaymentProtocolEvents = {
-	"payment:sent": CustomEvent<SignedPayment>;
-	"payment:received": CustomEvent<SignedPayment>;
+	"payment:sent": CustomEvent<Payment>;
+	"payment:received": CustomEvent<Payment>;
 	"payment:nonce-request": CustomEvent<string>;
 	"payment:nonce-response": CustomEvent<number>;
-	"payment:acknowledged": CustomEvent<SignedPayment>;
+	"payment:acknowledged": CustomEvent<Payment>;
 };
 
 export interface PaymentProtocolComponents {
@@ -58,8 +62,8 @@ export class PaymentProtocolService extends TypedEventEmitter<PaymentProtocolEve
 		if (message.requestNonce) {
 			const manager = message.requestNonce.peerId;
 			this.safeDispatchEvent("payment:nonce-request", { detail: manager });
-		} else if (message.signedPayment) {
-			// const payment = SignedPayment.decode(message.signedPayment);
+		} else if (message.payment) {
+			// const payment = SignedPayment.decode(message.payment);
 			// this.safeDispatchEvent("payment:received", { detail: payment });
 		} else if (message.nonceResponse) {
 			const nonce = message.nonceResponse.nonce;
@@ -77,14 +81,11 @@ export class PaymentProtocolService extends TypedEventEmitter<PaymentProtocolEve
 		});
 	}
 
-	async getPayments(): Promise<SignedPayment[]> {
+	async getPayments(): Promise<Payment[]> {
 		return await this.store.all();
 	}
 
-	async storePayment(
-		managerPeer: string,
-		payment: SignedPayment,
-	): Promise<void> {
+	async storePayment(managerPeer: string, payment: Payment): Promise<void> {
 		await this.store.put(managerPeer, payment);
 	}
 
@@ -93,7 +94,7 @@ export class PaymentProtocolService extends TypedEventEmitter<PaymentProtocolEve
 		amount: number,
 		nonce: bigint,
 		paymentAccount: PublicKey,
-	): Promise<SignedPayment> {
+	): Promise<Payment> {
 		try {
 			const pid = peerIdFromString(peerId);
 
@@ -105,24 +106,29 @@ export class PaymentProtocolService extends TypedEventEmitter<PaymentProtocolEve
 				pid.publicKey,
 			).toBase58();
 
-			const payment = SignedPayment.encode({
-				amount,
-				recipient,
-				paymentAccount: paymentAccount.toBase58(),
-				nonce,
-			});
-
-			//TODO:: sign the payment here..
-			// payment.signature = await
-			const signature = signPayment(
-				SignedPayment.decode(payment),
-				this.components.privateKey,
+			const payment = Payment.decode(
+				Payment.encode({
+					amount,
+					recipient,
+					paymentAccount: paymentAccount.toBase58(),
+					nonce,
+				}),
 			);
 
-			//store payment after we generate it.
-			await this.storePayment(peerId, SignedPayment.decode(payment));
+			const signature = await signPayment(payment, this.components.privateKey);
 
-			return SignedPayment.decode(payment);
+			payment.signature = {
+				S: signature.S.toString(),
+				R8: {
+					R8_1: new Uint8Array(signature.R8[0]),
+					R8_2: new Uint8Array(signature.R8[1]),
+				},
+			};
+
+			//store payment after we generate it.
+			await this.storePayment(peerId, payment);
+
+			return payment;
 		} catch (e) {
 			//TODO:: handle error
 			console.error("Error generating payment", e);

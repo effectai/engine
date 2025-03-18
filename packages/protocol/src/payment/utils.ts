@@ -6,7 +6,7 @@ import {
 	buildBabyjub,
 } from "circomlibjs";
 // import * as anchor from "@coral-xyz/anchor";
-import { SignedPayment } from "./payment.js";
+import { Payment, SignedPayment } from "./payment.js";
 import { ed25519 } from "@noble/curves/ed25519";
 import { Ed25519PrivateKey, PrivateKey } from "@libp2p/interface";
 import crypto, { randomUUID } from "node:crypto";
@@ -41,20 +41,16 @@ export const createDummyPayments = ({
 	return payments.map((payment) => Payment.decode(payment));
 };
 
-export const toAnchorPayment = (payment: Payment) => {
-	return {
-		amount: new anchor.BN(payment.amount),
-		recipientTokenAccount: new anchor.web3.PublicKey(payment.recipient),
-		nonce: Number(payment.nonce),
-	};
-};
+// export const toAnchorPayment = (payment: Payment) => {
+// 	return {
+// 		amount: new anchor.BN(payment.amount),
+// 		recipientTokenAccount: new anchor.web3.PublicKey(payment.recipient),
+// 		nonce: Number(payment.nonce),
+// 	};
+// };
 
 const int2hex = (i) => "0x" + BigInt(i).toString(16);
-
-export const signPayment = async (
-	payment: SignedPayment,
-	privateKey: PrivateKey,
-) => {
+export const signPayment = async (payment: Payment, privateKey: PrivateKey) => {
 	const eddsa = await buildEddsa();
 	const poseidon = await buildPoseidon();
 
@@ -67,13 +63,7 @@ export const signPayment = async (
 		]),
 	);
 
-	console.log("signature:", signature);
-	//
-	// return {
-	// 	message,
-	// 	serializedPayment,
-	// 	signature,
-	// };
+	return signature;
 };
 
 export const serializePayment = (payment: Payment) => {

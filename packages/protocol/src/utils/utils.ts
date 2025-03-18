@@ -6,22 +6,7 @@ import type {
 import type { ConnectionManager } from "@libp2p/interface-internal";
 import { Uint8ArrayList } from "uint8arraylist";
 import { PublicKey } from "@solana/web3.js";
-
-export const getOpenOutboundConnections = (
-	connectionManager: ConnectionManager,
-	peerId: PeerId,
-) => {
-	const connections = connectionManager.getConnections(peerId);
-	return connections.filter((conn) => conn.status === "open");
-};
-
-export const getActiveOutBoundConnections = async (
-	connectionManager: ConnectionManager,
-	peerId: PeerId,
-) => {
-	const connections = getOpenOutboundConnections(connectionManager, peerId);
-	return connections.filter((conn) => conn.direction === "outbound");
-};
+import { peerIdFromString } from "@libp2p/peer-id";
 
 export const handleMessage = async (streamData: IncomingStreamData) => {
 	const data = new Uint8ArrayList();
@@ -36,22 +21,6 @@ export const handleMessage = async (streamData: IncomingStreamData) => {
 export const extractPeerIdFromTaskResults = (taskResults: string) => {
 	const results = JSON.parse(taskResults);
 	return { peerId: results.worker };
-};
-
-export const getOrCreateConnection = async (
-	connectionManager: ConnectionManager,
-	peerId: PeerId,
-) => {
-	const connections = await getActiveOutBoundConnections(
-		connectionManager,
-		peerId,
-	);
-
-	if (connections.length > 0) {
-		return connections[0];
-	}
-
-	return await connectionManager.openConnection(peerId);
 };
 
 export const LibP2pPublicKeyToSolanaPublicKey = (
@@ -77,4 +46,29 @@ export const bigIntToUint8Array = (bigint) => {
 export const uint8ArrayToBigInt = (uint8Array) => {
 	return new DataView(uint8Array.buffer).getBigUint64(0, false); // false = big-endian
 };
-// Convert back
+
+export const getOrCreateActiveOutBoundStream = async (
+	peerId: string,
+	connectionManager: ConnectionManager,
+	protocol: string,
+) => {
+	const peer = peerIdFromString(peerId);
+
+	const connections = connectionManager.getConnections(peer);
+
+	let connection = connections.find((x) => x.status === "open");
+	if (!connection) {
+		connection = await connectionManager.openConnection(peer);
+	}
+
+	let stream = connection.streams.filter(
+		(s) => s.status === "open" && s.metadata.effectai === true,
+	)[0];
+
+	stream = await connection.newStream(protocol);
+	stream.metadata = {
+		effectai: true,
+	};
+
+	return stream;
+};

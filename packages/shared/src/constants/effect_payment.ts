@@ -1,5 +1,5 @@
 export const effect_payment = {
-  "address": "B8MtDgxNAyiEPTtzMewkLYXKEWorZqP1VTg9yF8DjCDN",
+  "address": "76EdaKZCL7vxbUvoV6NLoFSCnohU95fcUwoJNcxwsRvC",
   "metadata": {
     "name": "effect_payment",
     "version": "0.1.0",

@@ -30,55 +30,57 @@ describe("Libp2p", () => {
 				const relayAddress = manager1.getMultiaddrs()[0];
 				await new Promise((resolve) => setTimeout(resolve, 100));
 
-				const [w1, w2, w3] = await Promise.all([
-					createWorkerNode([relayAddress.toString()]),
-					createWorkerNode([relayAddress.toString()]),
+				const [w1] = await Promise.all([
 					createWorkerNode([relayAddress.toString()]),
 				]);
 
 				// start the worker and wait for them to discover peers
-				await Promise.all([w2.start(), w1.start(), w3.start()]);
+				await Promise.all([w1.start()]);
 				await new Promise((resolve) => setTimeout(resolve, 3000));
 
-				for (let i = 0; i < 3; i++) {
+				const tasksToComplete = 10;
+				for (let i = 0; i < tasksToComplete; i++) {
+					console.log("Creating task", i);
 					const dtask = dummyTask(i.toString());
 
 					const result = await manager1.services.manager.processTask(dtask);
-
-					await new Promise((resolve) => setTimeout(resolve, 100));
-
+					await new Promise((resolve) => setTimeout(resolve, 1000));
 					if (!result) {
 						throw new Error("Task not accepted");
 					}
-
-					for (const peer of [w1, w2, w3]) {
-						if (peer.peerId.toString() === result.peer.toString()) {
-							await peer.services.worker.completeTask(
-								dtask,
-								`{"result": "dummy"}`,
-							);
-						}
-					}
+					await w1.services.worker.completeTask(dtask, `{"result": "dummy"}`);
+					await new Promise((resolve) => setTimeout(resolve, 1000));
 				}
 
 				await new Promise((resolve) => setTimeout(resolve, 1000));
 
 				//expect to have 3 tasks in store with status completed
 				const tasks = await manager1.services.manager.getTasks();
-				expect(tasks.length).toBe(3);
+
+				console.log(
+					"tasks completed:",
+					tasks.filter((t) => t.status === TaskStatus.COMPLETED).length,
+				);
+
+				expect(tasks.length).toBe(tasksToComplete);
 				expect(tasks.every((t) => t.status === TaskStatus.COMPLETED)).toBe(
 					true,
 				);
 
-				//expect to have 1 payment in worker store
+				await new Promise((resolve) => setTimeout(resolve, 3000));
+
+				//expect to have enough payments in store.
 				const payments = await w1.services.worker.getPayments();
-				expect(payments.length).toBe(1);
+				expect(payments.length).toBe(tasksToComplete);
+
+				// request payment proof from manager
+				await w1.services.worker.requestPaymentProof(manager1.peerId, payments);
 
 				//wait 1 second
 				await manager1.stop();
-				await Promise.all([w1.stop(), w2.stop(), w3.stop()]);
+				await Promise.all([w1.stop()]);
 			},
-			{ timeout: 20000 },
+			{ timeout: 60000 },
 		);
 	});
 });
