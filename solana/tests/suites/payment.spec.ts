@@ -1,5 +1,10 @@
-import { newMemEmptyTrie, buildEddsa, buildPoseidon, buildBabyjub } from 'circomlibjs'
-import { randomBytes } from 'crypto'
+import {
+	newMemEmptyTrie,
+	buildEddsa,
+	buildPoseidon,
+	buildBabyjub,
+} from "circomlibjs";
+import { randomBytes } from "crypto";
 import { describe, it } from "vitest";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
@@ -14,10 +19,11 @@ import {
 } from "@effectai/protocol";
 
 import * as snarkjs from "snarkjs";
+import { PublicKey } from "@solana/web3.js";
 
 const { BN } = anchor;
 
-const int2hex = (i) => '0x' + BigInt(i).toString(16);
+const int2hex = (i) => "0x" + BigInt(i).toString(16);
 
 describe("Payment Program", async () => {
 	const program = anchor.workspace.EffectPayment as Program<EffectPayment>;
@@ -52,44 +58,46 @@ describe("Payment Program", async () => {
 		// BabyJubjub key that he uses for signing.
 		const prvKey = randomBytes(32);
 		const pubKey = eddsa.prv2pub(prvKey);
+		const batchSize = 10;
 
-		const managerAddress = payer.publicKey.toBuffer();
-
-		const batchSize = 60;
+		//construct pubkey to solana ed25519 pubkey
+		const managerPubKey = new PublicKey(eddsa.F.toObject(pubKey[0]));
 
 		// Generate dummy payments. Payments consist of: `nonce,
 		// receiver_ata, amount` and are signed by the manager
 		// commited eddsa keypair.
 		//
-		// TODO: we are comitting to the ATA but perhaps better the
-		// worker account?
-		const nonces = Array.from({length: batchSize}, (value, key) => int2hex(key));
-		const sigs = nonces.map((n) => eddsa.signPoseidon(prvKey, poseidon([
-			int2hex(n),
-			int2hex(ata._bn),
-			int2hex(12),
-		])));
+		const nonces = Array.from({ length: batchSize }, (value, key) =>
+			int2hex(key + 1),
+		);
+
+		const sigs = nonces.map((n) =>
+			eddsa.signPoseidon(
+				prvKey,
+				poseidon([int2hex(n), int2hex(payer.publicKey._bn), int2hex(12)]),
+			),
+		);
 
 		const proofInputs = {
-			receiver: int2hex(ata._bn),
+			receiver: int2hex(payer.publicKey._bn),
 			pubX: eddsa.F.toObject(pubKey[0]),
 			pubY: eddsa.F.toObject(pubKey[1]),
 			nonce: nonces,
 			enabled: Array(batchSize).fill(1),
 			payAmount: Array(batchSize).fill(int2hex(12)),
-			R8x: sigs.map((s) => eddsa.F.toObject(s.R8[0])), 
-			R8y: sigs.map((s) => eddsa.F.toObject(s.R8[1])), 
-			S: sigs.map((s) => s.S)
-		}
+			R8x: sigs.map((s) => eddsa.F.toObject(s.R8[0])),
+			R8y: sigs.map((s) => eddsa.F.toObject(s.R8[1])),
+			S: sigs.map((s) => s.S),
+		};
 
 		const { proof, publicSignals } = await snarkjs.groth16.fullProve(
 			proofInputs,
 			"../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
-			"../zkp/circuits/PaymentBatch_0001.zkey"      
-		)
+			"../zkp/circuits/PaymentBatch_0001.zkey",
+		);
 
 		await program.methods
-			.createPaymentPool([authority1.publicKey], new anchor.BN(10_000_000))
+			.createPaymentPool([managerPubKey], new anchor.BN(10_000_000))
 			.accounts({
 				paymentAccount: paymentAccount.publicKey,
 				mint,
@@ -99,21 +107,16 @@ describe("Payment Program", async () => {
 			.rpc();
 
 		// Ensure recipient paymentDataAccount exists
-		const [recipientPaymentDataAccount] =
+		const [recipientManagerDataAccount] =
 			await anchor.web3.PublicKey.findProgramAddress(
-				[
-					ata.toBuffer(),
-					mint.toBuffer(),
-				],
+				[payer.publicKey.toBuffer(), managerPubKey.toBuffer()],
 				program.programId,
 			);
 
 		await program.methods
-			.init()
+			.init(managerPubKey)
 			.accounts({
-				paymentAccount: paymentAccount.publicKey,
 				mint,
-				recipientTokenAccount: ata,
 			})
 			.rpc();
 
@@ -124,76 +127,22 @@ describe("Payment Program", async () => {
 				new BN(publicSignals[2]),
 				bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
 				bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
-				Array.from(convertProofToBytes(proof))
+				Array.from(convertProofToBytes(proof)),
 			)
 			.accounts({
-				recipientPaymentDataAccount: recipientPaymentDataAccount,
+				recipientManagerDataAccount,
 				paymentAccount: paymentAccount.publicKey,
 				mint,
 				recipientTokenAccount: ata,
 			})
 			.rpc();
 	}, 20000);
-
-	it("can redeem mulitple payments", async () => {
-		// const { mint, ata } = await setup({ payer, provider });
-		// const paymentAccount = anchor.web3.Keypair.generate();
-		//
-		// const [payment1, payment2] = createDummyPayments({
-		// 	n: 2,
-		// 	mint: mint.toBase58(),
-		// 	recipient: ata.toBase58(),
-		// 	escrowAccount: paymentAccount.publicKey.toBase58(),
-		// });
-		//
-		// const { signature: signature1, message: message1 } = await signPayment(
-		// 	payment1,
-		// 	authority1.secretKey.slice(0, 32),
-		// );
-		//
-		// const { signature: signature2, message: message2 } = await signPayment(
-		// 	payment2,
-		// 	authority1.secretKey.slice(0, 32),
-		// );
-		//
-		// const anchorPayment1 = toAnchorPayment(payment1);
-		// const anchorPayment2 = toAnchorPayment(payment2);
-		//
-		// const [recipientPaymentDataAccount] =
-		// 	await anchor.web3.PublicKey.findProgramAddress(
-		// 		[ata.toBuffer(), mint.toBuffer()],
-		// 		program.programId,
-		// 	);
-		//
-		// // check if recipient paymentDataAccount exists
-		// await program.methods
-		// 	.init()
-		// 	.accounts({
-		// 		paymentAccount: paymentAccount.publicKey,
-		// 		mint,
-		// 		recipientTokenAccount: ata,
-		// 	})
-		// 	.rpc();
-		//
-		// const verifyIx1 = Ed25519Program.createInstructionWithPublicKey({
-		// 	message: message1,
-		// 	signature: Buffer.from(signature1),
-		// 	publicKey: authority1.publicKey.toBuffer(),
-		// });
-		//
-		// const verifyIx2 = Ed25519Program.createInstructionWithPublicKey({
-		// 	message: message2,
-		// 	signature: Buffer.from(signature2),
-		// 	publicKey: authority1.publicKey.toBuffer(),
-		// });
-	});
 });
-
 
 function bigIntToBytes32(num) {
 	let hex = BigInt(num).toString(16);
 
-	hex = hex.padStart(64, '0');
+	hex = hex.padStart(64, "0");
 
 	const bytes = new Uint8Array(32);
 	for (let i = 0; i < 32; i++) {
@@ -216,35 +165,29 @@ function concatenateUint8Arrays(arrays) {
 	return result;
 }
 
-function convertProofToBytes(proof: { pi_a: any[]; pi_b: any[][]; pi_c: any[]; }) {
+function convertProofToBytes(proof: {
+	pi_a: any[];
+	pi_b: any[][];
+	pi_c: any[];
+}) {
 	// Convert pi_a components
-	const pi_a = [
-		bigIntToBytes32(proof.pi_a[0]),
-		bigIntToBytes32(proof.pi_a[1])
-	];
+	const pi_a = [bigIntToBytes32(proof.pi_a[0]), bigIntToBytes32(proof.pi_a[1])];
 
 	// Convert pi_b components (note the reversed order within pairs)
 	const pi_b = [
 		// First pair
-		bigIntToBytes32(proof.pi_b[0][1]),  // Reversed order
+		bigIntToBytes32(proof.pi_b[0][1]), // Reversed order
 		bigIntToBytes32(proof.pi_b[0][0]),
 		// Second pair
-		bigIntToBytes32(proof.pi_b[1][1]),  // Reversed order
-		bigIntToBytes32(proof.pi_b[1][0])
+		bigIntToBytes32(proof.pi_b[1][1]), // Reversed order
+		bigIntToBytes32(proof.pi_b[1][0]),
 	];
 
 	// Convert pi_c components
-	const pi_c = [
-		bigIntToBytes32(proof.pi_c[0]),
-		bigIntToBytes32(proof.pi_c[1])
-	];
+	const pi_c = [bigIntToBytes32(proof.pi_c[0]), bigIntToBytes32(proof.pi_c[1])];
 
 	// Concatenate all components
-	const allBytes = concatenateUint8Arrays([
-		...pi_a,
-		...pi_b,
-		...pi_c
-	]);
+	const allBytes = concatenateUint8Arrays([...pi_a, ...pi_b, ...pi_c]);
 
 	return allBytes;
 }

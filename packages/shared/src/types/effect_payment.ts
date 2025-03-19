@@ -46,7 +46,7 @@ export type EffectPayment = {
           "writable": true
         },
         {
-          "name": "recipientPaymentDataAccount",
+          "name": "recipientManagerDataAccount",
           "writable": true
         },
         {
@@ -191,25 +191,17 @@ export type EffectPayment = {
           "signer": true
         },
         {
-          "name": "paymentAccount",
-          "writable": true
-        },
-        {
-          "name": "recipientTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "recipientDataAccount",
+          "name": "recipientManagerDataAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "recipientTokenAccount"
+                "path": "authority"
               },
               {
-                "kind": "account",
-                "path": "mint"
+                "kind": "arg",
+                "path": "managerAuthority"
               }
             ]
           }
@@ -226,7 +218,12 @@ export type EffectPayment = {
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "managerAuthority",
+          "type": "pubkey"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -244,16 +241,16 @@ export type EffectPayment = {
       ]
     },
     {
-      "name": "recipientPaymentDataAccount",
+      "name": "recipientManagerDataAccount",
       "discriminator": [
-        254,
-        18,
-        216,
-        153,
-        241,
-        64,
-        229,
-        192
+        61,
+        41,
+        126,
+        131,
+        94,
+        55,
+        133,
+        237
       ]
     }
   ],
@@ -307,7 +304,7 @@ export type EffectPayment = {
       }
     },
     {
-      "name": "recipientPaymentDataAccount",
+      "name": "recipientManagerDataAccount",
       "type": {
         "kind": "struct",
         "fields": [

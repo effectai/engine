@@ -40,7 +40,7 @@ export const effect_payment = {
           "writable": true
         },
         {
-          "name": "recipient_payment_data_account",
+          "name": "recipient_manager_data_account",
           "writable": true
         },
         {
@@ -185,25 +185,17 @@ export const effect_payment = {
           "signer": true
         },
         {
-          "name": "payment_account",
-          "writable": true
-        },
-        {
-          "name": "recipient_token_account",
-          "writable": true
-        },
-        {
-          "name": "recipient_data_account",
+          "name": "recipient_manager_data_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "recipient_token_account"
+                "path": "authority"
               },
               {
-                "kind": "account",
-                "path": "mint"
+                "kind": "arg",
+                "path": "manager_authority"
               }
             ]
           }
@@ -220,7 +212,12 @@ export const effect_payment = {
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "manager_authority",
+          "type": "pubkey"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -238,16 +235,16 @@ export const effect_payment = {
       ]
     },
     {
-      "name": "RecipientPaymentDataAccount",
+      "name": "RecipientManagerDataAccount",
       "discriminator": [
-        254,
-        18,
-        216,
-        153,
-        241,
-        64,
-        229,
-        192
+        61,
+        41,
+        126,
+        131,
+        94,
+        55,
+        133,
+        237
       ]
     }
   ],
@@ -301,7 +298,7 @@ export const effect_payment = {
       }
     },
     {
-      "name": "RecipientPaymentDataAccount",
+      "name": "RecipientManagerDataAccount",
       "type": {
         "kind": "struct",
         "fields": [

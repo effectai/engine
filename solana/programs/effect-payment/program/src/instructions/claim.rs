@@ -3,13 +3,14 @@ use anchor_spl::token::TokenAccount;
 use anchor_spl::token::{Mint, Token};
 use effect_common::cpi;
 use effect_common::transfer_tokens_from_vault;
-use effect_payment_common::{Payment, PaymentAccount, RecipientPaymentDataAccount};
+use effect_payment_common::{Payment, PaymentAccount, RecipientManagerDataAccount};
 use solana_program::instruction::Instruction;
 
 use crate::errors::PaymentErrors;
+use crate::utils::{change_endianness, u32_to_32_byte_be_array, u64_to_32_byte_be_array};
 use crate::{id, vault_seed};
 
-use crate::verifying_key::{VERIFYINGKEY};
+use crate::verifying_key::VERIFYINGKEY;
 type G1 = ark_bn254::g1::G1Affine;
 
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -23,11 +24,12 @@ pub struct Claim<'info> {
     #[account(mut, seeds = [payment_account.key().as_ref()], bump) ]
     pub payment_vault_token_account: Account<'info, TokenAccount>,
 
+    //TODO:: ata of authority
     #[account(mut)]
     pub recipient_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
-    pub recipient_payment_data_account: Account<'info, RecipientPaymentDataAccount>,
+    pub recipient_manager_data_account: Account<'info, RecipientManagerDataAccount>,
 
     pub token_program: Program<'info, Token>,
 
@@ -37,7 +39,6 @@ pub struct Claim<'info> {
     pub authority: Signer<'info>,
 }
 
-
 pub fn handler(
     ctx: Context<Claim>,
     min_nonce: u32,
@@ -45,40 +46,48 @@ pub fn handler(
     total_amount: u64,
     pub_x: [u8; 32],
     pub_y: [u8; 32],
-    proof: [u8; 256]
+    proof: [u8; 256],
 ) -> Result<()> {
-    let mut last_nonce = ctx.accounts.recipient_payment_data_account.nonce;
-    // TODO: require min_nonce > last_nonce 
+    //make sure manager key is part of authorities on the payment account
+    let manager_key = Pubkey::from(pub_x);
+    require!(
+        ctx.accounts
+            .payment_account
+            .is_authorized(&manager_key.key()),
+        PaymentErrors::Unauthorized
+    );
+
+    let last_nonce = ctx.accounts.recipient_manager_data_account.nonce;
+    require!(min_nonce > last_nonce, PaymentErrors::InvalidPayment);
 
     // unpack the snark proof components
     let proof_a: G1 = <G1 as CanonicalDeserialize>::deserialize_uncompressed(
-	&*[&change_endianness(&proof[0..64])[..], &[0u8][..]].concat(),
+        &*[&change_endianness(&proof[0..64])[..], &[0u8][..]].concat(),
     )
-	.unwrap();
+    .unwrap();
     let mut proof_a_neg = [0u8; 65];
-    <G1 as CanonicalSerialize>::serialize_uncompressed(&-proof_a, &mut proof_a_neg[..])
-	.unwrap();
+    <G1 as CanonicalSerialize>::serialize_uncompressed(&-proof_a, &mut proof_a_neg[..]).unwrap();
     let proof_a: [u8; 64] = change_endianness(&proof_a_neg[..64]).try_into().unwrap();
     let proof_b: [u8; 128] = proof[64..192].try_into().unwrap();
     let proof_c: [u8; 64] = proof[192..256].try_into().unwrap();
 
     let public_inputs = [
-	u32_to_32_byte_be_array(min_nonce),
-	u32_to_32_byte_be_array(max_nonce),
-	u64_to_32_byte_be_array(total_amount),
-	pub_x,
-	pub_y
+        u32_to_32_byte_be_array(min_nonce),
+        u32_to_32_byte_be_array(max_nonce),
+        u64_to_32_byte_be_array(total_amount),
+        pub_x,
+        pub_y,
     ];
 
     // verify the proof is correct
     let mut verifier =
-	Groth16Verifier::new(&proof_a, &proof_b, &proof_c, &public_inputs, &VERIFYINGKEY)
-	.unwrap();
+        Groth16Verifier::new(&proof_a, &proof_b, &proof_c, &public_inputs, &VERIFYINGKEY).unwrap();
 
     let result = verifier.verify().unwrap();
+    require!(result == true, PaymentErrors::InvalidProof);
 
     // update the nonce
-    ctx.accounts.recipient_payment_data_account.nonce = max_nonce;
+    ctx.accounts.recipient_manager_data_account.nonce = max_nonce;
 
     // transfer the tokens to the recipient
     transfer_tokens_from_vault!(
@@ -89,35 +98,5 @@ pub fn handler(
         total_amount
     )?;
 
-    // require!(
-    //	result == Ok(true),
-    //	PaymentErrors::SigVerificationFailed
-    // );
-
-
     Ok(())
-}
-
-fn u64_to_32_byte_be_array(value: u64) -> [u8; 32] {
-    let mut result = [0u8; 32];
-    let value_bytes = value.to_be_bytes();
-    result[24..].copy_from_slice(&value_bytes);
-    result
-}
-
-fn u32_to_32_byte_be_array(value: u32) -> [u8; 32] {
-    let mut result = [0u8; 32];
-    let value_bytes = value.to_be_bytes();
-    result[28..].copy_from_slice(&value_bytes);
-    result
-}
-
-fn change_endianness(bytes: &[u8]) -> Vec<u8> {
-    let mut vec = Vec::new();
-    for b in bytes.chunks(32) {
-	for byte in b.iter().rev() {
-	    vec.push(*byte);
-	}
-    }
-    vec
 }

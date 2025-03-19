@@ -29,7 +29,7 @@ pub struct PaymentAccount {
 }
 
 #[account]
-pub struct RecipientPaymentDataAccount {
+pub struct RecipientManagerDataAccount {
     pub nonce: u32,
 }
 
