@@ -5,7 +5,7 @@ import {
 	buildBabyjub,
 } from "circomlibjs";
 import { randomBytes } from "crypto";
-import { describe, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
 import type { EffectPayment } from "../../target/types/effect_payment.js";
@@ -48,7 +48,7 @@ describe("Payment Program", async () => {
 	});
 
 	it("can claim a payment", async () => {
-		const { mint, ata } = await setup({ payer, provider });
+		const { mint, ata } = await setup({ payer, provider, amount: 10_000_000 });
 
 		const paymentAccount = anchor.web3.Keypair.generate();
 
@@ -63,10 +63,6 @@ describe("Payment Program", async () => {
 		//construct pubkey to solana ed25519 pubkey
 		const managerPubKey = new PublicKey(eddsa.F.toObject(pubKey[0]));
 
-		// Generate dummy payments. Payments consist of: `nonce,
-		// receiver_ata, amount` and are signed by the manager
-		// commited eddsa keypair.
-		//
 		const nonces = Array.from({ length: batchSize }, (value, key) =>
 			int2hex(key + 1),
 		);
@@ -74,7 +70,11 @@ describe("Payment Program", async () => {
 		const sigs = nonces.map((n) =>
 			eddsa.signPoseidon(
 				prvKey,
-				poseidon([int2hex(n), int2hex(payer.publicKey._bn), int2hex(12)]),
+				poseidon([
+					int2hex(n),
+					int2hex(payer.publicKey._bn),
+					int2hex(1_000_000),
+				]),
 			),
 		);
 
@@ -84,7 +84,7 @@ describe("Payment Program", async () => {
 			pubY: eddsa.F.toObject(pubKey[1]),
 			nonce: nonces,
 			enabled: Array(batchSize).fill(1),
-			payAmount: Array(batchSize).fill(int2hex(12)),
+			payAmount: Array(batchSize).fill(int2hex(1_000_000)),
 			R8x: sigs.map((s) => eddsa.F.toObject(s.R8[0])),
 			R8y: sigs.map((s) => eddsa.F.toObject(s.R8[1])),
 			S: sigs.map((s) => s.S),
@@ -136,6 +136,16 @@ describe("Payment Program", async () => {
 				recipientTokenAccount: ata,
 			})
 			.rpc();
+
+		//get token account
+		const ataBalance = await provider.connection.getTokenAccountBalance(ata);
+		expect(ataBalance.value.uiAmount).toBe(10);
+		//get nonce account
+		const recipientManagerDataAccountData =
+			await program.account.recipientManagerDataAccount.fetch(
+				recipientManagerDataAccount,
+			);
+		expect(recipientManagerDataAccountData.nonce).toBe(10);
 	}, 20000);
 });
 

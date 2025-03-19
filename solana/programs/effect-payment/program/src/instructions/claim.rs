@@ -25,7 +25,11 @@ pub struct Claim<'info> {
     pub payment_vault_token_account: Account<'info, TokenAccount>,
 
     //TODO:: ata of authority
-    #[account(mut)]
+    #[account(mut,
+        token::mint = mint,
+        token::authority = authority
+    )
+    ]
     pub recipient_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
