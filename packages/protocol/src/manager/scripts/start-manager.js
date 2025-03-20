@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import express from "express";
 import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
-import { createManagerNode } from "../dist/manager.js";
+import { createManagerNode } from "../../../dist/index.js";
 
 const seed = Uint8Array.from([
 	0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
@@ -43,7 +43,7 @@ app.post("/task", async (req, res) => {
 		return res.json({ status: "No peers available" });
 	}
 
-	await manager.services.manager.acceptTask(task);
+	await manager.services.manager.processTask(task);
 
 	res.json({ status: "Task received", task });
 });

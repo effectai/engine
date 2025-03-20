@@ -13,18 +13,7 @@
 
     <div class="flex justify-between gap-2 mt-3">
       <div>
-        <div class="flex flex-col">
-          <label class="text-sm">Base earned: </label>
-          <span v-if="totalUptime.totalTimeInSeconds"
-            >{{ baseEffectEarned.toFixed(2) }} EFFECT</span
-          >
-        </div>
-      </div>
-      <div>
-        <div class="flex flex-col">
-          <label class="text-sm">Last Challenge: </label
-          >{{ totalManagerUptime.formattedTime }}
-        </div>
+        <div class="flex flex-col"></div>
       </div>
     </div>
   </UCard>
@@ -38,34 +27,6 @@ const props = defineProps<{
 }>();
 
 const totalUptime = useUptime(props.totalUptimeInSeconds);
-const totalManagerUptime = useUptime(props.totalManagerUptimeInSeconds);
-
-function useUptime(initialTime: number) {
-	const totalTimeInSeconds = ref(initialTime);
-
-	const formattedTime = computed(() => {
-		const seconds = totalTimeInSeconds.value;
-		const hours = Math.floor(seconds / 3600);
-		const minutes = Math.floor((seconds % 3600) / 60);
-		const remainingSeconds = seconds % 60;
-
-		return `${hours}h ${minutes}m ${remainingSeconds}s`;
-	});
-
-	let interval: ReturnType<typeof setInterval> | null = null;
-
-	onMounted(() => {
-		interval = setInterval(() => {
-			totalTimeInSeconds.value += 1;
-		}, 1000);
-	});
-
-	onUnmounted(() => {
-		if (interval) clearInterval(interval);
-	});
-
-	return { totalTimeInSeconds, formattedTime };
-}
 
 const baseEffectEarned = computed(() => {
 	return totalUptime.totalTimeInSeconds.value * 0.2;

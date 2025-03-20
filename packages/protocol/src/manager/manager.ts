@@ -101,7 +101,7 @@ export class ManagerService
 						detail.connection,
 					);
 
-					if (!nonce) {
+					if (!nonce && nonce != 0n) {
 						console.error("Failed to get nonce from worker");
 						return;
 					}
@@ -269,6 +269,7 @@ export class ManagerService
 
 	public async processTask(task: Task) {
 		task.manager = this.components.peerId.toString();
+
 		await this.taskService.storeTask(task);
 		//get worker from queue
 		const worker = this.workerQueue.dequeue();
@@ -323,6 +324,12 @@ export class ManagerService
 		}
 
 		await this.taskService.storeTask(task);
+	}
+
+	public acceptTask() {}
+
+	public getQueue() {
+		return this.workerQueue.getQueue();
 	}
 
 	private async generatePayment(peerId: string, amount: bigint) {

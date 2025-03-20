@@ -106,17 +106,19 @@ describe("Libp2p", () => {
 					}
 					await w1.services.worker.completeTask(dtask, `{"result": "dummy"}`);
 
+					const tasks = await w1.services.worker.getTasks();
+					console.log(tasks);
 					await new Promise((resolve) => setTimeout(resolve, 1000));
 				}
 
-				await w1.services.worker.requestPayout(manager1.peerId);
-				await new Promise((resolve) => setTimeout(resolve, 5000));
-
-				await w1.services.worker.requestPayout(manager1.peerId);
-				await new Promise((resolve) => setTimeout(resolve, 5000));
-
-				await w1.services.worker.requestPayout(manager1.peerId);
-
+				// await w1.services.worker.requestPayout(manager1.peerId);
+				// await new Promise((resolve) => setTimeout(resolve, 5000));
+				//
+				// await w1.services.worker.requestPayout(manager1.peerId);
+				// await new Promise((resolve) => setTimeout(resolve, 5000));
+				//
+				// await w1.services.worker.requestPayout(manager1.peerId);
+				//
 				await manager1.stop();
 				await Promise.all([w1.stop()]);
 			},

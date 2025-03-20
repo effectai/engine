@@ -33,7 +33,6 @@ const handlerSubmitTask = async (data) => {
 		taskId,
 		JSON.stringify({
 			...data.values,
-			worker: node.value.peerId.toString(),
 		}),
 	);
 
@@ -44,7 +43,7 @@ const handlerSubmitTask = async (data) => {
 onMounted(() => {
 	if (template.value) {
 		template.value.setHtml(
-			taskStore.value.find((task) => task.id === taskId)?.template || "",
+			taskStore.value.find((task) => task.taskId === taskId)?.template || "",
 		);
 	}
 });

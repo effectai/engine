@@ -9,7 +9,7 @@
             Welcome to the Effect AI Protocol Worker Dashboard. Please wait a
             moment while we connect you to a manager node.
           </p>
-          <UProgress animation="carousel" />
+          <UProgress :total-uptime-in-seconds="0" animation="carousel" />
         </UCard>
       </div>
       <div v-else-if="connecting">
@@ -28,9 +28,9 @@
               <span class="text-green-500">Connected</span>
             </div>
             <div class="text-sm flex gap-1">
-              <label class="font-bold">Wallet:</label>
-              <span class="text-black" v-if="publicKey">{{
-                trimAddress(publicKey.toString())
+              <label class="font-bold">Worker address:</label>
+              <span class="text-black" v-if="nodePublicKey">{{
+                trimAddress(nodePublicKey)
               }}</span>
             </div>
             <div class="text-sm flex gap-1">
@@ -44,12 +44,12 @@
             </div>
           </div>
 
-          <UptimeCard
-            :total-uptime-in-seconds="0"
-            :total-manager-uptime-in-seconds="0"
-          />
-
-          <ProgressCard />
+          <div>
+            <div class="flex gap-5">
+              <UptimeCard :total-uptime-in-seconds="0" />
+              <ProgressCard :total-uptime-in-seconds="0" />
+            </div>
+          </div>
         </div>
         <UModals />
         <div class="mt-5"><slot /></div>

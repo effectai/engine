@@ -11,6 +11,7 @@ import * as filters from "@libp2p/websockets/filters";
 import type { Ed25519PrivateKey } from "@libp2p/interface";
 import { IDBDatastore } from "datastore-idb";
 import { workerProtocol } from "./worker.js";
+import { Key } from "interface-datastore";
 
 export type WorkerNode = ReturnType<typeof createWorkerNode>;
 
@@ -23,6 +24,8 @@ export const createWorkerNode = async (
 	if (typeof window !== "undefined") {
 		datastore = new IDBDatastore("/worker");
 		await datastore.open();
+		//clear all old data
+		// console.log(datastore.db.clear());
 	}
 
 	return createLibp2p({

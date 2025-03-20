@@ -63,9 +63,9 @@ export class WorkerProtocolService
 {
 	private taskService: TaskProtocolService;
 	private paymentService: PaymentProtocolService;
+
+	//TODO:: retrieve current nonce based on manager requesting it.
 	private nonce = BigInt(1);
-	//TODO::
-	// private challengeService: ChallengeProtocolService;
 
 	constructor(private components: WorkerProtocolComponents) {
 		super();
@@ -100,6 +100,10 @@ export class WorkerProtocolService
 		} else if (workerMessage.task) {
 			this.handleTaskMessage(workerMessage.task);
 		}
+	}
+
+	async getTasks() {
+		return await this.taskService.getTasks();
 	}
 
 	//request a payment from a manager for time spent on the network.
@@ -163,6 +167,10 @@ export class WorkerProtocolService
 				remotePeer,
 				paymentMessage.payment,
 			);
+
+			this.safeDispatchEvent("payment:received", {
+				detail: paymentMessage,
+			});
 		}
 	}
 
@@ -239,9 +247,10 @@ export class WorkerProtocolService
 		await this.sendManagerMessage(task.manager, managerMessage);
 	}
 
-	async completeTask(task: Task, result: string) {
-		//retrieve task from store..
-		if (!task.manager) {
+	async completeTask(taskId: string, result: string) {
+		const task = await this.taskService.getTask(taskId);
+
+		if (!task || !task.manager) {
 			throw new Error("Task does not have a manager");
 		}
 
