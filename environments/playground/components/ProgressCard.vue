@@ -8,9 +8,7 @@
       <div class="flex justify-center items-center my-4">
         <div class="text-3xl flex justify-center items-center gap-2">
           <img class="rounded-xl" src="public/effect-icon.png" />
-          <span
-            >{{ totalEffectEarned }} <span class="text-xl">EFFECT</span></span
-          >
+          <span>{{ claimableAmount }} <span class="text-xl">EFFECT</span></span>
         </div>
       </div>
     </UCard>
@@ -18,21 +16,13 @@
 </template>
 
 <script setup lang="ts">
-const { paymentStore } = await useWorkerNode();
+const { paymentStore, claimableAmount } = await useWorkerNode();
 
 const props = defineProps<{
 	totalUptimeInSeconds: number;
 }>();
 
 const totalUptime = useUptime(props.totalUptimeInSeconds);
-
-const baseEffectEarned = computed(() => {
-	return (totalUptime.totalTimeInSeconds.value * 0.1).toFixed(2);
-});
-
-const totalEffectEarned = computed(() => {
-	return paymentStore.value.reduce((acc, curr) => acc + curr.amount, 0);
-});
 </script>
 
 <style scoped></style>

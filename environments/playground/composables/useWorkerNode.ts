@@ -23,6 +23,8 @@ const createWorkerNodeStore = async (): Promise<WorkerNodeStore> => {
 	const privateKey = localStorage.getItem("privateKey");
 	const privateKeyHex = Buffer.from(privateKey as string, "hex");
 
+	const timeSinceLastPayout = new Date().getTime() / 1000;
+
 	const key = await generateKeyPairFromSeed(
 		"Ed25519",
 		privateKeyHex.slice(0, 32),
@@ -63,12 +65,11 @@ const createWorkerNodeStore = async (): Promise<WorkerNodeStore> => {
 	node.value.services.worker.addEventListener(
 		"payment:received",
 		async ({ detail }) => {
-			console.log("payment received", detail);
 			paymentStore.value = await node.value.services.worker.getPayments();
 		},
 	);
 
-	const currentNonce = ref(0);
+	const currentNonce = ref(1);
 	const claimablePayments = computed(() =>
 		paymentStore.value
 			.filter((p) => p.nonce <= currentNonce.value)
@@ -81,12 +82,20 @@ const createWorkerNodeStore = async (): Promise<WorkerNodeStore> => {
 	);
 
 	const claimableAmount = computed(() =>
-		claimablePayments.value.reduce((acc, payment) => acc + payment.amount, 0),
+		claimablePayments.value.reduce((acc, payment) => acc + payment.amount, 0n),
 	);
 
 	const publicKey = computed(() => {
 		return node.value.peerId.publicKey?.toString();
 	});
+
+	const unpaidUptime = computed(() => {});
+
+	const requestPayout = async () => {
+		const payment =
+			await node.value.services.worker.requestPayout(managerPeerId);
+		console.log(payment);
+	};
 
 	return {
 		node,
@@ -99,6 +108,7 @@ const createWorkerNodeStore = async (): Promise<WorkerNodeStore> => {
 
 		publicKey,
 
+		currentNonce,
 		connected,
 	};
 };

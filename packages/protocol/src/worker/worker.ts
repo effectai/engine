@@ -270,7 +270,8 @@ export class WorkerProtocolService
 	}
 
 	async getPayments() {
-		return this.paymentService.getPayments();
+		const payments = await this.paymentService.getPayments();
+		return payments;
 	}
 
 	async sendManagerMessage(peerId: string, message: ManagerMessage) {
