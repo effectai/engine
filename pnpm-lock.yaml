@@ -230,8 +230,8 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
       vite-plugin-node-polyfills:
-        specifier: 0.22.0
-        version: 0.22.0(vite@6.2.2)
+        specifier: ^0.23.0
+        version: 0.23.0(vite@6.2.2)
       vue:
         specifier: ^3.5.13
         version: 3.5.13(typescript@5.8.2)
@@ -28261,10 +28261,10 @@ packages:
     transitivePeerDependencies:
       - supports-color
 
-  /vite-plugin-node-polyfills@0.22.0(vite@6.2.2):
-    resolution: {integrity: sha512-F+G3LjiGbG8QpbH9bZ//GSBr9i1InSTkaulfUHFa9jkLqVGORFBoqc2A/Yu5Mmh1kNAbiAeKeK+6aaQUf3x0JA==}
+  /vite-plugin-node-polyfills@0.23.0(vite@6.2.2):
+    resolution: {integrity: sha512-4n+Ys+2bKHQohPBKigFlndwWQ5fFKwaGY6muNDMTb0fSQLyBzS+jjUNRZG9sKF0S/Go4ApG6LFnUGopjkILg3w==}
     peerDependencies:
-      vite: ^2.0.0 || ^3.0.0 || ^4.0.0 || ^5.0.0
+      vite: ^2.0.0 || ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0
     dependencies:
       '@rollup/plugin-inject': 5.0.5(rollup@4.34.8)
       node-stdlib-browser: 1.3.1

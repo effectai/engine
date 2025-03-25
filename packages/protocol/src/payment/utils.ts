@@ -1,7 +1,6 @@
 //create dummy payments
 import { buildEddsa, buildPoseidon } from "circomlibjs";
 
-import crypto from "node:crypto";
 import type { PrivateKey } from "@libp2p/interface";
 import { PublicKey } from "@solana/web3.js";
 import { int2hex } from "../utils/utils.js";
@@ -21,8 +20,4 @@ export const signPayment = async (payment: Payment, privateKey: PrivateKey) => {
 	);
 
 	return signature;
-};
-
-export const hashPayment = (serializedPayment: Uint8Array) => {
-	return crypto.createHash("sha256").update(serializedPayment).digest();
 };

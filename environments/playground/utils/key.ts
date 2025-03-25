@@ -1,9 +1,9 @@
 import { peerIdFromString } from "@libp2p/peer-id";
 import { PublicKey } from "@solana/web3.js";
-import crypto from "node:crypto";
+// import crypto from "node:crypto";
 
 export function generateSeed() {
-	return crypto.randomBytes(32);
+	// return crypto.randomBytes(32);
 }
 
 export const getPublicKeyFromPeerId = (peerId: string) => {
