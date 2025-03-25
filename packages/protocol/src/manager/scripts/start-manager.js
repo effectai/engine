@@ -11,8 +11,9 @@ const seed = Uint8Array.from([
 
 const key = await generateKeyPairFromSeed("Ed25519", Buffer.from(seed, "hex"));
 const manager = await createManagerNode([], key);
-const relayAddress = manager.getMultiaddrs()[0];
-console.log("connecting on :", relayAddress.toString());
+console.log("Listening on:");
+manager.getMultiaddrs().forEach((ma) => console.log(ma.toString()));
+// console.log("connecting on :", relayAddress.toString());
 
 //report some info every 10 seconds
 setInterval(async () => {
