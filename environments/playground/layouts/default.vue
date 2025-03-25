@@ -8,9 +8,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
-console.log("default layout..");
-</script>
+<script setup lang="ts"></script>
 
 <style lang="scss" scoped>
   #layout-container {
