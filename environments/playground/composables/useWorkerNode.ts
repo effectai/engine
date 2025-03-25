@@ -37,6 +37,7 @@ export const useWorkerNode = () => {
 		await datastore.open();
 		// await datastore.destroy();
 		const config = useRuntimeConfig();
+		console.log(config.public.MANAGER_MULTI_ADDRESS);
 		nodeInstance.value = await createWorkerNode(
 			[config.public.MANAGER_MULTI_ADDRESS],
 			privateKey,

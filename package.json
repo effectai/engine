@@ -17,6 +17,7 @@
 		"build": "turbo run build",
 		"format": "pnpm prettier -w . && pnpm biome format --write .",
 		"dashboard:generate-prod": "pnpm --filter effect-dashboard run generate-prod",
+		"playground:generate-prod": "pnpm --filter effect-playground run generate-prod",
 		"website:generate": "pnpm --filter effect-website run generate",
 		"manager:start": "pnpm --filter @effectai/protocol run manager:start",
 		"packages:build": "pnpm turbo build --filter @effectai/*",
