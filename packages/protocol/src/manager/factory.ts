@@ -14,7 +14,7 @@ export const createManagerNode = (peers: string[], privateKey?: PrivateKey) => {
 	return createLibp2p({
 		...(privateKey && { privateKey }),
 		addresses: {
-			listen: ["/ip4/0.0.0.0/tcp/34859/ws"],
+			listen: ["/ip4/192.168.2.17/tcp/34859/wss"],
 		},
 		transports: [webSockets({ filter: filters.all })],
 		streamMuxers: [yamux()],
