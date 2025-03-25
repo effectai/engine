@@ -13,5 +13,5 @@ RUN pnpm deploy --filter=@effectai/protocol --prod /prod/manager
 FROM base AS manager
 COPY --from=build /prod/manager /prod/manager
 WORKDIR /prod/manager
-EXPOSE 34859 8888
+EXPOSE 34859
 CMD [ "pnpm", "manager:start" ]
