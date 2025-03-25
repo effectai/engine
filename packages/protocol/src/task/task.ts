@@ -30,6 +30,7 @@ export namespace TaskStatus {
 }
 export interface Task {
   taskId: string
+  title: string
   manager: string
   created: string
   reward: bigint
@@ -54,38 +55,43 @@ export namespace Task {
           w.string(obj.taskId)
         }
 
-        if ((obj.manager != null && obj.manager !== '')) {
+        if ((obj.title != null && obj.title !== '')) {
           w.uint32(18)
+          w.string(obj.title)
+        }
+
+        if ((obj.manager != null && obj.manager !== '')) {
+          w.uint32(26)
           w.string(obj.manager)
         }
 
         if ((obj.created != null && obj.created !== '')) {
-          w.uint32(26)
+          w.uint32(34)
           w.string(obj.created)
         }
 
         if ((obj.reward != null && obj.reward !== 0n)) {
-          w.uint32(32)
+          w.uint32(40)
           w.uint64(obj.reward)
         }
 
         if ((obj.template != null && obj.template !== '')) {
-          w.uint32(42)
+          w.uint32(50)
           w.string(obj.template)
         }
 
         if ((obj.result != null && obj.result !== '')) {
-          w.uint32(50)
+          w.uint32(58)
           w.string(obj.result)
         }
 
         if ((obj.signature != null && obj.signature !== '')) {
-          w.uint32(58)
+          w.uint32(66)
           w.string(obj.signature)
         }
 
         if (obj.status != null && __TaskStatusValues[obj.status] !== 0) {
-          w.uint32(64)
+          w.uint32(72)
           TaskStatus.codec().encode(obj.status, w)
         }
 
@@ -95,6 +101,7 @@ export namespace Task {
       }, (reader, length, opts = {}) => {
         const obj: any = {
           taskId: '',
+          title: '',
           manager: '',
           created: '',
           reward: 0n,
@@ -115,30 +122,34 @@ export namespace Task {
               break
             }
             case 2: {
-              obj.manager = reader.string()
+              obj.title = reader.string()
               break
             }
             case 3: {
-              obj.created = reader.string()
+              obj.manager = reader.string()
               break
             }
             case 4: {
-              obj.reward = reader.uint64()
+              obj.created = reader.string()
               break
             }
             case 5: {
-              obj.template = reader.string()
+              obj.reward = reader.uint64()
               break
             }
             case 6: {
-              obj.result = reader.string()
+              obj.template = reader.string()
               break
             }
             case 7: {
-              obj.signature = reader.string()
+              obj.result = reader.string()
               break
             }
             case 8: {
+              obj.signature = reader.string()
+              break
+            }
+            case 9: {
               obj.status = TaskStatus.codec().decode(reader)
               break
             }

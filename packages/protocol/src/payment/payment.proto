@@ -15,14 +15,14 @@ message Payment {
 
   // The signature is the signed payment data by the manager node
   PaymentSignature signature = 5;
+}   
+
+message R8Pair {
+      bytes R8_1 = 1;
+      bytes R8_2 = 2;
 }
 
 message PaymentSignature {
-    message R8Pair {
-      bytes R8_1 = 1;
-      bytes R8_2 = 2;
-    }
-
     R8Pair R8 = 1;
     string S = 2;
 }
@@ -40,6 +40,11 @@ message ProofRequest {
 }
 
 message ProofResponse {
+  message Signals {
+    string min_nonce = 1;
+    string max_nonce = 2;
+    uint64 amount = 3;
+  }
   repeated string pi_a = 1;
   message Matrix {
     repeated string row = 1 [packed = true];
@@ -48,6 +53,8 @@ message ProofResponse {
   repeated string pi_c = 3;
   string protocol = 4;
   string curve = 5;
+  Signals signals = 6;
+  R8Pair R8 = 7;
 }
 
 // RequestNonce is a message to request a nonce from a worker 

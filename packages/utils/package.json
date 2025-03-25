@@ -24,6 +24,7 @@
 		"yaml": "2.6.1"
 	},
 	"devDependencies": {
+		"@types/node": "^22.13.13",
 		"typescript": "5.7.2",
 		"rollup": "^4.27.3"
 	}

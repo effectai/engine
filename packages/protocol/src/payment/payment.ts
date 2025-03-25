@@ -113,83 +113,83 @@ export namespace Payment {
   }
 }
 
+export interface R8Pair {
+  R8_1: Uint8Array
+  R8_2: Uint8Array
+}
+
+export namespace R8Pair {
+  let _codec: Codec<R8Pair>
+
+  export const codec = (): Codec<R8Pair> => {
+    if (_codec == null) {
+      _codec = message<R8Pair>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.R8_1 != null && obj.R8_1.byteLength > 0)) {
+          w.uint32(10)
+          w.bytes(obj.R8_1)
+        }
+
+        if ((obj.R8_2 != null && obj.R8_2.byteLength > 0)) {
+          w.uint32(18)
+          w.bytes(obj.R8_2)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          R8_1: uint8ArrayAlloc(0),
+          R8_2: uint8ArrayAlloc(0)
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.R8_1 = reader.bytes()
+              break
+            }
+            case 2: {
+              obj.R8_2 = reader.bytes()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<R8Pair>): Uint8Array => {
+    return encodeMessage(obj, R8Pair.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<R8Pair>): R8Pair => {
+    return decodeMessage(buf, R8Pair.codec(), opts)
+  }
+}
+
 export interface PaymentSignature {
-  R8?: PaymentSignature.R8Pair
+  R8?: R8Pair
   S: string
 }
 
 export namespace PaymentSignature {
-  export interface R8Pair {
-    R8_1: Uint8Array
-    R8_2: Uint8Array
-  }
-
-  export namespace R8Pair {
-    let _codec: Codec<R8Pair>
-
-    export const codec = (): Codec<R8Pair> => {
-      if (_codec == null) {
-        _codec = message<R8Pair>((obj, w, opts = {}) => {
-          if (opts.lengthDelimited !== false) {
-            w.fork()
-          }
-
-          if ((obj.R8_1 != null && obj.R8_1.byteLength > 0)) {
-            w.uint32(10)
-            w.bytes(obj.R8_1)
-          }
-
-          if ((obj.R8_2 != null && obj.R8_2.byteLength > 0)) {
-            w.uint32(18)
-            w.bytes(obj.R8_2)
-          }
-
-          if (opts.lengthDelimited !== false) {
-            w.ldelim()
-          }
-        }, (reader, length, opts = {}) => {
-          const obj: any = {
-            R8_1: uint8ArrayAlloc(0),
-            R8_2: uint8ArrayAlloc(0)
-          }
-
-          const end = length == null ? reader.len : reader.pos + length
-
-          while (reader.pos < end) {
-            const tag = reader.uint32()
-
-            switch (tag >>> 3) {
-              case 1: {
-                obj.R8_1 = reader.bytes()
-                break
-              }
-              case 2: {
-                obj.R8_2 = reader.bytes()
-                break
-              }
-              default: {
-                reader.skipType(tag & 7)
-                break
-              }
-            }
-          }
-
-          return obj
-        })
-      }
-
-      return _codec
-    }
-
-    export const encode = (obj: Partial<R8Pair>): Uint8Array => {
-      return encodeMessage(obj, R8Pair.codec())
-    }
-
-    export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<R8Pair>): R8Pair => {
-      return decodeMessage(buf, R8Pair.codec(), opts)
-    }
-  }
-
   let _codec: Codec<PaymentSignature>
 
   export const codec = (): Codec<PaymentSignature> => {
@@ -201,7 +201,7 @@ export namespace PaymentSignature {
 
         if (obj.R8 != null) {
           w.uint32(10)
-          PaymentSignature.R8Pair.codec().encode(obj.R8, w)
+          R8Pair.codec().encode(obj.R8, w)
         }
 
         if ((obj.S != null && obj.S !== '')) {
@@ -224,7 +224,7 @@ export namespace PaymentSignature {
 
           switch (tag >>> 3) {
             case 1: {
-              obj.R8 = PaymentSignature.R8Pair.codec().decode(reader, reader.uint32(), {
+              obj.R8 = R8Pair.codec().decode(reader, reader.uint32(), {
                 limits: opts.limits?.R8
               })
               break
@@ -435,9 +435,93 @@ export interface ProofResponse {
   piC: string[]
   protocol: string
   curve: string
+  signals?: ProofResponse.Signals
+  R8?: R8Pair
 }
 
 export namespace ProofResponse {
+  export interface Signals {
+    minNonce: string
+    maxNonce: string
+    amount: bigint
+  }
+
+  export namespace Signals {
+    let _codec: Codec<Signals>
+
+    export const codec = (): Codec<Signals> => {
+      if (_codec == null) {
+        _codec = message<Signals>((obj, w, opts = {}) => {
+          if (opts.lengthDelimited !== false) {
+            w.fork()
+          }
+
+          if ((obj.minNonce != null && obj.minNonce !== '')) {
+            w.uint32(10)
+            w.string(obj.minNonce)
+          }
+
+          if ((obj.maxNonce != null && obj.maxNonce !== '')) {
+            w.uint32(18)
+            w.string(obj.maxNonce)
+          }
+
+          if ((obj.amount != null && obj.amount !== 0n)) {
+            w.uint32(24)
+            w.uint64(obj.amount)
+          }
+
+          if (opts.lengthDelimited !== false) {
+            w.ldelim()
+          }
+        }, (reader, length, opts = {}) => {
+          const obj: any = {
+            minNonce: '',
+            maxNonce: '',
+            amount: 0n
+          }
+
+          const end = length == null ? reader.len : reader.pos + length
+
+          while (reader.pos < end) {
+            const tag = reader.uint32()
+
+            switch (tag >>> 3) {
+              case 1: {
+                obj.minNonce = reader.string()
+                break
+              }
+              case 2: {
+                obj.maxNonce = reader.string()
+                break
+              }
+              case 3: {
+                obj.amount = reader.uint64()
+                break
+              }
+              default: {
+                reader.skipType(tag & 7)
+                break
+              }
+            }
+          }
+
+          return obj
+        })
+      }
+
+      return _codec
+    }
+
+    export const encode = (obj: Partial<Signals>): Uint8Array => {
+      return encodeMessage(obj, Signals.codec())
+    }
+
+    export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<Signals>): Signals => {
+      return decodeMessage(buf, Signals.codec(), opts)
+    }
+  }
+
   export interface Matrix {
     row: string[]
   }
@@ -544,6 +628,16 @@ export namespace ProofResponse {
           w.string(obj.curve)
         }
 
+        if (obj.signals != null) {
+          w.uint32(50)
+          ProofResponse.Signals.codec().encode(obj.signals, w)
+        }
+
+        if (obj.R8 != null) {
+          w.uint32(58)
+          R8Pair.codec().encode(obj.R8, w)
+        }
+
         if (opts.lengthDelimited !== false) {
           w.ldelim()
         }
@@ -594,6 +688,18 @@ export namespace ProofResponse {
             }
             case 5: {
               obj.curve = reader.string()
+              break
+            }
+            case 6: {
+              obj.signals = ProofResponse.Signals.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.signals
+              })
+              break
+            }
+            case 7: {
+              obj.R8 = R8Pair.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.R8
+              })
               break
             }
             default: {

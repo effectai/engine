@@ -3,3 +3,6 @@ node_modules
 .gitignore
 *.md
 dist
+solana
+website
+environments

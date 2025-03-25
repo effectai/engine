@@ -6,116 +6,176 @@ import {
 } from "@effectai/protocol";
 import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 import { peerIdFromString } from "@libp2p/peer-id";
+import { Keypair, PublicKey } from "@solana/web3.js";
+import { IDBDatastore } from "datastore-idb";
+import { useWallet } from "solana-wallets-vue";
+import { buildEddsa } from "circomlibjs";
 
-type WorkerNodeStore = {
-	node: Ref<Awaited<WorkerNode>>;
-	taskStore: Ref<Task[]>;
-	paymentStore: Ref<Payment[]>;
-	publicKey: Ref<string | null>;
-};
+const nodeInstance = shallowRef<Awaited<WorkerNode> | null>(null);
+const isListenersAttached = ref(false);
+const isInitialized = ref(false);
+const isInitializing = ref(false);
+const isPairing = ref(true);
+const connected = ref(false);
+const managerPeerId: Ref<string | null> = ref(null);
+const { privateKey } = useAuth(); //
+const connectionTime = ref(0);
+const paymentStore = ref<Payment[]>([]);
+const taskStore = ref<Task[]>([]);
+const toast = useToast();
 
-let workerNodeStore: WorkerNodeStore | null = null;
+export const useWorkerNode = () => {
+	const initialize = async (privateKey: any) => {
+		if (isInitialized.value) return;
+		isInitializing.value = true;
+		isPairing.value = true;
 
-const createWorkerNodeStore = async (): Promise<WorkerNodeStore> => {
-	const taskStore = ref<Task[]>([]);
-	const paymentStore = ref<Payment[]>([]);
+		const workerKeypair = Keypair.fromSecretKey(privateKey.raw);
+		const datastore = new IDBDatastore(
+			`worker/${workerKeypair.publicKey.toBase58()}`,
+		);
+		await datastore.open();
+		// await datastore.destroy();
+		const config = useRuntimeConfig();
+		nodeInstance.value = await createWorkerNode(
+			[config.public.MANAGER_MULTI_ADDRESS],
+			privateKey,
+			datastore,
+			async (managerPeerId: string, pub_x: Uint8Array, pub_y: Uint8Array) => {
+				const { fetchNonces } = useNonce();
+				const { publicKey } = useWallet();
 
-	const privateKey = localStorage.getItem("privateKey");
-	const privateKeyHex = Buffer.from(privateKey as string, "hex");
+				const managerPublicKey = getPublicKeyFromPeerId(managerPeerId);
+				if (!workerPublicKey.value || !managerPublicKey) return;
 
-	const timeSinceLastPayout = new Date().getTime() / 1000;
+				const eddsa = await buildEddsa();
 
-	const key = await generateKeyPairFromSeed(
-		"Ed25519",
-		privateKeyHex.slice(0, 32),
-	);
+				const { nextNonce, remoteNonce } = await fetchNonces(
+					publicKey.value,
+					new PublicKey(eddsa.F.toObject(pub_x)),
+				);
 
-	const node = ref(
-		await createWorkerNode(
-			[
-				"/ip4/127.0.0.1/tcp/34859/ws/p2p/12D3KooWFFNkqu7bETMX2qfdyi9t9T3fEYtqQXMTKtSt8Yw9jz5b",
-			],
-			key,
-		),
-	);
+				toast.add({
+					title: "Pairing Successful",
+					description: "Successfully Paired with manager",
+				});
+				isPairing.value = false;
 
-	node.value.addEventListener("start", async () => {
-		taskStore.value = await node.value.services.worker.getTasks();
-		paymentStore.value = await node.value.services.worker.getPayments();
-	});
+				return { nonce: nextNonce, delegate: publicKey.value };
+			},
+		);
 
-	await node.value.start();
+		attachListeners(nodeInstance.value);
 
-	//check if we're still connected every 5 seconds
-	const managerPeerId = peerIdFromString(
-		"12D3KooWFFNkqu7bETMX2qfdyi9t9T3fEYtqQXMTKtSt8Yw9jz5b",
-	);
-
-	const connected = ref(false);
-
-	setInterval(async () => {
-		const connections = node.value.getConnections(managerPeerId);
-		connected.value = connections.length > 0;
-	}, 5000);
-
-	node.value.services.worker.addEventListener("task:received", async () => {
-		taskStore.value = await node.value.services.worker.getTasks();
-	});
-
-	node.value.services.worker.addEventListener(
-		"payment:received",
-		async ({ detail }) => {
-			paymentStore.value = await node.value.services.worker.getPayments();
-		},
-	);
-
-	const currentNonce = ref(1);
-	const claimablePayments = computed(() =>
-		paymentStore.value
-			.filter((p) => p.nonce <= currentNonce.value)
-			.map((payment) => {
-				return {
-					nonce: payment.nonce,
-					amount: payment.amount,
-				};
-			}),
-	);
-
-	const claimableAmount = computed(() =>
-		claimablePayments.value.reduce((acc, payment) => acc + payment.amount, 0n),
-	);
-
-	const publicKey = computed(() => {
-		return node.value.peerId.publicKey?.toString();
-	});
-
-	const unpaidUptime = computed(() => {});
-
-	const requestPayout = async () => {
-		const payment =
-			await node.value.services.worker.requestPayout(managerPeerId);
-		console.log(payment);
+		isInitialized.value = true;
+		isInitializing.value = false;
 	};
+
+	const start = async () => {
+		if (!nodeInstance.value) return;
+		await nodeInstance.value.start();
+	};
+
+	const stop = async () => {
+		if (!nodeInstance.value) return;
+		await nodeInstance.value.stop();
+	};
+
+	const attachListeners = (node: Awaited<WorkerNode>) => {
+		if (isListenersAttached.value) return;
+
+		node.addEventListener("start", async () => {
+			taskStore.value = await node.services.worker.getTasks();
+			paymentStore.value = await node.services.worker.getPayments();
+		});
+
+		node.services.worker.addEventListener(
+			"task:received",
+			async ({ detail }) => {
+				taskStore.value = await node.services.worker.getTasks();
+				toast.add({
+					title: "Task Received",
+					description: `Received task ${detail.title}`,
+				});
+			},
+		);
+
+		node.services.worker.addEventListener(
+			"payment:received",
+			async ({ detail }) => {
+				paymentStore.value = await node.services.worker.getPayments();
+				toast.add({
+					title: "Payment Received",
+					description: `Received ${formatBigIntToAmount(
+						detail.payment?.amount,
+					)} EFFECT`,
+				});
+			},
+		);
+
+		node.addEventListener("peer:connect", async ({ detail }) => {
+			// console.log("Peer connected:", detail);
+		});
+
+		node.addEventListener("peer:identify", async ({ detail }) => {
+			if (detail.protocols.includes("/effectai/manager/0.0.1")) {
+				managerPeerId.value = detail.peerId.toString();
+				connected.value = true;
+				connectionTime.value = Date.now() / 1000;
+			}
+		});
+
+		isListenersAttached.value = true;
+	};
+
+	watchEffect(async () => {
+		if (!privateKey.value || isInitialized.value || isInitializing.value)
+			return;
+
+		isInitializing.value = true;
+
+		const keyBuffer = Buffer.from(privateKey.value, "hex");
+		const ed25519PrivateKey = await generateKeyPairFromSeed(
+			"Ed25519",
+			keyBuffer.slice(0, 32),
+		);
+
+		await initialize(ed25519PrivateKey);
+		await start();
+	});
+
+	const publicKey = computed(() =>
+		nodeInstance.value?.peerId.publicKey?.toString(),
+	);
+
+	const workerPublicKey = computed(() => {
+		if (!nodeInstance.value || !nodeInstance.value.peerId.publicKey) return;
+		return new PublicKey(nodeInstance.value?.peerId.publicKey.raw);
+	});
+
+	const managerPublicKey = computed(() => {
+		if (!managerPeerId.value) return;
+		const peerId = peerIdFromString(managerPeerId.value);
+		return new PublicKey(peerId.publicKey.raw);
+	});
 
 	return {
-		node,
+		node: nodeInstance,
 
-		taskStore,
-		paymentStore,
-
-		claimablePayments,
-		claimableAmount,
+		workerPublicKey,
+		managerPublicKey,
+		managerPeerId,
 
 		publicKey,
+		privateKey,
 
-		currentNonce,
+		start,
+		stop,
 		connected,
-	};
-};
+		paymentStore,
+		taskStore,
 
-export const useWorkerNode = async () => {
-	if (workerNodeStore === null) {
-		workerNodeStore = await createWorkerNodeStore();
-	}
-	return workerNodeStore;
+		isPairing,
+		connectionTime,
+	};
 };

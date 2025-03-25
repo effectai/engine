@@ -1,23 +1,21 @@
 import type { Config } from "tailwindcss";
 
 export default (<Partial<Config>>{
-	theme: {
-		extend: {
-			colors: {
-				green: {
-					50: "#EFFDF5",
-					100: "#D9FBE8",
-					200: "#B3F5D1",
-					300: "#75EDAE",
-					400: "#00DC82",
-					500: "#00C16A",
-					600: "#00A155",
-					700: "#007F45",
-					800: "#016538",
-					900: "#0A5331",
-					950: "#052e16",
-				},
-			},
-		},
+	theme: { extend: {} },
+	content: {
+		files: [
+			// all directories and extensions will correspond to your Nuxt config
+			"{srcDir}/components/**/*.{vue,js,jsx,mjs,ts,tsx}",
+			"{srcDir}/layouts/**/*.{vue,js,jsx,mjs,ts,tsx}",
+			"{srcDir}/pages/**/*.{vue,js,jsx,mjs,ts,tsx}",
+			"{srcDir}/plugins/**/*.{js,ts,mjs}",
+			"{srcDir}/composables/**/*.{js,ts,mjs}",
+			"{srcDir}/utils/**/*.{js,ts,mjs}",
+			"{srcDir}/{A,a}pp.{vue,js,jsx,mjs,ts,tsx}",
+			"{srcDir}/{E,e}rror.{vue,js,jsx,mjs,ts,tsx}",
+			"{srcDir}/app.config.{js,ts,mjs}",
+			"{srcDir}/app/spa-loading-template.html",
+		],
 	},
+	plugins: [],
 });

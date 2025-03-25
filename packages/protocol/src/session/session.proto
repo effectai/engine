@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message WorkerSessionData {
+  string id = 1;
+  uint64 nonce = 2;
+  bytes delegate = 3; 
+}
+
+message ManagerSessionData {
+  bytes pub_x = 1;
+  bytes pub_y = 2;
+}
+
+message SessionMessage {
+  oneof session_data {
+    WorkerSessionData worker = 1;
+    ManagerSessionData manager = 2;
+  }
+}

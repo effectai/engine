@@ -20,6 +20,8 @@ import {
 	MULTICODEC_WORKER_PROTOCOL_VERSION,
 } from "./consts.js";
 
+import { PublicKey } from "@solana/web3.js";
+
 import type { Datastore } from "interface-datastore";
 
 import {
@@ -30,6 +32,11 @@ import {
 	WorkerMessage,
 } from "./workerMessage.js";
 
+export type WorkerSession = {
+	nonce: bigint;
+	delegate: PublicKey;
+};
+
 import {
 	MULTICODEC_MANAGER_PROTOCOL_NAME,
 	MULTICODEC_MANAGER_PROTOCOL_VERSION,
@@ -37,13 +44,14 @@ import {
 import { ManagerMessage } from "../manager/managerMessage.js";
 import { PaymentProtocolService } from "../payment/service.js";
 import { TaskProtocolService } from "../task/service.js";
-import { getOrCreateActiveOutBoundStream } from "../utils/utils.js";
+import { getOrCreateActiveOutBoundStream, isManager } from "../utils/utils.js";
 import { Payment } from "../payment/payment.js";
 
 export interface WorkerProtocolEvents {
 	"task:received": CustomEvent<Task>;
 	"task:sent": CustomEvent<Task>;
 	"payment:received": CustomEvent<PaymentMessage>;
+	"worker:identify": CustomEvent<WorkerSession>;
 }
 
 export interface WorkerProtocolComponents {
@@ -63,21 +71,42 @@ export class WorkerProtocolService
 {
 	private taskService: TaskProtocolService;
 	private paymentService: PaymentProtocolService;
+	private onRequestSessionData?: (
+		peerId: string,
+		pubX: Uint8Array,
+		pubY: Uint8Array,
+	) => Promise<WorkerSession>;
 
 	//TODO:: retrieve current nonce based on manager requesting it.
-	private nonce = BigInt(1);
+	private nonce = BigInt(0);
 
-	constructor(private components: WorkerProtocolComponents) {
+	setNonce(nonce: bigint) {
+		this.nonce = nonce;
+	}
+
+	getNonce() {
+		return this.nonce;
+	}
+
+	constructor(
+		private components: WorkerProtocolComponents,
+		init: WorkerProtocolInit,
+	) {
 		super();
 		this.taskService = new TaskProtocolService(components);
 		this.paymentService = new PaymentProtocolService(components);
+
+		this.onRequestSessionData = init.onRequestSessionData;
 	}
 
 	start(): void | Promise<void> {
+		console.log("WorkerProtocolService start");
 		this.register();
 	}
 
-	stop(): void | Promise<void> {}
+	stop(): void | Promise<void> {
+		console.log("WorkerProtocolService stop");
+	}
 
 	async register() {
 		this.components.registrar.handle(
@@ -99,6 +128,30 @@ export class WorkerProtocolService
 			);
 		} else if (workerMessage.task) {
 			this.handleTaskMessage(workerMessage.task);
+		} else if (workerMessage.session?.manager) {
+			console.log("Worker Session Message", workerMessage.session);
+
+			if (!this.onRequestSessionData) {
+				throw new Error("onRequestSessionData is not defined");
+			}
+
+			const { nonce, delegate } = await this.onRequestSessionData(
+				data.connection.remotePeer.toString(),
+				workerMessage.session.manager.pubX,
+				workerMessage.session.manager.pubY,
+			);
+
+			const sessionMessage: WorkerMessage = {
+				session: {
+					worker: {
+						id: this.components.peerId.toString(),
+						nonce: nonce,
+						delegate: delegate.toBuffer(),
+					},
+				},
+			};
+
+			await pb.write(sessionMessage);
 		}
 	}
 
@@ -132,9 +185,16 @@ export class WorkerProtocolService
 
 			// Ensure we received a payment
 			if (response.payment?.payment) {
-				console.log("received payment from manager", response.payment.payment);
+				// Store payment
+				await this.paymentService.storePayment(
+					managerPeerId.toString(),
+					response.payment.payment,
+				);
+
+				return response.payment.payment;
 			}
 
+			await stream.close();
 			return null;
 		} catch (error) {
 			console.error(`Failed to request payment from ${managerPeerId}:`, error);
@@ -202,8 +262,6 @@ export class WorkerProtocolService
 
 			// Ensure we received a proof
 			if (response.payment?.proofResponse) {
-				//TODO:: store the proof / send it to smart contract.
-				console.log("response", response.payment.proofResponse);
 				await stream.close();
 				return response.payment.proofResponse;
 			}
@@ -292,9 +350,17 @@ export class WorkerProtocolService
 	}
 }
 
-export function workerProtocol(): (
-	components: WorkerProtocolComponents,
-) => WorkerProtocolService {
+type WorkerProtocolInit = {
+	onRequestSessionData?: (
+		peerId: string,
+		pubX: Uint8Array,
+		pubY: Uint8Array,
+	) => Promise<WorkerSession>;
+};
+
+export function workerProtocol(
+	init: WorkerProtocolInit = {},
+): (components: WorkerProtocolComponents) => WorkerProtocolService {
 	return (components: WorkerProtocolComponents) =>
-		new WorkerProtocolService(components);
+		new WorkerProtocolService(components, init);
 }

@@ -24,19 +24,12 @@ definePageMeta({
 	layout: "worker",
 });
 
-const { taskStore, node } = await useWorkerNode();
 const route = useRoute();
 const taskId = route.params.id as string;
+const { completeTask, taskStore } = useTasks();
 
 const handlerSubmitTask = async (data) => {
-	const task = await node.value.services.worker.completeTask(
-		taskId,
-		JSON.stringify({
-			...data.values,
-		}),
-	);
-
-	//redirect to dashboard
+	await completeTask(taskId, JSON.stringify({ ...data.values }));
 	navigateTo("/");
 };
 

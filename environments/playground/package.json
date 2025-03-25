@@ -11,14 +11,21 @@
 	},
 	"devDependencies": {
 		"vite-plugin-node-polyfills": "0.22.0",
-		"@nuxt/ui": "^2.21.0",
-		"nuxt": "^3.16.0",
+		"@nuxt/ui": "^2.21.1",
+		"nuxt": "3.14.1592",
 		"vue": "^3.5.13",
 		"vue-router": "^4.5.0",
 		"typescript": "^5.8.2"
 	},
 	"dependencies": {
+		"@vueuse/nuxt": "^13.0.0",
+		"@vueuse/core": "^13.0.0",
+		"@solana/spl-token": "0.4.9",
+		"@coral-xyz/anchor": "0.30.1",
+		"@solana/web3.js": "^1.95.8",
+		"@tanstack/vue-query": "^5.60.6",
 		"@effectai/protocol": "workspace:*",
+		"@effectai/shared": "workspace:*",
 		"buffer": "^6.0.3",
 		"solana-wallets-vue": "0.7.1",
 		"@solana/wallet-adapter-wallets": "^0.19.32",
@@ -32,6 +39,8 @@
 		"@web3auth/solana-provider": "^9.5.1",
 		"@web3auth/default-solana-adapter": "^9.5.1",
 		"@web3auth/ws-embed": "^4.0.4",
-		"@web3auth/torus-solana-adapter": "^9.7.0"
+		"@web3auth/torus-solana-adapter": "^9.7.0",
+		"datastore-idb": "^3.0.1",
+		"circomlibjs": "^0.1.7"
 	}
 }

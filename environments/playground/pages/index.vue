@@ -1,96 +1,140 @@
 <template>
-  <div class="">
-    <div class="my-5">
-      <div class="">
-        <UTable
-          :loading="taskStore === null"
-          :rows="taskStore"
-          :loading-state="{
-            icon: 'i-heroicons-arrow-path-20-solid',
-            label: 'Waiting for tasks...',
-          }"
-          :progress="{ color: 'primary', animation: 'carousel' }"
-          class="w-full"
-          :columns="[
-            { key: 'taskId', label: 'ID' },
-            { key: 'created', label: 'Created at' },
-            { key: 'status', label: 'Status' },
-            { key: 'reward', label: 'Reward' },
-            { key: 'actions', label: 'Actions' },
-          ]"
-        >
-          <template #taskId-data="{ row }">
-            <nuxt-link class="underline" :to="`/task/${row.taskId}`">{{
-              row.taskId
-            }}</nuxt-link>
-          </template>
-          <template #created-data="{ row }">
-            <span>{{ new Date(row.created).toLocaleString() }}</span>
-          </template>
-          <template #manager-data="{ row }">
-            <span>{{ trimAddress(row.manager) }}</span>
-          </template>
-          <template #actions-data="{ row }">
-            <UDropdown :items="actions(row)">
-              <UButton
-                color="gray"
-                variant="ghost"
-                icon="i-heroicons-ellipsis-horizontal-20-solid"
-              />
-            </UDropdown>
-          </template>
+  <div class="w-full">
+    <NodeStatusCard class="my-5" />
+    <TaskModal v-model="activeTask" :active-task="activeTask" />
 
-          <template #reward-data="{ row }"> {{ row.reward }} EFFECT </template>
-        </UTable>
-      </div>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 my-5">
+      <StatisticCard
+        icon="i-lucide-cpu"
+        label="Time Online"
+        :value="uptime.formattedTime"
+      >
+        <small class="text-xs text-emerald-500 font-mono italic"
+          >payout every 5 minutes</small
+        >
+      </StatisticCard>
+      <StatisticCard
+        icon="i-lucide-dollar-sign"
+        label="Total Earned"
+        :value="totalEarned"
+      />
+      <StatisticCard
+        icon="i-lucide-activity"
+        label="Tasks Completed"
+        :value="totalCompletedTasks"
+      />
+      <StatisticCard
+        icon="i-lucide-shield"
+        label="EFFECT Claimable"
+        :value="claimableAmountFormatted"
+      >
+        <UButton
+          @click="claimPaymentsHandler"
+          class="btn btn-primary mt-2"
+          color="white"
+          :loading="isClaiming"
+          :disabled="!connected"
+        >
+          Claim Payments
+        </UButton>
+      </StatisticCard>
     </div>
+    <TaskList class="my-5" />
+    <PaymentsList />
   </div>
 </template>
 
 <script setup lang="ts">
-const { node, taskStore } = await useWorkerNode();
+import type { Payment, Task } from "@effectai/protocol";
+import { useMutation } from "@tanstack/vue-query";
+import { useIntervalFn } from "@vueuse/core";
+const {
+	connectionTime,
+	taskStore,
+	connected,
+	managerPeerId,
+	workerPublicKey,
+	managerPublicKey,
+} = useWorkerNode();
+const {
+	claimableAmount,
+	claimedAmount,
+	claimablePayments,
+	requestPayout,
+	requestProof,
+} = usePayments();
 
-definePageMeta({
-	layout: "worker",
-	middleware: "auth",
+const { fetchNonces } = useNonce();
+const { activeTask } = useTasks();
+
+const totalCompletedTasks = computed(
+	() => taskStore.value.filter((task) => task.status === "COMPLETED").length,
+);
+
+const claimableAmountFormatted = computed(() => {
+	return `${formatBigIntToAmount(claimableAmount.value)} EFFECT`;
 });
 
-const isOpen = ref(false);
+const totalEarned = computed(() => {
+	return `${formatBigIntToAmount(
+		claimableAmount.value + claimedAmount.value,
+	)} EFFECT`;
+});
 
-const router = useRouter();
-const actions = (row) => [
-	[
-		{
-			label: "View",
-			icon: "i-heroicons-eye-20-solid",
-			click: () => {
-				router.push(`/task/${row.taskId}`);
-			},
-		},
-		{
-			label: "Accept",
-			icon: "i-heroicons-check-20-solid",
-			click: async () => {
-				// await node.value?.services.worker.acceptTask(row);
-			},
-		},
-		{
-			label: "Reject",
-			disabled: true,
-			icon: "i-heroicons-x-20-solid",
-			onClick: () => {
-				console.log("reject", row);
-			},
-		},
-	],
-];
+const uptime = useUptime(connectionTime);
+const claimInterval = useIntervalFn(
+	() => {
+		if (!managerPeerId.value) {
+			console.warn("Manager Peer ID not found");
+			return;
+		}
+
+		requestPayout(managerPeerId.value);
+	},
+	300000,
+	{ immediate: false },
+);
+
+const toast = useToast();
+const { claim } = usePaymentProgram();
+const { mutateAsync: mutateRequestProof } = requestProof();
+const { mutateAsync: mutateClaim } = claim();
+const { mutateAsync: claimPayments, isPending: isClaiming } = useMutation({
+	mutationFn: async ({ payments }: { payments: Payment[] }) => {
+		const proof = await mutateRequestProof({ payments });
+
+		if (!proof) {
+			throw new Error("Proof not found");
+		}
+
+		const claimResult = await mutateClaim({ proof });
+	},
+});
+
+const claimPaymentsHandler = async () => {
+	try {
+		await claimPayments({ payments: claimablePayments.value });
+
+		//refetch remote nonce
+		await fetchNonces(workerPublicKey.value, managerPublicKey.value);
+
+		toast.add({
+			title: "Claimed",
+			description: "Your payments have been claimed",
+		});
+	} catch (e) {}
+};
+
+watch(connected, () => {
+	if (connected.value) {
+		claimInterval.resume();
+	} else {
+	}
+});
+
+definePageMeta({
+	middleware: "auth",
+});
 </script>
 
-<style lang="scss" scoped>
-  #template input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.25rem;
-  }
-</style>
+<style lang="scss" scoped></style>

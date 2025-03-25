@@ -1,6 +1,7 @@
 import {
 	type ComponentLogger,
 	type Connection,
+	IdentifyResult,
 	type Libp2pEvents,
 	type PeerId,
 	type PeerStore,
@@ -30,6 +31,8 @@ import { TaskProtocolService } from "../task/service.js";
 import {
 	bigIntToUint8Array,
 	getOrCreateActiveOutBoundStream,
+	int2hex,
+	isWorker,
 	uint8ArrayToBigInt,
 } from "../utils/utils.js";
 import {
@@ -46,12 +49,15 @@ import {
 } from "./managerMessage.js";
 import { peerIdFromString } from "@libp2p/peer-id";
 import { WorkerQueue } from "./queue.js";
-import { RequestNonce } from "../payment/payment.js";
 import { PaymentProtocolService } from "../payment/service.js";
 import { PublicKey } from "@solana/web3.js";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-export const int2hex = (i: string | number | bigint | boolean) =>
-	`0x${BigInt(i).toString(16)}`;
+export type WorkerMeta = {
+	nonce: bigint;
+	delegate: PublicKey;
+};
 
 export interface ManagerServiceComponents {
 	registrar: Registrar;
@@ -84,88 +90,95 @@ export class ManagerService
 		this.workerQueue = new WorkerQueue(components);
 	}
 
+	async pairWorker(result: CustomEvent<IdentifyResult>["detail"]) {
+		try {
+			const eddsa = await buildEddsa();
+			const key = eddsa.prv2pub(this.components.privateKey.raw.slice(0, 32));
+
+			const message: WorkerMessage = {
+				session: {
+					manager: {
+						pubX: key[0],
+						pubY: key[1],
+					},
+				},
+			};
+
+			const stream = await getOrCreateActiveOutBoundStream(
+				result.peerId.toString(),
+				this.components.connectionManager,
+				`/${MULTICODEC_WORKER_PROTOCOL_NAME}/${MULTICODEC_WORKER_PROTOCOL_VERSION}`,
+			);
+
+			const pb = pbStream(stream).pb(WorkerMessage);
+			await pb.write(message);
+			const response = await pb.read();
+			//close stream
+			await stream.close();
+
+			const timestamp = Math.floor(new Date().getTime() / 1000); // Convert to integer (seconds)
+			const buffer = Buffer.alloc(4); // 4 bytes for a 32-bit integer
+			buffer.writeUInt32BE(timestamp, 0);
+
+			if (!response.session?.worker?.nonce) {
+				console.error("No nonce found for worker, skipping pairing..");
+				return;
+			}
+
+			this.components.peerStore.merge(result.peerId, {
+				metadata: {
+					timeSinceLastPayout: buffer,
+					nonce: bigIntToUint8Array(response.session?.worker?.nonce),
+					delegate: response.session?.worker?.delegate,
+				},
+			});
+
+			this.workerQueue.enqueue(result.peerId.toString());
+		} catch (e) {
+			console.error("Error pairing worker", e);
+		} //TODO:: sned an ack to worker that it has been paired
+	}
+
 	start(): void | Promise<void> {
 		this.register();
 
 		this.components.events.addEventListener(
 			"peer:identify",
 			async ({ detail }) => {
-				if (
-					detail.protocols.includes(
-						`/${MULTICODEC_WORKER_PROTOCOL_NAME}/${MULTICODEC_WORKER_PROTOCOL_VERSION}`,
-					)
-				) {
-					// request nonce from newly identified worker
-					const nonce = await this.requestNonce(
-						detail.peerId.toString(),
-						detail.connection,
-					);
-
-					if (!nonce && nonce != 0n) {
-						console.error("Failed to get nonce from worker");
-						return;
-					}
-
-					const timestamp = Math.floor(new Date().getTime() / 1000); // Convert to integer (seconds)
-					const buffer = Buffer.alloc(4); // 4 bytes for a 32-bit integer
-					buffer.writeUInt32BE(timestamp, 0);
-					//save nonce in metadata of peer
-					this.components.peerStore.merge(detail.peerId, {
-						metadata: {
-							timeSinceLastPayout: buffer,
-							nonce: bigIntToUint8Array(nonce),
-						},
-					});
-
-					this.workerQueue.enqueue(detail.peerId.toString());
+				//check if peer is a worker
+				if (isWorker(detail)) {
+					await this.pairWorker(detail);
 				}
 			},
 		);
 	}
 
-	async retrieveNonce(peerId: string): Promise<bigint | null> {
-		const peer = peerIdFromString(peerId);
-		const peerData = await this.components.peerStore.get(peer);
-		const nonce = peerData.metadata.get("nonce");
-		if (!nonce) return null;
-		return uint8ArrayToBigInt(new Uint8Array(nonce));
-	}
-
-	async requestNonce(
-		peerId: string,
-		connection: Connection,
-	): Promise<bigint | null> {
+	async retrieveWorkerMeta(peerId: string): Promise<WorkerMeta> {
 		try {
-			console.log("requesting nonce from worker", peerId);
-			const stream = await connection.newStream(
-				`/${MULTICODEC_WORKER_PROTOCOL_NAME}/${MULTICODEC_WORKER_PROTOCOL_VERSION}`,
-			);
+			const peer = peerIdFromString(peerId);
+			const peerData = await this.components.peerStore.get(peer);
 
-			const pb = pbStream(stream).pb(WorkerMessage);
-
-			// Send the nonce request
-			await pb.write({
-				payment: {
-					requestNonce: {
-						peerId: this.components.peerId.toString(),
-					},
-				},
-			});
-
-			// Wait for the worker's response
-			const response = await pb.read();
-
-			// Ensure we received a nonce
-			if (response.payment?.nonceResponse) {
-				console.log("nonce response", response.payment.nonceResponse.nonce);
-				await stream.close();
-				return response.payment.nonceResponse.nonce;
+			if (!peerData) {
+				throw new Error(`No peer data found for peerId: ${peerId}`);
 			}
 
-			return null;
+			const nonce = peerData.metadata.get("nonce");
+			if (!nonce) {
+				throw new Error(`No nonce found for worker with peerId: ${peerId}`);
+			}
+
+			const delegate = peerData.metadata.get("delegate");
+			if (!delegate) {
+				throw new Error(`No delegate found for worker with peerId: ${peerId}`);
+			}
+
+			return {
+				nonce: uint8ArrayToBigInt(new Uint8Array(nonce)),
+				delegate: new PublicKey(delegate),
+			};
 		} catch (error) {
-			console.error(`Failed to request nonce from ${peerId}:`, error);
-			return null;
+			console.error("Error retrieving worker meta", error);
+			throw error;
 		}
 	}
 
@@ -195,7 +208,6 @@ export class ManagerService
 				message.task,
 			);
 		}
-
 		await data.stream.close();
 	}
 
@@ -205,25 +217,40 @@ export class ManagerService
 		payment: PaymentMessage,
 	) {
 		if (payment.proofRequest) {
-			const proof = await this.generatePaymentProof(payment.proofRequest);
+			try {
+				const { proof, publicSignals, pubKey } =
+					await this.generatePaymentProof(payment.proofRequest);
 
-			const message: WorkerMessage = {
-				payment: {
-					proofResponse: {
-						piA: proof.pi_a,
-						piB: [
-							{ row: [proof.pi_b[0][0], proof.pi_b[0][1]] },
-							{ row: [proof.pi_b[1][0], proof.pi_b[1][1]] },
-							{ row: [proof.pi_b[2][0], proof.pi_b[2][1]] },
-						],
-						piC: proof.pi_c,
-						protocol: proof.protocol,
-						curve: proof.curve,
+				const message: WorkerMessage = {
+					payment: {
+						proofResponse: {
+							R8: {
+								R8_1: pubKey[0],
+								R8_2: pubKey[1],
+							},
+							signals: {
+								minNonce: publicSignals[0],
+								maxNonce: publicSignals[1],
+								amount: BigInt(publicSignals[2]),
+							},
+							piA: proof.pi_a,
+							piB: [
+								{ row: [proof.pi_b[0][0], proof.pi_b[0][1]] },
+								{ row: [proof.pi_b[1][0], proof.pi_b[1][1]] },
+								{ row: [proof.pi_b[2][0], proof.pi_b[2][1]] },
+							],
+							piC: proof.pi_c,
+							protocol: proof.protocol,
+							curve: proof.curve,
+						},
 					},
-				},
-			};
+				};
 
-			await stream.write(message);
+				await stream.write(message);
+			} catch (e) {
+				console.error("Error generating payment proof", e);
+				throw e;
+			}
 		} else if (payment.payoutRequest) {
 			const peer = peerIdFromString(remotePeer);
 			const peerData = await this.components.peerStore.get(peer);
@@ -308,6 +335,12 @@ export class ManagerService
 			task.status = TaskStatus.REJECTED;
 		} else if (taskMessage.taskCompleted) {
 			//task completed by worker
+
+			if (task.status === TaskStatus.COMPLETED) {
+				console.error("Task already completed");
+				return;
+			}
+
 			task.status = TaskStatus.COMPLETED;
 			task.result = taskMessage.taskCompleted.result;
 
@@ -334,13 +367,16 @@ export class ManagerService
 
 	private async generatePayment(peerId: string, amount: bigint) {
 		//get current nonce for this peerId
-		const nonce = await this.retrieveNonce(peerId);
+		const { nonce, delegate } = await this.retrieveWorkerMeta(peerId);
+
+		console.log("delegate", delegate.toBase58());
 
 		const payment = await this.paymentService.generatePayment(
 			peerId,
 			amount,
 			nonce ?? BigInt(0),
-			new PublicKey("5cvmp5heVgetZxYhQuqyR6k3NNs8iv6YAChiJdj4dbh7"),
+			new PublicKey("EFcxXsFYMKP1HfEHEmSrSZtV2fKhJzEfC44h4KWZZ9cm"),
+			new PublicKey(delegate),
 		);
 
 		if (!nonce) {
@@ -366,32 +402,99 @@ export class ManagerService
 	}
 
 	private async generatePaymentProof(message: PaymentMessage["proofRequest"]) {
-		const eddsa = await buildEddsa();
-		const pubKey = eddsa.prv2pub(this.components.privateKey.raw.slice(0, 32));
+		try {
+			const eddsa = await buildEddsa();
+			const pubKey = eddsa.prv2pub(this.components.privateKey.raw.slice(0, 32));
 
-		if (!message) {
-			console.error("No proof request found");
-			return;
+			if (!message) {
+				throw new Error("No payment message found");
+			}
+
+			//TODO:: make this dynamic
+			const maxBatchSize = 10;
+			const batchSize = message.payments.length;
+			const enabled = Array(maxBatchSize).fill(0);
+			enabled.fill(1, 0, batchSize);
+
+			console.log(
+				"generating proof for: ",
+				message.payments.length,
+				" payments",
+			);
+
+			const padArray = <T>(arr: T[], defaultValue: T): T[] =>
+				arr
+					.concat(Array(maxBatchSize - arr.length).fill(defaultValue))
+					.slice(0, maxBatchSize);
+
+			const uniqueRecipients = new Set(
+				message.payments.map((p) => p.recipient),
+			);
+
+			if (uniqueRecipients.size > 1) {
+				throw new Error("Only one recipient is supported");
+			}
+
+			//sort payments by nonce
+			const payments = message.payments.toSorted((a, b) =>
+				Number(a.nonce - b.nonce),
+			);
+
+			const proofInputs = {
+				receiver: int2hex(
+					BigInt(
+						new PublicKey(message.payments[0]?.recipient || "0").toString(),
+					),
+				),
+				pubX: eddsa.F.toObject(pubKey[0]),
+				pubY: eddsa.F.toObject(pubKey[1]),
+				nonce: padArray(
+					payments.map((p) => int2hex(Number(p.nonce))),
+					//fill with max nonce
+					int2hex(payments[message.payments.length - 1].nonce),
+				),
+				enabled: enabled,
+				payAmount: padArray(
+					payments.map((p) => int2hex(p.amount)),
+					"0",
+				),
+				R8x: padArray(
+					payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_1)),
+					0,
+				),
+				R8y: padArray(
+					payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_2)),
+					0,
+				),
+				S: padArray(
+					payments.map((s) => BigInt(s.signature?.S || 0)),
+					BigInt(0),
+				),
+			};
+
+			const __filename = fileURLToPath(import.meta.url);
+			const __dirname = path.dirname(__filename);
+
+			const wasmPath = path.resolve(
+				__dirname,
+				"../../../../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
+			);
+			const zkeyPath = path.resolve(
+				__dirname,
+				"../../../../zkp/circuits/PaymentBatch_0001.zkey",
+			);
+
+			const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+				proofInputs,
+				wasmPath,
+				zkeyPath,
+			);
+
+			return { proof, publicSignals, pubKey };
+		} catch (e) {
+			console.error("Error generating payment proof", e);
+			throw e;
 		}
-
-		const proofInputs = {
-			receiver: int2hex(new PublicKey(message.payments[0].recipient)._bn),
-			pubX: eddsa.F.toObject(pubKey[0]),
-			pubY: eddsa.F.toObject(pubKey[1]),
-			nonce: message.payments.map((p) => int2hex(p.nonce)),
-			payAmount: message.payments.map((p) => int2hex(p.amount)),
-			R8x: message.payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_1)),
-			R8y: message.payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_2)),
-			S: message.payments.map((s) => BigInt(s.signature?.S)),
-		};
-
-		const { proof, publicSignals } = await snarkjs.groth16.fullProve(
-			proofInputs,
-			"../../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
-			"../../zkp/circuits/PaymentBatch_0001.zkey",
-		);
-
-		return proof;
 	}
 
 	private async sendWorkerMessage(peerId: string, message: WorkerMessage) {

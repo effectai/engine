@@ -1,5 +1,6 @@
 import type {
 	Ed25519PublicKey,
+	IdentifyResult,
 	IncomingStreamData,
 	PeerId,
 } from "@libp2p/interface";
@@ -36,14 +37,14 @@ export const LibP2pPublicKeyToSolanaPublicKey = (
 	return new PublicKey(publicKey);
 };
 
-export const bigIntToUint8Array = (bigint) => {
+export const bigIntToUint8Array = (bigint: bigint) => {
 	const array = new Uint8Array(8); // 64-bit = 8 bytes
 	const view = new DataView(array.buffer);
 	view.setBigUint64(0, bigint, false); // false = Big-endian (MSB first)
 	return array;
 };
 
-export const uint8ArrayToBigInt = (uint8Array) => {
+export const uint8ArrayToBigInt = (uint8Array: Uint8Array) => {
 	return new DataView(uint8Array.buffer).getBigUint64(0, false); // false = big-endian
 };
 
@@ -72,3 +73,15 @@ export const getOrCreateActiveOutBoundStream = async (
 
 	return stream;
 };
+
+export const isManager = (info: IdentifyResult) => {
+	console.log(info.protocols);
+	return info.protocols.includes("/effectai/manager/0.0.1");
+};
+
+export const isWorker = (info: IdentifyResult) => {
+	return info.protocols.includes("/effectai/worker/0.0.1");
+};
+
+export const int2hex = (i: string | number | bigint | boolean) =>
+	`0x${BigInt(i).toString(16)}`;

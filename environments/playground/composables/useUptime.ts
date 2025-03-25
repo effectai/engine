@@ -1,8 +1,11 @@
-export function useUptime(initialTime: number) {
-	const totalTimeInSeconds = ref(initialTime);
+export function useUptime() {
+	const startTime = ref(Math.floor(Date.now() / 1000)); // Current Unix timestamp in seconds
+	const elapsedTime = ref(0);
+
+	let interval: ReturnType<typeof setInterval> | null = null;
 
 	const formattedTime = computed(() => {
-		const seconds = totalTimeInSeconds.value;
+		const seconds = elapsedTime.value;
 		const hours = Math.floor(seconds / 3600);
 		const minutes = Math.floor((seconds % 3600) / 60);
 		const remainingSeconds = seconds % 60;
@@ -10,11 +13,11 @@ export function useUptime(initialTime: number) {
 		return `${hours}h ${minutes}m ${remainingSeconds}s`;
 	});
 
-	let interval: ReturnType<typeof setInterval> | null = null;
-
 	onMounted(() => {
+		elapsedTime.value = Math.floor(Date.now() / 1000) - startTime.value;
+
 		interval = setInterval(() => {
-			totalTimeInSeconds.value += 1;
+			elapsedTime.value = Math.floor(Date.now() / 1000) - startTime.value;
 		}, 1000);
 	});
 
@@ -22,5 +25,5 @@ export function useUptime(initialTime: number) {
 		if (interval) clearInterval(interval);
 	});
 
-	return { totalTimeInSeconds, formattedTime };
+	return { startTime, elapsedTime, formattedTime };
 }

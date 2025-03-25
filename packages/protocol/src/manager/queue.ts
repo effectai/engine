@@ -61,5 +61,5 @@ export function workerQueue(): (
 	// init: Partial<TaskManagerInit> = {}
 	components: PeerQueueComponents,
 ) => WorkerQueue {
-	return (components: PeerQueueComponents) => new WorkerTaskQueue(components);
+	return (components: PeerQueueComponents) => new WorkerQueue(components);
 }

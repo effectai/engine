@@ -58,7 +58,8 @@ describe("Payment Program", async () => {
 		// BabyJubjub key that he uses for signing.
 		const prvKey = randomBytes(32);
 		const pubKey = eddsa.prv2pub(prvKey);
-		const batchSize = 10;
+		const batchSize = 7;
+		const maxBatchSize = 10;
 
 		//construct pubkey to solana ed25519 pubkey
 		const managerPubKey = new PublicKey(eddsa.F.toObject(pubKey[0]));
@@ -78,23 +79,47 @@ describe("Payment Program", async () => {
 			),
 		);
 
+		const padArray = <T>(arr: T[], defaultValue: T): T[] =>
+			arr
+				.concat(Array(maxBatchSize - arr.length).fill(defaultValue))
+				.slice(0, maxBatchSize);
+
+		const enabled = Array(maxBatchSize).fill(0);
+		enabled.fill(1, 0, batchSize);
+
+		const highestNonce = nonces[nonces.length - 1];
+
 		const proofInputs = {
 			receiver: int2hex(payer.publicKey._bn),
 			pubX: eddsa.F.toObject(pubKey[0]),
 			pubY: eddsa.F.toObject(pubKey[1]),
-			nonce: nonces,
-			enabled: Array(batchSize).fill(1),
-			payAmount: Array(batchSize).fill(int2hex(1_000_000)),
-			R8x: sigs.map((s) => eddsa.F.toObject(s.R8[0])),
-			R8y: sigs.map((s) => eddsa.F.toObject(s.R8[1])),
-			S: sigs.map((s) => s.S),
+			nonce: padArray(nonces, highestNonce),
+			//fill rest with 0
+			enabled,
+			payAmount: padArray(Array(batchSize).fill(int2hex(1_000_000)), 0),
+			R8x: padArray(
+				sigs.map((s) => eddsa.F.toObject(s.R8[0])),
+				0,
+			),
+			R8y: padArray(
+				sigs.map((s) => eddsa.F.toObject(s.R8[1])),
+				0,
+			),
+			S: padArray(
+				sigs.map((s) => s.S),
+				0,
+			),
 		};
+
+		console.log("nonces:", padArray(nonces, 0));
 
 		const { proof, publicSignals } = await snarkjs.groth16.fullProve(
 			proofInputs,
 			"../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
 			"../zkp/circuits/PaymentBatch_0001.zkey",
 		);
+
+		console.log("signals", publicSignals);
 
 		await program.methods
 			.createPaymentPool([managerPubKey], new anchor.BN(10_000_000))
@@ -139,13 +164,13 @@ describe("Payment Program", async () => {
 
 		//get token account
 		const ataBalance = await provider.connection.getTokenAccountBalance(ata);
-		expect(ataBalance.value.uiAmount).toBe(10);
+		expect(ataBalance.value.uiAmount).toBe(batchSize);
 		//get nonce account
 		const recipientManagerDataAccountData =
 			await program.account.recipientManagerDataAccount.fetch(
 				recipientManagerDataAccount,
 			);
-		expect(recipientManagerDataAccountData.nonce).toBe(10);
+		expect(recipientManagerDataAccountData.nonce).toBe(batchSize);
 	}, 20000);
 });
 

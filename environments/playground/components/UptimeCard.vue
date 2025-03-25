@@ -13,7 +13,11 @@
 
     <div class="flex justify-between gap-2 mt-3">
       <div>
-        <div class="flex flex-col"></div>
+        <div class="flex flex-col">
+          <UButton color="black" @click="requestPayoutHandler"
+            >Claim Payout</UButton
+          >
+        </div>
       </div>
     </div>
   </UCard>
@@ -26,11 +30,31 @@ const props = defineProps<{
 	lastPing: number;
 }>();
 
+const { requestPayout } = usePayments();
+const { managerPeerId } = useWorkerNode();
 const totalUptime = useUptime(props.totalUptimeInSeconds);
 
-const baseEffectEarned = computed(() => {
-	return totalUptime.totalTimeInSeconds.value * 0.2;
-});
+const toast = useToast();
+
+const requestPayoutHandler = async () => {
+	try {
+		if (!managerPeerId.value) {
+			console.error("Manager peer id not found");
+			return;
+		}
+
+		const payment = await requestPayout(managerPeerId.value);
+
+		toast.add({
+			title: "Paid out",
+			description: `Succesfully paid out ${formatBigIntToAmount(
+				payment.amount,
+			)} EFFECT`,
+		});
+	} catch (e) {
+		console.error(e);
+	}
+};
 </script>
 
 <style lang="scss" scoped></style>

@@ -63,6 +63,7 @@ export class PaymentProtocolService extends TypedEventEmitter<PaymentProtocolEve
 		amount: bigint,
 		nonce: bigint,
 		paymentAccount: PublicKey,
+		recipient: PublicKey,
 	): Promise<Payment> {
 		try {
 			const pid = peerIdFromString(peerId);
@@ -70,15 +71,10 @@ export class PaymentProtocolService extends TypedEventEmitter<PaymentProtocolEve
 			if (!pid.publicKey || pid.publicKey.type !== "Ed25519") {
 				throw new Error("PeerId does not have a public key");
 			}
-
-			const recipient = LibP2pPublicKeyToSolanaPublicKey(
-				pid.publicKey,
-			).toBase58();
-
 			const payment = Payment.decode(
 				Payment.encode({
 					amount,
-					recipient,
+					recipient: recipient.toBase58(),
 					paymentAccount: paymentAccount.toBase58(),
 					nonce,
 				}),

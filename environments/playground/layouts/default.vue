@@ -1,7 +1,7 @@
 <template>
   <div id="layout-container">
     <div id="layout-bg"></div>
-    <UContainer>
+    <UContainer class="w-full">
       <UModals />
       <slot />
     </UContainer>

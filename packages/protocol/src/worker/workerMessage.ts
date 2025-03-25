@@ -11,6 +11,7 @@ import type { Uint8ArrayList } from 'uint8arraylist'
 export interface WorkerMessage {
   task?: Task
   payment?: PaymentMessage
+  session?: SessionMessage
 }
 
 export namespace WorkerMessage {
@@ -31,6 +32,11 @@ export namespace WorkerMessage {
         if (obj.payment != null) {
           w.uint32(18)
           PaymentMessage.codec().encode(obj.payment, w)
+        }
+
+        if (obj.session != null) {
+          w.uint32(26)
+          SessionMessage.codec().encode(obj.session, w)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -54,6 +60,12 @@ export namespace WorkerMessage {
             case 2: {
               obj.payment = PaymentMessage.codec().decode(reader, reader.uint32(), {
                 limits: opts.limits?.payment
+              })
+              break
+            }
+            case 3: {
+              obj.session = SessionMessage.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.session
               })
               break
             }
@@ -185,83 +197,83 @@ export namespace Payment {
   }
 }
 
+export interface R8Pair {
+  R8_1: Uint8Array
+  R8_2: Uint8Array
+}
+
+export namespace R8Pair {
+  let _codec: Codec<R8Pair>
+
+  export const codec = (): Codec<R8Pair> => {
+    if (_codec == null) {
+      _codec = message<R8Pair>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.R8_1 != null && obj.R8_1.byteLength > 0)) {
+          w.uint32(10)
+          w.bytes(obj.R8_1)
+        }
+
+        if ((obj.R8_2 != null && obj.R8_2.byteLength > 0)) {
+          w.uint32(18)
+          w.bytes(obj.R8_2)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          R8_1: uint8ArrayAlloc(0),
+          R8_2: uint8ArrayAlloc(0)
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.R8_1 = reader.bytes()
+              break
+            }
+            case 2: {
+              obj.R8_2 = reader.bytes()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<R8Pair>): Uint8Array => {
+    return encodeMessage(obj, R8Pair.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<R8Pair>): R8Pair => {
+    return decodeMessage(buf, R8Pair.codec(), opts)
+  }
+}
+
 export interface PaymentSignature {
-  R8?: PaymentSignature.R8Pair
+  R8?: R8Pair
   S: string
 }
 
 export namespace PaymentSignature {
-  export interface R8Pair {
-    R8_1: Uint8Array
-    R8_2: Uint8Array
-  }
-
-  export namespace R8Pair {
-    let _codec: Codec<R8Pair>
-
-    export const codec = (): Codec<R8Pair> => {
-      if (_codec == null) {
-        _codec = message<R8Pair>((obj, w, opts = {}) => {
-          if (opts.lengthDelimited !== false) {
-            w.fork()
-          }
-
-          if ((obj.R8_1 != null && obj.R8_1.byteLength > 0)) {
-            w.uint32(10)
-            w.bytes(obj.R8_1)
-          }
-
-          if ((obj.R8_2 != null && obj.R8_2.byteLength > 0)) {
-            w.uint32(18)
-            w.bytes(obj.R8_2)
-          }
-
-          if (opts.lengthDelimited !== false) {
-            w.ldelim()
-          }
-        }, (reader, length, opts = {}) => {
-          const obj: any = {
-            R8_1: uint8ArrayAlloc(0),
-            R8_2: uint8ArrayAlloc(0)
-          }
-
-          const end = length == null ? reader.len : reader.pos + length
-
-          while (reader.pos < end) {
-            const tag = reader.uint32()
-
-            switch (tag >>> 3) {
-              case 1: {
-                obj.R8_1 = reader.bytes()
-                break
-              }
-              case 2: {
-                obj.R8_2 = reader.bytes()
-                break
-              }
-              default: {
-                reader.skipType(tag & 7)
-                break
-              }
-            }
-          }
-
-          return obj
-        })
-      }
-
-      return _codec
-    }
-
-    export const encode = (obj: Partial<R8Pair>): Uint8Array => {
-      return encodeMessage(obj, R8Pair.codec())
-    }
-
-    export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<R8Pair>): R8Pair => {
-      return decodeMessage(buf, R8Pair.codec(), opts)
-    }
-  }
-
   let _codec: Codec<PaymentSignature>
 
   export const codec = (): Codec<PaymentSignature> => {
@@ -273,7 +285,7 @@ export namespace PaymentSignature {
 
         if (obj.R8 != null) {
           w.uint32(10)
-          PaymentSignature.R8Pair.codec().encode(obj.R8, w)
+          R8Pair.codec().encode(obj.R8, w)
         }
 
         if ((obj.S != null && obj.S !== '')) {
@@ -296,7 +308,7 @@ export namespace PaymentSignature {
 
           switch (tag >>> 3) {
             case 1: {
-              obj.R8 = PaymentSignature.R8Pair.codec().decode(reader, reader.uint32(), {
+              obj.R8 = R8Pair.codec().decode(reader, reader.uint32(), {
                 limits: opts.limits?.R8
               })
               break
@@ -507,9 +519,93 @@ export interface ProofResponse {
   piC: string[]
   protocol: string
   curve: string
+  signals?: ProofResponse.Signals
+  R8?: R8Pair
 }
 
 export namespace ProofResponse {
+  export interface Signals {
+    minNonce: string
+    maxNonce: string
+    amount: bigint
+  }
+
+  export namespace Signals {
+    let _codec: Codec<Signals>
+
+    export const codec = (): Codec<Signals> => {
+      if (_codec == null) {
+        _codec = message<Signals>((obj, w, opts = {}) => {
+          if (opts.lengthDelimited !== false) {
+            w.fork()
+          }
+
+          if ((obj.minNonce != null && obj.minNonce !== '')) {
+            w.uint32(10)
+            w.string(obj.minNonce)
+          }
+
+          if ((obj.maxNonce != null && obj.maxNonce !== '')) {
+            w.uint32(18)
+            w.string(obj.maxNonce)
+          }
+
+          if ((obj.amount != null && obj.amount !== 0n)) {
+            w.uint32(24)
+            w.uint64(obj.amount)
+          }
+
+          if (opts.lengthDelimited !== false) {
+            w.ldelim()
+          }
+        }, (reader, length, opts = {}) => {
+          const obj: any = {
+            minNonce: '',
+            maxNonce: '',
+            amount: 0n
+          }
+
+          const end = length == null ? reader.len : reader.pos + length
+
+          while (reader.pos < end) {
+            const tag = reader.uint32()
+
+            switch (tag >>> 3) {
+              case 1: {
+                obj.minNonce = reader.string()
+                break
+              }
+              case 2: {
+                obj.maxNonce = reader.string()
+                break
+              }
+              case 3: {
+                obj.amount = reader.uint64()
+                break
+              }
+              default: {
+                reader.skipType(tag & 7)
+                break
+              }
+            }
+          }
+
+          return obj
+        })
+      }
+
+      return _codec
+    }
+
+    export const encode = (obj: Partial<Signals>): Uint8Array => {
+      return encodeMessage(obj, Signals.codec())
+    }
+
+    export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<Signals>): Signals => {
+      return decodeMessage(buf, Signals.codec(), opts)
+    }
+  }
+
   export interface Matrix {
     row: string[]
   }
@@ -616,6 +712,16 @@ export namespace ProofResponse {
           w.string(obj.curve)
         }
 
+        if (obj.signals != null) {
+          w.uint32(50)
+          ProofResponse.Signals.codec().encode(obj.signals, w)
+        }
+
+        if (obj.R8 != null) {
+          w.uint32(58)
+          R8Pair.codec().encode(obj.R8, w)
+        }
+
         if (opts.lengthDelimited !== false) {
           w.ldelim()
         }
@@ -666,6 +772,18 @@ export namespace ProofResponse {
             }
             case 5: {
               obj.curve = reader.string()
+              break
+            }
+            case 6: {
+              obj.signals = ProofResponse.Signals.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.signals
+              })
+              break
+            }
+            case 7: {
+              obj.R8 = R8Pair.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.R8
+              })
               break
             }
             default: {
@@ -1097,6 +1215,7 @@ export namespace TaskStatus {
 }
 export interface Task {
   taskId: string
+  title: string
   manager: string
   created: string
   reward: bigint
@@ -1121,38 +1240,43 @@ export namespace Task {
           w.string(obj.taskId)
         }
 
-        if ((obj.manager != null && obj.manager !== '')) {
+        if ((obj.title != null && obj.title !== '')) {
           w.uint32(18)
+          w.string(obj.title)
+        }
+
+        if ((obj.manager != null && obj.manager !== '')) {
+          w.uint32(26)
           w.string(obj.manager)
         }
 
         if ((obj.created != null && obj.created !== '')) {
-          w.uint32(26)
+          w.uint32(34)
           w.string(obj.created)
         }
 
         if ((obj.reward != null && obj.reward !== 0n)) {
-          w.uint32(32)
+          w.uint32(40)
           w.uint64(obj.reward)
         }
 
         if ((obj.template != null && obj.template !== '')) {
-          w.uint32(42)
+          w.uint32(50)
           w.string(obj.template)
         }
 
         if ((obj.result != null && obj.result !== '')) {
-          w.uint32(50)
+          w.uint32(58)
           w.string(obj.result)
         }
 
         if ((obj.signature != null && obj.signature !== '')) {
-          w.uint32(58)
+          w.uint32(66)
           w.string(obj.signature)
         }
 
         if (obj.status != null && __TaskStatusValues[obj.status] !== 0) {
-          w.uint32(64)
+          w.uint32(72)
           TaskStatus.codec().encode(obj.status, w)
         }
 
@@ -1162,6 +1286,7 @@ export namespace Task {
       }, (reader, length, opts = {}) => {
         const obj: any = {
           taskId: '',
+          title: '',
           manager: '',
           created: '',
           reward: 0n,
@@ -1182,30 +1307,34 @@ export namespace Task {
               break
             }
             case 2: {
-              obj.manager = reader.string()
+              obj.title = reader.string()
               break
             }
             case 3: {
-              obj.created = reader.string()
+              obj.manager = reader.string()
               break
             }
             case 4: {
-              obj.reward = reader.uint64()
+              obj.created = reader.string()
               break
             }
             case 5: {
-              obj.template = reader.string()
+              obj.reward = reader.uint64()
               break
             }
             case 6: {
-              obj.result = reader.string()
+              obj.template = reader.string()
               break
             }
             case 7: {
-              obj.signature = reader.string()
+              obj.result = reader.string()
               break
             }
             case 8: {
+              obj.signature = reader.string()
+              break
+            }
+            case 9: {
               obj.status = TaskStatus.codec().decode(reader)
               break
             }
@@ -1605,5 +1734,230 @@ export namespace TaskMessage {
 
   export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<TaskMessage>): TaskMessage => {
     return decodeMessage(buf, TaskMessage.codec(), opts)
+  }
+}
+
+export interface WorkerSessionData {
+  id: string
+  nonce: bigint
+  delegate: Uint8Array
+}
+
+export namespace WorkerSessionData {
+  let _codec: Codec<WorkerSessionData>
+
+  export const codec = (): Codec<WorkerSessionData> => {
+    if (_codec == null) {
+      _codec = message<WorkerSessionData>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.id != null && obj.id !== '')) {
+          w.uint32(10)
+          w.string(obj.id)
+        }
+
+        if ((obj.nonce != null && obj.nonce !== 0n)) {
+          w.uint32(16)
+          w.uint64(obj.nonce)
+        }
+
+        if ((obj.delegate != null && obj.delegate.byteLength > 0)) {
+          w.uint32(26)
+          w.bytes(obj.delegate)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          id: '',
+          nonce: 0n,
+          delegate: uint8ArrayAlloc(0)
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.id = reader.string()
+              break
+            }
+            case 2: {
+              obj.nonce = reader.uint64()
+              break
+            }
+            case 3: {
+              obj.delegate = reader.bytes()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<WorkerSessionData>): Uint8Array => {
+    return encodeMessage(obj, WorkerSessionData.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<WorkerSessionData>): WorkerSessionData => {
+    return decodeMessage(buf, WorkerSessionData.codec(), opts)
+  }
+}
+
+export interface ManagerSessionData {
+  pubX: Uint8Array
+  pubY: Uint8Array
+}
+
+export namespace ManagerSessionData {
+  let _codec: Codec<ManagerSessionData>
+
+  export const codec = (): Codec<ManagerSessionData> => {
+    if (_codec == null) {
+      _codec = message<ManagerSessionData>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.pubX != null && obj.pubX.byteLength > 0)) {
+          w.uint32(10)
+          w.bytes(obj.pubX)
+        }
+
+        if ((obj.pubY != null && obj.pubY.byteLength > 0)) {
+          w.uint32(18)
+          w.bytes(obj.pubY)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          pubX: uint8ArrayAlloc(0),
+          pubY: uint8ArrayAlloc(0)
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.pubX = reader.bytes()
+              break
+            }
+            case 2: {
+              obj.pubY = reader.bytes()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<ManagerSessionData>): Uint8Array => {
+    return encodeMessage(obj, ManagerSessionData.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<ManagerSessionData>): ManagerSessionData => {
+    return decodeMessage(buf, ManagerSessionData.codec(), opts)
+  }
+}
+
+export interface SessionMessage {
+  worker?: WorkerSessionData
+  manager?: ManagerSessionData
+}
+
+export namespace SessionMessage {
+  let _codec: Codec<SessionMessage>
+
+  export const codec = (): Codec<SessionMessage> => {
+    if (_codec == null) {
+      _codec = message<SessionMessage>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if (obj.worker != null) {
+          w.uint32(10)
+          WorkerSessionData.codec().encode(obj.worker, w)
+        }
+
+        if (obj.manager != null) {
+          w.uint32(18)
+          ManagerSessionData.codec().encode(obj.manager, w)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {}
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.worker = WorkerSessionData.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.worker
+              })
+              break
+            }
+            case 2: {
+              obj.manager = ManagerSessionData.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.manager
+              })
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<SessionMessage>): Uint8Array => {
+    return encodeMessage(obj, SessionMessage.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<SessionMessage>): SessionMessage => {
+    return decodeMessage(buf, SessionMessage.codec(), opts)
   }
 }

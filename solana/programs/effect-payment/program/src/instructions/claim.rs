@@ -53,6 +53,7 @@ pub fn handler(
     proof: [u8; 256],
 ) -> Result<()> {
     //make sure manager key is part of authorities on the payment account
+    //TODO:: this is not correct..
     let manager_key = Pubkey::from(pub_x);
     require!(
         ctx.accounts
@@ -60,6 +61,10 @@ pub fn handler(
             .is_authorized(&manager_key.key()),
         PaymentErrors::Unauthorized
     );
+
+    msg!("min nonce: {}", min_nonce);
+    msg!("max nonce: {}", max_nonce);
+    msg!("total amount: {}", total_amount);
 
     let last_nonce = ctx.accounts.recipient_manager_data_account.nonce;
     require!(min_nonce > last_nonce, PaymentErrors::InvalidPayment);
