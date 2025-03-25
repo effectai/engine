@@ -23,8 +23,27 @@ const connectionTime = ref(0);
 const paymentStore = ref<Payment[]>([]);
 const taskStore = ref<Task[]>([]);
 const toast = useToast();
+const managerNodeMultiAddress = ref(
+	"/ip4/codifex.nl/tcp/34851/tls/ws/p2p/12D3KooWFFNkqu7bETMX2qfdyi9t9T3fEYtqQXMTKtSt8Yw9jz5b",
+);
 
 export const useWorkerNode = () => {
+	const reconnect = async () => {
+		if (!nodeInstance.value) return;
+		await nodeInstance.value.stop();
+
+		isInitializing.value = true;
+
+		const keyBuffer = Buffer.from(privateKey.value, "hex");
+		const ed25519PrivateKey = await generateKeyPairFromSeed(
+			"Ed25519",
+			keyBuffer.slice(0, 32),
+		);
+
+		await initialize(ed25519PrivateKey);
+		await nodeInstance.value.start();
+	};
+
 	const initialize = async (privateKey: any) => {
 		if (isInitialized.value) return;
 		isInitializing.value = true;
@@ -37,9 +56,9 @@ export const useWorkerNode = () => {
 		await datastore.open();
 		// await datastore.destroy();
 		const config = useRuntimeConfig();
-		console.log(config.public.MANAGER_MULTI_ADDRESS);
+
 		nodeInstance.value = await createWorkerNode(
-			[config.public.MANAGER_MULTI_ADDRESS],
+			[managerNodeMultiAddress.value],
 			privateKey,
 			datastore,
 			async (managerPeerId: string, pub_x: Uint8Array, pub_y: Uint8Array) => {
@@ -172,11 +191,13 @@ export const useWorkerNode = () => {
 
 		start,
 		stop,
+		reconnect,
 		connected,
 		paymentStore,
 		taskStore,
 
 		isPairing,
 		connectionTime,
+		managerNodeMultiAddress,
 	};
 };

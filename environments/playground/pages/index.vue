@@ -1,5 +1,11 @@
 <template>
   <div class="w-full">
+    <div>
+      <UInput v-model="managerNodeMultiAddress" />
+      <UButton @click="reconnect" class="btn btn-primary mt-2" color="white">
+        Connect
+      </UButton>
+    </div>
     <NodeStatusCard class="my-5" />
     <TaskModal v-model="activeTask" :active-task="activeTask" />
 
@@ -55,6 +61,8 @@ const {
 	managerPeerId,
 	workerPublicKey,
 	managerPublicKey,
+	managerNodeMultiAddress,
+	reconnect,
 } = useWorkerNode();
 const {
 	claimableAmount,

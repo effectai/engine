@@ -11,6 +11,7 @@ import * as filters from "@libp2p/websockets/filters";
 import { type Datastore, Key } from "interface-datastore";
 import { createLibp2p } from "libp2p";
 import { workerProtocol, WorkerSession } from "./worker.js";
+import { webTransport } from "@libp2p/webtransport";
 
 export type WorkerNode = ReturnType<typeof createWorkerNode>;
 
@@ -27,9 +28,14 @@ export const createWorkerNode = (
 		addresses: {
 			listen: ["/p2p-circuit", "/webrtc"],
 		},
+		connectionGater: {
+			// Allow private addresses for local testing
+			denyDialMultiaddr: async () => false,
+		},
 		transports: [
 			webSockets({ filter: filters.all }),
 			webRTC(),
+			webTransport(),
 			circuitRelayTransport(),
 		],
 		streamMuxers: [yamux()],

@@ -9,14 +9,15 @@ import * as filters from "@libp2p/websockets/filters";
 import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 import type { PrivateKey } from "@libp2p/interface";
 import { managerProtocol } from "./manager.js";
+import { webTransport } from "@libp2p/webtransport";
 
 export const createManagerNode = (peers: string[], privateKey?: PrivateKey) => {
 	return createLibp2p({
 		...(privateKey && { privateKey }),
 		addresses: {
-			listen: ["/ip4/192.168.2.17/tcp/34859/wss"],
+			listen: ["/ip4/0.0.0.0/tcp/34859/ws"],
 		},
-		transports: [webSockets({ filter: filters.all })],
+		transports: [webSockets({ filter: filters.all }), webTransport()],
 		streamMuxers: [yamux()],
 		connectionEncrypters: [noise()],
 		peerDiscovery: [
