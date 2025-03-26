@@ -33,7 +33,7 @@ export const createWorkerNode = (
 			denyDialMultiaddr: async () => false,
 		},
 		transports: [
-			webSockets({ filter: filters.all }),
+			webSockets({}),
 			webRTC(),
 			webTransport(),
 			circuitRelayTransport(),

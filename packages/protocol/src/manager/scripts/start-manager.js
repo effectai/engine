@@ -21,6 +21,8 @@ setInterval(async () => {
 	const peers = manager.getPeers();
 	const tasks = await manager.services.manager.getTasks();
 
+	manager.getMultiaddrs().forEach((ma) => console.log(ma.toString()));
+
 	console.log(
 		chalk.green(
 			`Manager Info: ${peers.length} peers, ${queue.length} in queue, ${tasks.length} tasks`,

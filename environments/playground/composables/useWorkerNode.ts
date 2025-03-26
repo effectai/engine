@@ -24,7 +24,7 @@ const paymentStore = ref<Payment[]>([]);
 const taskStore = ref<Task[]>([]);
 const toast = useToast();
 const managerNodeMultiAddress = ref(
-	"/ip4/codifex.nl/tcp/34851/ws/p2p/12D3KooWFFNkqu7bETMX2qfdyi9t9T3fEYtqQXMTKtSt8Yw9jz5b",
+	"/ip4/192.168.2.17/tcp/39527/tls/ws/p2p/12D3KooWFFNkqu7bETMX2qfdyi9t9T3fEYtqQXMTKtSt8Yw9jz5b",
 );
 
 export const useWorkerNode = () => {
