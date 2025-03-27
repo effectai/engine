@@ -4,9 +4,10 @@ services:
   manager:
     image: jhamer/effect-manager:latest
     restart: unless-stopped
+    ports:
+      - "8888:8888"
     expose:
       - "34859"
-      - "8888"
     networks:
       - app-network
 
