@@ -25,7 +25,7 @@ const taskStore = ref<Task[]>([]);
 const toast = useToast();
 
 const managerNodeMultiAddress = ref(
-	"/dns4/codifex.nl/tcp/34859/ws/p2p/12D3KooWFFNkqu7bETMX2qfdyi9t9T3fEYtqQXMTKtSt8Yw9jz5b",
+	"/dns4/codifex.nl/tcp/443/ws/p2p/12D3KooWFFNkqu7bETMX2qfdyi9t9T3fEYtqQXMTKtSt8Yw9jz5b",
 );
 
 export const useWorkerNode = () => {

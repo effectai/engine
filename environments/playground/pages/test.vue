@@ -1,18 +1,23 @@
 <template>
   <div class="w-full">
-    <NodeStatusCard />
-
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-5">
-      <StatisticCard icon="i-lucide-cpu" label="CPU" value="12%" />
-      <StatisticCard icon="i-lucide-memory" label="Memory" value="12%" />
-      <StatisticCard icon="i-lucide-activity" label="Network" value="12ms" />
-      <StatisticCard icon="i-lucide-shield" label="Tasks" value="12" />
+    <div>
+      <UInput v-model="address" />
+      <UButton @click="connect" class="btn btn-primary mt-2" color="white">
+        Connect
+      </UButton>
     </div>
-
-    <TaskList />
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { createWorkerNode } from "@effectai/protocol";
+
+const address = ref<string>("");
+const connect = async () => {
+	console.log("Connecting to worker node...");
+	const workerNode = await createWorkerNode([address.value]);
+	workerNode.start();
+};
+</script>
 
 <style scoped></style>

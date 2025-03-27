@@ -5,7 +5,7 @@ import { bootstrap } from "@libp2p/bootstrap";
 import { circuitRelayTransport } from "@libp2p/circuit-relay-v2";
 import { identify } from "@libp2p/identify";
 import type { Ed25519PrivateKey } from "@libp2p/interface";
-import { webRTC } from "@libp2p/webrtc";
+import { webRTC, webRTCDirect } from "@libp2p/webrtc";
 import { webSockets } from "@libp2p/websockets";
 import * as filters from "@libp2p/websockets/filters";
 import { type Datastore, Key } from "interface-datastore";
@@ -32,7 +32,7 @@ export const createWorkerNode = (
 			// Allow private addresses for local testing
 			denyDialMultiaddr: async () => false,
 		},
-		transports: [webSockets({}), circuitRelayTransport()],
+		transports: [webSockets(), circuitRelayTransport(), webRTCDirect()],
 		streamMuxers: [yamux()],
 		connectionEncrypters: [noise()],
 		peerDiscovery: [

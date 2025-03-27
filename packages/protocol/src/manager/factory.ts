@@ -19,7 +19,7 @@ export const createManagerNode = (peers: string[], privateKey?: PrivateKey) => {
 		connectionGater: {
 			denyDialMultiaddr: () => false,
 		},
-		transports: [webSockets({ filter: filters.all })],
+		transports: [webSockets()],
 		streamMuxers: [yamux()],
 		connectionEncrypters: [noise()],
 		peerDiscovery: [
