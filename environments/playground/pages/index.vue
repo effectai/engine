@@ -4,6 +4,8 @@
       <UCard class="bg-zinc-800 text-white">
         <p class="my-5 text-2xl">Pairing with Manager node...</p>
         <UProgress />
+
+        <UButton @click="disconnect">Disconnect</UButton>
       </UCard>
     </div>
     <div v-else>
@@ -59,6 +61,7 @@ import type { Payment, Task } from "@effectai/protocol";
 import { peerIdFromString } from "@libp2p/peer-id";
 import { useMutation } from "@tanstack/vue-query";
 import { useIntervalFn } from "@vueuse/core";
+import { useWallet } from "solana-wallets-vue";
 const {
 	connectionTime,
 	taskStore,
@@ -126,6 +129,15 @@ const { mutateAsync: claimPayments, isPending: isClaiming } = useMutation({
 		const claimResult = await mutateClaim({ proof });
 	},
 });
+
+const { logout } = useAuth();
+const { disconnect: disconnectWallet } = useWallet();
+const router = useRouter();
+const disconnect = () => {
+	logout();
+	disconnectWallet();
+	router.push("/login");
+};
 
 const claimPaymentsHandler = async () => {
 	try {
