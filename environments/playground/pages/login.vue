@@ -58,10 +58,6 @@ onMounted(async () => {
 	try {
 		await web3auth.initModal();
 
-		if (web3auth.connected && !privateKey.value) {
-			await web3auth.logout();
-		}
-
 		if (web3auth.connected) {
 			loggedIn.value = true;
 		} else {

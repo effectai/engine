@@ -82,6 +82,7 @@ export const useWorkerNode = () => {
 					title: "Pairing Successful",
 					description: "Successfully Paired with manager",
 				});
+
 				isPairing.value = false;
 
 				return { nonce: nextNonce, delegate: publicKey.value };

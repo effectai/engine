@@ -9,6 +9,7 @@ import * as filters from "@libp2p/websockets/filters";
 import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 import type { PrivateKey } from "@libp2p/interface";
 import { managerProtocol } from "./manager.js";
+import { ping } from "@libp2p/ping";
 
 export const createManagerNode = (peers: string[], privateKey?: PrivateKey) => {
 	return createLibp2p({
@@ -26,6 +27,7 @@ export const createManagerNode = (peers: string[], privateKey?: PrivateKey) => {
 			...(peers && peers.length > 0 ? [bootstrap({ list: peers })] : []),
 		],
 		services: {
+			ping: ping(),
 			pubsub: gossipsub(),
 			identify: identify(),
 			manager: managerProtocol(),

@@ -17,7 +17,9 @@
           :value="uptime.formattedTime"
         >
           <small class="text-xs text-emerald-500 font-mono italic"
-            >payout every 1 minutes</small
+            >payout every
+            {{ Number.parseInt(config.public.PAYOUT_INTERVAL) / 1000 / 60 }}
+            minutes</small
           >
         </StatisticCard>
         <StatisticCard
@@ -31,7 +33,7 @@
           :value="totalCompletedTasks"
         />
         <StatisticCard
-          icon="i-lucide-shield"
+          icon="i-lucide-baggage-claim"
           label="EFFECT Claimable"
           :value="claimableAmountFormatted"
         >
@@ -54,6 +56,7 @@
 
 <script setup lang="ts">
 import type { Payment, Task } from "@effectai/protocol";
+import { peerIdFromString } from "@libp2p/peer-id";
 import { useMutation } from "@tanstack/vue-query";
 import { useIntervalFn } from "@vueuse/core";
 const {
@@ -64,6 +67,7 @@ const {
 	managerPeerId,
 	workerPublicKey,
 	managerPublicKey,
+	node,
 	reconnect,
 } = useWorkerNode();
 const {
@@ -91,6 +95,7 @@ const totalEarned = computed(() => {
 	)} EFFECT`;
 });
 
+const config = useRuntimeConfig();
 const uptime = useUptime(connectionTime);
 const claimInterval = useIntervalFn(
 	() => {
@@ -102,7 +107,7 @@ const claimInterval = useIntervalFn(
 		console.log("requesting payout..");
 		requestPayout(managerPeerId.value);
 	},
-	60000,
+	Number.parseInt(config.public.PAYOUT_INTERVAL),
 	{ immediate: false },
 );
 
@@ -145,6 +150,22 @@ watch(connected, () => {
 
 definePageMeta({
 	middleware: "auth",
+});
+
+const { resume } = useIntervalFn(
+	async () => {
+		if (!node.value || !managerPeerId.value) return;
+		const peerId = peerIdFromString(managerPeerId.value);
+		const result = await node.value.services.ping.ping(peerId);
+		console.log("Ping result", result);
+	},
+	10000,
+	{ immediate: false },
+);
+//while connected, ping the manager node every 10 seconds to measure the latency
+watchEffect(() => {
+	if (!connected.value) return;
+	resume();
 });
 </script>
 

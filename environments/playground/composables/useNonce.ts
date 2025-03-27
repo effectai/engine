@@ -11,6 +11,12 @@ export const useNonce = () => {
 		);
 	});
 
+	const currentNonce = computed(() => {
+		if (!remoteNonce.value) return highestLocalNonce.value;
+		if (remoteNonce.value > highestLocalNonce.value) return remoteNonce.value;
+		return highestLocalNonce.value;
+	});
+
 	const fetchNonces = async (worker: PublicKey, manager: PublicKey) => {
 		const { fetchRemoteNonce } = usePaymentProgram();
 		const remoteNonceResult = await fetchRemoteNonce(worker, manager);
@@ -36,5 +42,11 @@ export const useNonce = () => {
 		return smartContractNonce + 1n;
 	};
 
-	return { remoteNonce, getNextNonce, highestLocalNonce, fetchNonces };
+	return {
+		remoteNonce,
+		getNextNonce,
+		highestLocalNonce,
+		fetchNonces,
+		currentNonce,
+	};
 };

@@ -73,10 +73,10 @@
           class="flex items-center justify-between p-2 border border-zinc-700 rounded"
         >
           <div class="flex items-center gap-2 text-zinc-400">
-            <UIcon name="i-lucide-shield" size="16" />
-            TASK QUEUE
+            <UIcon name="i-lucide-parking-meter" size="16" />
+            NONCE
           </div>
-          <code class="text-emerald-400">4</code>
+          <code class="text-emerald-400">{{ currentNonce }}</code>
         </div>
       </div>
     </div>
@@ -87,6 +87,7 @@
 import { useWallet } from "solana-wallets-vue";
 
 const { workerPublicKey, managerPeerId } = useWorkerNode();
+const { currentNonce } = useNonce();
 
 const props = defineProps({
 	stats: Object,

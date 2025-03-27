@@ -10,6 +10,7 @@ export default defineNuxtConfig({
 	css: ["~/assets/css/main.css"],
 	runtimeConfig: {
 		public: {
+			PAYOUT_INTERVAL: process.env.PAYOUT_INTERVAL,
 			MANAGER_MULTI_ADDRESS: process.env.MANAGER_MULTI_ADDRESS,
 			EFFECT_SPL_TOKEN_MINT: process.env.EFFECT_SPL_TOKEN_MINT,
 			EFFECT_SOLANA_RPC_NODE_URL: process.env.EFFECT_SOLANA_RPC_NODE_URL,
