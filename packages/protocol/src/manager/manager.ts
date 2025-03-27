@@ -249,7 +249,6 @@ export class ManagerService
 				await stream.write(message);
 			} catch (e) {
 				console.error("Error generating payment proof", e);
-				throw e;
 			}
 		} else if (payment.payoutRequest) {
 			const peer = peerIdFromString(remotePeer);
@@ -442,9 +441,9 @@ export class ManagerService
 
 			const proofInputs = {
 				receiver: int2hex(
-					BigInt(
-						new PublicKey(message.payments[0]?.recipient || "0").toString(),
-					),
+					new PublicKey(message.payments[0]?.recipient || "0")
+						.toBuffer()
+						.readBigInt64BE(),
 				),
 				pubX: eddsa.F.toObject(pubKey[0]),
 				pubY: eddsa.F.toObject(pubKey[1]),
@@ -489,6 +488,8 @@ export class ManagerService
 				wasmPath,
 				zkeyPath,
 			);
+
+			console.log("proof", proof);
 
 			return { proof, publicSignals, pubKey };
 		} catch (e) {

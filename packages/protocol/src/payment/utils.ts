@@ -14,7 +14,7 @@ export const signPayment = async (payment: Payment, privateKey: PrivateKey) => {
 		privateKey.raw.slice(0, 32),
 		poseidon([
 			int2hex(payment.nonce),
-			int2hex(new PublicKey(payment.recipient).toString()),
+			int2hex(new PublicKey(payment.recipient).toBuffer().readBigInt64BE()),
 			int2hex(payment.amount),
 		]),
 	);

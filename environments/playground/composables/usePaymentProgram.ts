@@ -61,89 +61,97 @@ export function usePaymentProgram() {
 		useMutation({
 			onSuccess: () => {},
 			mutationFn: async ({ proof }: { proof: ProofResponse }) => {
-				const { publicKey } = useWallet();
+				try {
+					const { publicKey } = useWallet();
 
-				if (!proof.signals) {
-					throw new Error("No proof provided");
-				}
+					if (!proof.signals) {
+						throw new Error("No proof provided");
+					}
 
-				if (!publicKey.value) {
-					throw new Error("No public key found");
-				}
+					if (!publicKey.value) {
+						throw new Error("No public key found");
+					}
 
-				const eddsa = await buildEddsa();
-				const { workerPublicKey, managerPublicKey } = useWorkerNode();
+					const eddsa = await buildEddsa();
+					const { workerPublicKey, managerPublicKey } = useWorkerNode();
 
-				const mngpubkey = new PublicKey(
-					eddsa.F.toObject(new Uint8Array(proof.R8?.R8_1)),
-				);
+					const mngpubkey = new PublicKey(
+						eddsa.F.toObject(new Uint8Array(proof.R8?.R8_1)),
+					);
 
-				const managerRecipientDataAccount = deriveWorkerManagerDataAccount(
-					publicKey.value,
-					mngpubkey,
-				);
+					const managerRecipientDataAccount = deriveWorkerManagerDataAccount(
+						publicKey.value,
+						mngpubkey,
+					);
 
-				if (!workerPublicKey.value) {
-					throw new Error("No worker public key found");
-				}
-
-				const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
-
-				const dataAccount =
-					await paymentProgram.value.account.recipientManagerDataAccount.fetch(
+					console.log(
+						"managerRecipientDataAccount:",
 						managerRecipientDataAccount,
 					);
 
-				console.log("dataAccount:", dataAccount);
-				console.log("min_nonce", proof.signals?.minNonce);
-				console.log("max_nonce", proof.signals?.maxNonce);
-				console.log("amount", proof.signals?.amount.toString());
+					if (!workerPublicKey.value) {
+						throw new Error("No worker public key found");
+					}
 
-				const tx = await paymentProgram.value.methods
-					.claim(
-						new anchor.BN(proof.signals?.minNonce),
-						new anchor.BN(proof.signals?.maxNonce),
-						new anchor.BN(proof.signals?.amount.toString()),
-						bigIntToBytes32(eddsa.F.toObject(proof.R8?.R8_1)),
-						bigIntToBytes32(eddsa.F.toObject(proof.R8?.R8_2)),
-						Array.from(convertProofToBytes(proof)),
-					)
-					.accounts({
-						recipientManagerDataAccount: managerRecipientDataAccount,
-						paymentAccount: new PublicKey(
-							"7XMNp4NqBDQ8o6Pj2FGAwnuNFdonnVyY2vdzMhgPRQBz",
-						),
-						mint,
-						recipientTokenAccount: ata,
-					})
-					.preInstructions([
-						...((await connection.value.getAccountInfo(ata))
-							? []
-							: [
-									createAssociatedTokenAccountIdempotentInstructionWithDerivation(
-										publicKey.value,
-										publicKey.value,
-										mint,
-									),
-								]),
+					const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
-						// Initialize the manager recipient data account if it doesn't exist
-						...((await connection.value.getAccountInfo(
-							managerRecipientDataAccount,
-						))
-							? []
-							: [
-									await paymentProgram.value.methods
-										.init(new PublicKey(eddsa.F.toObject(proof.R8?.R8_1)))
-										.accounts({
+					// const dataAccount =
+					// 	await paymentProgram.value.account.recipientManagerDataAccount.fetch(
+					// 		managerRecipientDataAccount,
+					// 	);
+					//
+					// console.log("dataAccount:", dataAccount);
+					console.log("min_nonce", proof.signals?.minNonce);
+					console.log("max_nonce", proof.signals?.maxNonce);
+					console.log("amount", proof.signals?.amount.toString());
+
+					const tx = await paymentProgram.value.methods
+						.claim(
+							new anchor.BN(proof.signals?.minNonce),
+							new anchor.BN(proof.signals?.maxNonce),
+							new anchor.BN(proof.signals?.amount.toString()),
+							bigIntToBytes32(eddsa.F.toObject(proof.R8?.R8_1)),
+							bigIntToBytes32(eddsa.F.toObject(proof.R8?.R8_2)),
+							Array.from(convertProofToBytes(proof)),
+						)
+						.accounts({
+							recipientManagerDataAccount: managerRecipientDataAccount,
+							paymentAccount: new PublicKey(
+								"26RGxZJsuN1xGXjJyimWh1GVCnUR4VrjytQGj5c4NBPJ",
+							),
+							mint,
+							recipientTokenAccount: ata,
+						})
+						.preInstructions([
+							...((await connection.value.getAccountInfo(ata))
+								? []
+								: [
+										createAssociatedTokenAccountIdempotentInstructionWithDerivation(
+											publicKey.value,
+											publicKey.value,
 											mint,
-										})
-										.instruction(),
-								]),
-					])
-					.rpc();
+										),
+									]),
 
-				console.log("tx:", tx);
+							// Initialize the manager recipient data account if it doesn't exist
+							...((await connection.value.getAccountInfo(
+								managerRecipientDataAccount,
+							))
+								? []
+								: [
+										await paymentProgram.value.methods
+											.init(new PublicKey(eddsa.F.toObject(proof.R8?.R8_1)))
+											.accounts({
+												mint,
+											})
+											.instruction(),
+									]),
+						])
+						.rpc();
+					console.log("tx:", tx);
+				} catch (e) {
+					console.log("error:", e);
+				}
 			},
 		});
 

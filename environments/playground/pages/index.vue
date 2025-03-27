@@ -16,7 +16,7 @@
         :value="uptime.formattedTime"
       >
         <small class="text-xs text-emerald-500 font-mono italic"
-          >payout every 5 minutes</small
+          >payout every 1 minutes</small
         >
       </StatisticCard>
       <StatisticCard
@@ -97,9 +97,10 @@ const claimInterval = useIntervalFn(
 			return;
 		}
 
+		console.log("requesting payout..");
 		requestPayout(managerPeerId.value);
 	},
-	300000,
+	60000,
 	{ immediate: false },
 );
 
@@ -135,8 +136,8 @@ const claimPaymentsHandler = async () => {
 
 watch(connected, () => {
 	if (connected.value) {
+		console.log("resuming..");
 		claimInterval.resume();
-	} else {
 	}
 });
 

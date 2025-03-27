@@ -43,9 +43,7 @@ export const createPaymentPool: CommandModule<unknown, MigrationClaimOptions> =
 				provider,
 			) as unknown as anchor.Program<EffectPayment>;
 
-			const mint = new PublicKey(
-				"68RYayn5MFxYFLpnrQcLtMbRD6wCjNxuKrFzAejzSUj4",
-			);
+			const mint = new PublicKey("mint44RzfitV8sqFGrLnh6sLNAS2jxaw1KhaSsYGT3P");
 
 			const ata = getAssociatedTokenAddressSync(mint, payer.publicKey);
 

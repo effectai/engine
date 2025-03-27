@@ -33,7 +33,6 @@
         { key: 'recipient', label: 'Recipient' },
         { key: 'paymentAccount', label: 'payment Account' },
         { key: 'amount', label: 'Amount' },
-        { key: 'actions', label: 'Actions' },
       ]"
     >
       <template #amount-data="{ row }">

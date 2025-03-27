@@ -26,27 +26,33 @@ describe("Libp2p", () => {
 		test(
 			"testing",
 			async () => {
-				const worker = await createWorkerNode([
-					"/ip4/10.244.2.116/tcp/34859/ws/p2p/12D3KooWFFNkqu7bETMX2qfdyi9t9T3fEYtqQXMTKtSt8Yw9jz5b",
-				]);
+				const manager = await createManagerNode([]);
 
-				worker.addEventListener("peer:identify", (peerId) => {
-					console.log("Discovered", peerId.detail);
+				manager.addEventListener("peer:discovery", (peer) => {
+					console.log("Discovered:", peer);
 				});
 
-				await worker.start();
-				const mm = multiaddr(
-					"/ip4/10.244.2.116/tcp/34859/ws/p2p/12D3KooWFFNkqu7bETMX2qfdyi9t9T3fEYtqQXMTKtSt8Yw9jz5b",
+				await manager.start();
+				const managerAddress = manager.getMultiaddrs();
+
+				console.log(
+					"Manager address:",
+					managerAddress.map((a) => a.toString()),
 				);
 
-				//dial the manager
-				const res = await worker.isDialable(mm);
-				const result = await worker.dialProtocol(mm, "/effectai/manager/0.0.1");
+				await new Promise((resolve) => setTimeout(resolve, 500));
+				const multi = `/dns4/codifex.nl/tcp/34859/ws/p2p/${manager.peerId.toString()}`;
+				const addr = multiaddr(multi);
 
-				console.log(result);
-				console.log("done!");
-				//wait 10 seconds
-				await new Promise((resolve) => setTimeout(resolve, 10000));
+				console.log(managerAddress[0].toString());
+				const worker = await createWorkerNode([addr]);
+				await worker.start();
+
+				//check if dialable
+				const result = await worker.isDialable(addr);
+				console.log("Is dialable:", result);
+				expect(result).toBe(true);
+				await new Promise((resolve) => setTimeout(resolve, 3500));
 			},
 			{ timeout: 60000 },
 		);
