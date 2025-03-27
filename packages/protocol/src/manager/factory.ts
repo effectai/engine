@@ -9,11 +9,6 @@ import * as filters from "@libp2p/websockets/filters";
 import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 import type { PrivateKey } from "@libp2p/interface";
 import { managerProtocol } from "./manager.js";
-import { webTransport } from "@libp2p/webtransport";
-import { autoTLS } from "@libp2p/auto-tls";
-import { autoNAT } from "@libp2p/autonat";
-import { keychain } from "@libp2p/keychain";
-import { uPnPNAT } from "@libp2p/upnp-nat";
 
 export const createManagerNode = (peers: string[], privateKey?: PrivateKey) => {
 	return createLibp2p({
@@ -35,10 +30,6 @@ export const createManagerNode = (peers: string[], privateKey?: PrivateKey) => {
 			identify: identify(),
 			manager: managerProtocol(),
 			relay: circuitRelayServer(),
-			// autoNAT: autoNAT(),
-			// autoTLS: autoTLS(),
-			// keychain: keychain(),
-			// upnp: uPnPNAT(),
 		},
 	});
 };

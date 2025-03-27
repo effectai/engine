@@ -32,12 +32,7 @@ export const createWorkerNode = (
 			// Allow private addresses for local testing
 			denyDialMultiaddr: async () => false,
 		},
-		transports: [
-			webSockets({}),
-			webRTC(),
-			webTransport(),
-			circuitRelayTransport(),
-		],
+		transports: [webSockets({}), circuitRelayTransport()],
 		streamMuxers: [yamux()],
 		connectionEncrypters: [noise()],
 		peerDiscovery: [
