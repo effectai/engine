@@ -13,14 +13,14 @@ import {
 } from "@libp2p/interface";
 import { peerIdFromString } from "@libp2p/peer-id";
 
-import { MessageStream, pbStream } from "it-protobuf-stream";
+import { type MessageStream, pbStream } from "it-protobuf-stream";
 import type { ConnectionManager, Registrar } from "@libp2p/interface-internal";
 import {
 	MULTICODEC_WORKER_PROTOCOL_NAME,
 	MULTICODEC_WORKER_PROTOCOL_VERSION,
 } from "./consts.js";
 
-import { PublicKey } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
 
 import type { Datastore } from "interface-datastore";
 
@@ -45,7 +45,7 @@ import { ManagerMessage } from "../manager/managerMessage.js";
 import { PaymentProtocolService } from "../payment/service.js";
 import { TaskProtocolService } from "../task/service.js";
 import { getOrCreateActiveOutBoundStream, isManager } from "../utils/utils.js";
-import { Payment } from "../payment/payment.js";
+import type { Payment } from "../payment/payment.js";
 
 export interface WorkerProtocolEvents {
 	"task:received": CustomEvent<Task>;

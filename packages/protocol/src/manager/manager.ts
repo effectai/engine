@@ -1,7 +1,7 @@
 import {
 	type ComponentLogger,
 	type Connection,
-	IdentifyResult,
+	type IdentifyResult,
 	type Libp2pEvents,
 	type PeerId,
 	type PeerStore,
@@ -14,7 +14,7 @@ import {
 import { buildEddsa } from "circomlibjs";
 
 import * as snarkjs from "snarkjs";
-import { MessageStream, pbStream } from "it-protobuf-stream";
+import { type MessageStream, pbStream } from "it-protobuf-stream";
 
 import type {
 	Registrar,
@@ -113,6 +113,8 @@ export class ManagerService
 			const pb = pbStream(stream).pb(WorkerMessage);
 			await pb.write(message);
 			const response = await pb.read();
+			console.log("response", response);
+
 			//close stream
 			await stream.close();
 
@@ -147,6 +149,7 @@ export class ManagerService
 			async ({ detail }) => {
 				//check if peer is a worker
 				if (isWorker(detail)) {
+					console.log("worker peer identified.");
 					await this.pairWorker(detail);
 				}
 			},

@@ -1,46 +1,54 @@
 <template>
   <div class="w-full">
-    <NodeStatusCard class="my-5" />
-    <TaskModal v-model="activeTask" :active-task="activeTask" />
-
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 my-5">
-      <StatisticCard
-        icon="i-lucide-cpu"
-        label="Time Online"
-        :value="uptime.formattedTime"
-      >
-        <small class="text-xs text-emerald-500 font-mono italic"
-          >payout every 1 minutes</small
-        >
-      </StatisticCard>
-      <StatisticCard
-        icon="i-lucide-dollar-sign"
-        label="Total Earned"
-        :value="totalEarned"
-      />
-      <StatisticCard
-        icon="i-lucide-activity"
-        label="Tasks Completed"
-        :value="totalCompletedTasks"
-      />
-      <StatisticCard
-        icon="i-lucide-shield"
-        label="EFFECT Claimable"
-        :value="claimableAmountFormatted"
-      >
-        <UButton
-          @click="claimPaymentsHandler"
-          class="btn btn-primary mt-2"
-          color="white"
-          :loading="isClaiming"
-          :disabled="!connected"
-        >
-          Claim Payments
-        </UButton>
-      </StatisticCard>
+    <div class="my-5" v-if="isPairing">
+      <UCard class="bg-zinc-800 text-white">
+        <p class="my-5 text-2xl">Pairing with Manager node...</p>
+        <UProgress />
+      </UCard>
     </div>
-    <TaskList class="my-5" />
-    <PaymentsList />
+    <div v-else>
+      <NodeStatusCard class="my-5" />
+      <TaskModal v-model="activeTask" :active-task="activeTask" />
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 my-5">
+        <StatisticCard
+          icon="i-lucide-cpu"
+          label="Time Online"
+          :value="uptime.formattedTime"
+        >
+          <small class="text-xs text-emerald-500 font-mono italic"
+            >payout every 1 minutes</small
+          >
+        </StatisticCard>
+        <StatisticCard
+          icon="i-lucide-dollar-sign"
+          label="Total Earned"
+          :value="totalEarned"
+        />
+        <StatisticCard
+          icon="i-lucide-activity"
+          label="Tasks Completed"
+          :value="totalCompletedTasks"
+        />
+        <StatisticCard
+          icon="i-lucide-shield"
+          label="EFFECT Claimable"
+          :value="claimableAmountFormatted"
+        >
+          <UButton
+            @click="claimPaymentsHandler"
+            class="btn btn-primary mt-2"
+            color="white"
+            :loading="isClaiming"
+            :disabled="!connected"
+          >
+            Claim Payments
+          </UButton>
+        </StatisticCard>
+      </div>
+      <TaskList class="my-5" />
+      <PaymentsList />
+    </div>
   </div>
 </template>
 
@@ -52,10 +60,10 @@ const {
 	connectionTime,
 	taskStore,
 	connected,
+	isPairing,
 	managerPeerId,
 	workerPublicKey,
 	managerPublicKey,
-	managerNodeMultiAddress,
 	reconnect,
 } = useWorkerNode();
 const {
