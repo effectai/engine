@@ -26,7 +26,6 @@ const toast = useToast();
 
 export const useWorkerNode = () => {
 	const reconnect = async () => {
-		console.log("reconnecting");
 		if (nodeInstance.value) {
 			await nodeInstance.value.stop();
 		}
@@ -55,11 +54,9 @@ export const useWorkerNode = () => {
 			`worker/${workerKeypair.publicKey.toBase58()}`,
 		);
 		await datastore.open();
-		// await datastore.destroy();
 
 		const config = useRuntimeConfig();
 		const managerNodeMultiAddress = config.public.MANAGER_MULTI_ADDRESS;
-		console.log("managerNodeMultiAddress", managerNodeMultiAddress);
 
 		nodeInstance.value = await createWorkerNode(
 			[managerNodeMultiAddress],

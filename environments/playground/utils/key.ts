@@ -12,6 +12,5 @@ export const getPublicKeyFromPeerId = (peerId: string) => {
 		throw new Error("PeerId does not contain a public key");
 	}
 
-	console.log(peer.publicKey.raw);
 	return new PublicKey(peer.publicKey?.raw);
 };

@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     expose:
       - "34859"
+      - "8888"
     networks:
       - app-network
 

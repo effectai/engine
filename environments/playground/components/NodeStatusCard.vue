@@ -67,7 +67,7 @@
             <UIcon name="i-lucide-activity" size="16" />
             NETWORK LATENCY
           </div>
-          <code class="text-emerald-400">45ms</code>
+          <code class="text-emerald-400">{{ latency }} ms</code>
         </div>
         <div
           class="flex items-center justify-between p-2 border border-zinc-700 rounded"
@@ -84,9 +84,10 @@
 </template>
 
 <script setup lang="ts">
+import { peerIdFromString } from "@libp2p/peer-id";
 import { useWallet } from "solana-wallets-vue";
 
-const { workerPublicKey, managerPeerId } = useWorkerNode();
+const { workerPublicKey, managerPeerId, node, connected } = useWorkerNode();
 const { currentNonce } = useNonce();
 
 const props = defineProps({
@@ -108,6 +109,22 @@ const { remoteNonce } = useNonce();
 const logs = () => {
 	console.log(remoteNonce.value);
 };
+
+const latency = ref(0);
+const { resume } = useIntervalFn(
+	async () => {
+		if (!node.value || !managerPeerId.value) return;
+		const peerId = peerIdFromString(managerPeerId.value);
+		const result = await node.value.services.ping.ping(peerId);
+		latency.value = result;
+	},
+	10000,
+	{ immediate: false },
+);
+watchEffect(() => {
+	if (!connected.value) return;
+	resume();
+});
 </script>
 
 <style scoped></style>

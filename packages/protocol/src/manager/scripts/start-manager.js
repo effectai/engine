@@ -11,6 +11,7 @@ const seed = Uint8Array.from([
 
 const key = await generateKeyPairFromSeed("Ed25519", Buffer.from(seed, "hex"));
 const manager = await createManagerNode([], key);
+await manager.start();
 console.log("Listening on:");
 manager.getMultiaddrs().forEach((ma) => console.log(ma.toString()));
 // console.log("connecting on :", relayAddress.toString());

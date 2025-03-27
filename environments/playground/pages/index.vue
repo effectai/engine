@@ -107,7 +107,6 @@ const claimInterval = useIntervalFn(
 			return;
 		}
 
-		console.log("requesting payout..");
 		requestPayout(managerPeerId.value);
 	},
 	Number.parseInt(config.public.PAYOUT_INTERVAL),
@@ -130,7 +129,6 @@ const { mutateAsync: claimPayments, isPending: isClaiming } = useMutation({
 	},
 });
 
-const { logout } = useAuth();
 const { disconnect: disconnectWallet } = useWallet();
 const router = useRouter();
 const disconnect = () => {
@@ -155,7 +153,6 @@ const claimPaymentsHandler = async () => {
 
 watch(connected, () => {
 	if (connected.value) {
-		console.log("resuming..");
 		claimInterval.resume();
 	}
 });
@@ -164,21 +161,7 @@ definePageMeta({
 	middleware: "auth",
 });
 
-const { resume } = useIntervalFn(
-	async () => {
-		if (!node.value || !managerPeerId.value) return;
-		const peerId = peerIdFromString(managerPeerId.value);
-		const result = await node.value.services.ping.ping(peerId);
-		console.log("Ping result", result);
-	},
-	10000,
-	{ immediate: false },
-);
 //while connected, ping the manager node every 10 seconds to measure the latency
-watchEffect(() => {
-	if (!connected.value) return;
-	resume();
-});
 </script>
 
 <style lang="scss" scoped></style>

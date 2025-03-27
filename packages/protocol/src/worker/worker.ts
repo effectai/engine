@@ -100,7 +100,6 @@ export class WorkerProtocolService
 	}
 
 	start(): void | Promise<void> {
-		console.log("WorkerProtocolService start");
 		this.register();
 	}
 
@@ -129,8 +128,6 @@ export class WorkerProtocolService
 		} else if (workerMessage.task) {
 			this.handleTaskMessage(workerMessage.task);
 		} else if (workerMessage.session?.manager) {
-			console.log("Worker Session Message", workerMessage.session);
-
 			if (!this.onRequestSessionData) {
 				throw new Error("onRequestSessionData is not defined");
 			}
