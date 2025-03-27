@@ -59,6 +59,7 @@ export const useWorkerNode = () => {
 
 		const config = useRuntimeConfig();
 		const managerNodeMultiAddress = config.public.MANAGER_MULTI_ADDRESS;
+		console.log("managerNodeMultiAddress", managerNodeMultiAddress);
 
 		nodeInstance.value = await createWorkerNode(
 			[managerNodeMultiAddress],
