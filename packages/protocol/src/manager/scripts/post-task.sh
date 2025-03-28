@@ -1,4 +1,13 @@
-curl -X POST http://209.38.53.149:8888/task \
+#!/bin/bash
+
+URL="$1"
+
+if [ -z "$URL" ]; then
+  echo "Usage: $0 <URL>"
+  exit 1
+fi
+
+curl -X POST "$URL/task" \
   -H "Content-Type: application/json" \
   -d "$(
     jq -n --arg template "$(cat "$(dirname "$0")/../data/template.html")" \

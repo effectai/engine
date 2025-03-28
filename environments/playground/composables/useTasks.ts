@@ -14,6 +14,7 @@ export const useTasks = () => {
 	const acceptTask = async (taskId: string) => {
 		if (!node.value) return;
 		await node.value.services.worker.acceptTask(taskId);
+		activeTask.value.status = "ACCEPTED";
 		await refreshTaskStore();
 	};
 
@@ -31,6 +32,7 @@ export const useTasks = () => {
 		refreshTaskStore,
 		completeTask,
 		activeTask,
+		acceptTask,
 		setActiveTask,
 	};
 };

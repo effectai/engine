@@ -13,10 +13,13 @@
               class="text-base font-semibold leading-6 text-gray-900 dark:text-white"
             >
               {{ activeTask?.title }}
+              {{ activeTask?.status }}
             </h3>
             <UButton> Show Instructions </UButton>
             <div class="flex space-x-2">
-              <UButton> Accept Task </UButton>
+              <UButton @click.stop="acceptTask(activeTask.taskId)">
+                Accept Task
+              </UButton>
               <UButton color="red"> Reject Task </UButton>
             </div>
             <UButton
@@ -60,11 +63,12 @@ const emit = defineEmits(["update:activeTask"]);
 const task = useVModel(props, "activeTask", emit);
 const isOpen = computed(() => !!task.value);
 
-const { completeTask, taskStore } = useTasks();
+const { completeTask, taskStore, acceptTask } = useTasks();
 
 const toast = useToast();
 const handlerSubmitTask = async (data) => {
-	if (!activeTask.value.status !== "ACCEPTED") {
+	console.log(activeTask.value);
+	if (activeTask.value?.status !== "ACCEPTED") {
 		//TODO:: show error message
 		toast.add({
 			title: "Error",
