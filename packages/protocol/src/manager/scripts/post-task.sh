@@ -1,4 +1,4 @@
-curl -X POST http://localhost:8888/task \
+curl -X POST http://209.38.53.149:8888/task \
   -H "Content-Type: application/json" \
   -d "$(
     jq -n --arg template "$(cat "$(dirname "$0")/../data/template.html")" \

@@ -14,6 +14,11 @@
             >
               {{ activeTask?.title }}
             </h3>
+            <UButton> Show Instructions </UButton>
+            <div class="flex space-x-2">
+              <UButton> Accept Task </UButton>
+              <UButton color="red"> Reject Task </UButton>
+            </div>
             <UButton
               color="gray"
               variant="ghost"
@@ -25,7 +30,7 @@
         </template>
 
         <template #default>
-          <div class="p-4">
+          <div class="p-4 opacity-30">
             <TaskTemplate
               ref="template"
               @submit="handlerSubmitTask"
@@ -57,7 +62,17 @@ const isOpen = computed(() => !!task.value);
 
 const { completeTask, taskStore } = useTasks();
 
+const toast = useToast();
 const handlerSubmitTask = async (data) => {
+	if (!activeTask.value.status !== "ACCEPTED") {
+		//TODO:: show error message
+		toast.add({
+			title: "Error",
+			description: "You need to accept the task first",
+			color: "red",
+		});
+		return;
+	}
 	await completeTask(task.value.taskId, JSON.stringify({ ...data.values }));
 	setActiveTask(null);
 };

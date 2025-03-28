@@ -32,11 +32,17 @@ export class TaskStore extends TypedEventEmitter<TaskStoreEvents> {
 		return this.datastore.has(new Key(`/tasks/${taskId}`));
 	}
 
-	async get(taskId: string): Promise<Task | undefined> {
-		const task = Task.decode(
-			await this.datastore.get(new Key(`/tasks/${taskId}`)),
-		);
-		return task;
+	async get(taskId: string): Promise<Task> {
+		try {
+			const task = Task.decode(
+				await this.datastore.get(new Key(`/tasks/${taskId}`)),
+			);
+
+			return task;
+		} catch (e) {
+			console.error("Task not found");
+			throw e;
+		}
 	}
 
 	async put(task: Task): Promise<Task> {

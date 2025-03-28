@@ -270,23 +270,28 @@ export class WorkerProtocolService
 		}
 	}
 
-	async acceptTask(task: Task) {
-		task.status = TaskStatus.ACCEPTED;
-		await this.taskService.storeTask(task);
+	async acceptTask(taskId: string) {
+		try {
+			const task = await this.taskService.getTask(taskId);
 
-		const managerMessage: ManagerMessage = {
-			task: {
-				taskId: task.taskId,
-				taskAccepted: this.taskService.createTaskAcceptedMessage(task),
-			},
-		};
+			await this.sendManagerMessage(task.manager, {
+				task: {
+					taskId: task.taskId,
+					taskAccepted: this.taskService.createTaskAcceptedMessage(task),
+				},
+			});
 
-		await this.sendManagerMessage(task.manager, managerMessage);
+			task.status = TaskStatus.ACCEPTED;
+			await this.taskService.storeTask(task);
+		} catch (e) {
+			console.error(e);
+			throw e;
+		}
 	}
 
-	async rejectTask(task: Task) {
-		task.status = TaskStatus.REJECTED;
-		await this.taskService.storeTask(task);
+	async rejectTask(taskId: string) {
+		const task = await this.taskService.getTask(taskId);
+
 		const managerMessage: ManagerMessage = {
 			task: {
 				taskId: task.taskId,
@@ -300,6 +305,9 @@ export class WorkerProtocolService
 		};
 
 		await this.sendManagerMessage(task.manager, managerMessage);
+
+		task.status = TaskStatus.REJECTED;
+		await this.taskService.storeTask(task);
 	}
 
 	async completeTask(taskId: string, result: string) {

@@ -25,6 +25,8 @@ const taskStore = ref<Task[]>([]);
 const toast = useToast();
 
 export const useWorkerNode = () => {
+	const isErrored = ref(false);
+
 	const reconnect = async () => {
 		if (nodeInstance.value) {
 			await nodeInstance.value.stop();
@@ -63,27 +65,38 @@ export const useWorkerNode = () => {
 			privateKey,
 			datastore,
 			async (managerPeerId: string, pub_x: Uint8Array, pub_y: Uint8Array) => {
-				const { fetchNonces } = useNonce();
-				const { publicKey } = useWallet();
+				try {
+					const { fetchNonces } = useNonce();
+					const { publicKey } = useWallet();
 
-				const managerPublicKey = getPublicKeyFromPeerId(managerPeerId);
-				if (!workerPublicKey.value || !managerPublicKey) return;
+					const managerPublicKey = getPublicKeyFromPeerId(managerPeerId);
+					if (!workerPublicKey.value || !managerPublicKey) return;
 
-				const eddsa = await buildEddsa();
+					const eddsa = await buildEddsa();
 
-				const { nextNonce, remoteNonce } = await fetchNonces(
-					publicKey.value,
-					new PublicKey(eddsa.F.toObject(pub_x)),
-				);
+					const { nextNonce, remoteNonce } = await fetchNonces(
+						publicKey.value,
+						new PublicKey(eddsa.F.toObject(pub_x)),
+					);
 
-				toast.add({
-					title: "Pairing Successful",
-					description: "Successfully Paired with manager",
-				});
+					toast.add({
+						title: "Pairing Successful",
+						description: "Successfully Paired with manager",
+					});
 
-				isPairing.value = false;
+					isPairing.value = false;
 
-				return { nonce: nextNonce, delegate: publicKey.value };
+					return { nonce: nextNonce, delegate: publicKey.value };
+				} catch (e) {
+					console.log(e);
+					isPairing.value = false;
+					isErrored.value = true;
+					toast.add({
+						title: "Pairing Failed",
+						description: "Failed to Pair with manager",
+						color: "red",
+					});
+				}
 			},
 		);
 
@@ -199,6 +212,7 @@ export const useWorkerNode = () => {
 		taskStore,
 
 		isPairing,
+		isErrored,
 		connectionTime,
 	};
 };

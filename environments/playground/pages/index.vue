@@ -1,11 +1,17 @@
 <template>
   <div class="w-full">
     <div class="my-5" v-if="isPairing">
-      <UCard class="bg-zinc-800 text-white">
+      <UCard class="bg-zinc-800 text-white max-w-md mx-auto p-5">
         <p class="my-5 text-2xl">Pairing with Manager node...</p>
         <UProgress />
 
-        <UButton @click="disconnect">Disconnect</UButton>
+        <UButton class="mt-5" @click="disconnect">Cancel</UButton>
+      </UCard>
+    </div>
+    <div v-else-if="isErrored" class="my-5">
+      <UCard class="bg-zinc-800 text-white max-w-md mx-auto p-5">
+        <p class="my-5 text-2xl">Error connecting to Manager node</p>
+        <UButton class="mt-5" @click="reconnect">Retry</UButton>
       </UCard>
     </div>
     <div v-else>
@@ -71,6 +77,7 @@ const {
 	workerPublicKey,
 	managerPublicKey,
 	node,
+	isErrored,
 	reconnect,
 } = useWorkerNode();
 const {
@@ -129,6 +136,7 @@ const { mutateAsync: claimPayments, isPending: isClaiming } = useMutation({
 	},
 });
 
+const { logout } = useAuth();
 const { disconnect: disconnectWallet } = useWallet();
 const router = useRouter();
 const disconnect = () => {

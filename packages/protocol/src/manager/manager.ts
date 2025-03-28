@@ -322,46 +322,42 @@ export class ManagerService
 
 	private async handleTaskMessage(peerId: string, taskMessage: TaskMessage) {
 		//retrieve task from task store
-		const task = await this.taskService.getTask(taskMessage.taskId);
+		try {
+			const task = await this.taskService.getTask(taskMessage.taskId);
 
-		if (!task) {
-			console.error("Task not found");
-			return;
-		}
+			if (taskMessage.taskAccepted) {
+				//task accepted by worker
+				task.status = TaskStatus.ACCEPTED;
+			} else if (taskMessage.taskRejected) {
+				//task rejected by worker
+				task.status = TaskStatus.REJECTED;
+			} else if (taskMessage.taskCompleted) {
+				//task completed by worker
 
-		if (taskMessage.taskAccepted) {
-			//task accepted by worker
-			task.status = TaskStatus.ACCEPTED;
-		} else if (taskMessage.taskRejected) {
-			//task rejected by worker
-			task.status = TaskStatus.REJECTED;
-		} else if (taskMessage.taskCompleted) {
-			//task completed by worker
+				if (task.status === TaskStatus.COMPLETED) {
+					console.error("Task already completed");
+					return;
+				}
 
-			if (task.status === TaskStatus.COMPLETED) {
-				console.error("Task already completed");
-				return;
+				task.status = TaskStatus.COMPLETED;
+				task.result = taskMessage.taskCompleted.result;
+
+				const paymentMessage = await this.generatePayment(peerId, task.reward);
+
+				if (!paymentMessage) {
+					//TODO:: LOGGING/ERROR HANDLING
+					console.error("couldnt generate payment..");
+					return;
+				}
+
+				await this.sendWorkerMessage(peerId, paymentMessage);
 			}
 
-			task.status = TaskStatus.COMPLETED;
-			task.result = taskMessage.taskCompleted.result;
-
-			//TODO:: generate payment and send it.
-			const paymentMessage = await this.generatePayment(peerId, task.reward);
-
-			if (!paymentMessage) {
-				//TODO:: LOGGING/ERROR HANDLING
-				console.error("couldnt generate payment..");
-				return;
-			}
-
-			await this.sendWorkerMessage(peerId, paymentMessage);
+			await this.taskService.storeTask(task);
+		} catch (e) {
+			console.error("Error handling task message", e);
 		}
-
-		await this.taskService.storeTask(task);
 	}
-
-	public acceptTask() {}
 
 	public getQueue() {
 		return this.workerQueue.getQueue();
@@ -371,12 +367,11 @@ export class ManagerService
 		//get current nonce for this peerId
 		const { nonce, delegate } = await this.retrieveWorkerMeta(peerId);
 
-		console.log("delegate", delegate.toBase58());
-
 		const payment = await this.paymentService.generatePayment(
 			peerId,
 			amount,
 			nonce ?? BigInt(0),
+			//TODO:: decide payment account to use
 			new PublicKey("EFcxXsFYMKP1HfEHEmSrSZtV2fKhJzEfC44h4KWZZ9cm"),
 			new PublicKey(delegate),
 		);
@@ -434,10 +429,10 @@ export class ManagerService
 			);
 
 			if (uniqueRecipients.size > 1) {
-				throw new Error("Only one recipient is supported");
+				throw new Error("Only one type of recipient is supported");
 			}
 
-			//sort payments by nonce
+			//sort (in-place) payments by nonce
 			const payments = message.payments.toSorted((a, b) =>
 				Number(a.nonce - b.nonce),
 			);

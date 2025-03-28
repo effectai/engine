@@ -11,6 +11,12 @@ export const useTasks = () => {
 		await refreshTaskStore();
 	};
 
+	const acceptTask = async (taskId: string) => {
+		if (!node.value) return;
+		await node.value.services.worker.acceptTask(taskId);
+		await refreshTaskStore();
+	};
+
 	const refreshTaskStore = async () => {
 		if (!node.value) return;
 		taskStore.value = await node.value.services.worker.getTasks();

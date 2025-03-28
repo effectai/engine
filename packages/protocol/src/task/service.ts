@@ -45,7 +45,7 @@ export class TaskProtocolService extends TypedEventEmitter<TaskProtocolEvents> {
 		return await this.taskStore.all();
 	}
 
-	async getTask(taskId: string): Promise<Task | undefined> {
+	async getTask(taskId: string): Promise<Task> {
 		return await this.taskStore.get(taskId);
 	}
 
