@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+import "./../../../../proto/task/task.proto";
+
+message ManagerTask {
+  Task task = 1;
+  repeated WorkerAssignment worker_assignment = 2;
+}
+
+message WorkerAssignment {
+  string worker_id = 1;
+  optional string assigned_at = 2;
+  optional string accepted_at = 3;
+  optional string completed_at = 4;
+  optional string rejected_at = 6;
+}

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "payment.proto";
+import "proof.proto";
+import "payout.proto";
+
+message PaymentMessage {
+  oneof message {
+    Payment payment = 1;
+    ProofRequest proof_request = 5;
+    ProofResponse proof_response = 6;
+    PayoutRequest payout_request = 7;
+  }
+}

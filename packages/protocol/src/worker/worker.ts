@@ -1,6 +1,5 @@
 import {
 	TypedEventEmitter,
-	type IncomingStreamData,
 	type Startable,
 	type PrivateKey,
 	type TypedEventTarget,
@@ -8,12 +7,8 @@ import {
 	type ComponentLogger,
 	type PeerStore,
 	type PeerId,
-	Stream,
-	Connection,
 } from "@libp2p/interface";
-import { peerIdFromString } from "@libp2p/peer-id";
 
-import { type MessageStream, pbStream } from "it-protobuf-stream";
 import type { ConnectionManager, Registrar } from "@libp2p/interface-internal";
 import {
 	MULTICODEC_WORKER_PROTOCOL_NAME,
@@ -24,33 +19,38 @@ import type { PublicKey } from "@solana/web3.js";
 
 import type { Datastore } from "interface-datastore";
 
-import {
-	type PaymentMessage,
-	type Task,
-	TaskMessage,
-	TaskStatus,
-	WorkerMessage,
-} from "./workerMessage.js";
-
 export type WorkerSession = {
 	nonce: bigint;
-	delegate: PublicKey;
+	recipient: PublicKey;
 };
 
 import {
-	MULTICODEC_MANAGER_PROTOCOL_NAME,
-	MULTICODEC_MANAGER_PROTOCOL_VERSION,
-} from "../manager/consts.js";
-import { ManagerMessage } from "../manager/managerMessage.js";
-import { PaymentProtocolService } from "../payment/service.js";
-import { TaskProtocolService } from "../task/service.js";
-import { getOrCreateActiveOutBoundStream, isManager } from "../utils/utils.js";
-import type { Payment } from "../payment/payment.js";
+	type ActionHandler,
+	type MessageHandler,
+	Router,
+} from "../common/router.js";
+import { WorkerTaskService } from "./modules/task/service.js";
+import { PaymentMessageHandler } from "./modules/payment/handlers/payment.js";
+import { WorkerPaymentService } from "./modules/payment/service.js";
+import { WorkerSessionService } from "./modules/session/service.js";
+import type { Payment, Task } from "../proto/effect.js";
+import {
+	AcceptTaskAction,
+	type AcceptTaskActionParams,
+} from "./modules/task/actions/acceptTask.js";
+import { ManagerSessionDataHandler } from "./modules/session/handlers/managerSessionData.js";
+import { TaskMessageHandler } from "./modules/task/handlers/task.js";
+import { CompleteTaskAction } from "./modules/task/actions/completeTask.js";
+import {
+	RequestPayoutAction,
+	type RequestPayoutActionParams,
+	type RequestPayoutActionResult,
+} from "./modules/payment/actions/requestPayout.js";
 
 export interface WorkerProtocolEvents {
 	"task:received": CustomEvent<Task>;
 	"task:sent": CustomEvent<Task>;
-	"payment:received": CustomEvent<PaymentMessage>;
+	"payment:received": CustomEvent<Payment>;
 	"worker:identify": CustomEvent<WorkerSession>;
 }
 
@@ -65,293 +65,103 @@ export interface WorkerProtocolComponents {
 	privateKey: PrivateKey;
 }
 
+type ActionsMap = {
+	getTasks: ActionHandler<string, Task[]>;
+	acceptTask: ActionHandler<AcceptTaskActionParams, boolean>;
+	completeTask: ActionHandler<{ taskId: string; result: any }, void>;
+	requestPayout: ActionHandler<
+		RequestPayoutActionParams,
+		RequestPayoutActionResult
+	>;
+};
+
+type MessagesMap = {
+	taskMessageHandler: MessageHandler<Task>;
+};
+
 export class WorkerProtocolService
 	extends TypedEventEmitter<WorkerProtocolEvents>
 	implements Startable
 {
-	private taskService: TaskProtocolService;
-	private paymentService: PaymentProtocolService;
-	private onRequestSessionData?: (
-		peerId: string,
-		pubX: Uint8Array,
-		pubY: Uint8Array,
-	) => Promise<WorkerSession>;
-
-	//TODO:: retrieve current nonce based on manager requesting it.
-	private nonce = BigInt(0);
-
-	setNonce(nonce: bigint) {
-		this.nonce = nonce;
-	}
-
-	getNonce() {
-		return this.nonce;
-	}
+	public taskService: WorkerTaskService;
+	private paymentService: WorkerPaymentService;
+	private sessionService: WorkerSessionService;
+	private router: Router<MessagesMap, ActionsMap>;
+	public actions?: {
+		[key in keyof ActionsMap]: (
+			params: Parameters<ActionsMap[key]["execute"]>[0],
+		) => Promise<ReturnType<ActionsMap[key]["execute"]>>;
+	};
 
 	constructor(
 		private components: WorkerProtocolComponents,
-		init: WorkerProtocolInit,
+		private init: WorkerProtocolInit,
 	) {
 		super();
-		this.taskService = new TaskProtocolService(components);
-		this.paymentService = new PaymentProtocolService(components);
 
-		this.onRequestSessionData = init.onRequestSessionData;
+		this.router = new Router();
+		this.taskService = new WorkerTaskService(components);
+		this.paymentService = new WorkerPaymentService(components);
+		this.sessionService = new WorkerSessionService(components);
 	}
 
 	start(): void | Promise<void> {
 		this.register();
 	}
 
-	stop(): void | Promise<void> {
-		console.log("WorkerProtocolService stop");
-	}
+	stop(): void | Promise<void> {}
 
 	async register() {
 		this.components.registrar.handle(
 			`/${MULTICODEC_WORKER_PROTOCOL_NAME}/${MULTICODEC_WORKER_PROTOCOL_VERSION}`,
-			this.handleProtocol.bind(this),
+			this.router.handleMessage.bind(this),
 			{ runOnLimitedConnection: false },
 		);
-	}
 
-	async handleProtocol(data: IncomingStreamData): Promise<void> {
-		const pb = pbStream(data.stream).pb(WorkerMessage);
-		const workerMessage = await pb.read();
+		const messageHandlers = [
+			[
+				"managerSession",
+				new ManagerSessionDataHandler(
+					this.components.peerId,
+					this.init.onRequestSessionData,
+				),
+			],
+			["task", new TaskMessageHandler(this.taskService)],
+			["payment", new PaymentMessageHandler(this.paymentService)],
+		] as const;
 
-		if (workerMessage.payment) {
-			this.handlePaymentMessage(
-				data.connection.remotePeer.toString(),
-				pb,
-				workerMessage.payment,
-			);
-		} else if (workerMessage.task) {
-			this.handleTaskMessage(workerMessage.task);
-		} else if (workerMessage.session?.manager) {
-			if (!this.onRequestSessionData) {
-				throw new Error("onRequestSessionData is not defined");
-			}
+		const actionHandlers = [
+			[
+				"acceptTask",
+				new AcceptTaskAction(
+					this.components.peerId,
+					this.taskService,
+					this.sessionService,
+				),
+			],
+			[
+				"completeTask",
+				new CompleteTaskAction(
+					this.components.peerId,
+					this.taskService,
+					this.sessionService,
+				),
+			],
+			[
+				"requestPayout",
+				new RequestPayoutAction(this.components.peerId, this.sessionService),
+			],
+		] as const;
 
-			const { nonce, delegate } = await this.onRequestSessionData(
-				data.connection.remotePeer.toString(),
-				workerMessage.session.manager.pubX,
-				workerMessage.session.manager.pubY,
-			);
-
-			const sessionMessage: WorkerMessage = {
-				session: {
-					worker: {
-						id: this.components.peerId.toString(),
-						nonce: nonce,
-						delegate: delegate.toBuffer(),
-					},
-				},
-			};
-
-			await pb.write(sessionMessage);
-		}
-	}
-
-	async getTasks() {
-		return await this.taskService.getTasks();
-	}
-
-	//request a payment from a manager for time spent on the network.
-	async requestPayout(managerPeerId: PeerId) {
-		try {
-			const stream = await getOrCreateActiveOutBoundStream(
-				managerPeerId.toString(),
-				this.components.connectionManager,
-				`/${MULTICODEC_MANAGER_PROTOCOL_NAME}/${MULTICODEC_MANAGER_PROTOCOL_VERSION}`,
-			);
-
-			const pb = pbStream(stream).pb(ManagerMessage);
-
-			const paymentMessage: ManagerMessage = {
-				payment: {
-					payoutRequest: {
-						peerId: this.components.peerId.toString(),
-					},
-				},
-			};
-
-			await pb.write(paymentMessage);
-
-			// Wait for the manager's response
-			const response = await pb.read();
-
-			// Ensure we received a payment
-			if (response.payment?.payment) {
-				// Store payment
-				await this.paymentService.storePayment(
-					managerPeerId.toString(),
-					response.payment.payment,
-				);
-
-				return response.payment.payment;
-			}
-
-			await stream.close();
-			return null;
-		} catch (error) {
-			console.error(`Failed to request payment from ${managerPeerId}:`, error);
-			return;
-		}
-	}
-
-	async handleTaskMessage(task: Task) {
-		await this.taskService.storeTask(task);
-		this.safeDispatchEvent("task:received", { detail: task });
-	}
-
-	async handlePaymentMessage(
-		remotePeer: string,
-		stream: MessageStream<WorkerMessage>,
-		paymentMessage: PaymentMessage,
-	) {
-		if (paymentMessage.requestNonce) {
-			const nonceResponse: WorkerMessage = {
-				payment: {
-					nonceResponse: {
-						nonce: this.nonce,
-					},
-				},
-			};
-
-			await stream.write(nonceResponse);
-		} else if (paymentMessage.payment) {
-			await this.paymentService.storePayment(
-				remotePeer,
-				paymentMessage.payment,
-			);
-
-			this.safeDispatchEvent("payment:received", {
-				detail: paymentMessage,
-			});
-		}
-	}
-
-	//request a payment proof from a manager peer
-	async requestPaymentProof(peerId: PeerId, payments: Payment[]) {
-		try {
-			const connection =
-				this.components.connectionManager.getConnections(peerId)[0];
-
-			const stream = await connection.newStream(
-				`/${MULTICODEC_MANAGER_PROTOCOL_NAME}/${MULTICODEC_MANAGER_PROTOCOL_VERSION}`,
-			);
-
-			const pb = pbStream(stream).pb(ManagerMessage);
-
-			const paymentProofMessage: ManagerMessage = {
-				payment: {
-					proofRequest: {
-						batchSize: payments.length,
-						payments,
-					},
-				},
-			};
-
-			await pb.write(paymentProofMessage);
-
-			// Wait for the manager's response
-			const response = await pb.read();
-
-			// Ensure we received a proof
-			if (response.payment?.proofResponse) {
-				await stream.close();
-				return response.payment.proofResponse;
-			}
-
-			return null;
-		} catch (error) {
-			console.error(`Failed to request proof from ${peerId}:`, error);
-			return null;
-		}
-	}
-
-	async acceptTask(taskId: string) {
-		try {
-			const task = await this.taskService.getTask(taskId);
-
-			await this.sendManagerMessage(task.manager, {
-				task: {
-					taskId: task.taskId,
-					taskAccepted: this.taskService.createTaskAcceptedMessage(task),
-				},
-			});
-
-			task.status = TaskStatus.ACCEPTED;
-			await this.taskService.storeTask(task);
-		} catch (e) {
-			console.error(e);
-			throw e;
-		}
-	}
-
-	async rejectTask(taskId: string) {
-		const task = await this.taskService.getTask(taskId);
-
-		const managerMessage: ManagerMessage = {
-			task: {
-				taskId: task.taskId,
-				taskRejected: {
-					taskId: task.taskId,
-					worker: this.components.peerId.toString(),
-					reason: "Task Rejected",
-					timestamp: Date.now().toString(),
-				},
-			},
-		};
-
-		await this.sendManagerMessage(task.manager, managerMessage);
-
-		task.status = TaskStatus.REJECTED;
-		await this.taskService.storeTask(task);
-	}
-
-	async completeTask(taskId: string, result: string) {
-		const task = await this.taskService.getTask(taskId);
-
-		if (!task || !task.manager) {
-			throw new Error("Task does not have a manager");
+		for (const [key, handler] of messageHandlers) {
+			this.router.register("message", key, handler);
 		}
 
-		task.status = TaskStatus.COMPLETED;
-		task.result = result;
-
-		await this.taskService.storeTask(task);
-
-		const managerMessage: ManagerMessage = {
-			task: {
-				taskId: task.taskId,
-				taskCompleted: this.taskService.createTaskCompletedMessage(task),
-			},
-		};
-
-		await this.sendManagerMessage(task.manager, managerMessage);
-	}
-
-	async getPayments() {
-		const payments = await this.paymentService.getPayments();
-		return payments;
-	}
-
-	async sendManagerMessage(peerId: string, message: ManagerMessage) {
-		try {
-			const stream = await getOrCreateActiveOutBoundStream(
-				peerId,
-				this.components.connectionManager,
-				`/${MULTICODEC_MANAGER_PROTOCOL_NAME}/${MULTICODEC_MANAGER_PROTOCOL_VERSION}`,
-			);
-
-			const pb = pbStream(stream).pb(ManagerMessage);
-			await pb.write(message);
-			await stream.close();
-		} catch (e) {
-			console.error("Error sending payment", e);
-		} finally {
+		for (const [key, handler] of actionHandlers) {
+			this.router.register("action", key, handler);
 		}
+
+		this.actions = this.router.getActions();
 	}
 }
 

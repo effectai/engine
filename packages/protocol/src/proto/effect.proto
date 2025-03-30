@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+import "./session/session.proto";
+import "./payment/message.proto";
+import "./task/message.proto";
+
+message EffectProtocolMessage {
+  oneof message {
+    Task task = 1;
+    TaskAccepted task_accepted = 2;
+    TaskRejected task_rejected = 3;
+    TaskCompleted task_completed = 4;
+    Payment payment = 5;
+    PayoutRequest payout_request = 6;
+    ProofRequest proof_request = 7;
+    ProofResponse proof_response = 8;
+    ManagerSessionData manager_session = 9;
+    WorkerSessionData worker_session = 10;
+  }
+}

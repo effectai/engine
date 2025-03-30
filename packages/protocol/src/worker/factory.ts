@@ -15,12 +15,17 @@ import { ping } from "@libp2p/ping";
 
 export type WorkerNode = ReturnType<typeof createWorkerNode>;
 
-export const createWorkerNode = (
-	peers: string[],
-	privateKey?: Ed25519PrivateKey,
-	datastore?: Datastore,
-	onRequestSessionData?: () => Promise<WorkerSession>,
-) => {
+export const createWorkerNode = ({
+	peers,
+	privateKey,
+	datastore,
+	onPairRequest,
+}: {
+	peers: string[];
+	onPairRequest: () => Promise<WorkerSession>;
+	privateKey?: Ed25519PrivateKey;
+	datastore?: Datastore;
+}) => {
 	return createLibp2p({
 		start: false,
 		...(datastore && { datastore }),
@@ -47,7 +52,7 @@ export const createWorkerNode = (
 			ping: ping(),
 			pubsub: gossipsub(),
 			identify: identify(),
-			worker: workerProtocol({ onRequestSessionData }),
+			worker: workerProtocol({ onRequestSessionData: onPairRequest }),
 		},
 	});
 };

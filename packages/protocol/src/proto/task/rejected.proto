@@ -1,0 +1,7 @@
+syntax = "proto3";
+message TaskRejected {
+  string task_id = 1;   
+  string worker = 2;   
+  string reason = 3;     
+  string timestamp = 4; 
+}

@@ -1,18 +1,17 @@
 import { describe, expect, it, test } from "vitest";
-import { PublicKey } from "@solana/web3.js";
 
 import { createManagerNode } from "../src/manager/factory.js";
 import { createWorkerNode } from "../src/worker/factory.js";
-import { TaskStatus } from "../src/task/task.js";
+import { TaskStatus } from "../src/proto/effect.js";
 import { multiaddr } from "@multiformats/multiaddr";
+import { PublicKey } from "@solana/web3.js";
 
 const dummyTask = (id: string) => ({
 	taskId: id,
 	reward: 5_000_000n,
-	manager: "",
-	created: new Date().toISOString(),
-	signature: "",
-	status: TaskStatus.CREATED,
+	title: "Dummy Task",
+	createdAt: new Date().toISOString(),
+	status: TaskStatus.PENDING,
 	template: `<form>
         <h2>Please submit the form to complete the task</h2>
         <input type='submit'/ >
@@ -26,33 +25,56 @@ describe("Libp2p", () => {
 		test(
 			"testing",
 			async () => {
-				const manager = await createManagerNode([]);
+				const [manager1] = await Promise.all([createManagerNode([])]);
+				const relayAddress = manager1.getMultiaddrs()[0];
+				await new Promise((resolve) => setTimeout(resolve, 100));
 
-				manager.addEventListener("peer:discovery", (peer) => {
-					console.log("Discovered:", peer);
+				const [worker] = await Promise.all([
+					createWorkerNode({
+						peers: [relayAddress.toString()],
+						onPairRequest: async () => ({
+							recipient: new PublicKey(
+								"jeffCRA2yFkRbuw99fBxXaqE5GN3DwjZtmjV18McEDf",
+							),
+							nonce: 1n,
+						}),
+					}),
+				]);
+
+				// start the worker and wait for them to discover peers
+				await Promise.all([worker.start()]);
+				await new Promise((resolve) => setTimeout(resolve, 5000));
+
+				const tasksToComplete = 2;
+				for (let i = 0; i < tasksToComplete; i++) {
+					const dtask = dummyTask(i.toString());
+
+					const task = await manager1.services.manager.onReceiveNewTask(dtask);
+					await manager1.services.manager.manageTask(task);
+					await new Promise((resolve) => setTimeout(resolve, 1000));
+				}
+
+				await new Promise((resolve) => setTimeout(resolve, 1000));
+
+				await worker.services.worker.actions?.acceptTask({
+					taskId: "0",
 				});
 
-				await manager.start();
-				const managerAddress = manager.getMultiaddrs();
+				await new Promise((resolve) => setTimeout(resolve, 1000));
 
-				console.log(
-					"Manager address:",
-					managerAddress.map((a) => a.toString()),
-				);
+				await worker.services.worker.actions?.completeTask({});
 
-				await new Promise((resolve) => setTimeout(resolve, 500));
-				const multi = `/dns4/codifex.nl/tcp/34859/ws/p2p/${manager.peerId.toString()}`;
-				const addr = multiaddr(multi);
+				// const { payment } = await worker.services.worker.actions?.requestPayout(
+				// 	{
+				// 		managerPeer: manager1.peerId,
+				// 	},
+				// );
+				//
 
-				console.log(managerAddress[0].toString());
-				const worker = await createWorkerNode([addr]);
-				await worker.start();
+				await new Promise((resolve) => setTimeout(resolve, 3000));
 
-				//check if dialable
-				const result = await worker.isDialable(addr);
-				console.log("Is dialable:", result);
-				expect(result).toBe(true);
-				await new Promise((resolve) => setTimeout(resolve, 3500));
+				await manager1.stop();
+				await Promise.all([worker.stop()]);
 			},
 			{ timeout: 60000 },
 		);

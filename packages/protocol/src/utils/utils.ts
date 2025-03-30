@@ -75,7 +75,6 @@ export const getOrCreateActiveOutBoundStream = async (
 };
 
 export const isManager = (info: IdentifyResult) => {
-	console.log(info.protocols);
 	return info.protocols.includes("/effectai/manager/0.0.1");
 };
 

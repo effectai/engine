@@ -1,0 +1,7 @@
+syntax = "proto3";
+// PaymentRequest is a message to request a payment from a manager
+message PayoutRequest {
+  string peerId = 1;
+}
+
+
