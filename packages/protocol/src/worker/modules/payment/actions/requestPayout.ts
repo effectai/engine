@@ -15,18 +15,16 @@ export type RequestPayoutActionResult = {
 };
 
 export class RequestPayoutAction
-	implements ActionHandler<RequestPayoutActionParams, void>
+	implements ActionHandler<RequestPayoutActionParams, Payment>
 {
 	constructor(
 		private peerId: PeerId,
 		private sessionService: WorkerSessionService,
 	) {}
 
-	async execute(params: RequestPayoutActionParams): Promise<void> {
-		const { managerPeer } = params;
-
+	async execute(params: RequestPayoutActionParams): Promise<Payment> {
 		try {
-			console.log("executing request payout action...");
+			const { managerPeer } = params;
 
 			const message: EffectProtocolMessage = {
 				payoutRequest: {
@@ -34,13 +32,14 @@ export class RequestPayoutAction
 				},
 			};
 
-			const result = await this.sessionService.sendManagerMessage(
+			return (await this.sessionService.sendManagerMessage(
 				managerPeer.toString(),
 				message,
 				true,
-			);
+			)) as Promise<Payment>;
 		} catch (e) {
 			console.error(e);
+			throw new Error("Failed to request payout");
 		}
 	}
 }

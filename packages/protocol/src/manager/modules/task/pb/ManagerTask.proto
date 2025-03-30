@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "./../../../../proto/task/task.proto";
+import "./../../../../common/proto/task/task.proto";
 
 message ManagerTask {
   Task task = 1;

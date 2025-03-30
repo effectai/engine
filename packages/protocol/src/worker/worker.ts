@@ -40,12 +40,16 @@ import {
 } from "./modules/task/actions/acceptTask.js";
 import { ManagerSessionDataHandler } from "./modules/session/handlers/managerSessionData.js";
 import { TaskMessageHandler } from "./modules/task/handlers/task.js";
-import { CompleteTaskAction } from "./modules/task/actions/completeTask.js";
+import {
+	CompleteTaskAction,
+	CompleteTaskActionParams,
+} from "./modules/task/actions/completeTask.js";
 import {
 	RequestPayoutAction,
 	type RequestPayoutActionParams,
 	type RequestPayoutActionResult,
 } from "./modules/payment/actions/requestPayout.js";
+import { ManagerSessionData } from "../common/proto/effect.js";
 
 export interface WorkerProtocolEvents {
 	"task:received": CustomEvent<Task>;
@@ -65,28 +69,34 @@ export interface WorkerProtocolComponents {
 	privateKey: PrivateKey;
 }
 
-type ActionsMap = {
+// the actions that the worker can perform.
+export type ActionsMap = {
 	getTasks: ActionHandler<string, Task[]>;
-	acceptTask: ActionHandler<AcceptTaskActionParams, boolean>;
-	completeTask: ActionHandler<{ taskId: string; result: any }, void>;
+	acceptTask: ActionHandler<AcceptTaskActionParams, void>;
+	completeTask: ActionHandler<CompleteTaskActionParams, void>;
 	requestPayout: ActionHandler<
 		RequestPayoutActionParams,
 		RequestPayoutActionResult
 	>;
 };
 
+// the messages that the worker can interact with.
 type MessagesMap = {
-	taskMessageHandler: MessageHandler<Task>;
+	managerSession: MessageHandler<ManagerSessionData>;
+	task: MessageHandler<Task>;
+	payment: MessageHandler<Payment>;
 };
 
 export class WorkerProtocolService
 	extends TypedEventEmitter<WorkerProtocolEvents>
 	implements Startable
 {
-	public taskService: WorkerTaskService;
+	private router: Router<MessagesMap, ActionsMap>;
+
+	private taskService: WorkerTaskService;
 	private paymentService: WorkerPaymentService;
 	private sessionService: WorkerSessionService;
-	private router: Router<MessagesMap, ActionsMap>;
+
 	public actions?: {
 		[key in keyof ActionsMap]: (
 			params: Parameters<ActionsMap[key]["execute"]>[0],
@@ -100,6 +110,7 @@ export class WorkerProtocolService
 		super();
 
 		this.router = new Router();
+
 		this.taskService = new WorkerTaskService(components);
 		this.paymentService = new WorkerPaymentService(components);
 		this.sessionService = new WorkerSessionService(components);
@@ -118,49 +129,54 @@ export class WorkerProtocolService
 			{ runOnLimitedConnection: false },
 		);
 
-		const messageHandlers = [
-			[
-				"managerSession",
-				new ManagerSessionDataHandler(
-					this.components.peerId,
-					this.init.onRequestSessionData,
-				),
-			],
-			["task", new TaskMessageHandler(this.taskService)],
-			["payment", new PaymentMessageHandler(this.paymentService)],
-		] as const;
+		this.router.register(
+			"message",
+			"managerSession",
+			new ManagerSessionDataHandler(
+				this.components.peerId,
+				this.init.onRequestSessionData,
+			),
+		);
 
-		const actionHandlers = [
-			[
-				"acceptTask",
-				new AcceptTaskAction(
-					this.components.peerId,
-					this.taskService,
-					this.sessionService,
-				),
-			],
-			[
-				"completeTask",
-				new CompleteTaskAction(
-					this.components.peerId,
-					this.taskService,
-					this.sessionService,
-				),
-			],
-			[
-				"requestPayout",
-				new RequestPayoutAction(this.components.peerId, this.sessionService),
-			],
-		] as const;
+		this.router.register(
+			"message",
+			"task",
+			new TaskMessageHandler(this.taskService),
+		);
 
-		for (const [key, handler] of messageHandlers) {
-			this.router.register("message", key, handler);
-		}
+		this.router.register(
+			"message",
+			"payment",
+			new PaymentMessageHandler(this.paymentService),
+		);
 
-		for (const [key, handler] of actionHandlers) {
-			this.router.register("action", key, handler);
-		}
+		this.router.register(
+			"action",
+			"acceptTask",
+			new AcceptTaskAction(
+				this.components.peerId,
+				this.taskService,
+				this.sessionService,
+			),
+		);
 
+		this.router.register(
+			"action",
+			"completeTask",
+			new CompleteTaskAction(
+				this.components.peerId,
+				this.taskService,
+				this.sessionService,
+			),
+		);
+
+		this.router.register(
+			"action",
+			"requestPayout",
+			new RequestPayoutAction(this.components.peerId, this.sessionService),
+		);
+
+		//TODO:: fix ts error.
 		this.actions = this.router.getActions();
 	}
 }

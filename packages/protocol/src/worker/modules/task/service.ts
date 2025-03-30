@@ -1,7 +1,7 @@
 import type { Datastore } from "interface-datastore";
 import { ProtoStore } from "../../../common/proto-store.js";
 import { WorkerTask } from "./pb/WorkerTask.js";
-import { type Task, TaskStatus } from "../../../proto/effect.js";
+import { type Task, TaskStatus } from "../../../common/proto/effect.js";
 import { EventHandler, TypedEventEmitter } from "@libp2p/interface";
 import { logger } from "../../../common/logging.js";
 

@@ -9,21 +9,6 @@ import { Uint8ArrayList } from "uint8arraylist";
 import { PublicKey } from "@solana/web3.js";
 import { peerIdFromString } from "@libp2p/peer-id";
 
-export const handleMessage = async (streamData: IncomingStreamData) => {
-	const data = new Uint8ArrayList();
-
-	for await (const chunk of streamData.stream.source) {
-		data.append(chunk);
-	}
-
-	return JSON.parse(new TextDecoder().decode(data.subarray()));
-};
-
-export const extractPeerIdFromTaskResults = (taskResults: string) => {
-	const results = JSON.parse(taskResults);
-	return { peerId: results.worker };
-};
-
 export const LibP2pPublicKeyToSolanaPublicKey = (
 	publicKey: Ed25519PublicKey,
 ) => {

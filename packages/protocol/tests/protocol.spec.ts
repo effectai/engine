@@ -1,8 +1,8 @@
 import { describe, expect, it, test } from "vitest";
 
 import { createManagerNode } from "../src/manager/factory.js";
-import { createWorkerNode } from "../src/worker/factory.js";
-import { TaskStatus } from "../src/proto/effect.js";
+import { createWorkerNode } from "../src/worker/create.js";
+import { TaskStatus } from "../src/common/proto/effect.js";
 import { multiaddr } from "@multiformats/multiaddr";
 import { PublicKey } from "@solana/web3.js";
 
@@ -62,14 +62,17 @@ describe("Libp2p", () => {
 
 				await new Promise((resolve) => setTimeout(resolve, 1000));
 
-				await worker.services.worker.actions?.completeTask({});
+				// await worker.services.worker.actions?.completeTask({});
 
-				// const { payment } = await worker.services.worker.actions?.requestPayout(
-				// 	{
-				// 		managerPeer: manager1.peerId,
-				// 	},
-				// );
-				//
+				if (!worker.services.worker.actions) {
+					throw new Error("Worker actions not available");
+				}
+
+				const { payment } = await worker.services.worker.actions.requestPayout({
+					managerPeer: manager1.peerId,
+				});
+
+				console.log("got payment", payment);
 
 				await new Promise((resolve) => setTimeout(resolve, 3000));
 

@@ -3,10 +3,10 @@ import type { MessageStream, pbStream } from "it-protobuf-stream";
 import type {
 	EffectProtocolMessage,
 	ManagerSessionData,
-} from "../../../../proto/effect.js";
+} from "../../../../common/proto/effect.js";
 import { logger } from "../../../../common/logging.js";
 import type { WorkerSession } from "../../../worker.js";
-import { MessageHandler } from "../../../../common/router.js";
+import type { MessageHandler } from "../../../../common/router.js";
 
 export class ManagerSessionDataHandler
 	implements MessageHandler<ManagerSessionData>

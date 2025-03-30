@@ -1,6 +1,10 @@
 import { PeerId, type PeerStore, type PrivateKey } from "@libp2p/interface";
 import { PublicKey } from "@solana/web3.js";
-import { Payment, PaymentMessage } from "../../../proto/effect.js";
+import {
+	Payment,
+	ProofRequest,
+	type PaymentMessage,
+} from "../../../common/proto/effect.js";
 import { ProtoStore } from "../../../common/proto-store.js";
 import type { Datastore } from "interface-datastore";
 import { int2hex } from "../../../utils/utils.js";
@@ -9,7 +13,8 @@ import { fileURLToPath } from "node:url";
 import * as snarkjs from "snarkjs";
 import { peerIdFromString } from "@libp2p/peer-id";
 import { buildEddsa } from "circomlibjs";
-import { MessageStream } from "it-protobuf-stream";
+import type { MessageStream } from "it-protobuf-stream";
+import { signPayment } from "./utils.js";
 
 export interface ManagerPaymentServiceComponents {
 	peerStore: PeerStore;
@@ -26,88 +31,6 @@ export class ManagerPaymentService {
 			encoder: Payment.encode,
 			decoder: Payment.decode,
 		});
-	}
-
-	private async handlePaymentMessage(
-		remotePeer: string,
-		stream: MessageStream<ManagerMessage>,
-		payment: PaymentMessage,
-	) {
-		if (payment.proofRequest) {
-			try {
-				const { proof, publicSignals, pubKey } =
-					await this.generatePaymentProof(payment.proofRequest);
-
-				const message: WorkerMessage = {
-					payment: {
-						proofResponse: {
-							R8: {
-								R8_1: pubKey[0],
-								R8_2: pubKey[1],
-							},
-							signals: {
-								minNonce: publicSignals[0],
-								maxNonce: publicSignals[1],
-								amount: BigInt(publicSignals[2]),
-							},
-							piA: proof.pi_a,
-							piB: [
-								{ row: [proof.pi_b[0][0], proof.pi_b[0][1]] },
-								{ row: [proof.pi_b[1][0], proof.pi_b[1][1]] },
-								{ row: [proof.pi_b[2][0], proof.pi_b[2][1]] },
-							],
-							piC: proof.pi_c,
-							protocol: proof.protocol,
-							curve: proof.curve,
-						},
-					},
-				};
-
-				await stream.write(message);
-			} catch (e) {
-				console.error("Error generating payment proof", e);
-			}
-		} else if (payment.payoutRequest) {
-			const peer = peerIdFromString(remotePeer);
-			const peerData = await this.components.peerStore.get(peer);
-			const timeSinceLastPayout = peerData.metadata.get("timeSinceLastPayout");
-
-			if (!timeSinceLastPayout) {
-				console.error("No timeSinceLastPayout found");
-				return;
-			}
-
-			const recoveredTimestamp = new DataView(
-				new Uint8Array(timeSinceLastPayout).buffer,
-			).getUint32(0, false);
-
-			const payoutTimeInSeconds =
-				Math.floor(new Date().getTime() / 1000) - recoveredTimestamp;
-
-			const payment = await this.generatePayment(
-				remotePeer,
-				BigInt(payoutTimeInSeconds * 1_000_00),
-			);
-
-			const timestamp = Math.floor(new Date().getTime() / 1000);
-			const buffer = Buffer.alloc(4);
-			buffer.writeUInt32BE(timestamp, 0);
-
-			//update last payout time
-			await this.components.peerStore.merge(peer, {
-				metadata: {
-					timeSinceLastPayout: buffer,
-				},
-			});
-
-			if (!payment) {
-				//TODO:: error logging
-				console.error("error generating payment");
-				return;
-			}
-
-			await stream.write(payment);
-		}
 	}
 
 	public async generatePayment(
@@ -141,7 +64,7 @@ export class ManagerPaymentService {
 		return payment;
 	}
 
-	private async generatePaymentProof(payments: Payment[]) {
+	public async generatePaymentProof(payments: ProofRequest.PaymentProof[]) {
 		try {
 			//sort payments by nonce
 			payments.sort((a, b) => Number(a.nonce) - Number(b.nonce));

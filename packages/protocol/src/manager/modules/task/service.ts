@@ -2,7 +2,7 @@ import { type Datastore, Key } from "interface-datastore";
 import type { ManagerPaymentService } from "../payments/service.js";
 import type { PeerId, PeerStore, PrivateKey } from "@libp2p/interface";
 import type { ConnectionManager } from "@libp2p/interface-internal";
-import { TaskStatus } from "../../../proto/task/task.js";
+import { TaskStatus } from "../../../common/proto/task/task.js";
 import type { WorkerQueue } from "../../queue.js";
 import { ManagerTask } from "./pb/ManagerTask.js";
 import { ProtoStore } from "../../../common/proto-store.js";

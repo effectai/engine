@@ -14,10 +14,10 @@ import { PublicKey } from "@solana/web3.js";
 
 import type { ConnectionManager } from "@libp2p/interface-internal";
 import type { PeerStore } from "@libp2p/interface";
-import type { WorkerQueue } from "../../queue.js";
+
 import { peerIdFromString } from "@libp2p/peer-id";
-import { EffectProtocolMessage } from "../../../proto/effect.js";
-import { WorkerSession } from "../../../worker/worker.js";
+import { EffectProtocolMessage } from "../../../common/proto/effect.js";
+import type { WorkerSession } from "../../../worker/worker.js";
 
 export interface ManagerSessionComponents {
 	connectionManager: ConnectionManager;
@@ -68,6 +68,7 @@ export class ManagerSessionService {
 		}
 
 		const lastPayoutTimestamp = peerData.metadata.get("timeSinceLastPayout");
+
 		if (!lastPayoutTimestamp) {
 			throw new Error(`No lastPayoutTimestamp found for peerId: ${peerId}`);
 		}
@@ -146,8 +147,7 @@ export class ManagerSessionService {
 			await stream.close();
 
 			const timestamp = Math.floor(new Date().getTime() / 1000);
-			const buffer = Buffer.alloc(4);
-			buffer.writeUInt32BE(timestamp, 0);
+			const buffer = new TextEncoder().encode(timestamp.toString());
 
 			if (!response.workerSession?.nonce) {
 				console.error("No nonce found for worker, skipping pairing..");

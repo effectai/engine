@@ -1,12 +1,12 @@
 import type { PeerId } from "@libp2p/interface";
 import type { ActionHandler } from "../../../../common/router.js";
-import type { EffectProtocolMessage } from "../../../../proto/effect.js";
+import type { EffectProtocolMessage } from "../../../../common/proto/effect.js";
 import type { WorkerSessionService } from "../../session/service.js";
 import type { WorkerTaskService } from "./../service.js";
 
 export interface CompleteTaskActionParams {
 	taskId: string;
-	result: string;
+	result: Record<string, string | number | bigint>;
 }
 
 export class CompleteTaskAction

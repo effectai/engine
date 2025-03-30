@@ -37,7 +37,7 @@ import {
 	ManagerTaskService,
 } from "./modules/index.js";
 import { logger } from "../common/logging.js";
-import { EffectProtocolMessage, type Task } from "../proto/effect.js";
+import { EffectProtocolMessage, type Task } from "../common/proto/effect.js";
 import { SessionMessageHandler } from "./modules/session/handler.js";
 import type { ManagerTask } from "./modules/task/pb/ManagerTask.js";
 import {
@@ -45,6 +45,7 @@ import {
 	TaskCompletedMessageHandler,
 } from "./modules/task/handler.js";
 import { Router } from "../common/router.js";
+import { PaymentPayoutRequestMessageHandler } from "./modules/payments/handlers/payoutRequest.js";
 
 export interface ManagerServiceComponents {
 	registrar: Registrar;
@@ -111,6 +112,15 @@ export class ManagerService
 			`/${MULTICODEC_MANAGER_PROTOCOL_NAME}/${MULTICODEC_MANAGER_PROTOCOL_VERSION}`,
 			this.router.handleMessage.bind(this),
 			{ runOnLimitedConnection: false },
+		);
+
+		this.router.register(
+			"message",
+			"payoutRequest",
+			new PaymentPayoutRequestMessageHandler(
+				this.paymentService,
+				this.sessionService,
+			),
 		);
 
 		this.router.register(

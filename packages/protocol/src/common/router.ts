@@ -1,6 +1,6 @@
 import type { IncomingStreamData, PeerId } from "@libp2p/interface";
 import { type MessageStream, pbStream } from "it-protobuf-stream";
-import { EffectProtocolMessage } from "../proto/effect.js";
+import { EffectProtocolMessage } from "../common/proto/effect.js";
 import { logger } from "./logging.js";
 
 export interface MessageHandler<T> {
@@ -34,7 +34,13 @@ export class Router<
 		}
 	}
 
-	getActions<A extends ActionsMap>(): {
+	createActionMethod<T, R>(
+		handler: ActionHandler<T, R>,
+	): (input: T) => Promise<R> {
+		return async (input: T) => handler.execute(input);
+	}
+
+	getActions(): {
 		[K in keyof A]: (
 			input: Parameters<A[K]["execute"]>[0],
 		) => ReturnType<A[K]["execute"]>;
@@ -46,10 +52,9 @@ export class Router<
 		};
 
 		for (const [key, handler] of this.actionHandlers.entries()) {
-			// This assumes that handler has an `execute` method that fits the types.
-			actionMethods[key as keyof A] = async (
+			actionMethods[key as keyof A] = this.createActionMethod(handler) as (
 				input: Parameters<A[typeof key]["execute"]>[0],
-			) => handler.execute(input);
+			) => ReturnType<A[typeof key]["execute"]>;
 		}
 
 		return actionMethods;
@@ -63,6 +68,7 @@ export class Router<
 		const message = await pb.read();
 		const remotePeer = data.connection.remotePeer;
 
+		//TODO:: move this function ?
 		await this.router.route(remotePeer, pb, message);
 
 		await data.stream.close();

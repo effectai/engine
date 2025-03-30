@@ -5,7 +5,7 @@ import {
 } from "../../../manager/consts.js";
 import { EffectProtocolMessage } from "../../../proto/effect.js";
 import { getOrCreateActiveOutBoundStream } from "../../../utils/utils.js";
-import { WorkerProtocolComponents } from "../../worker.js";
+import type { WorkerProtocolComponents } from "../../worker.js";
 
 export class WorkerSessionService {
 	constructor(private components: WorkerProtocolComponents) {}
