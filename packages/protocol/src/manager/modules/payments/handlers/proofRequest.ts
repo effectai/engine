@@ -1,4 +1,4 @@
-import type { PeerId } from "@libp2p/interface";
+import type { PeerId, TypedEventTarget } from "@libp2p/interface";
 import type { MessageStream, pbStream } from "it-protobuf-stream";
 import type {
 	EffectProtocolMessage,
@@ -6,19 +6,27 @@ import type {
 } from "../../../../common/proto/effect.js";
 import type { MessageHandler } from "../../../../common/router.js";
 import type { ManagerPaymentService } from "../service.js";
+import {
+	ManagerMessageHandler,
+	ManagerProtocolEvents,
+} from "../../../manager.js";
 
 export class PaymentProofRequestMessageHandler
-	implements MessageHandler<ProofRequest>
+	implements ManagerMessageHandler<ProofRequest>
 {
 	constructor(private paymentService: ManagerPaymentService) {}
 
-	async handle(
-		remotePeer: PeerId,
-		stream: MessageStream<EffectProtocolMessage>,
-		message: ProofRequest,
-	): Promise<void> {
-		console.log("Received payment proof request:", message);
-
+	async handle({
+		remotePeer,
+		stream,
+		events,
+		message,
+	}: {
+		remotePeer: PeerId;
+		stream: MessageStream<EffectProtocolMessage>;
+		events: TypedEventTarget<ManagerProtocolEvents>;
+		message: ProofRequest;
+	}): Promise<void> {
 		const { proof, publicSignals, pubKey } =
 			await this.paymentService.generatePaymentProof(message.payments);
 

@@ -1,32 +1,39 @@
-import type { PeerId } from "@libp2p/interface";
+import type { PeerId, TypedEventTarget } from "@libp2p/interface";
 import { PublicKey } from "@solana/web3.js";
-import type { MessageStream, pbStream } from "it-protobuf-stream";
-import type { MessageHandler } from "../../../../common/router.js";
+import type { MessageStream } from "it-protobuf-stream";
 import type {
 	PayoutRequest,
-	Payment,
 	EffectProtocolMessage,
 } from "../../../../common/proto/effect.js";
 import type { ManagerSessionService } from "../../session/service.js";
 import type { ManagerPaymentService } from "../service.js";
+import type {
+	ManagerMessageHandler,
+	ManagerProtocolEvents,
+} from "../../../manager.js";
+import { logger } from "../../../../common/logging.js";
 
 export class PaymentPayoutRequestMessageHandler
-	implements MessageHandler<PayoutRequest>
+	implements ManagerMessageHandler<PayoutRequest>
 {
 	constructor(
 		private paymentService: ManagerPaymentService,
 		private sessionService: ManagerSessionService,
 	) {}
 
-	requiresAck = true;
-
-	async handle(
-		remotePeer: PeerId,
-		stream: MessageStream<EffectProtocolMessage>,
-		message: PayoutRequest,
-	): Promise<void> {
+	async handle({
+		remotePeer,
+		stream,
+	}: {
+		remotePeer: PeerId;
+		stream: MessageStream<EffectProtocolMessage>;
+		events: TypedEventTarget<ManagerProtocolEvents>;
+		message: PayoutRequest;
+	}): Promise<void> {
 		const { nonce, lastPayoutTimestamp, recipient } =
 			await this.sessionService.getMeta(remotePeer);
+
+		logger.debug({ nonce, recipient }, "MANAGER: handling payout");
 
 		if (!lastPayoutTimestamp) {
 			throw new Error("lastPayoutTimestamp is not set");
@@ -54,7 +61,6 @@ export class PaymentPayoutRequestMessageHandler
 		);
 
 		//TODO:: save this payment to the store for future resends
-
 		const msg: EffectProtocolMessage = {
 			payment,
 		};

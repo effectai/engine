@@ -7,11 +7,12 @@ import { identify } from "@libp2p/identify";
 import type { Ed25519PrivateKey } from "@libp2p/interface";
 import { webRTC } from "@libp2p/webrtc";
 import { webSockets } from "@libp2p/websockets";
-import { type Datastore, Key } from "interface-datastore";
+import { type Datastore } from "interface-datastore";
 import { createLibp2p } from "libp2p";
-import { workerProtocol, type WorkerSession } from "./worker.js";
+import { workerProtocol } from "./worker.js";
 import { webTransport } from "@libp2p/webtransport";
 import { ping } from "@libp2p/ping";
+import type { WorkerSession } from "./modules/session/service.js";
 
 export type WorkerNode = ReturnType<typeof createWorkerNode>;
 
@@ -22,7 +23,11 @@ export const createWorkerNode = ({
 	onPairRequest,
 }: {
 	peers: string[];
-	onPairRequest: () => Promise<WorkerSession>;
+	onPairRequest: (
+		peerId: string,
+		pub_x: Uint8Array,
+		pub_y: Uint8Array,
+	) => Promise<WorkerSession>;
 	privateKey?: Ed25519PrivateKey;
 	datastore?: Datastore;
 }) => {

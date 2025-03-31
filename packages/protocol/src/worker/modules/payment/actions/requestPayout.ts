@@ -3,8 +3,10 @@ import type { ActionHandler } from "../../../../common/router.js";
 import type {
 	EffectProtocolMessage,
 	Payment,
-} from "../../../../proto/effect.js";
+} from "../../../../common/proto/effect.js";
 import type { WorkerSessionService } from "../../session/service.js";
+import { logger } from "../../../../common/logging.js";
+import { WorkerPaymentService } from "../service.js";
 
 export type RequestPayoutActionParams = {
 	managerPeer: PeerId;
@@ -15,14 +17,17 @@ export type RequestPayoutActionResult = {
 };
 
 export class RequestPayoutAction
-	implements ActionHandler<RequestPayoutActionParams, Payment>
+	implements ActionHandler<RequestPayoutActionParams, RequestPayoutActionResult>
 {
 	constructor(
 		private peerId: PeerId,
 		private sessionService: WorkerSessionService,
+		private paymentService: WorkerPaymentService,
 	) {}
 
-	async execute(params: RequestPayoutActionParams): Promise<Payment> {
+	async execute(
+		params: RequestPayoutActionParams,
+	): Promise<RequestPayoutActionResult> {
 		try {
 			const { managerPeer } = params;
 
@@ -32,11 +37,20 @@ export class RequestPayoutAction
 				},
 			};
 
-			return (await this.sessionService.sendManagerMessage(
+			const payment = (await this.sessionService.sendManagerMessage(
 				managerPeer.toString(),
 				message,
 				true,
-			)) as Promise<Payment>;
+			)) as Payment;
+
+			logger.info(payment, "WORKER: Received payment");
+
+			//store the payment
+			await this.paymentService.onReceivePayment(payment);
+
+			return {
+				payment,
+			};
 		} catch (e) {
 			console.error(e);
 			throw new Error("Failed to request payout");

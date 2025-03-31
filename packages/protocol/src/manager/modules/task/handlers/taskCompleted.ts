@@ -1,4 +1,4 @@
-import type { PeerId } from "@libp2p/interface";
+import type { PeerId, TypedEventTarget } from "@libp2p/interface";
 import { PublicKey } from "@solana/web3.js";
 import type { MessageStream } from "it-protobuf-stream";
 import { logger } from "../../../../common/logging.js";
@@ -6,13 +6,16 @@ import type {
 	TaskCompleted,
 	EffectProtocolMessage,
 } from "../../../../common/proto/effect.js";
-import type { MessageHandler } from "../../../../common/router.js";
 import type { ManagerPaymentService } from "../../payments/service.js";
 import type { ManagerSessionService } from "../../session/service.js";
 import type { ManagerTaskService } from "../service.js";
+import type {
+	ManagerMessageHandler,
+	ManagerProtocolEvents,
+} from "../../../manager.js";
 
 export class TaskCompletedMessageHandler
-	implements MessageHandler<TaskCompleted>
+	implements ManagerMessageHandler<TaskCompleted>
 {
 	constructor(
 		private paymentService: ManagerPaymentService,
@@ -20,11 +23,17 @@ export class TaskCompletedMessageHandler
 		private sessionService: ManagerSessionService,
 	) {}
 
-	async handle(
-		remotePeer: PeerId,
-		stream: MessageStream<EffectProtocolMessage>,
-		message: TaskCompleted,
-	): Promise<void> {
+	async handle({
+		remotePeer,
+		stream,
+		events,
+		message,
+	}: {
+		remotePeer: PeerId;
+		stream: MessageStream<EffectProtocolMessage>;
+		events: TypedEventTarget<ManagerProtocolEvents>;
+		message: TaskCompleted;
+	}): Promise<void> {
 		logger.info(`MANAGER: Task completed by ${remotePeer.toString()}`);
 		const task = await this.taskService.getTask(message.taskId);
 

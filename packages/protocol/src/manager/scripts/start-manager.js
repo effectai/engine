@@ -12,24 +12,18 @@ const seed = Uint8Array.from([
 const key = await generateKeyPairFromSeed("Ed25519", Buffer.from(seed, "hex"));
 const manager = await createManagerNode([], key);
 await manager.start();
+
 console.log("Listening on:");
 manager.getMultiaddrs().forEach((ma) => console.log(ma.toString()));
 // console.log("connecting on :", relayAddress.toString());
 
-//report some info every 10 seconds
+//report some info every 5 seconds
 setInterval(async () => {
-	const queue = manager.services.manager.getQueue();
 	const peers = manager.getPeers();
-	const tasks = await manager.services.manager.getTasks();
+	const tasks = await manager.services.manager.actions.getTasks();
 
-	manager.getMultiaddrs().forEach((ma) => console.log(ma.toString()));
-
-	console.log(
-		chalk.green(
-			`Manager Info: ${peers.length} peers, ${queue.length} in queue, ${tasks.length} tasks`,
-		),
-	);
-}, 10000);
+	await manager.services.manager.actions.manageTasks();
+}, 5000);
 
 const app = express();
 app.use(express.json());
@@ -47,9 +41,9 @@ app.post("/task", async (req, res) => {
 		return res.json({ status: "No peers available" });
 	}
 
-	await manager.services.manager.processTask(task);
+	await manager.services.manager.actions.onReceiveNewTask({ task });
 
-	res.json({ status: "Task received", task });
+	res.json({ status: "Task received!" });
 });
 
 const PORT = 8888;

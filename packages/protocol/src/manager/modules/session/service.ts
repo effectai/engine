@@ -17,7 +17,8 @@ import type { PeerStore } from "@libp2p/interface";
 
 import { peerIdFromString } from "@libp2p/peer-id";
 import { EffectProtocolMessage } from "../../../common/proto/effect.js";
-import type { WorkerSession } from "../../../worker/worker.js";
+import { WorkerQueue } from "./queue.js";
+import { logger } from "../../../common/logging.js";
 
 export interface ManagerSessionComponents {
 	connectionManager: ConnectionManager;
@@ -25,14 +26,28 @@ export interface ManagerSessionComponents {
 	privateKey: PrivateKey;
 }
 
-export type WorkerSessionData = {
+export type TypedWorkerSessionData = {
 	nonce: bigint;
 	recipient: PublicKey;
 	lastPayoutTimestamp: number;
 };
 
 export class ManagerSessionService {
+	private _workerQueue: WorkerQueue = new WorkerQueue();
+
 	constructor(private components: ManagerSessionComponents) {}
+
+	get workerQueue() {
+		return this._workerQueue;
+	}
+
+	public async enqueueWorker(peerId: string) {
+		this._workerQueue.enqueue(peerId);
+	}
+
+	public async dequeueWorker() {
+		return this._workerQueue.dequeue();
+	}
 
 	public async sendMessage(peerId: string, message: EffectProtocolMessage) {
 		try {
@@ -57,7 +72,7 @@ export class ManagerSessionService {
 		}
 	}
 
-	getMeta = async (peerId: PeerId): Promise<WorkerSessionData> => {
+	getMeta = async (peerId: PeerId): Promise<TypedWorkerSessionData> => {
 		const peerData = await this.components.peerStore.get(peerId);
 
 		const nonce = peerData.metadata.get("nonce");
@@ -161,12 +176,22 @@ export class ManagerSessionService {
 					recipient: response.workerSession.recipient,
 				},
 			});
+
+			await this.enqueueWorker(result.peerId.toString());
+
+			logger.debug(
+				{
+					nonce: response.workerSession.nonce,
+					peerId: result.peerId.toString(),
+				},
+				"(MANAGER) Established Worker Session",
+			);
 		} catch (e) {
 			console.error("Error pairing worker", e);
 		}
 	}
 
-	async retrieveWorkerMeta(peerId: string): Promise<WorkerSession> {
+	async retrieveWorkerMeta(peerId: string) {
 		try {
 			const peer = peerIdFromString(peerId);
 			const peerData = await this.components.peerStore.get(peer);

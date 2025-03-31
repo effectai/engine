@@ -26,6 +26,7 @@ describe("Libp2p", () => {
 			"testing",
 			async () => {
 				const [manager1] = await Promise.all([createManagerNode([])]);
+				await manager1.start();
 				const relayAddress = manager1.getMultiaddrs()[0];
 				await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -43,14 +44,23 @@ describe("Libp2p", () => {
 
 				// start the worker and wait for them to discover peers
 				await Promise.all([worker.start()]);
-				await new Promise((resolve) => setTimeout(resolve, 5000));
+				await new Promise((resolve) => setTimeout(resolve, 3000));
+
+				worker.services.worker.events.addEventListener("task:received", () => {
+					console.log("!!!!! WORKER RECEIVED TASK");
+				});
 
 				const tasksToComplete = 2;
 				for (let i = 0; i < tasksToComplete; i++) {
 					const dtask = dummyTask(i.toString());
 
-					const task = await manager1.services.manager.onReceiveNewTask(dtask);
-					await manager1.services.manager.manageTask(task);
+					const task = await manager1.services.manager.actions.onReceiveNewTask(
+						{ task: dtask },
+					);
+
+					await manager1.services.manager.actions.manageTask({
+						taskId: dtask.taskId,
+					});
 					await new Promise((resolve) => setTimeout(resolve, 1000));
 				}
 

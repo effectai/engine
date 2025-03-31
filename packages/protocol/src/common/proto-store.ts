@@ -55,7 +55,7 @@ export class ProtoStore<T> extends TypedEventEmitter<TaskStoreEvents<T>> {
 
 	async put(entityId: string, entity: T): Promise<Key> {
 		return await this.datastore.put(
-			new Key(`/tasks/${entityId}`),
+			new Key(`/${this.prefix}/${entityId}`),
 			this.encoder(entity),
 		);
 	}

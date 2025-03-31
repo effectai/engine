@@ -26,6 +26,10 @@ export class WorkerTaskService extends TypedEventEmitter<WorkerTaskEvents> {
 		});
 	}
 
+	public async getTasks(): Promise<WorkerTask[]> {
+		return await this.store.all();
+	}
+
 	public async onIncomingTask(task: Task, managerId: string) {
 		logger.info(`WORKER: Received task from manager ${managerId}`);
 

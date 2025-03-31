@@ -1,18 +1,19 @@
-import type { PeerId } from "@libp2p/interface";
+import type { Libp2pEvents, PeerId, TypedEventTarget } from "@libp2p/interface";
 import type { MessageStream, pbStream } from "it-protobuf-stream";
 import type {
 	EffectProtocolMessage,
 	ManagerSessionData,
 } from "../../../../common/proto/effect.js";
-import { logger } from "../../../../common/logging.js";
-import type { WorkerSession } from "../../../worker.js";
-import type { MessageHandler } from "../../../../common/router.js";
+import { logger, workerLogger } from "../../../../common/logging.js";
+import type { WorkerSession } from "../service.js";
+import type {
+	WorkerMessageHandler,
+	WorkerProtocolEvents,
+} from "../../../worker.js";
 
 export class ManagerSessionDataHandler
-	implements MessageHandler<ManagerSessionData>
+	implements WorkerMessageHandler<ManagerSessionData>
 {
-	requiresAck = true;
-
 	constructor(
 		private peerId: PeerId,
 		private onPair?: (
@@ -22,13 +23,17 @@ export class ManagerSessionDataHandler
 		) => Promise<WorkerSession>,
 	) {}
 
-	async handle(
-		remotePeer: PeerId,
-		stream: MessageStream<EffectProtocolMessage>,
-		message: ManagerSessionData,
-	): Promise<void> {
-		logger.info("WORKER: handling manager session data");
-
+	async handle({
+		remotePeer,
+		stream,
+		events,
+		message,
+	}: {
+		remotePeer: PeerId;
+		stream: MessageStream<EffectProtocolMessage>;
+		events: TypedEventTarget<WorkerProtocolEvents>;
+		message: ManagerSessionData;
+	}): Promise<void> {
 		if (!this.onPair) {
 			throw new Error("onPair is not defined");
 		}
@@ -47,6 +52,11 @@ export class ManagerSessionDataHandler
 				nonce: nonce,
 			},
 		};
+
+		workerLogger.info(
+			{ nonce, recipient: recipient.toString() },
+			"sending session message to manager",
+		);
 
 		await stream.write(workerSessionMessage);
 	}

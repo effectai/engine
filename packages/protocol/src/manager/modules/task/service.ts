@@ -3,7 +3,7 @@ import type { ManagerPaymentService } from "../payments/service.js";
 import type { PeerId, PeerStore, PrivateKey } from "@libp2p/interface";
 import type { ConnectionManager } from "@libp2p/interface-internal";
 import { TaskStatus } from "../../../common/proto/task/task.js";
-import type { WorkerQueue } from "../../queue.js";
+import type { WorkerQueue } from "../session/queue.js";
 import { ManagerTask } from "./pb/ManagerTask.js";
 import { ProtoStore } from "../../../common/proto-store.js";
 import { logger } from "../../../common/logging.js";
@@ -45,7 +45,7 @@ export class ManagerTaskService {
 	}
 
 	public async getTasks(): Promise<ManagerTask[]> {
-		return this.store.all();
+		return await this.store.all();
 	}
 
 	public async getTask(taskId: string): Promise<ManagerTask | undefined> {
@@ -111,10 +111,10 @@ export class ManagerTaskService {
 
 	public async assignTask(
 		managerTask: ManagerTask,
-		worker: PeerId,
+		workerPeerId: string,
 	): Promise<ManagerTask> {
 		managerTask.workerAssignment.push({
-			workerId: worker.toString(),
+			workerId: workerPeerId.toString(),
 			assignedAt: new Date().toISOString(),
 		});
 

@@ -1,22 +1,33 @@
-import type { IncomingStreamData, PeerId } from "@libp2p/interface";
+import type {
+	IncomingStreamData,
+	Libp2pEvents,
+	PeerId,
+	TypedEventTarget,
+} from "@libp2p/interface";
 import { type MessageStream, pbStream } from "it-protobuf-stream";
 import { EffectProtocolMessage } from "../common/proto/effect.js";
 import { logger } from "./logging.js";
 
-export interface MessageHandler<T> {
-	handle(
-		remotePeer: PeerId,
-		stream: MessageStream<EffectProtocolMessage>,
-		message: T,
-	): Promise<void>;
-}
+export type MessageHandler<T, E extends Record<string, CustomEvent>> = {
+	handle({
+		remotePeer,
+		stream,
+		events,
+		message,
+	}: {
+		remotePeer: PeerId;
+		stream: MessageStream<EffectProtocolMessage>;
+		events: TypedEventTarget<E>;
+		message: T;
+	}): Promise<void>;
+};
 
 export interface ActionHandler<T, R> {
 	execute(params: T): Promise<R>;
 }
 
 export class Router<
-	M extends Record<string, MessageHandler<any>>,
+	M extends Record<string, MessageHandler<any, any>>,
 	A extends Record<string, ActionHandler<any, any>>,
 > {
 	private messageHandlers = new Map<keyof M, M[keyof M]>();
@@ -68,8 +79,9 @@ export class Router<
 		const message = await pb.read();
 		const remotePeer = data.connection.remotePeer;
 
-		//TODO:: move this function ?
-		await this.router.route(remotePeer, pb, message);
+		//TODO:: figure out how to inject this context here.. ?
+		//@ts-ignore
+		await this.router.route(remotePeer, pb, this.events, message);
 
 		await data.stream.close();
 	}
@@ -80,6 +92,7 @@ export class Router<
 	async route(
 		remotePeer: PeerId,
 		stream: MessageStream<EffectProtocolMessage>,
+		events: TypedEventTarget<any>,
 		message: Record<string, unknown>,
 	) {
 		if (!message) {
@@ -92,8 +105,12 @@ export class Router<
 		for (const key of keys) {
 			const handler = this.messageHandlers.get(key as keyof M);
 			if (handler) {
-				await handler.handle(remotePeer, stream, message[key]);
-				return;
+				return await handler.handle({
+					remotePeer,
+					stream,
+					events,
+					message: message[key],
+				});
 			}
 		}
 

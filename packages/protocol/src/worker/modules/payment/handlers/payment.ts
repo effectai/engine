@@ -1,20 +1,26 @@
-import type { PeerId } from "@libp2p/interface";
+import type { PeerId, TypedEventTarget } from "@libp2p/interface";
 import type { MessageStream } from "it-protobuf-stream";
-import type { MessageHandler } from "../../../../common/router.js";
 import type {
 	EffectProtocolMessage,
 	Payment,
-} from "../../../../proto/effect.js";
+} from "../../../../common/proto/effect.js";
 import type { WorkerPaymentService } from "./../service.js";
+import type {
+	WorkerMessageHandler,
+	WorkerProtocolEvents,
+} from "../../../worker.js";
 
-export class PaymentMessageHandler implements MessageHandler<Payment> {
+export class PaymentMessageHandler implements WorkerMessageHandler<Payment> {
 	constructor(private paymentService: WorkerPaymentService) {}
 
-	async handle(
-		remotePeer: PeerId,
-		stream: MessageStream<EffectProtocolMessage>,
-		message: Payment,
-	): Promise<void> {
+	async handle({
+		message,
+	}: {
+		remotePeer: PeerId;
+		stream: MessageStream<EffectProtocolMessage>;
+		events: TypedEventTarget<WorkerProtocolEvents>;
+		message: Payment;
+	}): Promise<void> {
 		await this.paymentService.onReceivePayment(message);
 	}
 }

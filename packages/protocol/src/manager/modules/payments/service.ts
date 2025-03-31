@@ -15,6 +15,7 @@ import { peerIdFromString } from "@libp2p/peer-id";
 import { buildEddsa } from "circomlibjs";
 import type { MessageStream } from "it-protobuf-stream";
 import { signPayment } from "./utils.js";
+import { logger } from "../../../common/logging.js";
 
 export interface ManagerPaymentServiceComponents {
 	peerStore: PeerStore;
@@ -48,6 +49,8 @@ export class ManagerPaymentService {
 				nonce,
 			}),
 		);
+
+		logger.debug({ payment }, "MANAGER: creating payment..");
 
 		const signature = await signPayment(payment, this.components.privateKey);
 
@@ -91,7 +94,9 @@ export class ManagerPaymentService {
 			const recipient = payments[0]?.recipient || "0";
 
 			const proofInputs = {
-				receiver: int2hex(new PublicKey(recipient).toBuffer().readBigInt64BE()),
+				receiver: int2hex(
+					new PublicKey(recipient).toBuffer().readBigUInt64BE(),
+				),
 				pubX: eddsa.F.toObject(pubKey[0]),
 				pubY: eddsa.F.toObject(pubKey[1]),
 				nonce: padArray(

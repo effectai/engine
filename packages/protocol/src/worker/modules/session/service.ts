@@ -3,9 +3,15 @@ import {
 	MULTICODEC_MANAGER_PROTOCOL_NAME,
 	MULTICODEC_MANAGER_PROTOCOL_VERSION,
 } from "../../../manager/consts.js";
-import { EffectProtocolMessage } from "../../../proto/effect.js";
+import { EffectProtocolMessage } from "../../../common/proto/effect.js";
 import { getOrCreateActiveOutBoundStream } from "../../../utils/utils.js";
 import type { WorkerProtocolComponents } from "../../worker.js";
+import type { PublicKey } from "@solana/web3.js";
+
+export type WorkerSession = {
+	recipient: PublicKey;
+	nonce: bigint;
+};
 
 export class WorkerSessionService {
 	constructor(private components: WorkerProtocolComponents) {}

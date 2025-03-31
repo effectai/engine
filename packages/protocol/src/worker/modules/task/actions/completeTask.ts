@@ -6,7 +6,7 @@ import type { WorkerTaskService } from "./../service.js";
 
 export interface CompleteTaskActionParams {
 	taskId: string;
-	result: Record<string, string | number | bigint>;
+	result: string;
 }
 
 export class CompleteTaskAction

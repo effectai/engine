@@ -7,6 +7,7 @@ import {
 	type ComponentLogger,
 	type PeerStore,
 	type PeerId,
+	Libp2p,
 } from "@libp2p/interface";
 
 import type { ConnectionManager, Registrar } from "@libp2p/interface-internal";
@@ -15,14 +16,7 @@ import {
 	MULTICODEC_WORKER_PROTOCOL_VERSION,
 } from "./consts.js";
 
-import type { PublicKey } from "@solana/web3.js";
-
 import type { Datastore } from "interface-datastore";
-
-export type WorkerSession = {
-	nonce: bigint;
-	recipient: PublicKey;
-};
 
 import {
 	type ActionHandler,
@@ -32,8 +26,15 @@ import {
 import { WorkerTaskService } from "./modules/task/service.js";
 import { PaymentMessageHandler } from "./modules/payment/handlers/payment.js";
 import { WorkerPaymentService } from "./modules/payment/service.js";
-import { WorkerSessionService } from "./modules/session/service.js";
-import type { Payment, Task } from "../proto/effect.js";
+import {
+	type WorkerSession,
+	WorkerSessionService,
+} from "./modules/session/service.js";
+import type {
+	Payment,
+	Task,
+	WorkerSessionData,
+} from "../common/proto/effect.js";
 import {
 	AcceptTaskAction,
 	type AcceptTaskActionParams,
@@ -42,21 +43,34 @@ import { ManagerSessionDataHandler } from "./modules/session/handlers/managerSes
 import { TaskMessageHandler } from "./modules/task/handlers/task.js";
 import {
 	CompleteTaskAction,
-	CompleteTaskActionParams,
+	type CompleteTaskActionParams,
 } from "./modules/task/actions/completeTask.js";
 import {
 	RequestPayoutAction,
 	type RequestPayoutActionParams,
 	type RequestPayoutActionResult,
 } from "./modules/payment/actions/requestPayout.js";
-import { ManagerSessionData } from "../common/proto/effect.js";
+import type { ManagerSessionData } from "../common/proto/effect.js";
+import { ProtocolEntity } from "../common/ProtocolEntity.js";
+import { GetTasksAction } from "./modules/task/actions/getTasks.js";
+import { WorkerTask } from "./modules/task/pb/WorkerTask.js";
+import { GetPaymentsAction } from "./modules/payment/actions/getPayments.js";
+import {
+	RequestPaymentProof,
+	RequestProofActionParams,
+	RequestProofActionResult,
+} from "./modules/payment/actions/requestProof.js";
 
-export interface WorkerProtocolEvents {
+export type WorkerProtocolEvents = {
 	"task:received": CustomEvent<Task>;
 	"task:sent": CustomEvent<Task>;
 	"payment:received": CustomEvent<Payment>;
-	"worker:identify": CustomEvent<WorkerSession>;
-}
+};
+
+export type WorkerMessageHandler<
+	T,
+	E extends WorkerProtocolEvents = WorkerProtocolEvents,
+> = MessageHandler<T, E>;
 
 export interface WorkerProtocolComponents {
 	registrar: Registrar;
@@ -71,37 +85,35 @@ export interface WorkerProtocolComponents {
 
 // the actions that the worker can perform.
 export type ActionsMap = {
-	getTasks: ActionHandler<string, Task[]>;
+	getTasks: ActionHandler<void, WorkerTask[]>;
+	getPayments: ActionHandler<void, Payment[]>;
 	acceptTask: ActionHandler<AcceptTaskActionParams, void>;
 	completeTask: ActionHandler<CompleteTaskActionParams, void>;
 	requestPayout: ActionHandler<
 		RequestPayoutActionParams,
 		RequestPayoutActionResult
 	>;
+	requestProof: ActionHandler<
+		RequestProofActionParams,
+		RequestProofActionResult
+	>;
 };
 
 // the messages that the worker can interact with.
-type MessagesMap = {
-	managerSession: MessageHandler<ManagerSessionData>;
-	task: MessageHandler<Task>;
-	payment: MessageHandler<Payment>;
+export type MessageHandlerMap = {
+	managerSession: WorkerMessageHandler<ManagerSessionData>;
+	task: WorkerMessageHandler<Task>;
+	payment: WorkerMessageHandler<Payment>;
 };
 
 export class WorkerProtocolService
-	extends TypedEventEmitter<WorkerProtocolEvents>
+	extends ProtocolEntity<MessageHandlerMap, ActionsMap, WorkerProtocolEvents>
 	implements Startable
 {
-	private router: Router<MessagesMap, ActionsMap>;
-
-	private taskService: WorkerTaskService;
-	private paymentService: WorkerPaymentService;
-	private sessionService: WorkerSessionService;
-
-	public actions?: {
-		[key in keyof ActionsMap]: (
-			params: Parameters<ActionsMap[key]["execute"]>[0],
-		) => Promise<ReturnType<ActionsMap[key]["execute"]>>;
-	};
+	protected taskService: WorkerTaskService;
+	protected paymentService: WorkerPaymentService;
+	protected sessionService: WorkerSessionService;
+	public events: TypedEventTarget<Libp2pEvents>;
 
 	constructor(
 		private components: WorkerProtocolComponents,
@@ -114,13 +126,13 @@ export class WorkerProtocolService
 		this.taskService = new WorkerTaskService(components);
 		this.paymentService = new WorkerPaymentService(components);
 		this.sessionService = new WorkerSessionService(components);
+
+		this.events = components.events;
 	}
 
 	start(): void | Promise<void> {
 		this.register();
 	}
-
-	stop(): void | Promise<void> {}
 
 	async register() {
 		this.components.registrar.handle(
@@ -173,12 +185,33 @@ export class WorkerProtocolService
 		this.router.register(
 			"action",
 			"requestPayout",
-			new RequestPayoutAction(this.components.peerId, this.sessionService),
+			new RequestPayoutAction(
+				this.components.peerId,
+				this.sessionService,
+				this.paymentService,
+			),
 		);
 
-		//TODO:: fix ts error.
-		this.actions = this.router.getActions();
+		this.router.register(
+			"action",
+			"getTasks",
+			new GetTasksAction(this.taskService),
+		);
+
+		this.router.register(
+			"action",
+			"getPayments",
+			new GetPaymentsAction(this.paymentService),
+		);
+
+		this.router.register(
+			"action",
+			"requestProof",
+			new RequestPaymentProof(this.components.peerId, this.sessionService),
+		);
 	}
+
+	stop(): void | Promise<void> {}
 }
 
 type WorkerProtocolInit = {
