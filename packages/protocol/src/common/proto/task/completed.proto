@@ -5,6 +5,5 @@ message TaskCompleted {
   string task_id = 1;   
   string worker = 2; 
   string result = 3;      
-  string timestamp = 4;
 }
 

@@ -9,6 +9,15 @@ export class ProtocolEntity<
 	extends TypedEventEmitter<ProtocolEvents>
 	implements Startable
 {
+	public events: TypedEventEmitter<ProtocolEvents>;
+
+	constructor(
+		protected router: Router<MessageHandlerMap, ActionsMap> = new Router(),
+	) {
+		super();
+		this.events = new TypedEventEmitter<ProtocolEvents>();
+	}
+
 	private _actions?: {
 		[key in keyof ActionsMap]: (
 			params: Parameters<ActionsMap[key]["execute"]>[0],
@@ -21,12 +30,6 @@ export class ProtocolEntity<
 		}
 
 		return this._actions;
-	}
-
-	constructor(
-		protected router: Router<MessageHandlerMap, ActionsMap> = new Router(),
-	) {
-		super();
 	}
 
 	start(): void | Promise<void> {}

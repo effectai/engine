@@ -8,6 +8,7 @@ import type { ConnectionManager } from "@libp2p/interface-internal";
 import { Uint8ArrayList } from "uint8arraylist";
 import { PublicKey } from "@solana/web3.js";
 import { peerIdFromString } from "@libp2p/peer-id";
+import { EffectProtocolMessage } from "../common/index.js";
 
 export const LibP2pPublicKeyToSolanaPublicKey = (
 	publicKey: Ed25519PublicKey,
@@ -69,3 +70,25 @@ export const isWorker = (info: IdentifyResult) => {
 
 export const int2hex = (i: string | number | bigint | boolean) =>
 	`0x${BigInt(i).toString(16)}`;
+
+type EffectMessageType = keyof EffectProtocolMessage;
+export function extractMessageType<T extends EffectMessageType>(
+	message: EffectProtocolMessage,
+): { type: T; payload: NonNullable<EffectProtocolMessage[T]> } {
+	const entries = Object.entries(message) as [EffectMessageType, any][];
+
+	const definedEntries = entries.filter(([_, value]) => value !== undefined);
+
+	if (definedEntries.length !== 1) {
+		throw new Error(
+			`Message must have exactly one defined field, found ${definedEntries.length}`,
+		);
+	}
+
+	const [type, payload] = definedEntries[0];
+
+	return {
+		type: type as T,
+		payload,
+	};
+}

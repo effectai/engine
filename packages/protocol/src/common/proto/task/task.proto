@@ -9,13 +9,18 @@ enum TaskStatus {
 }
 
 message Task {
-  string task_id = 1;
+  string id = 1;
   string title = 2;
-  string created_at = 3;
-  uint64 reward = 4;
-  string template = 5;
-  TaskStatus status = 6;
-  optional string result = 7;
+  uint64 reward = 3;
+  uint32 time_limit_seconds = 4;
+  string template_id = 5;
+  string template_data = 6;
 }
 
-
+message TaskAssignment {
+  string peerId = 1;
+  optional uint32 assigned_at = 2;
+  optional uint32 accepted_at = 3;
+  optional uint32 completed_at = 4;
+  optional uint32 rejected_at = 5;
+}

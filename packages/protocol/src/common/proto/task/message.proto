@@ -4,6 +4,7 @@ import "task.proto";
 import "accepted.proto";
 import "rejected.proto";
 import "completed.proto";
+import "template.proto";
 
 message TaskMessage {
   string task_id = 1;
@@ -12,5 +13,6 @@ message TaskMessage {
     TaskAccepted task_accepted = 3;
     TaskRejected task_rejected = 4;
     TaskCompleted task_completed = 5;
+    Template template = 6;
   }
 }
