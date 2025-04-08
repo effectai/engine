@@ -8,6 +8,7 @@
 	"scripts": {
 		"build": "tsc",
 		"test": "vitest",
+		"format": "pnpm biome format --write .",
 		"generate": "protons ./src/core/protocol/task/task.proto",
 		"manager:start": "node ./src/manager/scripts/start-manager.js",
 		"post:task": "sh ./packages/manager/scripts/post-task.sh"
