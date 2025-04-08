@@ -8,6 +8,10 @@ const now = Math.floor(Date.now() / 1000);
 const mockWorkerId = "12D3KooWR3aZ9bLgTjsyUNqC8oZp5tf3HRmqb9G5wNpEAKiUjVv5";
 const mockTaskId = "task-1";
 
+const mockEventEmitter = {
+	safeDispatchEvent: vi.fn(),
+};
+
 const createMockTaskRecord = (type: string, timestamp = now) => ({
 	state: {
 		id: mockTaskId,
@@ -19,6 +23,7 @@ const createMockTaskRecord = (type: string, timestamp = now) => ({
 			timestamp,
 			assignedToPeer: mockWorkerId,
 			completedByPeer: mockWorkerId,
+			submissionByPeer: mockWorkerId,
 			rejectedByPeer: "",
 			reason: "",
 		},
@@ -54,12 +59,12 @@ describe("createTaskManager", () => {
 				destination: "some-destination",
 			})),
 		};
-
 		taskManager = createTaskManager({
 			manager,
 			workerQueue,
 			taskStore,
 			paymentManager,
+			eventEmitter: mockEventEmitter,
 		});
 
 		vi.clearAllMocks();
@@ -117,8 +122,8 @@ describe("createTaskManager", () => {
 		expect(taskStore.assign).toHaveBeenCalled();
 	});
 
-	it("should generate payout and send message on complete", async () => {
-		const task = createMockTaskRecord("complete");
+	it("should generate payout and send message on submission", async () => {
+		const task = createMockTaskRecord("submission");
 
 		await taskManager.manageTask(task);
 
