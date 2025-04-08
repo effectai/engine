@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-import "./../../../../common/proto/task/task.proto";
-
-message WorkerTask {
-  Task task = 1;
-  TaskAssignment assignment = 2;
-}
-
