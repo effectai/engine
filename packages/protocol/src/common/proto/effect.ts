@@ -89,6 +89,7 @@ export interface EffectProtocolMessage {
   proofRequest?: ProofRequest
   proofResponse?: ProofResponse
   template?: Template
+  templateRequest?: TemplateRequest
 }
 
 export namespace EffectProtocolMessage {
@@ -142,8 +143,13 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.template != null) {
-          w.uint32(90)
+          w.uint32(74)
           Template.codec().encode(obj.template, w)
+        }
+
+        if (obj.templateRequest != null) {
+          w.uint32(82)
+          TemplateRequest.codec().encode(obj.templateRequest, w)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -206,9 +212,15 @@ export namespace EffectProtocolMessage {
               })
               break
             }
-            case 11: {
+            case 9: {
               obj.template = Template.codec().decode(reader, reader.uint32(), {
                 limits: opts.limits?.template
+              })
+              break
+            }
+            case 10: {
+              obj.templateRequest = TemplateRequest.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.templateRequest
               })
               break
             }
@@ -1548,7 +1560,7 @@ export namespace TaskAssignment {
 export interface TaskAccepted {
   taskId: string
   worker: string
-  timestamp: string
+  timestamp: number
 }
 
 export namespace TaskAccepted {
@@ -1571,9 +1583,9 @@ export namespace TaskAccepted {
           w.string(obj.worker)
         }
 
-        if ((obj.timestamp != null && obj.timestamp !== '')) {
-          w.uint32(26)
-          w.string(obj.timestamp)
+        if ((obj.timestamp != null && obj.timestamp !== 0)) {
+          w.uint32(24)
+          w.uint32(obj.timestamp)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -1583,7 +1595,7 @@ export namespace TaskAccepted {
         const obj: any = {
           taskId: '',
           worker: '',
-          timestamp: ''
+          timestamp: 0
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -1601,7 +1613,7 @@ export namespace TaskAccepted {
               break
             }
             case 3: {
-              obj.timestamp = reader.string()
+              obj.timestamp = reader.uint32()
               break
             }
             default: {
@@ -1631,7 +1643,7 @@ export interface TaskRejected {
   taskId: string
   worker: string
   reason: string
-  timestamp: string
+  timestamp: number
 }
 
 export namespace TaskRejected {
@@ -1659,9 +1671,9 @@ export namespace TaskRejected {
           w.string(obj.reason)
         }
 
-        if ((obj.timestamp != null && obj.timestamp !== '')) {
-          w.uint32(34)
-          w.string(obj.timestamp)
+        if ((obj.timestamp != null && obj.timestamp !== 0)) {
+          w.uint32(32)
+          w.uint32(obj.timestamp)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -1672,7 +1684,7 @@ export namespace TaskRejected {
           taskId: '',
           worker: '',
           reason: '',
-          timestamp: ''
+          timestamp: 0
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -1694,7 +1706,7 @@ export namespace TaskRejected {
               break
             }
             case 4: {
-              obj.timestamp = reader.string()
+              obj.timestamp = reader.uint32()
               break
             }
             default: {
@@ -1799,6 +1811,66 @@ export namespace TaskCompleted {
 
   export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<TaskCompleted>): TaskCompleted => {
     return decodeMessage(buf, TaskCompleted.codec(), opts)
+  }
+}
+
+export interface TemplateRequest {
+  templateId: string
+}
+
+export namespace TemplateRequest {
+  let _codec: Codec<TemplateRequest>
+
+  export const codec = (): Codec<TemplateRequest> => {
+    if (_codec == null) {
+      _codec = message<TemplateRequest>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.templateId != null && obj.templateId !== '')) {
+          w.uint32(10)
+          w.string(obj.templateId)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          templateId: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.templateId = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<TemplateRequest>): Uint8Array => {
+    return encodeMessage(obj, TemplateRequest.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<TemplateRequest>): TemplateRequest => {
+    return decodeMessage(buf, TemplateRequest.codec(), opts)
   }
 }
 

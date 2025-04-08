@@ -5,8 +5,6 @@ import type {
 	Transport,
 	UnionToIntersection,
 } from "../core/types.js";
-import type { EntityWithTransports } from "./types.js";
-import type { StoreInitializers, StoreMap } from "../stores/base.js";
 
 export async function createEffectEntity<T extends Transport[]>(config: {
 	transports: [...T];

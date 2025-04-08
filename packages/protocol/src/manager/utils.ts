@@ -34,7 +34,7 @@ export const getNonce = ({ peer }: { peer: Peer }) => {
 		throw Error("no valid nonce found..");
 	}
 
-	return uint8ArrayToBigInt(new Uint8Array(result));
+	return BigInt(new TextDecoder().decode(result).replace(/n$/, ""));
 };
 
 export const updateNonce = ({ nonce, peer }: { nonce: bigint; peer: Peer }) => {

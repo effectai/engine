@@ -1,197 +1,158 @@
-import { describe, expect, it, test } from "vitest";
-
-import { createManagerNode } from "../src/manager/factory.js";
-import { createWorkerNode } from "../src/worker/create.js";
-import { TaskStatus } from "../src/common/proto/effect.js";
-import { multiaddr } from "@multiformats/multiaddr";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { peerIdFromString } from "@libp2p/peer-id";
+import { createManager } from "./../src/manager/main.js";
+import { createWorker } from "./../src/worker/main.js";
+import { Datastore } from "interface-datastore";
+import {
+	createDataStore,
+	delay,
+	trackManagerEvents,
+	trackWorkerEvents,
+	waitForEvent,
+} from "./utils.js";
+import { randomBytes } from "crypto";
+import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 import { PublicKey } from "@solana/web3.js";
+import { Task } from "../src/common/index.js";
 
-const dummyTask = (id: string) => ({
-	taskId: id,
-	reward: 5_000_000n,
-	title: "Dummy Task",
-	createdAt: new Date().toISOString(),
-	status: TaskStatus.PENDING,
-	template: `<form>
-        <h2>Please submit the form to complete the task</h2>
-        <input type='submit'/ >
-        </form>`,
-	data: new Map(),
-	result: "",
-});
+describe("Complete Task Lifecycle", () => {
+	let manager: Awaited<ReturnType<typeof createManager>>;
+	let worker: Awaited<ReturnType<typeof createWorker>>;
+	let providerPeerId = peerIdFromString(
+		"12D3KooWR3aZ9bLgTjsyUNqC8oZp5tf3HRmqb9G5wNpEAKiUjVv5",
+	);
+	let w_taskRecord;
 
-describe("Libp2p", () => {
-	describe("Libp2p: Effect AI Protocol", () => {
-		test(
-			"testing",
-			async () => {
-				const [manager1] = await Promise.all([createManagerNode([])]);
-				await manager1.start();
-				const relayAddress = manager1.getMultiaddrs()[0];
-				await new Promise((resolve) => setTimeout(resolve, 100));
+	let managerDatastore: Datastore;
+	let workerDatastore: Datastore;
 
-				const [worker] = await Promise.all([
-					createWorkerNode({
-						peers: [relayAddress.toString()],
-						onPairRequest: async () => ({
-							recipient: new PublicKey(
-								"jeffCRA2yFkRbuw99fBxXaqE5GN3DwjZtmjV18McEDf",
-							),
-							nonce: 1n,
-						}),
-					}),
-				]);
+	beforeAll(async () => {
+		workerDatastore = await createDataStore("/tmp/worker-test");
+		managerDatastore = await createDataStore("/tmp/manager-test");
 
-				// start the worker and wait for them to discover peers
-				await Promise.all([worker.start()]);
-				await new Promise((resolve) => setTimeout(resolve, 3000));
-
-				worker.services.worker.events.addEventListener("task:received", () => {
-					console.log("!!!!! WORKER RECEIVED TASK");
-				});
-
-				const tasksToComplete = 2;
-				for (let i = 0; i < tasksToComplete; i++) {
-					const dtask = dummyTask(i.toString());
-
-					const task = await manager1.services.manager.actions.onReceiveNewTask(
-						{ task: dtask },
-					);
-
-					await manager1.services.manager.actions.manageTask({
-						taskId: dtask.taskId,
-					});
-					await new Promise((resolve) => setTimeout(resolve, 1000));
-				}
-
-				await new Promise((resolve) => setTimeout(resolve, 1000));
-
-				await worker.services.worker.actions?.acceptTask({
-					taskId: "0",
-				});
-
-				await new Promise((resolve) => setTimeout(resolve, 1000));
-
-				// await worker.services.worker.actions?.completeTask({});
-
-				if (!worker.services.worker.actions) {
-					throw new Error("Worker actions not available");
-				}
-
-				const { payment } = await worker.services.worker.actions.requestPayout({
-					managerPeer: manager1.peerId,
-				});
-
-				console.log("got payment", payment);
-
-				await new Promise((resolve) => setTimeout(resolve, 3000));
-
-				await manager1.stop();
-				await Promise.all([worker.stop()]);
-			},
-			{ timeout: 60000 },
+		const managerPrivateKey = await generateKeyPairFromSeed(
+			"Ed25519",
+			randomBytes(32),
 		);
-		// test(
-		// 	"be able to receive a task",
-		// 	async () => {
-		// 		const [manager1] = await Promise.all([createManagerNode([])]);
-		//
-		// 		const relayAddress = manager1.getMultiaddrs()[0];
-		// 		await new Promise((resolve) => setTimeout(resolve, 100));
-		//
-		// 		const [w1] = await Promise.all([
-		// 			createWorkerNode([relayAddress.toString()]),
-		// 		]);
-		//
-		// 		// start the worker and wait for them to discover peers
-		// 		await Promise.all([w1.start()]);
-		// 		await new Promise((resolve) => setTimeout(resolve, 3000));
-		//
-		// 		const tasksToComplete = 10;
-		// 		for (let i = 0; i < tasksToComplete; i++) {
-		// 			console.log("Creating task", i);
-		// 			const dtask = dummyTask(i.toString());
-		//
-		// 			const result = await manager1.services.manager.processTask(dtask);
-		// 			if (!result) {
-		// 				throw new Error("Task not accepted");
-		// 			}
-		// 			await w1.services.worker.completeTask(dtask, `{"result": "dummy"}`);
-		//
-		// 			await new Promise((resolve) => setTimeout(resolve, 1000));
-		// 		}
-		//
-		// 		await new Promise((resolve) => setTimeout(resolve, 3000));
-		//
-		// 		//expect to have all tasks in store with status completed
-		// 		const tasks = await manager1.services.manager.getTasks();
-		//
-		// 		expect(tasks.length).toBe(tasksToComplete);
-		// 		expect(tasks.every((t) => t.status === TaskStatus.COMPLETED)).toBe(
-		// 			true,
-		// 		);
-		//
-		// 		//expect to have enough payments in store.
-		// 		const payments = await w1.services.worker.getPayments();
-		// 		expect(payments.length).toBe(tasksToComplete);
-		//
-		// 		// request payment proof from manager
-		// 		const proof = await w1.services.worker.requestPaymentProof(
-		// 			manager1.peerId,
-		// 			payments,
-		// 		);
-		//
-		// 		console.log("received proof from manager:", proof);
-		//
-		// 		await manager1.stop();
-		// 		await Promise.all([w1.stop()]);
-		// 	},
-		// 	{ timeout: 60000 },
-		// );
-		// test(
-		// 	"be able to receive a task",
-		// 	async () => {
-		// 		const [manager1] = await Promise.all([createManagerNode([])]);
-		//
-		// 		const relayAddress = manager1.getMultiaddrs()[0];
-		// 		await new Promise((resolve) => setTimeout(resolve, 100));
-		//
-		// 		const [w1] = await Promise.all([
-		// 			createWorkerNode([relayAddress.toString()]),
-		// 		]);
-		//
-		// 		// start the worker and wait for them to discover peers
-		// 		await Promise.all([w1.start()]);
-		// 		await new Promise((resolve) => setTimeout(resolve, 3000));
-		//
-		// 		const tasksToComplete = 1;
-		// 		for (let i = 0; i < tasksToComplete; i++) {
-		// 			console.log("Creating task", i);
-		// 			const dtask = dummyTask(i.toString());
-		//
-		// 			const result = await manager1.services.manager.processTask(dtask);
-		// 			if (!result) {
-		// 				throw new Error("Task not accepted");
-		// 			}
-		// 			await w1.services.worker.completeTask(dtask, `{"result": "dummy"}`);
-		//
-		// 			const tasks = await w1.services.worker.getTasks();
-		// 			console.log(tasks);
-		// 			await new Promise((resolve) => setTimeout(resolve, 1000));
-		// 		}
-		//
-		// 		// await w1.services.worker.requestPayout(manager1.peerId);
-		// 		// await new Promise((resolve) => setTimeout(resolve, 5000));
-		// 		//
-		// 		// await w1.services.worker.requestPayout(manager1.peerId);
-		// 		// await new Promise((resolve) => setTimeout(resolve, 5000));
-		// 		//
-		// 		// await w1.services.worker.requestPayout(manager1.peerId);
-		// 		//
-		// 		await manager1.stop();
-		// 		await Promise.all([w1.stop()]);
-		// 	},
-		// 	{ timeout: 60000 },
-		// );
+
+		const workerPrivateKey = await generateKeyPairFromSeed(
+			"Ed25519",
+			randomBytes(32),
+		);
+
+		manager = await createManager({
+			datastore: managerDatastore,
+			privateKey: managerPrivateKey,
+		});
+
+		const managerMultiAddress = manager.node.getMultiAddress();
+
+		worker = await createWorker({
+			datastore: workerDatastore,
+			privateKey: workerPrivateKey,
+			bootstrap: [managerMultiAddress[0]],
+			getSessionData: () => ({
+				nonce: 1n,
+				recipient: new PublicKey(randomBytes(32)).toString(),
+			}),
+		});
+
+		// Connect manager and worker
+		await manager.node.start();
+		await worker.node.start();
+
+		// wait for the nodes to be ready
+		await delay(2000);
+	});
+
+	afterAll(async () => {
+		await manager.node.stop();
+		await worker.node.stop();
+
+		await managerDatastore.close();
+		await workerDatastore.close();
+	});
+
+	it("should complete the happy-path of the task flow", async () => {
+		const testTask: Task = {
+			id: "task-1",
+			title: "Test Task",
+			reward: 100n,
+			timeLimitSeconds: 600, // 10 minutes
+			templateId: "template-1",
+			templateData: '{"key": "value"}',
+		};
+
+		// set up event tracking for testing
+		const workerEvents = trackWorkerEvents(worker);
+		const managerEvents = trackManagerEvents(manager);
+
+		//manager creates task
+		const taskRecord = await manager.taskStore.create({
+			task: testTask,
+			providerPeerId: providerPeerId,
+		});
+
+		//verify that task was created
+		expect(taskRecord.state.id).toBe(testTask.id);
+		expect(taskRecord.events[0].type).toBe("create");
+
+		//assign task to worker peer.
+		await manager.taskManager.assignTask({ taskRecord });
+
+		//verify worker received assignment
+		await waitForEvent(workerEvents.taskCreated);
+		expect(workerEvents.taskCreated).toHaveBeenCalled();
+
+		//get task from worker store and accept it.
+		w_taskRecord = await worker.getTask({ taskId: testTask.id });
+		await worker.acceptTask({
+			taskRecord: w_taskRecord,
+		});
+
+		//verify acceptance
+		await waitForEvent(managerEvents.taskAccepted);
+		expect(managerEvents.taskAccepted).toHaveBeenCalled();
+
+		//verify task state in manager
+		const acceptedTask = await manager.taskStore.get({ entityId: testTask.id });
+		expect(acceptedTask.events.some((e) => e.type === "accept")).toBe(true);
+
+		//worker completes task
+		const completionResult = "Task completed successfully";
+		w_taskRecord = await worker.getTask({ taskId: testTask.id });
+		await worker.completeTask({
+			taskRecord: w_taskRecord,
+			workerPeerId: worker.node.getPeerId(),
+			result: completionResult,
+		});
+
+		//verify task submission inside manager
+		await waitForEvent(managerEvents.taskSubmitted);
+		expect(managerEvents.taskSubmitted).toHaveBeenCalled();
+
+		//Manager processes task completion and payout
+		const m_taskRecord = await manager.taskStore.get({ entityId: testTask.id });
+		await manager.taskManager.manageTask(m_taskRecord);
+
+		//verify that worker recieved payment
+		await waitForEvent(workerEvents.paymentReceived);
+		expect(workerEvents.paymentReceived).toHaveBeenCalled();
+
+		//verify the final state of the completedTask in the manager store.
+		const completedTask = await manager.taskStore.get({
+			entityId: testTask.id,
+		});
+		expect(completedTask.events).toEqual([
+			expect.objectContaining({ type: "create" }),
+			expect.objectContaining({ type: "assign" }),
+			expect.objectContaining({ type: "accept" }),
+			expect.objectContaining({ type: "submission" }),
+			expect.objectContaining({ type: "payout" }),
+		]);
+	}, 15000);
+
+	it("should handle task rejection flow", async () => {
+		//TODO::
 	});
 });

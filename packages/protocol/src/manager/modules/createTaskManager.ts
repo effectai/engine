@@ -1,131 +1,50 @@
-import type { PeerId, PrivateKey } from "@libp2p/interface";
-import {
-	createTaskStore,
-	type TaskCompletedEvent,
-	type TaskEvent,
-	type TaskStore,
-	type TaskRecord,
-} from "../../stores/taskStore.js";
+import type { TaskRecord as ManagerTaskRecord } from "../../stores/taskStore.js";
 import { PublicKey } from "@solana/web3.js";
-import { Payment, type Task } from "../../common/index.js";
 import { peerIdFromString } from "@libp2p/peer-id";
-import { TaskExpiredError } from "../../common/errors.js";
 import { TASK_ACCEPTANCE_TIME } from "../consts.js";
-import type { createManager } from "../main.js";
+import type { createManager, ManagerEvents } from "../main.js";
 import { managerLogger } from "../../common/logging.js";
 import type { createWorkerQueue } from "./createWorkerQueue.js";
 import type { createPaymentManager } from "./createPaymentManager.js";
+import type {
+	ManagerTaskStore,
+	TaskAcceptedEvent,
+	TaskAssignedEvent,
+	TaskCompletedEvent,
+	TaskSubmissionEvent,
+} from "../stores/managerTaskStore.js";
+import { TypedEventEmitter } from "@libp2p/interface";
 
 export function createTaskManager({
 	manager,
-	taskStore,
 	workerQueue,
+	taskStore,
 	paymentManager,
+	eventEmitter,
 }: {
 	manager: Awaited<ReturnType<typeof createManager>>["manager"];
-	taskStore: TaskStore;
+	taskStore: ManagerTaskStore;
 	paymentManager: ReturnType<typeof createPaymentManager>;
 	workerQueue: ReturnType<typeof createWorkerQueue>;
+	eventEmitter: TypedEventEmitter<ManagerEvents>;
 }) {
-	const createTask = async ({
-		task,
-		providerPeerId,
-	}: {
-		providerPeerId: PeerId;
-		task: Task;
-	}) => {
-		//TODO:: create checks for creating this task.
-		//e.g. can we pay out completion of this task ?
-		await taskStore.create({
-			providerPeerId,
-			task,
-		});
-	};
-
-	const acceptTask = async ({
-		taskRecord,
-		worker,
-	}: {
-		taskRecord: TaskRecord;
-		worker: PeerId;
-	}) => {
-		//was it assigned to this worker ?
-		const assigned = taskRecord.events.find((t) => t.type === "assign");
-		if (!assigned || assigned.worker !== worker.toString()) {
-			throw new Error("task was not assigned to this worker.");
-		}
-
-		//is it expired ?
-		if (Date.now() / 1000 - assigned.timestamp >= TASK_ACCEPTANCE_TIME) {
-			throw new TaskExpiredError("Task has expired.");
-		}
-
-		await taskStore.accept({
-			entityId: taskRecord.state.id,
-			worker: worker.toString(),
-		});
-	};
-
-	const completeTask = async ({
-		taskRecord,
-		worker,
-		result,
-	}: {
-		taskRecord: TaskRecord;
-		worker: PeerId;
-		result: string;
-	}) => {
-		//was it accepted by this worker ?
-		const accepted = taskRecord.events.find(
-			(t) => t.type === "accept" && t.worker === worker.toString(),
-		);
-
-		if (!accepted) {
-			throw new Error("Task not accepted by this worker.");
-		}
-
-		//is it expired ?
-		if (
-			Date.now() / 1000 - accepted.timestamp >=
-			taskRecord.state.timeLimitSeconds
-		) {
-			throw new TaskExpiredError("Task has expired.");
-		}
-
-		await taskStore.complete({
-			timestamp: Date.now() / 1000,
-			entityId: taskRecord.state.id,
-			worker: worker.toString(),
-			result,
-		});
-	};
-
-	const rejectTask = async ({
-		taskRecord,
-		reason,
-	}: { taskRecord: TaskRecord; reason: string }) => {
-		//TODO:: checks if we can actually reject this task.
-
-		await taskStore.reject({
-			reason,
-			taskRecord,
-			timestamp: Date.now() / 1000,
-		});
-	};
-
 	const isExpired = (timestamp: number) =>
 		timestamp + TASK_ACCEPTANCE_TIME < Math.floor(Date.now() / 1000);
 
-	const handleCreate = async (taskRecord: TaskRecord) => {
+	const handleCreateEvent = async (taskRecord: ManagerTaskRecord) => {
 		await assignTask({ taskRecord });
 	};
 
-	const handleAssign = async (taskRecord: TaskRecord, lastEvent: TaskEvent) => {
+	const handleAssignEvent = async (
+		taskRecord: ManagerTaskRecord,
+		lastEvent: TaskAssignedEvent,
+	) => {
 		if (isExpired(lastEvent.timestamp)) {
 			managerLogger.info("Worker took too long to accept/reject task");
 
-			await rejectTask({
-				taskRecord,
+			await taskStore.reject({
+				entityId: taskRecord.state.id,
+				peerIdStr: lastEvent.assignedToPeer,
 				reason: "Worker took too long to accept/reject task",
 			});
 
@@ -133,19 +52,22 @@ export function createTaskManager({
 		}
 	};
 
-	const handleAccept = async (taskRecord: TaskRecord, lastEvent: TaskEvent) => {
+	const handleAcceptEvent = async (
+		taskRecord: ManagerTaskRecord,
+		lastEvent: TaskAcceptedEvent,
+	) => {
 		if (isExpired(lastEvent.timestamp)) {
 			managerLogger.info("Worker took too long to accept/reject task");
 			await assignTask({ taskRecord });
 		}
 	};
 
-	const handleComplete = async (
-		taskRecord: TaskRecord,
-		event: TaskCompletedEvent,
+	const handleSubmissionEvent = async (
+		taskRecord: ManagerTaskRecord,
+		event: TaskSubmissionEvent,
 	) => {
 		const payment = await paymentManager.generatePayment({
-			peerId: peerIdFromString(event.worker),
+			peerId: peerIdFromString(event.submissionByPeer),
 			amount: taskRecord.state.reward,
 			paymentAccount: new PublicKey(
 				"796qppG6jGia39AE8KLENa2mpRp5VCtm48J8JsokmwEL",
@@ -159,13 +81,16 @@ export function createTaskManager({
 		});
 
 		//send the payment.
-		manager.sendMessage(peerIdFromString(event.worker), {
+		manager.sendMessage(peerIdFromString(event.submissionByPeer), {
 			payment,
 		});
+
+		//sendout task completed event
+		eventEmitter.safeDispatchEvent("task:completed", { detail: taskRecord });
 	};
 
-	const manageTask = async (taskRecord: TaskRecord) => {
-		const lastEvent = taskRecord.events.at(-1);
+	const manageTask = async (taskRecord: ManagerTaskRecord) => {
+		const lastEvent = taskRecord.events[taskRecord.events.length - 1];
 
 		if (!lastEvent) {
 			managerLogger.error("No events found in taskRecord");
@@ -174,16 +99,16 @@ export function createTaskManager({
 
 		switch (lastEvent.type) {
 			case "create":
-				await handleCreate(taskRecord);
+				await handleCreateEvent(taskRecord);
 				break;
 			case "assign":
-				await handleAssign(taskRecord, lastEvent);
+				await handleAssignEvent(taskRecord, lastEvent);
 				break;
 			case "accept":
-				await handleAccept(taskRecord, lastEvent);
+				await handleAcceptEvent(taskRecord, lastEvent);
 				break;
-			case "complete":
-				await handleComplete(taskRecord, lastEvent);
+			case "submission":
+				await handleSubmissionEvent(taskRecord, lastEvent);
 				break;
 			case "payout":
 				// do nothing..
@@ -193,7 +118,9 @@ export function createTaskManager({
 		}
 	};
 
-	const assignTask = async ({ taskRecord }: { taskRecord: TaskRecord }) => {
+	const assignTask = async ({
+		taskRecord,
+	}: { taskRecord: ManagerTaskRecord }) => {
 		const lastEvent = taskRecord.events[taskRecord.events.length - 1];
 
 		if (lastEvent.type === "assign") {
@@ -203,21 +130,34 @@ export function createTaskManager({
 		const worker = workerQueue.dequeueWorker();
 
 		if (!worker) {
-			console.error("No worker available to assign task");
+			managerLogger.info("No available workers to assign task to");
 			return;
 		}
 
-		manager.sendMessage(peerIdFromString(worker), { task: taskRecord.state });
+		await taskStore.assign({
+			entityId: taskRecord.state.id,
+			workerPeerIdStr: worker,
+		});
 
-		await taskStore.assign({ entityId: taskRecord.state.id, worker });
+		manager.sendMessage(peerIdFromString(worker), { task: taskRecord.state });
+	};
+
+	const manageTasks = async () => {
+		try {
+			const tasks = await taskStore.all();
+			managerLogger.info(`Managing ${tasks.length} tasks`);
+
+			for (const task of tasks) {
+				await manageTask(task);
+			}
+		} catch (e) {
+			console.error(e);
+		}
 	};
 
 	return {
 		manageTask,
-		createTask,
-		completeTask,
-		acceptTask,
-		rejectTask,
+		manageTasks,
 		assignTask,
 	};
 }

@@ -31,7 +31,7 @@ export const bigIntToUint8Array = (bigint: bigint) => {
 };
 
 export const uint8ArrayToBigInt = (uint8Array: Uint8Array) => {
-	return new DataView(uint8Array.buffer).getBigUint64(0, false); // false = big-endian
+	return new DataView(uint8Array.buffer).getBigUint64(0, false);
 };
 
 export const getOrCreateActiveOutBoundStream = async (

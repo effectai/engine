@@ -44,6 +44,8 @@ interface Libp2pMethods {
 	getMultiAddress(): Multiaddr;
 	dialProtocol(): void;
 	getNode(): Libp2p;
+	start(): Promise<void>;
+	stop(): Promise<void>;
 }
 
 export interface Libp2pInit {
@@ -162,11 +164,12 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
 		this.#node.register(this.options.protocol.name, {
 			onConnect: (peerId, conn) => {
 				try {
-					this.options.onConnect?.(
-						this.node?.services.session as SessionService,
-						peerId,
-						conn,
-					);
+					this.options.onConnect?.({
+						sessionService: this.node?.services.session as SessionService,
+						peerId: peerId,
+						peerStore: this.node?.peerStore,
+						connection: conn,
+					});
 				} catch (e) {
 					//if onConnect fails or throws, we should disconnect.
 					console.error("onConnect failed:", e);
@@ -178,8 +181,6 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
 			const { detail } = event;
 			this.onIdentify(detail.peerId, detail);
 		});
-
-		console.log("init finish");
 	}
 
 	getMultiAddress() {
@@ -214,6 +215,8 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
 			sendMessage: this.sendMessage.bind(this),
 			onMessage: this.onMessage.bind(this),
 			getPeerId: this.getPeerId.bind(this),
+			start: this.start.bind(this),
+			stop: this.stop.bind(this),
 			onIdentify: this.onIdentify.bind(this),
 			getMultiAddress: this.getMultiAddress.bind(this),
 			getNode: () => this.node,
@@ -249,7 +252,6 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
 		const stream = await connection.newStream(this.options.protocol.name);
 
 		const pb = pbStream(stream).pb(EffectProtocolMessage);
-
 		await pb.write(message);
 	}
 }

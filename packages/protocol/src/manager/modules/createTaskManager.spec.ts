@@ -1,341 +1,194 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { peerIdFromString } from "@libp2p/peer-id";
-import { TaskExpiredError } from "../../common/errors.js";
-import { TaskCompletedEvent, TaskRecord } from "../../stores/taskStore.js";
+import { describe, it, vi, beforeEach, expect } from "vitest";
+import { PublicKey } from "@solana/web3.js";
 import { createTaskManager } from "./createTaskManager.js";
+import { TASK_ACCEPTANCE_TIME } from "../consts.js";
+import { peerIdFromString } from "@libp2p/peer-id";
 
 const now = Math.floor(Date.now() / 1000);
-const mockWorkerId = peerIdFromString(
-	"12D3KooWCGYNj72ZrtiXG8MUvSEmEUZUvq1Uksz2JGBqAQofmGk2",
-).toString();
+const mockWorkerId = "12D3KooWR3aZ9bLgTjsyUNqC8oZp5tf3HRmqb9G5wNpEAKiUjVv5";
+const mockTaskId = "task-1";
 
-const mockPeerId = (): any => ({
-	toString: () => mockWorkerId,
+const createMockTaskRecord = (type: string, timestamp = now) => ({
+	state: {
+		id: mockTaskId,
+		reward: 1000,
+	},
+	events: [
+		{
+			type,
+			timestamp,
+			assignedToPeer: mockWorkerId,
+			completedByPeer: mockWorkerId,
+			rejectedByPeer: "",
+			reason: "",
+		},
+	],
 });
 
-const mockPrivateKey = {
-	raw: new Uint8Array(64),
-} as any;
-
-const baseTaskRecord: TaskRecord = {
-	state: {
-		id: "task-1",
-		reward: 10n,
-		timeLimitSeconds: 3600,
-		title: "",
-		templateId: "",
-		templateData: "",
-	},
-	events: [],
-};
-
-let manager: ReturnType<typeof createTaskManager>;
-let mockTaskStore: any;
-let mockPaymentManager: any;
-let mockWorkerQueue: any;
-let mockManager: any;
-
 describe("createTaskManager", () => {
+	let manager: any;
+	let workerQueue: any;
+	let taskStore: any;
+	let paymentManager: any;
+	let taskManager: ReturnType<typeof createTaskManager>;
+
 	beforeEach(() => {
-		vi.clearAllMocks();
-
-		mockTaskStore = {
-			create: vi.fn(),
-			accept: vi.fn(),
-			complete: vi.fn(),
-			reject: vi.fn(),
-			assign: vi.fn(),
-			payout: vi.fn(),
+		manager = {
+			sendMessage: vi.fn(),
 		};
 
-		mockPaymentManager = {
-			generatePayment: vi.fn(),
-		};
-
-		mockWorkerQueue = {
+		workerQueue = {
 			dequeueWorker: vi.fn(() => mockWorkerId),
 		};
 
-		mockManager = {
-			sendMessage: vi.fn(),
-			getNode: () => ({
-				peerStore: {
-					get: vi.fn(() => ({})),
-				},
-			}),
+		taskStore = {
+			all: vi.fn(),
+			assign: vi.fn(),
+			reject: vi.fn(),
+			payout: vi.fn(),
 		};
 
-		manager = createTaskManager({
-			manager: mockManager,
-			taskStore: mockTaskStore,
-			workerQueue: mockWorkerQueue,
-			paymentManager: mockPaymentManager,
-		});
-	});
+		paymentManager = {
+			generatePayment: vi.fn(() => ({
+				amount: 1000,
+				destination: "some-destination",
+			})),
+		};
 
-	it("creates a task", async () => {
-		const providerPeerId = mockPeerId();
-
-		await manager.createTask({
-			providerPeerId,
-			task: baseTaskRecord.state,
+		taskManager = createTaskManager({
+			manager,
+			workerQueue,
+			taskStore,
+			paymentManager,
 		});
 
-		expect(mockTaskStore.create).toHaveBeenCalledWith({
-			providerPeerId,
-			task: baseTaskRecord.state,
-		});
+		vi.clearAllMocks();
 	});
 
-	it("accepts a task if assigned to the worker and not expired", async () => {
-		const taskRecord: TaskRecord = {
-			...baseTaskRecord,
-			events: [
-				{
-					type: "assign",
-					worker: mockWorkerId,
-					timestamp: now,
-				},
-			],
-		};
+	it("should assign task on creation", async () => {
+		const task = createMockTaskRecord("create");
 
-		await manager.acceptTask({
-			taskRecord,
-			worker: peerIdFromString(mockWorkerId),
+		await taskManager.manageTask(task);
+
+		expect(workerQueue.dequeueWorker).toHaveBeenCalled();
+		expect(taskStore.assign).toHaveBeenCalledWith({
+			entityId: mockTaskId,
+			workerPeerIdStr: mockWorkerId,
 		});
 
-		expect(mockTaskStore.accept).toHaveBeenCalledWith({
-			entityId: taskRecord.state.id,
-			worker: mockWorkerId,
-		});
-	});
-
-	it("throws if accepting task not assigned to this worker", async () => {
-		const taskRecord: TaskRecord = {
-			...baseTaskRecord,
-			events: [
-				{
-					type: "assign",
-					worker: "someone-else",
-					timestamp: now,
-				},
-			],
-		};
-
-		await expect(
-			manager.acceptTask({
-				taskRecord,
-				worker: peerIdFromString(mockWorkerId),
-			}),
-		).rejects.toThrow("task was not assigned to this worker.");
-	});
-
-	it("throws if accepting expired task", async () => {
-		const taskRecord: TaskRecord = {
-			...baseTaskRecord,
-			events: [
-				{
-					type: "assign",
-					worker: mockWorkerId,
-					timestamp: now - 9999,
-				},
-			],
-		};
-
-		await expect(
-			manager.acceptTask({
-				taskRecord,
-				worker: peerIdFromString(mockWorkerId),
-			}),
-		).rejects.toThrow(TaskExpiredError);
-	});
-
-	it("completes a task if accepted and within time", async () => {
-		const taskRecord: TaskRecord = {
-			...baseTaskRecord,
-			events: [
-				{
-					type: "accept",
-					worker: mockWorkerId,
-					timestamp: now,
-				},
-			],
-		};
-
-		await manager.completeTask({
-			taskRecord,
-			worker: peerIdFromString(mockWorkerId),
-			result: "result",
-		});
-
-		expect(mockTaskStore.complete).toHaveBeenCalledWith({
-			entityId: taskRecord.state.id,
-			worker: mockWorkerId,
-			result: "result",
-			timestamp: expect.any(Number),
-		});
-	});
-
-	it("throws if completing task not accepted", async () => {
-		const taskRecord: TaskRecord = {
-			...baseTaskRecord,
-			events: [],
-		};
-
-		await expect(
-			manager.completeTask({
-				taskRecord,
-				worker: peerIdFromString(mockWorkerId),
-				result: "result",
-			}),
-		).rejects.toThrow("Task not accepted by this worker.");
-	});
-
-	it("throws if completing an expired task", async () => {
-		const taskRecord: TaskRecord = {
-			...baseTaskRecord,
-			events: [
-				{
-					type: "accept",
-					worker: mockWorkerId,
-					timestamp: now - 5000,
-				},
-			],
-		};
-
-		await expect(
-			manager.completeTask({
-				taskRecord,
-				worker: peerIdFromString(mockWorkerId),
-				result: "result",
-			}),
-		).rejects.toThrow(TaskExpiredError);
-	});
-
-	it("assigns a task to a worker", async () => {
-		const taskRecord: TaskRecord = {
-			...baseTaskRecord,
-			events: [{ type: "create", timestamp: now, provider: mockWorkerId }],
-		};
-
-		await manager.assignTask({ taskRecord });
-
-		expect(mockWorkerQueue.dequeueWorker).toHaveBeenCalled();
-		expect(mockManager.sendMessage).toHaveBeenCalledWith(
+		expect(manager.sendMessage).toHaveBeenCalledWith(
 			peerIdFromString(mockWorkerId),
-			{ task: taskRecord.state },
+			{
+				task: task.state,
+			},
 		);
-		expect(mockTaskStore.assign).toHaveBeenCalledWith({
-			entityId: taskRecord.state.id,
-			worker: mockWorkerId,
-		});
 	});
 
-	it("does not assign if already assigned", async () => {
-		const taskRecord: TaskRecord = {
-			...baseTaskRecord,
-			events: [
-				{
-					type: "assign",
-					worker: mockWorkerId,
-					timestamp: now,
-				},
-			],
+	it("should reject and reassign expired assigned task", async () => {
+		const expiredTimestamp = now - TASK_ACCEPTANCE_TIME - 10;
+		const task = createMockTaskRecord("assign", expiredTimestamp);
+
+		taskStore.reject.mockImplementation(async ({ entityId, peerIdStr }) => {
+			task.events.push({
+				type: "reject",
+				timestamp: Math.floor(Date.now() / 1000),
+				rejectedByPeer: peerIdStr.toString(),
+				reason: "Worker took too long to accept/reject task",
+			});
+		});
+
+		await taskManager.manageTask(task);
+
+		expect(taskStore.reject).toHaveBeenCalledWith({
+			entityId: mockTaskId,
+			peerIdStr: mockWorkerId,
+			reason: "Worker took too long to accept/reject task",
+		});
+
+		expect(taskStore.assign).toHaveBeenCalled();
+	});
+
+	it("should reassign if task was accepted but expired", async () => {
+		const expiredTimestamp = now - TASK_ACCEPTANCE_TIME - 10;
+		const task = createMockTaskRecord("accept", expiredTimestamp);
+
+		await taskManager.manageTask(task);
+
+		expect(taskStore.assign).toHaveBeenCalled();
+	});
+
+	it("should generate payout and send message on complete", async () => {
+		const task = createMockTaskRecord("complete");
+
+		await taskManager.manageTask(task);
+
+		expect(paymentManager.generatePayment).toHaveBeenCalledWith({
+			peerId: peerIdFromString(mockWorkerId),
+			amount: 1000,
+			paymentAccount: new PublicKey(
+				"796qppG6jGia39AE8KLENa2mpRp5VCtm48J8JsokmwEL",
+			),
+		});
+
+		expect(taskStore.payout).toHaveBeenCalledWith({
+			entityId: mockTaskId,
+			payment: expect.any(Object),
+		});
+
+		expect(manager.sendMessage).toHaveBeenCalledWith(
+			peerIdFromString(mockWorkerId),
+			expect.objectContaining({ payment: expect.any(Object) }),
+		);
+	});
+
+	it("should do nothing for payout event type", async () => {
+		const task = {
+			...createMockTaskRecord("payout"),
+			events: [{ type: "payout", timestamp: now }],
 		};
 
-		await expect(manager.assignTask({ taskRecord })).rejects.toThrow(
+		await taskManager.manageTask(task);
+
+		expect(taskStore.assign).not.toHaveBeenCalled();
+		expect(manager.sendMessage).not.toHaveBeenCalled();
+	});
+
+	it("should log error if event type is unknown", async () => {
+		const task = {
+			...createMockTaskRecord("unknown"),
+			events: [{ type: "what-the-heck", timestamp: now }],
+		};
+
+		await taskManager.manageTask(task);
+
+		expect(taskStore.assign).not.toHaveBeenCalled();
+	});
+
+	it("should manage all tasks in taskStore", async () => {
+		taskStore.all.mockResolvedValue([
+			createMockTaskRecord("create"),
+			createMockTaskRecord("accept", now - TASK_ACCEPTANCE_TIME - 5),
+		]);
+
+		await taskManager.manageTasks();
+
+		expect(taskStore.assign).toHaveBeenCalledTimes(2);
+	});
+
+	it("should throw error if trying to assign already assigned task", async () => {
+		const task = createMockTaskRecord("assign");
+
+		await expect(taskManager.assignTask({ taskRecord: task })).rejects.toThrow(
 			"Task is already assigned.",
 		);
 	});
 
-	it("manages a task with a 'create' event", async () => {
-		const taskRecord: TaskRecord = {
-			...baseTaskRecord,
-			events: [{ type: "create", timestamp: now, provider: mockWorkerId }],
-		};
+	it("should handle missing available worker gracefully", async () => {
+		workerQueue.dequeueWorker.mockReturnValueOnce(null);
+		const task = createMockTaskRecord("create");
 
-		await manager.manageTask(taskRecord);
+		await taskManager.manageTask(task);
 
-		//expect sendMessage to have been called
-		expect(mockManager.sendMessage).toHaveBeenCalledWith(
-			peerIdFromString(mockWorkerId),
-			{ task: taskRecord.state },
-		);
-
-		expect(mockWorkerQueue.dequeueWorker).toHaveBeenCalled();
-
-		//expect mockTaskStore assign to be called
-		expect(mockTaskStore.assign).toHaveBeenCalledWith({
-			entityId: taskRecord.state.id,
-			worker: mockWorkerId,
-		});
-	});
-
-	it("manages a task with an 'assign' event and reassigns if expired", async () => {
-		const rejectSpy = vi.spyOn(mockTaskStore, "reject");
-
-		const taskRecord: TaskRecord = {
-			...baseTaskRecord,
-			events: [{ type: "assign", worker: mockWorkerId, timestamp: now - 9999 }],
-		};
-
-		//mock rejects type to add a reject event to taskRecord
-		rejectSpy.mockImplementation(async ({ taskRecord }) => {
-			taskRecord.events.push({
-				type: "reject",
-				reason: "Task expired",
-				timestamp: now,
-			});
-		});
-
-		await manager.manageTask(taskRecord);
-
-		expect(rejectSpy).toHaveBeenCalled();
-	});
-
-	it("manages a task with an unknown event type", async () => {
-		const taskRecord: TaskRecord = {
-			...baseTaskRecord,
-			events: [{ type: "unknown", timestamp: now }],
-		};
-
-		await manager.manageTask(taskRecord); // should log error, not crash
-	});
-
-	it("handles a completed task and generates payment", async () => {
-		const taskRecord: TaskRecord = {
-			...baseTaskRecord,
-			events: [
-				{
-					type: "complete",
-					worker: mockWorkerId,
-					timestamp: now,
-					result: "result",
-				},
-			],
-		};
-
-		//mock payment generation
-		mockPaymentManager.generatePayment.mockResolvedValue({
-			amount: taskRecord.state.reward,
-			recipient: mockWorkerId,
-			nonce: 1n,
-		});
-
-		await manager.manageTask(taskRecord);
-
-		expect(mockTaskStore.payout).toHaveBeenCalledWith(
-			expect.objectContaining({
-				entityId: taskRecord.state.id,
-				payment: expect.objectContaining({
-					amount: taskRecord.state.reward,
-					recipient: expect.any(String),
-					nonce: expect.any(BigInt),
-				}),
-			}),
-		);
-
-		expect(mockManager.sendMessage).toHaveBeenCalled();
-		//expect that a payout event was created
+		expect(taskStore.assign).not.toHaveBeenCalled();
 	});
 });

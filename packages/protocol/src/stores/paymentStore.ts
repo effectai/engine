@@ -52,7 +52,7 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
 		record: PaymentRecord;
 	}): Promise<Key> => {
 		return datastore.put(
-			new Key(`/tasks/${entityId}`),
+			new Key(`/payments/${entityId}`),
 			Buffer.from(stringifyWithBigInt(record)),
 		);
 	};

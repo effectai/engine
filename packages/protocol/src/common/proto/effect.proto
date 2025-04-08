@@ -18,6 +18,7 @@ message EffectProtocolMessage {
     PayoutRequest payout_request = 6;
     ProofRequest proof_request = 7;
     ProofResponse proof_response = 8;
-    Template template = 11;
+    Template template = 9;
+    TemplateRequest template_request = 10;
   }
 }

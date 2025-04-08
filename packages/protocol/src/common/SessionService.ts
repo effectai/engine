@@ -15,6 +15,7 @@ import { handshake } from "it-handshake";
 import { pipe } from "it-pipe";
 import * as uint8arrays from "uint8arrays";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
+import { stringifyWithBigInt } from "../core/utils.js";
 
 export interface SessionComponents {
 	peerId: PeerId;
@@ -60,9 +61,7 @@ export class SessionService
 		);
 	}
 
-	async start() {
-		console.log("SessionService started");
-	}
+	async start() {}
 
 	async stop() {}
 
@@ -81,7 +80,7 @@ export class SessionService
 
 			//respond with our own data..
 			await pipe(
-				[uint8arrays.fromString(JSON.stringify(this.getSessionData()))],
+				[uint8arrays.fromString(stringifyWithBigInt(this.getSessionData()))],
 				stream.sink,
 			);
 

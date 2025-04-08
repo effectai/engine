@@ -1,10 +1,9 @@
-import type { PrivateKey } from "@libp2p/interface";
+import { TypedEventEmitter, type PrivateKey } from "@libp2p/interface";
 import { webSockets } from "@libp2p/websockets";
 import type { Datastore } from "interface-datastore";
-import { EffectProtocolMessage } from "../common/index.js";
+import { EffectProtocolMessage, Payment } from "../common/index.js";
 import { session } from "../common/SessionService.js";
 import { createEffectEntity } from "../entity/factory.js";
-import { createTaskStore } from "../stores/taskStore.js";
 import { Libp2pTransport } from "../transports/libp2p.js";
 
 import { createTaskManager } from "./modules/createTaskManager.js";
@@ -12,6 +11,17 @@ import { createWorkerQueue } from "./modules/createWorkerQueue.js";
 import { createPaymentStore } from "../stores/paymentStore.js";
 import { createPaymentManager } from "./modules/createPaymentManager.js";
 import { managerLogger } from "../common/logging.js";
+import { createManagerTaskStore } from "./stores/managerTaskStore.js";
+import { TaskRecord } from "../common/types.js";
+
+export type ManagerEvents = {
+	"task:created": (task: TaskRecord) => void;
+	"task:accepted": (task: TaskRecord) => void;
+	"task:rejected": (task: TaskRecord) => void;
+	"task:submission": (task: TaskRecord) => void;
+	"task:completed": (task: TaskRecord) => void;
+	"payment:created": (payment: Payment) => void;
+};
 
 export const createManager = async ({
 	datastore,
@@ -20,15 +30,15 @@ export const createManager = async ({
 	datastore: Datastore;
 	privateKey: PrivateKey;
 }) => {
-	const taskStore = createTaskStore({ datastore });
 	const paymentStore = createPaymentStore({ datastore });
-
 	const workerQueue = createWorkerQueue();
+	const eventEmitter = new TypedEventEmitter<ManagerEvents>();
 
 	const manager = await createEffectEntity({
 		transports: [
 			new Libp2pTransport({
 				privateKey,
+				autoStart: true,
 				listen: ["/ip4/0.0.0.0/tcp/34861/ws"],
 				services: {
 					session: session({
@@ -83,34 +93,37 @@ export const createManager = async ({
 		datastore,
 	});
 
-	// <------ MANAGER -----> define modules
-
 	const paymentManager = createPaymentManager({
 		privateKey,
 		peerStore: manager.getNode().peerStore,
 		paymentStore,
 	});
 
+	const taskStore = createManagerTaskStore({ datastore, eventEmitter });
 	const taskManager = createTaskManager({
+		eventEmitter,
 		manager,
-		taskStore,
 		workerQueue,
+		taskStore,
 		paymentManager,
 	});
 
-	// <------ MANAGER -----> Handle incoming messages
-
 	manager
 		.onMessage("task", async (task, { peerId }) => {
-			await taskManager.createTask({ task, providerPeerId: peerId });
+			await taskStore.create({ task, providerPeerId: peerId });
 		})
 		.onMessage("taskAccepted", async ({ taskId, worker }, { peerId }) => {
-			const taskRecord = await taskStore.get({ entityId: taskId });
-			await taskManager.acceptTask({ taskRecord, worker: peerId });
+			await taskStore.accept({
+				entityId: taskId,
+				peerIdStr: peerId.toString(),
+			});
 		})
 		.onMessage("taskCompleted", async ({ taskId, result }, { peerId }) => {
-			const taskRecord = await taskStore.get({ entityId: taskId });
-			await taskManager.completeTask({ taskRecord, result, worker: peerId });
+			await taskStore.complete({
+				entityId: taskId,
+				result,
+				peerIdStr: peerId.toString(),
+			});
 		})
 		.onMessage("template", async (template, { peerId }) => {
 			// worker requested a template
@@ -118,51 +131,49 @@ export const createManager = async ({
 		.onMessage(
 			"taskRejected",
 			async ({ taskId, reason, worker }, { connection, peerId }) => {
-				const taskRecord = await taskStore.get({ entityId: taskId });
-				await taskManager.rejectTask({ taskRecord, reason });
+				await taskStore.reject({
+					entityId: taskId,
+					peerIdStr: peerId.toString(),
+					reason,
+				});
 			},
 		)
 		.onMessage("proofRequest", async (proofRequest, { connection, peerId }) => {
-			const { proof, pubKey, publicSignals } =
-				await paymentManager.generatePaymentProof(
-					privateKey,
-					proofRequest.payments,
-				);
+			const msg = await paymentManager.generatePaymentProof(
+				privateKey,
+				proofRequest.payments,
+			);
 
-			const msg: EffectProtocolMessage = {
-				proofResponse: {
-					r8: {
-						R8_1: pubKey[0],
-						R8_2: pubKey[1],
-					},
-					signals: {
-						minNonce: publicSignals[0],
-						maxNonce: publicSignals[1],
-						amount: BigInt(publicSignals[2]),
-					},
-					piA: proof.pi_a,
-					piB: [
-						{ row: [proof.pi_b[0][0], proof.pi_b[0][1]] },
-						{ row: [proof.pi_b[1][0], proof.pi_b[1][1]] },
-						{ row: [proof.pi_b[2][0], proof.pi_b[2][1]] },
-					],
-					piC: proof.pi_c,
-					protocol: proof.protocol,
-					curve: proof.curve,
-				},
-			};
-
-			//TODO:: send this message back
+			// send the proof to the worker
+			manager.sendMessage(peerId, msg);
 		})
 		.onMessage(
 			"payoutRequest",
 			async (payoutRequest, { connection, peerId }) => {
 				const payment = await paymentManager.generatePayout({ peerId });
+
 				// send the payment to the worker
+				manager.sendMessage(peerId, { payment });
 			},
 		);
 
+	const node = manager.getNode();
+
+	node.addEventListener("start", async () => {
+		console.log("Manager started");
+
+		//every 10 seconds, manage tasks..
+		setInterval(async () => {
+			await taskManager.manageTasks();
+		}, 10000);
+	});
+
+	await node.start();
+
 	return {
-		manager,
+		node: manager,
+		eventEmitter,
+		taskStore,
+		taskManager,
 	};
 };
