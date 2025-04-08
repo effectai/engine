@@ -7,70 +7,70 @@ import { PublicKey } from "@solana/web3.js";
 export const computePaymentId = (payment: Payment) => {};
 
 export const computeTaskIdFromTaskRecord = (task: TaskRecord) => {
-	const provider = computeTaskProvider(task);
+  const provider = computeTaskProvider(task);
 
-	if (!provider) {
-		throw new Error("Task provider not found");
-	}
+  if (!provider) {
+    throw new Error("Task provider not found");
+  }
 
-	return computeTaskId(provider, task.state.templateData);
+  return computeTaskId(provider, task.state.templateData);
 };
 
 export const canCompleteTask = (record: TaskRecord) => {
-	const lastEvent = record.events[record.events.length - 1];
+  const lastEvent = record.events[record.events.length - 1];
 
-	if (lastEvent.type !== "accept") return false;
-	if (record.events.some((e) => e.type === "complete")) return false;
+  if (lastEvent.type !== "accept") return false;
+  if (record.events.some((e) => e.type === "complete")) return false;
 
-	// Check if expired? Add logic here.
+  // Check if expired? Add logic here.
 
-	return true;
+  return true;
 };
 
 export const getNonce = ({ peer }: { peer: Peer }) => {
-	const result = peer.metadata.get("session:nonce");
+  const result = peer.metadata.get("session:nonce");
 
-	if (!result) {
-		throw Error("no valid nonce found..");
-	}
+  if (!result) {
+    throw Error("no valid nonce found..");
+  }
 
-	return BigInt(new TextDecoder().decode(result).replace(/n$/, ""));
+  return BigInt(new TextDecoder().decode(result).replace(/n$/, ""));
 };
 
 export const updateNonce = ({ nonce, peer }: { nonce: bigint; peer: Peer }) => {
-	peer.metadata.set("session:nonce", bigIntToUint8Array(nonce));
-	return true;
+  peer.metadata.set("session:nonce", bigIntToUint8Array(nonce));
+  return true;
 };
 
 export const getRecipient = ({ peer }: { peer: Peer }): string => {
-	const result = peer.metadata.get("session:recipient");
+  const result = peer.metadata.get("session:recipient");
 
-	if (!result) {
-		throw Error("no valid recipient found..");
-	}
+  if (!result) {
+    throw Error("no valid recipient found..");
+  }
 
-	return new TextDecoder().decode(result);
+  return new TextDecoder().decode(result);
 };
 
 export const getSessionData = async (peer: Peer) => {
-	const nonce = peer.metadata.get("nonce");
-	const recipient = peer.metadata.get("recipient");
+  const nonce = peer.metadata.get("nonce");
+  const recipient = peer.metadata.get("recipient");
 
-	if (!recipient) {
-		throw new Error(`No recipient found for peerId: ${peer.id}`);
-	}
+  if (!recipient) {
+    throw new Error(`No recipient found for peerId: ${peer.id}`);
+  }
 
-	const lastPayoutTimestamp = peer.metadata.get("timeSinceLastPayout");
+  const lastPayoutTimestamp = peer.metadata.get("timeSinceLastPayout");
 
-	if (!lastPayoutTimestamp) {
-		throw new Error(`No lastPayoutTimestamp found for peerId: ${peer.id}`);
-	}
+  if (!lastPayoutTimestamp) {
+    throw new Error(`No lastPayoutTimestamp found for peerId: ${peer.id}`);
+  }
 
-	return {
-		nonce: nonce ? uint8ArrayToBigInt(new Uint8Array(nonce)) : BigInt(0),
-		recipient: new PublicKey(recipient),
-		lastPayoutTimestamp: Number.parseInt(
-			new TextDecoder().decode(lastPayoutTimestamp),
-		),
-	};
+  return {
+    nonce: nonce ? uint8ArrayToBigInt(new Uint8Array(nonce)) : BigInt(0),
+    recipient: new PublicKey(recipient),
+    lastPayoutTimestamp: Number.parseInt(
+      new TextDecoder().decode(lastPayoutTimestamp),
+    ),
+  };
 };
