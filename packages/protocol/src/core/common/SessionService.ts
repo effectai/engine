@@ -15,7 +15,7 @@ import { handshake } from "it-handshake";
 import { pipe } from "it-pipe";
 import * as uint8arrays from "uint8arrays";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
-import { stringifyWithBigInt } from "../core/utils.js";
+import { stringifyWithBigInt } from "../utils.js";
 
 export interface SessionComponents {
   peerId: PeerId;

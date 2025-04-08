@@ -1,23 +1,23 @@
 import type { PeerId, PeerStore, PrivateKey } from "@libp2p/interface";
-import type { PaymentStore } from "../../stores/paymentStore.js";
 import { PublicKey } from "@solana/web3.js";
-import {
-  EffectProtocolMessage,
-  Payment,
-  ProofRequest,
-} from "../../common/index.js";
-import { int2hex, signPayment } from "../../utils/payment.js";
 import { buildEddsa } from "circomlibjs";
 import { fileURLToPath } from "node:url";
 import * as snarkjs from "snarkjs";
 import path from "node:path";
 import {
+  computePaymentId,
   getNonce,
   getRecipient,
   getSessionData,
   updateNonce,
+  signPayment,
 } from "../utils.js";
-import { computePaymentId } from "../../core/utils.js";
+import {
+  type ProofRequest,
+  type EffectProtocolMessage,
+  Payment,
+} from "../../core/messages/effect.js";
+import type { PaymentStore } from "../../core/stores/paymentStore.js";
 
 export function createPaymentManager({
   paymentStore,

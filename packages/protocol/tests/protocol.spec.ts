@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { peerIdFromString } from "@libp2p/peer-id";
 import { createManager } from "./../src/manager/main.js";
 import { createWorker } from "./../src/worker/main.js";
-import { Datastore } from "interface-datastore";
+import type { Datastore } from "interface-datastore";
 import {
   createDataStore,
   delay,
@@ -10,18 +10,19 @@ import {
   trackWorkerEvents,
   waitForEvent,
 } from "./utils.js";
-import { randomBytes } from "crypto";
+import { randomBytes } from "node:crypto";
 import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 import { PublicKey } from "@solana/web3.js";
-import { Task } from "../src/common/index.js";
+import type { Task } from "../src/core/messages/effect.js";
+import type { WorkerTaskRecord } from "../src/worker/stores/workerTaskStore.js";
 
 describe("Complete Task Lifecycle", () => {
   let manager: Awaited<ReturnType<typeof createManager>>;
   let worker: Awaited<ReturnType<typeof createWorker>>;
-  let providerPeerId = peerIdFromString(
+  const providerPeerId = peerIdFromString(
     "12D3KooWR3aZ9bLgTjsyUNqC8oZp5tf3HRmqb9G5wNpEAKiUjVv5",
   );
-  let w_taskRecord;
+  let workerTaskRecord: WorkerTaskRecord;
 
   let managerDatastore: Datastore;
   let workerDatastore: Datastore;
@@ -57,7 +58,7 @@ describe("Complete Task Lifecycle", () => {
       }),
     });
 
-    // Connect manager and worker
+    // start manager and worker
     await manager.node.start();
     await worker.node.start();
 
@@ -90,7 +91,7 @@ describe("Complete Task Lifecycle", () => {
     //manager creates task
     const taskRecord = await manager.taskStore.create({
       task: testTask,
-      providerPeerId: providerPeerId,
+      providerPeerIdStr: providerPeerId.toString(),
     });
 
     //verify that task was created
@@ -100,30 +101,27 @@ describe("Complete Task Lifecycle", () => {
     //assign task to worker peer.
     await manager.taskManager.assignTask({ taskRecord });
 
-    //verify worker received assignment
+    //verify that worker received task assignment
     await waitForEvent(workerEvents.taskCreated);
     expect(workerEvents.taskCreated).toHaveBeenCalled();
 
-    //get task from worker store and accept it.
-    w_taskRecord = await worker.getTask({ taskId: testTask.id });
+    //get task from worker store and let worker accept it.
+    workerTaskRecord = await worker.taskStore.get({ entityId: testTask.id });
     await worker.acceptTask({
-      taskRecord: w_taskRecord,
+      taskId: testTask.id,
     });
 
-    //verify acceptance
+    //verify that manager registered the accept
     await waitForEvent(managerEvents.taskAccepted);
     expect(managerEvents.taskAccepted).toHaveBeenCalled();
-
-    //verify task state in manager
     const acceptedTask = await manager.taskStore.get({ entityId: testTask.id });
     expect(acceptedTask.events.some((e) => e.type === "accept")).toBe(true);
 
-    //worker completes task
+    //let worker complete task
     const completionResult = "Task completed successfully";
-    w_taskRecord = await worker.getTask({ taskId: testTask.id });
+    workerTaskRecord = await worker.taskStore.get({ entityId: testTask.id });
     await worker.completeTask({
-      taskRecord: w_taskRecord,
-      workerPeerId: worker.node.getPeerId(),
+      taskId: testTask.id,
       result: completionResult,
     });
 
@@ -132,14 +130,16 @@ describe("Complete Task Lifecycle", () => {
     expect(managerEvents.taskSubmitted).toHaveBeenCalled();
 
     //Manager processes task completion and payout
-    const m_taskRecord = await manager.taskStore.get({ entityId: testTask.id });
-    await manager.taskManager.manageTask(m_taskRecord);
+    const managerTaskRecord = await manager.taskStore.get({
+      entityId: testTask.id,
+    });
+    await manager.taskManager.manageTask(managerTaskRecord);
 
     //verify that worker recieved payment
     await waitForEvent(workerEvents.paymentReceived);
     expect(workerEvents.paymentReceived).toHaveBeenCalled();
 
-    //verify the final state of the completedTask in the manager store.
+    //verify the final state of the completed task in the manager store.
     const completedTask = await manager.taskStore.get({
       entityId: testTask.id,
     });

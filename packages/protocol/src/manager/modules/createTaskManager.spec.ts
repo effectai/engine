@@ -43,7 +43,7 @@ describe("createTaskManager", () => {
     };
 
     workerQueue = {
-      dequeueWorker: vi.fn(() => mockWorkerId),
+      dequeuePeer: vi.fn(() => mockWorkerId),
     };
 
     taskStore = {
@@ -75,7 +75,7 @@ describe("createTaskManager", () => {
 
     await taskManager.manageTask(task);
 
-    expect(workerQueue.dequeueWorker).toHaveBeenCalled();
+    expect(workerQueue.dequeuePeer).toHaveBeenCalled();
     expect(taskStore.assign).toHaveBeenCalledWith({
       entityId: mockTaskId,
       workerPeerIdStr: mockWorkerId,
@@ -158,26 +158,16 @@ describe("createTaskManager", () => {
     expect(manager.sendMessage).not.toHaveBeenCalled();
   });
 
-  it("should log error if event type is unknown", async () => {
-    const task = {
-      ...createMockTaskRecord("unknown"),
-      events: [{ type: "what-the-heck", timestamp: now }],
-    };
-
-    await taskManager.manageTask(task);
-
-    expect(taskStore.assign).not.toHaveBeenCalled();
-  });
-
-  it("should manage all tasks in taskStore", async () => {
+  it("should assign all tasks in taskStore", async () => {
     taskStore.all.mockResolvedValue([
       createMockTaskRecord("create"),
+      createMockTaskRecord("reject"),
       createMockTaskRecord("accept", now - TASK_ACCEPTANCE_TIME - 5),
     ]);
 
     await taskManager.manageTasks();
 
-    expect(taskStore.assign).toHaveBeenCalledTimes(2);
+    expect(taskStore.assign).toHaveBeenCalledTimes(3);
   });
 
   it("should throw error if trying to assign already assigned task", async () => {
@@ -189,7 +179,7 @@ describe("createTaskManager", () => {
   });
 
   it("should handle missing available worker gracefully", async () => {
-    workerQueue.dequeueWorker.mockReturnValueOnce(null);
+    workerQueue.dequeuePeer.mockReturnValueOnce(null);
     const task = createMockTaskRecord("create");
 
     await taskManager.manageTask(task);

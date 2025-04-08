@@ -1,18 +1,18 @@
 // manager-task-store.ts
 import type { PeerId, TypedEventEmitter } from "@libp2p/interface";
-import { Payment, type Task } from "../../common/index.js";
-import { createCoreTaskStore } from "../../stores/taskStore.js";
 import type { Datastore } from "interface-datastore";
-import { TaskExpiredError, TaskValidationError } from "../../common/errors.js";
-import type { BaseTaskEvent, TaskRecord } from "../../common/types.js";
 import { TASK_ACCEPTANCE_TIME } from "../consts.js";
-import { ManagerEvents } from "../main.js";
+import type { BaseTaskEvent, TaskRecord } from "../../core/common/types.js";
+import { TaskValidationError, TaskExpiredError } from "../../core/errors.js";
+import { createCoreTaskStore } from "../../core/stores/taskStore.js";
+import type { ManagerEvents } from "../main.js";
+import type { Payment, Task } from "../../core/messages/effect.js";
 
 export type ManagerTaskEvent =
   | TaskCreatedEvent
   | TaskAssignedEvent
   | TaskSubmissionEvent
-  | RejectTaskEvent
+  | TaskRejectedEvent
   | TaskAcceptedEvent
   | TaskPaymentEvent;
 
@@ -31,7 +31,7 @@ export interface TaskAcceptedEvent extends BaseTaskEvent {
   acceptedByPeer: string;
 }
 
-export interface RejectTaskEvent extends BaseTaskEvent {
+export interface TaskRejectedEvent extends BaseTaskEvent {
   type: "reject";
   reason: string;
   rejectedByPeer: string;
@@ -58,34 +58,30 @@ export type ManagerTaskRecord = TaskRecord<ManagerTaskEvent>;
 
 export const createManagerTaskStore = ({
   datastore,
-  eventEmitter,
 }: {
   datastore: Datastore;
-  eventEmitter: TypedEventEmitter<ManagerEvents>;
 }) => {
   const coreStore = createCoreTaskStore<ManagerTaskEvent>({ datastore });
 
   const create = async ({
     task,
-    providerPeerId,
+    providerPeerIdStr,
   }: {
     task: Task;
-    providerPeerId: PeerId;
+    providerPeerIdStr: string;
   }): Promise<ManagerTaskRecord> => {
     const record: ManagerTaskRecord = {
       events: [
         {
           timestamp: Math.floor(Date.now() / 1000),
           type: "create",
-          providerPeer: providerPeerId.toString(),
+          providerPeer: providerPeerIdStr,
         },
       ],
       state: task,
     };
 
     await coreStore.put({ entityId: task.id, record });
-
-    eventEmitter.safeDispatchEvent("task:created", { detail: record });
 
     return record;
   };
@@ -98,7 +94,7 @@ export const createManagerTaskStore = ({
     entityId: string;
     result: string;
     peerIdStr: string;
-  }): Promise<void> => {
+  }): Promise<ManagerTaskRecord> => {
     const taskRecord = await coreStore.get({ entityId });
 
     if (taskRecord.events.some((e) => e.type === "submission")) {
@@ -127,9 +123,7 @@ export const createManagerTaskStore = ({
 
     await coreStore.put({ entityId, record: taskRecord });
 
-    eventEmitter.safeDispatchEvent("task:submission", {
-      detail: taskRecord,
-    });
+    return taskRecord;
   };
 
   const accept = async ({
@@ -138,7 +132,7 @@ export const createManagerTaskStore = ({
   }: {
     entityId: string;
     peerIdStr: string;
-  }): Promise<void> => {
+  }): Promise<ManagerTaskRecord> => {
     const taskRecord = await coreStore.get({ entityId });
 
     // only allowed to accept if last event is assign
@@ -159,7 +153,7 @@ export const createManagerTaskStore = ({
 
     await coreStore.put({ entityId, record: taskRecord });
 
-    eventEmitter.safeDispatchEvent("task:accepted", { detail: taskRecord });
+    return taskRecord;
   };
 
   const reject = async ({

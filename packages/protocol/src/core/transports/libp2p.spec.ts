@@ -1,11 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Libp2pTransport } from "./libp2p.js";
 import { webSockets } from "@libp2p/websockets";
-import { identify } from "@libp2p/identify";
-import { createLibp2p } from "libp2p";
-import { noise } from "@chainsafe/libp2p-noise";
-import { yamux } from "@chainsafe/libp2p-yamux";
-import { EffectProtocolMessage } from "../common/index.js";
+import { EffectProtocolMessage } from "../messages/effect.js";
 
 describe("Libp2pTransport", () => {
   vi.mock("libp2p", () => ({

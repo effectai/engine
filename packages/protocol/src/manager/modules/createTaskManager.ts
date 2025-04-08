@@ -1,19 +1,22 @@
-import type { TaskRecord as ManagerTaskRecord } from "../../stores/taskStore.js";
 import { PublicKey } from "@solana/web3.js";
 import { peerIdFromString } from "@libp2p/peer-id";
 import { TASK_ACCEPTANCE_TIME } from "../consts.js";
 import type { createManager, ManagerEvents } from "../main.js";
-import { managerLogger } from "../../common/logging.js";
 import type { createWorkerQueue } from "./createWorkerQueue.js";
 import type { createPaymentManager } from "./createPaymentManager.js";
 import type {
+  ManagerTaskRecord,
   ManagerTaskStore,
   TaskAcceptedEvent,
   TaskAssignedEvent,
-  TaskCompletedEvent,
+  TaskRejectedEvent,
   TaskSubmissionEvent,
 } from "../stores/managerTaskStore.js";
-import { TypedEventEmitter } from "@libp2p/interface";
+import { managerLogger } from "../../core/logging.js";
+import type { TypedEventEmitter } from "@libp2p/interface";
+import type { createEffectEntity } from "../../core/entity/factory.js";
+import type { Libp2pTransport } from "../../core/transports/libp2p.js";
+import type { Task } from "../../core/messages/effect.js";
 
 export function createTaskManager({
   manager,
@@ -22,7 +25,7 @@ export function createTaskManager({
   paymentManager,
   eventEmitter,
 }: {
-  manager: Awaited<ReturnType<typeof createManager>>["manager"];
+  manager: Awaited<ReturnType<typeof createEffectEntity<Libp2pTransport[]>>>;
   taskStore: ManagerTaskStore;
   paymentManager: ReturnType<typeof createPaymentManager>;
   workerQueue: ReturnType<typeof createWorkerQueue>;
@@ -30,6 +33,80 @@ export function createTaskManager({
 }) {
   const isExpired = (timestamp: number) =>
     timestamp + TASK_ACCEPTANCE_TIME < Math.floor(Date.now() / 1000);
+
+  const createTask = async ({
+    task,
+    providerPeerIdStr,
+  }: {
+    task: Task;
+    providerPeerIdStr: string;
+  }) => {
+    const taskRecord = await taskStore.create({
+      task,
+      providerPeerIdStr,
+    });
+
+    eventEmitter.safeDispatchEvent("task:created", {
+      detail: taskRecord,
+    });
+  };
+
+  const processTaskAcception = async ({
+    taskId,
+    workerPeerIdStr,
+  }: {
+    taskId: string;
+    workerPeerIdStr: string;
+  }) => {
+    const taskRecord = await taskStore.accept({
+      entityId: taskId,
+      peerIdStr: workerPeerIdStr,
+    });
+
+    eventEmitter.safeDispatchEvent("task:accepted", {
+      detail: taskRecord,
+    });
+  };
+
+  const processTaskRejection = async ({
+    taskId,
+    workerPeerIdStr,
+    reason,
+  }: {
+    taskId: string;
+    workerPeerIdStr: string;
+    reason: string;
+  }) => {
+    const taskRecord = await taskStore.reject({
+      entityId: taskId,
+      peerIdStr: workerPeerIdStr,
+      reason,
+    });
+
+    eventEmitter.safeDispatchEvent("task:rejected", {
+      detail: taskRecord,
+    });
+  };
+
+  const processTaskSubmission = async ({
+    taskId,
+    result,
+    workerPeerIdStr,
+  }: {
+    taskId: string;
+    result: string;
+    workerPeerIdStr: string;
+  }) => {
+    const taskRecord = await taskStore.complete({
+      entityId: taskId,
+      result,
+      peerIdStr: workerPeerIdStr,
+    });
+
+    eventEmitter.safeDispatchEvent("task:submission", {
+      detail: taskRecord,
+    });
+  };
 
   const handleCreateEvent = async (taskRecord: ManagerTaskRecord) => {
     await assignTask({ taskRecord });
@@ -89,6 +166,14 @@ export function createTaskManager({
     eventEmitter.safeDispatchEvent("task:completed", { detail: taskRecord });
   };
 
+  const handleRejectEvent = async (
+    taskRecord: ManagerTaskRecord,
+    event: TaskRejectedEvent,
+  ) => {
+    //this task got rejected, lets just re-assign it for now.
+    await assignTask({ taskRecord });
+  };
+
   const manageTask = async (taskRecord: ManagerTaskRecord) => {
     const lastEvent = taskRecord.events[taskRecord.events.length - 1];
 
@@ -106,6 +191,9 @@ export function createTaskManager({
         break;
       case "accept":
         await handleAcceptEvent(taskRecord, lastEvent);
+        break;
+      case "reject":
+        await handleRejectEvent(taskRecord, lastEvent);
         break;
       case "submission":
         await handleSubmissionEvent(taskRecord, lastEvent);
@@ -127,7 +215,7 @@ export function createTaskManager({
       throw new Error("Task is already assigned.");
     }
 
-    const worker = workerQueue.dequeueWorker();
+    const worker = workerQueue.dequeuePeer();
 
     if (!worker) {
       managerLogger.info("No available workers to assign task to");
@@ -156,6 +244,10 @@ export function createTaskManager({
   };
 
   return {
+    createTask,
+    processTaskAcception,
+    processTaskRejection,
+    processTaskSubmission,
     manageTask,
     manageTasks,
     assignTask,

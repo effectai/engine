@@ -1,8 +1,14 @@
 import type { Peer } from "@libp2p/interface";
-import { computeTaskProvider, computeTaskId } from "../core/utils.js";
-import type { TaskRecord } from "../stores/taskStore.js";
-import { bigIntToUint8Array, uint8ArrayToBigInt } from "../utils/utils.js";
+import {
+  computeTaskProvider,
+  computeTaskId,
+  bigIntToUint8Array,
+  uint8ArrayToBigInt,
+} from "../core/utils.js";
 import { PublicKey } from "@solana/web3.js";
+import { buildEddsa, buildPoseidon } from "circomlibjs";
+import { TaskRecord } from "../core/common/types.js";
+import { Payment } from "../core/messages/effect.js";
 
 export const computePaymentId = (payment: Payment) => {};
 
@@ -74,3 +80,22 @@ export const getSessionData = async (peer: Peer) => {
     ),
   };
 };
+
+export const signPayment = async (payment: Payment, privateKey: Uint8Array) => {
+  const eddsa = await buildEddsa();
+  const poseidon = await buildPoseidon();
+
+  const signature = eddsa.signPoseidon(
+    privateKey,
+    poseidon([
+      int2hex(payment.nonce.toString()),
+      int2hex(new PublicKey(payment.recipient).toBuffer().readBigUInt64BE()),
+      int2hex(payment.amount),
+    ]),
+  );
+
+  return signature;
+};
+
+export const int2hex = (i: string | number | bigint | boolean) =>
+  `0x${BigInt(i).toString(16)}`;

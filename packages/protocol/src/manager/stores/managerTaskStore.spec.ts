@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { Datastore, Key } from "interface-datastore";
-import { Task } from "../common/proto/effect.js";
 import { PeerId } from "@libp2p/interface";
+import { Datastore, Key } from "interface-datastore";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Task } from "../common/proto/effect.js";
 import { createManagerTaskStore } from "./managerTaskStore.js";
-import { TaskExpiredError, TaskValidationError } from "../../common/errors.js";
+import { TaskValidationError, TaskExpiredError } from "../../core/errors.js";
 
 // Mock Datastore
 const mockDatastore = {
@@ -73,7 +73,7 @@ describe("ManagerTaskStore", () => {
     it("should include the provider peer in create event", async () => {
       const result = await taskStore.create({
         task: mockTask,
-        providerPeerId: mockPeerId,
+        providerPeerIdStr: mockPeerId.toString(),
       });
 
       expect(result.events[0].providerPeer).toBe("peerId123");

@@ -1,8 +1,8 @@
 import type { PeerId } from "@libp2p/interface";
-import { EffectProtocolMessage } from "../../common/index.js";
-import { WorkerTaskStore } from "../stores/workerTaskStore.js";
-import { createEffectEntity } from "../../entity/factory.js";
-import { Libp2pTransport } from "../../transports/libp2p.js";
+import type { createEffectEntity } from "../../core/entity/factory.js";
+import type { EffectProtocolMessage } from "../../core/messages/effect.js";
+import type { Libp2pTransport } from "../../core/transports/libp2p.js";
+import type { WorkerTaskStore } from "../stores/workerTaskStore.js";
 
 export function createPaymentWorker({
   taskStore,

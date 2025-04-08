@@ -1,16 +1,16 @@
 import type { PeerId, TypedEventEmitter } from "@libp2p/interface";
-import { type Task } from "../../common/index.js";
-import { TaskExpiredError } from "../../common/errors.js";
 import { TASK_ACCEPTANCE_TIME } from "../../manager/consts.js";
 import type {
   TaskAcceptedEvent,
+  WorkerTaskEvents,
   WorkerTaskRecord,
   WorkerTaskStore,
 } from "../stores/workerTaskStore.js";
-import type { createEffectEntity } from "../../entity/factory.js";
-import type { Libp2pTransport } from "../../transports/libp2p.js";
-import { WorkerEvents } from "../main.js";
 import { peerIdFromString } from "@libp2p/peer-id";
+import type { createEffectEntity } from "../../core/entity/factory.js";
+import type { Libp2pTransport } from "../../core/transports/libp2p.js";
+import type { WorkerEvents } from "../main.js";
+import { Task } from "../../core/messages/effect.js";
 
 export function createTaskWorker({
   taskStore,
@@ -21,20 +21,12 @@ export function createTaskWorker({
   worker: Awaited<ReturnType<typeof createEffectEntity<Libp2pTransport[]>>>;
   taskStore: WorkerTaskStore;
 }) {
-  const getTask = async ({
-    taskId,
-  }: {
-    taskId: string;
-  }) => {
-    const taskRecord = await taskStore.get({
-      entityId: taskId,
-    });
+  const extractMetadata = (task: WorkerTaskRecord) => {
+    const managerPeer = task.events.find(
+      (e) => e.type === "create",
+    )?.managerPeer;
 
-    if (!taskRecord) {
-      throw new Error("Task not found.");
-    }
-
-    return taskRecord;
+    return { managerPeer };
   };
 
   const createTask = async ({
@@ -44,38 +36,33 @@ export function createTaskWorker({
     managerPeerId: PeerId;
     task: Task;
   }) => {
-    //TODO:: check if the task is valid.
-    //TODO:: is this a task coming from a manager ?
-    await taskStore.put({
+    await taskStore.create({
       task,
-      peerId: managerPeerId,
+      managerPeerId,
     });
+
+    eventEmitter.safeDispatchEvent("task:created", { detail: task });
   };
 
   const acceptTask = async ({
-    taskRecord,
+    taskId,
   }: {
-    taskRecord: WorkerTaskRecord;
+    taskId: string;
   }): Promise<void> => {
-    const created = taskRecord.events.find((t) => t.type === "create");
-
-    if (!created) {
-      throw new Error("Task not created.");
-    }
-
-    if (Date.now() / 1000 - created.timestamp >= TASK_ACCEPTANCE_TIME) {
-      throw new TaskExpiredError("Task has expired.");
-    }
-
-    await taskStore.accept({
-      entityId: taskRecord.state.id,
+    const taskRecord = await taskStore.accept({
+      entityId: taskId,
     });
 
+    const { managerPeer } = extractMetadata(taskRecord);
+    if (!managerPeer) {
+      throw new Error("no manager peer..");
+    }
+
     // send accepted message to manager
-    worker.sendMessage(peerIdFromString(created.managerPeer), {
+    worker.sendMessage(peerIdFromString(managerPeer), {
       taskAccepted: {
         timestamp: Math.floor(Date.now() / 1000),
-        taskId: taskRecord.state.id,
+        taskId: taskId,
         worker: worker.getNode().peerId.toString(),
       },
     });
@@ -85,42 +72,25 @@ export function createTaskWorker({
   };
 
   const completeTask = async ({
-    taskRecord,
-    workerPeerId,
+    taskId,
     result,
   }: {
-    taskRecord: WorkerTaskRecord;
-    workerPeerId: PeerId;
+    taskId: string;
     result: string;
   }) => {
-    //was it accepted ?
-    const accepted = taskRecord.events.find((t) => t.type === "accept");
-
-    if (!accepted) {
-      throw new Error("Task not accepted by this worker.");
-    }
-
-    const created = taskRecord.events.find((t) => t.type === "create");
-
-    if (!created) {
-      throw new Error("Task not created.");
-    }
-
-    //is it expired ?
-    if (
-      Date.now() / 1000 - accepted.timestamp >=
-      taskRecord.state.timeLimitSeconds
-    ) {
-      throw new TaskExpiredError("Task has expired.");
-    }
-
-    await taskStore.complete({
-      entityId: taskRecord.state.id,
+    const taskRecord = await taskStore.complete({
+      entityId: taskId,
       result,
     });
 
+    const { managerPeer } = extractMetadata(taskRecord);
+
+    if (!managerPeer) {
+      throw new Error("no manager peer found");
+    }
+
     // send completed message to manager
-    worker.sendMessage(peerIdFromString(created?.managerPeer), {
+    worker.sendMessage(peerIdFromString(managerPeer), {
       taskCompleted: {
         taskId: taskRecord.state.id,
         worker: worker.toString(),
@@ -132,19 +102,20 @@ export function createTaskWorker({
   };
 
   const rejectTask = async ({
+    peerId,
     taskRecord,
     reason,
-  }: { taskRecord: WorkerTaskRecord; reason: string }) => {
+  }: { taskRecord: WorkerTaskRecord; reason: string; peerId: string }) => {
     await taskStore.reject({
+      peerIdStr: peerId,
       entityId: taskRecord.state.id,
       reason,
     });
 
-    eventEmitter.safeDispatchEvent("task:reject", { detail: taskRecord });
+    eventEmitter.safeDispatchEvent("task:rejected", { detail: taskRecord });
   };
 
   return {
-    getTask,
     createTask,
     completeTask,
     acceptTask,

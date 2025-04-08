@@ -1,10 +1,10 @@
 import type { PeerId } from "@libp2p/interface";
-import { Payment, type Task } from "../../common/index.js";
-import { createCoreTaskStore } from "../../stores/taskStore.js";
 import type { Datastore } from "interface-datastore";
-import { TaskExpiredError, TaskValidationError } from "../../common/errors.js";
-import type { BaseTaskEvent, TaskRecord } from "../../common/types.js";
 import { TASK_ACCEPTANCE_TIME } from "../../manager/consts.js";
+import { TaskValidationError, TaskExpiredError } from "../../core/errors.js";
+import { createCoreTaskStore } from "../../core/stores/taskStore.js";
+import { BaseTaskEvent, TaskRecord } from "../../core/common/types.js";
+import { Task } from "../../core/messages/effect.js";
 
 export type WorkerTaskEvents =
   | TaskCreatedEvent
@@ -58,6 +58,8 @@ export const createWorkerTaskStore = ({
       state: task,
     };
 
+    //TODO:: check if task already exist ?
+
     await coreStore.put({ entityId: task.id, record });
 
     return record;
@@ -69,7 +71,7 @@ export const createWorkerTaskStore = ({
   }: {
     entityId: string;
     result: string;
-  }): Promise<void> => {
+  }): Promise<WorkerTaskRecord> => {
     const taskRecord = await coreStore.get({ entityId });
 
     if (taskRecord.events.some((e) => e.type === "complete")) {
@@ -78,6 +80,7 @@ export const createWorkerTaskStore = ({
 
     // only allowed to complete if last event is accept
     const lastEvent = taskRecord.events[taskRecord.events.length - 1];
+
     if (lastEvent.type !== "accept") {
       throw new TaskValidationError("Task was not accepted..");
     }
@@ -96,31 +99,39 @@ export const createWorkerTaskStore = ({
     });
 
     await coreStore.put({ entityId, record: taskRecord });
+
+    return taskRecord;
   };
 
   const accept = async ({
     entityId,
   }: {
     entityId: string;
-  }): Promise<void> => {
+  }): Promise<WorkerTaskRecord> => {
     const taskRecord = await coreStore.get({ entityId });
 
-    // only allowed to accept if last event is created
-    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
-    if (lastEvent.type !== "create") {
-      throw new TaskValidationError("Task was not created.");
+    const created = taskRecord.events.find(
+      (t: WorkerTaskEvents) => t.type === "create",
+    );
+
+    if (!created) {
+      throw new Error("Task not created.");
     }
 
-    if (Date.now() / 1000 - lastEvent.timestamp >= TASK_ACCEPTANCE_TIME) {
+    if (Date.now() / 1000 - created.timestamp >= TASK_ACCEPTANCE_TIME) {
       throw new TaskExpiredError("Task has expired.");
     }
 
-    taskRecord.events.push({
+    const event: TaskAcceptedEvent = {
       timestamp: Math.floor(Date.now() / 1000),
       type: "accept",
-    });
+    };
+
+    taskRecord.events.push(event);
 
     await coreStore.put({ entityId, record: taskRecord });
+
+    return taskRecord;
   };
 
   const reject = async ({

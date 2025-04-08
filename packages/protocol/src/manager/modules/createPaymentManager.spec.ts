@@ -1,10 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createPaymentManager } from "./createPaymentManager";
-import { PublicKey } from "@solana/web3.js";
 import { PeerId } from "@libp2p/interface";
-
-import { getNonce, getRecipient } from "../utils.js";
-import { signPayment } from "../../utils/payment.js";
+import { PublicKey } from "@solana/web3.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createPaymentManager } from "./createPaymentManager.js";
+import { getNonce, getRecipient, signPayment } from "../utils.js";
 
 vi.mock("../utils.js");
 vi.mock("../../utils/payment.js");

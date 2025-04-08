@@ -1,6 +1,6 @@
 import { type Datastore, Key } from "interface-datastore";
-import { parseWithBigInt, stringifyWithBigInt } from "../core/utils.js";
 import type { BaseTaskEvent, TaskRecord } from "../common/types.js";
+import { parseWithBigInt, stringifyWithBigInt } from "../utils.js";
 
 export const createCoreTaskStore = <EventType extends BaseTaskEvent>({
   datastore,

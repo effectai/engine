@@ -1,11 +1,10 @@
 import type { Datastore } from "interface-datastore";
-import type {
+import {
   Entity,
   ExtractMethods,
   Transport,
   UnionToIntersection,
-} from "../core/types.js";
-
+} from "../types.js";
 export async function createEffectEntity<T extends Transport[]>(config: {
   transports: [...T];
   datastore: Datastore;

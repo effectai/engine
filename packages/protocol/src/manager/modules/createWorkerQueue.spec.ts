@@ -18,37 +18,34 @@ describe("createWorkerQueue", () => {
 
   it("adds a worker to the queue", () => {
     const queue = createWorkerQueue();
-    queue.addWorker(peerId1);
+    queue.addPeer({ peerIdStr: peerId1.toString() });
 
-    expect(queue.getWorkerQueue()).toEqual([peerId1.toString()]);
+    expect(queue.getQueue()).toEqual([peerId1.toString()]);
   });
 
   it("can add multiple workers and get them in order", () => {
     const queue = createWorkerQueue();
 
-    queue.addWorker(peerId1);
-    queue.addWorker(peerId2);
+    queue.addPeer({ peerIdStr: peerId1.toString() });
+    queue.addPeer({ peerIdStr: peerId2.toString() });
 
-    expect(queue.getWorkerQueue()).toEqual([
-      peerId1.toString(),
-      peerId2.toString(),
-    ]);
+    expect(queue.getQueue()).toEqual([peerId1.toString(), peerId2.toString()]);
   });
 
   it("dequeues workers in FIFO order", () => {
     const queue = createWorkerQueue();
-    queue.addWorker(peerId1);
-    queue.addWorker(peerId2);
+    queue.addPeer({ peerIdStr: peerId1.toString() });
+    queue.addPeer({ peerIdStr: peerId2.toString() });
 
-    const firstOut = queue.dequeueWorker();
+    const firstOut = queue.dequeuePeer();
     expect(firstOut).toBe(peerId1.toString());
 
-    const secondOut = queue.dequeueWorker();
+    const secondOut = queue.dequeuePeer();
     expect(secondOut).toBe(peerId2.toString());
   });
 
   it("returns undefined when dequeuing from an empty queue", () => {
     const queue = createWorkerQueue();
-    expect(queue.dequeueWorker()).toBeUndefined();
+    expect(queue.dequeuePeer()).toBeUndefined();
   });
 });

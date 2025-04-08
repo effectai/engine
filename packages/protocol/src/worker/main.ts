@@ -1,19 +1,22 @@
-import { webSockets } from "@libp2p/websockets";
-import type { Datastore } from "interface-datastore";
-import { EffectProtocolMessage, Payment, Task } from "../common/index.js";
-import { session } from "../common/SessionService.js";
-import { createEffectEntity } from "../entity/factory.js";
-import { Libp2pTransport } from "../transports/libp2p.js";
-import { createPaymentStore } from "../stores/paymentStore.js";
-import { PrivateKey, TypedEventEmitter } from "@libp2p/interface";
-import { webRTC, webRTCDirect } from "@libp2p/webrtc";
-import { webTransport } from "@libp2p/webtransport";
 import { circuitRelayTransport } from "@libp2p/circuit-relay-v2";
-import { createTaskWorker } from "./modules/createTaskWorker.js";
-import { createCoreTaskStore } from "../stores/taskStore.js";
-import { createWorkerTaskStore } from "./stores/workerTaskStore.js";
+import { type PrivateKey, TypedEventEmitter } from "@libp2p/interface";
+import { webRTC, webRTCDirect } from "@libp2p/webrtc";
+import { webSockets } from "@libp2p/websockets";
+import { webTransport } from "@libp2p/webtransport";
+import type { Datastore } from "interface-datastore";
+import { session } from "../core/common/SessionService.js";
+import type { TaskRecord } from "../core/common/types.js";
+import { createEffectEntity } from "../core/entity/factory.js";
+import {
+  EffectProtocolMessage,
+  type Task,
+  type Payment,
+} from "../core/messages/effect.js";
+import { createPaymentStore } from "../core/stores/paymentStore.js";
+import { Libp2pTransport } from "../core/transports/libp2p.js";
 import { createPaymentWorker } from "./modules/createPaymentWorker.js";
-import { TaskRecord } from "../common/types.js";
+import { createTaskWorker } from "./modules/createTaskWorker.js";
+import { createWorkerTaskStore } from "./stores/workerTaskStore.js";
 
 export type WorkerEvents = {
   "task:created": (task: Task) => void;
@@ -98,7 +101,8 @@ export const createWorker = async ({
   return {
     node: worker,
     eventEmitter,
-    getTask,
+    taskStore,
+
     requestPayout,
     acceptTask,
     rejectTask,

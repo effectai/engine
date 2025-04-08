@@ -1,31 +1,29 @@
-import { createLibp2p, ServiceFactoryMap } from "libp2p";
-import type { Entity, Transport } from "../core/types.js";
-import { webSockets } from "@libp2p/websockets";
-import { yamux } from "@chainsafe/libp2p-yamux";
 import { noise } from "@chainsafe/libp2p-noise";
+import { yamux } from "@chainsafe/libp2p-yamux";
 import { bootstrap } from "@libp2p/bootstrap";
-import { ping } from "@libp2p/ping";
-import { identify } from "@libp2p/identify";
 import { circuitRelayServer } from "@libp2p/circuit-relay-v2";
+import type { Components } from "@libp2p/interface";
+import { identify } from "@libp2p/identify";
 import type {
-  Libp2p,
-  PrivateKey,
-  Transport as InternalLibp2pTransport,
-  IdentifyResult,
-  PeerId,
-  Stream,
   Connection,
+  IdentifyResult,
+  Transport as InternalLibp2pTransport,
+  Libp2p,
+  PeerId,
   PeerStore,
+  PrivateKey,
+  Stream,
 } from "@libp2p/interface";
-import { TransportManager } from "@libp2p/interface-internal";
+import { ping } from "@libp2p/ping";
+import { type ServiceFactoryMap, createLibp2p } from "libp2p";
+import type { Entity, Transport } from "./../types.js";
 
-import type { Components } from "@libp2p";
-import { Multiaddr } from "@multiformats/multiaddr";
-import { SessionService } from "../common/SessionService.js";
-import { EntityWithTransports } from "../entity/types.js";
-import { EffectProtocolMessage } from "../common/index.js";
+import type { Multiaddr } from "@multiformats/multiaddr";
 import { pbStream } from "it-protobuf-stream";
-import { extractMessageType } from "../utils/utils.js";
+import type { SessionService } from "../common/SessionService.js";
+import type { EntityWithTransports } from "../entity/types.js";
+import { EffectProtocolMessage } from "../messages/effect.js";
+import { extractMessageType } from "../utils.js";
 type EffectMessageType = keyof EffectProtocolMessage;
 
 interface Libp2pMethods {

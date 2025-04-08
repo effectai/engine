@@ -1,14 +1,11 @@
 import { type Datastore, Key } from "interface-datastore";
-import { Payment, Task } from "./../common/proto/effect.js";
+import type { PeerId } from "@libp2p/interface";
 import {
-  computePaymentId,
-  computeTaskId,
   parseWithBigInt,
   stringifyWithBigInt,
-} from "../core/utils.js";
-import type { PeerId } from "@libp2p/interface";
-
-import { TaskValidationError } from "../common/errors.js";
+  computePaymentId,
+} from "../utils.js";
+import { Payment } from "../messages/effect.js";
 
 export interface PaymentRecord {
   state: Payment;
