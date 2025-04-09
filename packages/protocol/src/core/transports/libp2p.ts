@@ -36,7 +36,7 @@ export interface SendMessageOptions {
   existingStream?: Stream; // Adjust type based on your stream implementation
 }
 
-interface Libp2pMethods {
+export interface Libp2pMethods {
   sendMessage<T extends EffectProtocolMessage>(
     peerId: PeerId,
     message: T,
