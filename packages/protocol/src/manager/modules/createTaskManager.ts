@@ -202,7 +202,7 @@ export function createTaskManager({
         // do nothing..
         break;
       default:
-        managerLogger.error(`Unknown task event type: ${lastEvent.type}`);
+        managerLogger.error(`Unknown task event type: ${lastEvent}`);
     }
   };
 

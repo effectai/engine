@@ -1,8 +1,7 @@
-import type { Entity } from "../core/types.js";
+import type { Entity } from "../types.js";
 
 export abstract class BaseTransport<TMethods>
-  implements BaseTransport<TMethods>
-{
+  implements BaseTransport<TMethods> {
   protected entity?: Entity;
 
   async initialize(entity: Entity) {

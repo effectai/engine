@@ -2,7 +2,10 @@
   "compilerOptions": {
     // Enable latest features
     "strict": true,
-    "lib": ["ESNext", "DOM"],
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
     "moduleResolution": "NodeNext",
     "module": "NodeNext",
     "target": "ES2020",
@@ -13,6 +16,16 @@
     "resolveJsonModule": true,
     "outDir": "./dist"
   },
-  "include": ["src"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "**/*.spec.tsx",
+    "**/*.test.tsx",
+    "**/__tests__/**",
+    "**/__mocks__/**"
+  ]
 }

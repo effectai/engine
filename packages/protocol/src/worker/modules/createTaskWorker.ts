@@ -63,7 +63,7 @@ export function createTaskWorker({
       taskAccepted: {
         timestamp: Math.floor(Date.now() / 1000),
         taskId: taskId,
-        worker: worker.getNode().peerId.toString(),
+        worker: worker.node.peerId.toString(),
       },
     });
 

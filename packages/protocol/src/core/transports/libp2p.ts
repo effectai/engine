@@ -1,8 +1,6 @@
 import { noise } from "@chainsafe/libp2p-noise";
 import { yamux } from "@chainsafe/libp2p-yamux";
 import { bootstrap } from "@libp2p/bootstrap";
-import { circuitRelayServer } from "@libp2p/circuit-relay-v2";
-import type { Components } from "@libp2p/interface";
 import { identify } from "@libp2p/identify";
 import type {
   Connection,
@@ -28,7 +26,7 @@ import {
   isErrorResponse,
   shouldExpectResponse,
 } from "../utils.js";
-import { MessageResponse } from "../common/types.js";
+import type { MessageResponse } from "../common/types.js";
 import { ProtocolError } from "../errors.js";
 type EffectMessageType = keyof EffectProtocolMessage;
 
@@ -51,20 +49,14 @@ interface Libp2pMethods {
       context: { peerId: PeerId; connection: Connection },
     ) => Promise<void>,
   ): EntityWithTransports<[Libp2pTransport]>;
-  onIdentify(
-    handler: (peerId: PeerId, identity: IdentifyResult) => Promise<void>,
-  ): void;
   getPeerId(): PeerId;
-  getMultiAddress(): Multiaddr;
-  dialProtocol(): void;
-  getNode(): Libp2p;
-  start(): Promise<void>;
-  stop(): Promise<void>;
+  getMultiAddress(): Multiaddr[] | undefined;
+  node: Libp2p;
 }
 
 export interface Libp2pInit {
   listen: string[];
-  transports: ((components: Components) => InternalLibp2pTransport)[];
+  transports: ((components: any) => InternalLibp2pTransport)[];
   bootstrap?: string[];
   privateKey?: PrivateKey;
   autoStart?: boolean;
@@ -110,6 +102,10 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
   #node: Libp2p | null = null;
 
   get node() {
+    if (!this.#node) {
+      throw new Error("Libp2p node is not initialized");
+    }
+
     return this.#node;
   }
 
@@ -191,10 +187,15 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
     this.#node.register(this.options.protocol.name, {
       onConnect: (peerId, conn) => {
         try {
+          if (!this.#node?.peerStore) {
+            console.error("PeerStore is not available");
+            return;
+          }
+
           this.options.onConnect?.({
             sessionService: this.node?.services.session as SessionService,
             peerId: peerId,
-            peerStore: this.node?.peerStore,
+            peerStore: this.#node.peerStore,
             connection: conn,
           });
         } catch (e) {
@@ -218,7 +219,7 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
   }
 
   getPeerId() {
-    return this.#node?.peerId;
+    return this.node.peerId;
   }
 
   async start() {
@@ -237,16 +238,19 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
     return this.#node;
   }
 
+  getAccessors() {
+    return {
+      node: this.#node,
+    };
+  }
+
   getMethods(): Libp2pMethods {
     return {
       sendMessage: this.sendMessage.bind(this),
       onMessage: this.onMessage.bind(this),
       getPeerId: this.getPeerId.bind(this),
-      start: this.start.bind(this),
-      stop: this.stop.bind(this),
-      onIdentify: this.onIdentify.bind(this),
       getMultiAddress: this.getMultiAddress.bind(this),
-      getNode: () => this.node,
+      node: this.node,
     };
   }
 
@@ -260,7 +264,12 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
     }
 
     this.messageHandlers.set(type, handler);
-    return this.entity;
+
+    if (!this.entity) {
+      throw new Error("Entity is not initialized");
+    }
+
+    return this.entity as EntityWithTransports<[Libp2pTransport]>;
   }
 
   private async sendMessage<T extends EffectProtocolMessage>(
@@ -305,8 +314,8 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
 
         if (isErrorResponse(response)) {
           throw new ProtocolError(
-            response.error?.code,
-            response.error?.message,
+            response.error!.code,
+            response.error!.message,
           );
         }
 

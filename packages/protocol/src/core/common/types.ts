@@ -1,10 +1,10 @@
-import {
+import type {
   EffectProtocolMessage,
   Payment,
   ProofResponse,
+  Task,
   Template,
 } from "../messages/effect.js";
-import { Task } from "./proto/effect.js";
 
 export interface BaseTaskEvent {
   timestamp: number;
@@ -36,8 +36,8 @@ export type ResponseMap = {
 // Helper type to extract response type
 export type MessageResponse<T extends EffectProtocolMessage> = {
   [K in keyof T]: K extends keyof ResponseMap
-    ? T[K] extends undefined
-      ? never
-      : ResponseMap[K]
-    : never;
+  ? T[K] extends undefined
+  ? never
+  : ResponseMap[K]
+  : never;
 }[keyof T];

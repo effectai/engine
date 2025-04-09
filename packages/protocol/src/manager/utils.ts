@@ -1,35 +1,9 @@
 import type { Peer } from "@libp2p/interface";
-import {
-  computeTaskProvider,
-  computeTaskId,
-  bigIntToUint8Array,
-  uint8ArrayToBigInt,
-} from "../core/utils.js";
+import { bigIntToUint8Array, uint8ArrayToBigInt } from "../core/utils.js";
 import { PublicKey } from "@solana/web3.js";
 import { buildEddsa, buildPoseidon } from "circomlibjs";
 import { TaskRecord } from "../core/common/types.js";
 import { Payment } from "../core/messages/effect.js";
-
-export const computeTaskIdFromTaskRecord = (task: TaskRecord) => {
-  const provider = computeTaskProvider(task);
-
-  if (!provider) {
-    throw new Error("Task provider not found");
-  }
-
-  return computeTaskId(provider, task.state.templateData);
-};
-
-export const canCompleteTask = (record: TaskRecord) => {
-  const lastEvent = record.events[record.events.length - 1];
-
-  if (lastEvent.type !== "accept") return false;
-  if (record.events.some((e) => e.type === "complete")) return false;
-
-  // Check if expired? Add logic here.
-
-  return true;
-};
 
 export const getNonce = ({ peer }: { peer: Peer }) => {
   const result = peer.metadata.get("session:nonce");

@@ -209,12 +209,10 @@ export function createPaymentManager({
     privateKey,
     peerId,
     payments,
-    connection,
   }: {
     privateKey: PrivateKey; // TODO: use the private key from the
     peerId: PeerId;
     payments: ProofRequest.PaymentProof[];
-    connection: Connection;
   }) => {
     const { proof, pubKey, publicSignals } = await generatePaymentProof(
       privateKey,
@@ -245,7 +243,7 @@ export function createPaymentManager({
     };
 
     // send the proof to the worker
-    manager.sendMessage(peerId, msg);
+    await manager.sendMessage(peerId, msg);
   };
 
   return {

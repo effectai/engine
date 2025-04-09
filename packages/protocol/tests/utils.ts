@@ -1,5 +1,9 @@
-import { TypedEventEmitter } from "@libp2p/interface";
+import type { TypedEventEmitter } from "@libp2p/interface";
 import { LevelDatastore } from "datastore-level";
+
+import { vi } from "vitest";
+import type { ManagerEvents } from "../src/manager/main";
+import type { WorkerEvents } from "../src/worker/main";
 
 export const createDataStore = async (path: string) => {
   const datastore = new LevelDatastore(path);
@@ -22,11 +26,6 @@ export const waitForEvent = async (
   }
   throw new Error(`Timeout waiting for event after ${timeout}ms`);
 };
-
-import { vi } from "vitest";
-import { ManagerEvents } from "../src/manager/main";
-import { WorkerEvents } from "../src/worker/main";
-
 type EventTracker = Record<string, ReturnType<typeof vi.fn>>;
 
 export function trackWorkerEvents(worker: {

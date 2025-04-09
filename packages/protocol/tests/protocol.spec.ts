@@ -46,7 +46,7 @@ describe("Complete Task Lifecycle", () => {
       privateKey: managerPrivateKey,
     });
 
-    const managerMultiAddress = manager.node.getMultiAddress();
+    const managerMultiAddress = manager.entity.getMultiAddress();
 
     worker = await createWorker({
       datastore: workerDatastore,
@@ -59,16 +59,16 @@ describe("Complete Task Lifecycle", () => {
     });
 
     // start manager and worker
-    await manager.node.start();
-    await worker.node.start();
+    await manager.start();
+    await worker.start();
 
     // wait for the nodes to be ready
     await delay(2000);
   });
 
   afterAll(async () => {
-    await manager.node.stop();
-    await worker.node.stop();
+    await manager.stop();
+    await worker.stop();
 
     await managerDatastore.close();
     await workerDatastore.close();

@@ -39,7 +39,7 @@ export const createManager = async ({
   const workerQueue = createWorkerQueue();
   const eventEmitter = new TypedEventEmitter<ManagerEvents>();
 
-  const manager = await createEffectEntity({
+  const entity = await createEffectEntity({
     transports: [
       new Libp2pTransport({
         privateKey,
@@ -99,21 +99,21 @@ export const createManager = async ({
   });
 
   const paymentManager = createPaymentManager({
-    manager,
+    manager: entity,
+    peerStore: entity.node.peerStore,
     privateKey,
-    peerStore: manager.getNode().peerStore,
     paymentStore,
   });
 
   const taskManager = createTaskManager({
+    manager: entity,
     eventEmitter,
-    manager,
     workerQueue,
     taskStore,
     paymentManager,
   });
 
-  manager
+  entity
     .onMessage("task", async (task, { peerId }) => {
       await taskManager.createTask({
         task,
@@ -152,13 +152,25 @@ export const createManager = async ({
         peerId,
       });
     })
-    .onMessage("template", async (template, { peerId }) => {
+    .onMessage("templateRequest", async (template, { peerId }) => {
       // worker requested a template
       // TODO::
     });
 
+  const start = () => {
+    return entity.node.start();
+  };
+
+  const stop = () => {
+    return entity.node.stop();
+  };
+
   return {
-    node: manager,
+    start,
+    stop,
+
+    entity,
+
     eventEmitter,
     taskStore,
     taskManager,

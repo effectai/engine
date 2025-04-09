@@ -25,7 +25,7 @@ export interface SessionComponents {
 }
 
 export interface SessionEvents {
-  "session:established": SessionInfo;
+  "session:established": any;
 }
 
 export type SessionData = {
@@ -38,8 +38,7 @@ export type SessionInit = {
 
 export class SessionService
   extends TypedEventEmitter<SessionEvents>
-  implements Startable
-{
+  implements Startable {
   private readonly protocol = "/effect-session/1.0.0";
 
   constructor(
@@ -61,9 +60,9 @@ export class SessionService
     );
   }
 
-  async start() {}
+  async start() { }
 
-  async stop() {}
+  async stop() { }
 
   private async peformHandshakeResponder(
     connection: Connection,

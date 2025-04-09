@@ -1,10 +1,11 @@
 import type { Datastore } from "interface-datastore";
-import {
+import type {
   Entity,
   ExtractMethods,
   Transport,
   UnionToIntersection,
 } from "../types.js";
+
 export async function createEffectEntity<T extends Transport[]>(config: {
   transports: [...T];
   datastore: Datastore;
@@ -16,6 +17,9 @@ export async function createEffectEntity<T extends Transport[]>(config: {
     },
   };
 
+  // Initialize all transports
+  await Promise.all(config.transports.map((t) => t.initialize(entity)));
+
   // Initialize transports and merge methods
   for (const transport of config.transports) {
     entity.transports.push(transport);
@@ -24,9 +28,6 @@ export async function createEffectEntity<T extends Transport[]>(config: {
     const methods = transport.getMethods();
     Object.assign(entity, methods);
   }
-
-  // Initialize all transports
-  await Promise.all(config.transports.map((t) => t.initialize(entity)));
 
   return entity as Entity & UnionToIntersection<ExtractMethods<T[number]>>;
 }

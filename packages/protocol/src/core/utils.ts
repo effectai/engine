@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { TaskRecord } from "../stores/taskStore.js";
 
 import type {
   Ed25519PublicKey,
@@ -11,7 +10,7 @@ import type { ConnectionManager } from "@libp2p/interface-internal";
 import { Uint8ArrayList } from "uint8arraylist";
 import { PublicKey } from "@solana/web3.js";
 import { peerIdFromString } from "@libp2p/peer-id";
-import { EffectProtocolMessage } from "../common/index.js";
+import type { EffectError, EffectProtocolMessage } from "./messages/effect.js";
 
 export const computeTaskId = (
   provider: string,
@@ -30,11 +29,6 @@ export const computePaymentId = (payment: {
   const sha256 = createHash("sha256").update(input).digest("hex");
 
   return sha256;
-};
-
-export const computeTaskProvider = (taskRecord: TaskRecord) => {
-  const created = taskRecord.events.find((e) => e.type === "create");
-  return created?.provider;
 };
 
 export function stringifyWithBigInt(obj: any): string {
@@ -125,7 +119,7 @@ export function extractMessageType<T extends EffectMessageType>(
   };
 }
 
-export function isErrorResponse(response: any): response is ErrorResponse {
+export function isErrorResponse(response: any): response is EffectError {
   return response?.type === "error";
 }
 

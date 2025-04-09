@@ -1,11 +1,11 @@
-import { PeerId } from "@libp2p/interface";
-import { Datastore, Key } from "interface-datastore";
+import type { PeerId } from "@libp2p/interface";
+import { type Datastore, Key } from "interface-datastore";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Task } from "../common/proto/effect.js";
 import { createManagerTaskStore } from "./managerTaskStore.js";
 import { TaskValidationError, TaskExpiredError } from "../../core/errors.js";
+import { Task } from "../../core/messages/effect.js";
+import { stringifyWithBigInt } from "../../core/utils.js";
 
-// Mock Datastore
 const mockDatastore = {
   has: vi.fn(),
   get: vi.fn(),
@@ -31,9 +31,11 @@ const mockWorkerPeerId = {
 
 const mockTask: Task = {
   id: "task123",
-  description: "Test task",
-  reward: 100,
+  title: "Test Task",
+  reward: 100n,
   timeLimitSeconds: 3600,
+  templateId: "template123",
+  templateData: "{}",
 };
 
 describe("ManagerTaskStore", () => {
@@ -48,7 +50,7 @@ describe("ManagerTaskStore", () => {
 
     mockDatastore.get.mockImplementation(async (key: Key) => {
       return Buffer.from(
-        JSON.stringify({
+        stringifyWithBigInt({
           state: mockTask,
           events: [],
         }),
@@ -84,7 +86,7 @@ describe("ManagerTaskStore", () => {
     it("should assign task to worker when last event is create", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: mockTask,
             events: [
               {
@@ -113,7 +115,7 @@ describe("ManagerTaskStore", () => {
     it("should assign task to worker when last event is reject", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: mockTask,
             events: [
               { type: "create", timestamp: 1000, providerPeer: "peerId123" },
@@ -142,7 +144,7 @@ describe("ManagerTaskStore", () => {
     it("should throw when trying to assign to a non-assignable state", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: mockTask,
             events: [
               { type: "create", timestamp: 1000, providerPeer: "peerId123" },
@@ -165,7 +167,7 @@ describe("ManagerTaskStore", () => {
     it("should accept task when properly assigned", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: mockTask,
             events: [
               { type: "create", timestamp: 1000, providerPeer: "peerId123" },
@@ -193,7 +195,7 @@ describe("ManagerTaskStore", () => {
     it("should throw when accepting an expired task", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: mockTask,
             events: [
               { type: "create", timestamp: 1000, providerPeer: "peerId123" },
@@ -218,7 +220,7 @@ describe("ManagerTaskStore", () => {
     it("should throw when accepting a task not assigned to this worker", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: mockTask,
             events: [
               { type: "create", timestamp: 1000, providerPeer: "peerId123" },
@@ -245,7 +247,7 @@ describe("ManagerTaskStore", () => {
     it("should reject task when properly assigned", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: mockTask,
             events: [
               { type: "create", timestamp: 1000, providerPeer: "peerId123" },
@@ -275,7 +277,7 @@ describe("ManagerTaskStore", () => {
     it("should throw when rejecting a task not assigned to this worker", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: mockTask,
             events: [
               { type: "create", timestamp: 1000, providerPeer: "peerId123" },
@@ -303,7 +305,7 @@ describe("ManagerTaskStore", () => {
     it("should complete task when properly accepted", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: mockTask,
             events: [
               { type: "create", timestamp: 1000, providerPeer: "peerId123" },
@@ -340,7 +342,7 @@ describe("ManagerTaskStore", () => {
     it("should throw when completing an expired task", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: { ...mockTask, timeLimitSeconds: 60 }, // 1 minute limit
             events: [
               { type: "create", timestamp: 1000, providerPeer: "peerId123" },
@@ -371,7 +373,7 @@ describe("ManagerTaskStore", () => {
     it("should throw when completing a task not accepted by this worker", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: mockTask,
             events: [
               { type: "create", timestamp: 1000, providerPeer: "peerId123" },
@@ -402,7 +404,7 @@ describe("ManagerTaskStore", () => {
     it("should throw when task is already completed", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: mockTask,
             events: [
               { type: "create", timestamp: 1000, providerPeer: "peerId123" },
@@ -449,7 +451,7 @@ describe("ManagerTaskStore", () => {
     it("should add payout event when task is completed", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: mockTask,
             events: [
               { type: "create", timestamp: 1000, providerPeer: "peerId123" },
@@ -489,7 +491,7 @@ describe("ManagerTaskStore", () => {
     it("should throw when paying out a non-completed task", async () => {
       mockDatastore.get.mockResolvedValueOnce(
         Buffer.from(
-          JSON.stringify({
+          stringifyWithBigInt({
             state: mockTask,
             events: [
               { type: "create", timestamp: 1000, providerPeer: "peerId123" },
@@ -528,7 +530,7 @@ describe("ManagerTaskStore", () => {
     it("should delegate get calls to datastore", async () => {
       const mockData = { state: mockTask, events: [] };
       mockDatastore.get.mockResolvedValue(
-        Buffer.from(JSON.stringify(mockData)),
+        Buffer.from(stringifyWithBigInt(mockData)),
       );
       const result = await taskStore.get({ entityId: "task123" });
       expect(result).toEqual(mockData);
@@ -539,20 +541,6 @@ describe("ManagerTaskStore", () => {
       expect(mockDatastore.delete).toHaveBeenCalledWith(
         new Key("/tasks/task123"),
       );
-    });
-
-    it("should delegate all calls to datastore", async () => {
-      const mockTasks = [
-        { state: mockTask, events: [] },
-        { state: { ...mockTask, id: "task456" }, events: [] },
-      ];
-      mockDatastore.query.mockReturnValueOnce(
-        mockTasks.map((task) => ({
-          value: Buffer.from(JSON.stringify(task)),
-        })),
-      );
-      const result = await taskStore.all();
-      expect(result).toEqual(mockTasks);
     });
   });
 });

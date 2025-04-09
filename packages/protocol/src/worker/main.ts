@@ -40,11 +40,7 @@ export const createWorker = async ({
     nonce: bigint;
   };
 }) => {
-  const eventEmitter = new TypedEventEmitter<WorkerEvents>();
-
-  const taskStore = createWorkerTaskStore({ datastore });
-  const paymentStore = createPaymentStore({ datastore });
-
+  //create a worker protocol entity
   const worker = await createEffectEntity({
     transports: [
       new Libp2pTransport({
@@ -75,14 +71,19 @@ export const createWorker = async ({
     datastore,
   });
 
-  const { requestPayout } = createPaymentWorker({ taskStore, worker });
+  // register worker modules
+  const eventEmitter = new TypedEventEmitter<WorkerEvents>();
+  const taskStore = createWorkerTaskStore({ datastore });
+  const paymentStore = createPaymentStore({ datastore });
 
-  const { acceptTask, rejectTask, completeTask, getTask } = createTaskWorker({
+  const { requestPayout } = createPaymentWorker({ taskStore, worker });
+  const { acceptTask, rejectTask, completeTask } = createTaskWorker({
     eventEmitter,
     taskStore,
     worker,
   });
 
+  // register message handlers
   worker
     .onMessage("task", async (task, { peerId }) => {
       await taskStore.create({ task, managerPeerId: peerId });
@@ -93,13 +94,18 @@ export const createWorker = async ({
         payment,
       });
       eventEmitter.safeDispatchEvent("payment:created", { detail: payment });
-    })
-    .onMessage("proofResponse", async (response, { peerId }) => {});
+    });
 
-  worker.getNode().addEventListener("start", () => {});
+  const start = async () => {
+    await worker.node.start();
+  };
+
+  const stop = async () => {
+    await worker.node.stop();
+  };
 
   return {
-    node: worker,
+    entity: worker,
     eventEmitter,
     taskStore,
 
@@ -107,5 +113,8 @@ export const createWorker = async ({
     acceptTask,
     rejectTask,
     completeTask,
+
+    start,
+    stop,
   };
 };

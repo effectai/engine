@@ -1,4 +1,4 @@
-import { Datastore } from "interface-datastore";
+import type { Datastore } from "interface-datastore";
 
 export interface Transport<TMethods = {}> {
   initialize(entity: Entity): Promise<void>;
