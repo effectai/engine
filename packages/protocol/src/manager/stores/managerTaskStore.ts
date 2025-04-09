@@ -5,7 +5,6 @@ import { TASK_ACCEPTANCE_TIME } from "../consts.js";
 import type { BaseTaskEvent, TaskRecord } from "../../core/common/types.js";
 import { TaskValidationError, TaskExpiredError } from "../../core/errors.js";
 import { createCoreTaskStore } from "../../core/stores/taskStore.js";
-import type { ManagerEvents } from "../main.js";
 import type { Payment, Task } from "../../core/messages/effect.js";
 
 export type ManagerTaskEvent =

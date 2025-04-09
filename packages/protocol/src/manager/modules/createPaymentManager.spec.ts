@@ -10,6 +10,7 @@ vi.mock("../../utils/payment.js");
 describe("createPaymentManager", () => {
   let mockPeerStore: any;
   let mockPrivateKey: any;
+  let mockPaymentStore: any;
   let mockPeerId: PeerId;
   let peerData: any;
 
@@ -24,6 +25,15 @@ describe("createPaymentManager", () => {
 
     mockPeerStore = {
       get: vi.fn().mockResolvedValue(peerData),
+    };
+
+    mockPaymentStore = {
+      all: vi.fn(),
+      has: vi.fn(),
+      get: vi.fn(),
+      put: vi.fn(),
+      delete: vi.fn(),
+      create: vi.fn(),
     };
 
     mockPrivateKey = {
@@ -41,7 +51,7 @@ describe("createPaymentManager", () => {
   it("generates a signed payment object", async () => {
     const paymentManager = createPaymentManager({
       privateKey: mockPrivateKey,
-      paymentStore: {},
+      paymentStore: mockPaymentStore,
       peerStore: mockPeerStore,
     });
 

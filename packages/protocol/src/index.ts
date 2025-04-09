@@ -1,3 +1,2 @@
-export * from "./manager/index.js";
-export * from "./worker/index.js";
-export * from "./common/index.js";
+export * from "./manager/main.js";
+export * from "./worker/main.js";

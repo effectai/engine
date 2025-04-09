@@ -59,7 +59,7 @@ export function createTaskWorker({
     }
 
     // send accepted message to manager
-    worker.sendMessage(peerIdFromString(managerPeer), {
+    await worker.sendMessage(peerIdFromString(managerPeer), {
       taskAccepted: {
         timestamp: Math.floor(Date.now() / 1000),
         taskId: taskId,
@@ -90,7 +90,7 @@ export function createTaskWorker({
     }
 
     // send completed message to manager
-    worker.sendMessage(peerIdFromString(managerPeer), {
+    await worker.sendMessage(peerIdFromString(managerPeer), {
       taskCompleted: {
         taskId: taskRecord.state.id,
         worker: worker.toString(),

@@ -10,8 +10,6 @@ import { buildEddsa, buildPoseidon } from "circomlibjs";
 import { TaskRecord } from "../core/common/types.js";
 import { Payment } from "../core/messages/effect.js";
 
-export const computePaymentId = (payment: Payment) => {};
-
 export const computeTaskIdFromTaskRecord = (task: TaskRecord) => {
   const provider = computeTaskProvider(task);
 

@@ -18,3 +18,13 @@ export class TaskValidationError extends Error {
     this.name = "TaskValidationError";
   }
 }
+
+export class ProtocolError extends Error {
+  constructor(
+    public code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ProtocolError";
+  }
+}

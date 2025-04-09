@@ -124,3 +124,21 @@ export function extractMessageType<T extends EffectMessageType>(
     payload,
   };
 }
+
+export function isErrorResponse(response: any): response is ErrorResponse {
+  return response?.type === "error";
+}
+
+export function shouldExpectResponse(message: EffectProtocolMessage): boolean {
+  return (
+    "proofRequest" in message ||
+    "templateRequest" in message ||
+    "task" in message ||
+    "taskAccepted" in message ||
+    "taskRejected" in message ||
+    "taskCompleted" in message ||
+    "payment" in message ||
+    "proofRequest" in message ||
+    false
+  );
+}

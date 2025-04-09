@@ -1,16 +1,21 @@
-import type { PeerId, PeerStore, PrivateKey } from "@libp2p/interface";
+import type {
+  Connection,
+  PeerId,
+  PeerStore,
+  PrivateKey,
+} from "@libp2p/interface";
 import { PublicKey } from "@solana/web3.js";
 import { buildEddsa } from "circomlibjs";
 import { fileURLToPath } from "node:url";
 import * as snarkjs from "snarkjs";
 import path from "node:path";
 import {
-  computePaymentId,
   getNonce,
   getRecipient,
   getSessionData,
   updateNonce,
   signPayment,
+  int2hex,
 } from "../utils.js";
 import {
   type ProofRequest,
@@ -18,17 +23,22 @@ import {
   Payment,
 } from "../../core/messages/effect.js";
 import type { PaymentStore } from "../../core/stores/paymentStore.js";
+import { createEffectEntity } from "../../core/entity/factory.js";
+import { Libp2pTransport } from "../../core/transports/libp2p.js";
+import { computePaymentId } from "../../core/utils.js";
 
 export function createPaymentManager({
+  manager,
   paymentStore,
   privateKey,
   peerStore,
 }: {
+  manager: Awaited<ReturnType<typeof createEffectEntity<Libp2pTransport[]>>>;
   peerStore: PeerStore;
   privateKey: PrivateKey;
   paymentStore: PaymentStore;
 }) {
-  const generatePayout = async ({
+  const processPayoutRequest = async ({
     peerId,
   }: {
     peerId: PeerId;
@@ -63,6 +73,8 @@ export function createPaymentManager({
       record: { state: payment },
     });
 
+    // send the payment to the worker
+    manager.sendMessage(peerId, { payment });
     return payment;
   };
 
@@ -142,30 +154,7 @@ export function createPaymentManager({
         zkeyPath,
       );
 
-      const msg: EffectProtocolMessage = {
-        proofResponse: {
-          r8: {
-            R8_1: pubKey[0],
-            R8_2: pubKey[1],
-          },
-          signals: {
-            minNonce: publicSignals[0],
-            maxNonce: publicSignals[1],
-            amount: BigInt(publicSignals[2]),
-          },
-          piA: proof.pi_a,
-          piB: [
-            { row: [proof.pi_b[0][0], proof.pi_b[0][1]] },
-            { row: [proof.pi_b[1][0], proof.pi_b[1][1]] },
-            { row: [proof.pi_b[2][0], proof.pi_b[2][1]] },
-          ],
-          piC: proof.pi_c,
-          protocol: proof.protocol,
-          curve: proof.curve,
-        },
-      };
-
-      return msg;
+      return { proof, publicSignals, pubKey };
     } catch (e) {
       console.error("Error generating payment proof", e);
       throw e;
@@ -207,12 +196,62 @@ export function createPaymentManager({
 
     updateNonce({ peer, nonce: nonce + 1n });
 
+    //save payment in store.
+    paymentStore.put({
+      entityId: computePaymentId(payment),
+      record: { state: payment },
+    });
+
     return payment;
+  };
+
+  const processProofRequest = async ({
+    privateKey,
+    peerId,
+    payments,
+    connection,
+  }: {
+    privateKey: PrivateKey; // TODO: use the private key from the
+    peerId: PeerId;
+    payments: ProofRequest.PaymentProof[];
+    connection: Connection;
+  }) => {
+    const { proof, pubKey, publicSignals } = await generatePaymentProof(
+      privateKey,
+      payments,
+    );
+
+    const msg: EffectProtocolMessage = {
+      proofResponse: {
+        r8: {
+          R8_1: pubKey[0],
+          R8_2: pubKey[1],
+        },
+        signals: {
+          minNonce: publicSignals[0],
+          maxNonce: publicSignals[1],
+          amount: BigInt(publicSignals[2]),
+        },
+        piA: proof.pi_a,
+        piB: [
+          { row: [proof.pi_b[0][0], proof.pi_b[0][1]] },
+          { row: [proof.pi_b[1][0], proof.pi_b[1][1]] },
+          { row: [proof.pi_b[2][0], proof.pi_b[2][1]] },
+        ],
+        piC: proof.pi_c,
+        protocol: proof.protocol,
+        curve: proof.curve,
+      },
+    };
+
+    // send the proof to the worker
+    manager.sendMessage(peerId, msg);
   };
 
   return {
     generatePayment,
     generatePaymentProof,
-    generatePayout,
+    processPayoutRequest,
+    processProofRequest,
   };
 }

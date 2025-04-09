@@ -227,7 +227,9 @@ export function createTaskManager({
       workerPeerIdStr: worker,
     });
 
-    manager.sendMessage(peerIdFromString(worker), { task: taskRecord.state });
+    const ack = await manager.sendMessage(peerIdFromString(worker), {
+      task: taskRecord.state,
+    });
   };
 
   const manageTasks = async () => {

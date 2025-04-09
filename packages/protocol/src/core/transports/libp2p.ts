@@ -23,11 +23,27 @@ import { pbStream } from "it-protobuf-stream";
 import type { SessionService } from "../common/SessionService.js";
 import type { EntityWithTransports } from "../entity/types.js";
 import { EffectProtocolMessage } from "../messages/effect.js";
-import { extractMessageType } from "../utils.js";
+import {
+  extractMessageType,
+  isErrorResponse,
+  shouldExpectResponse,
+} from "../utils.js";
+import { MessageResponse } from "../common/types.js";
+import { ProtocolError } from "../errors.js";
 type EffectMessageType = keyof EffectProtocolMessage;
 
+export interface SendMessageOptions {
+  expectReply?: boolean;
+  timeout?: number;
+  existingStream?: Stream; // Adjust type based on your stream implementation
+}
+
 interface Libp2pMethods {
-  sendMessage(peerId: PeerId, message: EffectProtocolMessage): void;
+  sendMessage<T extends EffectProtocolMessage>(
+    peerId: PeerId,
+    message: T,
+    options?: SendMessageOptions,
+  ): Promise<MessageResponse<T>>;
   onMessage<T extends EffectMessageType>(
     type: T,
     handler: (
@@ -150,11 +166,24 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
           return;
         }
 
-        if (handler) {
-          await handler(payload, {
-            peerId: connection.remotePeer,
-            connection,
-          });
+        const result = await handler(payload, {
+          peerId: connection.remotePeer,
+          connection,
+        });
+
+        if (!result) {
+          //if there is no result from the handler we just send a generic ack response back to the sender.
+          const message: EffectProtocolMessage = {
+            ack: {
+              timestamp: Date.now() / 1000,
+            },
+          };
+
+          const pb = pbStream(stream).pb(EffectProtocolMessage);
+          await pb.write(message);
+        } else {
+          const pb = pbStream(stream).pb(EffectProtocolMessage);
+          await pb.write(result);
         }
       },
     );
@@ -234,23 +263,61 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
     return this.entity;
   }
 
-  private async sendMessage(peerId: PeerId, message: EffectProtocolMessage) {
+  private async sendMessage<T extends EffectProtocolMessage>(
+    peerId: PeerId,
+    message: T,
+    options: SendMessageOptions = {},
+  ): Promise<MessageResponse<T>> {
+    const { timeout = 5000, existingStream } = options;
+    const expectResponse = shouldExpectResponse(message);
+
     if (!this.#node) {
-      console.error("Libp2p node is not initialized");
-      return;
+      throw new Error("Libp2p node is not initialized");
     }
 
-    let [connection] = this.#node.getConnections();
+    try {
+      let stream = existingStream;
+      let shouldCloseStream = false;
 
-    if (!connection) {
-      console.error("No open connection found.. dialing..");
-      connection = await this.#node.dial(peerId);
+      if (!stream) {
+        let connection = this.#node.getConnections(peerId)[0];
+        if (!connection) connection = await this.#node.dial(peerId);
+        stream = await connection.newStream(this.options.protocol.name);
+        shouldCloseStream = true;
+      }
+
+      try {
+        const pb = pbStream(stream).pb(EffectProtocolMessage);
+        await pb.write(message);
+
+        if (!expectResponse) {
+          throw new Error(
+            "Unexpected response received for fire-and-forget message",
+          );
+        }
+
+        const response = await Promise.race([
+          pb.read(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Response timeout")), timeout),
+          ),
+        ]);
+
+        if (isErrorResponse(response)) {
+          throw new ProtocolError(
+            response.error?.code,
+            response.error?.message,
+          );
+        }
+
+        return response as MessageResponse<T>;
+      } finally {
+        if (shouldCloseStream && stream) await stream.close();
+      }
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      throw error;
     }
-
-    const stream = await connection.newStream(this.options.protocol.name);
-
-    const pb = pbStream(stream).pb(EffectProtocolMessage);
-    await pb.write(message);
   }
 }
 

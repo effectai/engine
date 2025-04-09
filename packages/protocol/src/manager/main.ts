@@ -99,6 +99,7 @@ export const createManager = async ({
   });
 
   const paymentManager = createPaymentManager({
+    manager,
     privateKey,
     peerStore: manager.getNode().peerStore,
     paymentStore,
@@ -139,24 +140,18 @@ export const createManager = async ({
         workerPeerIdStr: peerId.toString(),
       });
     })
-    .onMessage("proofRequest", async (proofRequest, { connection, peerId }) => {
-      const msg = await paymentManager.generatePaymentProof(
+    .onMessage("proofRequest", async (proofRequest, { peerId }) => {
+      await paymentManager.processProofRequest({
         privateKey,
-        proofRequest.payments,
-      );
-
-      // send the proof to the worker
-      manager.sendMessage(peerId, msg);
+        peerId,
+        payments: proofRequest.payments,
+      });
     })
-    .onMessage(
-      "payoutRequest",
-      async (payoutRequest, { connection, peerId }) => {
-        const payment = await paymentManager.generatePayout({ peerId });
-
-        // send the payment to the worker
-        manager.sendMessage(peerId, { payment });
-      },
-    )
+    .onMessage("payoutRequest", async (payoutRequest, { peerId }) => {
+      await paymentManager.processPayoutRequest({
+        peerId,
+      });
+    })
     .onMessage("template", async (template, { peerId }) => {
       // worker requested a template
       // TODO::
