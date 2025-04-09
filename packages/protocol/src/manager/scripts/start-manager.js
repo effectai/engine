@@ -46,3 +46,10 @@ const PORT = 8888;
 app.listen(PORT, () => {
   console.log(`HTTP server running on http://localhost:${PORT}`);
 });
+
+console.log(
+  `manager running on the following multiaddresses: \n ${manager.entity
+    .getMultiAddress()
+    .map((m) => m.toString())
+    .join(", \n")}`,
+);
