@@ -1,5 +1,5 @@
 import type { Datastore } from "interface-datastore";
-import { Transport } from "../types.js";
+import { Transport } from "./factory.js";
 
 interface EntityContext {
   datastore: Datastore;

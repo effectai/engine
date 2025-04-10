@@ -8,14 +8,15 @@ import { createPaymentManager } from "./modules/createPaymentManager.js";
 import { createManagerTaskStore } from "./stores/managerTaskStore.js";
 import type { TaskRecord } from "../core/common/types.js";
 import { createEffectEntity } from "../core/entity/factory.js";
-import { managerLogger } from "../core/logging.js";
 import {
   type Payment,
   EffectProtocolMessage,
 } from "../core/messages/effect.js";
-import { createPaymentStore } from "../core/stores/paymentStore.js";
-import { session } from "../core/common/SessionService.js";
 import { Libp2pTransport } from "../core/transports/libp2p.js";
+import { createPaymentStore } from "../core/common/stores/paymentStore.js";
+import { createTemplateStore } from "../core/common/stores/templateStore.js";
+import { createTemplateManager } from "./modules/createTemplateManager.js";
+import { randomBytes } from "node:crypto";
 
 export type ManagerEvents = {
   "task:created": (task: TaskRecord) => void;
@@ -34,68 +35,28 @@ export const createManager = async ({
   privateKey: PrivateKey;
 }) => {
   const paymentStore = createPaymentStore({ datastore });
+  const templateStore = createTemplateStore({ datastore });
+
   const taskStore = createManagerTaskStore({ datastore });
 
   const workerQueue = createWorkerQueue();
-  const eventEmitter = new TypedEventEmitter<ManagerEvents>();
+  const events = new TypedEventEmitter<ManagerEvents>();
 
   const entity = await createEffectEntity({
+    protocol: {
+      name: "effectai",
+      version: "1.0.0",
+      scheme: EffectProtocolMessage,
+    },
     transports: [
       new Libp2pTransport({
-        privateKey,
         autoStart: true,
+        privateKey,
         listen: ["/ip4/0.0.0.0/tcp/34861/ws"],
-        services: {
-          session: session({
-            getData: () => ({
-              role: "manager",
-              pub_x: "0x1234567890abcdef",
-              pub_y: "0xabcdef1234567890",
-            }),
-          }),
-        },
+        services: {},
         transports: [webSockets()],
-        protocol: {
-          name: "/effectai/1.0.0",
-          scheme: EffectProtocolMessage,
-        },
-        onConnect: async ({
-          peerStore,
-          sessionService,
-          peerId,
-          connection,
-        }) => {
-          try {
-            // handshake for generic session data.
-            const { role, nonce, recipient } =
-              await sessionService.peformHandshakeInitiator(connection);
-
-            // set last payout on connect..
-            const lastPayoutTimestamp = Math.floor(Date.now() / 1000);
-            peerStore.merge(peerId, {
-              metadata: {
-                "session:lastPayout": new TextEncoder().encode(
-                  lastPayoutTimestamp.toString(),
-                ),
-              },
-            });
-
-            // add worker to queue
-            if (role === "worker" && nonce && recipient) {
-              managerLogger.info(
-                { peer: peerId.toString(), recipient, nonce },
-                "Worker connected",
-              );
-
-              workerQueue.addPeer({ peerIdStr: peerId.toString() });
-            }
-          } catch (err) {
-            console.error("Error in handshake initiator:", err);
-          }
-        },
       }),
     ],
-    datastore,
   });
 
   const paymentManager = createPaymentManager({
@@ -107,13 +68,38 @@ export const createManager = async ({
 
   const taskManager = createTaskManager({
     manager: entity,
-    eventEmitter,
+    events,
     workerQueue,
     taskStore,
     paymentManager,
+    templateStore,
+  });
+
+  const templateManager = createTemplateManager({
+    templateStore,
   });
 
   entity
+    .onMessage("requestToWork", async ({ recipient, nonce }, { peerId }) => {
+      //save nonce & recipient in peerStore
+      await entity.node.peerStore.merge(peerId, {
+        metadata: {
+          recipient: new TextEncoder().encode(recipient),
+          nonce: new TextEncoder().encode(nonce.toString()),
+        },
+      });
+
+      //add the peerId to the worker queue
+      workerQueue.addPeer({ peerIdStr: peerId.toString() });
+
+      return {
+        // we respond with our jubjub key
+        requestToWorkResponse: {
+          pubX: randomBytes(32),
+          pubY: randomBytes(32),
+        },
+      };
+    })
     .onMessage("task", async (task, { peerId }) => {
       await taskManager.createTask({
         task,
@@ -141,7 +127,7 @@ export const createManager = async ({
       });
     })
     .onMessage("proofRequest", async (proofRequest, { peerId }) => {
-      await paymentManager.processProofRequest({
+      return await paymentManager.processProofRequest({
         privateKey,
         peerId,
         payments: proofRequest.payments,
@@ -153,8 +139,11 @@ export const createManager = async ({
       });
     })
     .onMessage("templateRequest", async (template, { peerId }) => {
-      // worker requested a template
-      // TODO::
+      const record = await templateStore.get({ entityId: template.templateId });
+
+      return {
+        templateResponse: { ...record?.state },
+      };
     });
 
   const start = () => {
@@ -166,13 +155,14 @@ export const createManager = async ({
   };
 
   return {
-    start,
-    stop,
-
     entity,
 
-    eventEmitter,
-    taskStore,
+    events,
+
     taskManager,
+    templateManager,
+
+    start,
+    stop,
   };
 };

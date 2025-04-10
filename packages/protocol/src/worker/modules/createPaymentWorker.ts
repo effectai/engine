@@ -6,23 +6,23 @@ import type { WorkerTaskStore } from "../stores/workerTaskStore.js";
 
 export function createPaymentWorker({
   taskStore,
-  worker,
+  entity,
 }: {
   taskStore: WorkerTaskStore;
-  worker: Awaited<ReturnType<typeof createEffectEntity<Libp2pTransport[]>>>;
+  entity: Awaited<ReturnType<typeof createEffectEntity<Libp2pTransport[]>>>;
 }) {
   const requestPayout = async ({
     managerPeer,
   }: {
     managerPeer: PeerId;
   }) => {
-    const requestPayoutMessage: EffectProtocolMessage = {
+    const requestPayoutMessage = {
       payoutRequest: {
-        peerId: worker.getPeerId().toString(),
+        peerId: entity.getPeerId().toString(),
       },
     };
 
-    const payment = worker.sendMessage(managerPeer, requestPayoutMessage);
+    const payment = await entity.sendMessage(managerPeer, requestPayoutMessage);
   };
 
   return {

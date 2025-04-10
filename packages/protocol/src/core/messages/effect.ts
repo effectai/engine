@@ -150,6 +150,159 @@ export namespace EffectAcknowledgment {
   }
 }
 
+export interface RequestToWork {
+  timestamp: number
+  recipient: string
+  nonce: bigint
+}
+
+export namespace RequestToWork {
+  let _codec: Codec<RequestToWork>
+
+  export const codec = (): Codec<RequestToWork> => {
+    if (_codec == null) {
+      _codec = message<RequestToWork>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.timestamp != null && obj.timestamp !== 0)) {
+          w.uint32(8)
+          w.uint32(obj.timestamp)
+        }
+
+        if ((obj.recipient != null && obj.recipient !== '')) {
+          w.uint32(18)
+          w.string(obj.recipient)
+        }
+
+        if ((obj.nonce != null && obj.nonce !== 0n)) {
+          w.uint32(24)
+          w.uint64(obj.nonce)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          timestamp: 0,
+          recipient: '',
+          nonce: 0n
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.timestamp = reader.uint32()
+              break
+            }
+            case 2: {
+              obj.recipient = reader.string()
+              break
+            }
+            case 3: {
+              obj.nonce = reader.uint64()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<RequestToWork>): Uint8Array => {
+    return encodeMessage(obj, RequestToWork.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<RequestToWork>): RequestToWork => {
+    return decodeMessage(buf, RequestToWork.codec(), opts)
+  }
+}
+
+export interface RequestToWorkResponse {
+  pubX: Uint8Array
+  pubY: Uint8Array
+}
+
+export namespace RequestToWorkResponse {
+  let _codec: Codec<RequestToWorkResponse>
+
+  export const codec = (): Codec<RequestToWorkResponse> => {
+    if (_codec == null) {
+      _codec = message<RequestToWorkResponse>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.pubX != null && obj.pubX.byteLength > 0)) {
+          w.uint32(10)
+          w.bytes(obj.pubX)
+        }
+
+        if ((obj.pubY != null && obj.pubY.byteLength > 0)) {
+          w.uint32(18)
+          w.bytes(obj.pubY)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          pubX: uint8ArrayAlloc(0),
+          pubY: uint8ArrayAlloc(0)
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.pubX = reader.bytes()
+              break
+            }
+            case 2: {
+              obj.pubY = reader.bytes()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<RequestToWorkResponse>): Uint8Array => {
+    return encodeMessage(obj, RequestToWorkResponse.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<RequestToWorkResponse>): RequestToWorkResponse => {
+    return decodeMessage(buf, RequestToWorkResponse.codec(), opts)
+  }
+}
+
 export interface EffectProtocolMessage {
   task?: Task
   taskAccepted?: TaskAccepted
@@ -163,6 +316,8 @@ export interface EffectProtocolMessage {
   templateResponse?: Template
   error?: EffectError
   ack?: EffectAcknowledgment
+  requestToWork?: RequestToWork
+  requestToWorkResponse?: RequestToWorkResponse
 }
 
 export namespace EffectProtocolMessage {
@@ -233,6 +388,16 @@ export namespace EffectProtocolMessage {
         if (obj.ack != null) {
           w.uint32(98)
           EffectAcknowledgment.codec().encode(obj.ack, w)
+        }
+
+        if (obj.requestToWork != null) {
+          w.uint32(106)
+          RequestToWork.codec().encode(obj.requestToWork, w)
+        }
+
+        if (obj.requestToWorkResponse != null) {
+          w.uint32(114)
+          RequestToWorkResponse.codec().encode(obj.requestToWorkResponse, w)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -316,6 +481,18 @@ export namespace EffectProtocolMessage {
             case 12: {
               obj.ack = EffectAcknowledgment.codec().decode(reader, reader.uint32(), {
                 limits: opts.limits?.ack
+              })
+              break
+            }
+            case 13: {
+              obj.requestToWork = RequestToWork.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.requestToWork
+              })
+              break
+            }
+            case 14: {
+              obj.requestToWorkResponse = RequestToWorkResponse.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.requestToWorkResponse
               })
               break
             }
@@ -458,32 +635,32 @@ export namespace Payment {
         }
 
         if ((obj.amount != null && obj.amount !== 0n)) {
-          w.uint32(8)
+          w.uint32(16)
           w.uint64(obj.amount)
         }
 
         if ((obj.recipient != null && obj.recipient !== '')) {
-          w.uint32(18)
+          w.uint32(26)
           w.string(obj.recipient)
         }
 
         if ((obj.paymentAccount != null && obj.paymentAccount !== '')) {
-          w.uint32(26)
+          w.uint32(34)
           w.string(obj.paymentAccount)
         }
 
         if ((obj.nonce != null && obj.nonce !== 0n)) {
-          w.uint32(32)
+          w.uint32(40)
           w.uint64(obj.nonce)
         }
 
         if (obj.signature != null) {
-          w.uint32(42)
+          w.uint32(50)
           PaymentSignature.codec().encode(obj.signature, w)
         }
 
         if (obj.label != null) {
-          w.uint32(50)
+          w.uint32(58)
           w.string(obj.label)
         }
 
@@ -504,29 +681,29 @@ export namespace Payment {
           const tag = reader.uint32()
 
           switch (tag >>> 3) {
-            case 1: {
+            case 2: {
               obj.amount = reader.uint64()
               break
             }
-            case 2: {
+            case 3: {
               obj.recipient = reader.string()
               break
             }
-            case 3: {
+            case 4: {
               obj.paymentAccount = reader.string()
               break
             }
-            case 4: {
+            case 5: {
               obj.nonce = reader.uint64()
               break
             }
-            case 5: {
+            case 6: {
               obj.signature = PaymentSignature.codec().decode(reader, reader.uint32(), {
                 limits: opts.limits?.signature
               })
               break
             }
-            case 6: {
+            case 7: {
               obj.label = reader.string()
               break
             }

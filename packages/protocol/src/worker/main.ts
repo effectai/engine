@@ -12,11 +12,16 @@ import {
   type Task,
   type Payment,
 } from "../core/messages/effect.js";
-import { createPaymentStore } from "../core/stores/paymentStore.js";
 import { Libp2pTransport } from "../core/transports/libp2p.js";
 import { createPaymentWorker } from "./modules/createPaymentWorker.js";
 import { createTaskWorker } from "./modules/createTaskWorker.js";
 import { createWorkerTaskStore } from "./stores/workerTaskStore.js";
+import { createPaymentStore } from "../core/common/stores/paymentStore.js";
+import { createTemplateWorker } from "./modules/createTemplateWorker.js";
+import { createTemplateStore } from "../core/common/stores/templateStore.js";
+import { Multiaddr } from "@multiformats/multiaddr";
+import { randomBytes } from "node:crypto";
+import { PublicKey } from "@solana/web3.js";
 
 export type WorkerEvents = {
   "task:created": (task: Task) => void;
@@ -29,10 +34,8 @@ export type WorkerEvents = {
 export const createWorker = async ({
   datastore,
   privateKey,
-  bootstrap,
   getSessionData,
 }: {
-  bootstrap: string[];
   datastore: Datastore;
   privateKey: PrivateKey;
   getSessionData: () => {
@@ -40,80 +43,89 @@ export const createWorker = async ({
     nonce: bigint;
   };
 }) => {
-  //create a worker protocol entity
-  const worker = await createEffectEntity({
+  const entity = await createEffectEntity({
+    protocol: {
+      name: "effectai",
+      version: "1.0.0",
+      scheme: EffectProtocolMessage,
+    },
     transports: [
       new Libp2pTransport({
         privateKey,
         autoStart: false,
-        bootstrap,
         listen: ["/p2p-circuit", "/webrtc"],
-        services: {
-          session: session({
-            getData: () => ({
-              role: "worker",
-              ...getSessionData(),
-            }),
-          }),
-        },
         transports: [
           webSockets(),
           webRTC(),
           webTransport(),
           circuitRelayTransport(),
         ],
-        protocol: {
-          name: "/effectai/1.0.0",
-          scheme: EffectProtocolMessage,
-        },
       }),
     ],
-    datastore,
   });
+
+  const connect = async (manager: Multiaddr) => {
+    const result = await entity.sendMessage(manager, {
+      requestToWork: {
+        timestamp: Date.now() / 1000,
+        recipient: new PublicKey(randomBytes(32)).toString(),
+        nonce: 32n,
+      },
+    });
+    //TODO:: handle result
+  };
 
   // register worker modules
-  const eventEmitter = new TypedEventEmitter<WorkerEvents>();
+  const events = new TypedEventEmitter<WorkerEvents>();
+
   const taskStore = createWorkerTaskStore({ datastore });
   const paymentStore = createPaymentStore({ datastore });
+  const templateStore = createTemplateStore({ datastore });
 
-  const { requestPayout } = createPaymentWorker({ taskStore, worker });
-  const { acceptTask, rejectTask, completeTask } = createTaskWorker({
-    eventEmitter,
-    taskStore,
-    worker,
-  });
+  const templateWorker = createTemplateWorker({ entity, templateStore });
+  const { requestPayout } = createPaymentWorker({ entity, taskStore });
+  const { acceptTask, rejectTask, completeTask, renderTask, getTask } =
+    createTaskWorker({
+      entity,
+      events,
+      taskStore,
+      templateWorker,
+    });
 
   // register message handlers
-  worker
+  entity
     .onMessage("task", async (task, { peerId }) => {
       await taskStore.create({ task, managerPeerId: peerId });
-      eventEmitter.safeDispatchEvent("task:created", { detail: task });
+      events.safeDispatchEvent("task:created", { detail: task });
     })
     .onMessage("payment", async (payment, { peerId }) => {
       await paymentStore.create({
         payment,
+        peerId: peerId.toString(),
       });
-      eventEmitter.safeDispatchEvent("payment:created", { detail: payment });
+      events.safeDispatchEvent("payment:created", { detail: payment });
     });
 
   const start = async () => {
-    await worker.node.start();
+    await entity.node.start();
   };
 
   const stop = async () => {
-    await worker.node.stop();
+    await entity.node.stop();
   };
 
   return {
-    entity: worker,
-    eventEmitter,
-    taskStore,
+    entity,
+    events,
 
     requestPayout,
     acceptTask,
     rejectTask,
     completeTask,
+    renderTask,
+    getTask,
 
+    connect,
     start,
     stop,
   };

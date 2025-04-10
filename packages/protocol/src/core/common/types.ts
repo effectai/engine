@@ -2,6 +2,7 @@ import type {
   EffectProtocolMessage,
   Payment,
   ProofResponse,
+  RequestToWorkResponse,
   Task,
   Template,
 } from "../messages/effect.js";
@@ -16,24 +17,38 @@ export interface TaskRecord<EventType extends BaseTaskEvent = BaseTaskEvent> {
   events: EventType[];
 }
 
-export type TenantType = "manager" | "worker";
-
 type AckResponse = EffectProtocolMessage["ack"];
 
 export type ResponseMap = {
-  task: AckResponse;
-  taskAccepted: AckResponse;
-  taskRejected: AckResponse;
-  taskCompleted: AckResponse;
-  payment: AckResponse;
-  payoutRequest: Payment;
-  proofRequest: ProofResponse;
-  proofResponse: never;
-  template: never;
-  templateRequest: Template;
+  [K in keyof EffectProtocolMessage]: K extends "task"
+  ? AckResponse
+  : K extends "taskAccepted"
+  ? AckResponse
+  : K extends "taskRejected"
+  ? AckResponse
+  : K extends "taskCompleted"
+  ? AckResponse
+  : K extends "payment"
+  ? AckResponse
+  : K extends "payoutRequest"
+  ? Payment
+  : K extends "proofRequest"
+  ? ProofResponse
+  : K extends "proofResponse"
+  ? never
+  : K extends "templateRequest"
+  ? Template
+  : K extends "templateResponse"
+  ? never
+  : K extends "error"
+  ? never
+  : K extends "ack"
+  ? never
+  : K extends "requestToWork"
+  ? RequestToWorkResponse
+  : never;
 };
 
-// Helper type to extract response type
 export type MessageResponse<T extends EffectProtocolMessage> = {
   [K in keyof T]: K extends keyof ResponseMap
   ? T[K] extends undefined

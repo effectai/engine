@@ -2,9 +2,10 @@ import type { PeerId } from "@libp2p/interface";
 import type { Datastore } from "interface-datastore";
 import { TASK_ACCEPTANCE_TIME } from "../../manager/consts.js";
 import { TaskValidationError, TaskExpiredError } from "../../core/errors.js";
-import { createCoreTaskStore } from "../../core/stores/taskStore.js";
-import { BaseTaskEvent, TaskRecord } from "../../core/common/types.js";
-import { Task } from "../../core/messages/effect.js";
+import type { BaseTaskEvent, TaskRecord } from "../../core/common/types.js";
+import type { Task } from "../../core/messages/effect.js";
+import { createEntityStore } from "../../core/store.js";
+import { parseWithBigInt, stringifyWithBigInt } from "../../core/utils.js";
 
 export type WorkerTaskEvents =
   | TaskCreatedEvent
@@ -38,7 +39,12 @@ export const createWorkerTaskStore = ({
 }: {
   datastore: Datastore;
 }) => {
-  const coreStore = createCoreTaskStore<WorkerTaskEvents>({ datastore });
+  const coreStore = createEntityStore<WorkerTaskEvents, WorkerTaskRecord>({
+    datastore,
+    prefix: "tasks",
+    stringify: (record) => stringifyWithBigInt(record),
+    parse: (data) => parseWithBigInt(data),
+  });
 
   const create = async ({
     task,
@@ -59,7 +65,6 @@ export const createWorkerTaskStore = ({
     };
 
     //TODO:: check if task already exist ?
-
     await coreStore.put({ entityId: task.id, record });
 
     return record;

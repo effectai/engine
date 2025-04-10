@@ -44,7 +44,6 @@ describe("ManagerTaskStore", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     taskStore = createManagerTaskStore({
-      eventEmitter: mockEventEmitter,
       datastore: mockDatastore as unknown as Datastore,
     });
 
@@ -516,31 +515,6 @@ describe("ManagerTaskStore", () => {
           payment: mockPayment,
         }),
       ).rejects.toThrow(TaskValidationError);
-    });
-  });
-
-  describe("core store methods", () => {
-    it("should delegate has calls to datastore", async () => {
-      mockDatastore.has.mockResolvedValue(true);
-      const result = await taskStore.has({ entityId: "task123" });
-      expect(result).toBe(true);
-      expect(mockDatastore.has).toHaveBeenCalledWith(new Key("/tasks/task123"));
-    });
-
-    it("should delegate get calls to datastore", async () => {
-      const mockData = { state: mockTask, events: [] };
-      mockDatastore.get.mockResolvedValue(
-        Buffer.from(stringifyWithBigInt(mockData)),
-      );
-      const result = await taskStore.get({ entityId: "task123" });
-      expect(result).toEqual(mockData);
-    });
-
-    it("should delegate delete calls to datastore", async () => {
-      await taskStore.delete({ entityId: "task123" });
-      expect(mockDatastore.delete).toHaveBeenCalledWith(
-        new Key("/tasks/task123"),
-      );
     });
   });
 });

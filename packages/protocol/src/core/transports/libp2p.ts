@@ -1,53 +1,50 @@
 import { noise } from "@chainsafe/libp2p-noise";
 import { yamux } from "@chainsafe/libp2p-yamux";
-import { bootstrap } from "@libp2p/bootstrap";
 import { identify } from "@libp2p/identify";
 import type {
   Connection,
-  IdentifyResult,
-  Transport as InternalLibp2pTransport,
   Libp2p,
   PeerId,
-  PeerStore,
   PrivateKey,
   Stream,
 } from "@libp2p/interface";
 import { ping } from "@libp2p/ping";
 import { type ServiceFactoryMap, createLibp2p } from "libp2p";
-import type { Entity, Transport } from "./../types.js";
 
-import type { Multiaddr } from "@multiformats/multiaddr";
-import { pbStream } from "it-protobuf-stream";
-import type { SessionService } from "../common/SessionService.js";
+import { isMultiaddr, type Multiaddr } from "@multiformats/multiaddr";
+import { MessageStream, pbStream } from "it-protobuf-stream";
 import type { EntityWithTransports } from "../entity/types.js";
 import { EffectProtocolMessage } from "../messages/effect.js";
-import {
-  extractMessageType,
-  isErrorResponse,
-  shouldExpectResponse,
-} from "../utils.js";
-import type { MessageResponse } from "../common/types.js";
+import { extractMessageType, shouldExpectResponse } from "../utils.js";
+import type { MessageResponse, ResponseMap } from "../common/types.js";
 import { ProtocolError } from "../errors.js";
+import { Entity, Transport } from "../entity/factory.js";
+import { peerIdFromString } from "@libp2p/peer-id";
+
 type EffectMessageType = keyof EffectProtocolMessage;
 
+type ExtractMessageKey<T> = {
+  [K in keyof T]: K extends keyof EffectProtocolMessage ? K : never;
+}[keyof T];
+
 export interface SendMessageOptions {
-  expectReply?: boolean;
   timeout?: number;
-  existingStream?: Stream; // Adjust type based on your stream implementation
+  existingStream?: Stream;
 }
 
 interface Libp2pMethods {
+  connect(connect: Multiaddr): Promise<Connection>;
   sendMessage<T extends EffectProtocolMessage>(
-    peerId: PeerId,
+    peerId: PeerId | Multiaddr,
     message: T,
     options?: SendMessageOptions,
-  ): Promise<MessageResponse<T>>;
+  ): Promise<ResponseMap[ExtractMessageKey<T>]>;
   onMessage<T extends EffectMessageType>(
     type: T,
     handler: (
       payload: NonNullable<EffectProtocolMessage[T]>,
       context: { peerId: PeerId; connection: Connection },
-    ) => Promise<void>,
+    ) => Promise<EffectProtocolMessage | void>,
   ): EntityWithTransports<[Libp2pTransport]>;
   getPeerId(): PeerId;
   getMultiAddress(): Multiaddr[] | undefined;
@@ -61,22 +58,6 @@ export interface Libp2pInit {
   privateKey?: PrivateKey;
   autoStart?: boolean;
   services?: ServiceFactoryMap;
-  protocol: {
-    name: "/effectai/1.0.0";
-    scheme: typeof EffectProtocolMessage;
-  };
-  onConnect?: ({
-    sessionService,
-    peerId,
-    connection,
-    peerStore,
-  }: {
-    sessionService: SessionService;
-    peerId: PeerId;
-    connection: Connection;
-    peerStore: PeerStore;
-  }) => void;
-  metadata?: ConnectionMetadata;
 }
 
 const DEFAULT_LIBP2P_OPTIONS: Partial<Libp2pInit> = {
@@ -84,252 +65,250 @@ const DEFAULT_LIBP2P_OPTIONS: Partial<Libp2pInit> = {
   bootstrap: [],
 };
 
-export interface ConnectionMetadata {
-  [key: string]: string | number | boolean | Uint8Array;
-}
+type MessageHandler = (
+  payload: NonNullable<EffectProtocolMessage[EffectMessageType]>,
+  context: { peerId: PeerId; connection: Connection },
+) => Promise<EffectProtocolMessage | void>;
 
 export class Libp2pTransport implements Transport<Libp2pMethods> {
-  private entity?: Entity;
-  private readonly metadata: ConnectionMetadata;
-  private readonly messageHandlers: Map<
+  #entity: Entity | null = null;
+  #libp2p: Libp2p | null = null;
+
+  private readonly messageHandlers = new Map<
     EffectMessageType,
-    (
-      payload: NonNullable<EffectProtocolMessage[EffectMessageType]>,
-      { peerId, connection }: { peerId: PeerId; connection: Connection },
-    ) => any
-  > = new Map();
-
-  #node: Libp2p | null = null;
-
-  get node() {
-    if (!this.#node) {
-      throw new Error("Libp2p node is not initialized");
-    }
-
-    return this.#node;
-  }
+    MessageHandler
+  >();
 
   constructor(private readonly options: Libp2pInit) {
     this.options = { ...DEFAULT_LIBP2P_OPTIONS, ...options };
-    this.metadata = options.metadata || {};
   }
 
-  async initialize(entity: Entity) {
-    this.entity = entity;
-
-    //create a libp2p node
-    const libp2p = await createLibp2p({
-      start: this.options.autoStart,
-      ...(this.options.privateKey && { privateKey: this.options.privateKey }),
-      addresses: {
-        listen: this.options.listen || [],
-      },
-      connectionGater: {
-        denyDialMultiaddr: () => false,
-      },
-      transports: this.options.transports,
-      streamMuxers: [yamux()],
-      connectionEncrypters: [noise()],
-      peerDiscovery: [
-        ...(this.options.bootstrap && this.options.bootstrap.length > 0
-          ? [bootstrap({ list: this.options.bootstrap })]
-          : []),
-      ],
-      services: {
-        ping: ping(),
-        identify: identify(),
-        ...this.options.services,
-      },
-    });
-
-    this.#node = libp2p;
-
-    this.#node.handle(
-      this.options.protocol.name,
-      async ({ stream, connection }) => {
-        const pb = pbStream(stream).pb(this.options.protocol.scheme);
-
-        const message = await pb.read();
-        if (!message) {
-          return;
-        }
-
-        const { type, payload } = extractMessageType(message);
-        const handler = this.messageHandlers.get(type);
-
-        if (!handler) {
-          console.error("No handler for message type:", type);
-          return;
-        }
-
-        const result = await handler(payload, {
-          peerId: connection.remotePeer,
-          connection,
-        });
-
-        if (!result) {
-          //if there is no result from the handler we just send a generic ack response back to the sender.
-          const message: EffectProtocolMessage = {
-            ack: {
-              timestamp: Date.now() / 1000,
-            },
-          };
-
-          const pb = pbStream(stream).pb(EffectProtocolMessage);
-          await pb.write(message);
-        } else {
-          const pb = pbStream(stream).pb(EffectProtocolMessage);
-          await pb.write(result);
-        }
-      },
-    );
-
-    this.#node.register(this.options.protocol.name, {
-      onConnect: (peerId, conn) => {
-        try {
-          if (!this.#node?.peerStore) {
-            console.error("PeerStore is not available");
-            return;
-          }
-
-          this.options.onConnect?.({
-            sessionService: this.node?.services.session as SessionService,
-            peerId: peerId,
-            peerStore: this.#node.peerStore,
-            connection: conn,
-          });
-        } catch (e) {
-          //if onConnect fails or throws, we should disconnect.
-          console.error("onConnect failed:", e);
-        }
-      },
-    });
-
-    this.#node.addEventListener("peer:identify", (event) => {
-      const { detail } = event;
-      this.onIdentify(detail.peerId, detail);
-    });
+  get libp2p(): Libp2p {
+    if (!this.#libp2p) throw new Error("Libp2p node is not initialized");
+    return this.#libp2p;
   }
 
-  getMultiAddress() {
-    if (this.#node) {
-      return this.#node.getMultiaddrs();
-    }
-    return [];
+  get entity(): Entity {
+    if (!this.#entity) throw new Error("Entity not initialized");
+    return this.#entity;
   }
 
-  getPeerId() {
-    return this.node.peerId;
-  }
-
-  async start() {
-    if (this.#node) {
-      await this.#node.start();
-    }
-  }
-
-  async stop() {
-    if (this.#node) {
-      await this.#node.stop();
-    }
-  }
-
-  getNode() {
-    return this.#node;
-  }
-
-  getAccessors() {
-    return {
-      node: this.#node,
-    };
+  async initialize(entity: Entity): Promise<void> {
+    this.#entity = entity;
+    this.#libp2p = await this.createLibp2pNode();
+    this.setupProtocolHandler();
   }
 
   getMethods(): Libp2pMethods {
     return {
       sendMessage: this.sendMessage.bind(this),
       onMessage: this.onMessage.bind(this),
-      getPeerId: this.getPeerId.bind(this),
-      getMultiAddress: this.getMultiAddress.bind(this),
-      node: this.node,
+      getPeerId: () => this.libp2p.peerId,
+      getMultiAddress: () => this.libp2p.getMultiaddrs(),
+      connect: (multiaddr: Multiaddr) => this.libp2p.dial(multiaddr),
+      node: this.libp2p,
     };
   }
 
-  private async onIdentify(peerId: PeerId, identity: IdentifyResult) {
-    // console.log("Peer identified:", peerId.toString(), identity);
+  async start(): Promise<void> {
+    await this.libp2p.start();
   }
 
-  private onMessage(type: EffectMessageType, handler: any) {
+  async stop(): Promise<void> {
+    await this.libp2p.stop();
+  }
+
+  // Private implementation
+  private async createLibp2pNode(): Promise<Libp2p> {
+    return createLibp2p({
+      start: this.options.autoStart,
+      ...(this.options.privateKey && { privateKey: this.options.privateKey }),
+      addresses: { listen: this.options.listen || [] },
+      connectionGater: { denyDialMultiaddr: () => false },
+      transports: this.options.transports,
+      streamMuxers: [yamux()],
+      connectionEncrypters: [noise()],
+      services: {
+        ping: ping(),
+        identify: identify(),
+        ...this.options.services,
+      },
+    });
+  }
+
+  private setupProtocolHandler(): void {
+    this.libp2p.handle(
+      this.entity.protocol.name,
+      async ({ stream, connection }) => {
+        await this.handleIncomingStream(stream, connection);
+      },
+    );
+  }
+
+  private async handleIncomingStream(
+    stream: Stream,
+    connection: Connection,
+  ): Promise<void> {
+    const pb = pbStream(stream).pb(this.entity.protocol.scheme);
+
+    try {
+      const message = await this.readMessage(pb);
+      if (!message) return;
+
+      const response = await this.processIncomingMessage(message, connection);
+      await this.sendResponse(pb, response);
+    } catch (error) {
+      console.error("Stream handling failed:", error);
+      await this.sendErrorResponse(pb);
+    } finally {
+      await stream.close();
+    }
+  }
+
+  private async readMessage(
+    pb: MessageStream<unknown, Stream>,
+  ): Promise<unknown | null> {
+    try {
+      return await pb.read();
+    } catch (error) {
+      console.error("Failed to read message:", error);
+      return null;
+    }
+  }
+
+  private async processIncomingMessage(
+    message: EffectProtocolMessage,
+    connection: Connection,
+  ): Promise<EffectProtocolMessage | null> {
+    const { type, payload } = extractMessageType(message);
+    const handler = this.messageHandlers.get(type);
+
+    if (!handler) {
+      console.error("No handler for message type:", type);
+      return null;
+    }
+
+    try {
+      return await handler(payload, {
+        peerId: connection.remotePeer,
+        connection,
+      });
+    } catch (error) {
+      console.error(`Handler failed for ${type}:`, error);
+      return null;
+    }
+  }
+
+  private async sendResponse(
+    pb: MessageStream<EffectProtocolMessage, Stream>,
+    response: EffectProtocolMessage | null,
+  ): Promise<void> {
+    await pb.write(response || this.createAckMessage());
+  }
+
+  private createAckMessage(): EffectProtocolMessage {
+    return {
+      ack: { timestamp: Math.floor(Date.now() / 1000) },
+    };
+  }
+
+  private async sendErrorResponse(
+    pb: MessageStream<EffectProtocolMessage, Stream>,
+  ): Promise<void> {
+    try {
+      await pb.write({
+        error: {
+          timestamp: Math.floor(Date.now() / 1000),
+          code: "500",
+          message: "Internal server error",
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send error response:", error);
+    }
+  }
+
+  private onMessage(
+    type: EffectMessageType,
+    handler: MessageHandler,
+  ): EntityWithTransports<[Libp2pTransport]> {
     if (this.messageHandlers.has(type)) {
       throw new Error(`Handler for ${type} already exists`);
     }
+    if (!this.entity) throw new Error("Entity not initialized");
 
     this.messageHandlers.set(type, handler);
-
-    if (!this.entity) {
-      throw new Error("Entity is not initialized");
-    }
-
     return this.entity as EntityWithTransports<[Libp2pTransport]>;
   }
 
   private async sendMessage<T extends EffectProtocolMessage>(
-    peerId: PeerId,
+    peerId: PeerId | Multiaddr,
     message: T,
     options: SendMessageOptions = {},
   ): Promise<MessageResponse<T>> {
     const { timeout = 5000, existingStream } = options;
     const expectResponse = shouldExpectResponse(message);
 
-    if (!this.#node) {
-      throw new Error("Libp2p node is not initialized");
-    }
+    const { stream, shouldClose } = await this.prepareStream(
+      peerId,
+      existingStream,
+    );
+    const pb = pbStream(stream).pb(EffectProtocolMessage);
 
     try {
-      let stream = existingStream;
-      let shouldCloseStream = false;
+      await pb.write(message);
+      if (!expectResponse)
+        throw new Error("Unexpected response for fire-and-forget");
 
-      if (!stream) {
-        let connection = this.#node.getConnections(peerId)[0];
-        if (!connection) connection = await this.#node.dial(peerId);
-        stream = await connection.newStream(this.options.protocol.name);
-        shouldCloseStream = true;
-      }
+      const response = await this.readResponseWithTimeout(pb, timeout);
+      this.validateResponse(response);
 
-      try {
-        const pb = pbStream(stream).pb(EffectProtocolMessage);
-        await pb.write(message);
+      return extractMessageType(response).payload as MessageResponse<T>;
+    } finally {
+      if (shouldClose) await stream.close();
+    }
+  }
 
-        if (!expectResponse) {
-          throw new Error(
-            "Unexpected response received for fire-and-forget message",
-          );
-        }
+  private async prepareStream(
+    address: PeerId | Multiaddr,
+    existingStream?: Stream,
+  ): Promise<{ stream: Stream; shouldClose: boolean }> {
+    if (existingStream) return { stream: existingStream, shouldClose: false };
 
-        const response = await Promise.race([
-          pb.read(),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Response timeout")), timeout),
-          ),
-        ]);
+    if (isMultiaddr(address)) {
+      const connection = await this.libp2p.dial(address);
+      return {
+        stream: await connection.newStream(this.entity.protocol.name),
+        shouldClose: true,
+      };
+    }
 
-        if (isErrorResponse(response)) {
-          throw new ProtocolError(
-            response.error!.code,
-            response.error!.message,
-          );
-        }
+    let connection = this.libp2p.getConnections(address)[0];
+    if (!connection) connection = await this.libp2p.dial(address);
+    return {
+      stream: await connection.newStream(this.entity.protocol.name),
+      shouldClose: true,
+    };
+  }
 
-        return response as MessageResponse<T>;
-      } finally {
-        if (shouldCloseStream && stream) await stream.close();
-      }
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      throw error;
+  private async readResponseWithTimeout(
+    pb: MessageStream<EffectProtocolMessage, Stream>,
+    timeout: number,
+  ): Promise<EffectProtocolMessage> {
+    return Promise.race([
+      pb.read(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Response timeout")), timeout),
+      ),
+    ]);
+  }
+
+  private validateResponse(response: EffectProtocolMessage): void {
+    if (response.error) {
+      throw new ProtocolError(response.error.code, response.error.message);
     }
   }
 }
-
 export const createLibp2pTransport = (init: Libp2pInit) => {
   return new Libp2pTransport(init);
 };

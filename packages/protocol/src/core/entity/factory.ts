@@ -1,20 +1,43 @@
-import type { Datastore } from "interface-datastore";
-import type {
-  Entity,
-  ExtractMethods,
-  Transport,
-  UnionToIntersection,
-} from "../types.js";
+import type { EffectProtocolMessage } from "../messages/effect.js";
 
-export async function createEffectEntity<T extends Transport[]>(config: {
+export type Protocol = {
+  name: string;
+  version: string;
+  scheme: typeof EffectProtocolMessage;
+};
+
+export interface Entity {
+  transports: Transport[];
+  protocol: Protocol;
+}
+
+export interface Transport<TMethods = {}> {
+  initialize(entity: Entity): Promise<void>;
+  getMethods(): TMethods;
+}
+
+export type UnionToIntersection<U> = (
+  U extends any
+  ? (k: U) => void
+  : never
+) extends (k: infer I) => void
+  ? I
+  : never;
+
+export type ExtractMethods<T> = T extends Transport<infer TMethods>
+  ? TMethods
+  : never;
+
+export async function createEffectEntity<
+  T extends Transport[],
+  P extends Protocol,
+>(config: {
   transports: [...T];
-  datastore: Datastore;
+  protocol: P;
 }): Promise<Entity & UnionToIntersection<ExtractMethods<T[number]>>> {
-  const entity: Entity = {
+  const entity = {
     transports: [],
-    context: {
-      datastore: config.datastore,
-    },
+    protocol: config.protocol,
   };
 
   // Initialize all transports

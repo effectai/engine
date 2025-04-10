@@ -21,11 +21,13 @@ import {
   type ProofRequest,
   type EffectProtocolMessage,
   Payment,
+  PaymentMessage,
+  ProofResponse,
 } from "../../core/messages/effect.js";
-import type { PaymentStore } from "../../core/stores/paymentStore.js";
-import { createEffectEntity } from "../../core/entity/factory.js";
-import { Libp2pTransport } from "../../core/transports/libp2p.js";
+import type { createEffectEntity } from "../../core/entity/factory.js";
+import type { Libp2pTransport } from "../../core/transports/libp2p.js";
 import { computePaymentId } from "../../core/utils.js";
+import type { PaymentStore } from "../../core/common/stores/paymentStore.js";
 
 export function createPaymentManager({
   manager,
@@ -63,18 +65,27 @@ export function createPaymentManager({
     //update last payout time
     await peerStore.merge(peerId, {
       metadata: {
-        "session:lastPayout": new TextEncoder().encode(currentTime.toString()),
+        lastPayout: new TextEncoder().encode(currentTime.toString()),
       },
     });
 
     //insert payment into the store
     await paymentStore.put({
       entityId: computePaymentId(payment),
-      record: { state: payment },
+      record: {
+        state: payment,
+        events: [
+          {
+            type: "payment:created",
+            timestamp: Date.now(),
+          },
+        ],
+      },
     });
 
     // send the payment to the worker
     manager.sendMessage(peerId, { payment });
+
     return payment;
   };
 
@@ -199,7 +210,15 @@ export function createPaymentManager({
     //save payment in store.
     paymentStore.put({
       entityId: computePaymentId(payment),
-      record: { state: payment },
+      record: {
+        state: payment,
+        events: [
+          {
+            type: "payment:created",
+            timestamp: Date.now(),
+          },
+        ],
+      },
     });
 
     return payment;
@@ -219,7 +238,7 @@ export function createPaymentManager({
       payments,
     );
 
-    const msg: EffectProtocolMessage = {
+    const proofResponse: EffectProtocolMessage = {
       proofResponse: {
         r8: {
           R8_1: pubKey[0],
@@ -242,8 +261,7 @@ export function createPaymentManager({
       },
     };
 
-    // send the proof to the worker
-    await manager.sendMessage(peerId, msg);
+    return proofResponse;
   };
 
   return {

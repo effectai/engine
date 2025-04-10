@@ -1,4 +1,3 @@
-// manager-task-store.ts
 import type { PeerId, TypedEventEmitter } from "@libp2p/interface";
 import type { Datastore } from "interface-datastore";
 import { TASK_ACCEPTANCE_TIME } from "../consts.js";
@@ -6,6 +5,8 @@ import type { BaseTaskEvent, TaskRecord } from "../../core/common/types.js";
 import { TaskValidationError, TaskExpiredError } from "../../core/errors.js";
 import { createCoreTaskStore } from "../../core/stores/taskStore.js";
 import type { Payment, Task } from "../../core/messages/effect.js";
+import { createEntityStore } from "../../core/store.js";
+import { parseWithBigInt, stringifyWithBigInt } from "../../core/utils.js";
 
 export type ManagerTaskEvent =
   | TaskCreatedEvent
@@ -60,7 +61,12 @@ export const createManagerTaskStore = ({
 }: {
   datastore: Datastore;
 }) => {
-  const coreStore = createCoreTaskStore<ManagerTaskEvent>({ datastore });
+  const coreStore = createEntityStore<ManagerTaskEvent, ManagerTaskRecord>({
+    datastore,
+    prefix: "tasks",
+    stringify: (record) => stringifyWithBigInt(record),
+    parse: (data) => parseWithBigInt(data),
+  });
 
   const create = async ({
     task,
@@ -95,6 +101,10 @@ export const createManagerTaskStore = ({
     peerIdStr: string;
   }): Promise<ManagerTaskRecord> => {
     const taskRecord = await coreStore.get({ entityId });
+
+    if (!taskRecord) {
+      throw new TaskValidationError("Task not found");
+    }
 
     if (taskRecord.events.some((e) => e.type === "submission")) {
       throw new TaskValidationError("Task is already submitted");

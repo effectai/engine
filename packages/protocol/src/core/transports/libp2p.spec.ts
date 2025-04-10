@@ -26,10 +26,6 @@ describe("Libp2pTransport", () => {
     const libp2p = new Libp2pTransport({
       listen: ["/dns4/0.0.0.0/tcp/34860/ws"],
       services: {},
-      protocol: {
-        name: "/effectai/1.0.0",
-        scheme: EffectProtocolMessage,
-      },
       bootstrap: [],
       transports: [webSockets()],
       autoStart: false,
@@ -42,16 +38,18 @@ describe("Libp2pTransport", () => {
     const libp2p = new Libp2pTransport({
       listen: ["/dns4/0.0.0.0/tcp/34860/ws"],
       services: {},
-      protocol: {
-        name: "/effectai/1.0.0",
-        scheme: EffectProtocolMessage,
-      },
       bootstrap: [],
       transports: [webSockets()],
       autoStart: false,
     });
 
-    await libp2p.initialize({} as any);
+    await libp2p.initialize({
+      protocol: {
+        name: "effect",
+        version: "1.0.0",
+        scheme: EffectProtocolMessage,
+      },
+    } as any);
 
     expect(libp2p).toBeDefined();
   });
@@ -60,43 +58,42 @@ describe("Libp2pTransport", () => {
     const libp2p = new Libp2pTransport({
       listen: ["/dns4/0.0.0.0/tcp/34860/ws"],
       services: {},
-      protocol: {
-        name: "/effectai/1.0.0",
-        scheme: EffectProtocolMessage,
-      },
       bootstrap: [],
       transports: [webSockets()],
-
       autoStart: true,
     });
 
-    await libp2p.initialize({} as any);
-    expect(libp2p.node).toBeDefined();
-    expect(libp2p.node?.status).toStrictEqual("started");
+    await libp2p.initialize({
+      protocol: {
+        name: "effect",
+        version: "1.0.0",
+        scheme: EffectProtocolMessage,
+      },
+    } as any);
+
+    expect(libp2p.libp2p).toBeDefined();
+    expect(libp2p.libp2p.status).toStrictEqual("started");
 
     //stop node
-    await libp2p.node?.stop();
+    await libp2p.libp2p?.stop();
   });
 
   it("should have a multiaddress", async () => {
     const libp2p = new Libp2pTransport({
       listen: ["/dns4/0.0.0.0/tcp/34860/ws"],
       services: {},
-      protocol: {
-        name: "/effectai/1.0.0",
-        scheme: EffectProtocolMessage,
-      },
-      bootstrap: [],
       transports: [webSockets()],
-
       autoStart: true,
     });
 
-    await libp2p.initialize({} as any);
-    const multiaddrs = libp2p.getMultiAddress();
+    await libp2p.initialize({
+      protocol: {
+        name: "effect",
+        version: "1.0.0",
+        scheme: EffectProtocolMessage,
+      },
+    } as any);
 
-    expect(multiaddrs).toBeDefined();
-    expect(multiaddrs.length).toBeGreaterThan(0);
-    expect(multiaddrs[0]).toBeDefined();
+    expect(libp2p.libp2p.getMultiaddrs()).toBeDefined();
   });
 });

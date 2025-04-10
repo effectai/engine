@@ -10,7 +10,11 @@ import type { ConnectionManager } from "@libp2p/interface-internal";
 import { Uint8ArrayList } from "uint8arraylist";
 import { PublicKey } from "@solana/web3.js";
 import { peerIdFromString } from "@libp2p/peer-id";
-import type { EffectError, EffectProtocolMessage } from "./messages/effect.js";
+import type {
+  EffectError,
+  EffectProtocolMessage,
+  Template,
+} from "./messages/effect.js";
 
 export const computeTaskId = (
   provider: string,
@@ -28,6 +32,12 @@ export const computePaymentId = (payment: {
   const input = `${payment.recipient}:${payment.nonce}`;
   const sha256 = createHash("sha256").update(input).digest("hex");
 
+  return sha256;
+};
+
+export const computeTemplateId = (provider: string, template_html: string) => {
+  const input = `${provider}:${template_html}`;
+  const sha256 = createHash("sha256").update(input).digest("hex");
   return sha256;
 };
 
@@ -119,13 +129,10 @@ export function extractMessageType<T extends EffectMessageType>(
   };
 }
 
-export function isErrorResponse(response: any): response is EffectError {
-  return response?.type === "error";
-}
-
 export function shouldExpectResponse(message: EffectProtocolMessage): boolean {
   return (
     "proofRequest" in message ||
+    "payoutRequest" in message ||
     "templateRequest" in message ||
     "task" in message ||
     "taskAccepted" in message ||
@@ -133,6 +140,7 @@ export function shouldExpectResponse(message: EffectProtocolMessage): boolean {
     "taskCompleted" in message ||
     "payment" in message ||
     "proofRequest" in message ||
+    "requestToWork" in message ||
     false
   );
 }

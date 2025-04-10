@@ -4,11 +4,13 @@ import { LevelDatastore } from "datastore-level";
 import { vi } from "vitest";
 import type { ManagerEvents } from "../src/manager/main";
 import type { WorkerEvents } from "../src/worker/main";
+import { Key } from "interface-datastore";
+import { Template } from "../src/core/messages/effect";
+import { computeTemplateId } from "../src/core/utils";
 
 export const createDataStore = async (path: string) => {
   const datastore = new LevelDatastore(path);
   await datastore.open();
-
   return datastore;
 };
 
@@ -29,7 +31,7 @@ export const waitForEvent = async (
 type EventTracker = Record<string, ReturnType<typeof vi.fn>>;
 
 export function trackWorkerEvents(worker: {
-  eventEmitter: TypedEventEmitter<WorkerEvents>;
+  events: TypedEventEmitter<WorkerEvents>;
 }) {
   const events = {
     taskCreated: vi.fn(),
@@ -38,18 +40,15 @@ export function trackWorkerEvents(worker: {
     paymentReceived: vi.fn(),
   };
 
-  worker.eventEmitter.addEventListener("task:created", events.taskCreated);
-  worker.eventEmitter.addEventListener("task:accepted", events.taskAccepted);
-  worker.eventEmitter.addEventListener(
-    "payment:created",
-    events.paymentReceived,
-  );
+  worker.events.addEventListener("task:created", events.taskCreated);
+  worker.events.addEventListener("task:accepted", events.taskAccepted);
+  worker.events.addEventListener("payment:created", events.paymentReceived);
 
   return events;
 }
 
 export function trackManagerEvents(manager: {
-  eventEmitter: TypedEventEmitter<ManagerEvents>;
+  events: TypedEventEmitter<ManagerEvents>;
 }) {
   const events = {
     taskCreated: vi.fn(),
@@ -59,12 +58,47 @@ export function trackManagerEvents(manager: {
     taskCompleted: vi.fn(),
   };
 
-  manager.eventEmitter.addEventListener("task:accepted", events.taskAccepted);
-  manager.eventEmitter.addEventListener(
-    "task:submission",
-    events.taskSubmitted,
-  );
-  manager.eventEmitter.addEventListener("task:completed", events.taskCompleted);
+  manager.events.addEventListener("task:accepted", events.taskAccepted);
+  manager.events.addEventListener("task:submission", events.taskSubmitted);
+  manager.events.addEventListener("task:completed", events.taskCompleted);
 
   return events;
 }
+
+export const createMockDatastore = () => {
+  const store = new Map<string, Buffer>();
+
+  return {
+    has: vi.fn(async (key: Key) => store.has(key.toString())),
+    get: vi.fn(async (key: Key) => {
+      const val = store.get(key.toString());
+      if (!val) throw new Error("Not found");
+      return val;
+    }),
+    put: vi.fn(async (key: Key, val: Buffer) => {
+      store.set(key.toString(), val);
+      return key;
+    }),
+    delete: vi.fn(async (key: Key) => {
+      store.delete(key.toString());
+    }),
+    query: vi.fn(async function* () {
+      for (const [key, value] of store.entries()) {
+        yield { key, value };
+      }
+    }),
+    _raw: store, // expose for inspection if needed
+  };
+};
+
+export const createDummyTemplate = (providerPeerIdStr: string) => {
+  const templateHtml =
+    "<html><body><h1>Test Template with test variable: {{test}} </h1></body></html>";
+  const templateId = computeTemplateId(providerPeerIdStr, templateHtml);
+  const template: Template = {
+    templateId,
+    data: templateHtml,
+    createdAt: Math.floor(Date.now() / 1000),
+  };
+  return { template, templateId };
+};

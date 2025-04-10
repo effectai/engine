@@ -11,7 +11,6 @@ import {
   TypedEventTarget,
 } from "@libp2p/interface";
 import type { Registrar } from "@libp2p/interface-internal";
-import { handshake } from "it-handshake";
 import { pipe } from "it-pipe";
 import * as uint8arrays from "uint8arrays";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";

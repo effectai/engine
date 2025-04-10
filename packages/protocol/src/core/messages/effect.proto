@@ -13,6 +13,17 @@ message EffectAcknowledgment {
   uint32 timestamp = 1;
 }
 
+message RequestToWork {
+  uint32 timestamp = 1;
+  string recipient = 2;
+  uint64 nonce = 3;
+}
+
+message RequestToWorkResponse {
+  bytes pub_x = 1;
+  bytes pub_y = 2;
+}
+
 message EffectProtocolMessage {
   oneof message {
     Task task = 1;
@@ -27,5 +38,7 @@ message EffectProtocolMessage {
     Template template_response = 10;
     EffectError error = 11;
     EffectAcknowledgment ack = 12;
+    RequestToWork request_to_work = 13;
+    RequestToWorkResponse request_to_work_response = 14;
   }
 }

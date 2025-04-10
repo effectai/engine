@@ -3,10 +3,10 @@ import { bigIntToUint8Array, uint8ArrayToBigInt } from "../core/utils.js";
 import { PublicKey } from "@solana/web3.js";
 import { buildEddsa, buildPoseidon } from "circomlibjs";
 import { TaskRecord } from "../core/common/types.js";
-import { Payment } from "../core/messages/effect.js";
+import type { Payment } from "../core/messages/effect.js";
 
 export const getNonce = ({ peer }: { peer: Peer }) => {
-  const result = peer.metadata.get("session:nonce");
+  const result = peer.metadata.get("nonce");
 
   if (!result) {
     throw Error("no valid nonce found..");
@@ -16,12 +16,12 @@ export const getNonce = ({ peer }: { peer: Peer }) => {
 };
 
 export const updateNonce = ({ nonce, peer }: { nonce: bigint; peer: Peer }) => {
-  peer.metadata.set("session:nonce", bigIntToUint8Array(nonce));
+  peer.metadata.set("nonce", bigIntToUint8Array(nonce));
   return true;
 };
 
 export const getRecipient = ({ peer }: { peer: Peer }): string => {
-  const result = peer.metadata.get("session:recipient");
+  const result = peer.metadata.get("recipient");
 
   if (!result) {
     throw Error("no valid recipient found..");

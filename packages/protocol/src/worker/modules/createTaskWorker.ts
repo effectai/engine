@@ -11,15 +11,18 @@ import type { createEffectEntity } from "../../core/entity/factory.js";
 import type { Libp2pTransport } from "../../core/transports/libp2p.js";
 import type { WorkerEvents } from "../main.js";
 import { Task } from "../../core/messages/effect.js";
+import { createTemplateWorker } from "./createTemplateWorker.js";
 
 export function createTaskWorker({
+  entity,
   taskStore,
-  worker,
-  eventEmitter,
+  events,
+  templateWorker,
 }: {
-  eventEmitter: TypedEventEmitter<WorkerEvents>;
-  worker: Awaited<ReturnType<typeof createEffectEntity<Libp2pTransport[]>>>;
+  entity: Awaited<ReturnType<typeof createEffectEntity<Libp2pTransport[]>>>;
+  events: TypedEventEmitter<WorkerEvents>;
   taskStore: WorkerTaskStore;
+  templateWorker: ReturnType<typeof createTemplateWorker>;
 }) {
   const extractMetadata = (task: WorkerTaskRecord) => {
     const managerPeer = task.events.find(
@@ -27,6 +30,22 @@ export function createTaskWorker({
     )?.managerPeer;
 
     return { managerPeer };
+  };
+
+  const getTask = async ({
+    taskId,
+  }: {
+    taskId: string;
+  }): Promise<WorkerTaskRecord> => {
+    const taskRecord = await taskStore.get({
+      entityId: taskId,
+    });
+
+    if (!taskRecord) {
+      throw new Error("Task not found");
+    }
+
+    return taskRecord;
   };
 
   const createTask = async ({
@@ -41,7 +60,7 @@ export function createTaskWorker({
       managerPeerId,
     });
 
-    eventEmitter.safeDispatchEvent("task:created", { detail: task });
+    events.safeDispatchEvent("task:created", { detail: task });
   };
 
   const acceptTask = async ({
@@ -59,16 +78,16 @@ export function createTaskWorker({
     }
 
     // send accepted message to manager
-    await worker.sendMessage(peerIdFromString(managerPeer), {
+    await entity.sendMessage(peerIdFromString(managerPeer), {
       taskAccepted: {
         timestamp: Math.floor(Date.now() / 1000),
         taskId: taskId,
-        worker: worker.node.peerId.toString(),
+        worker: entity.node.peerId.toString(),
       },
     });
 
     //emit task accepted event
-    eventEmitter.safeDispatchEvent("task:accepted", { detail: taskRecord });
+    events.safeDispatchEvent("task:accepted", { detail: taskRecord });
   };
 
   const completeTask = async ({
@@ -90,15 +109,15 @@ export function createTaskWorker({
     }
 
     // send completed message to manager
-    await worker.sendMessage(peerIdFromString(managerPeer), {
+    await entity.sendMessage(peerIdFromString(managerPeer), {
       taskCompleted: {
         taskId: taskRecord.state.id,
-        worker: worker.toString(),
+        worker: entity.toString(),
         result,
       },
     });
 
-    eventEmitter.safeDispatchEvent("task:completed", { detail: taskRecord });
+    events.safeDispatchEvent("task:completed", { detail: taskRecord });
   };
 
   const rejectTask = async ({
@@ -112,13 +131,41 @@ export function createTaskWorker({
       reason,
     });
 
-    eventEmitter.safeDispatchEvent("task:rejected", { detail: taskRecord });
+    events.safeDispatchEvent("task:rejected", { detail: taskRecord });
+  };
+
+  //render task template html and prefill the data on the placeholders
+  //placeholders: {{key}} matches the key in the template data
+  const renderTask = async ({
+    taskRecord,
+  }: {
+    taskRecord: WorkerTaskRecord;
+  }): Promise<string> => {
+    const template = await templateWorker.getOrFetchTemplate({
+      taskRecord,
+      templateId: taskRecord.state.templateId,
+    });
+
+    if (!template) {
+      throw new Error("Template not found");
+    }
+
+    const templateData = JSON.parse(taskRecord.state.templateData);
+
+    const templateHtml = template.data.replace(/{{(.*?)}}/g, (_, key) => {
+      const value = templateData[key.trim()];
+      return value !== undefined ? value : "";
+    });
+
+    return templateHtml;
   };
 
   return {
+    getTask,
     createTask,
     completeTask,
     acceptTask,
     rejectTask,
+    renderTask,
   };
 }

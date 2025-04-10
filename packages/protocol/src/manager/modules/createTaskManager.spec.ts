@@ -64,7 +64,7 @@ describe("createTaskManager", () => {
       workerQueue,
       taskStore,
       paymentManager,
-      eventEmitter: mockEventEmitter,
+      events: mockEventEmitter,
     });
 
     vi.clearAllMocks();

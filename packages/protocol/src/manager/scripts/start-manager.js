@@ -31,14 +31,20 @@ app.get("/tasks", async (req, res) => {
 
 app.post("/task", async (req, res) => {
   const task = req.body;
-
   //save task in manager store
-  await manager.taskManager.createTask({
-    task,
-    providerPeerIdString: manager.entity.getPeerId(),
-  });
-
-  res.json({ status: "Task received", task });
+  try {
+    await manager.taskManager.createTask({
+      task,
+      providerPeerIdString: manager.entity.getPeerId(),
+    });
+    res.json({ status: "Task received", task });
+  } catch (e) {
+    console.error("Error creating task", e);
+    res.status(500).json({
+      status: "Error creating task",
+      error: e.message,
+    });
+  }
 });
 
 const PORT = 8888;

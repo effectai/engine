@@ -17,22 +17,41 @@ import type { TypedEventEmitter } from "@libp2p/interface";
 import type { createEffectEntity } from "../../core/entity/factory.js";
 import type { Libp2pTransport } from "../../core/transports/libp2p.js";
 import type { Task } from "../../core/messages/effect.js";
+import { TemplateStore } from "../../core/common/stores/templateStore.js";
 
 export function createTaskManager({
   manager,
   workerQueue,
   taskStore,
   paymentManager,
-  eventEmitter,
+  events,
+  templateStore,
 }: {
   manager: Awaited<ReturnType<typeof createEffectEntity<Libp2pTransport[]>>>;
   taskStore: ManagerTaskStore;
   paymentManager: ReturnType<typeof createPaymentManager>;
   workerQueue: ReturnType<typeof createWorkerQueue>;
-  eventEmitter: TypedEventEmitter<ManagerEvents>;
+  events: TypedEventEmitter<ManagerEvents>;
+  templateStore: TemplateStore;
 }) {
   const isExpired = (timestamp: number) =>
     timestamp + TASK_ACCEPTANCE_TIME < Math.floor(Date.now() / 1000);
+
+  const getTask = async ({
+    taskId,
+  }: {
+    taskId: string;
+  }): Promise<ManagerTaskRecord> => {
+    const taskRecord = await taskStore.get({
+      entityId: taskId,
+    });
+
+    if (!taskRecord) {
+      throw new Error("Task not found");
+    }
+
+    return taskRecord;
+  };
 
   const createTask = async ({
     task,
@@ -41,14 +60,38 @@ export function createTaskManager({
     task: Task;
     providerPeerIdStr: string;
   }) => {
+    //TODO:: use zod here to validate the task.
+    if (!task.templateId) {
+      throw new Error("Task must have a templateId");
+    }
+
+    if (!task.reward) {
+      throw new Error("Task must have a reward");
+    }
+
+    if (!task.templateData) {
+      throw new Error("Task must have template data");
+    }
+
+    //we must have the templateId in our template store.
+    const templateRecord = await templateStore.get({
+      entityId: task.templateId,
+    });
+
+    if (!templateRecord) {
+      throw new Error("Template not found in store");
+    }
+
     const taskRecord = await taskStore.create({
       task,
       providerPeerIdStr,
     });
 
-    eventEmitter.safeDispatchEvent("task:created", {
+    events.safeDispatchEvent("task:created", {
       detail: taskRecord,
     });
+
+    return taskRecord;
   };
 
   const processTaskAcception = async ({
@@ -63,7 +106,7 @@ export function createTaskManager({
       peerIdStr: workerPeerIdStr,
     });
 
-    eventEmitter.safeDispatchEvent("task:accepted", {
+    events.safeDispatchEvent("task:accepted", {
       detail: taskRecord,
     });
   };
@@ -83,7 +126,7 @@ export function createTaskManager({
       reason,
     });
 
-    eventEmitter.safeDispatchEvent("task:rejected", {
+    events.safeDispatchEvent("task:rejected", {
       detail: taskRecord,
     });
   };
@@ -103,7 +146,7 @@ export function createTaskManager({
       peerIdStr: workerPeerIdStr,
     });
 
-    eventEmitter.safeDispatchEvent("task:submission", {
+    events.safeDispatchEvent("task:submission", {
       detail: taskRecord,
     });
   };
@@ -158,12 +201,10 @@ export function createTaskManager({
     });
 
     //send the payment.
-    manager.sendMessage(peerIdFromString(event.submissionByPeer), {
-      payment,
-    });
+    manager.sendMessage(peerIdFromString(event.submissionByPeer), { payment });
 
     //sendout task completed event
-    eventEmitter.safeDispatchEvent("task:completed", { detail: taskRecord });
+    events.safeDispatchEvent("task:completed", { detail: taskRecord });
   };
 
   const handleRejectEvent = async (
@@ -227,7 +268,7 @@ export function createTaskManager({
       workerPeerIdStr: worker,
     });
 
-    const ack = await manager.sendMessage(peerIdFromString(worker), {
+    await manager.sendMessage(peerIdFromString(worker), {
       task: taskRecord.state,
     });
   };
@@ -246,6 +287,7 @@ export function createTaskManager({
   };
 
   return {
+    getTask,
     createTask,
     processTaskAcception,
     processTaskRejection,

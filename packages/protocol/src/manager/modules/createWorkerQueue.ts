@@ -15,8 +15,8 @@ export const createWorkerQueue = () => {
 
   const dequeuePeer = (): PeerIdStr | undefined => {
     if (queue.length === 0) return undefined;
-    const peer = queue.shift(); // Remove from the front
-    if (peer) queue.push(peer); // Add back to the end
+    const peer = queue.shift();
+    if (peer) queue.push(peer); 
     return peer;
   };
 
