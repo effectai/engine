@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { peerIdFromString } from "@libp2p/peer-id";
 import { TASK_ACCEPTANCE_TIME } from "../consts.js";
-import type { createManager, ManagerEvents } from "../main.js";
+import type { createManager, ManagerEntity, ManagerEvents } from "../main.js";
 import type { createWorkerQueue } from "./createWorkerQueue.js";
 import type { createPaymentManager } from "./createPaymentManager.js";
 import type {
@@ -27,7 +27,7 @@ export function createTaskManager({
   events,
   templateStore,
 }: {
-  manager: Awaited<ReturnType<typeof createEffectEntity<Libp2pTransport[]>>>;
+  manager: ManagerEntity;
   taskStore: ManagerTaskStore;
   paymentManager: ReturnType<typeof createPaymentManager>;
   workerQueue: ReturnType<typeof createWorkerQueue>;

@@ -13,6 +13,7 @@
     "manager:start": "node ./src/manager/scripts/start-manager.js",
     "post:task": "sh ./packages/manager/scripts/post-task.sh"
   },
+  "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",

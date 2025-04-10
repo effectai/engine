@@ -31,19 +31,14 @@ export type WorkerEvents = {
   "payment:created": (payment: Payment) => void;
 };
 
-export const createWorker = async ({
+export const createWorkerEntity = async ({
   datastore,
   privateKey,
-  getSessionData,
 }: {
   datastore: Datastore;
   privateKey: PrivateKey;
-  getSessionData: () => {
-    recipient: string;
-    nonce: bigint;
-  };
 }) => {
-  const entity = await createEffectEntity({
+  return await createEffectEntity({
     protocol: {
       name: "effectai",
       version: "1.0.0",
@@ -62,6 +57,25 @@ export const createWorker = async ({
         ],
       }),
     ],
+  });
+};
+export type WorkerEntity = Awaited<ReturnType<typeof createWorkerEntity>>;
+
+export const createWorker = async ({
+  datastore,
+  privateKey,
+  getSessionData,
+}: {
+  datastore: Datastore;
+  privateKey: PrivateKey;
+  getSessionData: () => {
+    recipient: string;
+    nonce: bigint;
+  };
+}) => {
+  const entity = await createWorkerEntity({
+    datastore,
+    privateKey,
   });
 
   const connect = async (manager: Multiaddr) => {

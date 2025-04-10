@@ -9,7 +9,7 @@ import type {
 import { peerIdFromString } from "@libp2p/peer-id";
 import type { createEffectEntity } from "../../core/entity/factory.js";
 import type { Libp2pTransport } from "../../core/transports/libp2p.js";
-import type { WorkerEvents } from "../main.js";
+import type { WorkerEntity, WorkerEvents } from "../main.js";
 import { Task } from "../../core/messages/effect.js";
 import { createTemplateWorker } from "./createTemplateWorker.js";
 
@@ -19,7 +19,7 @@ export function createTaskWorker({
   events,
   templateWorker,
 }: {
-  entity: Awaited<ReturnType<typeof createEffectEntity<Libp2pTransport[]>>>;
+  entity: WorkerEntity;
   events: TypedEventEmitter<WorkerEvents>;
   taskStore: WorkerTaskStore;
   templateWorker: ReturnType<typeof createTemplateWorker>;

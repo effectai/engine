@@ -18,8 +18,8 @@ export interface Transport<TMethods = {}> {
 
 export type UnionToIntersection<U> = (
   U extends any
-  ? (k: U) => void
-  : never
+    ? (k: U) => void
+    : never
 ) extends (k: infer I) => void
   ? I
   : never;
@@ -27,6 +27,11 @@ export type UnionToIntersection<U> = (
 export type ExtractMethods<T> = T extends Transport<infer TMethods>
   ? TMethods
   : never;
+
+export type EntityWithTransports<T extends Transport[]> = Entity &
+  {
+    [K in keyof T]: T[K] extends Transport<infer TMethods> ? TMethods : never;
+  }[number];
 
 export async function createEffectEntity<
   T extends Transport[],
@@ -36,7 +41,7 @@ export async function createEffectEntity<
   protocol: P;
 }): Promise<Entity & UnionToIntersection<ExtractMethods<T[number]>>> {
   const entity = {
-    transports: [],
+    transports: [] as Transport[],
     protocol: config.protocol,
   };
 

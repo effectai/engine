@@ -28,6 +28,7 @@ import type { createEffectEntity } from "../../core/entity/factory.js";
 import type { Libp2pTransport } from "../../core/transports/libp2p.js";
 import { computePaymentId } from "../../core/utils.js";
 import type { PaymentStore } from "../../core/common/stores/paymentStore.js";
+import { ManagerEntity } from "../main.js";
 
 export function createPaymentManager({
   manager,
@@ -35,7 +36,7 @@ export function createPaymentManager({
   privateKey,
   peerStore,
 }: {
-  manager: Awaited<ReturnType<typeof createEffectEntity<Libp2pTransport[]>>>;
+  manager: ManagerEntity;
   peerStore: PeerStore;
   privateKey: PrivateKey;
   paymentStore: PaymentStore;

@@ -3,13 +3,14 @@ import type { createEffectEntity } from "../../core/entity/factory.js";
 import type { EffectProtocolMessage } from "../../core/messages/effect.js";
 import type { Libp2pTransport } from "../../core/transports/libp2p.js";
 import type { WorkerTaskStore } from "../stores/workerTaskStore.js";
+import { WorkerEntity } from "../main.js";
 
 export function createPaymentWorker({
   taskStore,
   entity,
 }: {
   taskStore: WorkerTaskStore;
-  entity: Awaited<ReturnType<typeof createEffectEntity<Libp2pTransport[]>>>;
+  entity: WorkerEntity;
 }) {
   const requestPayout = async ({
     managerPeer,

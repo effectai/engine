@@ -4,6 +4,7 @@ import { identify } from "@libp2p/identify";
 import type {
   Connection,
   Libp2p,
+  Transport as InternalLibp2pTransport,
   PeerId,
   PrivateKey,
   Stream,
@@ -12,14 +13,17 @@ import { ping } from "@libp2p/ping";
 import { type ServiceFactoryMap, createLibp2p } from "libp2p";
 
 import { isMultiaddr, type Multiaddr } from "@multiformats/multiaddr";
-import { MessageStream, pbStream } from "it-protobuf-stream";
-import type { EntityWithTransports } from "../entity/types.js";
+import { type MessageStream, pbStream } from "it-protobuf-stream";
 import { EffectProtocolMessage } from "../messages/effect.js";
 import { extractMessageType, shouldExpectResponse } from "../utils.js";
 import type { MessageResponse, ResponseMap } from "../common/types.js";
 import { ProtocolError } from "../errors.js";
-import { Entity, Transport } from "../entity/factory.js";
-import { peerIdFromString } from "@libp2p/peer-id";
+import type {
+  Entity,
+  EntityWithTransports,
+  Transport,
+} from "../entity/factory.js";
+import type { Datastore } from "interface-datastore";
 
 type EffectMessageType = keyof EffectProtocolMessage;
 
@@ -32,8 +36,7 @@ export interface SendMessageOptions {
   existingStream?: Stream;
 }
 
-interface Libp2pMethods {
-  connect(connect: Multiaddr): Promise<Connection>;
+export interface Libp2pMethods {
   sendMessage<T extends EffectProtocolMessage>(
     peerId: PeerId | Multiaddr,
     message: T,
@@ -58,6 +61,7 @@ export interface Libp2pInit {
   privateKey?: PrivateKey;
   autoStart?: boolean;
   services?: ServiceFactoryMap;
+  datastore?: Datastore;
 }
 
 const DEFAULT_LIBP2P_OPTIONS: Partial<Libp2pInit> = {
@@ -101,7 +105,10 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
 
   getMethods(): Libp2pMethods {
     return {
+      //TODO::properly type these.
+      //@ts-ignore
       sendMessage: this.sendMessage.bind(this),
+      //@ts-ignore
       onMessage: this.onMessage.bind(this),
       getPeerId: () => this.libp2p.peerId,
       getMultiAddress: () => this.libp2p.getMultiaddrs(),
@@ -128,6 +135,7 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
       transports: this.options.transports,
       streamMuxers: [yamux()],
       connectionEncrypters: [noise()],
+      datastore: this.options.datastore,
       services: {
         ping: ping(),
         identify: identify(),
@@ -166,8 +174,8 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
   }
 
   private async readMessage(
-    pb: MessageStream<unknown, Stream>,
-  ): Promise<unknown | null> {
+    pb: MessageStream<EffectProtocolMessage, Stream>,
+  ): Promise<EffectProtocolMessage | null> {
     try {
       return await pb.read();
     } catch (error) {
@@ -189,10 +197,12 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
     }
 
     try {
-      return await handler(payload, {
-        peerId: connection.remotePeer,
-        connection,
-      });
+      return (
+        (await handler(payload, {
+          peerId: connection.remotePeer,
+          connection,
+        })) || null
+      );
     } catch (error) {
       console.error(`Handler failed for ${type}:`, error);
       return null;

@@ -27,22 +27,14 @@ export type ManagerEvents = {
   "payment:created": (payment: Payment) => void;
 };
 
-export const createManager = async ({
+export const createManagerEntity = async ({
   datastore,
   privateKey,
 }: {
   datastore: Datastore;
   privateKey: PrivateKey;
 }) => {
-  const paymentStore = createPaymentStore({ datastore });
-  const templateStore = createTemplateStore({ datastore });
-
-  const taskStore = createManagerTaskStore({ datastore });
-
-  const workerQueue = createWorkerQueue();
-  const events = new TypedEventEmitter<ManagerEvents>();
-
-  const entity = await createEffectEntity({
+  return await createEffectEntity({
     protocol: {
       name: "effectai",
       version: "1.0.0",
@@ -51,6 +43,7 @@ export const createManager = async ({
     transports: [
       new Libp2pTransport({
         autoStart: true,
+        datastore,
         privateKey,
         listen: ["/ip4/0.0.0.0/tcp/34861/ws"],
         services: {},
@@ -58,6 +51,28 @@ export const createManager = async ({
       }),
     ],
   });
+};
+
+export type ManagerEntity = Awaited<ReturnType<typeof createManagerEntity>>;
+
+export const createManager = async ({
+  datastore,
+  privateKey,
+}: {
+  datastore: Datastore;
+  privateKey: PrivateKey;
+}) => {
+  const entity = await createManagerEntity({
+    datastore,
+    privateKey,
+  });
+
+  const paymentStore = createPaymentStore({ datastore });
+  const templateStore = createTemplateStore({ datastore });
+  const taskStore = createManagerTaskStore({ datastore });
+
+  const workerQueue = createWorkerQueue();
+  const events = new TypedEventEmitter<ManagerEvents>();
 
   const paymentManager = createPaymentManager({
     manager: entity,

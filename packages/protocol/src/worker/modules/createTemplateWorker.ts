@@ -5,12 +5,13 @@ import type { Libp2pTransport } from "../../core/transports/libp2p.js";
 import { workerLogger } from "../../core/logging.js";
 import type { WorkerTaskRecord } from "../stores/workerTaskStore.js";
 import { peerIdFromString } from "@libp2p/peer-id";
+import { WorkerEntity } from "../main.js";
 
 export function createTemplateWorker({
   entity,
   templateStore,
 }: {
-  entity: Awaited<ReturnType<typeof createEffectEntity<Libp2pTransport[]>>>;
+  entity: WorkerEntity;
   templateStore: TemplateStore;
 }) {
   const getOrFetchTemplate = async ({
