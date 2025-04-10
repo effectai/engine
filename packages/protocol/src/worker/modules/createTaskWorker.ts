@@ -1,17 +1,12 @@
 import type { PeerId, TypedEventEmitter } from "@libp2p/interface";
-import { TASK_ACCEPTANCE_TIME } from "../../manager/consts.js";
 import type {
-  TaskAcceptedEvent,
-  WorkerTaskEvents,
   WorkerTaskRecord,
   WorkerTaskStore,
 } from "../stores/workerTaskStore.js";
 import { peerIdFromString } from "@libp2p/peer-id";
-import type { createEffectEntity } from "../../core/entity/factory.js";
-import type { Libp2pTransport } from "../../core/transports/libp2p.js";
 import type { WorkerEntity, WorkerEvents } from "../main.js";
-import { Task } from "../../core/messages/effect.js";
-import { createTemplateWorker } from "./createTemplateWorker.js";
+import type { Task } from "../../core/messages/effect.js";
+import type { createTemplateWorker } from "./createTemplateWorker.js";
 
 export function createTaskWorker({
   entity,

@@ -58,11 +58,6 @@ describe("Complete Task Lifecycle", () => {
       privateKey: managerPrivateKey,
     });
 
-    const managerMultiAddress = manager.entity.getMultiAddress();
-    if (!managerMultiAddress?.[0]) {
-      throw new Error("manager multiaddress not found");
-    }
-
     worker = await createWorker({
       datastore: workerDatastore,
       privateKey: workerPrivateKey,
@@ -77,6 +72,10 @@ describe("Complete Task Lifecycle", () => {
     await worker.start();
 
     // connect worker to manager
+    const managerMultiAddress = manager.entity.getMultiAddress();
+    if (!managerMultiAddress?.[0]) {
+      throw new Error("manager multiaddress not found");
+    }
     await worker.connect(managerMultiAddress[0]);
     // wait for the nodes to be ready
     await delay(2000);

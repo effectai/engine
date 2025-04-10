@@ -78,17 +78,6 @@ export const createWorker = async ({
     privateKey,
   });
 
-  const connect = async (manager: Multiaddr) => {
-    const result = await entity.sendMessage(manager, {
-      requestToWork: {
-        timestamp: Date.now() / 1000,
-        recipient: new PublicKey(randomBytes(32)).toString(),
-        nonce: 32n,
-      },
-    });
-    //TODO:: handle result
-  };
-
   // register worker modules
   const events = new TypedEventEmitter<WorkerEvents>();
 
@@ -126,6 +115,17 @@ export const createWorker = async ({
 
   const stop = async () => {
     await entity.node.stop();
+  };
+
+  const connect = async (manager: Multiaddr) => {
+    const result = await entity.sendMessage(manager, {
+      requestToWork: {
+        timestamp: Date.now() / 1000,
+        recipient: new PublicKey(randomBytes(32)).toString(),
+        nonce: 32n,
+      },
+    });
+    //TODO:: handle result
   };
 
   return {
