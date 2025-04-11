@@ -92,27 +92,47 @@ export function createTaskWorker({
     taskId: string;
     result: string;
   }) => {
-    const taskRecord = await taskStore.complete({
-      entityId: taskId,
-      result,
-    });
-
-    const { managerPeer } = extractMetadata(taskRecord);
-
-    if (!managerPeer) {
-      throw new Error("no manager peer found");
-    }
-
-    // send completed message to manager
-    await entity.sendMessage(peerIdFromString(managerPeer), {
-      taskCompleted: {
-        taskId: taskRecord.state.id,
-        worker: entity.toString(),
+    try {
+      const taskRecord = await taskStore.complete({
+        entityId: taskId,
         result,
-      },
-    });
+      });
 
-    events.safeDispatchEvent("task:completed", { detail: taskRecord });
+      const { managerPeer } = extractMetadata(taskRecord);
+
+      if (!managerPeer) {
+        throw new Error("no manager peer found");
+      }
+
+      // send completed message to manager
+      const [response, error] = await entity.sendMessage(
+        peerIdFromString(managerPeer),
+        {
+          taskCompleted: {
+            taskId: taskRecord.state.id,
+            worker: entity.toString(),
+            result,
+          },
+        },
+      );
+
+      if (!response || error) {
+        throw new Error("Failed to send task completed message");
+      }
+
+      events.safeDispatchEvent("task:completed", { detail: taskRecord });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Error completing task:", error.message);
+
+        await taskStore.rollbackEvent({
+          entityId: taskId,
+          eventType: "complete",
+        });
+      } else {
+        console.error("Error completing task:", error);
+      }
+    }
   };
 
   const rejectTask = async ({
@@ -146,7 +166,6 @@ export function createTaskWorker({
     }
 
     const templateData = JSON.parse(taskRecord.state.templateData);
-
     const templateHtml = template.data.replace(/{{(.*?)}}/g, (_, key) => {
       const value = templateData[key.trim()];
       return value !== undefined ? value : "";

@@ -41,7 +41,7 @@ export interface Libp2pMethods {
     peerId: PeerId | Multiaddr,
     message: T,
     options?: SendMessageOptions,
-  ): Promise<ResponseMap[ExtractMessageKey<T>]>;
+  ): Promise<[MessageResponse<T> | null, ProtocolError | null]>;
   onMessage<T extends EffectMessageType>(
     type: T,
     handler: (
@@ -166,7 +166,6 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
       const response = await this.processIncomingMessage(message, connection);
       await this.sendResponse(pb, response);
     } catch (error) {
-      console.error("Stream handling failed:", error);
       await this.sendErrorResponse(pb);
     } finally {
       await stream.close();
@@ -255,27 +254,59 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
     peerId: PeerId | Multiaddr,
     message: T,
     options: SendMessageOptions = {},
-  ): Promise<MessageResponse<T>> {
+  ): Promise<[MessageResponse<T> | null, ProtocolError | null]> {
     const { timeout = 5000, existingStream } = options;
     const expectResponse = shouldExpectResponse(message);
-
-    const { stream, shouldClose } = await this.prepareStream(
-      peerId,
-      existingStream,
-    );
-    const pb = pbStream(stream).pb(EffectProtocolMessage);
+    let stream: Stream | undefined;
+    let shouldClose = false;
 
     try {
+      // Prepare stream
+      const streamResult = await this.prepareStream(peerId, existingStream);
+      stream = streamResult.stream;
+      shouldClose = streamResult.shouldClose;
+
+      const pb = pbStream(stream).pb(EffectProtocolMessage);
+
+      // Send message
       await pb.write(message);
-      if (!expectResponse)
-        throw new Error("Unexpected response for fire-and-forget");
+      if (!expectResponse) {
+        return [
+          null,
+          new ProtocolError(
+            "UNEXPECTED_RESPONSE",
+            "Received response for fire-and-forget message",
+          ),
+        ];
+      }
 
+      // Get response
       const response = await this.readResponseWithTimeout(pb, timeout);
-      this.validateResponse(response);
 
-      return extractMessageType(response).payload as MessageResponse<T>;
+      // Validate response
+      if (response.error) {
+        return [
+          null,
+          new ProtocolError(response.error.code, response.error.message),
+        ];
+      }
+
+      const { payload } = extractMessageType(response);
+      return [payload as MessageResponse<T>, null];
+    } catch (error) {
+      const protocolError =
+        error instanceof ProtocolError
+          ? error
+          : new ProtocolError("NETWORK_ERROR", error.message);
+      return [null, protocolError];
     } finally {
-      if (shouldClose) await stream.close();
+      if (shouldClose && stream) {
+        try {
+          await stream.close();
+        } catch (closeError) {
+          console.warn("Failed to close stream:", closeError);
+        }
+      }
     }
   }
 
@@ -311,12 +342,6 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
         setTimeout(() => reject(new Error("Response timeout")), timeout),
       ),
     ]);
-  }
-
-  private validateResponse(response: EffectProtocolMessage): void {
-    if (response.error) {
-      throw new ProtocolError(response.error.code, response.error.message);
-    }
   }
 }
 export const createLibp2pTransport = (init: Libp2pInit) => {

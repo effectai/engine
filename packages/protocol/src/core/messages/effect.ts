@@ -1021,77 +1021,6 @@ export namespace Matrix {
   }
 }
 
-export interface R8 {
-  R8_1: Uint8Array
-  R8_2: Uint8Array
-}
-
-export namespace R8 {
-  let _codec: Codec<R8>
-
-  export const codec = (): Codec<R8> => {
-    if (_codec == null) {
-      _codec = message<R8>((obj, w, opts = {}) => {
-        if (opts.lengthDelimited !== false) {
-          w.fork()
-        }
-
-        if ((obj.R8_1 != null && obj.R8_1.byteLength > 0)) {
-          w.uint32(10)
-          w.bytes(obj.R8_1)
-        }
-
-        if ((obj.R8_2 != null && obj.R8_2.byteLength > 0)) {
-          w.uint32(18)
-          w.bytes(obj.R8_2)
-        }
-
-        if (opts.lengthDelimited !== false) {
-          w.ldelim()
-        }
-      }, (reader, length, opts = {}) => {
-        const obj: any = {
-          R8_1: uint8ArrayAlloc(0),
-          R8_2: uint8ArrayAlloc(0)
-        }
-
-        const end = length == null ? reader.len : reader.pos + length
-
-        while (reader.pos < end) {
-          const tag = reader.uint32()
-
-          switch (tag >>> 3) {
-            case 1: {
-              obj.R8_1 = reader.bytes()
-              break
-            }
-            case 2: {
-              obj.R8_2 = reader.bytes()
-              break
-            }
-            default: {
-              reader.skipType(tag & 7)
-              break
-            }
-          }
-        }
-
-        return obj
-      })
-    }
-
-    return _codec
-  }
-
-  export const encode = (obj: Partial<R8>): Uint8Array => {
-    return encodeMessage(obj, R8.codec())
-  }
-
-  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<R8>): R8 => {
-    return decodeMessage(buf, R8.codec(), opts)
-  }
-}
-
 export interface ProofResponse {
   piA: string[]
   piB: Matrix[]
@@ -1099,7 +1028,7 @@ export interface ProofResponse {
   protocol: string
   curve: string
   signals?: Signals
-  r8?: R8
+  r8?: R8Pair
 }
 
 export namespace ProofResponse {
@@ -1150,7 +1079,7 @@ export namespace ProofResponse {
 
         if (obj.r8 != null) {
           w.uint32(58)
-          R8.codec().encode(obj.r8, w)
+          R8Pair.codec().encode(obj.r8, w)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -1212,7 +1141,7 @@ export namespace ProofResponse {
               break
             }
             case 7: {
-              obj.r8 = R8.codec().decode(reader, reader.uint32(), {
+              obj.r8 = R8Pair.codec().decode(reader, reader.uint32(), {
                 limits: opts.limits?.r8
               })
               break

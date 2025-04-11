@@ -1,10 +1,9 @@
 import { circuitRelayTransport } from "@libp2p/circuit-relay-v2";
 import { type PrivateKey, TypedEventEmitter } from "@libp2p/interface";
-import { webRTC, webRTCDirect } from "@libp2p/webrtc";
+import { webRTC } from "@libp2p/webrtc";
 import { webSockets } from "@libp2p/websockets";
 import { webTransport } from "@libp2p/webtransport";
 import type { Datastore } from "interface-datastore";
-import { session } from "../core/common/SessionService.js";
 import type { TaskRecord } from "../core/common/types.js";
 import { createEffectEntity } from "../core/entity/factory.js";
 import {
@@ -19,9 +18,7 @@ import { createWorkerTaskStore } from "./stores/workerTaskStore.js";
 import { createPaymentStore } from "../core/common/stores/paymentStore.js";
 import { createTemplateWorker } from "./modules/createTemplateWorker.js";
 import { createTemplateStore } from "../core/common/stores/templateStore.js";
-import { Multiaddr } from "@multiformats/multiaddr";
-import { randomBytes } from "node:crypto";
-import { PublicKey } from "@solana/web3.js";
+import type { Multiaddr } from "@multiformats/multiaddr";
 
 export type WorkerEvents = {
   "task:created": (task: Task) => void;
@@ -47,6 +44,7 @@ export const createWorkerEntity = async ({
     transports: [
       new Libp2pTransport({
         privateKey,
+        datastore,
         autoStart: false,
         listen: ["/p2p-circuit", "/webrtc"],
         transports: [
@@ -73,40 +71,47 @@ export const createWorker = async ({
     nonce: bigint;
   };
 }) => {
+  const events = new TypedEventEmitter<WorkerEvents>();
   const entity = await createWorkerEntity({
     datastore,
     privateKey,
   });
 
-  // register worker modules
-  const events = new TypedEventEmitter<WorkerEvents>();
-
+  // register stores
   const taskStore = createWorkerTaskStore({ datastore });
   const paymentStore = createPaymentStore({ datastore });
   const templateStore = createTemplateStore({ datastore });
 
+  // register worker modules
   const templateWorker = createTemplateWorker({ entity, templateStore });
-  const { requestPayout } = createPaymentWorker({ entity, taskStore });
-  const { acceptTask, rejectTask, completeTask, renderTask, getTask } =
-    createTaskWorker({
+  const { createPayment, getPayments, requestPayout, requestPaymentProof } =
+    createPaymentWorker({
       entity,
       events,
-      taskStore,
-      templateWorker,
+      paymentStore,
     });
+
+  const {
+    createTask,
+    acceptTask,
+    rejectTask,
+    completeTask,
+    renderTask,
+    getTask,
+  } = createTaskWorker({
+    entity,
+    events,
+    taskStore,
+    templateWorker,
+  });
 
   // register message handlers
   entity
     .onMessage("task", async (task, { peerId }) => {
-      await taskStore.create({ task, managerPeerId: peerId });
-      events.safeDispatchEvent("task:created", { detail: task });
+      await createTask({ task, managerPeerId: peerId });
     })
     .onMessage("payment", async (payment, { peerId }) => {
-      await paymentStore.create({
-        payment,
-        peerId: peerId.toString(),
-      });
-      events.safeDispatchEvent("payment:created", { detail: payment });
+      await createPayment({ payment, managerPeerId: peerId });
     });
 
   const start = async () => {
@@ -118,26 +123,33 @@ export const createWorker = async ({
   };
 
   const connect = async (manager: Multiaddr) => {
-    const result = await entity.sendMessage(manager, {
+    const [response, error] = await entity.sendMessage(manager, {
       requestToWork: {
         timestamp: Date.now() / 1000,
-        recipient: new PublicKey(randomBytes(32)).toString(),
-        nonce: 32n,
+        ...getSessionData(),
       },
     });
-    //TODO:: handle result
+
+    if (error) {
+      throw new Error(`Failed to connect to manager: ${error}`);
+    }
+
+    return response;
   };
 
   return {
     entity,
     events,
 
-    requestPayout,
+    getTask,
     acceptTask,
     rejectTask,
     completeTask,
     renderTask,
-    getTask,
+
+    getPayments,
+    requestPayout,
+    requestPaymentProof,
 
     connect,
     start,

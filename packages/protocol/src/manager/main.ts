@@ -17,6 +17,8 @@ import { createPaymentStore } from "../core/common/stores/paymentStore.js";
 import { createTemplateStore } from "../core/common/stores/templateStore.js";
 import { createTemplateManager } from "./modules/createTemplateManager.js";
 import { randomBytes } from "node:crypto";
+import { bigIntToUint8Array } from "../core/utils.js";
+import { managerLogger } from "../core/logging.js";
 
 export type ManagerEvents = {
   "task:created": (task: TaskRecord) => void;
@@ -75,7 +77,6 @@ export const createManager = async ({
   const events = new TypedEventEmitter<ManagerEvents>();
 
   const paymentManager = createPaymentManager({
-    manager: entity,
     peerStore: entity.node.peerStore,
     privateKey,
     paymentStore,
@@ -96,11 +97,12 @@ export const createManager = async ({
 
   entity
     .onMessage("requestToWork", async ({ recipient, nonce }, { peerId }) => {
-      //save nonce & recipient in peerStore
+      //save nonce & recipient in peerStore and set last payout to now
       await entity.node.peerStore.merge(peerId, {
         metadata: {
           recipient: new TextEncoder().encode(recipient),
-          nonce: new TextEncoder().encode(nonce.toString()),
+          nonce: bigIntToUint8Array(nonce),
+          lastPayout: new TextEncoder().encode((Date.now() / 1000).toString()),
         },
       });
 
@@ -149,9 +151,13 @@ export const createManager = async ({
       });
     })
     .onMessage("payoutRequest", async (payoutRequest, { peerId }) => {
-      await paymentManager.processPayoutRequest({
+      const payment = await paymentManager.processPayoutRequest({
         peerId,
       });
+
+      return {
+        payment,
+      };
     })
     .onMessage("templateRequest", async (template, { peerId }) => {
       const record = await templateStore.get({ entityId: template.templateId });

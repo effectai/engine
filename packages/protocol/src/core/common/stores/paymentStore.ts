@@ -49,6 +49,7 @@ export const createPaymentStore = ({
     };
 
     const entityId = `${peerId}/${payment.nonce}`;
+
     await coreStore.put({ entityId, record });
 
     return record;

@@ -1,4 +1,4 @@
-import type { Peer } from "@libp2p/interface";
+import type { Peer, PeerId, PeerStore } from "@libp2p/interface";
 import { bigIntToUint8Array, uint8ArrayToBigInt } from "../core/utils.js";
 import { PublicKey } from "@solana/web3.js";
 import { buildEddsa, buildPoseidon } from "circomlibjs";
@@ -12,11 +12,19 @@ export const getNonce = ({ peer }: { peer: Peer }) => {
     throw Error("no valid nonce found..");
   }
 
-  return BigInt(new TextDecoder().decode(result).replace(/n$/, ""));
+  return uint8ArrayToBigInt(new Uint8Array(result));
 };
 
-export const updateNonce = ({ nonce, peer }: { nonce: bigint; peer: Peer }) => {
-  peer.metadata.set("nonce", bigIntToUint8Array(nonce));
+export const updateNonce = async ({
+  nonce,
+  peerStore,
+  peer,
+}: { nonce: bigint; peerStore: PeerStore; peer: PeerId }) => {
+  await peerStore.merge(peer, {
+    metadata: {
+      nonce: bigIntToUint8Array(nonce),
+    },
+  });
   return true;
 };
 
@@ -38,7 +46,7 @@ export const getSessionData = async (peer: Peer) => {
     throw new Error(`No recipient found for peerId: ${peer.id}`);
   }
 
-  const lastPayoutTimestamp = peer.metadata.get("timeSinceLastPayout");
+  const lastPayoutTimestamp = peer.metadata.get("lastPayout");
 
   if (!lastPayoutTimestamp) {
     throw new Error(`No lastPayoutTimestamp found for peerId: ${peer.id}`);
@@ -46,10 +54,8 @@ export const getSessionData = async (peer: Peer) => {
 
   return {
     nonce: nonce ? uint8ArrayToBigInt(new Uint8Array(nonce)) : BigInt(0),
-    recipient: new PublicKey(recipient),
-    lastPayoutTimestamp: Number.parseInt(
-      new TextDecoder().decode(lastPayoutTimestamp),
-    ),
+    recipient: new PublicKey(new TextDecoder().decode(recipient)).toString(),
+    lastPayout: Number.parseInt(new TextDecoder().decode(lastPayoutTimestamp)),
   };
 };
 
@@ -71,3 +77,12 @@ export const signPayment = async (payment: Payment, privateKey: Uint8Array) => {
 
 export const int2hex = (i: string | number | bigint | boolean) =>
   `0x${BigInt(i).toString(16)}`;
+
+function objectToBytes(obj: Record<string, number>): Uint8Array {
+  // Get all values and sort by numeric keys
+  const values = Object.entries(obj)
+    .sort(([a], [b]) => parseInt(a) - parseInt(b))
+    .map(([_, value]) => value);
+
+  return new Uint8Array(values);
+}

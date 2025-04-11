@@ -34,6 +34,8 @@ describe("Complete Task Lifecycle", () => {
   const providerPeerId = peerIdFromString(
     "12D3KooWR3aZ9bLgTjsyUNqC8oZp5tf3HRmqb9G5wNpEAKiUjVv5",
   );
+
+  let managerPeerId: string;
   let workerTaskRecord: WorkerTaskRecord;
 
   let managerDatastore: Datastore;
@@ -71,6 +73,7 @@ describe("Complete Task Lifecycle", () => {
     await manager.start();
     await worker.start();
 
+    managerPeerId = manager.entity.getPeerId().toString();
     // connect worker to manager
     const managerMultiAddress = manager.entity.getMultiAddress();
     if (!managerMultiAddress?.[0]) {
@@ -175,6 +178,7 @@ describe("Complete Task Lifecycle", () => {
     const completedTask = await manager.taskManager.getTask({
       taskId: testTask.id,
     });
+
     expect(completedTask.events).toEqual([
       expect.objectContaining({ type: "create" }),
       expect.objectContaining({ type: "assign" }),
@@ -237,4 +241,37 @@ describe("Complete Task Lifecycle", () => {
     //verify that the worker rendered the task
     expect(templateHtml).toContain("test variable 1");
   });
+
+  it(
+    "should correctly handle payout flow",
+    async () => {
+      const workerEvents = trackWorkerEvents(worker);
+
+      const n = 2;
+      //lets request n payouts from manager
+      for (let i = 0; i < 2; i++) {
+        const payment = await worker.requestPayout({
+          managerPeer: peerIdFromString(managerPeerId),
+        });
+      }
+
+      //verify that manager processed payout request
+      await waitForEvent(workerEvents.paymentReceived);
+      expect(workerEvents.paymentReceived).toHaveBeenCalledTimes(n);
+
+      //verify that we have n payments in our store
+      const payments = await worker.getPayments();
+      expect(payments.length).toBe(n);
+
+      //lets batch these payments and request a proof from the manager
+      const paymentProof = await worker.requestPaymentProof(
+        peerIdFromString(managerPeerId),
+        payments.map((p) => p.state),
+      );
+
+      //verify that the proof was received
+      expect(paymentProof).toBeDefined();
+    },
+    { timeout: 20000 },
+  );
 });

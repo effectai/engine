@@ -144,3 +144,11 @@ export function shouldExpectResponse(message: EffectProtocolMessage): boolean {
     false
   );
 }
+
+export function objectToBytes(obj: Record<string, number>): Uint8Array {
+  const values = Object.entries(obj)
+    .sort(([a], [b]) => parseInt(a) - parseInt(b))
+    .map(([_, value]) => value);
+
+  return new Uint8Array(values);
+}

@@ -1,11 +1,9 @@
 import type { TemplateStore } from "../../core/common/stores/templateStore.js";
-import type { createEffectEntity } from "../../core/entity/factory.js";
 import type { Template, TemplateRequest } from "../../core/messages/effect.js";
-import type { Libp2pTransport } from "../../core/transports/libp2p.js";
 import { workerLogger } from "../../core/logging.js";
 import type { WorkerTaskRecord } from "../stores/workerTaskStore.js";
 import { peerIdFromString } from "@libp2p/peer-id";
-import { WorkerEntity } from "../main.js";
+import type { WorkerEntity } from "../main.js";
 
 export function createTemplateWorker({
   entity,
@@ -21,17 +19,14 @@ export function createTemplateWorker({
     taskRecord: WorkerTaskRecord;
     templateId: string;
   }): Promise<Template> => {
-    // Try cache first
     const cachedTemplate = await tryGetTemplateFromStore(templateId);
     if (cachedTemplate) return cachedTemplate;
 
-    // Get manager peer from task record
     const managerPeer = getManagerPeerFromTask(taskRecord);
     if (!managerPeer) {
       throw new Error("Manager peer not found in task record");
     }
 
-    // Fetch from the network
     return fetchTemplateFromPeer(templateId, managerPeer);
   };
 
@@ -64,7 +59,7 @@ export function createTemplateWorker({
     const templateRequest: TemplateRequest = { templateId };
 
     try {
-      const template = await entity.sendMessage(peerId, {
+      const [template, error] = await entity.sendMessage(peerId, {
         templateRequest,
       });
 

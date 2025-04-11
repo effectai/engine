@@ -27,7 +27,7 @@ export const createEntityStore = <
   parse?: (data: string) => EntityRecord;
   stringify?: (record: EntityRecord) => string;
 }) => {
-  const createKey = (entityId: string) => new Key(`${prefix}${entityId}`);
+  const createKey = (entityId: string) => new Key(`/${prefix}/${entityId}`);
 
   const has = async ({ entityId }: { entityId: string }): Promise<boolean> => {
     return datastore.has(createKey(entityId));
@@ -57,11 +57,47 @@ export const createEntityStore = <
   const all = async (): Promise<EntityRecord[]> => {
     const entities: EntityRecord[] = [];
     for await (const entry of datastore.query({
-      prefix: prefix.slice(1),
+      prefix: `/${prefix}/`,
     })) {
       entities.push(parse(entry.value.toString()));
     }
+
     return entities;
+  };
+
+  const rollback = async ({
+    entityId,
+  }: {
+    entityId: string;
+  }): Promise<void> => {
+    const record = await get({ entityId });
+
+    if (record.events.length === 0) {
+      throw new Error("No events to rollback");
+    }
+
+    record.events.pop();
+
+    await put({ entityId, record });
+  };
+
+  const rollbackEvent = async ({
+    entityId,
+    eventType,
+  }: {
+    entityId: string;
+    eventType: string;
+  }): Promise<void> => {
+    const record = await get({ entityId });
+
+    const index = record.events.findIndex((e) => e.type === eventType);
+    if (index === -1) {
+      throw new Error("Event not found");
+    }
+
+    record.events.splice(index, 1);
+
+    await record.put({ entityId, record });
   };
 
   return {
@@ -70,5 +106,7 @@ export const createEntityStore = <
     put,
     delete: del,
     all,
+    rollback,
+    rollbackEvent,
   };
 };

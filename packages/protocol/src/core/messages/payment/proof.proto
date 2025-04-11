@@ -1,6 +1,7 @@
 
 syntax = "proto3";
 
+
 message Signals {
   string min_nonce = 1;
   string max_nonce = 2;
@@ -11,11 +12,6 @@ message Matrix {
   repeated string row = 1;
 }
 
-message R8 {
-  bytes R8_1 = 1;
-  bytes R8_2 = 2;
-}
-
 message ProofResponse {
   repeated string pi_a = 1;
   repeated Matrix pi_b = 2;
@@ -23,7 +19,7 @@ message ProofResponse {
   string protocol = 4;
   string curve = 5;
   Signals signals = 6;
-  R8 r8 = 7;
+  R8Pair r8 = 7;
 }
 
 message ProofRequest {

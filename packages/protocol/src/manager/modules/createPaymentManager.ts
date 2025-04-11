@@ -21,22 +21,16 @@ import {
   type ProofRequest,
   type EffectProtocolMessage,
   Payment,
-  PaymentMessage,
-  ProofResponse,
 } from "../../core/messages/effect.js";
-import type { createEffectEntity } from "../../core/entity/factory.js";
-import type { Libp2pTransport } from "../../core/transports/libp2p.js";
 import { computePaymentId } from "../../core/utils.js";
 import type { PaymentStore } from "../../core/common/stores/paymentStore.js";
 import { ManagerEntity } from "../main.js";
 
 export function createPaymentManager({
-  manager,
   paymentStore,
   privateKey,
   peerStore,
 }: {
-  manager: ManagerEntity;
   peerStore: PeerStore;
   privateKey: PrivateKey;
   paymentStore: PaymentStore;
@@ -52,12 +46,12 @@ export function createPaymentManager({
       throw new Error("Worker not found");
     }
 
-    const { lastPayoutTimestamp } = await getSessionData(peer);
+    const { lastPayout } = await getSessionData(peer);
     const currentTime = Math.floor(Date.now() / 1000);
 
     const payment = await generatePayment({
       peerId,
-      amount: BigInt(currentTime - lastPayoutTimestamp),
+      amount: BigInt((currentTime - lastPayout) * 1_000_0),
       paymentAccount: new PublicKey(
         "8Ex7XokfTdr1MAMZXgN3e5eQWJ6H9u5KbnPC8CLcYgH5",
       ),
@@ -84,9 +78,6 @@ export function createPaymentManager({
       },
     });
 
-    // send the payment to the worker
-    manager.sendMessage(peerId, { payment });
-
     return payment;
   };
 
@@ -95,7 +86,8 @@ export function createPaymentManager({
     payments: ProofRequest.PaymentProof[],
   ) => {
     try {
-      //sort payments by nonce
+      //TODO:: verify & validate payments
+
       payments.sort((a, b) => Number(a.nonce) - Number(b.nonce));
 
       const eddsa = await buildEddsa();
@@ -104,6 +96,7 @@ export function createPaymentManager({
       //TODO:: make this dynamic
       const maxBatchSize = 10;
       const batchSize = payments.length;
+
       const enabled = Array(maxBatchSize).fill(0).fill(1, 0, batchSize);
 
       const padArray = <T>(arr: T[], defaultValue: T): T[] =>
@@ -112,6 +105,7 @@ export function createPaymentManager({
           .slice(0, maxBatchSize);
 
       const uniqueRecipients = new Set(payments.map((p) => p.recipient));
+
       if (uniqueRecipients.size > 1) {
         throw new Error("Only one type of recipient per batch is supported");
       }
@@ -153,11 +147,11 @@ export function createPaymentManager({
 
       const wasmPath = path.resolve(
         __dirname,
-        "../../../../../../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
+        "../../../../../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
       );
       const zkeyPath = path.resolve(
         __dirname,
-        "../../../../../../zkp/circuits/PaymentBatch_0001.zkey",
+        "../../../../../zkp/circuits/PaymentBatch_0001.zkey",
       );
 
       const { proof, publicSignals } = await snarkjs.groth16.fullProve(
@@ -185,6 +179,7 @@ export function createPaymentManager({
     const peer = await peerStore.get(peerId);
 
     const nonce = getNonce({ peer });
+
     const recipient = getRecipient({ peer });
 
     const payment = Payment.decode(
@@ -206,7 +201,7 @@ export function createPaymentManager({
       },
     };
 
-    updateNonce({ peer, nonce: nonce + 1n });
+    await updateNonce({ peer: peer.id, peerStore, nonce: nonce + 1n });
 
     //save payment in store.
     paymentStore.put({
@@ -230,7 +225,7 @@ export function createPaymentManager({
     peerId,
     payments,
   }: {
-    privateKey: PrivateKey; // TODO: use the private key from the
+    privateKey: PrivateKey;
     peerId: PeerId;
     payments: ProofRequest.PaymentProof[];
   }) => {
