@@ -80,17 +80,11 @@ export function createPaymentWorker({
       })),
     };
 
-    const [paymentProof, error] = await entity.sendMessage(managerPeerId, {
+    return await entity.sendMessage(managerPeerId, {
       proofRequest: {
         ...proofRequestMessage,
       },
     });
-
-    if (!paymentProof || error) {
-      throw new Error(`Error requesting payment proof: ${error}`);
-    }
-
-    return paymentProof;
   };
 
   return {

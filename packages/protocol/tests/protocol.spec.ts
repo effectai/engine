@@ -247,10 +247,10 @@ describe("Complete Task Lifecycle", () => {
     async () => {
       const workerEvents = trackWorkerEvents(worker);
 
-      const n = 2;
       //lets request n payouts from manager
-      for (let i = 0; i < 2; i++) {
-        const payment = await worker.requestPayout({
+      const n = 2;
+      for (let i = 0; i < n; i++) {
+        await worker.requestPayout({
           managerPeer: peerIdFromString(managerPeerId),
         });
       }
@@ -264,13 +264,35 @@ describe("Complete Task Lifecycle", () => {
       expect(payments.length).toBe(n);
 
       //lets batch these payments and request a proof from the manager
-      const paymentProof = await worker.requestPaymentProof(
+      const [paymentProof, pError] = await worker.requestPaymentProof(
         peerIdFromString(managerPeerId),
         payments.map((p) => p.state),
       );
 
+      if (!paymentProof) {
+        throw new Error("payment proof not found");
+      }
+
       //verify that the proof was received
-      expect(paymentProof).toBeDefined();
+      expect(paymentProof.piA).toBeDefined();
+
+      // lets manipulate the payments and request a proof
+      const manipulatedPayments = payments.map((p) => ({
+        ...p,
+        state: {
+          ...p.state,
+          amount: p.state.amount + BigInt(1000),
+        },
+      }));
+
+      //request a proof from the manager
+      const [proof, error] = await worker.requestPaymentProof(
+        peerIdFromString(managerPeerId),
+        manipulatedPayments.map((p) => p.state),
+      );
+
+      //expect that we have an error
+      expect(error).toBeDefined();
     },
     { timeout: 20000 },
   );

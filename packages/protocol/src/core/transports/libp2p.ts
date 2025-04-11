@@ -27,10 +27,6 @@ import type { Datastore } from "interface-datastore";
 
 type EffectMessageType = keyof EffectProtocolMessage;
 
-type ExtractMessageKey<T> = {
-  [K in keyof T]: K extends keyof EffectProtocolMessage ? K : never;
-}[keyof T];
-
 export interface SendMessageOptions {
   timeout?: number;
   existingStream?: Stream;
@@ -204,7 +200,7 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
       );
     } catch (error) {
       console.error(`Handler failed for ${type}:`, error);
-      return null;
+      throw new ProtocolError("HANDLER_ERROR", "something unexpected happened");
     }
   }
 

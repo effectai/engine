@@ -14,8 +14,6 @@ import type {
 } from "../stores/managerTaskStore.js";
 import { managerLogger } from "../../core/logging.js";
 import type { TypedEventEmitter } from "@libp2p/interface";
-import type { createEffectEntity } from "../../core/entity/factory.js";
-import type { Libp2pTransport } from "../../core/transports/libp2p.js";
 import type { Task } from "../../core/messages/effect.js";
 import { TemplateStore } from "../../core/common/stores/templateStore.js";
 
@@ -201,10 +199,18 @@ export function createTaskManager({
     });
 
     //send the payment.
-    manager.sendMessage(peerIdFromString(event.submissionByPeer), { payment });
+    const [ack, error] = await manager.sendMessage(
+      peerIdFromString(event.submissionByPeer),
+      { payment },
+    );
 
     //sendout task completed event
     events.safeDispatchEvent("task:completed", { detail: taskRecord });
+
+    return {
+      ack,
+      error,
+    };
   };
 
   const handleRejectEvent = async (

@@ -39,7 +39,7 @@ describe("createTaskManager", () => {
 
   beforeEach(() => {
     manager = {
-      sendMessage: vi.fn(),
+      sendMessage: vi.fn().mockResolvedValue([null, null]),
     };
 
     workerQueue = {
