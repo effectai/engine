@@ -199,7 +199,7 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
         })) || null
       );
     } catch (error) {
-      console.error(`Handler failed for ${type}:`, error);
+      console.error(`Handler failed for ${type}:`);
       throw new ProtocolError("HANDLER_ERROR", "something unexpected happened");
     }
   }

@@ -58,6 +58,7 @@ describe("Complete Task Lifecycle", () => {
     manager = await createManager({
       datastore: managerDatastore,
       privateKey: managerPrivateKey,
+      autoManage: false,
     });
 
     worker = await createWorker({
@@ -102,6 +103,7 @@ describe("Complete Task Lifecycle", () => {
     const { template, templateId } = createDummyTemplate(
       providerPeerId.toString(),
     );
+
     // register template
     await manager.templateManager.registerTemplate({
       providerPeerIdStr: providerPeerId.toString(),
@@ -204,7 +206,7 @@ describe("Complete Task Lifecycle", () => {
       id: "task-1",
       title: "Test Task",
       reward: 100n,
-      timeLimitSeconds: 600, // 10 minutes
+      timeLimitSeconds: 600,
       templateId: templateId,
       templateData: '{"test": "test variable 1"}',
     };

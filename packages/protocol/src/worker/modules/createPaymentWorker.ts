@@ -1,8 +1,7 @@
 import type { PeerId, TypedEventEmitter } from "@libp2p/interface";
-import type { WorkerTaskStore } from "../stores/workerTaskStore.js";
 import type { WorkerEntity, WorkerEvents } from "../main.js";
 import type { PaymentStore } from "../../core/common/stores/paymentStore.js";
-import { Payment, ProofRequest } from "../../core/messages/effect.js";
+import type { Payment, ProofRequest } from "../../core/messages/effect.js";
 import { objectToBytes } from "../../core/utils.js";
 
 export function createPaymentWorker({

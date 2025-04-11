@@ -16,9 +16,9 @@ import { Libp2pTransport } from "../core/transports/libp2p.js";
 import { createPaymentStore } from "../core/common/stores/paymentStore.js";
 import { createTemplateStore } from "../core/common/stores/templateStore.js";
 import { createTemplateManager } from "./modules/createTemplateManager.js";
-import { randomBytes } from "node:crypto";
 import { bigIntToUint8Array } from "../core/utils.js";
-import { managerLogger } from "../core/logging.js";
+import { buildEddsa } from "circomlibjs";
+import { HttpTransport } from "../core/transports/http.js";
 
 export type ManagerEvents = {
   "task:created": (task: TaskRecord) => void;
@@ -43,6 +43,7 @@ export const createManagerEntity = async ({
       scheme: EffectProtocolMessage,
     },
     transports: [
+      new HttpTransport({ port: 8888 }),
       new Libp2pTransport({
         autoStart: true,
         datastore,
@@ -60,15 +61,16 @@ export type ManagerEntity = Awaited<ReturnType<typeof createManagerEntity>>;
 export const createManager = async ({
   datastore,
   privateKey,
+  autoManage = true,
 }: {
   datastore: Datastore;
   privateKey: PrivateKey;
+  autoManage?: boolean;
 }) => {
   const entity = await createManagerEntity({
     datastore,
     privateKey,
   });
-
   const paymentStore = createPaymentStore({ datastore });
   const templateStore = createTemplateStore({ datastore });
   const taskStore = createManagerTaskStore({ datastore });
@@ -109,11 +111,14 @@ export const createManager = async ({
       //add the peerId to the worker queue
       workerQueue.addPeer({ peerIdStr: peerId.toString() });
 
+      const eddsa = await buildEddsa();
+      const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
+
       return {
         // we respond with our jubjub key
         requestToWorkResponse: {
-          pubX: randomBytes(32),
-          pubY: randomBytes(32),
+          pubX: pubKey[0],
+          pubY: pubKey[1],
         },
       };
     })
@@ -167,17 +172,47 @@ export const createManager = async ({
       };
     });
 
-  const start = () => {
-    return entity.node.start();
+  // Register http routes for manager
+  entity.post("/task", async (req, res) => {
+    const task = req.body;
+    //save task in manager store
+    try {
+      await taskManager.createTask({
+        task,
+        providerPeerIdStr: entity.getPeerId().toString(),
+      });
+      res.json({ status: "Task received", task });
+    } catch (e: unknown) {
+      console.error("Error creating task", e);
+      res.status(500).json({
+        status: "Error creating task",
+        error: e.message,
+      });
+    }
+  });
+
+  const start = async () => {
+    //start libp2p
+    await entity.node.start();
+    await entity.startHttp();
   };
 
-  const stop = () => {
-    return entity.node.stop();
+  const stop = async () => {
+    await entity.node.stop();
+    await entity.stopHttp();
   };
+
+  if (autoManage) {
+    await start();
+
+    //start managing on interval
+    setInterval(async () => {
+      await taskManager.manageTasks();
+    }, 5000);
+  }
 
   return {
     entity,
-
     events,
 
     taskManager,
