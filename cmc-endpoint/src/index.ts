@@ -1,9 +1,12 @@
 import express from 'express';
 import { Connection, PublicKey } from "@solana/web3.js";
+import * as dotenv from 'dotenv'
+dotenv.config()
+const HELIUS_RPC = process.env.RPC as string;
 
 const app = express();
 const port = process.env.PORT || 3000;
-const HELIUS_RPC = "API_KEY_HERE";
+
 
 const connection = new Connection(HELIUS_RPC, 'confirmed');
 
