@@ -20,13 +20,13 @@ import { createTemplateWorker } from "./modules/createTemplateWorker.js";
 import { createTemplateStore } from "../core/common/stores/templateStore.js";
 import type { Multiaddr } from "@multiformats/multiaddr";
 
-export type WorkerEvents = {
-  "task:created": (task: Task) => void;
+export interface WorkerEvents {
+  "task:created": CustomEvent<Task>;
   "task:completed": (task: TaskRecord) => void;
-  "task:accepted": (task: TaskRecord) => void;
+  "task:accepted": CustomEvent<Task>;
   "task:rejected": (task: TaskRecord) => void;
   "payment:created": (payment: Payment) => void;
-};
+}
 
 export const createWorkerEntity = async ({
   datastore,

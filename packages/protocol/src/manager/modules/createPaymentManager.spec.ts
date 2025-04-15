@@ -49,7 +49,7 @@ describe("createPaymentManager", () => {
   });
 
   it("generates a signed payment object", async () => {
-    const paymentManager = createPaymentManager({
+    const paymentManager = await createPaymentManager({
       privateKey: mockPrivateKey,
       paymentStore: mockPaymentStore,
       peerStore: mockPeerStore,

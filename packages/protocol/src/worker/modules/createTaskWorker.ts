@@ -82,7 +82,7 @@ export function createTaskWorker({
     });
 
     //emit task accepted event
-    events.safeDispatchEvent("task:accepted", { detail: taskRecord });
+    events.safeDispatchEvent("task:accepted", { detail: taskRecord.state });
   };
 
   const completeTask = async ({

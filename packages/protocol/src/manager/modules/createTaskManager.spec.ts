@@ -51,6 +51,9 @@ describe("createTaskManager", () => {
       assign: vi.fn(),
       reject: vi.fn(),
       payout: vi.fn(),
+      moveToActiveIndex: vi.fn(),
+      moveBulkToActiveIndex: vi.fn(),
+      moveToCompletedIndex: vi.fn(),
     };
 
     paymentManager = {

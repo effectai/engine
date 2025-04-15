@@ -233,6 +233,7 @@ export namespace RequestToWork {
 }
 
 export interface RequestToWorkResponse {
+  timestamp: number
   pubX: Uint8Array
   pubY: Uint8Array
 }
@@ -247,13 +248,18 @@ export namespace RequestToWorkResponse {
           w.fork()
         }
 
+        if ((obj.timestamp != null && obj.timestamp !== 0)) {
+          w.uint32(8)
+          w.uint32(obj.timestamp)
+        }
+
         if ((obj.pubX != null && obj.pubX.byteLength > 0)) {
-          w.uint32(10)
+          w.uint32(18)
           w.bytes(obj.pubX)
         }
 
         if ((obj.pubY != null && obj.pubY.byteLength > 0)) {
-          w.uint32(18)
+          w.uint32(26)
           w.bytes(obj.pubY)
         }
 
@@ -262,6 +268,7 @@ export namespace RequestToWorkResponse {
         }
       }, (reader, length, opts = {}) => {
         const obj: any = {
+          timestamp: 0,
           pubX: uint8ArrayAlloc(0),
           pubY: uint8ArrayAlloc(0)
         }
@@ -273,10 +280,14 @@ export namespace RequestToWorkResponse {
 
           switch (tag >>> 3) {
             case 1: {
-              obj.pubX = reader.bytes()
+              obj.timestamp = reader.uint32()
               break
             }
             case 2: {
+              obj.pubX = reader.bytes()
+              break
+            }
+            case 3: {
               obj.pubY = reader.bytes()
               break
             }

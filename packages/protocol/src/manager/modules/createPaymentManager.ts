@@ -5,7 +5,7 @@ import type {
   PrivateKey,
 } from "@libp2p/interface";
 import { PublicKey } from "@solana/web3.js";
-import { buildEddsa } from "circomlibjs";
+import { buildEddsa, buildPoseidon } from "circomlibjs";
 import { fileURLToPath } from "node:url";
 import * as snarkjs from "snarkjs";
 import path from "node:path";
@@ -26,7 +26,7 @@ import { computePaymentId } from "../../core/utils.js";
 import type { PaymentStore } from "../../core/common/stores/paymentStore.js";
 import { ManagerEntity } from "../main.js";
 
-export function createPaymentManager({
+export async function createPaymentManager({
   paymentStore,
   privateKey,
   peerStore,
@@ -35,6 +35,9 @@ export function createPaymentManager({
   privateKey: PrivateKey;
   paymentStore: PaymentStore;
 }) {
+  const eddsa = await buildEddsa();
+  const poseidon = await buildPoseidon();
+
   const processPayoutRequest = async ({
     peerId,
   }: {
@@ -184,7 +187,12 @@ export function createPaymentManager({
       }),
     );
 
-    const signature = await signPayment(payment, privateKey.raw.slice(0, 32));
+    const signature = await signPayment(
+      payment,
+      privateKey.raw.slice(0, 32),
+      eddsa,
+      poseidon,
+    );
 
     payment.signature = {
       S: signature.S.toString(),

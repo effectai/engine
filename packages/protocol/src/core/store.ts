@@ -1,4 +1,4 @@
-import { Datastore, Key } from "interface-datastore";
+import { Datastore, Key, QueryFilter } from "interface-datastore";
 
 // base-types.ts
 export interface BaseEvent {
@@ -15,19 +15,20 @@ export interface BaseEntityRecord<EventType extends BaseEvent> {
 export const createEntityStore = <
   EntityEvents extends BaseEvent = BaseEvent,
   EntityRecord extends
-  BaseEntityRecord<EntityEvents> = BaseEntityRecord<EntityEvents>,
+    BaseEntityRecord<EntityEvents> = BaseEntityRecord<EntityEvents>,
 >({
   datastore,
-  prefix = "/entities/",
+  defaultPrefix = "entities",
   parse = JSON.parse,
   stringify = JSON.stringify,
 }: {
   datastore: Datastore;
-  prefix?: string;
+  defaultPrefix?: string;
   parse?: (data: string) => EntityRecord;
   stringify?: (record: EntityRecord) => string;
 }) => {
-  const createKey = (entityId: string) => new Key(`/${prefix}/${entityId}`);
+  const createKey = (entityId: string) =>
+    new Key(`/${defaultPrefix}/${entityId}`);
 
   const has = async ({ entityId }: { entityId: string }): Promise<boolean> => {
     return datastore.has(createKey(entityId));
@@ -54,9 +55,19 @@ export const createEntityStore = <
     await datastore.delete(createKey(entityId));
   };
 
-  const all = async (): Promise<EntityRecord[]> => {
+  const all = async ({
+    filters = undefined,
+    limit = 100,
+    prefix = defaultPrefix,
+  }: {
+    prefix?: string;
+    filters?: QueryFilter[];
+    limit?: number;
+  } = {}): Promise<EntityRecord[]> => {
     const entities: EntityRecord[] = [];
     for await (const entry of datastore.query({
+      limit,
+      filters,
       prefix: `/${prefix}/`,
     })) {
       entities.push(parse(entry.value.toString()));
@@ -95,9 +106,11 @@ export const createEntityStore = <
       throw new Error("Event not found");
     }
 
-    record.events.splice(index, 1);
-
-    await record.put({ entityId, record });
+    //only delete the last event if it is the last event in the list.
+    if (index === record.events.length - 1) {
+      record.events.splice(index, 1);
+      await put({ entityId, record });
+    }
   };
 
   return {
@@ -108,5 +121,6 @@ export const createEntityStore = <
     all,
     rollback,
     rollbackEvent,
+    datastore,
   };
 };

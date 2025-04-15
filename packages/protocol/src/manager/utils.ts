@@ -59,11 +59,13 @@ export const getSessionData = async (peer: Peer) => {
   };
 };
 
-export const signPayment = async (payment: Payment, privateKey: Uint8Array) => {
-  const eddsa = await buildEddsa();
-  const poseidon = await buildPoseidon();
-
-  const signature = eddsa.signPoseidon(
+export const signPayment = async (
+  payment: Payment,
+  privateKey: Uint8Array,
+  eddsa: any,
+  poseidon: any,
+) => {
+  const signature = await eddsa.signPoseidon(
     privateKey,
     poseidon([
       int2hex(payment.nonce.toString()),

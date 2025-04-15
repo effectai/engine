@@ -1,11 +1,12 @@
 import type { PeerId, TypedEventEmitter } from "@libp2p/interface";
-import type { Datastore } from "interface-datastore";
-import { TASK_ACCEPTANCE_TIME } from "../consts.js";
+import { Key, type Datastore } from "interface-datastore";
+import { ACTIVE_TASK_TRESHOLD, TASK_ACCEPTANCE_TIME } from "../consts.js";
 import type { BaseTaskEvent, TaskRecord } from "../../core/common/types.js";
 import { TaskValidationError, TaskExpiredError } from "../../core/errors.js";
 import type { Payment, Task } from "../../core/messages/effect.js";
 import { createEntityStore } from "../../core/store.js";
 import { parseWithBigInt, stringifyWithBigInt } from "../../core/utils.js";
+import { P } from "pino";
 
 export type ManagerTaskEvent =
   | TaskCreatedEvent
@@ -62,10 +63,99 @@ export const createManagerTaskStore = ({
 }) => {
   const coreStore = createEntityStore<ManagerTaskEvent, ManagerTaskRecord>({
     datastore,
-    prefix: "tasks",
+    defaultPrefix: "tasks",
     stringify: (record) => stringifyWithBigInt(record),
     parse: (data) => parseWithBigInt(data),
   });
+
+  const getTask = async ({
+    entityId,
+    index = "active",
+  }: {
+    entityId: string;
+    index?: string;
+  }): Promise<ManagerTaskRecord | null> => {
+    try {
+      const taskRecord = await coreStore.get({
+        entityId: `${index}/${entityId}`,
+      });
+
+      if (!taskRecord) {
+        throw new TaskValidationError("Task not found");
+      }
+
+      return taskRecord;
+    } catch (e) {
+      if (e instanceof TaskValidationError) {
+        throw e;
+      }
+      throw new TaskValidationError("Task not found");
+    }
+  };
+
+  const moveToCompletedIndex = async ({
+    entityId,
+  }: {
+    entityId: string;
+  }): Promise<void> => {
+    const taskRecord = await getTask({ entityId });
+
+    if (!taskRecord) {
+      throw new TaskValidationError("Task not found");
+    }
+
+    const b = datastore.batch();
+    b.put(
+      new Key(`/tasks/completed/${taskRecord.state.id}`),
+      Buffer.from(stringifyWithBigInt(taskRecord)),
+    );
+    b.delete(new Key(`/tasks/active/${taskRecord.state.id}`));
+
+    await b.commit();
+  };
+
+  const moveToActiveIndex = async ({
+    entityId,
+  }: {
+    entityId: string;
+  }): Promise<void> => {
+    const taskRecord = await coreStore.get({ entityId });
+
+    if (!taskRecord) {
+      throw new TaskValidationError("Task not found");
+    }
+
+    const b = datastore.batch();
+    b.put(
+      new Key(`/tasks/active/${taskRecord.state.id}`),
+      Buffer.from(stringifyWithBigInt(taskRecord)),
+    );
+    b.delete(new Key(`/tasks/backlog/${taskRecord.state.id}`));
+
+    await b.commit();
+  };
+
+  const moveBulkToActiveIndex = async ({
+    n,
+  }: { n: number }): Promise<number> => {
+    const backlogTasks = await coreStore.all({
+      prefix: "tasks/backlog",
+      limit: n,
+    });
+
+    const b = datastore.batch();
+    for (let i = 0; i < backlogTasks.length; i++) {
+      b.put(
+        new Key(`/tasks/active/${backlogTasks[i].state.id}`),
+        Buffer.from(stringifyWithBigInt(backlogTasks[i])),
+      );
+      b.delete(new Key(`/tasks/backlog/${i}`));
+    }
+
+    await b.commit();
+
+    return backlogTasks.length;
+  };
 
   const create = async ({
     task,
@@ -85,7 +175,7 @@ export const createManagerTaskStore = ({
       state: task,
     };
 
-    await coreStore.put({ entityId: task.id, record });
+    await coreStore.put({ entityId: `active/${task.id}`, record });
 
     return record;
   };
@@ -99,7 +189,7 @@ export const createManagerTaskStore = ({
     result: string;
     peerIdStr: string;
   }): Promise<ManagerTaskRecord> => {
-    const taskRecord = await coreStore.get({ entityId });
+    const taskRecord = await getTask({ entityId });
 
     if (!taskRecord) {
       throw new TaskValidationError("Task not found");
@@ -129,7 +219,10 @@ export const createManagerTaskStore = ({
       submissionByPeer: peerIdStr,
     });
 
-    await coreStore.put({ entityId, record: taskRecord });
+    await coreStore.put({
+      entityId: `active/${entityId}`,
+      record: taskRecord,
+    });
 
     return taskRecord;
   };
@@ -141,7 +234,11 @@ export const createManagerTaskStore = ({
     entityId: string;
     peerIdStr: string;
   }): Promise<ManagerTaskRecord> => {
-    const taskRecord = await coreStore.get({ entityId });
+    const taskRecord = await getTask({ entityId });
+
+    if (!taskRecord) {
+      throw new TaskValidationError("Task not found");
+    }
 
     // only allowed to accept if last event is assign
     const lastEvent = taskRecord.events[taskRecord.events.length - 1];
@@ -159,7 +256,7 @@ export const createManagerTaskStore = ({
       acceptedByPeer: peerIdStr,
     });
 
-    await coreStore.put({ entityId, record: taskRecord });
+    await coreStore.put({ entityId: `active/${entityId}`, record: taskRecord });
 
     return taskRecord;
   };
@@ -173,7 +270,11 @@ export const createManagerTaskStore = ({
     peerIdStr: string;
     reason: string;
   }): Promise<void> => {
-    const taskRecord = await coreStore.get({ entityId });
+    const taskRecord = await getTask({ entityId });
+
+    if (!taskRecord) {
+      throw new TaskValidationError("Task not found");
+    }
 
     // only allowed to reject if last event is assign
     const lastEvent = taskRecord.events[taskRecord.events.length - 1];
@@ -199,7 +300,11 @@ export const createManagerTaskStore = ({
     entityId: string;
     payment: Payment;
   }): Promise<void> => {
-    const taskRecord = await coreStore.get({ entityId });
+    const taskRecord = await getTask({ entityId });
+
+    if (!taskRecord) {
+      throw new TaskValidationError("Task not found");
+    }
 
     // only allowed to payout if last event is complete
     const lastEvent = taskRecord.events[taskRecord.events.length - 1];
@@ -214,7 +319,7 @@ export const createManagerTaskStore = ({
       payment,
     });
 
-    await coreStore.put({ entityId, record: taskRecord });
+    await coreStore.put({ entityId: `active/${entityId}`, record: taskRecord });
   };
 
   const assign = async ({
@@ -224,7 +329,11 @@ export const createManagerTaskStore = ({
     entityId: string;
     workerPeerIdStr: string;
   }): Promise<void> => {
-    const taskRecord = await coreStore.get({ entityId });
+    const taskRecord = await getTask({ entityId });
+
+    if (!taskRecord) {
+      throw new TaskValidationError("Task not found");
+    }
 
     // only allowed to assign if last event is create or reject.
     const lastEvent = taskRecord.events[taskRecord.events.length - 1];
@@ -239,7 +348,7 @@ export const createManagerTaskStore = ({
       assignedToPeer: workerPeerIdStr,
     });
 
-    await coreStore.put({ entityId, record: taskRecord });
+    await coreStore.put({ entityId: `active/${entityId}`, record: taskRecord });
   };
 
   return {
@@ -250,6 +359,9 @@ export const createManagerTaskStore = ({
     reject,
     payout,
     assign,
+    moveToActiveIndex,
+    moveBulkToActiveIndex,
+    moveToCompletedIndex,
   };
 };
 

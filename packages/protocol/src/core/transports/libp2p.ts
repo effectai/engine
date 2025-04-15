@@ -146,6 +146,7 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
       async ({ stream, connection }) => {
         await this.handleIncomingStream(stream, connection);
       },
+      { maxInboundStreams: 1000 },
     );
   }
 

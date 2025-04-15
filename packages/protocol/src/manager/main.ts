@@ -22,10 +22,10 @@ import { HttpTransport } from "../core/transports/http.js";
 
 export type ManagerEvents = {
   "task:created": (task: TaskRecord) => void;
-  "task:accepted": (task: TaskRecord) => void;
+  "task:accepted": CustomEvent<TaskRecord>;
   "task:rejected": (task: TaskRecord) => void;
   "task:submission": (task: TaskRecord) => void;
-  "task:completed": (task: TaskRecord) => void;
+  "task:completed": CustomEvent<TaskRecord>;
   "payment:created": (payment: Payment) => void;
 };
 
@@ -78,7 +78,7 @@ export const createManager = async ({
   const workerQueue = createWorkerQueue();
   const events = new TypedEventEmitter<ManagerEvents>();
 
-  const paymentManager = createPaymentManager({
+  const paymentManager = await createPaymentManager({
     peerStore: entity.node.peerStore,
     privateKey,
     paymentStore,
@@ -100,11 +100,12 @@ export const createManager = async ({
   entity
     .onMessage("requestToWork", async ({ recipient, nonce }, { peerId }) => {
       //save nonce & recipient in peerStore and set last payout to now
+      const now = Math.floor(Date.now() / 1000);
       await entity.node.peerStore.merge(peerId, {
         metadata: {
           recipient: new TextEncoder().encode(recipient),
           nonce: bigIntToUint8Array(nonce),
-          lastPayout: new TextEncoder().encode((Date.now() / 1000).toString()),
+          lastPayout: new TextEncoder().encode(now.toString()),
         },
       });
 
@@ -115,8 +116,8 @@ export const createManager = async ({
       const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
 
       return {
-        // we respond with our jubjub key
         requestToWorkResponse: {
+          timestamp: now,
           pubX: pubKey[0],
           pubY: pubKey[1],
         },
@@ -175,8 +176,8 @@ export const createManager = async ({
   // Register http routes for manager
   entity.post("/task", async (req, res) => {
     const task = req.body;
-    //save task in manager store
     try {
+      //save task in manager store
       await taskManager.createTask({
         task,
         providerPeerIdStr: entity.getPeerId().toString(),
@@ -184,20 +185,57 @@ export const createManager = async ({
       res.json({ status: "Task received", task });
     } catch (e: unknown) {
       console.error("Error creating task", e);
-      res.status(500).json({
-        status: "Error creating task",
-        error: e.message,
+      if (e instanceof Error) {
+        res.status(500).json({
+          status: "Error creating task",
+          error: e.message,
+        });
+      }
+    }
+  });
+
+  entity.get("/", async (req, res) => {
+    const peersInQueue = workerQueue.getQueue().length;
+
+    const pendingTasks = await taskManager.getPendingTasks();
+    const completedTasks = await taskManager.getCompletedTasks();
+
+    res.json({
+      status: "Manager is running",
+      peerId: entity.getPeerId().toString(),
+      peersInQueue,
+      pendingTasks: pendingTasks.length,
+      completedTasks: completedTasks.length,
+    });
+  });
+
+  entity.post("/template/register", async (req, res) => {
+    const template = req.body;
+    try {
+      await templateManager.registerTemplate({
+        template,
+        providerPeerIdStr: entity.getPeerId().toString(),
       });
+      res.json({ status: "Template registered", id: template.templateId });
+    } catch (e: unknown) {
+      console.error("Error creating template", e);
+      if (e instanceof Error) {
+        res.status(500).json({
+          status: "Error creating template",
+          error: e.message,
+        });
+      }
     }
   });
 
   const start = async () => {
-    //start libp2p
+    //start libp2p & http transports
     await entity.node.start();
     await entity.startHttp();
   };
 
   const stop = async () => {
+    //stop libp2p & http transports
     await entity.node.stop();
     await entity.stopHttp();
   };

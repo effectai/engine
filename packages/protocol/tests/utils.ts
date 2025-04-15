@@ -1,7 +1,7 @@
 import type { TypedEventEmitter } from "@libp2p/interface";
 import { LevelDatastore } from "datastore-level";
 
-import { vi } from "vitest";
+import { MockedFunction, vi } from "vitest";
 import type { ManagerEvents } from "../src/manager/main";
 import type { WorkerEvents } from "../src/worker/main";
 import { Key } from "interface-datastore";
@@ -17,19 +17,6 @@ export const createDataStore = async (path: string) => {
 export const delay = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-export const waitForEvent = async (
-  mockFn: vi.Mock,
-  timeout = 5000,
-): Promise<void> => {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    if (mockFn.mock.calls.length > 0) return;
-    await delay(100);
-  }
-  throw new Error(`Timeout waiting for event after ${timeout}ms`);
-};
-type EventTracker = Record<string, ReturnType<typeof vi.fn>>;
-
 export function trackWorkerEvents(worker: {
   events: TypedEventEmitter<WorkerEvents>;
 }) {
@@ -38,11 +25,29 @@ export function trackWorkerEvents(worker: {
     taskAccepted: vi.fn(),
     taskCompleted: vi.fn(),
     paymentReceived: vi.fn(),
+
+    filtered: {
+      taskCreated: new Map<string, any[]>(),
+      taskAccepted: new Map<string, any[]>(),
+      taskCompleted: new Map<string, any[]>(),
+      paymentReceived: new Map<string, any[]>(),
+    },
   };
 
-  worker.events.addEventListener("task:created", events.taskCreated);
-  worker.events.addEventListener("task:accepted", events.taskAccepted);
-  worker.events.addEventListener("payment:created", events.paymentReceived);
+  worker.events.addEventListener("task:created", ({ detail }) => {
+    events.taskCreated({ detail });
+    if (detail?.id) {
+      events.filtered.taskCreated.set(detail.id, [detail]);
+    }
+  });
+
+  worker.events.addEventListener("task:accepted", ({ detail }) => {
+    events.taskAccepted({ detail });
+    if (detail?.id) {
+      const current = events.filtered.taskAccepted.get(detail.id) || [];
+      events.filtered.taskAccepted.set(detail.id, [...current, detail]);
+    }
+  });
 
   return events;
 }
@@ -52,18 +57,73 @@ export function trackManagerEvents(manager: {
 }) {
   const events = {
     taskCreated: vi.fn(),
-    taskAssigned: vi.fn(),
     taskAccepted: vi.fn(),
-    taskSubmitted: vi.fn(),
+    taskSubmission: vi.fn(),
     taskCompleted: vi.fn(),
+    paymentReceived: vi.fn(),
+
+    filtered: {
+      taskCreated: new Map<string, any[]>(),
+      taskAccepted: new Map<string, any[]>(),
+      taskSubmission: new Map<string, any[]>(),
+      taskCompleted: new Map<string, any[]>(),
+    },
   };
 
-  manager.events.addEventListener("task:accepted", events.taskAccepted);
-  manager.events.addEventListener("task:submission", events.taskSubmitted);
-  manager.events.addEventListener("task:completed", events.taskCompleted);
+  manager.events.addEventListener("task:created", ({ detail }) => {
+    events.taskCreated({ detail });
+    if (detail?.id) {
+      events.filtered.taskCreated.set(detail.id, [detail]);
+    }
+  });
 
-  return events;
+  manager.events.addEventListener("task:accepted", ({ detail }) => {
+    events.taskAccepted({ detail });
+    if (detail?.state.id) {
+      const current = events.filtered.taskAccepted.get(detail.state.id) || [];
+      events.filtered.taskAccepted.set(detail.state.id, [...current, detail]);
+    }
+  });
+
+  manager.events.addEventListener("task:submission", ({ detail }) => {
+    events.taskSubmission({ detail });
+    if (detail?.state.id) {
+      const current = events.filtered.taskSubmission.get(detail.state.id) || [];
+      events.filtered.taskSubmission.set(detail.state.id, [...current, detail]);
+    }
+  });
+
+  manager.events.addEventListener("task:completed", ({ detail }) => {
+    events.taskCompleted({ detail });
+    if (detail?.state.id) {
+      const current = events.filtered.taskCompleted.get(detail.state.id) || [];
+      events.filtered.taskCompleted.set(detail.state.id, [...current, detail]);
+    }
+  });
+
+  return {
+    ...events,
+    getTaskEvents: (taskId: string) => ({
+      created: events.filtered.taskCreated.get(taskId) || [],
+      accepted: events.filtered.taskAccepted.get(taskId) || [],
+    }),
+  };
 }
+
+export const waitForTaskEvent = (taskId: string, map: Map<string, any[]>) => {
+  return new Promise((resolve) => {
+    const check = () => {
+      const contains = map.has(taskId);
+
+      if (contains) {
+        resolve(map.get(taskId));
+      } else {
+        setTimeout(check, 200);
+      }
+    };
+    check();
+  });
+};
 
 export const createMockDatastore = () => {
   const store = new Map<string, Buffer>();

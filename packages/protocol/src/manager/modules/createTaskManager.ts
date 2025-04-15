@@ -1,6 +1,10 @@
 import { PublicKey } from "@solana/web3.js";
 import { peerIdFromString } from "@libp2p/peer-id";
-import { TASK_ACCEPTANCE_TIME } from "../consts.js";
+import {
+  BATCH_SIZE,
+  TASK_ACCEPTANCE_TIME,
+  ACTIVE_TASK_TRESHOLD,
+} from "../consts.js";
 import type { createManager, ManagerEntity, ManagerEvents } from "../main.js";
 import type { createWorkerQueue } from "./createWorkerQueue.js";
 import type { createPaymentManager } from "./createPaymentManager.js";
@@ -16,20 +20,24 @@ import { managerLogger } from "../../core/logging.js";
 import type { TypedEventEmitter } from "@libp2p/interface";
 import type { Task } from "../../core/messages/effect.js";
 import { TemplateStore } from "../../core/common/stores/templateStore.js";
+import { createWorkerManager } from "./createWorkerManager.js";
 
 export function createTaskManager({
   manager,
   workerQueue,
   taskStore,
   paymentManager,
+  workerManager,
   events,
   templateStore,
 }: {
   manager: ManagerEntity;
   taskStore: ManagerTaskStore;
   paymentManager: ReturnType<typeof createPaymentManager>;
+  workerManager: ReturnType<typeof createWorkerManager>;
   workerQueue: ReturnType<typeof createWorkerQueue>;
   events: TypedEventEmitter<ManagerEvents>;
+
   templateStore: TemplateStore;
 }) {
   const isExpired = (timestamp: number) =>
@@ -192,7 +200,6 @@ export function createTaskManager({
       ),
     });
 
-    //create payout event
     await taskStore.payout({
       entityId: taskRecord.state.id,
       payment,
@@ -206,6 +213,11 @@ export function createTaskManager({
 
     //sendout task completed event
     events.safeDispatchEvent("task:completed", { detail: taskRecord });
+
+    //move task to completed index
+    await taskStore.moveToCompletedIndex({
+      entityId: taskRecord.state.id,
+    });
 
     return {
       ack,
@@ -279,17 +291,59 @@ export function createTaskManager({
     });
   };
 
+  const moveToActiveIndex = async ({
+    entityId,
+  }: {
+    entityId: string;
+  }) => {
+    await taskStore.moveToActiveIndex({
+      entityId: `backlog/${entityId}`,
+    });
+  };
+
   const manageTasks = async () => {
     try {
-      const tasks = await taskStore.all();
-      managerLogger.info(`Managing ${tasks.length} tasks`);
+      let activeTasks = await taskStore.all({ prefix: "tasks/active" });
+      const deficit = ACTIVE_TASK_TRESHOLD - activeTasks.length;
 
-      for (const task of tasks) {
-        await manageTask(task);
+      if (deficit > 0) {
+        const movedCount = await taskStore.moveBulkToActiveIndex({
+          n: Math.min(deficit, BATCH_SIZE),
+        });
+
+        if (movedCount > 0) {
+          activeTasks = await taskStore.all({ prefix: "tasks/active" });
+        }
       }
+
+      console.log(`Managing ${activeTasks.length} active tasks`);
+      await Promise.allSettled(
+        activeTasks.map((task) =>
+          manageTask(task).catch((e) =>
+            console.error(`Task ${task.state.id} failed:`, e),
+          ),
+        ),
+      );
     } catch (e) {
-      console.error(e);
+      console.error("System error:", e);
     }
+  };
+
+  const getPendingTasks = async () => {
+    const tasks = await taskStore.all();
+
+    return tasks.filter((task) =>
+      task.events.every((event) => event.type !== "payout"),
+    );
+  };
+
+  const getCompletedTasks = async () => {
+    const tasks = await taskStore.all({
+      prefix: "tasks/completed",
+      limit: 500,
+    });
+
+    return tasks;
   };
 
   return {
@@ -298,8 +352,13 @@ export function createTaskManager({
     processTaskAcception,
     processTaskRejection,
     processTaskSubmission,
+
     manageTask,
     manageTasks,
     assignTask,
+
+    getPendingTasks,
+    getCompletedTasks,
+    moveToActiveIndex,
   };
 }

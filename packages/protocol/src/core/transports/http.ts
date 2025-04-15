@@ -42,11 +42,7 @@ export class HttpTransport implements Transport<HttpTransportMethods> {
   }
 
   async start(): Promise<void> {
-    this.#server = this.#app.listen(this.options.port, () => {
-      console.log(
-        `HTTP server running on http://localhost:${this.options.port}`,
-      );
-    });
+    this.#server = this.#app.listen(this.options.port, () => {});
   }
 
   getMethods(): HttpTransportMethods {

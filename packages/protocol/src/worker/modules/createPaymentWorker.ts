@@ -29,7 +29,10 @@ export function createPaymentWorker({
   };
 
   const getPayments = async () => {
-    return await paymentStore.all();
+    return await paymentStore.all({
+      filters: [],
+      limit: 100,
+    });
   };
 
   const requestPayout = async ({
