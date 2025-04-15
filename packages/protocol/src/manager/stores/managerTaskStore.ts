@@ -242,6 +242,7 @@ export const createManagerTaskStore = ({
 
     // only allowed to accept if last event is assign
     const lastEvent = taskRecord.events[taskRecord.events.length - 1];
+
     if (lastEvent.type !== "assign" || lastEvent.assignedToPeer !== peerIdStr) {
       throw new TaskValidationError("Task was not assigned to this worker");
     }
@@ -276,13 +277,6 @@ export const createManagerTaskStore = ({
       throw new TaskValidationError("Task not found");
     }
 
-    // only allowed to reject if last event is assign
-    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
-
-    if (lastEvent.type !== "assign" || lastEvent.assignedToPeer !== peerIdStr) {
-      throw new TaskValidationError("Task was not assigned to this worker");
-    }
-
     taskRecord.events.push({
       timestamp: Math.floor(Date.now() / 1000),
       type: "reject",
@@ -290,7 +284,7 @@ export const createManagerTaskStore = ({
       rejectedByPeer: peerIdStr,
     });
 
-    await coreStore.put({ entityId, record: taskRecord });
+    await coreStore.put({ entityId: `active/${entityId}`, record: taskRecord });
   };
 
   const payout = async ({
@@ -362,6 +356,7 @@ export const createManagerTaskStore = ({
     moveToActiveIndex,
     moveBulkToActiveIndex,
     moveToCompletedIndex,
+    getTask,
   };
 };
 

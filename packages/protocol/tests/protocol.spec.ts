@@ -18,7 +18,6 @@ import {
   delay,
   trackManagerEvents,
   trackWorkerEvents,
-  waitForEvent,
   waitForTaskEvent,
 } from "./utils.js";
 import { randomBytes } from "node:crypto";

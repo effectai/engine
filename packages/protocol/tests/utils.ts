@@ -1,6 +1,5 @@
 import type { TypedEventEmitter } from "@libp2p/interface";
 import { LevelDatastore } from "datastore-level";
-
 import { MockedFunction, vi } from "vitest";
 import type { ManagerEvents } from "../src/manager/main";
 import type { WorkerEvents } from "../src/worker/main";

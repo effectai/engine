@@ -19,6 +19,7 @@ import { createTemplateManager } from "./modules/createTemplateManager.js";
 import { bigIntToUint8Array } from "../core/utils.js";
 import { buildEddsa } from "circomlibjs";
 import { HttpTransport } from "../core/transports/http.js";
+import { managerLogger } from "../core/logging.js";
 
 export type ManagerEvents = {
   "task:created": (task: TaskRecord) => void;
@@ -43,12 +44,12 @@ export const createManagerEntity = async ({
       scheme: EffectProtocolMessage,
     },
     transports: [
-      new HttpTransport({ port: 8888 }),
+      new HttpTransport({ port: 8889 }),
       new Libp2pTransport({
         autoStart: true,
         datastore,
         privateKey,
-        listen: ["/ip4/0.0.0.0/tcp/34861/ws"],
+        listen: ["/ip4/0.0.0.0/tcp/0/ws"],
         services: {},
         transports: [webSockets()],
       }),
@@ -114,6 +115,8 @@ export const createManager = async ({
 
       const eddsa = await buildEddsa();
       const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
+
+      managerLogger.info(`Sucessfully registered worker ${peerId.toString()}`);
 
       return {
         requestToWorkResponse: {
@@ -243,10 +246,31 @@ export const createManager = async ({
   if (autoManage) {
     await start();
 
-    //start managing on interval
-    setInterval(async () => {
-      await taskManager.manageTasks();
-    }, 5000);
+    const MANAGEMENT_INTERVAL = 5000;
+    let isRunning = false;
+    let lastRunTime = 0;
+
+    const runManagementCycle = async () => {
+      if (isRunning) {
+        console.log("Management cycle skipped - already running");
+        return;
+      }
+
+      try {
+        isRunning = true;
+        lastRunTime = Date.now();
+        await taskManager.manageTasks();
+      } catch (err) {
+        console.error("Management cycle error:", err);
+      } finally {
+        isRunning = false;
+        const elapsed = Date.now() - lastRunTime;
+        const nextRun = Math.max(0, MANAGEMENT_INTERVAL - elapsed);
+        setTimeout(runManagementCycle, nextRun);
+      }
+    };
+
+    runManagementCycle();
   }
 
   return {

@@ -127,7 +127,18 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
       start: this.options.autoStart,
       ...(this.options.privateKey && { privateKey: this.options.privateKey }),
       addresses: { listen: this.options.listen || [] },
-      connectionGater: { denyDialMultiaddr: () => false },
+      connectionGater: {
+        denyDialMultiaddr: async () => false,
+        denyInboundConnection: async () => false,
+        denyOutboundConnection: async () => false,
+      },
+      connectionManager: {
+        //TODO::
+        maxConnections: 1000, // Increase from default 300
+        inboundUpgradeTimeout: 10000, // Give more time for handshake
+        maxParallelDials: 100, // Default is 100
+        dialTimeout: 30000, // Increase from default 30s
+      },
       transports: this.options.transports,
       streamMuxers: [yamux()],
       connectionEncrypters: [noise()],
@@ -146,7 +157,11 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
       async ({ stream, connection }) => {
         await this.handleIncomingStream(stream, connection);
       },
-      { maxInboundStreams: 1000 },
+      {
+        runOnLimitedConnection: false,
+        maxInboundStreams: 1000,
+        maxOutboundStreams: 1000,
+      },
     );
   }
 
@@ -282,6 +297,7 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
 
       // Validate response
       if (response.error) {
+        console.log("Received error response:", response.error);
         return [
           null,
           new ProtocolError(response.error.code, response.error.message),

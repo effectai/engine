@@ -158,7 +158,7 @@ export function createTaskManager({
   };
 
   const handleCreateEvent = async (taskRecord: ManagerTaskRecord) => {
-    await assignTask({ taskRecord });
+    await assignTask({ entityId: taskRecord.state.id });
   };
 
   const handleAssignEvent = async (
@@ -174,7 +174,7 @@ export function createTaskManager({
         reason: "Worker took too long to accept/reject task",
       });
 
-      await assignTask({ taskRecord });
+      await assignTask({ entityId: taskRecord.state.id });
     }
   };
 
@@ -182,9 +182,19 @@ export function createTaskManager({
     taskRecord: ManagerTaskRecord,
     lastEvent: TaskAcceptedEvent,
   ) => {
-    if (isExpired(lastEvent.timestamp)) {
-      managerLogger.info("Worker took too long to accept/reject task");
-      await assignTask({ taskRecord });
+    if (
+      lastEvent.timestamp + taskRecord.state.timeLimitSeconds <
+      Math.floor(Date.now() / 1000)
+    ) {
+      managerLogger.info("Worker took too long to complete task");
+
+      await taskStore.reject({
+        entityId: taskRecord.state.id,
+        peerIdStr: lastEvent.acceptedByPeer,
+        reason: "Worker took too long to accept/reject task",
+      });
+
+      await assignTask({ entityId: taskRecord.state.id });
     }
   };
 
@@ -230,7 +240,7 @@ export function createTaskManager({
     event: TaskRejectedEvent,
   ) => {
     //this task got rejected, lets just re-assign it for now.
-    await assignTask({ taskRecord });
+    await assignTask({ entityId: taskRecord.state.id });
   };
 
   const manageTask = async (taskRecord: ManagerTaskRecord) => {
@@ -265,9 +275,16 @@ export function createTaskManager({
     }
   };
 
-  const assignTask = async ({
-    taskRecord,
-  }: { taskRecord: ManagerTaskRecord }) => {
+  const assignTask = async ({ entityId }: { entityId: string }) => {
+    const taskRecord = await taskStore.getTask({
+      entityId,
+    });
+
+    if (!taskRecord) {
+      managerLogger.error("Task not found");
+      return;
+    }
+
     const lastEvent = taskRecord.events[taskRecord.events.length - 1];
 
     if (lastEvent.type === "assign") {
@@ -303,20 +320,13 @@ export function createTaskManager({
 
   const manageTasks = async () => {
     try {
-      let activeTasks = await taskStore.all({ prefix: "tasks/active" });
-      const deficit = ACTIVE_TASK_TRESHOLD - activeTasks.length;
-
-      if (deficit > 0) {
-        const movedCount = await taskStore.moveBulkToActiveIndex({
-          n: Math.min(deficit, BATCH_SIZE),
-        });
-
-        if (movedCount > 0) {
-          activeTasks = await taskStore.all({ prefix: "tasks/active" });
-        }
-      }
+      const activeTasks = await taskStore.all({
+        prefix: "tasks/active",
+        limit: 50,
+      });
 
       console.log(`Managing ${activeTasks.length} active tasks`);
+
       await Promise.allSettled(
         activeTasks.map((task) =>
           manageTask(task).catch((e) =>

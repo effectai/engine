@@ -11,7 +11,8 @@
     "format": "pnpm biome format --write . --config-path ../../biome.json",
     "generate": "protons ./src/core/protocol/task/task.proto",
     "manager:start": "node ./src/manager/scripts/start-manager.js",
-    "post:task": "sh ./packages/manager/scripts/post-task.sh"
+    "post:task": "sh ./packages/manager/scripts/post-task.sh",
+    "simulate": "node --experimental-strip-types ./tests/simulate.ts"
   },
   "types": "./dist/src/index.d.ts",
   "exports": {
@@ -21,6 +22,7 @@
     }
   },
   "dependencies": {
+    "ts-node": "^10.9.1",
     "commander": "^13.1.0",
     "axios": "^1.8.4",
     "libp2p": "^2.8.2",
