@@ -93,70 +93,6 @@ export const createManagerTaskStore = ({
     }
   };
 
-  const moveToCompletedIndex = async ({
-    entityId,
-  }: {
-    entityId: string;
-  }): Promise<void> => {
-    const taskRecord = await getTask({ entityId });
-
-    if (!taskRecord) {
-      throw new TaskValidationError("Task not found");
-    }
-
-    const b = datastore.batch();
-    b.put(
-      new Key(`/tasks/completed/${taskRecord.state.id}`),
-      Buffer.from(stringifyWithBigInt(taskRecord)),
-    );
-    b.delete(new Key(`/tasks/active/${taskRecord.state.id}`));
-
-    await b.commit();
-  };
-
-  const moveToActiveIndex = async ({
-    entityId,
-  }: {
-    entityId: string;
-  }): Promise<void> => {
-    const taskRecord = await coreStore.get({ entityId });
-
-    if (!taskRecord) {
-      throw new TaskValidationError("Task not found");
-    }
-
-    const b = datastore.batch();
-    b.put(
-      new Key(`/tasks/active/${taskRecord.state.id}`),
-      Buffer.from(stringifyWithBigInt(taskRecord)),
-    );
-    b.delete(new Key(`/tasks/backlog/${taskRecord.state.id}`));
-
-    await b.commit();
-  };
-
-  const moveBulkToActiveIndex = async ({
-    n,
-  }: { n: number }): Promise<number> => {
-    const backlogTasks = await coreStore.all({
-      prefix: "tasks/backlog",
-      limit: n,
-    });
-
-    const b = datastore.batch();
-    for (let i = 0; i < backlogTasks.length; i++) {
-      b.put(
-        new Key(`/tasks/active/${backlogTasks[i].state.id}`),
-        Buffer.from(stringifyWithBigInt(backlogTasks[i])),
-      );
-      b.delete(new Key(`/tasks/backlog/${i}`));
-    }
-
-    await b.commit();
-
-    return backlogTasks.length;
-  };
-
   const create = async ({
     task,
     providerPeerIdStr,
@@ -219,10 +155,13 @@ export const createManagerTaskStore = ({
       submissionByPeer: peerIdStr,
     });
 
-    await coreStore.put({
-      entityId: `active/${entityId}`,
-      record: taskRecord,
-    });
+    const batch = datastore.batch();
+    batch.put(
+      new Key(`/tasks/active/${taskRecord.state.id}`),
+      Buffer.from(stringifyWithBigInt(taskRecord)),
+    );
+    batch.delete(new Key(`/tasks/assign/${peerIdStr}/${entityId}`));
+    await batch.commit();
 
     return taskRecord;
   };
@@ -277,6 +216,22 @@ export const createManagerTaskStore = ({
       throw new TaskValidationError("Task not found");
     }
 
+    const latestAssignEvent = taskRecord.events.reduce(
+      (latest: TaskAssignedEvent | null, current) => {
+        if (current.type === "assign") {
+          if (!latest || current.timestamp > latest.timestamp) {
+            return current;
+          }
+        }
+        return latest;
+      },
+      null,
+    );
+
+    if (!latestAssignEvent) {
+      throw new TaskValidationError("Task was not assigned to this worker");
+    }
+
     taskRecord.events.push({
       timestamp: Math.floor(Date.now() / 1000),
       type: "reject",
@@ -284,7 +239,18 @@ export const createManagerTaskStore = ({
       rejectedByPeer: peerIdStr,
     });
 
-    await coreStore.put({ entityId: `active/${entityId}`, record: taskRecord });
+    const batch = datastore.batch();
+
+    batch.put(
+      new Key(`/tasks/active/${taskRecord.state.id}`),
+      Buffer.from(stringifyWithBigInt(taskRecord)),
+    );
+
+    batch.delete(
+      new Key(`/tasks/assign/${latestAssignEvent?.assignedToPeer}/${entityId}`),
+    );
+
+    await batch.commit();
   };
 
   const payout = async ({
@@ -313,7 +279,16 @@ export const createManagerTaskStore = ({
       payment,
     });
 
-    await coreStore.put({ entityId: `active/${entityId}`, record: taskRecord });
+    //delete from active tasks
+    const batch = datastore.batch();
+
+    batch.put(
+      new Key(`/tasks/completed/${taskRecord.state.id}`),
+      Buffer.from(stringifyWithBigInt(taskRecord)),
+    );
+    batch.delete(new Key(`/tasks/active/${taskRecord.state.id}`));
+
+    await batch.commit();
   };
 
   const assign = async ({
@@ -342,7 +317,20 @@ export const createManagerTaskStore = ({
       assignedToPeer: workerPeerIdStr,
     });
 
-    await coreStore.put({ entityId: `active/${entityId}`, record: taskRecord });
+    const batch = datastore.batch();
+
+    batch.put(
+      new Key(`/tasks/active/${taskRecord.state.id}`),
+      Buffer.from(stringifyWithBigInt(taskRecord)),
+    );
+
+    // add index
+    batch.put(
+      new Key(`/tasks/assign/${workerPeerIdStr}/${entityId}`),
+      new Uint8Array(),
+    );
+
+    await batch.commit();
   };
 
   return {
@@ -353,9 +341,6 @@ export const createManagerTaskStore = ({
     reject,
     payout,
     assign,
-    moveToActiveIndex,
-    moveBulkToActiveIndex,
-    moveToCompletedIndex,
     getTask,
   };
 };

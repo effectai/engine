@@ -20,6 +20,7 @@ import { bigIntToUint8Array } from "../core/utils.js";
 import { buildEddsa } from "circomlibjs";
 import { HttpTransport } from "../core/transports/http.js";
 import { managerLogger } from "../core/logging.js";
+import { createWorkerManager } from "./modules/createWorkerManager.js";
 
 export type ManagerEvents = {
   "task:created": (task: TaskRecord) => void;
@@ -72,15 +73,20 @@ export const createManager = async ({
     datastore,
     privateKey,
   });
+
   const paymentStore = createPaymentStore({ datastore });
   const templateStore = createTemplateStore({ datastore });
   const taskStore = createManagerTaskStore({ datastore });
 
-  const workerQueue = createWorkerQueue();
   const events = new TypedEventEmitter<ManagerEvents>();
 
+  const workerManager = createWorkerManager({
+    manager: entity,
+    datastore,
+  });
+
   const paymentManager = await createPaymentManager({
-    peerStore: entity.node.peerStore,
+    workerManager,
     privateKey,
     paymentStore,
   });
@@ -88,30 +94,18 @@ export const createManager = async ({
   const taskManager = createTaskManager({
     manager: entity,
     events,
-    workerQueue,
-    taskStore,
-    paymentManager,
-    templateStore,
-  });
 
-  const templateManager = createTemplateManager({
+    taskStore,
     templateStore,
+
+    paymentManager,
+    workerManager,
   });
 
   entity
     .onMessage("requestToWork", async ({ recipient, nonce }, { peerId }) => {
-      //save nonce & recipient in peerStore and set last payout to now
-      const now = Math.floor(Date.now() / 1000);
-      await entity.node.peerStore.merge(peerId, {
-        metadata: {
-          recipient: new TextEncoder().encode(recipient),
-          nonce: bigIntToUint8Array(nonce),
-          lastPayout: new TextEncoder().encode(now.toString()),
-        },
-      });
-
       //add the peerId to the worker queue
-      workerQueue.addPeer({ peerIdStr: peerId.toString() });
+      await workerManager.connectWorker(peerId.toString(), recipient, nonce);
 
       const eddsa = await buildEddsa();
       const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
@@ -120,7 +114,7 @@ export const createManager = async ({
 
       return {
         requestToWorkResponse: {
-          timestamp: now,
+          timestamp: Math.floor(Date.now() / 1000),
           pubX: pubKey[0],
           pubY: pubKey[1],
         },
@@ -198,15 +192,12 @@ export const createManager = async ({
   });
 
   entity.get("/", async (req, res) => {
-    const peersInQueue = workerQueue.getQueue().length;
-
     const pendingTasks = await taskManager.getPendingTasks();
     const completedTasks = await taskManager.getCompletedTasks();
 
     res.json({
       status: "Manager is running",
       peerId: entity.getPeerId().toString(),
-      peersInQueue,
       pendingTasks: pendingTasks.length,
       completedTasks: completedTasks.length,
     });
@@ -215,7 +206,7 @@ export const createManager = async ({
   entity.post("/template/register", async (req, res) => {
     const template = req.body;
     try {
-      await templateManager.registerTemplate({
+      await taskManager.registerTemplate({
         template,
         providerPeerIdStr: entity.getPeerId().toString(),
       });
@@ -231,16 +222,19 @@ export const createManager = async ({
     }
   });
 
+  let isStarted = false;
   const start = async () => {
     //start libp2p & http transports
     await entity.node.start();
     await entity.startHttp();
+    isStarted = true;
   };
 
   const stop = async () => {
     //stop libp2p & http transports
     await entity.node.stop();
     await entity.stopHttp();
+    isStarted = false;
   };
 
   if (autoManage) {
@@ -251,6 +245,10 @@ export const createManager = async ({
     let lastRunTime = 0;
 
     const runManagementCycle = async () => {
+      if (isStarted === false) {
+        return;
+      }
+
       if (isRunning) {
         console.log("Management cycle skipped - already running");
         return;
@@ -278,7 +276,7 @@ export const createManager = async ({
     events,
 
     taskManager,
-    templateManager,
+    workerManager,
 
     start,
     stop,

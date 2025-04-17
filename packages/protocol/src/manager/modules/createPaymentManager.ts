@@ -9,14 +9,7 @@ import { buildEddsa, buildPoseidon } from "circomlibjs";
 import { fileURLToPath } from "node:url";
 import * as snarkjs from "snarkjs";
 import path from "node:path";
-import {
-  getNonce,
-  getRecipient,
-  getSessionData,
-  updateNonce,
-  signPayment,
-  int2hex,
-} from "../utils.js";
+import { signPayment, int2hex } from "../utils.js";
 import {
   type ProofRequest,
   type EffectProtocolMessage,
@@ -24,16 +17,16 @@ import {
 } from "../../core/messages/effect.js";
 import { computePaymentId } from "../../core/utils.js";
 import type { PaymentStore } from "../../core/common/stores/paymentStore.js";
-import { ManagerEntity } from "../main.js";
+import { createWorkerManager } from "./createWorkerManager.js";
 
 export async function createPaymentManager({
   paymentStore,
   privateKey,
-  peerStore,
+  workerManager,
 }: {
-  peerStore: PeerStore;
   privateKey: PrivateKey;
   paymentStore: PaymentStore;
+  workerManager: ReturnType<typeof createWorkerManager>;
 }) {
   const eddsa = await buildEddsa();
   const poseidon = await buildPoseidon();
@@ -43,29 +36,24 @@ export async function createPaymentManager({
   }: {
     peerId: PeerId;
   }) => {
-    const peer = await peerStore.get(peerId);
+    const worker = await workerManager.getWorker(peerId.toString());
 
-    if (!peer) {
+    if (!worker) {
       throw new Error("Worker not found");
     }
 
-    const { lastPayout } = await getSessionData(peer);
     const currentTime = Math.floor(Date.now() / 1000);
 
     const payment = await generatePayment({
       peerId,
-      amount: BigInt((currentTime - lastPayout) * 1_000_0),
+      amount: BigInt((currentTime - worker.state.lastPayout) * 1_000_0),
       paymentAccount: new PublicKey(
         "8Ex7XokfTdr1MAMZXgN3e5eQWJ6H9u5KbnPC8CLcYgH5",
       ),
     });
 
     //update last payout time
-    await peerStore.merge(peerId, {
-      metadata: {
-        lastPayout: new TextEncoder().encode(currentTime.toString()),
-      },
-    });
+    await workerManager.updateLastPayout(peerId.toString());
 
     //insert payment into the store
     await paymentStore.put({
@@ -172,18 +160,14 @@ export async function createPaymentManager({
     amount: bigint;
     paymentAccount: PublicKey;
   }) => {
-    const peer = await peerStore.get(peerId);
-
-    const nonce = getNonce({ peer });
-
-    const recipient = getRecipient({ peer });
+    const peer = await workerManager.getWorker(peerId.toString());
 
     const payment = Payment.decode(
       Payment.encode({
         amount,
-        recipient,
+        recipient: peer.state.recipient,
         paymentAccount: paymentAccount.toBase58(),
-        nonce,
+        nonce: peer.state.nonce,
       }),
     );
 
@@ -202,7 +186,8 @@ export async function createPaymentManager({
       },
     };
 
-    await updateNonce({ peer: peer.id, peerStore, nonce: nonce + 1n });
+    //update nonce
+    workerManager.incrementNonce(peerId.toString());
 
     //save payment in store.
     paymentStore.put({

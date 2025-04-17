@@ -64,6 +64,7 @@ program
         `${options.url}/tasks`,
         task,
       );
+
       console.log("✅ Task posted successfully:", data);
     } catch (error) {
       console.error(

@@ -18,38 +18,44 @@ import type {
 } from "../stores/managerTaskStore.js";
 import { managerLogger } from "../../core/logging.js";
 import type { TypedEventEmitter } from "@libp2p/interface";
-import type { Task } from "../../core/messages/effect.js";
+import type { Task, Template } from "../../core/messages/effect.js";
 import { TemplateStore } from "../../core/common/stores/templateStore.js";
 import { createWorkerManager } from "./createWorkerManager.js";
+import { computeTemplateId } from "../../core/utils.js";
 
 export function createTaskManager({
   manager,
-  workerQueue,
-  taskStore,
+
   paymentManager,
   workerManager,
+
   events,
+
+  taskStore,
   templateStore,
 }: {
   manager: ManagerEntity;
-  taskStore: ManagerTaskStore;
-  paymentManager: ReturnType<typeof createPaymentManager>;
+
+  paymentManager: Awaited<ReturnType<typeof createPaymentManager>>;
   workerManager: ReturnType<typeof createWorkerManager>;
-  workerQueue: ReturnType<typeof createWorkerQueue>;
+
   events: TypedEventEmitter<ManagerEvents>;
 
+  taskStore: ManagerTaskStore;
   templateStore: TemplateStore;
 }) {
-  const isExpired = (timestamp: number) =>
-    timestamp + TASK_ACCEPTANCE_TIME < Math.floor(Date.now() / 1000);
+  const isExpired = (timestamp: number, value: number) =>
+    timestamp + value < Math.floor(Date.now() / 1000);
 
   const getTask = async ({
     taskId,
+    index = "active",
   }: {
     taskId: string;
+    index?: string;
   }): Promise<ManagerTaskRecord> => {
     const taskRecord = await taskStore.get({
-      entityId: taskId,
+      entityId: `${index}/${taskId}`,
     });
 
     if (!taskRecord) {
@@ -67,18 +73,6 @@ export function createTaskManager({
     providerPeerIdStr: string;
   }) => {
     //TODO:: use zod here to validate the task.
-    if (!task.templateId) {
-      throw new Error("Task must have a templateId");
-    }
-
-    if (!task.reward) {
-      throw new Error("Task must have a reward");
-    }
-
-    if (!task.templateData) {
-      throw new Error("Task must have template data");
-    }
-
     //we must have the templateId in our template store.
     const templateRecord = await templateStore.get({
       entityId: task.templateId,
@@ -112,6 +106,8 @@ export function createTaskManager({
       peerIdStr: workerPeerIdStr,
     });
 
+    await workerManager.incrementTasksAccepted(workerPeerIdStr);
+
     events.safeDispatchEvent("task:accepted", {
       detail: taskRecord,
     });
@@ -131,6 +127,8 @@ export function createTaskManager({
       peerIdStr: workerPeerIdStr,
       reason,
     });
+
+    await workerManager.incrementTasksRejected(workerPeerIdStr);
 
     events.safeDispatchEvent("task:rejected", {
       detail: taskRecord,
@@ -152,6 +150,8 @@ export function createTaskManager({
       peerIdStr: workerPeerIdStr,
     });
 
+    await workerManager.incrementTasksCompleted(workerPeerIdStr);
+
     events.safeDispatchEvent("task:submission", {
       detail: taskRecord,
     });
@@ -165,7 +165,7 @@ export function createTaskManager({
     taskRecord: ManagerTaskRecord,
     lastEvent: TaskAssignedEvent,
   ) => {
-    if (isExpired(lastEvent.timestamp)) {
+    if (isExpired(lastEvent.timestamp, TASK_ACCEPTANCE_TIME)) {
       managerLogger.info("Worker took too long to accept/reject task");
 
       await taskStore.reject({
@@ -173,7 +173,7 @@ export function createTaskManager({
         peerIdStr: lastEvent.assignedToPeer,
         reason: "Worker took too long to accept/reject task",
       });
-
+      await workerManager.incrementTasksRejected(lastEvent.assignedToPeer);
       await assignTask({ entityId: taskRecord.state.id });
     }
   };
@@ -182,10 +182,7 @@ export function createTaskManager({
     taskRecord: ManagerTaskRecord,
     lastEvent: TaskAcceptedEvent,
   ) => {
-    if (
-      lastEvent.timestamp + taskRecord.state.timeLimitSeconds <
-      Math.floor(Date.now() / 1000)
-    ) {
+    if (isExpired(lastEvent.timestamp, taskRecord.state.timeLimitSeconds)) {
       managerLogger.info("Worker took too long to complete task");
 
       await taskStore.reject({
@@ -193,6 +190,7 @@ export function createTaskManager({
         peerIdStr: lastEvent.acceptedByPeer,
         reason: "Worker took too long to accept/reject task",
       });
+      await workerManager.incrementTasksRejected(lastEvent.acceptedByPeer);
 
       await assignTask({ entityId: taskRecord.state.id });
     }
@@ -223,11 +221,6 @@ export function createTaskManager({
 
     //sendout task completed event
     events.safeDispatchEvent("task:completed", { detail: taskRecord });
-
-    //move task to completed index
-    await taskStore.moveToCompletedIndex({
-      entityId: taskRecord.state.id,
-    });
 
     return {
       ack,
@@ -291,7 +284,7 @@ export function createTaskManager({
       throw new Error("Task is already assigned.");
     }
 
-    const worker = workerQueue.dequeuePeer();
+    const worker = await workerManager.selectWorker(0);
 
     if (!worker) {
       managerLogger.info("No available workers to assign task to");
@@ -303,18 +296,10 @@ export function createTaskManager({
       workerPeerIdStr: worker,
     });
 
+    await workerManager.incrementTotalTasks(worker);
+
     await manager.sendMessage(peerIdFromString(worker), {
       task: taskRecord.state,
-    });
-  };
-
-  const moveToActiveIndex = async ({
-    entityId,
-  }: {
-    entityId: string;
-  }) => {
-    await taskStore.moveToActiveIndex({
-      entityId: `backlog/${entityId}`,
     });
   };
 
@@ -327,13 +312,9 @@ export function createTaskManager({
 
       console.log(`Managing ${activeTasks.length} active tasks`);
 
-      await Promise.allSettled(
-        activeTasks.map((task) =>
-          manageTask(task).catch((e) =>
-            console.error(`Task ${task.state.id} failed:`, e),
-          ),
-        ),
-      );
+      for (const taskRecord of activeTasks) {
+        await manageTask(taskRecord);
+      }
     } catch (e) {
       console.error("System error:", e);
     }
@@ -356,6 +337,27 @@ export function createTaskManager({
     return tasks;
   };
 
+  const registerTemplate = async ({
+    providerPeerIdStr,
+    template,
+  }: {
+    providerPeerIdStr: string;
+    template: Template;
+  }) => {
+    const entityId = computeTemplateId(providerPeerIdStr, template.data);
+
+    if (template.templateId !== entityId) {
+      throw new Error("Template ID does not match the computed ID");
+    }
+
+    await templateStore.create({
+      template,
+      createdByPeer: providerPeerIdStr,
+    });
+
+    return template;
+  };
+
   return {
     getTask,
     createTask,
@@ -363,12 +365,13 @@ export function createTaskManager({
     processTaskRejection,
     processTaskSubmission,
 
+    registerTemplate,
+
     manageTask,
     manageTasks,
     assignTask,
 
     getPendingTasks,
     getCompletedTasks,
-    moveToActiveIndex,
   };
 }

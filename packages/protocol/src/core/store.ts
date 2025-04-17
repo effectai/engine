@@ -1,3 +1,4 @@
+import { NotFoundError } from "@libp2p/interface";
 import { Datastore, Key, QueryFilter } from "interface-datastore";
 
 // base-types.ts
@@ -15,7 +16,7 @@ export interface BaseEntityRecord<EventType extends BaseEvent> {
 export const createEntityStore = <
   EntityEvents extends BaseEvent = BaseEvent,
   EntityRecord extends
-    BaseEntityRecord<EntityEvents> = BaseEntityRecord<EntityEvents>,
+  BaseEntityRecord<EntityEvents> = BaseEntityRecord<EntityEvents>,
 >({
   datastore,
   defaultPrefix = "entities",
@@ -39,6 +40,21 @@ export const createEntityStore = <
   }: { entityId: string }): Promise<EntityRecord> => {
     const data = await datastore.get(createKey(entityId));
     return parse(data.toString());
+  };
+
+  const getSafe = async ({
+    entityId,
+  }: { entityId: string }): Promise<EntityRecord | undefined> => {
+    try {
+      return await get({ entityId });
+    } catch (e: unknown) {
+      if (e.message.includes("NotFound")) {
+        return undefined;
+      }
+
+      console.error(`Error getting entity ${entityId}:`, e);
+      throw e;
+    }
   };
 
   const put = async ({
@@ -122,5 +138,6 @@ export const createEntityStore = <
     rollback,
     rollbackEvent,
     datastore,
+    getSafe,
   };
 };

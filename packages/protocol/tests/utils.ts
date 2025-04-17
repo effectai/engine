@@ -48,6 +48,10 @@ export function trackWorkerEvents(worker: {
     }
   });
 
+  worker.events.addEventListener("payment:created", ({ detail }) => {
+    events.paymentReceived({ detail });
+  });
+
   return events;
 }
 

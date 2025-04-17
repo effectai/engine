@@ -25,7 +25,7 @@ export interface WorkerEvents {
   "task:completed": (task: TaskRecord) => void;
   "task:accepted": CustomEvent<Task>;
   "task:rejected": (task: TaskRecord) => void;
-  "payment:created": (payment: Payment) => void;
+  "payment:created": CustomEvent<Payment>;
 }
 
 export const createWorkerEntity = async ({

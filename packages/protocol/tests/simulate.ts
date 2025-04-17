@@ -2,7 +2,7 @@ import { createManager, createWorker } from "../dist/index.js";
 import { performance } from "node:perf_hooks";
 import { randomBytes } from "node:crypto";
 import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
-import { computeTemplateId } from "../dist/core/utils.js";
+import { computeTemplateId, stringifyWithBigInt } from "../dist/core/utils.js";
 import { LevelDatastore } from "datastore-level";
 import { Template } from "../dist/core/messages/effect.js";
 import { Keypair } from "@solana/web3.js";
@@ -61,7 +61,7 @@ async function runTaskRateTest(
 
   // Register template
   const { template, templateId } = createDummyTemplate(managerPeer.toString());
-  await manager.templateManager.registerTemplate({
+  await manager.taskManager.registerTemplate({
     template,
     providerPeerIdStr: managerPeer.toString(),
   });
@@ -163,18 +163,31 @@ async function runTaskRateTest(
     t.events.some((e) => e.type === "payout"),
   ).length;
 
-  const actualRate = completedCount / durationSeconds;
   console.log(`
     Test completed:
-    - Target rate: ${tasksPerSecond} tasks/sec
-    - Actual rate: ${actualRate.toFixed(2)} tasks/sec
-    - Completion ratio: ${((completedCount / totalTasks) * 100).toFixed(2)}%
-    - Duration: ${((performance.now() - startTime) / 1000).toFixed(2)}s
+    - Total tasks created: ${tasksCreated}
+    - Completion tasks: ${(completedCount * 100).toFixed(2)}%
+    - Total time taken: ${(performance.now() - startTime) / 1000}s
   `);
+
+  // print worker states
+  for (const worker of workers) {
+    const workerState = await manager.workerManager.getWorker(
+      worker.entity.getPeerId().toString(),
+    );
+
+    console.log(`Worker ${worker.entity.getPeerId().toString()}
+      - Tasks Accepted: ${workerState.state.tasksAccepted}
+      - Tasks Completed: ${workerState.state.tasksCompleted}
+      - Tasks Rejected: ${workerState.state.tasksRejected}
+      - Tasks Total: ${workerState.state.totalTasks}
+      - Rejection Rate (%): ${(workerState.state.tasksRejected / workerState.state.totalTasks) * 100}
+`);
+  }
 
   // 7. Cleanup workers
   await Promise.all(workers.map((w) => w.stop()));
   await manager.stop();
 }
 
-runTaskRateTest(10, 1, 600).catch(console.error);
+runTaskRateTest(5, 1, 30).catch(console.error);
