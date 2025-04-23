@@ -3,7 +3,6 @@ import { webSockets } from "@libp2p/websockets";
 import type { Datastore } from "interface-datastore";
 
 import { createTaskManager } from "./modules/createTaskManager.js";
-import { createWorkerQueue } from "./modules/createWorkerQueue.js";
 import { createPaymentManager } from "./modules/createPaymentManager.js";
 import { createManagerTaskStore } from "./stores/managerTaskStore.js";
 import type { TaskRecord } from "../core/common/types.js";

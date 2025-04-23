@@ -10,7 +10,7 @@
     "test": "vitest",
     "format": "pnpm biome format --write . --config-path ../../biome.json",
     "generate": "protons ./src/core/protocol/task/task.proto",
-    "manager:start": "node ./src/manager/scripts/start-manager.js",
+    "manager:start": "node --experimental-strip-types cli/index.ts manager run -k ./tests/keys/manager.json",
     "post:task": "sh ./packages/manager/scripts/post-task.sh",
     "simulate": "node --experimental-strip-types ./tests/simulate.ts"
   },
