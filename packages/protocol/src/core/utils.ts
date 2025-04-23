@@ -1,20 +1,10 @@
 import { createHash } from "node:crypto";
 
-import type {
-  Ed25519PublicKey,
-  IdentifyResult,
-  IncomingStreamData,
-  PeerId,
-} from "@libp2p/interface";
+import type { Ed25519PublicKey } from "@libp2p/interface";
 import type { ConnectionManager } from "@libp2p/interface-internal";
-import { Uint8ArrayList } from "uint8arraylist";
 import { PublicKey } from "@solana/web3.js";
 import { peerIdFromString } from "@libp2p/peer-id";
-import type {
-  EffectError,
-  EffectProtocolMessage,
-  Template,
-} from "./messages/effect.js";
+import type { EffectProtocolMessage } from "./messages/effect.js";
 
 export const computeTaskId = (
   provider: string,

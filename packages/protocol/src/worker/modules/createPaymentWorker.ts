@@ -3,6 +3,7 @@ import type { WorkerEntity, WorkerEvents } from "../main.js";
 import type { PaymentStore } from "../../core/common/stores/paymentStore.js";
 import type { Payment, ProofRequest } from "../../core/messages/effect.js";
 import { objectToBytes } from "../../core/utils.js";
+import { peerIdFromString } from "@libp2p/peer-id";
 
 export function createPaymentWorker({
   paymentStore,
@@ -28,18 +29,26 @@ export function createPaymentWorker({
     return payment;
   };
 
-  const getPayments = async () => {
+  const getPayments = async ({
+    prefix,
+    limit = 100,
+  }: {
+    prefix?: string;
+    limit?: number;
+  }) => {
     return await paymentStore.all({
-      filters: [],
-      limit: 100,
+      prefix,
+      limit,
     });
   };
 
   const requestPayout = async ({
-    managerPeer,
+    managerPeerIdStr,
   }: {
-    managerPeer: PeerId;
+    managerPeerIdStr: string;
   }) => {
+    const managerPeerId = peerIdFromString(managerPeerIdStr);
+
     const requestPayoutMessage = {
       payoutRequest: {
         peerId: entity.getPeerId().toString(),
@@ -47,7 +56,7 @@ export function createPaymentWorker({
     };
 
     const [payment, error] = await entity.sendMessage(
-      managerPeer,
+      managerPeerId,
       requestPayoutMessage,
     );
 
@@ -55,13 +64,13 @@ export function createPaymentWorker({
       throw new Error(`Error requesting payout: ${error}`);
     }
 
-    await createPayment({ payment, managerPeerId: managerPeer });
+    await createPayment({ payment, managerPeerId: managerPeerId });
 
     return payment;
   };
 
   const requestPaymentProof = async (
-    managerPeerId: PeerId,
+    managerPeerIdStr: string,
     payments: Payment[],
   ) => {
     if (payments.length === 0) {
@@ -82,7 +91,7 @@ export function createPaymentWorker({
       })),
     };
 
-    return await entity.sendMessage(managerPeerId, {
+    return await entity.sendMessage(peerIdFromString(managerPeerIdStr), {
       proofRequest: {
         ...proofRequestMessage,
       },

@@ -1,6 +1,5 @@
 <div id="app" style="text-align: center">
-  {{ message }}
-  <h1 class="title">{{title}}</h1>
+  <h1>Effect AI - Is it AI ?</h1>
 
   <hr />
 
@@ -10,9 +9,34 @@
       id="image"
       ref="image"
       :src="imageSource"
-      style="display: block; max-width: 100%"
+      style="
+        max-width: 100%;
+        max-height: 100%;
+        margin: 0 auto;
+        display: block"
     />
-  </div>
+
+    <div class="field">
+      <label class="label">Image URL made by AI?</label>
+      <label class="radio">
+        <input
+          type="radio"
+          name="ai"
+          value="yes"
+          v-model="tmpLabel"
+        />
+        Yes
+      </label>
+      <label class="radio">
+        <input
+          type="radio"
+          name="ai"
+          value="no"
+          v-model="tmpLabel"
+        />
+        No
+      </label>
+    </div>
 
   <button
     @click.prevent="uploadAndSubmit"
@@ -49,12 +73,12 @@
       async uploadAndSubmit() {
         this.btnLoading = true;
         try {
-          // console.log(IpfsApi)
           parent.postMessage(
             {
               task: "submit",
               values: {
-                data: "completed",
+                label: this.tmpLabel,
+                image: this.imageSource,
               },
             },
             "*"

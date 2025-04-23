@@ -43,6 +43,24 @@ export function createTaskWorker({
     return taskRecord;
   };
 
+  const getTasks = async ({
+    prefix = undefined,
+    limit = 50,
+  }: {
+    prefix?: string;
+    limit?: number;
+  }) => {
+    try {
+      return await taskStore.all({
+        prefix,
+        limit,
+      });
+    } catch (e) {
+      console.error("Error getting tasks:", e);
+      throw new Error("Failed to get tasks");
+    }
+  };
+
   const createTask = async ({
     task,
     managerPeerId,
@@ -62,7 +80,7 @@ export function createTaskWorker({
     taskId,
   }: {
     taskId: string;
-  }): Promise<void> => {
+  }): Promise<WorkerTaskRecord> => {
     const taskRecord = await taskStore.accept({
       entityId: taskId,
     });
@@ -83,6 +101,8 @@ export function createTaskWorker({
 
     //emit task accepted event
     events.safeDispatchEvent("task:accepted", { detail: taskRecord.state });
+
+    return taskRecord;
   };
 
   const completeTask = async ({
@@ -116,7 +136,8 @@ export function createTaskWorker({
         },
       );
 
-      if (!response || error) {
+      if (error) {
+        console.error("Error sending task completed message:", error);
         throw new Error("Failed to send task completed message");
       }
 
@@ -150,7 +171,7 @@ export function createTaskWorker({
   };
 
   //render task template html and prefill the data on the placeholders
-  //placeholders: {{key}} matches the key in the template data
+  //placeholders: ${key} matches the key in the template data
   const renderTask = async ({
     taskRecord,
   }: {
@@ -165,21 +186,61 @@ export function createTaskWorker({
       throw new Error("Template not found");
     }
 
-    const templateData = JSON.parse(taskRecord.state.templateData);
-    const templateHtml = template.data.replace(/{{(.*?)}}/g, (_, key) => {
-      const value = templateData[key.trim()];
-      return value !== undefined ? value : "";
+    try {
+      const templateData = JSON.parse(taskRecord.state.templateData);
+
+      const templateHtml = template.data.replace(/\$\{([^}]+)\}/g, (_, key) => {
+        const value = templateData[key.trim()];
+        return value !== undefined ? value : "";
+      });
+
+      return templateHtml;
+    } catch (error) {
+      console.error("Error parsing template data:", error);
+      throw new Error("Failed to parse template data");
+    }
+  };
+
+  //cleanup stale / expired tasks
+  const cleanup = async () => {
+    const tasks = await taskStore.all({
+      prefix: "tasks/active",
+      limit: 100,
     });
 
-    return templateHtml;
+    const now = Math.floor(Date.now() / 1000);
+    //a task is considered expired if it has not been accepted or rejected in 10 minutes
+    //or if it has been accepted and not completed in task.state.taskTime
+    const expiredTasks = tasks.filter((task) => {
+      const lastTaskEvent = task.events[task.events.length - 1];
+
+      if (lastTaskEvent.type === "accept") {
+        const acceptedAt = lastTaskEvent.timestamp;
+        return now - acceptedAt > task.state.timeLimitSeconds;
+      }
+
+      if (lastTaskEvent.type === "create") {
+        const createdAt = lastTaskEvent.timestamp;
+        //TODO:: fetch this from manager connection state
+        return now - createdAt > 600;
+      }
+
+      return false;
+    });
+
+    for (const task of expiredTasks) {
+      await taskStore.expire({ entityId: task.state.id });
+    }
   };
 
   return {
     getTask,
+    getTasks,
     createTask,
     completeTask,
     acceptTask,
     rejectTask,
     renderTask,
+    cleanup,
   };
 }

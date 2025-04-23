@@ -15,8 +15,6 @@ import {
 import { Libp2pTransport } from "../core/transports/libp2p.js";
 import { createPaymentStore } from "../core/common/stores/paymentStore.js";
 import { createTemplateStore } from "../core/common/stores/templateStore.js";
-import { createTemplateManager } from "./modules/createTemplateManager.js";
-import { bigIntToUint8Array } from "../core/utils.js";
 import { buildEddsa } from "circomlibjs";
 import { HttpTransport } from "../core/transports/http.js";
 import { managerLogger } from "../core/logging.js";
@@ -34,9 +32,11 @@ export type ManagerEvents = {
 export const createManagerEntity = async ({
   datastore,
   privateKey,
+  port,
 }: {
   datastore: Datastore;
   privateKey: PrivateKey;
+  port?: number;
 }) => {
   return await createEffectEntity({
     protocol: {
@@ -50,7 +50,7 @@ export const createManagerEntity = async ({
         autoStart: true,
         datastore,
         privateKey,
-        listen: ["/ip4/0.0.0.0/tcp/0/ws"],
+        listen: [`/ip4/0.0.0.0/tcp/${port}/ws`],
         services: {},
         transports: [webSockets()],
       }),
@@ -61,17 +61,20 @@ export const createManagerEntity = async ({
 export type ManagerEntity = Awaited<ReturnType<typeof createManagerEntity>>;
 
 export const createManager = async ({
+  port = 11995,
   datastore,
   privateKey,
   autoManage = true,
 }: {
   datastore: Datastore;
   privateKey: PrivateKey;
+  port?: number;
   autoManage?: boolean;
 }) => {
   const entity = await createManagerEntity({
     datastore,
     privateKey,
+    port,
   });
 
   const paymentStore = createPaymentStore({ datastore });
@@ -110,13 +113,14 @@ export const createManager = async ({
       const eddsa = await buildEddsa();
       const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
 
-      managerLogger.info(`Sucessfully registered worker ${peerId.toString()}`);
-
       return {
         requestToWorkResponse: {
           timestamp: Math.floor(Date.now() / 1000),
+          // manager public key in eddsa format
           pubX: pubKey[0],
           pubY: pubKey[1],
+          // the maximum batch size of payments
+          batchSize: 10,
         },
       };
     })
@@ -170,6 +174,12 @@ export const createManager = async ({
       };
     });
 
+  entity.node.addEventListener("peer:disconnect", (event) => {
+    const peerId = event.detail;
+    managerLogger.info(`Peer disconnected: ${peerId.toString()}`);
+    workerManager.workerQueue.removePeer(peerId.toString());
+  });
+
   // Register http routes for manager
   entity.post("/task", async (req, res) => {
     const task = req.body;
@@ -204,12 +214,13 @@ export const createManager = async ({
   });
 
   entity.post("/template/register", async (req, res) => {
-    const template = req.body;
+    const { template, providerPeerIdStr } = req.body;
     try {
       await taskManager.registerTemplate({
         template,
-        providerPeerIdStr: entity.getPeerId().toString(),
+        providerPeerIdStr,
       });
+
       res.json({ status: "Template registered", id: template.templateId });
     } catch (e: unknown) {
       console.error("Error creating template", e);

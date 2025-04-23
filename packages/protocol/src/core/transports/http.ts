@@ -1,5 +1,4 @@
 import { Entity, Transport } from "../entity/factory.js";
-import express from "express";
 
 export interface HttpTransportOptions {
   port?: number;
@@ -19,15 +18,19 @@ export class HttpTransport implements Transport<HttpTransportMethods> {
   #app: any = null;
   #server: any = null;
 
-  constructor(private readonly options: HttpTransportOptions = {}) {}
+  constructor(private readonly options: HttpTransportOptions = {}) { }
 
-  initialize(entity: Entity): Promise<void> {
+  async initialize(entity: Entity): Promise<void> {
     this.entity = entity;
 
     // Set up the HTTP server
 
-    this.#app = express();
-    this.#app.use(express.json());
+    //dynamic import express
+    const express = await import("express");
+
+    // import express from "express";
+    this.#app = express.default();
+    this.#app.use(express.default.json());
 
     return Promise.resolve();
   }
@@ -42,7 +45,7 @@ export class HttpTransport implements Transport<HttpTransportMethods> {
   }
 
   async start(): Promise<void> {
-    this.#server = this.#app.listen(this.options.port, () => {});
+    this.#server = this.#app.listen(this.options.port, () => { });
   }
 
   getMethods(): HttpTransportMethods {
@@ -54,7 +57,7 @@ export class HttpTransport implements Transport<HttpTransportMethods> {
     };
   }
 
-  async send(data: Uint8Array): Promise<void> {}
+  async send(data: Uint8Array): Promise<void> { }
 
   async get(route: string, handler: HttpHandler): Promise<void> {
     this.#app.get(route, async (req: any, res: any) => {

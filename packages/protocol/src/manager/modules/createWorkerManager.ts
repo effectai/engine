@@ -34,6 +34,13 @@ export const createWorkerManager = ({
       return peer;
     };
 
+    const removePeer = (peerIdStr: PeerIdStr): void => {
+      const index = queue.indexOf(peerIdStr);
+      if (index !== -1) {
+        queue.splice(index, 1);
+      }
+    };
+
     const getQueue = (): PeerIdStr[] => {
       return [...queue];
     };
@@ -42,6 +49,7 @@ export const createWorkerManager = ({
       queue,
       addPeer,
       dequeuePeer,
+      removePeer,
       getQueue,
     };
   };
@@ -57,8 +65,8 @@ export const createWorkerManager = ({
     recipient: string,
     nonce: bigint,
   ) => {
-    // check if the peerId is already in the worker store
     try {
+      // check if the peerId is already in the worker store
       const workerRecord = await workerStore.getSafe({ entityId: peerId });
 
       if (!workerRecord) {
@@ -184,9 +192,10 @@ export const createWorkerManager = ({
       throw new Error("Worker not found");
     }
 
-    if (await isBusy(worker)) {
-      return selectWorker(n + 1);
-    }
+    //
+    // if (await isBusy(worker)) {
+    //   return selectWorker(n + 1);
+    // }
 
     //remove worker from queue
     workerQueue.dequeuePeer();

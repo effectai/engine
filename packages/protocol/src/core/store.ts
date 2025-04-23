@@ -39,7 +39,8 @@ export const createEntityStore = <
     entityId,
   }: { entityId: string }): Promise<EntityRecord> => {
     const data = await datastore.get(createKey(entityId));
-    return parse(data.toString());
+    const result = parse(new TextDecoder().decode(data));
+    return result;
   };
 
   const getSafe = async ({
@@ -64,7 +65,9 @@ export const createEntityStore = <
     entityId: string;
     record: EntityRecord;
   }): Promise<Key> => {
-    return datastore.put(createKey(entityId), Buffer.from(stringify(record)));
+    const jsonString = stringify(record);
+    const data = new TextEncoder().encode(jsonString);
+    return datastore.put(createKey(entityId), data);
   };
 
   const del = async ({ entityId }: { entityId: string }): Promise<void> => {
@@ -86,9 +89,8 @@ export const createEntityStore = <
       filters,
       prefix: `/${prefix}/`,
     })) {
-      entities.push(parse(entry.value.toString()));
+      entities.push(parse(new TextDecoder().decode(entry.value)));
     }
-
     return entities;
   };
 

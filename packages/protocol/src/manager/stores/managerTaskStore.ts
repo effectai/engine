@@ -6,7 +6,6 @@ import { TaskValidationError, TaskExpiredError } from "../../core/errors.js";
 import type { Payment, Task } from "../../core/messages/effect.js";
 import { createEntityStore } from "../../core/store.js";
 import { parseWithBigInt, stringifyWithBigInt } from "../../core/utils.js";
-import { P } from "pino";
 
 export type ManagerTaskEvent =
   | TaskCreatedEvent

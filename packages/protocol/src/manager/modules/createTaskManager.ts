@@ -206,6 +206,7 @@ export function createTaskManager({
       paymentAccount: new PublicKey(
         "796qppG6jGia39AE8KLENa2mpRp5VCtm48J8JsokmwEL",
       ),
+      label: `Payment for task: ${taskRecord.state.id}`,
     });
 
     await taskStore.payout({

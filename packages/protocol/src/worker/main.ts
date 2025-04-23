@@ -19,6 +19,7 @@ import { createPaymentStore } from "../core/common/stores/paymentStore.js";
 import { createTemplateWorker } from "./modules/createTemplateWorker.js";
 import { createTemplateStore } from "../core/common/stores/templateStore.js";
 import type { Multiaddr } from "@multiformats/multiaddr";
+import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 
 export interface WorkerEvents {
   "task:created": CustomEvent<Task>;
@@ -62,19 +63,19 @@ export type WorkerEntity = Awaited<ReturnType<typeof createWorkerEntity>>;
 export const createWorker = async ({
   datastore,
   privateKey,
-  getSessionData,
 }: {
   datastore: Datastore;
-  privateKey: PrivateKey;
-  getSessionData: () => {
-    recipient: string;
-    nonce: bigint;
-  };
+  privateKey: Uint8Array;
 }) => {
+  const ed25519PrivateKey = await generateKeyPairFromSeed(
+    "Ed25519",
+    privateKey,
+  );
+
   const events = new TypedEventEmitter<WorkerEvents>();
   const entity = await createWorkerEntity({
     datastore,
-    privateKey,
+    privateKey: ed25519PrivateKey,
   });
 
   // register stores
@@ -98,6 +99,8 @@ export const createWorker = async ({
     completeTask,
     renderTask,
     getTask,
+    getTasks,
+    cleanup,
   } = createTaskWorker({
     entity,
     events,
@@ -122,11 +125,16 @@ export const createWorker = async ({
     await entity.node.stop();
   };
 
-  const connect = async (manager: Multiaddr) => {
+  const connect = async (
+    manager: Multiaddr,
+    recipient: string,
+    nonce: bigint,
+  ) => {
     const [response, error] = await entity.sendMessage(manager, {
       requestToWork: {
         timestamp: Date.now() / 1000,
-        ...getSessionData(),
+        recipient,
+        nonce,
       },
     });
 
@@ -137,11 +145,28 @@ export const createWorker = async ({
     return response;
   };
 
+  const ping = async (manager: Multiaddr) => {
+    if ("ping" in entity.node.services) {
+      return await entity.node.services.ping.ping(manager, {
+        ping: {
+          timestamp: Date.now() / 1000,
+        },
+      });
+    }
+  };
+
+  setInterval(async () => {
+    //cleanup stale tasks
+    await cleanup();
+  }, 1000);
+
   return {
     entity,
     events,
+    taskStore,
 
     getTask,
+    getTasks,
     acceptTask,
     rejectTask,
     completeTask,
@@ -154,5 +179,6 @@ export const createWorker = async ({
     connect,
     start,
     stop,
+    ping,
   };
 };

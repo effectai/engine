@@ -71,20 +71,9 @@ async function runTaskRateTest(
     Array(workersCount)
       .fill(0)
       .map(async (_, i) => {
-        const randomPrivateKey = await generateKeyPairFromSeed(
-          "Ed25519",
-          randomBytes(32),
-        );
-
-        const workerRecipient = Keypair.generate();
-
         const worker = await createWorker({
           datastore: await createDataStore(`${path}/worker-${i}`),
-          privateKey: randomPrivateKey,
-          getSessionData: () => ({
-            nonce: 0n,
-            recipient: `${workerRecipient.publicKey.toBase58()}`,
-          }),
+          privateKey: randomBytes(32),
         });
 
         // Auto-accept and complete tasks
@@ -117,7 +106,12 @@ async function runTaskRateTest(
   //connect every worker to the manager
   for (const worker of workers) {
     try {
-      await worker.connect(managerMulti);
+      const workerRecipient = Keypair.generate();
+      await worker.connect(
+        managerMulti,
+        workerRecipient.publicKey.toBase58(),
+        1n,
+      );
     } catch (e) {
       console.error(`Error connecting worker: ${e}`);
       return;
@@ -190,4 +184,4 @@ async function runTaskRateTest(
   await manager.stop();
 }
 
-runTaskRateTest(5, 1, 30).catch(console.error);
+runTaskRateTest(3, 1, 60).catch(console.error);

@@ -3,8 +3,14 @@ import { program } from "commander";
 import axios from "axios";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { computeTemplateId } from "../../dist/core/utils.js";
+import { peerIdFromPrivateKey } from "@libp2p/peer-id";
+import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
+import { Template } from "../../dist/core/messages/effect.js";
+import { LevelDatastore } from "datastore-level";
+import { createManager } from "../../dist/manager/main.js";
+import { ulid } from "ulid";
 
-// Types
 type Task = {
   id?: string;
   title: string;
@@ -12,13 +18,6 @@ type Task = {
   timeLimitSeconds: number;
   templateId: string;
   templateData: string;
-};
-
-type Template = {
-  id: string;
-  name: string;
-  content: string;
-  providerPeerId?: string;
 };
 
 type APIResponse = {
@@ -51,19 +50,23 @@ program
   .option("--id <taskId>", "Custom task ID")
   .action(async (options) => {
     try {
+      //get random image from https://picsum.photos/
+      const imageUrl = `https://picsum.photos/400/400?random=${Math.floor(
+        Math.random() * 1000,
+      )}`;
+
       const task: Task = {
-        id: options.id,
+        id: ulid(),
         title: options.title,
-        reward: BigInt(options.reward),
-        timeLimitSeconds: parseInt(options.timeLimit),
+        reward: options.reward.toString(),
+        timeLimitSeconds: Number.parseInt(options.timeLimit),
         templateId: options.templateId,
-        templateData: options.data,
+        templateData: JSON.stringify({
+          image_url: imageUrl,
+        }),
       };
 
-      const { data } = await api.post<APIResponse>(
-        `${options.url}/tasks`,
-        task,
-      );
+      const { data } = await api.post<APIResponse>(`${options.url}/task`, task);
 
       console.log("✅ Task posted successfully:", data);
     } catch (error) {
@@ -84,25 +87,41 @@ program
   .description("Register a new template")
   .requiredOption("-u, --url <url>", "Manager node base URL")
   .requiredOption("-p, --template-path <path>", "Path to template file")
+  .requiredOption(
+    "-k, --private-key <path>",
+    "Path to provider private key file",
+  )
   .option("--id <id>", "Template ID (defaults to filename without extension)")
   .option("--name <name>", "Template name (defaults to filename)")
   .action(async (options) => {
     try {
       const filePath = path.resolve(options.templatePath);
       const content = readFileSync(filePath, "utf-8");
-      const templateId =
-        options.id || path.basename(filePath, path.extname(filePath));
       const templateName = options.name || path.basename(filePath);
+      const privateKey = readFileSync(options.privateKey, "utf-8");
+
+      // convert private key to Uint8Array
+      const secretKey = Uint8Array.from(JSON.parse(privateKey));
+      const keypair = await generateKeyPairFromSeed(
+        "Ed25519",
+        secretKey.slice(0, 32),
+      );
+      const providerPeerId = peerIdFromPrivateKey(keypair);
+
+      const templateId = computeTemplateId(providerPeerId.toString(), content);
 
       const template: Template = {
-        id: templateId,
-        name: templateName,
-        content,
+        templateId,
+        data: content,
+        createdAt: Date.now(),
       };
 
       const { data } = await api.post<APIResponse>(
-        `${options.url}/templates`,
-        template,
+        `${options.url}/template/register`,
+        {
+          template,
+          providerPeerIdStr: providerPeerId.toString(),
+        },
       );
       console.log("✅ Template registered successfully:", data);
     } catch (error) {
@@ -112,6 +131,42 @@ program
           ? error.response?.data?.error || error.message
           : error,
       );
+      process.exit(1);
+    }
+  });
+
+program
+  .command("manager")
+  .description("Manager operations")
+  .command("run")
+  .requiredOption(
+    "-k, --private-key <path>",
+    "Path to manager private key file",
+  )
+  .action(async (options) => {
+    try {
+      const privateKey = readFileSync(options.privateKey, "utf-8");
+
+      const secretKey = Uint8Array.from(JSON.parse(privateKey));
+
+      const keypair = await generateKeyPairFromSeed(
+        "Ed25519",
+        secretKey.slice(0, 32),
+      );
+
+      const datastore = new LevelDatastore("/tmp/manager");
+      await datastore.open();
+
+      const manager = await createManager({
+        privateKey: keypair,
+        datastore,
+        //automatically start managing tasks
+        autoManage: true,
+      });
+
+      console.log("Manager started", manager.entity.getMultiAddress());
+    } catch (e) {
+      console.error("Error starting manager:", e);
       process.exit(1);
     }
   });

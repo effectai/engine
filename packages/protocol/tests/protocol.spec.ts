@@ -64,10 +64,6 @@ describe("Complete Task Lifecycle", () => {
     worker = await createWorker({
       datastore: workerDatastore,
       privateKey: workerPrivateKey,
-      getSessionData: () => ({
-        nonce: 0n,
-        recipient: new PublicKey(randomBytes(32)).toString(),
-      }),
     });
 
     // start manager and worker

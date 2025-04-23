@@ -26,7 +26,7 @@ export const createPaymentStore = ({
 }) => {
   const coreStore = createEntityStore<PaymentEvent, PaymentRecord>({
     datastore,
-    prefix: "payments",
+    defaultPrefix: "payments",
     stringify: (record) => stringifyWithBigInt(record),
     parse: (data) => parseWithBigInt(data),
   });

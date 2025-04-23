@@ -27,9 +27,9 @@ export const createTemplateStore = ({
 }) => {
   const coreStore = createEntityStore<TemplateEvents, TemplateRecord>({
     datastore,
-    prefix: "templates",
-    stringify: (record) => stringifyWithBigInt(record),
-    parse: (data) => parseWithBigInt(data),
+    defaultPrefix: "templates",
+    stringify: (record) => JSON.stringify(record),
+    parse: (data) => JSON.parse(data),
   });
 
   const create = async ({

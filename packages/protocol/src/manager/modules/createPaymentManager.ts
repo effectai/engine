@@ -43,13 +43,15 @@ export async function createPaymentManager({
     }
 
     const currentTime = Math.floor(Date.now() / 1000);
+    const secondsSinceLastPayout = currentTime - worker.state.lastPayout;
 
     const payment = await generatePayment({
       peerId,
-      amount: BigInt((currentTime - worker.state.lastPayout) * 1_000_0),
+      amount: BigInt(secondsSinceLastPayout * 1_000_0),
       paymentAccount: new PublicKey(
         "8Ex7XokfTdr1MAMZXgN3e5eQWJ6H9u5KbnPC8CLcYgH5",
       ),
+      label: `Payout for ${secondsSinceLastPayout} seconds of online time`,
     });
 
     //update last payout time
@@ -155,10 +157,12 @@ export async function createPaymentManager({
     peerId,
     amount,
     paymentAccount,
+    label,
   }: {
     peerId: PeerId;
     amount: bigint;
     paymentAccount: PublicKey;
+    label?: string;
   }) => {
     const peer = await workerManager.getWorker(peerId.toString());
 
@@ -168,6 +172,7 @@ export async function createPaymentManager({
         recipient: peer.state.recipient,
         paymentAccount: paymentAccount.toBase58(),
         nonce: peer.state.nonce,
+        label: label || "",
       }),
     );
 
@@ -187,10 +192,10 @@ export async function createPaymentManager({
     };
 
     //update nonce
-    workerManager.incrementNonce(peerId.toString());
+    await workerManager.incrementNonce(peerId.toString());
 
     //save payment in store.
-    paymentStore.put({
+    await paymentStore.put({
       entityId: computePaymentId(payment),
       record: {
         state: payment,
@@ -215,35 +220,40 @@ export async function createPaymentManager({
     peerId: PeerId;
     payments: ProofRequest.PaymentProof[];
   }) => {
-    const { proof, pubKey, publicSignals } = await generatePaymentProof(
-      privateKey,
-      payments,
-    );
+    try {
+      const { proof, pubKey, publicSignals } = await generatePaymentProof(
+        privateKey,
+        payments,
+      );
 
-    const proofResponse: EffectProtocolMessage = {
-      proofResponse: {
-        r8: {
-          R8_1: pubKey[0],
-          R8_2: pubKey[1],
+      const proofResponse: EffectProtocolMessage = {
+        proofResponse: {
+          r8: {
+            R8_1: pubKey[0],
+            R8_2: pubKey[1],
+          },
+          signals: {
+            minNonce: publicSignals[0],
+            maxNonce: publicSignals[1],
+            amount: BigInt(publicSignals[2]),
+          },
+          piA: proof.pi_a,
+          piB: [
+            { row: [proof.pi_b[0][0], proof.pi_b[0][1]] },
+            { row: [proof.pi_b[1][0], proof.pi_b[1][1]] },
+            { row: [proof.pi_b[2][0], proof.pi_b[2][1]] },
+          ],
+          piC: proof.pi_c,
+          protocol: proof.protocol,
+          curve: proof.curve,
         },
-        signals: {
-          minNonce: publicSignals[0],
-          maxNonce: publicSignals[1],
-          amount: BigInt(publicSignals[2]),
-        },
-        piA: proof.pi_a,
-        piB: [
-          { row: [proof.pi_b[0][0], proof.pi_b[0][1]] },
-          { row: [proof.pi_b[1][0], proof.pi_b[1][1]] },
-          { row: [proof.pi_b[2][0], proof.pi_b[2][1]] },
-        ],
-        piC: proof.pi_c,
-        protocol: proof.protocol,
-        curve: proof.curve,
-      },
-    };
+      };
 
-    return proofResponse;
+      return proofResponse;
+    } catch (e) {
+      console.error("Error generating proof", e);
+      throw new Error("Error generating proof");
+    }
   };
 
   return {

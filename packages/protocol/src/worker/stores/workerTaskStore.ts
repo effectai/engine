@@ -1,5 +1,5 @@
 import type { PeerId } from "@libp2p/interface";
-import type { Datastore } from "interface-datastore";
+import { Key, type Datastore } from "interface-datastore";
 import { TASK_ACCEPTANCE_TIME } from "../../manager/consts.js";
 import { TaskValidationError, TaskExpiredError } from "../../core/errors.js";
 import type { BaseTaskEvent, TaskRecord } from "../../core/common/types.js";
@@ -11,7 +11,8 @@ export type WorkerTaskEvents =
   | TaskCreatedEvent
   | TaskCompletedEvent
   | TaskAcceptedEvent
-  | TaskRejectedEvent;
+  | TaskRejectedEvent
+  | TaskExpiredEvent;
 
 export interface TaskCreatedEvent extends BaseTaskEvent {
   type: "create";
@@ -32,6 +33,10 @@ export interface TaskRejectedEvent extends BaseTaskEvent {
   reason: string;
 }
 
+export interface TaskExpiredEvent extends BaseTaskEvent {
+  type: "expire";
+}
+
 export type WorkerTaskRecord = TaskRecord<WorkerTaskEvents>;
 
 export const createWorkerTaskStore = ({
@@ -41,10 +46,40 @@ export const createWorkerTaskStore = ({
 }) => {
   const coreStore = createEntityStore<WorkerTaskEvents, WorkerTaskRecord>({
     datastore,
-    prefix: "tasks",
+    defaultPrefix: "tasks",
     stringify: (record) => stringifyWithBigInt(record),
     parse: (data) => parseWithBigInt(data),
   });
+
+  const getTask = async ({
+    entityId,
+    index = "active",
+  }: {
+    entityId: string;
+    index?: string;
+  }): Promise<WorkerTaskRecord> => {
+    const taskRecord = await coreStore.get({
+      entityId: `${index}/${entityId}`,
+    });
+
+    if (!taskRecord) {
+      throw new Error("Task not found");
+    }
+
+    return taskRecord;
+  };
+
+  const saveTask = async ({
+    entityId,
+    record,
+    index = "active",
+  }: {
+    entityId: string;
+    record: WorkerTaskRecord;
+    index?: string;
+  }): Promise<void> => {
+    await coreStore.put({ entityId: `${index}/${entityId}`, record });
+  };
 
   const create = async ({
     task,
@@ -65,7 +100,10 @@ export const createWorkerTaskStore = ({
     };
 
     //TODO:: check if task already exist ?
-    await coreStore.put({ entityId: task.id, record });
+    await saveTask({
+      entityId: task.id,
+      record,
+    });
 
     return record;
   };
@@ -77,7 +115,9 @@ export const createWorkerTaskStore = ({
     entityId: string;
     result: string;
   }): Promise<WorkerTaskRecord> => {
-    const taskRecord = await coreStore.get({ entityId });
+    const taskRecord = await getTask({
+      entityId,
+    });
 
     if (taskRecord.events.some((e) => e.type === "complete")) {
       throw new TaskValidationError("Task is already completed");
@@ -103,7 +143,13 @@ export const createWorkerTaskStore = ({
       result,
     });
 
-    await coreStore.put({ entityId, record: taskRecord });
+    const batch = coreStore.datastore.batch();
+    batch.put(
+      new Key(`/tasks/completed/${entityId}`),
+      Buffer.from(stringifyWithBigInt(taskRecord)),
+    );
+    batch.delete(new Key(`/tasks/active/${entityId}`));
+    await batch.commit();
 
     return taskRecord;
   };
@@ -113,7 +159,7 @@ export const createWorkerTaskStore = ({
   }: {
     entityId: string;
   }): Promise<WorkerTaskRecord> => {
-    const taskRecord = await coreStore.get({ entityId });
+    const taskRecord = await getTask({ entityId });
 
     const created = taskRecord.events.find(
       (t: WorkerTaskEvents) => t.type === "create",
@@ -134,7 +180,10 @@ export const createWorkerTaskStore = ({
 
     taskRecord.events.push(event);
 
-    await coreStore.put({ entityId, record: taskRecord });
+    await saveTask({
+      entityId,
+      record: taskRecord,
+    });
 
     return taskRecord;
   };
@@ -147,7 +196,7 @@ export const createWorkerTaskStore = ({
     peerIdStr: string;
     reason: string;
   }): Promise<void> => {
-    const taskRecord = await coreStore.get({ entityId });
+    const taskRecord = await getTask({ entityId });
 
     const lastEvent = taskRecord.events[taskRecord.events.length - 1];
     if (lastEvent.type !== "create") {
@@ -160,7 +209,36 @@ export const createWorkerTaskStore = ({
       reason,
     });
 
-    await coreStore.put({ entityId, record: taskRecord });
+    const batch = coreStore.datastore.batch();
+    batch.put(
+      new Key(`/tasks/rejected/${entityId}`),
+      Buffer.from(stringifyWithBigInt(taskRecord)),
+    );
+    batch.delete(new Key(`/tasks/active/${entityId}`));
+  };
+
+  const expire = async ({ entityId }: { entityId: string }) => {
+    const taskRecord = await getTask({ entityId });
+
+    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
+
+    if (lastEvent.type !== "create" && lastEvent.type !== "accept") {
+      throw new TaskValidationError("Task was not created.");
+    }
+
+    taskRecord.events.push({
+      timestamp: Math.floor(Date.now() / 1000),
+      type: "expire",
+    });
+
+    //move task to expired index
+    const batch = coreStore.datastore.batch();
+    batch.put(
+      new Key(`/tasks/expired/${entityId}`),
+      Buffer.from(stringifyWithBigInt(taskRecord)),
+    );
+    batch.delete(new Key(`/tasks/active/${entityId}`));
+    await batch.commit();
   };
 
   return {
@@ -169,6 +247,7 @@ export const createWorkerTaskStore = ({
     complete,
     accept,
     reject,
+    expire,
   };
 };
 export type WorkerTaskStore = ReturnType<typeof createWorkerTaskStore>;
