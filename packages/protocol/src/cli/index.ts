@@ -3,13 +3,12 @@ import { program } from "commander";
 import axios from "axios";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { computeTemplateId } from "../../dist/core/utils.js";
 import { peerIdFromPrivateKey } from "@libp2p/peer-id";
 import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
-import { Template } from "../../dist/core/messages/effect.js";
 import { LevelDatastore } from "datastore-level";
-import { createManager } from "../../dist/manager/main.js";
 import { ulid } from "ulid";
+import { computeTemplateId } from "../core/utils.js";
+import { createManager } from "../manager/main.js";
 
 type Task = {
   id?: string;

@@ -14,11 +14,10 @@
     "post:task": "sh ./packages/manager/scripts/post-task.sh",
     "simulate": "node --experimental-strip-types ./tests/simulate.ts"
   },
-  "types": "./dist/src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js"
     }
   },
   "dependencies": {
