@@ -1,3 +1,3 @@
 export * from "./eos.js";
 export * from "./derive.js";
-export * from "./solana.js";
+export { getRpcUrl, getPayer, createKeypairFromFile } from "./solana.js";

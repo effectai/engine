@@ -45,6 +45,12 @@
       icon: "lucide:forward",
       current: computed(() => route.path.includes("migrate")),
     },
+    {
+      name: "Worker",
+      href: "/worker",
+      icon: "lucide:cpu",
+      current: computed(() => route.path.includes("/worker")),
+    }
   ]);
 </script>
 

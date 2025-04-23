@@ -1,10 +1,10 @@
 import { useWallet } from "solana-wallets-vue";
 
 export default defineNuxtRouteMiddleware((to, from) => {
-  const { publicKey } = useWallet();
+  const privateKey = useLocalStorage("privateKey", null);
 
-  if (!publicKey.value) {
-    console.log("User is not authenticated, redirecting to login page");
-    return navigateTo("/");
+  if (!privateKey.value) {
+    console.log("User is not authenticated, redirecting to login");
+    return navigateTo("/login");
   }
 });

@@ -77,7 +77,7 @@ export const calculateDue = (
   startTime: number,
   releaseRate: number,
   distributedTokens: number,
-  amountAvailable: number
+  amountAvailable: number,
 ): number => {
   // get now as a unix timestamp
   const now = Math.floor(new Date().getTime() / 1000);

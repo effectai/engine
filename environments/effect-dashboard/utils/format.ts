@@ -43,3 +43,7 @@ export const formatNumber = (num: number, digits?: number) => {
 export const formatTimestampToTimeAgo = (timestamp: number) => {
   return formatDistanceToNow(timestamp, { addSuffix: true });
 };
+
+export const formatBigIntToAmount = (amount: bigint): number => {
+  return Number(amount) / 10 ** 6;
+};

@@ -2,9 +2,12 @@
   "compilerOptions": {
     // Enable latest features
     "strict": true,
-    "lib": ["ESNext", "DOM"],
-    "moduleResolution": "NodeNext",
-    "module": "NodeNext",
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
+    "moduleResolution": "bundler",
+    "module": "ESNext",
     "target": "ES6",
     "skipLibCheck": true,
     "declaration": true,
@@ -13,6 +16,10 @@
     "resolveJsonModule": true,
     "outDir": "./dist"
   },
-  "include": ["src"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

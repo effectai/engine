@@ -10,14 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { createWorkerNode } from "@effectai/protocol";
-
-const address = ref<string>("");
-const connect = async () => {
-	console.log("Connecting to worker node...");
-	const workerNode = await createWorkerNode([address.value]);
-	workerNode.start();
-};
+import { createWorker } from "@effectai/protocol";
 </script>
 
 <style scoped></style>
