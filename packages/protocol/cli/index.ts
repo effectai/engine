@@ -141,6 +141,7 @@ program
     "-k, --private-key <path>",
     "Path to manager private key file",
   )
+  .option("--announce <multiaddr>", "Libp2p announce address")
   .action(async (options) => {
     try {
       const privateKey = readFileSync(options.privateKey, "utf-8");
@@ -160,6 +161,7 @@ program
         datastore,
         //automatically start managing tasks
         autoManage: true,
+        announce: [options.announce] || [],
       });
 
       console.log("Manager started", manager.entity.getMultiAddress());
