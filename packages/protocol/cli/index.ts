@@ -161,7 +161,7 @@ program
         datastore,
         //automatically start managing tasks
         autoManage: true,
-        announce: [options.announce] || [],
+        announce: options.announce ? [options.announce] : [],
       });
 
       console.log("Manager started", manager.entity.getMultiAddress());
