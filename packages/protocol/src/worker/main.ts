@@ -48,6 +48,7 @@ export const createWorkerEntity = async ({
         datastore,
         autoStart: false,
         listen: ["/p2p-circuit", "/webrtc"],
+        announce: [],
         transports: [
           webSockets(),
           webRTC(),

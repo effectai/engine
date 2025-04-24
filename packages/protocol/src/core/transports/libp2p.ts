@@ -52,6 +52,7 @@ export interface Libp2pMethods {
 
 export interface Libp2pInit {
   listen: string[];
+  announce: string[];
   transports: ((components: any) => InternalLibp2pTransport)[];
   bootstrap?: string[];
   privateKey?: PrivateKey;
@@ -126,7 +127,10 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
     return createLibp2p({
       start: this.options.autoStart,
       ...(this.options.privateKey && { privateKey: this.options.privateKey }),
-      addresses: { listen: this.options.listen || [] },
+      addresses: {
+        listen: this.options.listen || [],
+        announce: this.options.announce || [],
+      },
       connectionGater: {
         denyDialMultiaddr: async () => false,
         denyInboundConnection: async () => false,

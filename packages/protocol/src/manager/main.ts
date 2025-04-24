@@ -32,10 +32,14 @@ export const createManagerEntity = async ({
   datastore,
   privateKey,
   port,
+  listen,
+  announce,
 }: {
   datastore: Datastore;
   privateKey: PrivateKey;
   port?: number;
+  listen: string[];
+  announce: string[] | undefined;
 }) => {
   return await createEffectEntity({
     protocol: {
@@ -49,7 +53,8 @@ export const createManagerEntity = async ({
         autoStart: true,
         datastore,
         privateKey,
-        listen: [`/ip4/0.0.0.0/tcp/${port}/ws`],
+        listen,
+        announce: announce || [],
         services: {},
         transports: [webSockets()],
       }),
@@ -64,16 +69,22 @@ export const createManager = async ({
   datastore,
   privateKey,
   autoManage = true,
+  listen = [`/ip4/0.0.0.0/tcp/${port}/ws`],
+  announce = [],
 }: {
   datastore: Datastore;
   privateKey: PrivateKey;
   port?: number;
   autoManage?: boolean;
+  listen: string[];
+  announce: string[];
 }) => {
   const entity = await createManagerEntity({
     datastore,
     privateKey,
     port,
+    listen,
+    announce,
   });
 
   const paymentStore = createPaymentStore({ datastore });
