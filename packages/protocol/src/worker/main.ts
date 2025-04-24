@@ -66,12 +66,12 @@ export const createWorker = async ({
   privateKey,
 }: {
   datastore: Datastore;
-  privateKey: Uint8Array;
+  privateKey: Uint8Array | PrivateKey;
 }) => {
-  const ed25519PrivateKey = await generateKeyPairFromSeed(
-    "Ed25519",
-    privateKey,
-  );
+  const ed25519PrivateKey: PrivateKey =
+    privateKey instanceof Uint8Array
+      ? await generateKeyPairFromSeed("Ed25519", privateKey)
+      : privateKey;
 
   const events = new TypedEventEmitter<WorkerEvents>();
   const entity = await createWorkerEntity({
