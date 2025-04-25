@@ -85,12 +85,17 @@ export const createWorker = async ({
 
   // register worker modules
   const templateWorker = createTemplateWorker({ entity, templateStore });
-  const { createPayment, getPayments, requestPayout, requestPaymentProof } =
-    createPaymentWorker({
-      entity,
-      events,
-      paymentStore,
-    });
+  const {
+    createPayment,
+    getPayments,
+    requestPayout,
+    requestPaymentProof,
+    getMaxNonce,
+  } = createPaymentWorker({
+    entity,
+    events,
+    paymentStore,
+  });
 
   const {
     createTask,
@@ -156,7 +161,7 @@ export const createWorker = async ({
   };
 
   setInterval(async () => {
-    //cleanup stale tasks
+    //cleanup stale tasks / move to expired
     await cleanup();
   }, 1000);
 
@@ -171,6 +176,7 @@ export const createWorker = async ({
     rejectTask,
     completeTask,
     renderTask,
+    getMaxNonce,
 
     getPayments,
     requestPayout,

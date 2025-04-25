@@ -150,6 +150,11 @@ export const createMockDatastore = () => {
         yield { key, value };
       }
     }),
+    queryKeys: vi.fn(async function* () {
+      for (const key of store.keys()) {
+        yield new Key(key);
+      }
+    }),
     _raw: store, // expose for inspection if needed
   };
 };

@@ -98,10 +98,21 @@ export function createPaymentWorker({
     });
   };
 
+  const getMaxNonce = async ({
+    managerPeerIdStr,
+  }: {
+    managerPeerIdStr: string;
+  }) => {
+    return await paymentStore.getHighestNonce({
+      peerId: managerPeerIdStr,
+    });
+  };
+
   return {
     createPayment,
     requestPayout,
     getPayments,
     requestPaymentProof,
+    getMaxNonce,
   };
 }
