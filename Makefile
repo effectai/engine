@@ -46,4 +46,7 @@ clean:
 	rm zkp/circuits/${CIRCUIT}_verification.json
 	rm -rf zkp/circuits/${CIRCUIT}_js
 
-.PHONY: clean download_ptau
+guixify:
+	guix shell -m guix/manifest.scm -L guix/extra --expose /root/manager-key.json --container --network --emulate-fhs
+
+.PHONY: clean download_ptau guixify
