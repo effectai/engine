@@ -44,4 +44,7 @@ clean:
 	rm packages/zkp/circuits/${CIRCUIT}_verification.json
 	rm -rf packages/zkp/circuits/${CIRCUIT}_js
 
-.PHONY: clean
+guixify:
+	guix shell -m guix/manifest.scm -L guix/extra --expose=/root/manager-key.json --container --network --emulate-fhs
+
+.PHONY: clean guixify
