@@ -7,7 +7,6 @@ mod security;
 mod utils;
 mod verifying_key;
 
-use effect_payment_common::Payment;
 use effect_payment_common::EFFECT_PAYMENT;
 pub use instructions::*;
 
@@ -25,7 +24,7 @@ pub mod effect_payment {
         total_amount: u64,
         pub_x: [u8; 32],
         pub_y: [u8; 32],
-        proof: [u8; 256], 
+        proof: [u8; 256],
     ) -> Result<()> {
         claim::handler(ctx, min_nonce, max_nonce, total_amount, pub_x, pub_y, proof)
     }

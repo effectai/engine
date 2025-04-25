@@ -1,4 +1,3 @@
-#!/usr/bin/env bun
 import { program } from "commander";
 import axios from "axios";
 import { readFileSync } from "node:fs";

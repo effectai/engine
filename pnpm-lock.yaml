@@ -444,8 +444,8 @@ importers:
         specifier: ^1.0.4
         version: 1.0.19(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)
       '@coral-xyz/anchor':
-        specifier: ^0.30.1
-        version: 0.30.1
+        specifier: ^0.31.1
+        version: 0.31.1
       '@effectai/shared':
         specifier: workspace:*
         version: link:../packages/shared
@@ -466,7 +466,7 @@ importers:
         version: 11.3.0(nuxt@3.16.2)(vue@3.5.13)
       anchor-bankrun:
         specifier: 0.5.0
-        version: 0.5.0(@coral-xyz/anchor@0.30.1)(@solana/web3.js@1.95.5)(solana-bankrun@0.4.0)
+        version: 0.5.0(@coral-xyz/anchor@0.31.1)(@solana/web3.js@1.95.5)(solana-bankrun@0.4.0)
       bn.js:
         specifier: 5.2.1
         version: 5.2.1
@@ -1367,6 +1367,11 @@ packages:
     engines: {node: '>=10'}
     dev: false
 
+  /@coral-xyz/anchor-errors@0.31.1:
+    resolution: {integrity: sha512-NhNEku4F3zzUSBtrYz84FzYWm48+9OvmT1Hhnwr6GnPQry2dsEqH/ti/7ASjjpoFTWRnPXrjAIT1qM6Isop+LQ==}
+    engines: {node: '>=10'}
+    dev: false
+
   /@coral-xyz/anchor@0.29.0:
     resolution: {integrity: sha512-eny6QNG0WOwqV0zQ7cs/b1tIuzZGmP7U7EcH+ogt4Gdbl8HDmIYVMh/9aTmYZPaFWjtUaI8qSn73uYEXWfATdA==}
     engines: {node: '>=11'}
@@ -1416,6 +1421,29 @@ packages:
       - utf-8-validate
     dev: false
 
+  /@coral-xyz/anchor@0.31.1:
+    resolution: {integrity: sha512-QUqpoEK+gi2S6nlYc2atgT2r41TT3caWr/cPUEL8n8Md9437trZ68STknq897b82p5mW0XrTBNOzRbmIRJtfsA==}
+    engines: {node: '>=17'}
+    dependencies:
+      '@coral-xyz/anchor-errors': 0.31.1
+      '@coral-xyz/borsh': 0.31.1(@solana/web3.js@1.98.0)
+      '@noble/hashes': 1.7.2
+      '@solana/web3.js': 1.98.0
+      bn.js: 5.2.1
+      bs58: 4.0.1
+      buffer-layout: 1.2.2
+      camelcase: 6.3.0
+      cross-fetch: 3.2.0
+      eventemitter3: 4.0.7
+      pako: 2.1.0
+      superstruct: 0.15.5
+      toml: 3.0.0
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - utf-8-validate
+    dev: false
+
   /@coral-xyz/borsh@0.29.0(@solana/web3.js@1.98.0):
     resolution: {integrity: sha512-s7VFVa3a0oqpkuRloWVPdCK7hMbAMY270geZOGfCnaqexrP5dTIpbEHL33req6IYPPJ0hYa71cdvJ1h6V55/oQ==}
     engines: {node: '>=10'}
@@ -1432,6 +1460,17 @@ packages:
     engines: {node: '>=10'}
     peerDependencies:
       '@solana/web3.js': ^1.68.0
+    dependencies:
+      '@solana/web3.js': 1.98.0
+      bn.js: 5.2.1
+      buffer-layout: 1.2.2
+    dev: false
+
+  /@coral-xyz/borsh@0.31.1(@solana/web3.js@1.98.0):
+    resolution: {integrity: sha512-9N8AU9F0ubriKfNE3g1WF0/4dtlGXoBN/hd1PvbNBamBNwRgHxH4P+o3Zt7rSEloW1HUs6LfZEchlx9fW7POYw==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      '@solana/web3.js': ^1.69.0
     dependencies:
       '@solana/web3.js': 1.98.0
       bn.js: 5.2.1
@@ -13015,7 +13054,7 @@ packages:
     dependencies:
       humanize-ms: 1.2.1
 
-  /anchor-bankrun@0.5.0(@coral-xyz/anchor@0.30.1)(@solana/web3.js@1.95.5)(solana-bankrun@0.4.0):
+  /anchor-bankrun@0.5.0(@coral-xyz/anchor@0.31.1)(@solana/web3.js@1.95.5)(solana-bankrun@0.4.0):
     resolution: {integrity: sha512-cNTRv7pN9dy+kiyJ3UlNVTg9hAXhY2HtNVNXJbP/2BkS9nOdLV0qKWhgW8UR9Go0gYuEOLKuPzrGL4HFAZPsVw==}
     engines: {node: '>= 10'}
     peerDependencies:
@@ -13023,7 +13062,7 @@ packages:
       '@solana/web3.js': '>1.92.0'
       solana-bankrun: '>=0.2.0 <0.5.0'
     dependencies:
-      '@coral-xyz/anchor': 0.30.1
+      '@coral-xyz/anchor': 0.31.1
       '@solana/web3.js': 1.95.5
       solana-bankrun: 0.4.0
     dev: false

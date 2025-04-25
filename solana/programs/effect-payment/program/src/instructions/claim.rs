@@ -3,8 +3,7 @@ use anchor_spl::token::TokenAccount;
 use anchor_spl::token::{Mint, Token};
 use effect_common::cpi;
 use effect_common::transfer_tokens_from_vault;
-use effect_payment_common::{Payment, PaymentAccount, RecipientManagerDataAccount};
-use solana_program::instruction::Instruction;
+use effect_payment_common::{PaymentAccount, RecipientManagerDataAccount};
 
 use crate::errors::PaymentErrors;
 use crate::utils::{change_endianness, u32_to_32_byte_be_array, u64_to_32_byte_be_array};
@@ -16,8 +15,15 @@ type G1 = ark_bn254::g1::G1Affine;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use groth16_solana::groth16::Groth16Verifier;
 
-use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
-use curve25519_dalek::scalar::Scalar;
+pub fn compress_pubkey(pub_x: [u8; 32], pub_y: [u8; 32]) -> Pubkey {
+    let mut compressed = pub_y;
+
+    let x_sign = pub_x[0] & 1;
+
+    compressed[31] |= x_sign << 7;
+
+    Pubkey::from(compressed)
+}
 
 #[derive(Accounts)]
 pub struct Claim<'info> {
@@ -28,7 +34,8 @@ pub struct Claim<'info> {
     pub payment_vault_token_account: Account<'info, TokenAccount>,
 
     //TODO:: ata of authority
-    #[account(mut,
+    #[account(
+        mut,
         token::mint = mint,
         token::authority = authority
     )
@@ -46,18 +53,6 @@ pub struct Claim<'info> {
     pub authority: Signer<'info>,
 }
 
-pub fn compress_public_key(pub_x: [u8; 32], pub_y: [u8; 32]) -> [u8; 32] {
-    let y = CompressedEdwardsY(pub_y).decompress().unwrap();
-    
-    let x = Scalar::from_bytes_mod_order(pub_x);
-    let sign_bit = x.as_bytes()[31] >> 7;
-    
-    let mut compressed = pub_y;
-    compressed[31] |= sign_bit << 7;
-    
-    compressed
-}
-
 pub fn handler(
     ctx: Context<Claim>,
     min_nonce: u32,
@@ -67,11 +62,15 @@ pub fn handler(
     pub_y: [u8; 32],
     proof: [u8; 256],
 ) -> Result<()> {
-    //compress pub_x and pub_y
-    let compressed_pub_key = compress_public_key(pub_x, pub_y);
-    println!("compressed pub key: {:?}", compressed_pub_key);
-    //make sure manager key is part of authorities on the payment account
-    let manager_key = Pubkey::from(compressed_pub_key);
+    let manager_key = compress_pubkey(pub_x, pub_y);
+    let expected_seeds = &[ctx.accounts.authority.key.as_ref(), manager_key.as_ref()];
+    let (expected_pda, _) = Pubkey::find_program_address(expected_seeds, ctx.program_id);
+
+    require_keys_eq!(
+        expected_pda,
+        ctx.accounts.recipient_manager_data_account.key(),
+        PaymentErrors::InvalidPDA
+    );
 
     require!(
         ctx.accounts
@@ -79,10 +78,6 @@ pub fn handler(
             .is_authorized(&manager_key.key()),
         PaymentErrors::Unauthorized
     );
-
-    msg!("min nonce: {}", min_nonce);
-    msg!("max nonce: {}", max_nonce);
-    msg!("total amount: {}", total_amount);
 
     let last_nonce = ctx.accounts.recipient_manager_data_account.nonce;
     require!(min_nonce > last_nonce, PaymentErrors::InvalidPayment);

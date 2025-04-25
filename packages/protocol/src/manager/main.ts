@@ -18,7 +18,7 @@ import { buildEddsa } from "circomlibjs";
 import { HttpTransport } from "../core/transports/http.js";
 import { managerLogger } from "../core/logging.js";
 import { createWorkerManager } from "./modules/createWorkerManager.js";
-import { compressPubKey, pointToCompressedPubKey } from "./utils.js";
+import { compressBabyJubJubPubKey } from "./utils.js";
 import { PublicKey } from "@solana/web3.js";
 
 export type ManagerEvents = {
@@ -33,13 +33,11 @@ export type ManagerEvents = {
 export const createManagerEntity = async ({
   datastore,
   privateKey,
-  port,
   listen,
   announce,
 }: {
   datastore: Datastore;
   privateKey: PrivateKey;
-  port?: number;
   listen: string[];
   announce: string[] | undefined;
 }) => {
@@ -57,7 +55,6 @@ export const createManagerEntity = async ({
         privateKey,
         listen,
         announce: announce || [],
-        services: {},
         transports: [webSockets()],
       }),
     ],
@@ -84,7 +81,6 @@ export const createManager = async ({
   const entity = await createManagerEntity({
     datastore,
     privateKey,
-    port,
     listen,
     announce,
   });
@@ -124,7 +120,11 @@ export const createManager = async ({
 
       const eddsa = await buildEddsa();
       const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
-      const compressedPublicKey = await pointToCompressedPubKey(pubKey);
+
+      const compressedPublicKey = compressBabyJubJubPubKey(
+        pubKey[0],
+        pubKey[1],
+      );
 
       const solanaPublicKey = new PublicKey(compressedPublicKey);
 
