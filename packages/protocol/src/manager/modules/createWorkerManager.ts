@@ -7,21 +7,21 @@ import {
 import { ManagerEntity } from "../main.js";
 import { managerLogger } from "../../core/logging.js";
 import { stringifyWithBigInt } from "../../core/utils.js";
+import { ProtocolError } from "../../core/errors.js";
 
 export type PeerIdStr = string;
 
 export const createWorkerManager = ({
   datastore,
   manager,
-}: { datastore: Datastore; manager: ManagerEntity }) => {
+}: {
+  datastore: Datastore;
+  manager: ManagerEntity;
+}) => {
   const createWorkerQueue = () => {
     const queue: PeerIdStr[] = [];
 
-    const addPeer = ({
-      peerIdStr,
-    }: {
-      peerIdStr: PeerIdStr;
-    }): void => {
+    const addPeer = ({ peerIdStr }: { peerIdStr: PeerIdStr }): void => {
       if (!queue.includes(peerIdStr)) {
         queue.push(peerIdStr);
       }
@@ -68,6 +68,7 @@ export const createWorkerManager = ({
     try {
       // check if the peerId is already in the worker store
       const workerRecord = await workerStore.getSafe({ entityId: peerId });
+      let expectedNonce = workerRecord?.state.nonce;
 
       if (!workerRecord) {
         // if not, add it
@@ -95,9 +96,26 @@ export const createWorkerManager = ({
           record: newWorkerRecord,
         });
 
+        expectedNonce = newWorkerRecord.state.nonce;
+
         managerLogger.info(`New Worker: ${peerId} created`);
       } else {
         managerLogger.info(`Returning worker ${peerId} connected`);
+      }
+
+      //check if the nonce matches up
+      //TODO:: what should we do here?
+      if (expectedNonce !== nonce) {
+        managerLogger.warn(
+          {
+            peerId,
+            nonce,
+            expectedNonce,
+          },
+          `Nonce mismatch for worker`,
+        );
+
+        throw new ProtocolError("N01", "Nonce mismatch");
       }
 
       // add worker to queue
@@ -207,8 +225,8 @@ export const createWorkerManager = ({
     // check if worker is busy (i.e. has more than 3 tasks in assigned / accepted)
     return (
       workerRecord.state.totalTasks -
-      (workerRecord.state.tasksCompleted +
-        workerRecord.state.tasksRejected) >=
+        (workerRecord.state.tasksCompleted +
+          workerRecord.state.tasksRejected) >=
       3
     );
   };

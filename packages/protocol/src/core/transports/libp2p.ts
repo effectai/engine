@@ -271,7 +271,7 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
     message: T,
     options: SendMessageOptions = {},
   ): Promise<[MessageResponse<T> | null, ProtocolError | null]> {
-    const { timeout = 5000, existingStream } = options;
+    const { timeout = 10000, existingStream } = options;
     const expectResponse = shouldExpectResponse(message);
     let stream: Stream | undefined;
     let shouldClose = false;

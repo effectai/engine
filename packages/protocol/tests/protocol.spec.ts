@@ -22,7 +22,6 @@ import {
 } from "./utils.js";
 import { randomBytes } from "node:crypto";
 import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
-import { PublicKey } from "@solana/web3.js";
 import type { Task, Template } from "../src/core/messages/effect.js";
 import type { WorkerTaskRecord } from "../src/worker/stores/workerTaskStore.js";
 

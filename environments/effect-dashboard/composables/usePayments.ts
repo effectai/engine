@@ -2,12 +2,25 @@ import type { Payment } from "@effectai/protocol";
 import type { PublicKey } from "@solana/web3.js";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/vue-query";
 
-const remoteNonce: Ref<bigint | null> = ref(null);
-
 export const usePayments = () => {
   const currentNonce = computed(() => Math.max(0, 1));
   const workerStore = useWorkerStore();
-  const { paymentCounter } = storeToRefs(workerStore);
+  const { paymentCounter, worker } = storeToRefs(workerStore);
+
+  const useGetMaxNonce = (managerPeerId: string) => {
+    return useQuery({
+      queryKey: ["maxNonce", managerPeerId, paymentCounter],
+      queryFn: async () => {
+        if (!workerStore.managerPeerId) {
+          throw new Error("Manager peer ID is not set");
+        }
+
+        return await worker.value?.getMaxNonce({
+          managerPeerIdStr: workerStore.managerPeerId.toString(),
+        });
+      },
+    });
+  };
 
   const useGetPayments = () =>
     useQuery({
@@ -32,7 +45,7 @@ export const usePayments = () => {
           throw new Error("Worker is not initialized");
         }
 
-        console.log("claiming payments", payments.length);
+        console.log("Claiming payments", payments);
         const [proof, error] = await workerStore.worker.requestPaymentProof(
           workerStore.managerPeerId,
           payments,
@@ -54,5 +67,27 @@ export const usePayments = () => {
     currentNonce,
     useGetPayments,
     useClaimPayments,
+    useGetMaxNonce,
   };
+};
+
+export const useNextNonce = async (
+  workerPublicKey: PublicKey,
+  managerPublicKey: PublicKey,
+  managerPeerIdStr: string,
+) => {
+  const workerStore = useWorkerStore();
+  const { worker } = storeToRefs(workerStore);
+
+  const [remoteNonce, maxLocalNonce] = await Promise.all([
+    usePaymentProgram().fetchRemoteNonce(workerPublicKey, managerPublicKey),
+    worker.value?.getMaxNonce({ managerPeerIdStr }) ?? Promise.resolve(0),
+  ]);
+
+  const remoteBigInt = remoteNonce !== null ? BigInt(remoteNonce) : 0n;
+  const localBigInt = maxLocalNonce !== null ? BigInt(maxLocalNonce) : 0n;
+
+  const highestNonce = remoteBigInt > localBigInt ? remoteBigInt : localBigInt;
+
+  return highestNonce + 1n;
 };

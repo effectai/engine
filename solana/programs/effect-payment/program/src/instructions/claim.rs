@@ -16,6 +16,9 @@ type G1 = ark_bn254::g1::G1Affine;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use groth16_solana::groth16::Groth16Verifier;
 
+use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
+use curve25519_dalek::scalar::Scalar;
+
 #[derive(Accounts)]
 pub struct Claim<'info> {
     #[account()]
@@ -43,6 +46,18 @@ pub struct Claim<'info> {
     pub authority: Signer<'info>,
 }
 
+pub fn compress_public_key(pub_x: [u8; 32], pub_y: [u8; 32]) -> [u8; 32] {
+    let y = CompressedEdwardsY(pub_y).decompress().unwrap();
+    
+    let x = Scalar::from_bytes_mod_order(pub_x);
+    let sign_bit = x.as_bytes()[31] >> 7;
+    
+    let mut compressed = pub_y;
+    compressed[31] |= sign_bit << 7;
+    
+    compressed
+}
+
 pub fn handler(
     ctx: Context<Claim>,
     min_nonce: u32,
@@ -52,9 +67,12 @@ pub fn handler(
     pub_y: [u8; 32],
     proof: [u8; 256],
 ) -> Result<()> {
+    //compress pub_x and pub_y
+    let compressed_pub_key = compress_public_key(pub_x, pub_y);
+    println!("compressed pub key: {:?}", compressed_pub_key);
     //make sure manager key is part of authorities on the payment account
-    //TODO:: this is not correct..
-    let manager_key = Pubkey::from(pub_x);
+    let manager_key = Pubkey::from(compressed_pub_key);
+
     require!(
         ctx.accounts
             .payment_account

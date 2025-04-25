@@ -234,8 +234,7 @@ export namespace RequestToWork {
 
 export interface RequestToWorkResponse {
   timestamp: number
-  pubX: Uint8Array
-  pubY: Uint8Array
+  pubkey: Uint8Array
 }
 
 export namespace RequestToWorkResponse {
@@ -253,14 +252,9 @@ export namespace RequestToWorkResponse {
           w.uint32(obj.timestamp)
         }
 
-        if ((obj.pubX != null && obj.pubX.byteLength > 0)) {
+        if ((obj.pubkey != null && obj.pubkey.byteLength > 0)) {
           w.uint32(18)
-          w.bytes(obj.pubX)
-        }
-
-        if ((obj.pubY != null && obj.pubY.byteLength > 0)) {
-          w.uint32(26)
-          w.bytes(obj.pubY)
+          w.bytes(obj.pubkey)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -269,8 +263,7 @@ export namespace RequestToWorkResponse {
       }, (reader, length, opts = {}) => {
         const obj: any = {
           timestamp: 0,
-          pubX: uint8ArrayAlloc(0),
-          pubY: uint8ArrayAlloc(0)
+          pubkey: uint8ArrayAlloc(0)
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -284,11 +277,7 @@ export namespace RequestToWorkResponse {
               break
             }
             case 2: {
-              obj.pubX = reader.bytes()
-              break
-            }
-            case 3: {
-              obj.pubY = reader.bytes()
+              obj.pubkey = reader.bytes()
               break
             }
             default: {

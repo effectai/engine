@@ -31,11 +31,7 @@ export async function createPaymentManager({
   const eddsa = await buildEddsa();
   const poseidon = await buildPoseidon();
 
-  const processPayoutRequest = async ({
-    peerId,
-  }: {
-    peerId: PeerId;
-  }) => {
+  const processPayoutRequest = async ({ peerId }: { peerId: PeerId }) => {
     const worker = await workerManager.getWorker(peerId.toString());
 
     if (!worker) {
@@ -86,7 +82,7 @@ export async function createPaymentManager({
     const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
 
     //TODO:: make this dynamic
-    const maxBatchSize = 10;
+    const maxBatchSize = 50;
     const batchSize = payments.length;
 
     const enabled = Array(maxBatchSize).fill(0).fill(1, 0, batchSize);
@@ -137,11 +133,11 @@ export async function createPaymentManager({
 
     const wasmPath = path.resolve(
       __dirname,
-      "../../../../../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
+      "../../../../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
     );
     const zkeyPath = path.resolve(
       __dirname,
-      "../../../../../zkp/circuits/PaymentBatch_0001.zkey",
+      "../../../../zkp/circuits/PaymentBatch_0001.zkey",
     );
 
     const { proof, publicSignals } = await snarkjs.groth16.fullProve(

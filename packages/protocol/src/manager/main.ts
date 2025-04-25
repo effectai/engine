@@ -18,6 +18,8 @@ import { buildEddsa } from "circomlibjs";
 import { HttpTransport } from "../core/transports/http.js";
 import { managerLogger } from "../core/logging.js";
 import { createWorkerManager } from "./modules/createWorkerManager.js";
+import { compressPubKey, pointToCompressedPubKey } from "./utils.js";
+import { PublicKey } from "@solana/web3.js";
 
 export type ManagerEvents = {
   "task:created": (task: TaskRecord) => void;
@@ -122,13 +124,15 @@ export const createManager = async ({
 
       const eddsa = await buildEddsa();
       const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
+      const compressedPublicKey = await pointToCompressedPubKey(pubKey);
+
+      const solanaPublicKey = new PublicKey(compressedPublicKey);
 
       return {
         requestToWorkResponse: {
           timestamp: Math.floor(Date.now() / 1000),
-          // manager public key in eddsa format
-          pubX: pubKey[0],
-          pubY: pubKey[1],
+          //compressed public key
+          pubkey: solanaPublicKey,
           // the maximum batch size of payments
           batchSize: 10,
         },
