@@ -11,18 +11,22 @@
   #:use-module (guix git-download)
   #:use-module (guix download)
   #:use-module (guix build-system node)
-  #:use-module ((guix licenses) #:prefix license:))
+  #:use-module ((guix licenses) #:prefix license:)
+
+  #:use-module (gnu packages gcc)
+  #:use-module (gnu packages linux)
+  #:use-module (nonguix build-system binary))
 
 (define-public node-pnpm
   (package
     (name "node-pnpm")
-    (version "10.4.1")
+    (version "8.15.6")
     (source
      (origin
        (method url-fetch)
-       (uri "https://registry.npmjs.org/pnpm/-/pnpm-10.4.1.tgz")
+       (uri (string-append "https://registry.npmjs.org/pnpm/-/pnpm-" version ".tgz"))
        (sha256
-	(base32 "15wijn5n1jm4jdz4ybmmfay46anhsq26p0q08cyr75b9k23jhw2b"))))
+	(base32 "0vrfzyciqwl87wq82bmqa19gljm10sfkxh0rxwqrndqfk7mixh01"))))
     (build-system node-build-system)
     (arguments
      (list
@@ -34,3 +38,43 @@
     (synopsis "Fast, disk space efficient package manager")
     (description "Fast, disk space efficient package manager")
     (license license:expat)))
+
+(define-public solana-2.0.15
+  (package
+    (name "solana")
+    (version "1.18.26")
+    (source (origin
+	      (method url-fetch)
+	      (uri (string-append
+		    "https://github.com/anza-xyz/agave/releases/download/v"
+		    version "/solana-release-x86_64-unknown-linux-gnu.tar.bz2"))
+	      (sha256
+	       (base32
+		"1xlp3kkz2ac4crz3sf29rr4zz2g3ghi2nqyl0q9zqvaka7s4virs"))))
+    (arguments
+     `(#:patchelf-plan
+       `(("bin/solana" ("glibc" "gcc:lib" "eudev"))
+	 ("bin/spl-token" ("glibc" "gcc:lib" "eudev"))
+	 ("bin/solana-keygen" ("glibc" "gcc:lib" "eudev"))
+	 ("bin/cargo-build-bpf" ("glibc" "gcc:lib"))
+	 ("bin/cargo-build-sbf" ("glibc" "gcc:lib"))
+	 ("bin/cargo-test-bpf" ("glibc" "gcc:lib"))
+	 ("bin/cargo-test-sbf" ("glibc" "gcc:lib")))
+       #:install-plan
+       `(("bin/solana" "bin/")
+	 ("bin/spl-token" "bin/")
+	 ("bin/solana-keygen" "bin/")
+	 ("bin/cargo-build-bpf" "bin/")
+	 ("bin/cargo-build-sbf" "bin/")
+	 ("bin/sdk" "bin/")
+	 ("bin/cargo-test-bpf" "bin/")
+	 ("bin/cargo-test-sbf" "bin/"))))
+    (inputs
+     `(("gcc:lib" ,gcc "lib")
+       ("glibc" ,glibc)
+       ("eudev" ,eudev)))
+    (build-system binary-build-system)
+    (home-page "https://solana.com/")
+    (synopsis "Blockchain, Rebuilt for Scale")
+    (description "Blockchain, Rebuilt for Scale")
+    (license license:asl2.0)))
