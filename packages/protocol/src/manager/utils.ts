@@ -30,16 +30,26 @@ export async function pointToCompressedPubKey(
   point: Point,
 ): Promise<Uint8Array> {
   const eddsa = await buildEddsa();
-  // Ed25519 standard compression:
-  // Store Y coordinate and use LSB to indicate X's sign
+
   const yBuf = eddsa.babyJub.F.toObject(point[1])
     .toString(16)
     .padStart(64, "0");
   const yBytes = Buffer.from(yBuf, "hex");
 
-  // Set most significant bit of Y based on X's sign
   const isXNegative = eddsa.babyJub.F.isNegative(point[0]);
   yBytes[31] |= isXNegative ? 0x80 : 0x00;
 
   return yBytes;
+}
+
+export function compressBabyJubJubPubKey(pubX, pubY) {
+  if (pubX.length !== 32 || pubY.length !== 32) {
+    throw new Error("Invalid input length — must be 32 bytes each");
+  }
+
+  const compressed = Uint8Array.from(pubY);
+  const xSign = pubX[0] & 1;
+  compressed[31] |= xSign << 7;
+
+  return compressed;
 }

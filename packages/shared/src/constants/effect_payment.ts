@@ -1,5 +1,5 @@
 export const effect_payment = {
-  "address": "76EdaKZCL7vxbUvoV6NLoFSCnohU95fcUwoJNcxwsRvC",
+  "address": "effpJyVo6pe2Qmpa6SQjj7VzvJHBykXSiEdPcvTPGYM",
   "metadata": {
     "name": "effect_payment",
     "version": "0.1.0",
@@ -268,6 +268,11 @@ export const effect_payment = {
       "code": 6003,
       "name": "InvalidPayment",
       "msg": "Invalid Payment"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidPDA",
+      "msg": "Invalid PDA"
     }
   ],
   "types": [

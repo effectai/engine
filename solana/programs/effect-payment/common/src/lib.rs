@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-pub const EFFECT_PAYMENT: Pubkey = pubkey!("76EdaKZCL7vxbUvoV6NLoFSCnohU95fcUwoJNcxwsRvC");
+pub const EFFECT_PAYMENT: Pubkey = pubkey!("effpJyVo6pe2Qmpa6SQjj7VzvJHBykXSiEdPcvTPGYM");
 declare_id!(EFFECT_PAYMENT);
 
 #[derive(Debug, Clone)]

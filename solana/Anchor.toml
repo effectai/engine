@@ -9,6 +9,7 @@ effect_vesting = "effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S"
 effect_rewards = "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi"
 effect_staking = "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
 effect_migration = "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
+effect_payment = "effpJyVo6pe2Qmpa6SQjj7VzvJHBykXSiEdPcvTPGYM"
 
 [registry]
 url = "https://api.apr.dev"
@@ -18,8 +19,13 @@ cluster = "localnet"
 wallet = "./tests/keys/authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV.json"
 
 [workspace]
-members = ["programs/effect-payment/program","programs/effect-migration/program", "programs/effect-staking/program", "programs/effect-rewards/program", "programs/effect-vesting/program"]
+members = [
+  "programs/effect-payment/program",
+  "programs/effect-migration/program",
+  "programs/effect-staking/program",
+  "programs/effect-rewards/program",
+  "programs/effect-vesting/program",
+]
 
 [scripts]
 test = "npx tsx scripts/export-IDL.ts && pnpm vitest run"
-

@@ -274,6 +274,11 @@ export type EffectPayment = {
       "code": 6003,
       "name": "invalidPayment",
       "msg": "Invalid Payment"
+    },
+    {
+      "code": 6004,
+      "name": "invalidPda",
+      "msg": "Invalid PDA"
     }
   ],
   "types": [
