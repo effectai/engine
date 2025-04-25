@@ -45,6 +45,6 @@ clean:
 	rm -rf packages/zkp/circuits/${CIRCUIT}_js
 
 guixify:
-	guix shell -m guix/manifest.scm -L guix/extra --expose /root/manager-key.json --container --network --emulate-fhs
+	guix shell -m guix/manifest.scm -L guix/extra --expose=/root/manager-key.json --container --network --emulate-fhs
 
 .PHONY: clean guixify
