@@ -63,4 +63,4 @@ template VerifyPaymentBatch(n) {
     totalAmount <== total[n];
 }
 
-component main {public [pubX, pubY]} = VerifyPaymentBatch(10);
+component main {public [pubX, pubY]} = VerifyPaymentBatch(50);

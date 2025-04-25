@@ -2,14 +2,32 @@
   <WorkerNodeStatusCard class="my-5" />
   <WorkerTaskModal />
   <div class="grid grid-cols-1 md:grid-cols-4 gap-4 my-5">
-    <WorkerStatisticCard icon="i-lucide-cpu" label="Time Online" :value="uptime.formattedTime">
-      <small class="text-xs text-emerald-500 font-mono italic">payout every
+    <WorkerStatisticCard
+      icon="i-lucide-cpu"
+      label="Time Online"
+      :value="uptime.formattedTime"
+    >
+      <small class="text-xs text-emerald-500 font-mono italic"
+        >payout every
         {{ Number.parseInt(config.public.PAYOUT_INTERVAL) / 1000 / 60 }}
-        minutes</small>
+        minutes</small
+      >
     </WorkerStatisticCard>
-    <WorkerStatisticCard icon="i-lucide-dollar-sign" label="Total Earned" :value="totalEarned" />
-    <WorkerStatisticCard icon="i-lucide-activity" label="Tasks Completed" :value="totalCompletedTasks" />
-    <WorkerStatisticCard icon="i-material-symbols-score-sharp" label="Performance" :value="performanceScore">
+    <WorkerStatisticCard
+      icon="i-lucide-dollar-sign"
+      label="Total Earned"
+      :value="totalEarned"
+    />
+    <WorkerStatisticCard
+      icon="i-lucide-activity"
+      label="Tasks Completed"
+      :value="totalCompletedTasks"
+    />
+    <WorkerStatisticCard
+      icon="i-material-symbols-score-sharp"
+      label="Performance"
+      :value="performanceScore"
+    >
       <!-- <UButton @click="claimPaymentsHandler" class="btn btn-primary mt-2" color="white" :loading="isClaiming" -->
       <!--   :disabled="!connected"> -->
       <!--   Claim Payments -->
@@ -22,6 +40,9 @@
 
 <script lang="ts" setup>
 import { useWorkerStore } from "@/stores/worker";
+import { multiaddr } from "@multiformats/multiaddr";
+import { PublicKey } from "@solana/web3.js";
+import { useWallet } from "solana-wallets-vue";
 
 definePageMeta({
   middleware: ["auth", "connected"],
@@ -32,10 +53,28 @@ const config = useRuntimeConfig();
 const privateKey = useLocalStorage("privateKey", null);
 
 const privateKeyBytes = Buffer.from(privateKey.value, "hex").slice(0, 32);
+const managerPublicKey = new PublicKey(
+  config.public.EFFECT_MANAGER_SOLANA_PUBKEY,
+);
 const { connectedOn } = storeToRefs(workerStore);
 const uptime = useUptime(connectedOn);
 
+const managerNodeMultiAddress = config.public.EFFECT_MANAGER_MULTIADDRESS;
+const managerPeerId = multiaddr(managerNodeMultiAddress).getPeerId();
+if (!managerPeerId) {
+  throw new Error("Invalid manager node multiaddress");
+}
+const { publicKey } = useWallet();
+if (!publicKey.value) {
+  throw new Error("No public key found");
+}
 await workerStore.initialize(privateKeyBytes);
+const nonce = await useNextNonce(
+  publicKey.value,
+  managerPublicKey,
+  managerPeerId.toString(),
+);
+await workerStore.connect(managerNodeMultiAddress, nonce);
 
 const { useGetPayments } = usePayments();
 const { data: payments } = useGetPayments();

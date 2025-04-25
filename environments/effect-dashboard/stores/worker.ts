@@ -14,7 +14,7 @@ export const useWorkerStore = defineStore("worker", {
     latencyInterval: null as NodeJS.Timer | null,
     workerPeerId: null as string | null,
     managerPeerId: null as string | null,
-    managerPubX: null as Uint8Array | null,
+    managerPublicKey: null as PublicKey | null,
     taskUpdateEvent: createEventHook<{ detail: Task }>(),
     taskCounter: 0,
     paymentCounter: 0,
@@ -25,20 +25,19 @@ export const useWorkerStore = defineStore("worker", {
       const { deriveWorkerManagerDataAccount } = usePaymentProgram();
       const { publicKey } = useWallet();
 
-      if (!publicKey.value || !state.managerPubX) {
+      if (!publicKey.value || !state.managerPublicKey) {
         return null;
       }
 
       return deriveWorkerManagerDataAccount(
         publicKey.value,
-        new PublicKey(state.managerPubX),
+        new PublicKey(state.managerPublicKey),
       );
     },
   },
 
   actions: {
     async initialize(privateKey: Uint8Array) {
-      console.log("Initializing worker");
       const datastore = new IDBDatastore("/tmp/worker");
       await datastore.open();
 
@@ -55,26 +54,22 @@ export const useWorkerStore = defineStore("worker", {
       this.worker.events.addEventListener(
         "task:created",
         async ({ detail }) => {
-          console.log("task created", detail);
           this.taskCounter++;
         },
       );
 
       this.worker.events.addEventListener("payment:created", ({ detail }) => {
-        console.log("payment received", detail);
         this.paymentCounter++;
       });
 
-      await this.connect(managerNodeMultiAddress);
-
-      this.latencyInterval = setInterval(async () => {
-        if (this.worker && this.connectedOn) {
-          const latency = await this.worker.ping(
-            multiaddr(managerNodeMultiAddress),
-          );
-          this.latency = latency;
-        }
-      }, 5000);
+      // this.latencyInterval = setInterval(async () => {
+      //   if (this.worker && this.connectedOn) {
+      //     const latency = await this.worker.ping(
+      //       multiaddr(managerNodeMultiAddress),
+      //     );
+      //     this.latency = latency;
+      //   }
+      // }, 5000);
     },
 
     async disconnect() {
@@ -83,12 +78,12 @@ export const useWorkerStore = defineStore("worker", {
 
         this.managerPeerId = null;
         this.workerPeerId = null;
-        this.managerPubX = null;
+        this.managerPublicKey = null;
         this.connectedOn = null;
       }
     },
 
-    async connect(managerMultiAddress: string) {
+    async connect(managerMultiAddress: string, currentNonce: bigint) {
       const { publicKey } = useWallet();
 
       if (!this.worker) {
@@ -102,14 +97,14 @@ export const useWorkerStore = defineStore("worker", {
       const result = await this.worker.connect(
         multiaddr(managerMultiAddress),
         publicKey.value.toBase58(),
-        1n,
+        currentNonce,
       );
 
       if (!result) {
         throw new Error("Failed to connect to manager");
       }
 
-      this.managerPubX = result.pubX;
+      this.managerPublicKey = new PublicKey(result.pubkey);
       this.connectedOn = Math.floor(Date.now() / 1000);
       this.managerPeerId =
         multiaddr(managerMultiAddress).getPeerId()?.toString() || null;

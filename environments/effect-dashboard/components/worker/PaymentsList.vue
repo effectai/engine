@@ -64,7 +64,6 @@
 <script setup lang="ts">
 const { useGetPayments, useClaimPayments } = usePayments();
 const { data: payments } = useGetPayments();
-
 const { mutateAsync: claimPayments } = useClaimPayments();
 
 const useClaimPaymentsHandler = async () => {

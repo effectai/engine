@@ -47,27 +47,17 @@ export function usePaymentProgram() {
     ) as unknown as Program<EffectPayment>;
   });
 
-  // const queryClient = useQueryClient();
-
-  const init = () =>
-    useMutation({
-      onSuccess: () => { },
-      mutationFn: async ({ }: {}) => {
-        console.log("init");
-      },
-    });
-
   const claimWithProof = async (proof: ProofResponse) => {
     const { publicKey } = useWallet();
     const workerStore = useWorkerStore();
-    const { managerRecipientDataAccount, managerPubX } =
+    const { managerRecipientDataAccount, managerPublicKey } =
       storeToRefs(workerStore);
 
     if (!publicKey.value) {
       throw new Error("No public key found");
     }
 
-    if (!managerPubX.value) {
+    if (!managerPublicKey.value) {
       throw new Error("No manager public key found");
     }
 
@@ -96,7 +86,7 @@ export function usePaymentProgram() {
       .accounts({
         recipientManagerDataAccount: managerRecipientDataAccount.value,
         paymentAccount: new PublicKey(
-          "26RGxZJsuN1xGXjJyimWh1GVCnUR4VrjytQGj5c4NBPJ",
+          "AahuY9eumjHYtp7qXJLDEFiHVjffZA6U4S8FWkDyDoVb",
         ),
         mint,
         recipientTokenAccount: ata,
@@ -105,37 +95,25 @@ export function usePaymentProgram() {
         ...((await connection.getAccountInfo(ata))
           ? []
           : [
-            createAssociatedTokenAccountIdempotentInstructionWithDerivation(
-              publicKey.value,
-              publicKey.value,
-              mint,
-            ),
-          ]),
-        ...(!dataAccount
+              createAssociatedTokenAccountIdempotentInstructionWithDerivation(
+                publicKey.value,
+                publicKey.value,
+                mint,
+              ),
+            ]),
+        ...(dataAccount
           ? []
           : [
-            await paymentProgram.value.methods
-              .init(new PublicKey(managerPubX.value))
-              .accounts({
-                mint,
-              })
-              .instruction(),
-          ]),
+              await paymentProgram.value.methods
+                .init(managerPublicKey.value)
+                .accounts({
+                  mint,
+                })
+                .instruction(),
+            ]),
       ])
       .rpc();
   };
-
-  const claim = () =>
-    useMutation({
-      onSuccess: () => { },
-      mutationFn: async ({ proof }: { proof: ProofResponse }) => {
-        try {
-          console.log("tx:", tx);
-        } catch (e) {
-          console.log("error:", e);
-        }
-      },
-    });
 
   const deriveWorkerManagerDataAccount = (
     worker: PublicKey,
@@ -147,6 +125,35 @@ export function usePaymentProgram() {
     );
 
     return publicKey;
+  };
+
+  const useRecipientManagerDataAccount = (managerPublicKey: PublicKey) => {
+    const { publicKey } = useWallet();
+
+    return useQuery({
+      queryKey: [
+        "recipientManagerDataAccount",
+        publicKey,
+        managerPublicKey.toBase58(),
+      ],
+      queryFn: async () => {
+        if (!publicKey.value) {
+          throw new Error("No public key found");
+        }
+
+        const managerDataAccount = deriveWorkerManagerDataAccount(
+          publicKey.value,
+          managerPublicKey,
+        );
+
+        const dataAccount =
+          await paymentProgram.value.account.recipientManagerDataAccount.fetchNullable(
+            managerDataAccount,
+          );
+
+        return dataAccount;
+      },
+    });
   };
 
   const fetchRemoteNonce = async (
@@ -163,16 +170,14 @@ export function usePaymentProgram() {
         managerDataAccount,
       );
 
-    return result ? BigInt(result.nonce) : 0n;
+    return result ? BigInt(result.nonce) : null;
   };
 
   return {
     program: paymentProgram,
-    claim,
-    init,
-
     fetchRemoteNonce,
     deriveWorkerManagerDataAccount,
     claimWithProof,
+    useRecipientManagerDataAccount,
   };
 }
