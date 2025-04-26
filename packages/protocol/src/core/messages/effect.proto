@@ -22,6 +22,7 @@ message RequestToWork {
 message RequestToWorkResponse {
   uint32 timestamp = 1;
   bytes pubkey = 2;
+  uint32 batch_size = 3;
 }
 
 message EffectProtocolMessage {

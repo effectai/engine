@@ -222,7 +222,7 @@ export const createWorkerTaskStore = ({
 
     const lastEvent = taskRecord.events[taskRecord.events.length - 1];
 
-    if (lastEvent.type !== "create" && lastEvent.type !== "accept") {
+    if (lastEvent.type !== "create") {
       throw new TaskValidationError("Task was not created.");
     }
 

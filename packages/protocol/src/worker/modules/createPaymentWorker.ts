@@ -29,6 +29,21 @@ export function createPaymentWorker({
     return payment;
   };
 
+  const getPaymentsFromNonce = async ({
+    nonce,
+    peerId,
+  }: {
+    nonce: number;
+    peerId: string;
+  }) => {
+    const payments = await paymentStore.getFrom({
+      peerId,
+      nonce,
+    });
+
+    return payments;
+  };
+
   const getPayments = async ({
     prefix,
     limit = 100,
@@ -79,16 +94,7 @@ export function createPaymentWorker({
 
     const proofRequestMessage: ProofRequest = {
       batchSize: payments.length,
-      payments: payments.map((payment) => ({
-        ...payment,
-        signature: {
-          R8: {
-            R8_1: objectToBytes(payment.signature.R8?.R8_1),
-            R8_2: objectToBytes(payment.signature.R8?.R8_2),
-          },
-          S: payment.signature.S,
-        },
-      })),
+      payments,
     };
 
     return await entity.sendMessage(peerIdFromString(managerPeerIdStr), {
@@ -114,5 +120,6 @@ export function createPaymentWorker({
     getPayments,
     requestPaymentProof,
     getMaxNonce,
+    getPaymentsFromNonce,
   };
 }

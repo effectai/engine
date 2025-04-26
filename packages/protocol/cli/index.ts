@@ -103,6 +103,7 @@ program
         "Ed25519",
         secretKey.slice(0, 32),
       );
+
       const providerPeerId = peerIdFromPrivateKey(keypair);
 
       const templateId = computeTemplateId(providerPeerId.toString(), content);

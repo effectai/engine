@@ -26,6 +26,7 @@ import type { Task, Template } from "../src/core/messages/effect.js";
 import type { WorkerTaskRecord } from "../src/worker/stores/workerTaskStore.js";
 
 import { promises } from "node:fs";
+import { Keypair } from "@solana/web3.js";
 
 describe("Complete Task Lifecycle", () => {
   let manager: Awaited<ReturnType<typeof createManager>>;
@@ -41,6 +42,12 @@ describe("Complete Task Lifecycle", () => {
   let workerDatastore: Datastore;
 
   beforeEach(async () => {
+    await promises.rm("/tmp/worker-test", { recursive: true, force: true });
+    await promises.rm("/tmp/manager-test/", {
+      recursive: true,
+      force: true,
+    });
+
     workerDatastore = await createDataStore("/tmp/worker-test");
     managerDatastore = await createDataStore("/tmp/manager-test");
 
@@ -57,12 +64,15 @@ describe("Complete Task Lifecycle", () => {
     manager = await createManager({
       datastore: managerDatastore,
       privateKey: managerPrivateKey,
+      announce: [],
+      listen: ["/ip4/0.0.0.0/tcp/11995/ws"],
       autoManage: false,
     });
 
     worker = await createWorker({
       datastore: workerDatastore,
       privateKey: workerPrivateKey,
+      autoExpire: false,
     });
 
     // start manager and worker
@@ -75,7 +85,10 @@ describe("Complete Task Lifecycle", () => {
     if (!managerMultiAddress?.[0]) {
       throw new Error("manager multiaddress not found");
     }
-    await worker.connect(managerMultiAddress[0]);
+
+    //generate public key
+    const kp = Keypair.generate();
+    await worker.connect(managerMultiAddress[0], kp.publicKey.toBase58(), 1n);
     // wait for the nodes to be ready
     await delay(2000);
   });
@@ -84,14 +97,9 @@ describe("Complete Task Lifecycle", () => {
     await manager.stop();
     await worker.stop();
 
+    //close the datastores
     await managerDatastore.close();
     await workerDatastore.close();
-
-    await promises.rm("/tmp/worker-test", { recursive: true, force: true });
-    await promises.rm("/tmp/manager-test/", {
-      recursive: true,
-      force: true,
-    });
   });
 
   it(
@@ -130,7 +138,7 @@ describe("Complete Task Lifecycle", () => {
       expect(taskRecord.state.id).toBe(testTask.id);
       expect(taskRecord.events[0].type).toBe("create");
 
-      await manager.taskManager.manageTasks();
+      await manager.taskManager.manageTask(taskRecord);
 
       //verify that worker received task assignment
       await waitForTaskEvent(testTask.id, workerEvents.filtered.taskCreated);
@@ -227,7 +235,7 @@ describe("Complete Task Lifecycle", () => {
       expect(taskRecord.events[0].type).toBe("create");
 
       //assign task to worker peer.
-      await manager.taskManager.manageTasks();
+      await manager.taskManager.manageTask(taskRecord);
 
       //verify that worker received task assignment
       await waitForTaskEvent(
@@ -265,21 +273,20 @@ describe("Complete Task Lifecycle", () => {
       const n = 2;
       for (let i = 0; i < n; i++) {
         await worker.requestPayout({
-          managerPeer: peerIdFromString(managerPeerId),
+          managerPeerIdStr: managerPeerId,
         });
       }
 
       //verify that manager processed payout request
-      await waitForEvent(workerEvents.paymentReceived);
       expect(workerEvents.paymentReceived).toHaveBeenCalledTimes(n);
 
       //verify that we have n payments in our store
-      const payments = await worker.getPayments();
+      const payments = await worker.getPayments({});
       expect(payments.length).toBe(n);
 
       //lets batch these payments and request a proof from the manager
       const [paymentProof, pError] = await worker.requestPaymentProof(
-        peerIdFromString(managerPeerId),
+        managerPeerId,
         payments.map((p) => p.state),
       );
 
@@ -301,95 +308,83 @@ describe("Complete Task Lifecycle", () => {
 
       //request a proof from the manager
       const [proof, error] = await worker.requestPaymentProof(
-        peerIdFromString(managerPeerId),
+        managerPeerId,
         manipulatedPayments.map((p) => p.state),
       );
 
       //expect that we have an error
       expect(error).toBeDefined();
     },
-    { timeout: 20000, todo: true },
+    { timeout: 20000 },
   );
 
-  it(
-    "should handle 50 concurrent tasks",
-    async () => {
-      const concurrentTasks = 100;
-      const { template, templateId } = createDummyTemplate(
-        providerPeerId.toString(),
-      );
+  const concurrentTasks = 10;
+  it(`should handle ${concurrentTasks} concurrent tasks`, async () => {
+    const { template, templateId } = createDummyTemplate(
+      providerPeerId.toString(),
+    );
 
-      const workerEvents = trackWorkerEvents(worker);
-      const managerEvents = trackManagerEvents(manager);
+    const workerEvents = trackWorkerEvents(worker);
+    const managerEvents = trackManagerEvents(manager);
 
-      await manager.taskManager.registerTemplate({
-        template,
-        providerPeerIdStr: providerPeerId.toString(),
-      });
+    await manager.taskManager.registerTemplate({
+      template,
+      providerPeerIdStr: providerPeerId.toString(),
+    });
 
-      const tasks = Array(concurrentTasks)
-        .fill(0)
-        .map((_, i) => ({
-          id: `concurrent-task-${i}`,
-          title: `Concurrent Task ${i}`,
-          reward: 100n,
-          timeLimitSeconds: 600,
-          templateId,
-          templateData: '{"test": "value"}',
-        }));
+    const tasks = Array(concurrentTasks)
+      .fill(0)
+      .map((_, i) => ({
+        id: `concurrent-task-${i}`,
+        title: `Concurrent Task ${i}`,
+        reward: 100n,
+        timeLimitSeconds: 600,
+        templateId,
+        templateData: '{"test": "value"}',
+      }));
 
-      // Create, assign, and complete all tasks concurrently
-      await Promise.all(
-        tasks.map((task) =>
-          manager.taskManager
-            .createTask({ task, providerPeerIdStr: providerPeerId.toString() })
-            .then(async (record) => {
-              await manager.taskManager.manageTask(record);
-              await waitForTaskEvent(
-                task.id,
-                workerEvents.filtered.taskCreated,
-              );
+    // Create, assign, and complete all tasks concurrently
+    await Promise.all(
+      tasks.map((task) =>
+        manager.taskManager
+          .createTask({ task, providerPeerIdStr: providerPeerId.toString() })
+          .then(async (record) => {
+            await manager.taskManager.manageTask(record);
+            await waitForTaskEvent(task.id, workerEvents.filtered.taskCreated);
 
-              worker.acceptTask({ taskId: task.id });
-              await waitForTaskEvent(
-                task.id,
-                workerEvents.filtered.taskAccepted,
-              );
+            worker.acceptTask({ taskId: task.id });
+            await waitForTaskEvent(task.id, workerEvents.filtered.taskAccepted);
 
-              worker.completeTask({ taskId: task.id, result: "done" });
-              await waitForTaskEvent(
-                task.id,
-                managerEvents.filtered.taskSubmission,
-              );
+            worker.completeTask({ taskId: task.id, result: "done" });
+            await waitForTaskEvent(
+              task.id,
+              managerEvents.filtered.taskSubmission,
+            );
 
-              //fetch the task record from the manager
-              const managerTask = await manager.taskManager.getTask({
-                taskId: `active/${task.id}`,
-              });
+            //fetch the task record from the manager
+            const managerTask = await manager.taskManager.getTask({
+              taskId: task.id,
+              index: "active",
+            });
 
-              // let manager manage the task
-              manager.taskManager.manageTask(managerTask);
+            // let manager manage the task again
+            await manager.taskManager.manageTask(managerTask);
 
-              //expect task to be marked as completed
-              await waitForTaskEvent(
-                task.id,
-                managerEvents.filtered.taskCompleted,
-              );
+            //expect task to be marked as completed
+            await waitForTaskEvent(
+              task.id,
+              managerEvents.filtered.taskCompleted,
+            );
 
-              return true;
-            }),
-        ),
-      );
+            return true;
+          }),
+      ),
+    );
 
-      // Verify all tasks completed
-      const completed = await manager.taskManager.getCompletedTasks();
-      expect(
-        completed.filter((t) => t.events.some((e) => e.type === "payout"))
-          .length,
-      ).toBe(concurrentTasks);
-    },
-    {
-      todo: true,
-    },
-  );
+    // Verify all tasks completed
+    const completed = await manager.taskManager.getCompletedTasks();
+    expect(
+      completed.filter((t) => t.events.some((e) => e.type === "payout")).length,
+    ).toBe(concurrentTasks);
+  });
 });

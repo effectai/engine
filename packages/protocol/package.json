@@ -20,7 +20,6 @@
     }
   },
   "dependencies": {
-    "ts-node": "^10.9.1",
     "commander": "^13.1.0",
     "axios": "^1.8.4",
     "libp2p": "^2.8.2",
@@ -66,6 +65,7 @@
     "ulid": "3.0.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.1",
     "@types/circomlibjs": "^0.1.6",
     "@types/snarkjs": "^0.7.9",
     "turbo": "^2.4.2",

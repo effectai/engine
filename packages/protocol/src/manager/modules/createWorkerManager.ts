@@ -115,7 +115,8 @@ export const createWorkerManager = ({
           `Nonce mismatch for worker`,
         );
 
-        throw new ProtocolError("N01", "Nonce mismatch");
+        // update expectedNonce to given nonce from worker.
+        await setWorkerNonce(peerId, nonce);
       }
 
       // add worker to queue
@@ -133,6 +134,21 @@ export const createWorkerManager = ({
     }
 
     worker.state.tasksAccepted += 1;
+
+    await workerStore.put({
+      entityId: peerId,
+      record: worker,
+    });
+  };
+
+  const setWorkerNonce = async (peerId: string, nonce: bigint) => {
+    const worker = await workerStore.get({ entityId: peerId });
+
+    if (!worker) {
+      throw new Error("Worker not found");
+    }
+
+    worker.state.nonce = nonce;
 
     await workerStore.put({
       entityId: peerId,

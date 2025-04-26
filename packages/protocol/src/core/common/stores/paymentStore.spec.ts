@@ -86,5 +86,41 @@ describe("createPaymentStore", () => {
       });
       expect(highestNonce).toBe(7);
     });
+
+    describe("getFrom", () => {
+      it("fetches the correct payment records", async () => {
+        await paymentStore.create({
+          peerId: "peer1",
+          payment: { nonce: 18n, amount: 100n },
+        });
+        await paymentStore.create({
+          peerId: "peer1",
+          payment: { nonce: 3n, amount: 100n },
+        });
+        await paymentStore.create({
+          peerId: "peer1",
+          payment: { nonce: 7n, amount: 300n },
+        });
+        await paymentStore.create({
+          peerId: "peer1",
+          payment: { nonce: 2n, amount: 200n },
+        });
+        await paymentStore.create({
+          peerId: "peer1",
+          payment: { nonce: 9n, amount: 200n },
+        });
+        await paymentStore.create({
+          peerId: "peer1",
+          payment: { nonce: 13n, amount: 200n },
+        });
+
+        const payments = await paymentStore.getFrom({
+          peerId: "peer1",
+          nonce: 13,
+        });
+
+        expect(payments).toHaveLength(2);
+      });
+    });
   });
 });

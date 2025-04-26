@@ -29,11 +29,13 @@ export function createTaskWorker({
 
   const getTask = async ({
     taskId,
+    index = "active",
   }: {
     taskId: string;
+    index?: string;
   }): Promise<WorkerTaskRecord> => {
     const taskRecord = await taskStore.get({
-      entityId: taskId,
+      entityId: `${index}/${taskId}`,
     });
 
     if (!taskRecord) {
@@ -160,7 +162,11 @@ export function createTaskWorker({
     peerId,
     taskRecord,
     reason,
-  }: { taskRecord: WorkerTaskRecord; reason: string; peerId: string }) => {
+  }: {
+    taskRecord: WorkerTaskRecord;
+    reason: string;
+    peerId: string;
+  }) => {
     await taskStore.reject({
       peerIdStr: peerId,
       entityId: taskRecord.state.id,

@@ -49,6 +49,8 @@ async function runTaskRateTest(
   const manager = await createManager({
     datastore: await createDataStore(`${path}/manager`),
     privateKey: managerPrivateKey,
+    listen: ["/ip4/0.0.0.0/tcp/0/ws"],
+    announce: [],
     autoManage: true,
   });
 
@@ -74,6 +76,7 @@ async function runTaskRateTest(
         const worker = await createWorker({
           datastore: await createDataStore(`${path}/worker-${i}`),
           privateKey: randomBytes(32),
+          autoExpire: false,
         });
 
         // Auto-accept and complete tasks
@@ -118,7 +121,6 @@ async function runTaskRateTest(
     }
   }
 
-  // 4. Task generation by manager
   const tasksIntervalMs = 1000 / tasksPerSecond;
   let tasksCreated = 0;
   const totalTasks = tasksPerSecond * durationSeconds;
@@ -175,7 +177,9 @@ async function runTaskRateTest(
       - Tasks Completed: ${workerState.state.tasksCompleted}
       - Tasks Rejected: ${workerState.state.tasksRejected}
       - Tasks Total: ${workerState.state.totalTasks}
-      - Rejection Rate (%): ${(workerState.state.tasksRejected / workerState.state.totalTasks) * 100}
+      - Rejection Rate (%): ${
+        (workerState.state.tasksRejected / workerState.state.totalTasks) * 100
+      }
 `);
   }
 

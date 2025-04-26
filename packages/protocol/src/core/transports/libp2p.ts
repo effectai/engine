@@ -9,7 +9,7 @@ import type {
   PrivateKey,
   Stream,
 } from "@libp2p/interface";
-import { ping } from "@libp2p/ping";
+import { ping, PingService } from "@libp2p/ping";
 import { type ServiceFactoryMap, createLibp2p } from "libp2p";
 
 import { isMultiaddr, type Multiaddr } from "@multiformats/multiaddr";
@@ -122,7 +122,6 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
     await this.libp2p.stop();
   }
 
-  // Private implementation
   private async createLibp2pNode(): Promise<Libp2p> {
     return createLibp2p({
       start: this.options.autoStart,
@@ -138,10 +137,10 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
       },
       connectionManager: {
         //TODO::
-        maxConnections: 1000, // Increase from default 300
-        inboundUpgradeTimeout: 10000, // Give more time for handshake
-        maxParallelDials: 100, // Default is 100
-        dialTimeout: 30000, // Increase from default 30s
+        maxConnections: 1000,
+        inboundUpgradeTimeout: 10000,
+        maxParallelDials: 100,
+        dialTimeout: 30000,
       },
       transports: this.options.transports,
       streamMuxers: [yamux()],
@@ -277,14 +276,12 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
     let shouldClose = false;
 
     try {
-      // Prepare stream
       const streamResult = await this.prepareStream(peerId, existingStream);
       stream = streamResult.stream;
       shouldClose = streamResult.shouldClose;
 
       const pb = pbStream(stream).pb(EffectProtocolMessage);
 
-      // Send message
       await pb.write(message);
       if (!expectResponse) {
         return [
@@ -296,12 +293,9 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
         ];
       }
 
-      // Get response
       const response = await this.readResponseWithTimeout(pb, timeout);
 
-      // Validate response
       if (response.error) {
-        console.log("Received error response:", response.error);
         return [
           null,
           new ProtocolError(response.error.code, response.error.message),
@@ -311,11 +305,15 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
       const { payload } = extractMessageType(response);
       return [payload as MessageResponse<T>, null];
     } catch (error) {
-      const protocolError =
-        error instanceof ProtocolError
-          ? error
-          : new ProtocolError("NETWORK_ERROR", error.message);
-      return [null, protocolError];
+      if (error instanceof Error) {
+        const protocolError =
+          error instanceof ProtocolError
+            ? error
+            : new ProtocolError("NETWORK_ERROR", error.message);
+        return [null, protocolError];
+      }
+
+      return [null, new ProtocolError("UNKNOWN_ERROR", "Unknown error")];
     } finally {
       if (shouldClose && stream) {
         try {

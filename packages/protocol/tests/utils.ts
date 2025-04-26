@@ -161,7 +161,8 @@ export const createMockDatastore = () => {
 
 export const createDummyTemplate = (providerPeerIdStr: string) => {
   const templateHtml =
-    "<html><body><h1>Test Template with test variable: {{test}} </h1></body></html>";
+    "<html><body><h1>Test Template with test variable: ${test}</h1></body></html>";
+
   const templateId = computeTemplateId(providerPeerIdStr, templateHtml);
   const template: Template = {
     templateId,

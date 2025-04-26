@@ -16,7 +16,7 @@ export interface BaseEntityRecord<EventType extends BaseEvent> {
 export const createEntityStore = <
   EntityEvents extends BaseEvent = BaseEvent,
   EntityRecord extends
-  BaseEntityRecord<EntityEvents> = BaseEntityRecord<EntityEvents>,
+    BaseEntityRecord<EntityEvents> = BaseEntityRecord<EntityEvents>,
 >({
   datastore,
   defaultPrefix = "entities",
@@ -37,7 +37,9 @@ export const createEntityStore = <
 
   const get = async ({
     entityId,
-  }: { entityId: string }): Promise<EntityRecord> => {
+  }: {
+    entityId: string;
+  }): Promise<EntityRecord> => {
     const data = await datastore.get(createKey(entityId));
     const result = parse(new TextDecoder().decode(data));
     return result;
@@ -45,12 +47,16 @@ export const createEntityStore = <
 
   const getSafe = async ({
     entityId,
-  }: { entityId: string }): Promise<EntityRecord | undefined> => {
+  }: {
+    entityId: string;
+  }): Promise<EntityRecord | undefined> => {
     try {
       return await get({ entityId });
     } catch (e: unknown) {
-      if (e.message.includes("NotFound")) {
-        return undefined;
+      if (e instanceof Error) {
+        if (e?.message?.includes("NotFound")) {
+          return undefined;
+        }
       }
 
       console.error(`Error getting entity ${entityId}:`, e);

@@ -45,7 +45,6 @@ export const usePayments = () => {
           throw new Error("Worker is not initialized");
         }
 
-        console.log("Claiming payments", payments);
         const [proof, error] = await workerStore.worker.requestPaymentProof(
           workerStore.managerPeerId,
           payments,

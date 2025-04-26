@@ -132,9 +132,9 @@ export const createManager = async ({
         requestToWorkResponse: {
           timestamp: Math.floor(Date.now() / 1000),
           //compressed public key
-          pubkey: solanaPublicKey,
+          pubkey: solanaPublicKey.toBuffer(),
           // the maximum batch size of payments
-          batchSize: 10,
+          batchSize: 50,
         },
       };
     })
@@ -216,7 +216,7 @@ export const createManager = async ({
   });
 
   entity.get("/", async (req, res) => {
-    const pendingTasks = await taskManager.getPendingTasks();
+    const pendingTasks = await taskManager.getActiveTasks();
     const completedTasks = await taskManager.getCompletedTasks();
 
     res.json({

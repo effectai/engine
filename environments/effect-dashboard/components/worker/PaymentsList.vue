@@ -62,28 +62,59 @@
 </template>
 
 <script setup lang="ts">
+import { useWallet } from "solana-wallets-vue";
 const { useGetPayments, useClaimPayments } = usePayments();
 const { data: payments } = useGetPayments();
 const { mutateAsync: claimPayments } = useClaimPayments();
 
+function chunkArray(array, size) {
+  return Array.from({ length: Math.ceil(array.length / size) }, (_, i) =>
+    array.slice(i * size, i * size + size),
+  );
+}
+
+const { fetchRemoteNonce } = usePaymentProgram();
+const workerStore = useWorkerStore();
+const { publicKey } = useWallet();
+const { managerPublicKey, worker, managerPeerId } = storeToRefs(workerStore);
+
 const useClaimPaymentsHandler = async () => {
-  if (!payments.value) {
+  if (
+    !payments.value ||
+    payments.value.length === 0 ||
+    !publicKey.value ||
+    !managerPeerId.value ||
+    !managerPublicKey.value
+  ) {
+    console.warn("No payments found, or not connected");
     return;
   }
 
-  const claimablePayments = payments.value.map((r) => r.state);
-
-  claimablePayments.sort((a, b) => {
-    if (a.nonce < b.nonce) {
-      return -1;
-    }
-    if (a.nonce > b.nonce) {
-      return 1;
-    }
-    return 0;
+  //get remote nonce
+  const remoteNonce =
+    (await fetchRemoteNonce(publicKey.value, managerPublicKey.value)) ?? 1n;
+  const claimablePayments = await worker.value?.getPaymentsFromNonce({
+    nonce: Number.parseInt(remoteNonce.toString()),
+    peerId: managerPeerId.value.toString(),
   });
 
-  await claimPayments({ payments: claimablePayments });
+  //chunk into array's of 50
+  const result = chunkArray(claimablePayments, 50);
+
+  for (const paymentBatch of result) {
+    const payments = paymentBatch.map((payment) => {
+      return {
+        nonce: payment.state.nonce,
+        recipient: payment.state.recipient,
+        amount: payment.state.amount,
+        paymentAccount: payment.state.paymentAccount,
+        signature: payment.state.signature,
+      };
+    });
+
+    //claim payments
+    await claimPayments({ payments });
+  }
 };
 </script>
 

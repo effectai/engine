@@ -42,7 +42,7 @@ export async function pointToCompressedPubKey(
   return yBytes;
 }
 
-export function compressBabyJubJubPubKey(pubX, pubY) {
+export function compressBabyJubJubPubKey(pubX: Uint8Array, pubY: Uint8Array) {
   if (pubX.length !== 32 || pubY.length !== 32) {
     throw new Error("Invalid input length — must be 32 bytes each");
   }

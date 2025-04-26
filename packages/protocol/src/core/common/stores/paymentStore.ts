@@ -1,7 +1,11 @@
-import type { Datastore, Key } from "interface-datastore";
+import { Datastore, Key } from "interface-datastore";
 import type { Payment } from "../../messages/effect.js";
 import { createEntityStore } from "../../store.js";
-import { stringifyWithBigInt, parseWithBigInt } from "../../utils.js";
+import {
+  stringifyWithBigInt,
+  parseWithBigInt,
+  objectToBytes,
+} from "../../utils.js";
 
 export interface PaymentEvent {
   type: string;
@@ -19,13 +23,59 @@ export interface PaymentRecord {
   state: Payment;
 }
 
+const parsePaymentRecord = (data: string): PaymentRecord => {
+  const parsed = parseWithBigInt(data);
+
+  // parse the r8 arrays inside the signatures.
+  return {
+    events: parsed.events,
+    state: {
+      ...parsed.state,
+      signature: {
+        ...parsed.state.signature,
+        R8: {
+          R8_1: objectToBytes(parsed.state.signature.R8.R8_1),
+          R8_2: objectToBytes(parsed.state.signature.R8.R8_2),
+        },
+      },
+    },
+  };
+};
+
 export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
   const coreStore = createEntityStore<PaymentEvent, PaymentRecord>({
     datastore,
     defaultPrefix: "payments",
     stringify: (record) => stringifyWithBigInt(record),
-    parse: (data) => parseWithBigInt(data),
+    parse: (data) => parsePaymentRecord(data),
   });
+
+  const getFrom = async ({
+    peerId,
+    nonce,
+  }: {
+    peerId: string;
+    nonce: number;
+    limit?: number;
+  }): Promise<PaymentRecord[]> => {
+    const payments = [] as PaymentRecord[];
+
+    for await (const item of datastore.query({
+      prefix: `/payments/${peerId}/`,
+      filters: [
+        (item) => {
+          const parts = item.key.toString().split("/");
+          const nonceStr = parts[parts.length - 1];
+          const itemNonce = Number.parseInt(nonceStr, 10);
+          return itemNonce >= nonce;
+        },
+      ],
+    })) {
+      payments.push(parseWithBigInt(new TextDecoder().decode(item.value)));
+    }
+
+    return payments;
+  };
 
   const getHighestNonce = async ({
     peerId,
@@ -82,7 +132,6 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
     };
 
     const entityId = `${peerId}/${payment.nonce}`;
-    console.log(`Creating payment record for ${entityId}:`, record);
 
     await coreStore.put({ entityId, record });
 
@@ -93,6 +142,7 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
     ...coreStore,
     create,
     getHighestNonce,
+    getFrom,
   };
 };
 

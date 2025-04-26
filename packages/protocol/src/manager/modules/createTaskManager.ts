@@ -1,12 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { peerIdFromString } from "@libp2p/peer-id";
-import {
-  BATCH_SIZE,
-  TASK_ACCEPTANCE_TIME,
-  ACTIVE_TASK_TRESHOLD,
-} from "../consts.js";
-import type { createManager, ManagerEntity, ManagerEvents } from "../main.js";
-import type { createWorkerQueue } from "./createWorkerQueue.js";
+import { TASK_ACCEPTANCE_TIME } from "../consts.js";
+import type { ManagerEntity, ManagerEvents } from "../main.js";
 import type { createPaymentManager } from "./createPaymentManager.js";
 import type {
   ManagerTaskRecord,
@@ -19,8 +14,8 @@ import type {
 import { managerLogger } from "../../core/logging.js";
 import type { TypedEventEmitter } from "@libp2p/interface";
 import type { Task, Template } from "../../core/messages/effect.js";
-import { TemplateStore } from "../../core/common/stores/templateStore.js";
-import { createWorkerManager } from "./createWorkerManager.js";
+import type { TemplateStore } from "../../core/common/stores/templateStore.js";
+import type { createWorkerManager } from "./createWorkerManager.js";
 import { computeTemplateId } from "../../core/utils.js";
 
 export function createTaskManager({
@@ -321,18 +316,17 @@ export function createTaskManager({
     }
   };
 
-  const getPendingTasks = async () => {
-    const tasks = await taskStore.all();
+  const getActiveTasks = async () => {
+    const tasks = await taskStore.all({
+      prefix: "tasks/active",
+    });
 
-    return tasks.filter((task) =>
-      task.events.every((event) => event.type !== "payout"),
-    );
+    return tasks;
   };
 
   const getCompletedTasks = async () => {
     const tasks = await taskStore.all({
       prefix: "tasks/completed",
-      limit: 500,
     });
 
     return tasks;
@@ -372,7 +366,7 @@ export function createTaskManager({
     manageTasks,
     assignTask,
 
-    getPendingTasks,
+    getActiveTasks,
     getCompletedTasks,
   };
 }

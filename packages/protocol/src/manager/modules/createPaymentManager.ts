@@ -18,6 +18,7 @@ import {
 import { computePaymentId } from "../../core/utils.js";
 import type { PaymentStore } from "../../core/common/stores/paymentStore.js";
 import { createWorkerManager } from "./createWorkerManager.js";
+import { PAYMENT_BATCH_SIZE } from "../consts.js";
 
 export async function createPaymentManager({
   paymentStore,
@@ -75,22 +76,18 @@ export async function createPaymentManager({
     payments: ProofRequest.PaymentProof[],
   ) => {
     //TODO:: verify & validate payments
-
     payments.sort((a, b) => Number(a.nonce) - Number(b.nonce));
 
     const eddsa = await buildEddsa();
     const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
-
-    //TODO:: make this dynamic
-    const maxBatchSize = 50;
     const batchSize = payments.length;
 
-    const enabled = Array(maxBatchSize).fill(0).fill(1, 0, batchSize);
+    const enabled = Array(PAYMENT_BATCH_SIZE).fill(0).fill(1, 0, batchSize);
 
     const padArray = <T>(arr: T[], defaultValue: T): T[] =>
       arr
-        .concat(Array(maxBatchSize - arr.length).fill(defaultValue))
-        .slice(0, maxBatchSize);
+        .concat(Array(PAYMENT_BATCH_SIZE - arr.length).fill(defaultValue))
+        .slice(0, PAYMENT_BATCH_SIZE);
 
     const uniqueRecipients = new Set(payments.map((p) => p.recipient));
 
@@ -116,11 +113,11 @@ export async function createPaymentManager({
       ),
       R8x: padArray(
         payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_1)),
-        0,
+        0n,
       ),
       R8y: padArray(
         payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_2)),
-        0,
+        0n,
       ),
       S: padArray(
         payments.map((s) => BigInt(s.signature?.S || 0)),
@@ -135,12 +132,13 @@ export async function createPaymentManager({
       __dirname,
       "../../../../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
     );
+
     const zkeyPath = path.resolve(
       __dirname,
       "../../../../zkp/circuits/PaymentBatch_0001.zkey",
     );
 
-    const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+    const { publicSignals, proof } = await snarkjs.groth16.fullProve(
       proofInputs,
       wasmPath,
       zkeyPath,
@@ -247,7 +245,6 @@ export async function createPaymentManager({
 
       return proofResponse;
     } catch (e) {
-      console.error("Error generating proof", e);
       throw new Error("Error generating proof");
     }
   };

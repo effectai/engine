@@ -53,9 +53,7 @@ describe("Payment Program", async () => {
       bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
       bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
     );
-    console.log("compressed pubkey", compressedPubKey);
     const solanaPubKey = new PublicKey(compressedPubKey);
-    console.log("manager solana key", solanaPubKey.toBase58());
 
     const batchSize = 7;
     const maxBatchSize = 50;

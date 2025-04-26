@@ -20,6 +20,7 @@ import { createTemplateWorker } from "./modules/createTemplateWorker.js";
 import { createTemplateStore } from "../core/common/stores/templateStore.js";
 import type { Multiaddr } from "@multiformats/multiaddr";
 import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
+import { PingService } from "@libp2p/ping";
 
 export interface WorkerEvents {
   "task:created": CustomEvent<Task>;
@@ -59,14 +60,17 @@ export const createWorkerEntity = async ({
     ],
   });
 };
+
 export type WorkerEntity = Awaited<ReturnType<typeof createWorkerEntity>>;
 
 export const createWorker = async ({
   datastore,
   privateKey,
+  autoExpire = true,
 }: {
   datastore: Datastore;
   privateKey: Uint8Array | PrivateKey;
+  autoExpire: boolean;
 }) => {
   const ed25519PrivateKey: PrivateKey =
     privateKey instanceof Uint8Array
@@ -86,10 +90,12 @@ export const createWorker = async ({
 
   // register worker modules
   const templateWorker = createTemplateWorker({ entity, templateStore });
+
   const {
     createPayment,
     getPayments,
     requestPayout,
+    getPaymentsFromNonce,
     requestPaymentProof,
     getMaxNonce,
   } = createPaymentWorker({
@@ -152,19 +158,16 @@ export const createWorker = async ({
   };
 
   const ping = async (manager: Multiaddr) => {
-    if ("ping" in entity.node.services) {
-      return await entity.node.services.ping.ping(manager, {
-        ping: {
-          timestamp: Date.now() / 1000,
-        },
-      });
-    }
+    const pingService = entity.node.services.ping as PingService;
+    return await pingService.ping(manager);
   };
 
-  setInterval(async () => {
-    //cleanup stale tasks / move to expired
-    await cleanup();
-  }, 1000);
+  if (autoExpire) {
+    setInterval(async () => {
+      //cleanup stale tasks / move to expired
+      await cleanup();
+    }, 1000);
+  }
 
   return {
     entity,
@@ -180,6 +183,7 @@ export const createWorker = async ({
     getMaxNonce,
 
     getPayments,
+    getPaymentsFromNonce,
     requestPayout,
     requestPaymentProof,
 
