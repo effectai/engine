@@ -10,5 +10,9 @@
 	"findutils"
         "nss-certs"
         "sed"
-	"node-pnpm"
-	"git"))
+	"git"
+	"less"
+
+	;; these are packaged locally in guix/extra/packages.scm
+	"solana"
+	"node-pnpm"))
