@@ -84,7 +84,7 @@ export const createManager = async ({
   const managerSettings: ManagerSettings = {
     port: settings.port ?? 19955,
     autoManage: settings.autoManage ?? true,
-    listen: settings.listen ?? [],
+    listen: settings.listen ?? [`/ip4/0.0.0.0/tcp/${settings.port}/ws`],
     announce: settings.announce ?? [],
     paymentBatchSize: settings.paymentBatchSize ?? 60,
     requireAccessCodes: settings.requireAccessCodes ?? true,

@@ -163,10 +163,12 @@ program
       const manager = await createManager({
         privateKey: keypair,
         datastore,
-        //automatically start managing tasks
-        autoManage: true,
-        announce: options.announce ? [options.announce] : [],
-        port: 11955,
+        settings: {
+          requireAccessCodes: true,
+          port: 11955,
+          autoManage: true,
+          announce: options.announce ? [options.announce] : [],
+        },
       });
 
       console.log("Manager started", manager.entity.getMultiAddress());

@@ -1,13 +1,7 @@
 import { describe, it, vi, beforeEach, expect } from "vitest";
-import { PublicKey } from "@solana/web3.js";
 import { createTaskManager } from "./createTaskManager.js";
-import { TASK_ACCEPTANCE_TIME } from "../consts.js";
-import { peerIdFromString } from "@libp2p/peer-id";
 import { Task } from "../../core/index.js";
-import { ManagerTaskRecord } from "../stores/managerTaskStore.js";
 
-//create spy for signPaymen
-const now = Math.floor(Date.now() / 1000);
 const mockWorkerId = "12D3KooWR3aZ9bLgTjsyUNqC8oZp5tf3HRmqb9G5wNpEAKiUjVv5";
 const mockTaskId = "task-1";
 

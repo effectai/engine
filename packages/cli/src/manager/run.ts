@@ -3,7 +3,8 @@ import readline from "readline";
 import { Command } from "commander";
 import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 import { LevelDatastore } from "datastore-level";
-import { createManager } from "@effectai/protocol";
+import { createManager, Task } from "@effectai/protocol";
+import { ManagerTaskRecord } from "../../../protocol/dist/manager/stores/managerTaskStore.js";
 
 const program = new Command();
 
@@ -61,9 +62,13 @@ async function startManager(privateKeyPath: string, announceAddr?: string) {
     manager = await createManager({
       privateKey: keypair,
       datastore,
-      autoManage: true,
-      announce: announceAddr ? [announceAddr] : [],
-      port: 11955,
+      settings: {
+        autoManage: true,
+        announce: announceAddr ? [announceAddr] : [],
+        port: 11955,
+        paymentBatchSize: 60,
+        requireAccessCodes: true,
+      },
     });
 
     addLog("Manager started: " + manager.entity.getMultiAddress());
@@ -88,12 +93,12 @@ async function stopManager() {
   addLog("Manager stopped.");
 }
 
-async function showPeers() {
+async function showConnectedPeers() {
   if (!manager) {
     addLog("Manager not running.");
     return;
   }
-  const peers = await manager.getPeers();
+  const peers = manager.workerManager.workerQueue.getQueue();
   addLog("Connected Peers: " + peers.join(", "));
 }
 
@@ -102,9 +107,10 @@ async function showActiveTasks() {
     addLog("Manager not running.");
     return;
   }
-  const tasks = await manager.getActiveTasks();
+  const tasks = await manager.taskManager.getActiveTasks();
   addLog(
-    "Active Tasks: " + tasks.map((t: any) => JSON.stringify(t)).join("; "),
+    "Active Tasks: " +
+      tasks.map((t: ManagerTaskRecord) => t.state.id).join("; "),
   );
 }
 
@@ -120,7 +126,7 @@ async function handleInput(
       await stopManager();
       break;
     case "2":
-      await showPeers();
+      await showConnectedPeers();
       break;
     case "3":
       await showActiveTasks();
