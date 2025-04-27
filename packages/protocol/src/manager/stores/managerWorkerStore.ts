@@ -21,6 +21,7 @@ export interface WorkerBanned {
 }
 
 export interface WorkerState {
+  banned: boolean;
   recipient: string;
   nonce: bigint;
   lastPayout: number;
@@ -38,11 +39,7 @@ export interface ManagerWorkerRecord<T> {
 
 export type WorkerRecord = ManagerWorkerRecord<ManagerWorkerEvent>;
 
-export const createWorkerStore = ({
-  datastore,
-}: {
-  datastore: Datastore;
-}) => {
+export const createWorkerStore = ({ datastore }: { datastore: Datastore }) => {
   const coreStore = createEntityStore<
     ManagerWorkerEvent,
     ManagerWorkerRecord<ManagerWorkerEvent>
@@ -53,7 +50,57 @@ export const createWorkerStore = ({
     parse: (data) => parseWithBigInt(data),
   });
 
+  const createWorker = async (
+    peerId: string,
+    recipient: string,
+    nonce: bigint,
+  ) => {
+    const record = await coreStore.getSafe({ entityId: peerId });
+
+    if (record) {
+      throw new Error("Worker already exists");
+    }
+
+    const newRecord: WorkerRecord = {
+      events: [
+        {
+          timestamp: Math.floor(Date.now() / 1000),
+          type: "create",
+        },
+      ],
+      state: {
+        recipient,
+        banned: false,
+        nonce,
+        lastPayout: Math.floor(Date.now() / 1000),
+        tasksAccepted: 0,
+        totalTasks: 0,
+        tasksCompleted: 0,
+        tasksRejected: 0,
+        lastActivity: Math.floor(Date.now() / 1000),
+      },
+    };
+
+    await coreStore.put({ entityId: peerId, record: newRecord });
+
+    return newRecord;
+  };
+
+  const updateWorker = async (peerId: string, update: Partial<WorkerState>) => {
+    const record = await coreStore.getSafe({ entityId: peerId });
+
+    if (!record) {
+      throw new Error("Worker not found");
+    }
+
+    Object.assign(record.state, update);
+
+    await coreStore.put({ entityId: peerId, record });
+  };
+
   return {
     ...coreStore,
+    updateWorker,
+    createWorker,
   };
 };

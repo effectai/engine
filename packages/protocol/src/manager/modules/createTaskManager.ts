@@ -101,7 +101,7 @@ export function createTaskManager({
       peerIdStr: workerPeerIdStr,
     });
 
-    await workerManager.incrementTasksAccepted(workerPeerIdStr);
+    await workerManager.incrementStateValue(workerPeerIdStr, "tasksAccepted");
 
     events.safeDispatchEvent("task:accepted", {
       detail: taskRecord,
@@ -123,7 +123,7 @@ export function createTaskManager({
       reason,
     });
 
-    await workerManager.incrementTasksRejected(workerPeerIdStr);
+    await workerManager.incrementStateValue(workerPeerIdStr, "tasksRejected");
 
     events.safeDispatchEvent("task:rejected", {
       detail: taskRecord,
@@ -145,7 +145,7 @@ export function createTaskManager({
       peerIdStr: workerPeerIdStr,
     });
 
-    await workerManager.incrementTasksCompleted(workerPeerIdStr);
+    await workerManager.incrementStateValue(workerPeerIdStr, "tasksCompleted");
 
     events.safeDispatchEvent("task:submission", {
       detail: taskRecord,
@@ -168,9 +168,22 @@ export function createTaskManager({
         peerIdStr: lastEvent.assignedToPeer,
         reason: "Worker took too long to accept/reject task",
       });
-      await workerManager.incrementTasksRejected(lastEvent.assignedToPeer);
+
+      await workerManager.incrementStateValue(
+        lastEvent.assignedToPeer,
+        "tasksRejected",
+      );
+
+      //re-assign the task to another worker.
       await assignTask({ entityId: taskRecord.state.id });
     }
+  };
+
+  const rejectAndReassignTask = async (
+    taskRecord: ManagerTaskRecord,
+    lastEvent: TaskAcceptedEvent,
+  ) => {
+    await rejectAndReassignTask(taskRecord, lastEvent);
   };
 
   const handleAcceptEvent = async (
@@ -179,15 +192,7 @@ export function createTaskManager({
   ) => {
     if (isExpired(lastEvent.timestamp, taskRecord.state.timeLimitSeconds)) {
       managerLogger.info("Worker took too long to complete task");
-
-      await taskStore.reject({
-        entityId: taskRecord.state.id,
-        peerIdStr: lastEvent.acceptedByPeer,
-        reason: "Worker took too long to accept/reject task",
-      });
-      await workerManager.incrementTasksRejected(lastEvent.acceptedByPeer);
-
-      await assignTask({ entityId: taskRecord.state.id });
+      await rejectAndReassignTask(taskRecord, lastEvent);
     }
   };
 
@@ -280,7 +285,7 @@ export function createTaskManager({
       throw new Error("Task is already assigned.");
     }
 
-    const worker = await workerManager.selectWorker(0);
+    const worker = await workerManager.selectWorker();
 
     if (!worker) {
       managerLogger.info("No available workers to assign task to");
@@ -292,7 +297,7 @@ export function createTaskManager({
       workerPeerIdStr: worker,
     });
 
-    await workerManager.incrementTotalTasks(worker);
+    await workerManager.incrementStateValue(worker, "totalTasks");
 
     await manager.sendMessage(peerIdFromString(worker), {
       task: taskRecord.state,
@@ -305,8 +310,6 @@ export function createTaskManager({
         prefix: "tasks/active",
         limit: 50,
       });
-
-      console.log(`Managing ${activeTasks.length} active tasks`);
 
       for (const taskRecord of activeTasks) {
         await manageTask(taskRecord);

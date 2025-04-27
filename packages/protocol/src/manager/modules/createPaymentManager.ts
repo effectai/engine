@@ -52,7 +52,9 @@ export async function createPaymentManager({
     });
 
     //update last payout time
-    await workerManager.updateLastPayout(peerId.toString());
+    await workerManager.updateWorkerState(peerId.toString(), {
+      lastPayout: currentTime,
+    });
 
     //insert payment into the store
     await paymentStore.put({
@@ -186,7 +188,9 @@ export async function createPaymentManager({
     };
 
     //update nonce
-    await workerManager.incrementNonce(peerId.toString());
+    await workerManager.updateWorkerState(peerId.toString(), {
+      nonce: peer.state.nonce + BigInt(1),
+    });
 
     //save payment in store.
     await paymentStore.put({

@@ -11,6 +11,7 @@ describe("createPaymentStore", () => {
 
   beforeEach(async () => {
     // Reset mock datastore for each test
+    await promises.rm("/tmp/payment-test/", { recursive: true, force: true });
     datastore = await createDataStore("/tmp/payment-test");
     //reset payment store
     paymentStore = createPaymentStore({ datastore });
@@ -18,8 +19,6 @@ describe("createPaymentStore", () => {
 
   afterEach(async () => {
     await datastore.close();
-
-    await promises.rm("/tmp/payment-test/", { recursive: true, force: true });
   });
 
   describe("create", () => {
@@ -89,37 +88,20 @@ describe("createPaymentStore", () => {
 
     describe("getFrom", () => {
       it("fetches the correct payment records", async () => {
-        await paymentStore.create({
-          peerId: "peer1",
-          payment: { nonce: 18n, amount: 100n },
-        });
-        await paymentStore.create({
-          peerId: "peer1",
-          payment: { nonce: 3n, amount: 100n },
-        });
-        await paymentStore.create({
-          peerId: "peer1",
-          payment: { nonce: 7n, amount: 300n },
-        });
-        await paymentStore.create({
-          peerId: "peer1",
-          payment: { nonce: 2n, amount: 200n },
-        });
-        await paymentStore.create({
-          peerId: "peer1",
-          payment: { nonce: 9n, amount: 200n },
-        });
-        await paymentStore.create({
-          peerId: "peer1",
-          payment: { nonce: 13n, amount: 200n },
-        });
+        const n = 100;
+        for (let i = 1; i < n; i++) {
+          await paymentStore.create({
+            peerId: "peer1",
+            payment: { nonce: BigInt(i), amount: 100n },
+          });
+        }
 
         const payments = await paymentStore.getFrom({
           peerId: "peer1",
-          nonce: 13,
+          nonce: 20,
         });
 
-        expect(payments).toHaveLength(2);
+        expect(payments).toHaveLength(80);
       });
     });
   });

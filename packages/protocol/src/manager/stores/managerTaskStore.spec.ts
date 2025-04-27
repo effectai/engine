@@ -12,21 +12,17 @@ const mockDatastore = {
   put: vi.fn(),
   delete: vi.fn(),
   query: vi.fn(),
-};
-
-const mockEventEmitter = {
-  emit: vi.fn(),
-  on: vi.fn(),
-  off: vi.fn(),
-  safeDispatchEvent: vi.fn(),
+  batch: vi.fn(() => {
+    return {
+      put: vi.fn(),
+      delete: vi.fn(),
+      commit: vi.fn(),
+    };
+  }),
 };
 
 const mockPeerId = {
   toString: () => "peerId123",
-} as PeerId;
-
-const mockWorkerPeerId = {
-  toString: () => "workerPeerId123",
 } as PeerId;
 
 const mockTask: Task = {
@@ -56,6 +52,12 @@ describe("ManagerTaskStore", () => {
       );
     });
     mockDatastore.put.mockResolvedValue(new Key("/tasks/task123"));
+
+    mockDatastore.batch.mockReturnValue({
+      put: vi.fn().mockResolvedValue(new Key("/tasks/task123")),
+      delete: vi.fn(),
+      commit: vi.fn(),
+    });
   });
 
   describe("create", () => {
@@ -103,9 +105,9 @@ describe("ManagerTaskStore", () => {
         workerPeerIdStr: "workerPeerId123",
       });
 
-      expect(mockDatastore.put).toHaveBeenCalled();
+      expect(mockDatastore.batch().put).toHaveBeenCalled();
       const updatedRecord = JSON.parse(
-        mockDatastore.put.mock.calls[0][1].toString(),
+        mockDatastore.batch().put.mock.calls[0][1].toString(),
       );
       expect(updatedRecord.events[1].type).toBe("assign");
       expect(updatedRecord.events[1].assignedToPeer).toBe("workerPeerId123");
@@ -135,7 +137,7 @@ describe("ManagerTaskStore", () => {
       });
 
       const updatedRecord = JSON.parse(
-        mockDatastore.put.mock.calls[0][1].toString(),
+        mockDatastore.batch().put.mock.calls[0][1].toString(),
       );
       expect(updatedRecord.events[2].type).toBe("assign");
     });
@@ -185,8 +187,9 @@ describe("ManagerTaskStore", () => {
         peerIdStr: "workerPeerId123",
       });
 
+      expect(mockDatastore.put).toHaveBeenCalled();
       const updatedRecord = JSON.parse(
-        mockDatastore.put.mock.calls[0][1].toString(),
+        new TextDecoder().decode(mockDatastore.put.mock.calls[0][1]),
       );
       expect(updatedRecord.events[2].type).toBe("accept");
     });
@@ -267,7 +270,7 @@ describe("ManagerTaskStore", () => {
       });
 
       const updatedRecord = JSON.parse(
-        mockDatastore.put.mock.calls[0][1].toString(),
+        mockDatastore.batch().put.mock.calls[0][1].toString(),
       );
       expect(updatedRecord.events[2].type).toBe("reject");
       expect(updatedRecord.events[2].reason).toBe("Too busy");
@@ -330,7 +333,7 @@ describe("ManagerTaskStore", () => {
       });
 
       const updatedRecord = JSON.parse(
-        mockDatastore.put.mock.calls[0][1].toString(),
+        mockDatastore.batch().put.mock.calls[0][1].toString(),
       );
       expect(updatedRecord.events[3].type).toBe("submission");
       expect(updatedRecord.events[3].result).toBe(
@@ -481,7 +484,7 @@ describe("ManagerTaskStore", () => {
       });
 
       const updatedRecord = JSON.parse(
-        mockDatastore.put.mock.calls[0][1].toString(),
+        mockDatastore.batch().put.mock.calls[0][1].toString(),
       );
       expect(updatedRecord.events[4].type).toBe("payout");
       expect(updatedRecord.events[4].payment).toEqual(mockPayment);

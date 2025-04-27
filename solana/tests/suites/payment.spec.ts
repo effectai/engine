@@ -56,7 +56,7 @@ describe("Payment Program", async () => {
     const solanaPubKey = new PublicKey(compressedPubKey);
 
     const batchSize = 7;
-    const maxBatchSize = 50;
+    const maxBatchSize = 60;
 
     const nonces = Array.from({ length: batchSize }, (value, key) =>
       int2hex(key + 1),
@@ -220,8 +220,6 @@ function convertProofToBytes(proof: {
 }
 
 function compressBabyJubJubPubKey(pubX, pubY) {
-  console.log("pubX", pubX);
-  console.log("pubY", pubY);
   if (pubX.length !== 32 || pubY.length !== 32) {
     throw new Error("Invalid input length — must be 32 bytes each");
   }

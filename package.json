@@ -2,7 +2,7 @@
   "name": "effect-tasks",
   "private": true,
   "sideEffects": false,
-  "packageManager": "pnpm@8.15.6",
+  "packageManager": "pnpm@10.9.0+sha512.0486e394640d3c1fb3c9d43d49cf92879ff74f8516959c235308f5a8f62e2e19528a65cdc2a3058f587cde71eba3d5b56327c8c33a97e4c4051ca48a10ca2d5f",
   "type": "module",
   "version": "1.0.0",
   "exports": {
@@ -18,7 +18,7 @@
     "dashboard:generate-prod": "pnpm --filter effect-dashboard run generate-prod",
     "playground:generate-prod": "pnpm --filter effect-playground run generate-prod",
     "website:generate": "pnpm --filter effect-website run generate",
-    "manager:start": "pnpm --filter @effectai/protocol run manager:start",
+    "manager:start": "node --experimental-strip-types packages/cli/src/manager.ts manager run -k ./packages/protocol/tests/keys/manager.json",
     "packages:build": "pnpm turbo build --filter @effectai/*",
     "provider:start": "pnpm --filter @effectai/task-provider run start",
     "docs:dev": "pnpm --filter docs run dev",
@@ -35,6 +35,22 @@
   "pnpm": {
     "overrides": {
       "@vue/devtools": "7.6.4"
-    }
+    },
+    "ignoredBuiltDependencies": ["usb", "utf-8-validate", "vue-demi"],
+    "onlyBuiltDependencies": [
+      "@biomejs/biome",
+      "@ipshipyard/node-datachannel",
+      "@parcel/watcher",
+      "bigint-buffer",
+      "blake-hash",
+      "bufferutil",
+      "classic-level",
+      "core-js",
+      "esbuild",
+      "keccak",
+      "protobufjs",
+      "sharp",
+      "tiny-secp256k1"
+    ]
   }
 }

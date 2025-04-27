@@ -5,110 +5,114 @@ import { useQueryClient } from "@tanstack/vue-query";
 import { IDBDatastore } from "datastore-idb";
 import { defineStore } from "pinia";
 import { useWallet } from "solana-wallets-vue";
+import { peerIdFromPrivateKey } from "@libp2p/peer-id";
+import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 
-export const useWorkerStore = defineStore("worker", {
-  state: () => ({
-    worker: null as Awaited<ReturnType<typeof createWorker>> | null,
-    connectedOn: null as number | null,
-    latency: null as number | null,
-    latencyInterval: null as NodeJS.Timer | null,
-    workerPeerId: null as string | null,
-    managerPeerId: null as string | null,
-    managerPublicKey: null as PublicKey | null,
-    taskUpdateEvent: createEventHook<{ detail: Task }>(),
-    taskCounter: 0,
-    paymentCounter: 0,
-  }),
+export const useWorkerStore = defineStore("worker", () => {
+  const worker: Ref<null | Awaited<ReturnType<typeof createWorker>>> =
+    ref(null);
+  const connectedOn: Ref<null | number> = ref(null);
+  const latency: Ref<null | number> = ref(null);
+  const latencyInterval: Ref<null | NodeJS.Timer> = ref(null);
+  const workerPeerId: Ref<null | string> = ref(null);
+  const managerPeerId: Ref<null | string> = ref(null);
+  const managerPublicKey: Ref<null | PublicKey> = ref(null);
+  const taskCounter: Ref<number> = ref(0);
+  const paymentCounter: Ref<number> = ref(0);
+  const pingControls = ref<null | ReturnType<typeof useIntervalFn>>(null);
 
-  getters: {
-    managerRecipientDataAccount: (state) => {
-      const { deriveWorkerManagerDataAccount } = usePaymentProgram();
-      const { publicKey } = useWallet();
+  const initialize = async (privateKey: Uint8Array) => {
+    const keypair = await generateKeyPairFromSeed("Ed25519", privateKey);
+    const peerId = peerIdFromPrivateKey(keypair);
 
-      if (!publicKey.value || !state.managerPublicKey) {
-        return null;
-      }
+    const datastore = new IDBDatastore(`/tmp/worker/${peerId.toString()}`);
+    await datastore.open();
 
-      return deriveWorkerManagerDataAccount(
-        publicKey.value,
-        new PublicKey(state.managerPublicKey),
-      );
-    },
-  },
+    const config = useRuntimeConfig();
+    const managerNodeMultiAddress = config.public.EFFECT_MANAGER_MULTIADDRESS;
 
-  actions: {
-    async initialize(privateKey: Uint8Array) {
-      const datastore = new IDBDatastore("/tmp/worker");
-      await datastore.open();
+    worker.value = await createWorker({
+      datastore,
+      privateKey,
+      autoExpire: true,
+    });
 
-      const config = useRuntimeConfig();
-      const managerNodeMultiAddress = config.public.EFFECT_MANAGER_MULTIADDRESS;
+    await worker.value.start();
 
-      this.worker = await createWorker({
-        datastore,
-        privateKey,
-      });
+    worker.value.events.addEventListener("task:created", ({ detail }) => {
+      taskCounter.value += 1;
+    });
 
-      await this.worker.start();
+    worker.value.events.addEventListener("payment:created", ({ detail }) => {
+      paymentCounter.value += 1;
+    });
 
-      this.worker.events.addEventListener(
-        "task:created",
-        async ({ detail }) => {
-          this.taskCounter++;
-        },
-      );
+    pingControls.value = useIntervalFn(
+      async () => {
+        if (worker.value && connectedOn.value) {
+          latency.value = await worker.value.ping(
+            multiaddr(managerNodeMultiAddress),
+          );
+        }
+      },
+      5000,
+      { immediate: false, immediateCallback: true },
+    );
+  };
 
-      this.worker.events.addEventListener("payment:created", ({ detail }) => {
-        this.paymentCounter++;
-      });
+  const disconnect = async () => {
+    if (worker.value) {
+      await worker.value.stop();
 
-      // this.latencyInterval = setInterval(async () => {
-      //   if (this.worker && this.connectedOn) {
-      //     const latency = await this.worker.ping(
-      //       multiaddr(managerNodeMultiAddress),
-      //     );
-      //     this.latency = latency;
-      //   }
-      // }, 5000);
-    },
+      managerPeerId.value = null;
+      workerPeerId.value = null;
+      managerPublicKey.value = null;
+      connectedOn.value = null;
+    }
+  };
 
-    async disconnect() {
-      if (this.worker) {
-        await this.worker.stop();
+  const connect = async (managerMultiAddress: string, currentNonce: bigint) => {
+    const { publicKey } = useWallet();
 
-        this.managerPeerId = null;
-        this.workerPeerId = null;
-        this.managerPublicKey = null;
-        this.connectedOn = null;
-      }
-    },
+    if (!worker.value) {
+      throw new Error("Worker not initialized");
+    }
 
-    async connect(managerMultiAddress: string, currentNonce: bigint) {
-      const { publicKey } = useWallet();
+    if (!publicKey.value) {
+      throw new Error("Wallet not connected");
+    }
 
-      if (!this.worker) {
-        throw new Error("Worker not initialized");
-      }
+    const result = await worker.value.connect(
+      multiaddr(managerMultiAddress),
+      publicKey.value.toBase58(),
+      currentNonce,
+    );
 
-      if (!publicKey.value) {
-        throw new Error("Wallet not connected");
-      }
+    if (!result) {
+      throw new Error("Failed to connect to manager");
+    }
 
-      const result = await this.worker.connect(
-        multiaddr(managerMultiAddress),
-        publicKey.value.toBase58(),
-        currentNonce,
-      );
+    managerPublicKey.value = new PublicKey(result.pubkey);
+    connectedOn.value = Math.floor(Date.now() / 1000);
+    managerPeerId.value =
+      multiaddr(managerMultiAddress).getPeerId()?.toString() || null;
+    workerPeerId.value = worker.value.entity.getPeerId()?.toString() || null;
+    pingControls.value?.resume();
+  };
 
-      if (!result) {
-        throw new Error("Failed to connect to manager");
-      }
-
-      this.managerPublicKey = new PublicKey(result.pubkey);
-      this.connectedOn = Math.floor(Date.now() / 1000);
-      this.managerPeerId =
-        multiaddr(managerMultiAddress).getPeerId()?.toString() || null;
-      this.workerPeerId = this.worker.entity.getPeerId()?.toString() || null;
-    },
-  },
+  return {
+    worker,
+    connectedOn,
+    latency,
+    latencyInterval,
+    workerPeerId,
+    managerPeerId,
+    managerPublicKey,
+    taskCounter,
+    paymentCounter,
+    pingControls,
+    initialize,
+    disconnect,
+    connect,
+  };
 });

@@ -18,7 +18,7 @@ import { buildEddsa } from "circomlibjs";
 import { HttpTransport } from "../core/transports/http.js";
 import { managerLogger } from "../core/logging.js";
 import { createWorkerManager } from "./modules/createWorkerManager.js";
-import { compressBabyJubJubPubKey } from "./utils.js";
+import { bigIntToBytes32, compressBabyJubJubPubKey } from "./utils.js";
 import { PublicKey } from "@solana/web3.js";
 
 export type ManagerEvents = {
@@ -28,6 +28,17 @@ export type ManagerEvents = {
   "task:submission": (task: TaskRecord) => void;
   "task:completed": CustomEvent<TaskRecord>;
   "payment:created": (payment: Payment) => void;
+};
+
+export type ManagerEntity = Awaited<ReturnType<typeof createManagerEntity>>;
+
+export type ManagerSettings = {
+  port: number;
+  autoManage: boolean;
+  listen: string[];
+  announce: string[];
+  paymentBatchSize: number;
+  requireAccessCodes: boolean;
 };
 
 export const createManagerEntity = async ({
@@ -61,39 +72,44 @@ export const createManagerEntity = async ({
   });
 };
 
-export type ManagerEntity = Awaited<ReturnType<typeof createManagerEntity>>;
-
 export const createManager = async ({
-  port = 11995,
   datastore,
   privateKey,
-  autoManage = true,
-  listen = [`/ip4/0.0.0.0/tcp/${port}/ws`],
-  announce = [],
+  settings,
 }: {
   datastore: Datastore;
   privateKey: PrivateKey;
-  port?: number;
-  autoManage?: boolean;
-  listen: string[];
-  announce: string[];
+  settings: Partial<ManagerSettings>;
 }) => {
+  const managerSettings: ManagerSettings = {
+    port: settings.port ?? 19955,
+    autoManage: settings.autoManage ?? true,
+    listen: settings.listen ?? [],
+    announce: settings.announce ?? [],
+    paymentBatchSize: settings.paymentBatchSize ?? 60,
+    requireAccessCodes: settings.requireAccessCodes ?? true,
+  };
+
+  // create the entity
   const entity = await createManagerEntity({
     datastore,
     privateKey,
-    listen,
-    announce,
+    listen: managerSettings.listen,
+    announce: managerSettings.announce,
   });
 
+  // initialize the stores
   const paymentStore = createPaymentStore({ datastore });
   const templateStore = createTemplateStore({ datastore });
   const taskStore = createManagerTaskStore({ datastore });
 
+  // setup event emitter
   const events = new TypedEventEmitter<ManagerEvents>();
 
+  // create manager modules
   const workerManager = createWorkerManager({
-    manager: entity,
     datastore,
+    managerSettings,
   });
 
   const paymentManager = await createPaymentManager({
@@ -113,28 +129,26 @@ export const createManager = async ({
     workerManager,
   });
 
+  // register message handlers
   entity
     .onMessage("requestToWork", async ({ recipient, nonce }, { peerId }) => {
-      //add the peerId to the worker queue
       await workerManager.connectWorker(peerId.toString(), recipient, nonce);
 
       const eddsa = await buildEddsa();
       const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
 
-      const compressedPublicKey = compressBabyJubJubPubKey(
-        pubKey[0],
-        pubKey[1],
+      const compressedPubKey = compressBabyJubJubPubKey(
+        bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
+        bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
       );
 
-      const solanaPublicKey = new PublicKey(compressedPublicKey);
+      const solanaPublicKey = new PublicKey(compressedPubKey);
 
       return {
         requestToWorkResponse: {
           timestamp: Math.floor(Date.now() / 1000),
-          //compressed public key
-          pubkey: solanaPublicKey.toBuffer(),
-          // the maximum batch size of payments
-          batchSize: 50,
+          pubkey: solanaPublicKey.toBase58(),
+          batchSize: managerSettings.paymentBatchSize,
         },
       };
     })
@@ -187,12 +201,6 @@ export const createManager = async ({
         templateResponse: { ...record?.state },
       };
     });
-
-  entity.node.addEventListener("peer:disconnect", (event) => {
-    const peerId = event.detail;
-    managerLogger.info(`Peer disconnected: ${peerId.toString()}`);
-    workerManager.workerQueue.removePeer(peerId.toString());
-  });
 
   // Register http routes for manager
   entity.post("/task", async (req, res) => {
@@ -247,6 +255,25 @@ export const createManager = async ({
     }
   });
 
+  //TODO::
+  //make post endpoint to ban/remove peers
+  entity.post("/peer/remove", async (req, res) => {
+    const { peerId } = req.body;
+    try {
+      await entity.node.peerStore.delete(peerId);
+      await entity.node.hangUp(peerId);
+      res.json({ status: "Peer removed", peerId });
+    } catch (e: unknown) {
+      console.error("Error removing peer", e);
+      if (e instanceof Error) {
+        res.status(500).json({
+          status: "Error removing peer",
+          error: e.message,
+        });
+      }
+    }
+  });
+
   let isStarted = false;
   const start = async () => {
     //start libp2p & http transports
@@ -262,7 +289,7 @@ export const createManager = async ({
     isStarted = false;
   };
 
-  if (autoManage) {
+  if (managerSettings.autoManage) {
     await start();
 
     const MANAGEMENT_INTERVAL = 5000;
@@ -295,6 +322,13 @@ export const createManager = async ({
 
     runManagementCycle();
   }
+
+  // Register event listeners
+  entity.node.addEventListener("peer:disconnect", (event) => {
+    const peerId = event.detail;
+    managerLogger.info(`Peer disconnected: ${peerId.toString()}`);
+    workerManager.workerQueue.removePeer(peerId.toString());
+  });
 
   return {
     entity,

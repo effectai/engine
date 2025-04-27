@@ -2,7 +2,6 @@
   "name": "@effectai/protocol",
   "private": true,
   "sideEffects": false,
-  "packageManager": "pnpm@8.15.6",
   "type": "module",
   "version": "1.0.0",
   "scripts": {

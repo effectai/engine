@@ -1,204 +1,144 @@
-import { Datastore } from "interface-datastore";
+import { Datastore, Key } from "interface-datastore";
 import {
   createWorkerStore,
-  ManagerWorkerRecord,
   WorkerRecord,
 } from "../stores/managerWorkerStore.js";
-import { ManagerEntity } from "../main.js";
+import { ManagerEntity, ManagerSettings } from "../main.js";
 import { managerLogger } from "../../core/logging.js";
-import { stringifyWithBigInt } from "../../core/utils.js";
-import { ProtocolError } from "../../core/errors.js";
-
 export type PeerIdStr = string;
 
-export const createWorkerManager = ({
-  datastore,
-  manager,
-}: {
-  datastore: Datastore;
-  manager: ManagerEntity;
-}) => {
-  const createWorkerQueue = () => {
-    const queue: PeerIdStr[] = [];
+const createWorkerQueue = () => {
+  const queue: PeerIdStr[] = [];
 
-    const addPeer = ({ peerIdStr }: { peerIdStr: PeerIdStr }): void => {
-      if (!queue.includes(peerIdStr)) {
-        queue.push(peerIdStr);
+  const addPeer = ({ peerIdStr }: { peerIdStr: PeerIdStr }): void => {
+    if (!queue.includes(peerIdStr)) {
+      queue.push(peerIdStr);
+    }
+  };
+
+  const dequeuePeer = (workerPeerId?: PeerIdStr): PeerIdStr | undefined => {
+    if (queue.length === 0) return undefined;
+
+    if (workerPeerId) {
+      const index = queue.findIndex((peer) => peer === workerPeerId);
+      if (index !== -1) {
+        return queue.splice(index, 1)[0];
+      } else {
+        return undefined; // worker not found
       }
-    };
-
-    const dequeuePeer = (): PeerIdStr | undefined => {
-      if (queue.length === 0) return undefined;
+    } else {
       const peer = queue.shift();
       if (peer) queue.push(peer);
       return peer;
-    };
-
-    const removePeer = (peerIdStr: PeerIdStr): void => {
-      const index = queue.indexOf(peerIdStr);
-      if (index !== -1) {
-        queue.splice(index, 1);
-      }
-    };
-
-    const getQueue = (): PeerIdStr[] => {
-      return [...queue];
-    };
-
-    return {
-      queue,
-      addPeer,
-      dequeuePeer,
-      removePeer,
-      getQueue,
-    };
+    }
   };
 
-  const workerQueue = createWorkerQueue();
+  const removePeer = (peerIdStr: PeerIdStr): void => {
+    const index = queue.indexOf(peerIdStr);
+    if (index !== -1) {
+      queue.splice(index, 1);
+    }
+  };
 
+  const getQueue = (): PeerIdStr[] => {
+    return [...queue];
+  };
+
+  return {
+    queue,
+    addPeer,
+    dequeuePeer,
+    removePeer,
+    getQueue,
+  };
+};
+
+export const createWorkerManager = ({
+  datastore,
+  managerSettings,
+}: {
+  datastore: Datastore;
+  managerSettings: ManagerSettings;
+}) => {
+  const workerQueue = createWorkerQueue();
   const workerStore = createWorkerStore({
     datastore,
   });
+
+  const generateAccessCode = async () => {
+    const accessCode = Math.random().toString(36).substring(2, 10);
+
+    const accessCodeData = {
+      redeemedBy: null,
+      redeemedOn: null,
+      createdAt: Date.now(),
+    };
+
+    await datastore.put(
+      new Key(`access-codes/${accessCode}`),
+      Buffer.from(JSON.stringify(accessCodeData)),
+    );
+
+    return accessCode;
+  };
+
+  const redeemAccessCode = async (peerIdStr: string, accessCode: string) => {
+    const result = await datastore.get(new Key(`access-codes/${accessCode}`));
+
+    if (!result) {
+      throw new Error("Access code is invalid");
+    }
+
+    const accessCodeData = JSON.parse(result.toString());
+
+    if (accessCodeData.redeemedBy) {
+      throw new Error("Access code has already been redeemed");
+    }
+
+    accessCodeData.redeemedBy = peerIdStr;
+    accessCodeData.redeemedOn = Date.now();
+
+    await datastore.put(
+      new Key(`access-codes/${accessCode}`),
+      Buffer.from(JSON.stringify(accessCodeData)),
+    );
+
+    return true;
+  };
 
   const connectWorker = async (
     peerId: string,
     recipient: string,
     nonce: bigint,
+    accessCode?: string,
   ) => {
     try {
       // check if the peerId is already in the worker store
       const workerRecord = await workerStore.getSafe({ entityId: peerId });
-      let expectedNonce = workerRecord?.state.nonce;
 
       if (!workerRecord) {
-        // if not, add it
-        const newWorkerRecord: WorkerRecord = {
-          events: [
-            {
-              timestamp: Math.floor(Date.now() / 1000),
-              type: "create",
-            },
-          ],
-          state: {
-            recipient,
-            nonce,
-            lastPayout: Math.floor(Date.now() / 1000),
-            tasksAccepted: 0,
-            totalTasks: 0,
-            tasksCompleted: 0,
-            tasksRejected: 0,
-            lastActivity: Math.floor(Date.now() / 1000),
-          },
-        };
-
-        await workerStore.put({
-          entityId: peerId.toString(),
-          record: newWorkerRecord,
-        });
-
-        expectedNonce = newWorkerRecord.state.nonce;
-
+        if (managerSettings.requireAccessCodes) {
+          if (!accessCode) {
+            throw new Error("Access code is required to create a new worker");
+          }
+          await redeemAccessCode(peerId, accessCode);
+        }
+        await workerStore.createWorker(peerId, recipient, nonce);
         managerLogger.info(`New Worker: ${peerId} created`);
       } else {
         managerLogger.info(`Returning worker ${peerId} connected`);
       }
 
-      //check if the nonce matches up
-      //TODO:: what should we do here?
-      if (expectedNonce !== nonce) {
-        managerLogger.warn(
-          {
-            peerId,
-            nonce,
-            expectedNonce,
-          },
-          `Nonce mismatch for worker`,
-        );
-
-        // update expectedNonce to given nonce from worker.
-        await setWorkerNonce(peerId, nonce);
-      }
+      //overwrite the recipient
+      await workerStore.updateWorker(peerId, {
+        recipient,
+      });
 
       // add worker to queue
       workerQueue.addPeer({ peerIdStr: peerId });
     } catch (e) {
       console.log(e);
     }
-  };
-
-  const incrementTasksAccepted = async (peerId: string) => {
-    const worker = await workerStore.get({ entityId: peerId });
-
-    if (!worker) {
-      throw new Error("Worker not found");
-    }
-
-    worker.state.tasksAccepted += 1;
-
-    await workerStore.put({
-      entityId: peerId,
-      record: worker,
-    });
-  };
-
-  const setWorkerNonce = async (peerId: string, nonce: bigint) => {
-    const worker = await workerStore.get({ entityId: peerId });
-
-    if (!worker) {
-      throw new Error("Worker not found");
-    }
-
-    worker.state.nonce = nonce;
-
-    await workerStore.put({
-      entityId: peerId,
-      record: worker,
-    });
-  };
-
-  const incrementTasksCompleted = async (peerId: string) => {
-    const worker = await workerStore.get({ entityId: peerId });
-
-    if (!worker) {
-      throw new Error("Worker not found");
-    }
-
-    worker.state.tasksCompleted += 1;
-
-    await workerStore.put({
-      entityId: peerId,
-      record: worker,
-    });
-  };
-
-  const incrementTasksRejected = async (peerId: string) => {
-    const worker = await workerStore.get({ entityId: peerId });
-
-    if (!worker) {
-      throw new Error("Worker not found");
-    }
-
-    worker.state.tasksRejected += 1;
-
-    await workerStore.put({
-      entityId: peerId,
-      record: worker,
-    });
-  };
-
-  const incrementTotalTasks = async (peerId: string) => {
-    const worker = await workerStore.get({ entityId: peerId });
-
-    if (!worker) {
-      throw new Error("Worker not found");
-    }
-
-    worker.state.totalTasks += 1;
-
-    await workerStore.put({
-      entityId: peerId,
-      record: worker,
-    });
   };
 
   const getWorker = async (peerId: string) => {
@@ -211,30 +151,27 @@ export const createWorkerManager = ({
     return worker;
   };
 
-  const selectWorker = async (n: number) => {
-    //select next worker from the queue that is not busy
-    const workerId = workerQueue.getQueue()[n];
+  const selectWorker = async (): Promise<string | null> => {
+    const queue = workerQueue.getQueue();
 
-    if (!workerId) {
-      managerLogger.info("No available workers");
-      return null;
+    for (const workerId of queue) {
+      const worker = await getWorker(workerId);
+
+      if (!worker) {
+        continue;
+      }
+
+      const busy = await isBusy(worker);
+      if (!busy) {
+        // Found a non-busy worker
+        workerQueue.dequeuePeer(workerId);
+        return workerId;
+      }
     }
 
-    const worker = await getWorker(workerId);
-
-    if (!worker) {
-      throw new Error("Worker not found");
-    }
-
-    //
-    // if (await isBusy(worker)) {
-    //   return selectWorker(n + 1);
-    // }
-
-    //remove worker from queue
-    workerQueue.dequeuePeer();
-
-    return workerId;
+    // No available worker found
+    managerLogger.info("No available workers");
+    return null;
   };
 
   const isBusy = async (workerRecord: WorkerRecord) => {
@@ -247,34 +184,39 @@ export const createWorkerManager = ({
     );
   };
 
-  const incrementNonce = async (peerId: string) => {
-    const worker = await getWorker(peerId);
+  const incrementStateValue = async (
+    peerId: string,
+    stateKey: keyof WorkerRecord["state"],
+  ) => {
+    const worker = await workerStore.getSafe({ entityId: peerId });
 
     if (!worker) {
       throw new Error("Worker not found");
     }
 
-    worker.state.nonce += 1n;
+    const currentValue = worker.state[stateKey];
 
-    await workerStore.put({
-      entityId: peerId,
-      record: worker,
+    let newValue: number | bigint;
+    if (typeof currentValue === "bigint") {
+      newValue = currentValue + 1n; // add BigInt 1
+    } else if (typeof currentValue === "number") {
+      newValue = currentValue + 1; // add normal 1
+    } else {
+      throw new Error(
+        `Cannot increment non-number/bigint field: ${String(stateKey)}`,
+      );
+    }
+
+    await workerStore.updateWorker(peerId, {
+      [stateKey]: newValue,
     });
   };
 
-  const updateLastPayout = async (peerId: string) => {
-    const worker = await getWorker(peerId);
-
-    if (!worker) {
-      throw new Error("Worker not found");
-    }
-
-    worker.state.lastPayout = Math.floor(Date.now() / 1000);
-
-    await workerStore.put({
-      entityId: peerId,
-      record: worker,
-    });
+  const updateWorkerState = async (
+    peerId: string,
+    update: Partial<WorkerRecord["state"]>,
+  ) => {
+    await workerStore.updateWorker(peerId, update);
   };
 
   return {
@@ -283,12 +225,8 @@ export const createWorkerManager = ({
     connectWorker,
     workerStore,
     workerQueue,
-
-    updateLastPayout,
-    incrementNonce,
-    incrementTasksAccepted,
-    incrementTasksCompleted,
-    incrementTasksRejected,
-    incrementTotalTasks,
+    generateAccessCode,
+    updateWorkerState,
+    incrementStateValue,
   };
 };

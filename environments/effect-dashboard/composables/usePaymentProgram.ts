@@ -50,8 +50,17 @@ export function usePaymentProgram() {
   const claimWithProof = async (proof: ProofResponse) => {
     const { publicKey } = useWallet();
     const workerStore = useWorkerStore();
-    const { managerRecipientDataAccount, managerPublicKey } =
-      storeToRefs(workerStore);
+    const { managerPublicKey } = storeToRefs(workerStore);
+
+    if (!publicKey.value || !managerPublicKey.value) {
+      throw new Error("No public key found");
+    }
+
+    console.log(managerPublicKey.value.toBase58());
+    const managerRecipientDataAccount = deriveWorkerManagerDataAccount(
+      publicKey.value,
+      managerPublicKey.value,
+    );
 
     if (!publicKey.value) {
       throw new Error("No public key found");
@@ -61,15 +70,11 @@ export function usePaymentProgram() {
       throw new Error("No manager public key found");
     }
 
-    if (!managerRecipientDataAccount.value) {
-      throw new Error("No manager recipient data account found");
-    }
-
     const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
 
     const dataAccount =
       await paymentProgram.value.account.recipientManagerDataAccount.fetchNullable(
-        managerRecipientDataAccount.value,
+        managerRecipientDataAccount,
       );
 
     const eddsa = await buildEddsa();
@@ -79,18 +84,10 @@ export function usePaymentProgram() {
         new anchor.BN(proof.signals?.minNonce),
         new anchor.BN(proof.signals?.maxNonce),
         new anchor.BN(proof.signals?.amount.toString()),
-        bigIntToBytes32(eddsa.F.toObject(proof.R8?.R8_1)),
-        bigIntToBytes32(eddsa.F.toObject(proof.R8?.R8_2)),
+        bigIntToBytes32(eddsa.F.toObject(proof.r8?.R8_1)),
+        bigIntToBytes32(eddsa.F.toObject(proof.r8?.R8_2)),
         Array.from(convertProofToBytes(proof)),
       )
-      .accounts({
-        recipientManagerDataAccount: managerRecipientDataAccount.value,
-        paymentAccount: new PublicKey(
-          "AahuY9eumjHYtp7qXJLDEFiHVjffZA6U4S8FWkDyDoVb",
-        ),
-        mint,
-        recipientTokenAccount: ata,
-      })
       .preInstructions([
         ...((await connection.getAccountInfo(ata))
           ? []
@@ -112,6 +109,15 @@ export function usePaymentProgram() {
                 .instruction(),
             ]),
       ])
+      .accounts({
+        recipientManagerDataAccount: managerRecipientDataAccount,
+        paymentAccount: new PublicKey(
+          "v9iz7onKpFnjj1AYieUyz4NNm1WfE4NCbizTWLiWtMY",
+        ),
+        mint,
+        recipientTokenAccount: ata,
+      })
+
       .rpc();
   };
 
@@ -160,6 +166,8 @@ export function usePaymentProgram() {
     workerPublicKey: PublicKey,
     managerPublicKey: PublicKey,
   ) => {
+    console.log(workerPublicKey.toBase58());
+    console.log(managerPublicKey.toBase58());
     const managerDataAccount = deriveWorkerManagerDataAccount(
       workerPublicKey,
       managerPublicKey,

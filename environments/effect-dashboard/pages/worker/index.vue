@@ -45,36 +45,70 @@ import { PublicKey } from "@solana/web3.js";
 import { useWallet } from "solana-wallets-vue";
 
 definePageMeta({
-  middleware: ["auth", "connected"],
+  middleware: ["web3-auth", "connected"],
 });
 
 const workerStore = useWorkerStore();
-const config = useRuntimeConfig();
-const privateKey = useLocalStorage("privateKey", null);
-
-const privateKeyBytes = Buffer.from(privateKey.value, "hex").slice(0, 32);
-const managerPublicKey = new PublicKey(
-  config.public.EFFECT_MANAGER_SOLANA_PUBKEY,
-);
+const { connect, initialize } = workerStore;
 const { connectedOn } = storeToRefs(workerStore);
-const uptime = useUptime(connectedOn);
+const config = useRuntimeConfig();
 
-const managerNodeMultiAddress = config.public.EFFECT_MANAGER_MULTIADDRESS;
-const managerPeerId = multiaddr(managerNodeMultiAddress).getPeerId();
-if (!managerPeerId) {
-  throw new Error("Invalid manager node multiaddress");
-}
-const { publicKey } = useWallet();
-if (!publicKey.value) {
-  throw new Error("No public key found");
-}
-await workerStore.initialize(privateKeyBytes);
-const nonce = await useNextNonce(
-  publicKey.value,
-  managerPublicKey,
-  managerPeerId.toString(),
-);
-await workerStore.connect(managerNodeMultiAddress, nonce);
+const useSetupWorkerNode = async () => {
+  // Fetch private key from local storage
+  const privateKey = useLocalStorage("privateKey", null);
+  if (!privateKey.value) {
+    throw new Error(
+      "Private key not found in local storage. Please ensure it's set.",
+    );
+  }
+  const privateKeyBytes = Buffer.from(privateKey.value, "hex").slice(0, 32);
+
+  // Get manager node public key and multiaddress from the config
+  const managerPublicKey = new PublicKey(
+    config.public.EFFECT_MANAGER_SOLANA_PUBKEY,
+  );
+  const managerNodeMultiAddress = config.public.EFFECT_MANAGER_MULTIADDRESS;
+
+  // Ensure the manager's peerId can be derived from the multiaddress
+  const managerPeerId = multiaddr(managerNodeMultiAddress).getPeerId();
+  if (!managerPeerId) {
+    throw new Error(
+      `Invalid manager node multiaddress: ${managerNodeMultiAddress}`,
+    );
+  }
+
+  const { publicKey } = useWallet();
+  if (!publicKey.value) {
+    throw new Error(
+      "Public key not found in wallet. Please ensure the wallet is connected.",
+    );
+  }
+
+  try {
+    await initialize(privateKeyBytes);
+  } catch (error: any) {
+    throw new Error(`Failed to initialize worker node: ${error.message}`);
+  }
+
+  try {
+    const nonce = await useNextNonce(
+      publicKey.value,
+      managerPublicKey,
+      managerPeerId.toString(),
+    );
+    await connect(managerNodeMultiAddress, nonce);
+  } catch (error: any) {
+    throw new Error(`Failed to connect to manager node: ${error.message}`);
+  }
+
+  return {
+    managerPublicKey,
+    privateKeyBytes,
+  };
+};
+
+await useSetupWorkerNode();
+const uptime = useUptime(connectedOn);
 
 const { useGetPayments } = usePayments();
 const { data: payments } = useGetPayments();

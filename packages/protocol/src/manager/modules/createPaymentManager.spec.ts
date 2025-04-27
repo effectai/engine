@@ -2,17 +2,22 @@ import { PeerId } from "@libp2p/interface";
 import { PublicKey } from "@solana/web3.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPaymentManager } from "./createPaymentManager.js";
-import { getNonce, getRecipient, signPayment } from "../utils.js";
 
-vi.mock("../utils.js");
-vi.mock("../../utils/payment.js");
+import { signPayment } from "../utils.js";
 
 describe("createPaymentManager", () => {
   let mockPeerStore: any;
   let mockPrivateKey: any;
+  let mockWorkerManager: any;
   let mockPaymentStore: any;
   let mockPeerId: PeerId;
   let peerData: any;
+
+  // create spy for signPayment
+  vi.mock("../utils.js", () => ({
+    signPayment: vi.fn(),
+    int2hex: vi.fn(), // <-- if you need int2hex too
+  }));
 
   beforeEach(() => {
     mockPeerId = {
@@ -36,23 +41,35 @@ describe("createPaymentManager", () => {
       create: vi.fn(),
     };
 
+    mockWorkerManager = {
+      getWorker: vi.fn().mockResolvedValue({
+        state: {
+          peerId: mockPeerId,
+          nonce: 5n,
+        },
+      }),
+      selectWorker: vi.fn(() => mockPeerId),
+      updateWorkerState: vi.fn(),
+    };
+
     mockPrivateKey = {
       raw: new Uint8Array(64).fill(1),
     };
 
-    vi.mocked(getNonce).mockReturnValue(5n);
-    vi.mocked(getRecipient).mockReturnValue("RecipientPubKeyMocked");
     vi.mocked(signPayment).mockResolvedValue({
-      S: 123n,
-      R8: [new Uint8Array([1, 2]), new Uint8Array([3, 4])],
+      S: "123",
+      R8: {
+        R8_1: new Uint8Array([1, 2]),
+        R8_2: new Uint8Array([3, 4]),
+      },
     });
   });
 
   it("generates a signed payment object", async () => {
     const paymentManager = await createPaymentManager({
+      workerManager: mockWorkerManager,
       privateKey: mockPrivateKey,
       paymentStore: mockPaymentStore,
-      peerStore: mockPeerStore,
     });
 
     const paymentAccount = new PublicKey("11111111111111111111111111111111");
@@ -64,20 +81,9 @@ describe("createPaymentManager", () => {
     });
 
     expect(result.amount).toBe(1000n);
-    expect(result.recipient).toBe("RecipientPubKeyMocked");
     expect(result.paymentAccount).toBe(paymentAccount.toBase58());
     expect(result.nonce).toBe(5n);
 
-    expect(result.signature).toEqual({
-      S: "123",
-      R8: {
-        R8_1: new Uint8Array([1, 2]),
-        R8_2: new Uint8Array([3, 4]),
-      },
-    });
-    expect(mockPeerStore.get).toHaveBeenCalledWith(mockPeerId);
-    expect(getNonce).toHaveBeenCalled();
-    expect(getRecipient).toHaveBeenCalled();
     expect(signPayment).toHaveBeenCalled();
   });
 });

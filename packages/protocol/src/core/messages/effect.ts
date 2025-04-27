@@ -234,7 +234,7 @@ export namespace RequestToWork {
 
 export interface RequestToWorkResponse {
   timestamp: number
-  pubkey: Uint8Array
+  pubkey: string
   batchSize: number
 }
 
@@ -253,9 +253,9 @@ export namespace RequestToWorkResponse {
           w.uint32(obj.timestamp)
         }
 
-        if ((obj.pubkey != null && obj.pubkey.byteLength > 0)) {
+        if ((obj.pubkey != null && obj.pubkey !== '')) {
           w.uint32(18)
-          w.bytes(obj.pubkey)
+          w.string(obj.pubkey)
         }
 
         if ((obj.batchSize != null && obj.batchSize !== 0)) {
@@ -269,7 +269,7 @@ export namespace RequestToWorkResponse {
       }, (reader, length, opts = {}) => {
         const obj: any = {
           timestamp: 0,
-          pubkey: uint8ArrayAlloc(0),
+          pubkey: '',
           batchSize: 0
         }
 
@@ -284,7 +284,7 @@ export namespace RequestToWorkResponse {
               break
             }
             case 2: {
-              obj.pubkey = reader.bytes()
+              obj.pubkey = reader.string()
               break
             }
             case 3: {

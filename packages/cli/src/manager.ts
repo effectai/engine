@@ -5,8 +5,12 @@ import path from "node:path";
 import { peerIdFromPrivateKey } from "@libp2p/peer-id";
 import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 import { LevelDatastore } from "datastore-level";
-import { computeTemplateId, createManager } from "./../dist/index.js";
 import { ulid } from "ulid";
+import {
+  createManager,
+  computeTemplateId,
+  type Template,
+} from "@effectai/protocol";
 
 type Task = {
   id?: string;
@@ -162,6 +166,7 @@ program
         //automatically start managing tasks
         autoManage: true,
         announce: options.announce ? [options.announce] : [],
+        port: 11955,
       });
 
       console.log("Manager started", manager.entity.getMultiAddress());

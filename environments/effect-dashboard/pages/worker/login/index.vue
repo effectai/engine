@@ -1,28 +1,51 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-950 text-gray-200">
+  <div class="flex items-center justify-center">
     <div class="w-full max-w-md space-y-8 p-8" v-if="!isConnected">
       <div class="text-center">
-        <h1 class="text-3xl font-bold tracking-tight">Effect Worker Dashboard</h1>
-        <p class="mt-2 text-sm text-gray-400">Sign in to access the dashboard</p>
+        <h1 class="text-3xl font-bold tracking-tight">
+          Effect Worker Dashboard
+        </h1>
+        <p class="mt-2 text-sm text-gray-400">
+          Sign in to access the dashboard
+        </p>
       </div>
-
 
       <div class="space-y-4">
         <div class="flex flex-wrap gap-2 text-center">
-          <UButton block color="white" variant="outline" class="flex-1 w-[50%] justify-start gap-2"
-            @click="loginWithGoogle">
+          <UButton
+            block
+            color="white"
+            variant="outline"
+            class="flex-1 w-[50%] justify-start gap-2"
+            @click="loginWithGoogle"
+          >
             <UIcon name="i-logos-google-icon" />
             Google
           </UButton>
 
-          <UButton block color="white" variant="outline" class="flex-1 w-[50%] justify-center gap-2 !fill-white"
-            @click="loginWithGithub">
+          <UButton
+            block
+            color="white"
+            variant="outline"
+            class="flex-1 w-[50%] justify-center gap-2 !fill-white"
+            @click="loginWithGithub"
+          >
             <UIcon name="i-logos-github-icon" mode="svg" class="fill-white" />
             GitHub
           </UButton>
 
-          <UButton block color="white" variant="outline" class="justify-start gap-2" @click="loginWithDiscord">
-            <UIcon mode="svg" class="text-green-500 fill-white" name="i-logos-discord-icon" />
+          <UButton
+            block
+            color="white"
+            variant="outline"
+            class="justify-start gap-2"
+            @click="loginWithDiscord"
+          >
+            <UIcon
+              mode="svg"
+              class="text-green-500 fill-white"
+              name="i-logos-discord-icon"
+            />
             Discord
           </UButton>
         </div>
@@ -32,12 +55,20 @@
             <div class="w-full border-t border-gray-700"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="bg-gray-950 px-2 text-gray-400">Or continue with</span>
+            <span class="dark:bg-gray-950 bg-white px-2 text-gray-400"
+              >Or continue with</span
+            >
           </div>
         </div>
 
         <div class="flex">
-          <UButton block color="white" variant="outline" class="justify-start gap-2" @click="test">
+          <UButton
+            block
+            color="white"
+            variant="outline"
+            class="justify-start gap-2"
+            @click="navigateTo('/worker/login/with-private-key')"
+          >
             <UIcon name="i-logos-solana-icon" />
             Private Key (advanced)
           </UButton>
@@ -45,11 +76,16 @@
       </div>
     </div>
     <div v-else>
-      <UButton block color="white" variant="outline" class="justify-start gap-2" @click="web3auth.logout()">
+      <UButton
+        block
+        color="white"
+        variant="outline"
+        class="justify-start gap-2"
+        @click="web3auth.logout()"
+      >
         <UIcon name="i-logos-solana-icon" />
         Disconnect
       </UButton>
-
     </div>
   </div>
 </template>
@@ -103,7 +139,6 @@ const web3AuthOptions: Web3AuthNoModalOptions = {
 const web3auth = ref(new Web3AuthNoModal(web3AuthOptions));
 const isConnected = computed(() => authState.isConnected);
 const privateKey = useLocalStorage("privateKey", null);
-console.log(privateKey);
 
 const authState = reactive({
   isConnected: false,
@@ -123,7 +158,6 @@ const init = async () => {
       privateKey.value = await web3auth.value.provider?.request({
         method: "solanaPrivateKey",
       });
-      console.log("privateKey", privateKey.value);
     });
 
     web3auth.value.on("disconnected", () => {
@@ -156,7 +190,6 @@ onMounted(async () => {
 
 watchEffect(() => {
   if (privateKey.value) {
-    console.log("private key is set... navigating");
     navigateTo("/worker");
   }
 });

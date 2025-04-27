@@ -6,7 +6,7 @@ export default defineNuxtRouteMiddleware((to) => {
   const { isAuthenticated, loadPrivateKey, privateKey } = useAuth();
   loadPrivateKey();
 
-  if (!isAuthenticated.value && to.path !== "/login") {
-    return navigateTo("/login");
+  if (!isAuthenticated.value && to.path !== "/worker/login") {
+    return navigateTo("/worker/login");
   }
 });

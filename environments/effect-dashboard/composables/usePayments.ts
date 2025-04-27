@@ -83,6 +83,13 @@ export const useNextNonce = async (
     worker.value?.getMaxNonce({ managerPeerIdStr }) ?? Promise.resolve(0),
   ]);
 
+  console.log(
+    "fetched remote nonce:",
+    remoteNonce,
+    " fetched local nonce:",
+    maxLocalNonce,
+  );
+
   const remoteBigInt = remoteNonce !== null ? BigInt(remoteNonce) : 0n;
   const localBigInt = maxLocalNonce !== null ? BigInt(maxLocalNonce) : 0n;
 

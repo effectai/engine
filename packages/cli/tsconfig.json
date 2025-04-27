@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    // Enable latest features
     "strict": true,
     "lib": ["ESNext", "DOM"],
     "moduleResolution": "NodeNext",

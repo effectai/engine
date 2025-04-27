@@ -46,10 +46,21 @@ export function compressBabyJubJubPubKey(pubX: Uint8Array, pubY: Uint8Array) {
   if (pubX.length !== 32 || pubY.length !== 32) {
     throw new Error("Invalid input length — must be 32 bytes each");
   }
-
   const compressed = Uint8Array.from(pubY);
   const xSign = pubX[0] & 1;
   compressed[31] |= xSign << 7;
 
   return compressed;
+}
+
+export function bigIntToBytes32(num: bigint): Uint8Array {
+  let hex = BigInt(num).toString(16);
+
+  hex = hex.padStart(64, "0");
+
+  const bytes = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) {
+    bytes[i] = parseInt(hex.slice(i * 2, (i + 1) * 2), 16);
+  }
+  return bytes;
 }

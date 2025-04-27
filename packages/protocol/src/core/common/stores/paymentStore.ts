@@ -27,17 +27,17 @@ const parsePaymentRecord = (data: string): PaymentRecord => {
   const parsed = parseWithBigInt(data);
 
   // parse the r8 arrays inside the signatures.
+  if (parsed.state.signature) {
+    parsed.state.signature.R8 = {
+      R8_1: objectToBytes(parsed.state.signature.R8.R8_1),
+      R8_2: objectToBytes(parsed.state.signature.R8.R8_2),
+    };
+  }
+
   return {
     events: parsed.events,
     state: {
       ...parsed.state,
-      signature: {
-        ...parsed.state.signature,
-        R8: {
-          R8_1: objectToBytes(parsed.state.signature.R8.R8_1),
-          R8_2: objectToBytes(parsed.state.signature.R8.R8_2),
-        },
-      },
     },
   };
 };
@@ -71,7 +71,7 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
         },
       ],
     })) {
-      payments.push(parseWithBigInt(new TextDecoder().decode(item.value)));
+      payments.push(parsePaymentRecord(new TextDecoder().decode(item.value)));
     }
 
     return payments;

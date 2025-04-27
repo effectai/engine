@@ -5,11 +5,13 @@
         <UIcon name="i-lucide-dollar-sign" size="24" class="text-emerald-400" />
         PAYMENTS
       </h2>
-      <UButton color="black" @click="useClaimPaymentsHandler">Claim</UButton>
+      <UButton :loading="isPending" color="black" @click="mutateClaimPayments"
+        >Claim</UButton
+      >
     </div>
     <UTable
       :loading="payments === null"
-      :rows="payments"
+      :rows="mutatedPayments"
       :loading-state="{
         icon: 'i-heroicons-arrow-path-20-solid',
         label: 'Waiting for tasks...',
@@ -32,9 +34,9 @@
       :progress="{ color: 'primary', animation: 'carousel' }"
       class="w-full"
       :columns="[
-        { sortable: true, key: 'state.nonce', label: 'Nonce' },
+        { sortable: true, key: 'state.nonce', label: 'Nonce', sort: sortNonce },
         { key: 'state.label', label: 'label' },
-        { key: 'status', label: 'status' },
+        { key: 'claimed', label: 'status', sortable: true },
         { key: 'recipient', label: 'Recipient' },
         { key: 'amount', label: 'Amount' },
       ]"
@@ -43,10 +45,10 @@
         <span>{{ formatBigIntToAmount(row.state.amount) }}</span>
       </template>
 
-      <template #status-data="{ row }">
-        <span>
-          <UBadge :color="remoteNonce > row.state.nonce ? 'green' : 'yellow'">
-            <span v-if="remoteNonce > row.state.nonce"> Claimed </span>
+      <template #claimed-data="{ row }">
+        <span v-if="remoteNonce">
+          <UBadge :color="row.claimed ? 'green' : 'yellow'">
+            <span v-if="row.claimed"> Claimed </span>
             <span v-else> Claimable </span>
           </UBadge>
         </span>
@@ -62,10 +64,31 @@
 </template>
 
 <script setup lang="ts">
+import { useMutation } from "@tanstack/vue-query";
 import { useWallet } from "solana-wallets-vue";
 const { useGetPayments, useClaimPayments } = usePayments();
 const { data: payments } = useGetPayments();
 const { mutateAsync: claimPayments } = useClaimPayments();
+const mutatedPayments = computed(
+  () =>
+    payments.value &&
+    payments.value.map((p) => ({
+      ...p,
+      claimed: remoteNonce.value >= p.state.nonce,
+    })),
+);
+
+const sortNonce = (a: bigint, b: bigint) => {
+  if (a > b) {
+    return 1;
+  }
+
+  if (b > a) {
+    return -1;
+  }
+
+  return 0;
+};
 
 function chunkArray(array, size) {
   return Array.from({ length: Math.ceil(array.length / size) }, (_, i) =>
@@ -73,49 +96,66 @@ function chunkArray(array, size) {
   );
 }
 
-const { fetchRemoteNonce } = usePaymentProgram();
+const { fetchRemoteNonce, useRecipientManagerDataAccount } =
+  usePaymentProgram();
 const workerStore = useWorkerStore();
 const { publicKey } = useWallet();
 const { managerPublicKey, worker, managerPeerId } = storeToRefs(workerStore);
 
-const useClaimPaymentsHandler = async () => {
-  if (
-    !payments.value ||
-    payments.value.length === 0 ||
-    !publicKey.value ||
-    !managerPeerId.value ||
-    !managerPublicKey.value
-  ) {
-    console.warn("No payments found, or not connected");
-    return;
+const { data: dataAccount } = useRecipientManagerDataAccount(
+  managerPublicKey.value,
+);
+
+const remoteNonce = computed(() => {
+  if (!dataAccount.value) {
+    return null;
   }
 
-  //get remote nonce
-  const remoteNonce =
-    (await fetchRemoteNonce(publicKey.value, managerPublicKey.value)) ?? 1n;
-  const claimablePayments = await worker.value?.getPaymentsFromNonce({
-    nonce: Number.parseInt(remoteNonce.toString()),
-    peerId: managerPeerId.value.toString(),
-  });
+  return dataAccount.value.nonce;
+});
 
-  //chunk into array's of 50
-  const result = chunkArray(claimablePayments, 50);
+const { mutateAsync: mutateClaimPayments, isPending } = useMutation({
+  mutationFn: async () => {
+    if (
+      !payments.value ||
+      payments.value.length === 0 ||
+      !publicKey.value ||
+      !managerPeerId.value ||
+      !managerPublicKey.value
+    ) {
+      console.warn("No payments found, or not connected");
+      return;
+    }
 
-  for (const paymentBatch of result) {
-    const payments = paymentBatch.map((payment) => {
-      return {
-        nonce: payment.state.nonce,
-        recipient: payment.state.recipient,
-        amount: payment.state.amount,
-        paymentAccount: payment.state.paymentAccount,
-        signature: payment.state.signature,
-      };
+    //get remote nonce
+    const remoteNonce =
+      (await fetchRemoteNonce(publicKey.value, managerPublicKey.value)) ?? 1n;
+    const claimablePayments = await worker.value?.getPaymentsFromNonce({
+      nonce: Number.parseInt(remoteNonce.toString()) + 1,
+      peerId: managerPeerId.value.toString(),
     });
 
-    //claim payments
-    await claimPayments({ payments });
-  }
-};
+    const sortedPayments = claimablePayments?.toSorted((a, b) => {
+      return a.state.nonce > b.state.nonce ? 1 : -1;
+    });
+
+    const result = chunkArray(sortedPayments, 60);
+    for (const paymentBatch of result) {
+      const payments = paymentBatch.map((payment: PaymentRecord) => {
+        return {
+          nonce: payment.state.nonce,
+          recipient: payment.state.recipient,
+          amount: payment.state.amount,
+          paymentAccount: payment.state.paymentAccount,
+          signature: payment.state.signature,
+        };
+      });
+
+      //claim payments
+      await claimPayments({ payments });
+    }
+  },
+});
 </script>
 
 <style scoped></style>

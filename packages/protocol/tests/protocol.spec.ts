@@ -64,9 +64,12 @@ describe("Complete Task Lifecycle", () => {
     manager = await createManager({
       datastore: managerDatastore,
       privateKey: managerPrivateKey,
-      announce: [],
-      listen: ["/ip4/0.0.0.0/tcp/11995/ws"],
-      autoManage: false,
+      settings: {
+        listen: ["/ip4/0.0.0.0/tcp/0/ws"],
+        autoManage: false,
+        requireAccessCodes: false,
+        paymentBatchSize: 60,
+      },
     });
 
     worker = await createWorker({

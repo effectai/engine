@@ -12,21 +12,10 @@
         >
           Disconnect
         </UButton>
-        <UButton
-          color="black"
-          class=""
-          variant="outline"
-          icon="i-lucide-key"
-          @click="disconnect"
-        >
+        <UButton color="black" class="" variant="outline" icon="i-lucide-key">
           Export Private Key
         </UButton>
-        <UButton
-          color="black"
-          class=""
-          variant="outline"
-          icon="i-lucide-logs"
-          @click="logs"
+        <UButton color="black" class="" variant="outline" icon="i-lucide-logs"
           >Logs</UButton
         >
       </div>
@@ -83,16 +72,19 @@
 </template>
 
 <script setup lang="ts">
-import { useWallet } from "solana-wallets-vue";
 import { useWorkerStore } from "@/stores/worker";
-
-const { useGetMaxNonce } = usePayments();
-const { data: maxNonce } = useGetMaxNonce();
 
 const workerStore = useWorkerStore();
 const { latency, workerPeerId, managerPeerId } = storeToRefs(workerStore);
 
-const { currentNonce } = usePayments();
+const { useGetMaxNonce } = usePayments();
+const { data: maxNonce } = useGetMaxNonce(managerPeerId);
+
+const { logout } = useAuth();
+const disconnect = async () => {
+  logout();
+  navigateTo("/worker/login");
+};
 </script>
 
 <style scoped></style>

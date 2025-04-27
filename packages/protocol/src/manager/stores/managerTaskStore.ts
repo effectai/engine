@@ -227,7 +227,7 @@ export const createManagerTaskStore = ({
       null,
     );
 
-    if (!latestAssignEvent) {
+    if (!latestAssignEvent || latestAssignEvent.assignedToPeer !== peerIdStr) {
       throw new TaskValidationError("Task was not assigned to this worker");
     }
 
