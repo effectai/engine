@@ -16,7 +16,7 @@ import type { TypedEventEmitter } from "@libp2p/interface";
 import type { Task, Template } from "../../core/messages/effect.js";
 import type { TemplateStore } from "../../core/common/stores/templateStore.js";
 import type { createWorkerManager } from "./createWorkerManager.js";
-import { computeTemplateId } from "../../core/utils.js";
+import { computeTemplateId } from "../utils.js";
 
 export function createTaskManager({
   manager,

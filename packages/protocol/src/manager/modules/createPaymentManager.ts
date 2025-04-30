@@ -9,13 +9,12 @@ import { buildEddsa, buildPoseidon } from "circomlibjs";
 import { fileURLToPath } from "node:url";
 import * as snarkjs from "snarkjs";
 import path from "node:path";
-import { signPayment, int2hex } from "../utils.js";
+import { signPayment, int2hex, computePaymentId } from "../utils.js";
 import {
   type ProofRequest,
   type EffectProtocolMessage,
   Payment,
 } from "../../core/messages/effect.js";
-import { computePaymentId } from "../../core/utils.js";
 import type { PaymentStore } from "../../core/common/stores/paymentStore.js";
 import { createWorkerManager } from "./createWorkerManager.js";
 import { PAYMENT_BATCH_SIZE } from "../consts.js";

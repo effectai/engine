@@ -4,6 +4,7 @@ import { PublicKey } from "@solana/web3.js";
 import { buildEddsa, buildPoseidon, Point } from "circomlibjs";
 import { TaskRecord } from "../core/common/types.js";
 import type { Payment } from "../core/messages/effect.js";
+import { createHash } from "node:crypto";
 
 export const signPayment = async (
   payment: Payment,
@@ -64,3 +65,28 @@ export function bigIntToBytes32(num: bigint): Uint8Array {
   }
   return bytes;
 }
+
+export const computeTaskId = (
+  provider: string,
+  template_data: string,
+): string => {
+  const input = `${provider}:${template_data}`;
+  const sha256 = createHash("sha256").update(input).digest("hex");
+  return sha256;
+};
+
+export const computePaymentId = (payment: {
+  recipient: string;
+  nonce: bigint;
+}): string => {
+  const input = `${payment.recipient}:${payment.nonce}`;
+  const sha256 = createHash("sha256").update(input).digest("hex");
+
+  return sha256;
+};
+
+export const computeTemplateId = (provider: string, template_html: string) => {
+  const input = `${provider}:${template_html}`;
+  const sha256 = createHash("sha256").update(input).digest("hex");
+  return sha256;
+};

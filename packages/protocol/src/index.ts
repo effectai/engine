@@ -1,3 +1,14 @@
-export * from "./manager/index.js";
+export {
+  createManager,
+  ManagerTaskRecord,
+  ManagerEntity,
+  ManagerSettings,
+  ManagerInfoResponse,
+  ManagerEvents,
+  computeTemplateId,
+  computeTaskId,
+} from "./manager/index.js";
+
 export * from "./worker/index.js";
+
 export * from "./core/index.js";

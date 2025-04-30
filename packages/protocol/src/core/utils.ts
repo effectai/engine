@@ -6,31 +6,6 @@ import { PublicKey } from "@solana/web3.js";
 import { peerIdFromString } from "@libp2p/peer-id";
 import type { EffectProtocolMessage } from "./messages/effect.js";
 
-export const computeTaskId = (
-  provider: string,
-  template_data: string,
-): string => {
-  const input = `${provider}:${template_data}`;
-  const sha256 = createHash("sha256").update(input).digest("hex");
-  return sha256;
-};
-
-export const computePaymentId = (payment: {
-  recipient: string;
-  nonce: bigint;
-}): string => {
-  const input = `${payment.recipient}:${payment.nonce}`;
-  const sha256 = createHash("sha256").update(input).digest("hex");
-
-  return sha256;
-};
-
-export const computeTemplateId = (provider: string, template_html: string) => {
-  const input = `${provider}:${template_html}`;
-  const sha256 = createHash("sha256").update(input).digest("hex");
-  return sha256;
-};
-
 export function stringifyWithBigInt(obj: any): string {
   return JSON.stringify(obj, (_, value) =>
     typeof value === "bigint" ? `${value}n` : value,
