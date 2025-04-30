@@ -83,4 +83,46 @@ pnpm cli tasks:post --url <manager-url> --template-id <template-id> --title <tas
 
 ```
 
+### Deploying contracts
+
+In order for payouts to work, you need to run a local solana validator and deploy the payment contract
+
+1. Install the [Solana CLI](https://solana.com/nl/docs/intro/installation)
+
+2. Start a local validator
+```
+
+solana-test-validator
+
+```
+
+3. Build & Deploy the payment contract
+
+first make sure that the account that deploys the contracts has some sol:
+
+```
+
+solana airdrop 20 authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV
+
+```
+then run the following commands:
+```
+
+cd solana && \
+anchor build && \
+anchor deploy --provider.cluster localnet --program-name effect_payment
+
+```
+
+### Running the frontend
+
+Now that you have a manager node running, you can run the frontend to interact with it.
+
+
+```
+
+cd environments/effect-dashboard && pnpm prepare && pnpm dev
+
+```
+
 ```

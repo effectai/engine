@@ -22,7 +22,6 @@ export class HttpTransport implements Transport<HttpTransportMethods> {
 
   async initialize(entity: Entity): Promise<void> {
     this.entity = entity;
-
     // Set up the HTTP server
 
     //dynamic import express
