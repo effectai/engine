@@ -32,3 +32,44 @@ Clone and run:
 to run tests:
 
 `pnpm vitest`
+
+## Quickstart
+
+After installing dependencies, start by building the required packages:
+
+```
+pnpm packages:build
+```
+
+### Starting a Manager Node
+
+To spin up a manager node:
+
+```
+pnpm manager:start
+```
+
+### Posting tasks
+
+Before posting tasks, you need to register a task template. This can be done with the following command:
+
+```
+pnpm cli templates register --url <manager-url> --template-path <template-path>
+```
+
+This will return a template-id, which you can use to post tasks.
+
+### Post a Basic task
+
+```
+pnpm cli tasks:post --url <manager-url> --template-id <template-id>
+```
+
+## Post a Task with Custom Values
+
+You can also customize the task by specifying additional arguments:
+
+```
+pnpm cli tasks:post --url <manager-url> --template-id <template-id> --title <task-title> --reward <task-reward> --data <task-data>
+
+```

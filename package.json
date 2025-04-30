@@ -13,15 +13,13 @@
   "scripts": {
     "purge": "rm -rf node_modules pnpm-lock.yaml && pnpm recursive exec -- rm -rf node_modules dist",
     "dev": "pnpm turbo dev",
-    "dashboard:generate-staging": "pnpm --filter effect-dashboard run generate-staging",
     "build": "turbo run build",
+    "cli": "node --experimental-strip-types packages/cli/dist/index.js",
+    "dashboard:generate-staging": "pnpm --filter effect-dashboard run generate-staging",
     "dashboard:generate-prod": "pnpm --filter effect-dashboard run generate-prod",
-    "playground:generate-prod": "pnpm --filter effect-playground run generate-prod",
     "website:generate": "pnpm --filter effect-website run generate",
     "manager:start": "node --experimental-strip-types packages/cli/dist/index.js run -k ./packages/protocol/tests/keys/manager.json",
-    "cli": "node --experimental-strip-types packages/cli/dist/index.js",
     "packages:build": "pnpm turbo build --filter @effectai/*",
-    "provider:start": "pnpm --filter @effectai/task-provider run start",
     "docs:dev": "pnpm --filter docs run dev",
     "test": "vitest"
   },
