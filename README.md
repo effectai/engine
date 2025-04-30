@@ -65,7 +65,7 @@ This will return a template-id, which you can use to post tasks.
 pnpm cli tasks:post --url <manager-url> --template-id <template-id>
 ```
 
-## Post a Task with Custom Values
+### Post a Task with Custom Values
 
 You can also customize the task by specifying additional arguments:
 
