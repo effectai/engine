@@ -8,6 +8,12 @@ import { computeTemplateId, type Template } from "@effectai/protocol";
 
 export const templateCommand = new Command();
 
+type APIResponse = {
+  status: string;
+  data?: any;
+  error?: string;
+};
+
 const api = axios.create({
   timeout: 5000,
   headers: { "Content-Type": "application/json" },

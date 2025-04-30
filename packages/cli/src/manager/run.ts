@@ -83,7 +83,7 @@ async function startManager(
         addLog(`Peer connected: ${detail.toString()}`);
       });
     }
-  } catch (err) {
+  } catch (err: any) {
     addLog("Failed to start manager: " + err.message);
   }
 }
