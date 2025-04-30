@@ -32,8 +32,8 @@ export const useVestingProgram = () => {
     () =>
       new anchor.Program(
         EffectVestingIdl as Idl,
-        provider.value || undefined
-      ) as unknown as Program<EffectVesting>
+        provider.value || undefined,
+      ) as unknown as Program<EffectVesting>,
   );
 
   const useGetVestingAccounts = () => {
@@ -97,7 +97,7 @@ export const useVestingProgram = () => {
         try {
           ataExists =
             !!(await vestingProgram.value.provider.connection.getAccountInfo(
-              ata
+              ata,
             ));
         } catch (error) {
           console.log("ATA doesnt exists", ata.toString());
@@ -109,8 +109,8 @@ export const useVestingProgram = () => {
                 new PublicKey(publicKey.value),
                 ata,
                 new PublicKey(publicKey.value),
-                mint
-              )
+                mint,
+              ),
             );
           } catch (e) {
             console.log("createAssociatedTokenAccountInstruction", e);
@@ -137,10 +137,10 @@ export const useVestingProgram = () => {
       queryFn: async () => {
         const config = useRuntimeConfig();
         const ACTIVE_REWARD_VESTING_ACCOUNT = new PublicKey(
-          config.public.EFFECT_ACTIVE_REWARD_VESTING_ACCOUNT
+          config.public.EFFECT_ACTIVE_REWARD_VESTING_ACCOUNT,
         );
         const data = await vestingProgram.value.account.vestingAccount.fetch(
-          ACTIVE_REWARD_VESTING_ACCOUNT
+          ACTIVE_REWARD_VESTING_ACCOUNT,
         );
 
         const { vestingVaultAccount } = useDeriveVestingAccounts({

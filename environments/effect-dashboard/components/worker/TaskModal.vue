@@ -1,17 +1,26 @@
 <template>
-  <div v-if="activeTask" class="fixed inset-0 z-50 flex items-center justify-center">
+  <div
+    v-if="activeTask"
+    class="fixed inset-0 z-50 flex items-center justify-center"
+  >
     <UModal v-model="isOpen" prevent-close fullscreen>
-      <UCard :ui="{
-        ring: '',
-        divide: 'divide-y divide-gray-100 dark:divide-gray-800',
-      }">
+      <UCard
+        :ui="{
+          ring: '',
+          divide: 'divide-y divide-gray-100 dark:divide-gray-800',
+        }"
+      >
         <template #header>
           <div class="flex items-center justify-between">
-            <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+            <h3
+              class="text-base font-semibold leading-6 text-gray-900 dark:text-white"
+            >
               {{ activeTask?.state.title }}
             </h3>
             <div class="flex justify-end gap-2">
-              <UButton color="black" variant="outline"> Show Instructions </UButton>
+              <UButton color="black" variant="outline">
+                Show Instructions
+              </UButton>
               <div class="flex space-x-2" v-if="showAcceptTaskButton">
                 <UButton color="black" @click.stop="handlerAcceptTask">
                   <UIcon name="i-heroicons-check-circle-20-solid" />
@@ -22,16 +31,28 @@
                   Reject Task
                 </UButton>
               </div>
-              <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1"
-                @click="setActiveTask(null)" />
-
+              <UButton
+                color="gray"
+                variant="ghost"
+                icon="i-heroicons-x-mark-20-solid"
+                class="-my-1"
+                @click="setActiveTask(null)"
+              />
             </div>
           </div>
         </template>
 
         <template #default>
-          <div class="p-4" :class="{ 'opacity-30': taskState === 'create' }" v-if="activeTask">
-            <WorkerTaskTemplate ref="template" @submit="handlerSubmitTask" @ready="isTemplateReady = true" />
+          <div
+            class="p-4"
+            :class="{ 'opacity-30': taskState === 'create' }"
+            v-if="activeTask"
+          >
+            <WorkerTaskTemplate
+              ref="template"
+              @submit="handlerSubmitTask"
+              @ready="isTemplateReady = true"
+            />
           </div>
         </template>
       </UCard>
@@ -44,8 +65,8 @@ import type TaskTemplate from "./TaskTemplate.vue";
 import { useWorkerStore } from "@/stores/worker";
 
 const {
-  setActiveTask,
   activeTask,
+  setActiveTask,
   completeTask,
   acceptTask,
   rejectTask,

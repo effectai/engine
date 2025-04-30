@@ -64,7 +64,9 @@
             <UIcon name="i-lucide-parking-meter" size="16" />
             NONCE
           </div>
-          <code class="text-emerald-400">{{ maxNonce }}</code>
+          <code class="text-emerald-400" v-if="nonces">{{
+            nonces.nextNonce
+          }}</code>
         </div>
       </div>
     </div>
@@ -72,17 +74,16 @@
 </template>
 
 <script setup lang="ts">
-import { useWorkerStore } from "@/stores/worker";
+const sessionStore = useSessionStore();
+const { managerPeerId, latency } = storeToRefs(sessionStore);
+const { useGetNonce } = sessionStore.useActiveSession();
 
 const workerStore = useWorkerStore();
-const { latency, workerPeerId, managerPeerId } = storeToRefs(workerStore);
+const { workerPeerId } = storeToRefs(workerStore);
 
-const { useGetMaxNonce } = usePayments();
-const { data: maxNonce } = useGetMaxNonce(managerPeerId);
+const { data: nonces } = useGetNonce();
 
-const { logout } = useAuth();
 const disconnect = async () => {
-  logout();
   navigateTo("/worker/login");
 };
 </script>

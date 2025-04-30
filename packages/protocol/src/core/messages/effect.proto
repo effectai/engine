@@ -17,6 +17,7 @@ message RequestToWork {
   uint32 timestamp = 1;
   string recipient = 2;
   uint64 nonce = 3;
+  optional string access_code = 4;
 }
 
 message RequestToWorkResponse {

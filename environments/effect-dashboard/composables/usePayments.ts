@@ -7,21 +7,6 @@ export const usePayments = () => {
   const workerStore = useWorkerStore();
   const { paymentCounter, worker } = storeToRefs(workerStore);
 
-  const useGetMaxNonce = (managerPeerId: string) => {
-    return useQuery({
-      queryKey: ["maxNonce", managerPeerId, paymentCounter],
-      queryFn: async () => {
-        if (!workerStore.managerPeerId) {
-          throw new Error("Manager peer ID is not set");
-        }
-
-        return await worker.value?.getMaxNonce({
-          managerPeerIdStr: workerStore.managerPeerId.toString(),
-        });
-      },
-    });
-  };
-
   const useGetPayments = () =>
     useQuery({
       queryKey: ["payments", paymentCounter],
@@ -63,37 +48,7 @@ export const usePayments = () => {
     });
 
   return {
-    currentNonce,
     useGetPayments,
     useClaimPayments,
-    useGetMaxNonce,
   };
-};
-
-export const useNextNonce = async (
-  workerPublicKey: PublicKey,
-  managerPublicKey: PublicKey,
-  managerPeerIdStr: string,
-) => {
-  const workerStore = useWorkerStore();
-  const { worker } = storeToRefs(workerStore);
-
-  const [remoteNonce, maxLocalNonce] = await Promise.all([
-    usePaymentProgram().fetchRemoteNonce(workerPublicKey, managerPublicKey),
-    worker.value?.getMaxNonce({ managerPeerIdStr }) ?? Promise.resolve(0),
-  ]);
-
-  console.log(
-    "fetched remote nonce:",
-    remoteNonce,
-    " fetched local nonce:",
-    maxLocalNonce,
-  );
-
-  const remoteBigInt = remoteNonce !== null ? BigInt(remoteNonce) : 0n;
-  const localBigInt = maxLocalNonce !== null ? BigInt(maxLocalNonce) : 0n;
-
-  const highestNonce = remoteBigInt > localBigInt ? remoteBigInt : localBigInt;
-
-  return highestNonce + 1n;
 };

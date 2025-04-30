@@ -32,7 +32,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: latest
-        version: 1.2.10
+        version: 1.2.11
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -177,6 +177,9 @@ importers:
       buffer:
         specifier: ^6.0.3
         version: 6.0.3
+      circomlibjs:
+        specifier: ^0.1.7
+        version: 0.1.7(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       datastore-idb:
         specifier: ^3.0.1
         version: 3.0.1
@@ -202,7 +205,7 @@ importers:
         specifier: 0.23.0
         version: 0.23.0(rollup@4.40.0)(vite@6.3.3(@types/node@22.15.2)(jiti@2.4.2)(lightningcss@1.29.3)(sass-embedded@1.87.0)(terser@5.39.0)(yaml@2.7.1))
       vue:
-        specifier: latest
+        specifier: ^3.5.13
         version: 3.5.13(typescript@5.8.3)
       vue-confetti-explosion:
         specifier: ^1.0.2
@@ -210,6 +213,10 @@ importers:
       vue-router:
         specifier: latest
         version: 4.5.1(vue@3.5.13(typescript@5.8.3))
+    devDependencies:
+      '@types/circomlibjs':
+        specifier: ^0.1.6
+        version: 0.1.6
 
   packages/cli:
     dependencies:
@@ -323,11 +330,14 @@ importers:
         specifier: ^5.0.0
         version: 5.3.0
       circomlibjs:
-        specifier: ^0.1.7
+        specifier: ^0.1.6
         version: 0.1.7(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       commander:
         specifier: ^13.1.0
         version: 13.1.0
+      cors:
+        specifier: ^2.8.5
+        version: 2.8.5
       datastore-core:
         specifier: ^10.0.2
         version: 10.0.2
@@ -386,6 +396,9 @@ importers:
       '@types/circomlibjs':
         specifier: ^0.1.6
         version: 0.1.6
+      '@types/cors':
+        specifier: ^2.8.5
+        version: 2.8.17
       '@types/express':
         specifier: ^5.0.1
         version: 5.0.1
@@ -4739,14 +4752,17 @@ packages:
   '@types/body-parser@1.19.5':
     resolution: {integrity: sha512-fB3Zu92ucau0iQ0JMCFQE7b/dv8Ot07NI3KaZIkIUNXq82k4eBAqUaneXfleGY9JWskeS9y+u0nXMyspcuQrCg==}
 
-  '@types/bun@1.2.10':
-    resolution: {integrity: sha512-eilv6WFM3M0c9ztJt7/g80BDusK98z/FrFwseZgT4bXCq2vPhXD4z8R3oddmAn+R/Nmz9vBn4kweJKmGTZj+lg==}
+  '@types/bun@1.2.11':
+    resolution: {integrity: sha512-ZLbbI91EmmGwlWTRWuV6J19IUiUC5YQ3TCEuSHI3usIP75kuoA8/0PVF+LTrbEnVc8JIhpElWOxv1ocI1fJBbw==}
 
   '@types/circomlibjs@0.1.6':
     resolution: {integrity: sha512-yF174bPDaiKgejlZzCSqKwZaqXhlxMcVEHrAtstFohwP05OjtvHXOdxO6HQeTg8WwIdgMg7MJb1WyWZdUCGlPQ==}
 
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
+
+  '@types/cors@2.8.17':
+    resolution: {integrity: sha512-8CGDvrBj1zgo2qE+oS3pOCyYNqCPryMWY2bGfwA0dcfopWGgxs+78df0Rs3rc9THP4JkOhLsAa+15VdpAqkcUA==}
 
   '@types/debug@4.1.12':
     resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
@@ -6166,8 +6182,8 @@ packages:
   bulma@1.0.4:
     resolution: {integrity: sha512-Ffb6YGXDiZYX3cqvSbHWqQ8+LkX6tVoTcZuVB3lm93sbAVXlO0D6QlOTMnV6g18gILpAXqkG2z9hf9z4hCjz2g==}
 
-  bun-types@1.2.10:
-    resolution: {integrity: sha512-b5ITZMnVdf3m1gMvJHG+gIfeJHiQPJak0f7925Hxu6ZN5VKA8AGy4GZ4lM+Xkn6jtWxg5S3ldWvfmXdvnkp3GQ==}
+  bun-types@1.2.11:
+    resolution: {integrity: sha512-dbkp5Lo8HDrXkLrONm6bk+yiiYQSntvFUzQp0v3pzTAsXk6FtgVMjdQ+lzFNVAmQFUkPQZ3WMZqH5tTo+Dp/IA==}
 
   bundle-name@4.1.0:
     resolution: {integrity: sha512-tjwM5exMg6BGRI+kNmTntNsvdZS1X8BFYS6tnJ2hdH0kVxM6/eVZ2xy+FqStSWvYmtfFMDLIxurorHwDKfDz5Q==}
@@ -6592,6 +6608,10 @@ packages:
 
   core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
+
+  cors@2.8.5:
+    resolution: {integrity: sha512-KIHbLJqu73RGr/hnbrO9uBeixNGuvSQjul/jdFvS/KFSIH1hWVd1ng7zOHx+YrEfInLG7q4n6GHQ9cDtxv/P6g==}
+    engines: {node: '>= 0.10'}
 
   cosmiconfig@5.2.1:
     resolution: {integrity: sha512-H65gsXo1SKjf8zmrJ67eJk8aIRKV5ff2D4uKZIBZShbhGSpEmsQOPW/SKMKYhSTrqR7ufy6RP69rPogdaPh/kA==}
@@ -17570,7 +17590,7 @@ snapshots:
 
   '@solana/codecs-core@2.1.0':
     dependencies:
-      '@solana/errors': 2.1.0(typescript@5.7.2)
+      '@solana/errors': 2.1.0
 
   '@solana/codecs-core@2.1.0(typescript@5.7.2)':
     dependencies:
@@ -17611,7 +17631,7 @@ snapshots:
   '@solana/codecs-numbers@2.1.0':
     dependencies:
       '@solana/codecs-core': 2.1.0
-      '@solana/errors': 2.1.0(typescript@5.7.2)
+      '@solana/errors': 2.1.0
 
   '@solana/codecs-numbers@2.1.0(typescript@5.7.2)':
     dependencies:
@@ -17682,6 +17702,11 @@ snapshots:
       chalk: 5.3.0
       commander: 12.1.0
       typescript: 5.8.3
+
+  '@solana/errors@2.1.0':
+    dependencies:
+      chalk: 5.3.0
+      commander: 13.1.0
 
   '@solana/errors@2.1.0(typescript@5.7.2)':
     dependencies:
@@ -19187,13 +19212,17 @@ snapshots:
       '@types/connect': 3.4.38
       '@types/node': 22.15.2
 
-  '@types/bun@1.2.10':
+  '@types/bun@1.2.11':
     dependencies:
-      bun-types: 1.2.10
+      bun-types: 1.2.11
 
   '@types/circomlibjs@0.1.6': {}
 
   '@types/connect@3.4.38':
+    dependencies:
+      '@types/node': 22.15.2
+
+  '@types/cors@2.8.17':
     dependencies:
       '@types/node': 22.15.2
 
@@ -22286,7 +22315,7 @@ snapshots:
 
   bulma@1.0.4: {}
 
-  bun-types@1.2.10:
+  bun-types@1.2.11:
     dependencies:
       '@types/node': 22.15.2
 
@@ -22719,6 +22748,11 @@ snapshots:
   core-js@2.6.12: {}
 
   core-util-is@1.0.3: {}
+
+  cors@2.8.5:
+    dependencies:
+      object-assign: 4.1.1
+      vary: 1.1.2
 
   cosmiconfig@5.2.1:
     dependencies:

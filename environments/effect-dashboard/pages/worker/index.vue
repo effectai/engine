@@ -40,74 +40,23 @@
 
 <script lang="ts" setup>
 import { useWorkerStore } from "@/stores/worker";
-import { multiaddr } from "@multiformats/multiaddr";
-import { PublicKey } from "@solana/web3.js";
-import { useWallet } from "solana-wallets-vue";
 
 definePageMeta({
-  middleware: ["web3-auth", "connected"],
+  middleware: ["auth"],
 });
 
 const workerStore = useWorkerStore();
-const { connect, initialize } = workerStore;
-const { connectedOn } = storeToRefs(workerStore);
 const config = useRuntimeConfig();
 
-const useSetupWorkerNode = async () => {
-  // Fetch private key from local storage
-  const privateKey = useLocalStorage("privateKey", null);
-  if (!privateKey.value) {
-    throw new Error(
-      "Private key not found in local storage. Please ensure it's set.",
-    );
+const { useActiveSession, useDisconnect } = useSessionStore();
+const { connectedOn } = useActiveSession();
+
+onMounted(() => {
+  if (!connectedOn.value) {
+    navigateTo("/worker/connect");
   }
-  const privateKeyBytes = Buffer.from(privateKey.value, "hex").slice(0, 32);
+});
 
-  // Get manager node public key and multiaddress from the config
-  const managerPublicKey = new PublicKey(
-    config.public.EFFECT_MANAGER_SOLANA_PUBKEY,
-  );
-  const managerNodeMultiAddress = config.public.EFFECT_MANAGER_MULTIADDRESS;
-
-  // Ensure the manager's peerId can be derived from the multiaddress
-  const managerPeerId = multiaddr(managerNodeMultiAddress).getPeerId();
-  if (!managerPeerId) {
-    throw new Error(
-      `Invalid manager node multiaddress: ${managerNodeMultiAddress}`,
-    );
-  }
-
-  const { publicKey } = useWallet();
-  if (!publicKey.value) {
-    throw new Error(
-      "Public key not found in wallet. Please ensure the wallet is connected.",
-    );
-  }
-
-  try {
-    await initialize(privateKeyBytes);
-  } catch (error: any) {
-    throw new Error(`Failed to initialize worker node: ${error.message}`);
-  }
-
-  try {
-    const nonce = await useNextNonce(
-      publicKey.value,
-      managerPublicKey,
-      managerPeerId.toString(),
-    );
-    await connect(managerNodeMultiAddress, nonce);
-  } catch (error: any) {
-    throw new Error(`Failed to connect to manager node: ${error.message}`);
-  }
-
-  return {
-    managerPublicKey,
-    privateKeyBytes,
-  };
-};
-
-await useSetupWorkerNode();
 const uptime = useUptime(connectedOn);
 
 const { useGetPayments } = usePayments();
@@ -159,36 +108,8 @@ const totalCompletedTasks = computed(() => {
   return completedTasks.value.length;
 });
 
+const { mutateAsync: disconnect } = useDisconnect();
 tryOnBeforeUnmount(async () => {
-  await workerStore.disconnect();
+  await disconnect();
 });
-
-const payoutInterval = Number.parseInt(config.public.PAYOUT_INTERVAL);
-const interval = useIntervalFn(
-  async () => {
-    if (!workerStore.worker || !workerStore.managerPeerId) {
-      return;
-    }
-
-    await workerStore.worker.requestPayout({
-      managerPeerIdStr: workerStore.managerPeerId,
-    });
-  },
-  payoutInterval,
-  {
-    immediate: false,
-  },
-);
-
-watch(
-  () => connectedOn.value,
-  (newValue) => {
-    if (newValue) {
-      interval.resume();
-    } else {
-      interval.pause();
-    }
-  },
-  { immediate: true },
-);
 </script>

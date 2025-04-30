@@ -154,6 +154,7 @@ export interface RequestToWork {
   timestamp: number
   recipient: string
   nonce: bigint
+  accessCode?: string
 }
 
 export namespace RequestToWork {
@@ -179,6 +180,11 @@ export namespace RequestToWork {
         if ((obj.nonce != null && obj.nonce !== 0n)) {
           w.uint32(24)
           w.uint64(obj.nonce)
+        }
+
+        if (obj.accessCode != null) {
+          w.uint32(34)
+          w.string(obj.accessCode)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -207,6 +213,10 @@ export namespace RequestToWork {
             }
             case 3: {
               obj.nonce = reader.uint64()
+              break
+            }
+            case 4: {
+              obj.accessCode = reader.string()
               break
             }
             default: {

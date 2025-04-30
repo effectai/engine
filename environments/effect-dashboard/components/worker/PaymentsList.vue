@@ -64,18 +64,18 @@
 </template>
 
 <script setup lang="ts">
+import { PublicKey } from "@solana/web3.js";
 import { useMutation } from "@tanstack/vue-query";
 import { useWallet } from "solana-wallets-vue";
+
 const { useGetPayments, useClaimPayments } = usePayments();
 const { data: payments } = useGetPayments();
 const { mutateAsync: claimPayments } = useClaimPayments();
-const mutatedPayments = computed(
-  () =>
-    payments.value &&
-    payments.value.map((p) => ({
-      ...p,
-      claimed: remoteNonce.value >= p.state.nonce,
-    })),
+const mutatedPayments = computed(() =>
+  payments.value?.map((p) => ({
+    ...p,
+    claimed: remoteNonce.value >= p.state.nonce,
+  })),
 );
 
 const sortNonce = (a: bigint, b: bigint) => {
@@ -96,40 +96,13 @@ function chunkArray(array, size) {
   );
 }
 
-const { fetchRemoteNonce, useRecipientManagerDataAccount } =
-  usePaymentProgram();
-const workerStore = useWorkerStore();
-const { publicKey } = useWallet();
-const { managerPublicKey, worker, managerPeerId } = storeToRefs(workerStore);
-
-const { data: dataAccount } = useRecipientManagerDataAccount(
-  managerPublicKey.value,
-);
-
-const remoteNonce = computed(() => {
-  if (!dataAccount.value) {
-    return null;
-  }
-
-  return dataAccount.value.nonce;
-});
+const { useActiveSession } = useSessionStore();
+const { getNonce } = useActiveSession();
 
 const { mutateAsync: mutateClaimPayments, isPending } = useMutation({
   mutationFn: async () => {
-    if (
-      !payments.value ||
-      payments.value.length === 0 ||
-      !publicKey.value ||
-      !managerPeerId.value ||
-      !managerPublicKey.value
-    ) {
-      console.warn("No payments found, or not connected");
-      return;
-    }
+    const { account, managerPublicKey } = useActiveSession();
 
-    //get remote nonce
-    const remoteNonce =
-      (await fetchRemoteNonce(publicKey.value, managerPublicKey.value)) ?? 1n;
     const claimablePayments = await worker.value?.getPaymentsFromNonce({
       nonce: Number.parseInt(remoteNonce.toString()) + 1,
       peerId: managerPeerId.value.toString(),

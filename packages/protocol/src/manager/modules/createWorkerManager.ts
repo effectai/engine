@@ -5,6 +5,7 @@ import {
 } from "../stores/managerWorkerStore.js";
 import { ManagerEntity, ManagerSettings } from "../main.js";
 import { managerLogger } from "../../core/logging.js";
+import { ProtocolError } from "../../core/errors.js";
 export type PeerIdStr = string;
 
 const createWorkerQueue = () => {
@@ -83,10 +84,11 @@ export const createWorkerManager = ({
   };
 
   const redeemAccessCode = async (peerIdStr: string, accessCode: string) => {
-    const result = await datastore.get(new Key(`access-codes/${accessCode}`));
-
-    if (!result) {
-      throw new Error("Access code is invalid");
+    let result = null;
+    try {
+      result = await datastore.get(new Key(`access-codes/${accessCode}`));
+    } catch (e) {
+      throw new Error("Access code not found");
     }
 
     const accessCodeData = JSON.parse(result.toString());
@@ -138,6 +140,7 @@ export const createWorkerManager = ({
       workerQueue.addPeer({ peerIdStr: peerId });
     } catch (e) {
       console.log(e);
+      throw e;
     }
   };
 

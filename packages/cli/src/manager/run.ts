@@ -3,10 +3,13 @@ import readline from "readline";
 import { Command } from "commander";
 import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 import { LevelDatastore } from "datastore-level";
-import { createManager, Task } from "@effectai/protocol";
-import { ManagerTaskRecord } from "../../../protocol/dist/manager/stores/managerTaskStore.js";
+import {
+  createManager,
+  Task,
+  type ManagerTaskRecord,
+} from "@effectai/protocol";
 
-const program = new Command();
+export const runCommand = new Command();
 
 let manager: Awaited<ReturnType<typeof createManager>> | null = null;
 let logs: string[] = [];
@@ -19,13 +22,11 @@ const rl = readline.createInterface({
 const menu = `
 [0] Start Manager
 [1] Stop Manager
-[2] Show Peers
-[3] Show Active Tasks
-[4] Show Logs
-[5] Show Task Templates
-[6] Show Task Results
-[7] Ban worker
-[8] Exit
+[2] Show Workers
+[3] Ban Workers
+[4] Show Task Templates
+[6] Generate access code
+[7] Exit
 `;
 
 function renderScreen() {
@@ -131,10 +132,21 @@ async function handleInput(
     case "3":
       await showActiveTasks();
       break;
-    case "4":
+    case "6": {
+      if (!manager) {
+        addLog("Manager not running.");
+        return;
+      }
+      const accessCode = await manager.workerManager.generateAccessCode();
+      addLog(`Generated access code: ${accessCode}`);
+      break;
+    }
+    case "7": {
       addLog("Exiting...");
       rl.close();
       process.exit(0);
+      break;
+    }
     default:
       addLog("Invalid option. Try again.");
   }
@@ -145,10 +157,8 @@ async function startPrompt(options: { privateKey: string; announce?: string }) {
   rl.on("line", (input) => handleInput(input, options));
 }
 
-program
-  .command("manager")
-  .description("Manager operations")
-  .command("run")
+runCommand
+  .name("run")
   .requiredOption(
     "-k, --private-key <path>",
     "Path to manager private key file",
@@ -164,4 +174,4 @@ program
     }
   });
 
-program.parseAsync().catch(console.error);
+// program.parseAsync().catch(console.error);

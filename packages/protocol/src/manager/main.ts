@@ -21,6 +21,17 @@ import { createWorkerManager } from "./modules/createWorkerManager.js";
 import { bigIntToBytes32, compressBabyJubJubPubKey } from "./utils.js";
 import { PublicKey } from "@solana/web3.js";
 
+export type ManagerInfoResponse = {
+  status: string;
+  peerId: string;
+  announcedAddresses: string[];
+  requireAccessCodes: boolean;
+  publicKey: string;
+  connectedPeers: number;
+  pendingTasks: number;
+  completedTasks: number;
+};
+
 export type ManagerEvents = {
   "task:created": (task: TaskRecord) => void;
   "task:accepted": CustomEvent<TaskRecord>;
@@ -131,27 +142,37 @@ export const createManager = async ({
 
   // register message handlers
   entity
-    .onMessage("requestToWork", async ({ recipient, nonce }, { peerId }) => {
-      await workerManager.connectWorker(peerId.toString(), recipient, nonce);
+    .onMessage(
+      "requestToWork",
+      async ({ recipient, nonce, accessCode }, { peerId }) => {
+        console.log(recipient, nonce, accessCode);
 
-      const eddsa = await buildEddsa();
-      const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
+        await workerManager.connectWorker(
+          peerId.toString(),
+          recipient,
+          nonce,
+          accessCode,
+        );
 
-      const compressedPubKey = compressBabyJubJubPubKey(
-        bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
-        bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
-      );
+        const eddsa = await buildEddsa();
+        const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
 
-      const solanaPublicKey = new PublicKey(compressedPubKey);
+        const compressedPubKey = compressBabyJubJubPubKey(
+          bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
+          bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
+        );
 
-      return {
-        requestToWorkResponse: {
-          timestamp: Math.floor(Date.now() / 1000),
-          pubkey: solanaPublicKey.toBase58(),
-          batchSize: managerSettings.paymentBatchSize,
-        },
-      };
-    })
+        const solanaPublicKey = new PublicKey(compressedPubKey);
+
+        return {
+          requestToWorkResponse: {
+            timestamp: Math.floor(Date.now() / 1000),
+            pubkey: solanaPublicKey.toBase58(),
+            batchSize: managerSettings.paymentBatchSize,
+          },
+        };
+      },
+    )
     .onMessage("task", async (task, { peerId }) => {
       await taskManager.createTask({
         task,
@@ -227,9 +248,27 @@ export const createManager = async ({
     const pendingTasks = await taskManager.getActiveTasks();
     const completedTasks = await taskManager.getCompletedTasks();
 
+    const eddsa = await buildEddsa();
+    const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
+
+    const compressedPubKey = compressBabyJubJubPubKey(
+      bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
+      bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
+    );
+
+    const announcedAddresses =
+      managerSettings.announce.length === 0
+        ? [entity.getMultiAddress()?.[0]]
+        : managerSettings.announce;
+
     res.json({
-      status: "Manager is running",
+      status: "running",
       peerId: entity.getPeerId().toString(),
+      version: "0.0.1",
+      requireAccessCodes: managerSettings.requireAccessCodes,
+      announcedAddresses,
+      publicKey: new PublicKey(compressedPubKey),
+      connectedPeers: workerManager.workerQueue.queue.length,
       pendingTasks: pendingTasks.length,
       completedTasks: completedTasks.length,
     });

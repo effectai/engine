@@ -5,6 +5,6 @@ export default defineNuxtRouteMiddleware((to, from) => {
 
   if (!publicKey.value) {
     console.log("User is not connected, redirecting to login");
-    return navigateTo("/login");
+    return navigateTo("/worker/login");
   }
 });

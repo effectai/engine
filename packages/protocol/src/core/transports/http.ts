@@ -18,7 +18,7 @@ export class HttpTransport implements Transport<HttpTransportMethods> {
   #app: any = null;
   #server: any = null;
 
-  constructor(private readonly options: HttpTransportOptions = {}) { }
+  constructor(private readonly options: HttpTransportOptions = {}) {}
 
   async initialize(entity: Entity): Promise<void> {
     this.entity = entity;
@@ -27,9 +27,11 @@ export class HttpTransport implements Transport<HttpTransportMethods> {
 
     //dynamic import express
     const express = await import("express");
+    const cors = await import("cors");
 
-    // import express from "express";
     this.#app = express.default();
+    this.#app.use(cors.default()); // 👈 add this line
+
     this.#app.use(express.default.json());
 
     return Promise.resolve();
@@ -45,7 +47,7 @@ export class HttpTransport implements Transport<HttpTransportMethods> {
   }
 
   async start(): Promise<void> {
-    this.#server = this.#app.listen(this.options.port, () => { });
+    this.#server = this.#app.listen(this.options.port, () => {});
   }
 
   getMethods(): HttpTransportMethods {
@@ -57,7 +59,7 @@ export class HttpTransport implements Transport<HttpTransportMethods> {
     };
   }
 
-  async send(data: Uint8Array): Promise<void> { }
+  async send(data: Uint8Array): Promise<void> {}
 
   async get(route: string, handler: HttpHandler): Promise<void> {
     this.#app.get(route, async (req: any, res: any) => {

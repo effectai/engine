@@ -295,6 +295,7 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
 
       const response = await this.readResponseWithTimeout(pb, timeout);
 
+      console.log("response: ", response);
       if (response.error) {
         return [
           null,
@@ -305,6 +306,10 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
       const { payload } = extractMessageType(response);
       return [payload as MessageResponse<T>, null];
     } catch (error) {
+      if (error instanceof ProtocolError) {
+        return [null, error];
+      }
+
       if (error instanceof Error) {
         const protocolError =
           error instanceof ProtocolError
