@@ -140,6 +140,7 @@ const connectHandler = async () => {
     try {
       await connect({
         account: account.value,
+        managerPeerId: selectedManager.value.peerId,
         managerMultiAddress: selected.toString(),
         managerPublicKey: selectedManager.value.publicKey,
         nextNonce: nextNonce.value.nextNonce,

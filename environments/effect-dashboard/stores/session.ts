@@ -14,7 +14,7 @@ type SessionPayload = {
 
 export const useSessionStore = defineStore("session", () => {
   const account: Ref<PublicKey | null> = ref(null);
-  const connectedOn: Ref<number | null> = ref(0);
+  const connectedOn: Ref<number | null> = ref(null);
   const managerPeerId: Ref<string | null> = ref(null);
   const managerPublicKey: Ref<PublicKey | null> = ref(null);
   const managerMultiAddress: Ref<string | null> = ref(null);
