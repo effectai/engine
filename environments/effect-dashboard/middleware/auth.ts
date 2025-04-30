@@ -1,6 +1,7 @@
 export default defineNuxtRouteMiddleware(async (to) => {
   if (process.server) return;
 
+  console.log("Running auth middleware");
   const sessionStore = useSessionStore();
   const { connectedOn } = storeToRefs(sessionStore);
 
@@ -8,7 +9,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   await init();
 
   if (
-    (!privateKey.value || !authState.isConnected) &&
+    !privateKey.value &&
+    !authState.isConnected &&
     to.path !== "/worker/login"
   ) {
     return navigateTo("/worker/login");

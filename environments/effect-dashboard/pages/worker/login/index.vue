@@ -80,10 +80,10 @@
 <script setup lang="ts">
 import { UX_MODE, WALLET_ADAPTERS } from "@web3auth/base";
 
-const { web3auth, authState, privateKey } = useWeb3Auth();
+const { web3auth, authState, privateKey, init } = useWeb3Auth();
 
-definePageMeta({
-  middleware: ["auth"],
+onMounted(() => {
+  init();
 });
 
 definePageMeta({
