@@ -42,6 +42,7 @@
 import { useWorkerStore } from "@/stores/worker";
 
 definePageMeta({
+  layout: "worker",
   middleware: ["auth"],
 });
 

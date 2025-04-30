@@ -295,7 +295,6 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
 
       const response = await this.readResponseWithTimeout(pb, timeout);
 
-      console.log("response: ", response);
       if (response.error) {
         return [
           null,
