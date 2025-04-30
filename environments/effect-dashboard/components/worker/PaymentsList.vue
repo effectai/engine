@@ -64,18 +64,23 @@
 </template>
 
 <script setup lang="ts">
-import { PublicKey } from "@solana/web3.js";
 import { useMutation } from "@tanstack/vue-query";
-import { useWallet } from "solana-wallets-vue";
 
 const { useGetPayments, useClaimPayments } = usePayments();
 const { data: payments } = useGetPayments();
 const { mutateAsync: claimPayments } = useClaimPayments();
+const sessionStore = useSessionStore();
+const { useGetNonce } = sessionStore.useActiveSession();
+const { data: nonces } = useGetNonce();
+
 const mutatedPayments = computed(() =>
-  payments.value?.map((p) => ({
-    ...p,
-    claimed: remoteNonce.value >= p.state.nonce,
-  })),
+  payments.value?.map(
+    (p) =>
+      nonces.value && {
+        ...p,
+        claimed: nonces.value.remoteNonce ?? 0n >= p.state.nonce,
+      },
+  ),
 );
 
 const sortNonce = (a: bigint, b: bigint) => {
@@ -95,9 +100,6 @@ function chunkArray(array, size) {
     array.slice(i * size, i * size + size),
   );
 }
-
-const { useActiveSession } = useSessionStore();
-const { getNonce } = useActiveSession();
 
 const { mutateAsync: mutateClaimPayments, isPending } = useMutation({
   mutationFn: async () => {

@@ -15,7 +15,7 @@ Welcome to the Effect Tasking Mono Repo, this repository contains the neccesary 
 
 ### Prerequisites
 
-- Node.js >= 21.x
+- Node.js >= 23.x
 - pnpm >= 10.x
 
 Most machines are good to go with just:
