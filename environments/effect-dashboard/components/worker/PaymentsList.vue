@@ -10,6 +10,7 @@
       >
     </div>
     <UTable
+      v-if="isSuccess"
       :loading="payments === null"
       :rows="mutatedPayments"
       :loading-state="{
@@ -46,7 +47,7 @@
       </template>
 
       <template #claimed-data="{ row }">
-        <span v-if="nonces && nonces.remoteNonce">
+        <span v-if="nonces">
           <UBadge :color="row.claimed ? 'green' : 'yellow'">
             <span v-if="row.claimed"> Claimed </span>
             <span v-else> Claimable </span>
@@ -65,22 +66,25 @@
 
 <script setup lang="ts">
 import { useMutation } from "@tanstack/vue-query";
+import type { PaymentRecord } from "@effectai/protocol";
 
 const { useGetPayments, useClaimPayments } = usePayments();
 const { data: payments } = useGetPayments();
 const { mutateAsync: claimPayments } = useClaimPayments();
 const sessionStore = useSessionStore();
 const { useGetNonce } = sessionStore.useActiveSession();
-const { data: nonces } = useGetNonce();
+const { data: nonces, isSuccess } = useGetNonce();
 
-const mutatedPayments = computed(() =>
-  payments.value?.map(
-    (p) =>
-      nonces.value && {
-        ...p,
-        claimed: nonces.value.remoteNonce ?? 0n >= p.state.nonce,
-      },
-  ),
+const mutatedPayments = computed(
+  () =>
+    payments.value?.map(
+      (p) =>
+        (nonces.value && {
+          ...p,
+          claimed: nonces.value.remoteNonce ?? 0n >= p.state.nonce,
+        }) ||
+        [],
+    ) || [],
 );
 
 const sortNonce = (a: bigint, b: bigint) => {
@@ -95,18 +99,32 @@ const sortNonce = (a: bigint, b: bigint) => {
   return 0;
 };
 
-function chunkArray(array, size) {
-  return Array.from({ length: Math.ceil(array.length / size) }, (_, i) =>
-    array.slice(i * size, i * size + size),
-  );
-}
-
 const { mutateAsync: mutateClaimPayments, isPending } = useMutation({
   mutationFn: async () => {
-    const { account, managerPublicKey } = useActiveSession();
+    const { useActiveSession } = useSessionStore();
+    const { account, managerPublicKey, managerPeerId } = useActiveSession();
+    const workerStore = useWorkerStore();
+    const { worker } = storeToRefs(workerStore);
+
+    if (!account.value || !managerPublicKey.value || !managerPeerId.value) {
+      console.error("No account or manager found");
+      return;
+    }
+
+    if (!nonces.value) {
+      console.error("No nonces found");
+      return;
+    }
+
+    let nonce = 0;
+    if (nonces.value.remoteNonce === null) {
+      nonce = 1;
+    } else {
+      nonce = Number.parseInt(nonces.value.remoteNonce.toString()) + 1;
+    }
 
     const claimablePayments = await worker.value?.getPaymentsFromNonce({
-      nonce: Number.parseInt(remoteNonce.toString()) + 1,
+      nonce,
       peerId: managerPeerId.value.toString(),
     });
 

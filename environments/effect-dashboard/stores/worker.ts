@@ -58,5 +58,7 @@ export const useWorkerStore = defineStore("worker", () => {
     workerPeerId,
     initialize,
     ping,
+    taskCounter,
+    paymentCounter,
   };
 });

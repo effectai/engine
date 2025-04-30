@@ -91,3 +91,9 @@ export const calculateDue = (
   const amountDue = poolAmount - distributedTokens;
   return Math.min(amountDue, amountAvailable * 1_000_000);
 };
+
+export function chunkArray(array, size) {
+  return Array.from({ length: Math.ceil(array.length / size) }, (_, i) =>
+    array.slice(i * size, i * size + size),
+  );
+}

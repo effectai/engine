@@ -145,7 +145,7 @@ export const createWorker = async ({
   ) => {
     const [response, error] = await entity.sendMessage(manager, {
       requestToWork: {
-        timestamp: Date.now() / 1000,
+        timestamp: Math.floor(Date.now() / 1000),
         recipient,
         nonce,
         accessCode,

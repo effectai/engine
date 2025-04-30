@@ -61,7 +61,7 @@ export const useSessionStore = defineStore("session", () => {
       onSuccess: (data, opts) => {
         setSession({
           account: opts.account,
-          connectedOn: data.timestamp,
+          connectedOn: Math.floor(Date.now() / 1000),
           managerPeerId: opts.managerPeerId,
           managerPublicKey: opts.managerPublicKey,
           accessCode: opts.accessCode,
@@ -131,7 +131,7 @@ export const useSessionStore = defineStore("session", () => {
         await worker.value.stop();
 
         account.value = null;
-        connectedOn.value = 0;
+        connectedOn.value = null;
         managerPeerId.value = "";
         managerPublicKey.value = null;
         accessCode.value = undefined;

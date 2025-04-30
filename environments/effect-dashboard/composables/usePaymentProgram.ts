@@ -148,6 +148,7 @@ export function usePaymentProgram() {
   return {
     program: paymentProgram,
     useClaimWithProof,
+    claimWithProof,
     useRecipientManagerDataAccount,
     deriveWorkerManagerDataAccount,
   };

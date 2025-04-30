@@ -52,7 +52,7 @@ export function useUptime(startTimeRef: Ref<number | undefined | null>) {
 
   return {
     formattedTime,
-    timeElapsed: computed(() => timeElapsed.value / 1000), // in seconds
+    timeElapsed: computed(() => timeElapsed.value / 1000),
     isRunning: computed(() => startTimeRef.value !== undefined),
   };
 }
