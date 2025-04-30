@@ -8,7 +8,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (!web3auth.value) {
     await init();
-    return;
   }
 
   if (
