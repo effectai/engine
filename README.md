@@ -121,6 +121,6 @@ Now that you have a manager node running, you can run the frontend to interact w
 
 ```
 
-cd environments/effect-dashboard && pnpm prepare && pnpm dev
+cd environments/effect-dashboard && pnpm cp-env && pnpm dev
 
 ```

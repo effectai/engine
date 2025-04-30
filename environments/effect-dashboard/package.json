@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "cp .env.example .env",
+    "cp-env": "cp .env.example .env",
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate-staging": "nuxt generate --dotenv .env.staging",
