@@ -39,16 +39,12 @@
 </template>
 
 <script lang="ts" setup>
-import { useWorkerStore } from "@/stores/worker";
-
 definePageMeta({
   layout: "worker",
   middleware: ["auth"],
 });
 
-const workerStore = useWorkerStore();
 const config = useRuntimeConfig();
-
 const { useActiveSession, useDisconnect } = useSessionStore();
 const { connectedOn } = useActiveSession();
 

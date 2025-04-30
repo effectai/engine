@@ -46,7 +46,7 @@
       </template>
 
       <template #claimed-data="{ row }">
-        <span v-if="remoteNonce">
+        <span v-if="nonces && nonces.remoteNonce">
           <UBadge :color="row.claimed ? 'green' : 'yellow'">
             <span v-if="row.claimed"> Claimed </span>
             <span v-else> Claimable </span>

@@ -1,12 +1,15 @@
 export default defineNuxtRouteMiddleware(async (to) => {
   if (process.server) return;
 
-  console.log("Running auth middleware");
   const sessionStore = useSessionStore();
   const { connectedOn } = storeToRefs(sessionStore);
 
   const { privateKey, init, web3auth, authState } = useWeb3Auth();
-  await init();
+
+  if (!web3auth.value) {
+    await init();
+    return;
+  }
 
   if (
     !privateKey.value &&

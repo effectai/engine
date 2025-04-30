@@ -1,6 +1,18 @@
 <template>
   <div class="flex items-center justify-center">
-    <div class="w-full max-w-md space-y-8 p-8" v-if="!isConnected">
+    <div
+      v-if="true || authState.isLoading"
+      class="w-full max-w-md mt-10 space-y-8 p-8"
+    >
+      <p class="text-center text-gray-400 text-2xl flex items-center gap-2">
+        <UIcon
+          name="i-heroicons-arrow-path-20-solid"
+          class="animate-spin text-gray-400"
+        />
+        Loading.. Please wait.
+      </p>
+    </div>
+    <div v-else class="w-full max-w-md space-y-8 p-8">
       <div class="text-center">
         <h1 class="text-3xl font-bold tracking-tight">
           Effect Worker Dashboard

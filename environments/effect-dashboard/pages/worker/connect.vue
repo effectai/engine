@@ -41,7 +41,7 @@
         <div
           v-for="(manager, index) in managers"
           :key="index"
-          class="p-4 rounded-md border hover:bg-gray-50 transition cursor-pointer"
+          class="p-4 my-3 rounded-md border hover:bg-gray-50 transition cursor-pointer"
         >
           <URadio
             v-if="manager"
@@ -145,6 +145,7 @@ const connectHandler = async () => {
         nextNonce: nextNonce.value.nextNonce,
         accessCode: accessCode.value ?? undefined,
       });
+
       navigateTo("/worker");
     } catch (e) {
       console.error("Error connecting to worker: ", e);

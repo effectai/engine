@@ -21,6 +21,11 @@ import {
 
 const web3auth: Ref<Web3AuthNoModal | null> = shallowRef(null);
 const account = ref<string | null>(null);
+const authState = reactive({
+  isConnected: false,
+  isLoading: false,
+  error: null as Error | null,
+});
 
 export const useWeb3Auth = () => {
   const solanaWallet = ref<SolanaWallet | null>(null);
@@ -59,18 +64,12 @@ export const useWeb3Auth = () => {
     chainConfig,
   };
 
-  const authState = reactive({
-    isConnected: false,
-    isLoading: false,
-    error: null as Error | null,
-  });
-
   const bindEventListeners = () => {
     if (!web3auth.value) return;
 
     web3auth.value.on("connected", async () => {
+      authState.isLoading = false;
       authState.isConnected = true;
-      console.log("Web3Auth connected");
       try {
         const wallet = new SolanaWallet(web3auth.value.provider);
         solanaWallet.value = wallet;
@@ -88,6 +87,10 @@ export const useWeb3Auth = () => {
       } catch (e) {
         authState.error = e as Error;
       }
+    });
+
+    web3auth.value.on("connecting", () => {
+      authState.isLoading = true;
     });
 
     web3auth.value.on("disconnected", () => {
@@ -129,13 +132,11 @@ export const useWeb3Auth = () => {
         const userInfo = await web3auth.value.getUserInfo();
         return userInfo as UserInfo;
       },
-      enabled: computed(() => !!web3auth.value && authState.isConnected),
-      //cache this extremely long
-      staleTime: 1000 * 60 * 60 * 24,
+      enabled: computed(() => !!web3auth.value && !!authState.isConnected),
+      staleTime: 1000 * 60 * 10, // 10 minutes
     });
 
   const init = async () => {
-    console.log("Initializing Web3Auth");
     web3auth.value = new Web3AuthNoModal(web3AuthOptions);
     if (!web3auth.value) throw new Error("Web3Auth not initialized");
     web3auth.value.configureAdapter(authAdapter);

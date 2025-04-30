@@ -11,6 +11,7 @@ export const useFetchManagerNodes = () => {
     queryFn: async () => {
       const managers = config.public.EFFECT_MANAGERS;
 
+      console.log(managers);
       const results = await Promise.all(
         managers.map(async (manager) => {
           const { data } = await useFetch<ManagerInfoResponse>(manager);
