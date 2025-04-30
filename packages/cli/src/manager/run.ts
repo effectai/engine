@@ -43,7 +43,11 @@ function addLog(message: string) {
   renderScreen();
 }
 
-async function startManager(privateKeyPath: string, announceAddr?: string) {
+async function startManager(
+  privateKeyPath: string,
+  announceAddr?: string,
+  port?: number,
+) {
   if (manager) {
     addLog("Manager already started.");
     return;
@@ -66,7 +70,7 @@ async function startManager(privateKeyPath: string, announceAddr?: string) {
       settings: {
         autoManage: true,
         announce: announceAddr ? [announceAddr] : [],
-        port: 11955,
+        port: port ? port : 11995,
         paymentBatchSize: 60,
         requireAccessCodes: true,
       },
@@ -117,11 +121,11 @@ async function showActiveTasks() {
 
 async function handleInput(
   input: string,
-  options: { privateKey: string; announce?: string },
+  options: { privateKey: string; announce?: string; port?: number },
 ) {
   switch (input.trim()) {
     case "0":
-      await startManager(options.privateKey, options.announce);
+      await startManager(options.privateKey, options.announce, options.port);
       break;
     case "1":
       await stopManager();
@@ -164,6 +168,7 @@ runCommand
     "Path to manager private key file",
   )
   .option("--announce <multiaddr>", "Libp2p announce address")
+  .option("--port <port>", "Libp2p port", "11995")
   .action(async (options) => {
     try {
       addLog("Manager CLI started");
