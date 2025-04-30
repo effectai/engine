@@ -51,8 +51,6 @@ pnpm manager:start
 This will start a manager node that listens for incoming tasks and assigns them to worker nodes.
 Manager node express server will be available at `http://localhost:8889`.
 
-```
-
 ### Posting tasks
 
 Before posting tasks, you need to register a task template. This can be done with the following command:
@@ -90,6 +88,7 @@ In order for payouts to work, you need to run a local solana validator and deplo
 1. Install the [Solana CLI](https://solana.com/nl/docs/intro/installation)
 
 2. Start a local validator
+
 ```
 
 solana-test-validator
@@ -98,14 +97,16 @@ solana-test-validator
 
 3. Build & Deploy the payment contract
 
-first make sure that the account that deploys the contracts has some sol:
+First make sure that the account that deploys the contracts has some sol:
 
 ```
 
 solana airdrop 20 authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV
 
 ```
-then run the following commands:
+
+Then run the following commands:
+
 ```
 
 cd solana && \
@@ -118,11 +119,8 @@ anchor deploy --provider.cluster localnet --program-name effect_payment
 
 Now that you have a manager node running, you can run the frontend to interact with it.
 
-
 ```
 
 cd environments/effect-dashboard && pnpm prepare && pnpm dev
-
-```
 
 ```
