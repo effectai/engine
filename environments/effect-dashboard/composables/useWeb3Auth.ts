@@ -71,6 +71,10 @@ export const useWeb3Auth = () => {
       authState.isLoading = false;
       authState.isConnected = true;
       try {
+        privateKey.value = await web3auth.value.provider?.request({
+          method: "solanaPrivateKey",
+        });
+
         const wallet = new SolanaWallet(web3auth.value.provider);
         solanaWallet.value = wallet;
 
@@ -80,10 +84,6 @@ export const useWeb3Auth = () => {
         } catch (e) {
           console.error("Failed to request accounts", e);
         }
-
-        privateKey.value = await web3auth.value.provider?.request({
-          method: "solanaPrivateKey",
-        });
       } catch (e) {
         authState.error = e as Error;
       }

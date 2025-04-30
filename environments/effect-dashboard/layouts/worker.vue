@@ -107,7 +107,11 @@
               />
 
               <!-- Wallet dropdown -->
-              <Menu as="div" class="relative inline-block text-left">
+              <Menu
+                as="div"
+                class="relative inline-block text-left"
+                v-if="user"
+              >
                 <MenuButton
                   class="-m-1.5 flex items-center p-1.5 focus:outline-none"
                 >

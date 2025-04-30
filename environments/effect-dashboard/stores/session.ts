@@ -59,16 +59,10 @@ export const useSessionStore = defineStore("session", () => {
   const useConnect = () =>
     useMutation({
       onSuccess: (data, opts) => {
-        const managerPeerId = multiaddr(opts.managerMultiAddress).getPeerId();
-
-        if (!managerPeerId) {
-          throw new Error("Invalid multiaddr");
-        }
-
         setSession({
           account: opts.account,
           connectedOn: data.timestamp,
-          managerPeerId: managerPeerId,
+          managerPeerId: opts.managerPeerId,
           managerPublicKey: opts.managerPublicKey,
           accessCode: opts.accessCode,
           managerMultiAddress: opts.managerMultiAddress,
@@ -83,16 +77,11 @@ export const useSessionStore = defineStore("session", () => {
       }: {
         account: string;
         managerMultiAddress: string;
+        managerPeerId: string;
         managerPublicKey: string;
-        accessCode?: string;
         nextNonce: bigint;
+        accessCode?: string;
       }): Promise<Awaited<ReturnType<typeof connect>>> => {
-        const peerId = multiaddr(managerMultiAddress).getPeerId();
-
-        if (!peerId) {
-          throw new Error("Invalid multiaddr");
-        }
-
         return await connect(
           account,
           managerMultiAddress,

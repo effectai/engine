@@ -76,10 +76,11 @@
             color="white"
             variant="outline"
             class="justify-start gap-2"
+            :disabled="true"
             @click="navigateTo('/worker/login/with-private-key')"
           >
             <UIcon name="i-logos-solana-icon" />
-            Private Key (advanced)
+            Private Key (coming soon)
           </UButton>
         </div>
       </div>

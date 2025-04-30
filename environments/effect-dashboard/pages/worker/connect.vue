@@ -81,7 +81,7 @@
           class="mt-5"
           :disabled="!selectedManager || !nextNonce"
           @click="stepAccessCode = true"
-          :loading="isPending"
+          :loading="isPending || isFetchingNonce"
         >
           Connect
         </UButton>
@@ -117,7 +117,7 @@ const selectedManagerPeerId = computed(() => {
   return selectedManager.value?.peerId.toString();
 });
 
-const { data: nextNonce } = useNextNonce(
+const { data: nextNonce, isFetching: isFetchingNonce } = useNextNonce(
   selectedManagerPublicKey,
   selectedManagerPeerId,
 );
@@ -148,7 +148,7 @@ const connectHandler = async () => {
 
       navigateTo("/worker");
     } catch (e) {
-      console.error("Error connecting to worker: ", e);
+      console.error("Error connecting to manager: ", e);
       toast.add({
         color: "red",
         title: "Connection Error",
