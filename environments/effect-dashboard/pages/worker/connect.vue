@@ -1,90 +1,176 @@
 <template>
-  <UCard class="p-6 space-y-6">
-    <h1 class="text-2xl font-bold my-5">Connect to a Manager Node</h1>
-    <p class="text-gray-500 mb-3">
-      Please select a manager node to connect to. You can choose any of the
-      available nodes.
-    </p>
+  <UCard
+    class="p-6"
+    :ui="{
+      base: 'relative overflow-hidden',
+      ring: '',
+      divide: 'divide-y divide-gray-200 dark:divide-gray-700',
+      body: {
+        padding: 'px-0 py-0 sm:p-0',
+      },
+    }"
+  >
+    <!-- Header Section -->
+    <template #header>
+      <div class="space-y-1">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+          Connect to a Manager Node
+        </h1>
+        <p class="text-gray-500 dark:text-gray-400">
+          Select a manager node from the available options below
+        </p>
+      </div>
+    </template>
 
-    <div v-if="isFetching" class="text-gray-500">Fetching manager nodes...</div>
-
-    <div v-else-if="isError" class="text-red-500">
-      <p>Unable to fetch manager nodes. Please try again later.</p>
+    <!-- Loading State -->
+    <div v-if="isFetching" class="p-6 text-center">
+      <div class="flex justify-center items-center space-x-2 text-gray-500">
+        <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin" />
+        <span>Fetching manager nodes...</span>
+      </div>
     </div>
 
-    <div v-else-if="managers && managers.length === 0" class="text-gray-500">
-      <p class="font-bold">No manager nodes available right now.</p>
+    <!-- Error State -->
+    <div v-else-if="isError" class="p-6">
+      <UAlert
+        icon="i-heroicons-exclamation-circle"
+        color="red"
+        variant="subtle"
+        title="Connection Error"
+        description="Unable to fetch manager nodes. Please try again later."
+      />
     </div>
 
-    <div v-else class="space-y-3">
-      <div v-if="stepAccessCode">
-        <div>
-          This manager requires an access code to connect. Please enter the code
-          <UInput v-model="accessCode" />
+    <!-- Empty State -->
+    <div v-else-if="managers && managers.length === 0" class="p-6 text-center">
+      <UAlert
+        icon="i-heroicons-information-circle"
+        color="blue"
+        variant="subtle"
+        title="No Nodes Available"
+        description="There are currently no manager nodes available."
+      />
+    </div>
 
+    <!-- Content Section -->
+    <div v-else class="space-y-4 p-6">
+      <!-- Access Code Step -->
+      <div v-if="stepAccessCode" class="space-y-4">
+        <UAlert
+          icon="i-heroicons-lock-closed"
+          color="primary"
+          variant="subtle"
+          title="Access Required"
+          description="This manager requires an access code to connect."
+          class="mb-4"
+        />
+
+        <UFormGroup label="Access Code" class="space-y-2">
+          <UInput
+            v-model="accessCode"
+            placeholder="Enter access code"
+            size="md"
+            autofocus
+          />
+        </UFormGroup>
+
+        <div class="flex justify-end pt-2">
           <UButton
-            color="black"
-            class="mt-4"
+            color="gray"
+            variant="solid"
             :disabled="!selectedManager"
             @click="connectHandler"
             :loading="isPending"
+            class="font-medium"
           >
             Connect
           </UButton>
         </div>
       </div>
 
-      <div v-else>
+      <!-- Node Selection Step -->
+      <div v-else class="space-y-3">
         <div
           v-for="(manager, index) in managers"
           :key="index"
-          class="p-4 my-3 rounded-md border hover:bg-gray-50 transition cursor-pointer"
+          class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
         >
           <URadio
-            v-if="manager"
             v-model="selectedManager"
             :value="manager"
             class="w-full"
-            :ui="{ color: 'black' }"
+            :ui="{ color: 'primary' }"
           >
             <template #label>
               <div
-                class="flex flex-col sm:flex-row sm:items-center sm:gap-3 font-mono text-sm"
+                class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 font-mono text-sm"
               >
-                <div class="flex items-center gap-1">
-                  <span class="text-gray-400">{{ index + 1 }}:</span>
-                  <span>{{ extractHost(manager.announcedAddresses[0]) }}</span>
+                <!-- Node Number -->
+                <div
+                  class="flex items-center gap-1 text-gray-500 dark:text-gray-400"
+                >
+                  <span>#{{ index + 1 }}</span>
                 </div>
-                <div class="hidden sm:block text-gray-300">|</div>
+
+                <!-- Host -->
                 <div class="flex items-center gap-1">
-                  <span>{{ sliceBoth(manager.peerId) }}</span>
+                  <UIcon
+                    name="i-heroicons-server"
+                    class="w-4 h-4 text-gray-400"
+                  />
+                  <span class="text-gray-900 dark:text-gray-200">
+                    {{ extractHost(manager.announcedAddresses[0]) }}
+                  </span>
                 </div>
-                <div class="hidden sm:block text-gray-300">|</div>
+
+                <!-- Peer ID -->
                 <div class="flex items-center gap-1">
-                  <span>Version:</span>
-                  <span>{{ manager.version }}</span>
+                  <UIcon
+                    name="i-heroicons-finger-print"
+                    class="w-4 h-4 text-gray-400"
+                  />
+                  <span class="text-gray-700 dark:text-gray-300">
+                    {{ sliceBoth(manager.peerId) }}
+                  </span>
                 </div>
-                <div class="hidden sm:block text-gray-300">|</div>
+
+                <!-- Version -->
                 <div class="flex items-center gap-1">
-                  <span>Latency:</span>
-                  <span>{{ manager.latency }}ms</span>
+                  <UIcon name="i-heroicons-tag" class="w-4 h-4 text-gray-400" />
+                  <span class="text-gray-700 dark:text-gray-300">
+                    v{{ manager.version }}
+                  </span>
+                </div>
+
+                <!-- Latency -->
+                <div class="flex items-center gap-1">
+                  <UIcon
+                    name="i-heroicons-clock"
+                    class="w-4 h-4 text-gray-400"
+                  />
+                  <span class="text-gray-700 dark:text-gray-300">
+                    {{ manager.latency }}ms
+                  </span>
                 </div>
               </div>
             </template>
           </URadio>
         </div>
-        <UButton
-          color="black"
-          class="mt-5"
-          :disabled="!selectedManager || !nextNonce"
-          @click="stepAccessCode = true"
-          :loading="isPending || isFetchingNonce"
-        >
-          Connect
-        </UButton>
+
+        <div class="flex justify-end pt-4">
+          <UButton
+            color="gray"
+            variant="solid"
+            :disabled="!selectedManager || !nextNonce"
+            @click="stepAccessCode = true"
+            :loading="isPending || isFetchingNonce"
+            class="font-medium"
+          >
+            Continue
+          </UButton>
+        </div>
       </div>
     </div>
-    <div class="pt-4"></div>
   </UCard>
 </template>
 
