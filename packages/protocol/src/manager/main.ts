@@ -146,8 +146,6 @@ export const createManager = async ({
     .onMessage(
       "requestToWork",
       async ({ recipient, nonce, accessCode }, { peerId }) => {
-        console.log(recipient, nonce, accessCode);
-
         await workerManager.connectWorker(
           peerId.toString(),
           recipient,

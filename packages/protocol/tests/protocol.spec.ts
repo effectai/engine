@@ -27,6 +27,7 @@ import type { WorkerTaskRecord } from "../src/worker/stores/workerTaskStore.js";
 
 import { promises } from "node:fs";
 import { Keypair } from "@solana/web3.js";
+import { PAYMENT_BATCH_SIZE } from "../src/manager/consts.js";
 
 describe("Complete Task Lifecycle", () => {
   let manager: Awaited<ReturnType<typeof createManager>>;
@@ -68,7 +69,6 @@ describe("Complete Task Lifecycle", () => {
         listen: ["/ip4/0.0.0.0/tcp/0/ws"],
         autoManage: false,
         requireAccessCodes: false,
-        paymentBatchSize: 60,
       },
     });
 

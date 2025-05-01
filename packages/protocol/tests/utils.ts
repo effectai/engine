@@ -1,11 +1,11 @@
 import type { TypedEventEmitter } from "@libp2p/interface";
 import { LevelDatastore } from "datastore-level";
-import { MockedFunction, vi } from "vitest";
+import { vi } from "vitest";
 import type { ManagerEvents } from "../src/manager/main";
 import type { WorkerEvents } from "../src/worker/main";
 import { Key } from "interface-datastore";
-import { Template } from "../src/core/messages/effect";
-import { computeTemplateId } from "../src/core/utils";
+import { Template } from "../src/core";
+import { computeTemplateId } from "../src/manager/utils";
 
 export const createDataStore = async (path: string) => {
   const datastore = new LevelDatastore(path);

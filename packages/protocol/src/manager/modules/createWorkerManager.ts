@@ -23,9 +23,11 @@ const createWorkerQueue = () => {
     if (workerPeerId) {
       const index = queue.findIndex((peer) => peer === workerPeerId);
       if (index !== -1) {
-        return queue.splice(index, 1)[0];
+        const worker = queue.splice(index, 1)[0];
+        queue.push(worker);
+        return worker;
       } else {
-        return undefined; // worker not found
+        return undefined;
       }
     } else {
       const peer = queue.shift();
@@ -165,8 +167,8 @@ export const createWorkerManager = ({
       }
 
       const busy = await isBusy(worker);
+
       if (!busy) {
-        // Found a non-busy worker
         workerQueue.dequeuePeer(workerId);
         return workerId;
       }

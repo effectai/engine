@@ -103,6 +103,9 @@ describe("createWorkerManager", () => {
       //expect worker 2 to be busy
       selectedWorker = await workerManager.selectWorker();
       expect(selectedWorker).toBe("worker3");
+
+      //expect to have 3 workers in the queue
+      expect(workerManager.workerQueue.queue).toHaveLength(3);
     });
   });
 });
