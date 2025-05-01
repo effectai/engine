@@ -75,6 +75,7 @@ async function startManager(
         port: port ? port : 11995,
         paymentBatchSize: 60,
         requireAccessCodes: true,
+        paymentAccount,
       },
     });
 
@@ -190,7 +191,8 @@ async function startPrompt(options: {
 
 runCommand
   .name("run")
-  .requiredOption("-p, --payment-account <address>", "Payment account address")
+  .option("--payment-account <address>", "Payment account address")
+  .option("--no-payments", "Disable payments")
   .requiredOption(
     "-k, --private-key <path>",
     "Path to manager private key file",
@@ -199,6 +201,12 @@ runCommand
   .option("--port <port>", "Libp2p port", "11995")
   .action(async (options) => {
     try {
+      if (options.payments !== false && !options.paymentAccount) {
+        console.error(
+          "Error: --payment-account is required unless --no-payments is specified",
+        );
+        process.exit(1);
+      }
       addLog("Manager CLI started");
       await startPrompt(options);
     } catch (e) {
