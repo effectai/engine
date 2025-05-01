@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { peerIdFromString } from "@libp2p/peer-id";
 import { TASK_ACCEPTANCE_TIME } from "../consts.js";
-import type { ManagerEntity, ManagerEvents } from "../main.js";
+import type { ManagerEntity, ManagerEvents, ManagerSettings } from "../main.js";
 import type { createPaymentManager } from "./createPaymentManager.js";
 import type {
   ManagerTaskRecord,
@@ -28,6 +28,7 @@ export function createTaskManager({
 
   taskStore,
   templateStore,
+  managerSettings,
 }: {
   manager: ManagerEntity;
 
@@ -38,6 +39,8 @@ export function createTaskManager({
 
   taskStore: ManagerTaskStore;
   templateStore: TemplateStore;
+
+  managerSettings: ManagerSettings;
 }) {
   const isExpired = (timestamp: number, value: number) =>
     timestamp + value < Math.floor(Date.now() / 1000);
@@ -204,12 +207,14 @@ export function createTaskManager({
     taskRecord: ManagerTaskRecord,
     event: TaskSubmissionEvent,
   ) => {
+    if (!managerSettings.paymentAccount) {
+      throw new Error("Payment account not set, cannot process payout");
+    }
+
     const payment = await paymentManager.generatePayment({
       peerId: peerIdFromString(event.submissionByPeer),
       amount: taskRecord.state.reward,
-      paymentAccount: new PublicKey(
-        "796qppG6jGia39AE8KLENa2mpRp5VCtm48J8JsokmwEL",
-      ),
+      paymentAccount: new PublicKey(managerSettings.paymentAccount),
       label: `Payment for task: ${taskRecord.state.id}`,
     });
 

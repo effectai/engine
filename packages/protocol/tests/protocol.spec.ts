@@ -62,6 +62,9 @@ describe("Complete Task Lifecycle", () => {
       randomBytes(32),
     );
 
+    //fake a payout account
+    const pk = new Keypair();
+
     manager = await createManager({
       datastore: managerDatastore,
       privateKey: managerPrivateKey,
@@ -69,6 +72,7 @@ describe("Complete Task Lifecycle", () => {
         listen: ["/ip4/0.0.0.0/tcp/0/ws"],
         autoManage: false,
         requireAccessCodes: false,
+        paymentAccount: pk.publicKey.toBase58(),
       },
     });
 

@@ -53,11 +53,21 @@ export const useWorkerStore = defineStore("worker", () => {
     await initialize(privateKeyBytes);
   });
 
+  const destroy = async () => {
+    if (worker.value) {
+      await worker.value.stop();
+      worker.value.events.removeEventListener("task:created");
+      worker.value.events.removeEventListener("payment:created");
+      worker.value = null;
+    }
+  };
+
   return {
     worker,
     workerPeerId,
     initialize,
     ping,
+    destroy,
     taskCounter,
     paymentCounter,
   };

@@ -26,7 +26,7 @@
                   <UIcon name="i-heroicons-check-circle-20-solid" />
                   Accept Task
                 </UButton>
-                <UButton color="black">
+                <UButton color="black" @click.stop="handlerRejectTask">
                   <UIcon name="i-heroicons-x-mark-20-solid" />
                   Reject Task
                 </UButton>
@@ -97,7 +97,14 @@ const handlerAcceptTask = async () => {
   if (!activeTask.value) return;
 
   const taskRecord = await acceptTask(activeTask.value.state.id);
-  console.log("taskRecord", taskRecord);
+  if (!taskRecord) {
+    toast.add({
+      title: "Error",
+      color: "red",
+      description: "Failed to accept task",
+    });
+    return;
+  }
 
   toast.add({
     title: "Success",
@@ -110,6 +117,23 @@ const handlerAcceptTask = async () => {
   });
 
   setActiveTask(taskRecord);
+};
+
+const handlerRejectTask = async () => {
+  if (!activeTask.value) return;
+
+  await rejectTask(activeTask.value.state.id, "Task rejected by worker");
+  toast.add({
+    title: "Success",
+    color: "green",
+    description: "Task rejected successfully",
+  });
+
+  await queryClient.invalidateQueries({
+    queryKey: ["tasks", "active"],
+  });
+
+  setActiveTask(null);
 };
 
 const handlerSubmitTask = async (data: Record<unknown, string | number>) => {

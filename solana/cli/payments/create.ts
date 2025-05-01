@@ -48,6 +48,7 @@ export const createPaymentPool: CommandModule<unknown, MigrationClaimOptions> =
       const ata = getAssociatedTokenAddressSync(mint, payer.publicKey);
 
       const managerPubKey = new PublicKey(
+        // "2Y6qpvAMTD63R3i5d99ujekBFkWUjereXrPmEuu5b8mw",
         "Zh3DBwEMAxU2uN8rq5Jmo54m2PoUPt6V89UGaiz6EYx",
       );
 

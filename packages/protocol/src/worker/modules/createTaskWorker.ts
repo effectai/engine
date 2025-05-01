@@ -159,21 +159,23 @@ export function createTaskWorker({
   };
 
   const rejectTask = async ({
-    peerId,
-    taskRecord,
+    taskId,
     reason,
   }: {
-    taskRecord: WorkerTaskRecord;
+    taskId: string;
     reason: string;
-    peerId: string;
   }) => {
     await taskStore.reject({
-      peerIdStr: peerId,
-      entityId: taskRecord.state.id,
+      entityId: taskId,
       reason,
     });
 
-    events.safeDispatchEvent("task:rejected", { detail: taskRecord });
+    events.safeDispatchEvent("task:rejected", {
+      detail: {
+        taskId,
+        reason,
+      },
+    });
   };
 
   //render task template html and prefill the data on the placeholders

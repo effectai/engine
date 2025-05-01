@@ -72,6 +72,10 @@ export const useTasks = () => {
     return await workerStore.worker?.acceptTask({ taskId });
   };
 
+  const rejectTask = async (taskId: string, reason: string) => {
+    return await workerStore.worker?.rejectTask({ taskId, reason });
+  };
+
   return {
     activeTask,
     useGetTasks,
@@ -84,5 +88,6 @@ export const useTasks = () => {
     acceptTask,
     getTaskDeadline,
     useTaskState,
+    rejectTask,
   };
 };

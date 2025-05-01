@@ -26,9 +26,9 @@ const authState = reactive({
   isLoading: false,
   error: null as Error | null,
 });
+const solanaWallet = ref<SolanaWallet | null>(null);
 
 export const useWeb3Auth = () => {
-  const solanaWallet = ref<SolanaWallet | null>(null);
   const privateKey = useLocalStorage<string | null>("privateKey", null);
 
   const clientId =
@@ -103,26 +103,27 @@ export const useWeb3Auth = () => {
     });
   };
 
-  const initMutation = useMutation({
-    mutationFn: async () => {
-      if (!web3auth.value) throw new Error("Web3Auth not initialized");
+  const initMutation = () =>
+    useMutation({
+      mutationFn: async () => {
+        if (!web3auth.value) throw new Error("Web3Auth not initialized");
 
-      bindEventListeners();
-      authState.isLoading = true;
+        bindEventListeners();
+        authState.isLoading = true;
 
-      await web3auth.value.init();
-    },
-    onSuccess: () => {
-      if (!web3auth.value) return;
-      authState.isConnected = web3auth.value.status === "connected";
-    },
-    onError: (error: unknown) => {
-      authState.error = error as Error;
-    },
-    onSettled: () => {
-      authState.isLoading = false;
-    },
-  });
+        await web3auth.value.init();
+      },
+      onSuccess: () => {
+        if (!web3auth.value) return;
+        authState.isConnected = web3auth.value.status === "connected";
+      },
+      onError: (error: unknown) => {
+        authState.error = error as Error;
+      },
+      onSettled: () => {
+        authState.isLoading = false;
+      },
+    });
 
   const useGetUserInfo = () =>
     useQuery({
@@ -141,7 +142,7 @@ export const useWeb3Auth = () => {
     if (!web3auth.value) throw new Error("Web3Auth not initialized");
     web3auth.value.configureAdapter(authAdapter);
 
-    await initMutation.mutateAsync();
+    await initMutation().mutateAsync();
   };
 
   const useLogout = (opts: MutationOptions<void, unknown> = {}) =>

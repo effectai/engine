@@ -1,11 +1,15 @@
 <template>
   <UCard class="">
+    <WorkerClaimPaymentsModal v-model="isOpenClaimModal" />
     <div class="justify-between text-lg font-bold mb-4 flex items-center gap-2">
       <h2 class="flex items-center">
         <UIcon name="i-lucide-dollar-sign" size="24" class="text-emerald-400" />
         PAYMENTS
       </h2>
-      <UButton :loading="isPending" color="black" @click="mutateClaimPayments"
+      <UButton
+        :loading="isPending"
+        color="black"
+        @click="isOpenClaimModal = true"
         >Claim</UButton
       >
     </div>
@@ -65,15 +69,13 @@
 </template>
 
 <script setup lang="ts">
-import { useMutation } from "@tanstack/vue-query";
-import type { PaymentRecord } from "@effectai/protocol";
-
 const { useGetPayments, useClaimPayments } = usePayments();
 const { data: payments } = useGetPayments();
-const { mutateAsync: claimPayments } = useClaimPayments();
 const sessionStore = useSessionStore();
 const { useGetNonce } = sessionStore.useActiveSession();
 const { data: nonces, isSuccess } = useGetNonce();
+
+const isOpenClaimModal = ref(false);
 
 const mutatedPayments = computed(
   () =>
@@ -98,57 +100,6 @@ const sortNonce = (a: bigint, b: bigint) => {
 
   return 0;
 };
-
-const { mutateAsync: mutateClaimPayments, isPending } = useMutation({
-  mutationFn: async () => {
-    const { useActiveSession } = useSessionStore();
-    const { account, managerPublicKey, managerPeerId } = useActiveSession();
-    const workerStore = useWorkerStore();
-    const { worker } = storeToRefs(workerStore);
-
-    if (!account.value || !managerPublicKey.value || !managerPeerId.value) {
-      console.error("No account or manager found");
-      return;
-    }
-
-    if (!nonces.value) {
-      console.error("No nonces found");
-      return;
-    }
-
-    let nonce = 0;
-    if (nonces.value.remoteNonce === null) {
-      nonce = 1;
-    } else {
-      nonce = Number.parseInt(nonces.value.remoteNonce.toString()) + 1;
-    }
-
-    const claimablePayments = await worker.value?.getPaymentsFromNonce({
-      nonce,
-      peerId: managerPeerId.value.toString(),
-    });
-
-    const sortedPayments = claimablePayments?.toSorted((a, b) => {
-      return a.state.nonce > b.state.nonce ? 1 : -1;
-    });
-
-    const result = chunkArray(sortedPayments, 40);
-    for (const paymentBatch of result) {
-      const payments = paymentBatch.map((payment: PaymentRecord) => {
-        return {
-          nonce: payment.state.nonce,
-          recipient: payment.state.recipient,
-          amount: payment.state.amount,
-          paymentAccount: payment.state.paymentAccount,
-          signature: payment.state.signature,
-        };
-      });
-
-      //claim payments
-      await claimPayments({ payments });
-    }
-  },
-});
 </script>
 
 <style scoped></style>

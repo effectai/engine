@@ -51,6 +51,7 @@ export type ManagerSettings = {
   announce: string[];
   paymentBatchSize: number;
   requireAccessCodes: boolean;
+  paymentAccount: string | null;
 };
 
 export const createManagerEntity = async ({
@@ -100,7 +101,14 @@ export const createManager = async ({
     announce: settings.announce ?? [],
     paymentBatchSize: settings.paymentBatchSize ?? PAYMENT_BATCH_SIZE,
     requireAccessCodes: settings.requireAccessCodes ?? true,
+    paymentAccount: settings.paymentAccount ?? null,
   };
+
+  if (!managerSettings.paymentAccount) {
+    managerLogger.warn(
+      "No payment account provided. Payments will not be processed.",
+    );
+  }
 
   // create the entity
   const entity = await createManagerEntity({
@@ -128,15 +136,16 @@ export const createManager = async ({
     workerManager,
     privateKey,
     paymentStore,
+    managerSettings,
   });
 
   const taskManager = createTaskManager({
     manager: entity,
     events,
-
     taskStore,
     templateStore,
 
+    managerSettings,
     paymentManager,
     workerManager,
   });
@@ -226,6 +235,7 @@ export const createManager = async ({
   entity.post("/task", async (req, res) => {
     const task = req.body;
     try {
+      console.log("Received task:", task);
       //save task in manager store
       await taskManager.createTask({
         task,

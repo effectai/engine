@@ -35,7 +35,7 @@ export const useNextNonce = (
 
       const maxLocalNonce =
         (await worker.value.getMaxNonce({
-          managerPeerIdStr: unref(managerPeerIdStr),
+          managerPeerIdStr: managerPeerIdStr.value,
         })) ?? 0;
 
       const remoteBigInt = remoteNonce !== null ? BigInt(remoteNonce) : 0n;

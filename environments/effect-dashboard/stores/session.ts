@@ -49,8 +49,8 @@ export const useSessionStore = defineStore("session", () => {
       accessCode,
       useGetNonce: () => {
         return useNextNonce(
-          ref(account.value?.toString()),
           ref(managerPublicKey.value?.toString()),
+          ref(managerPeerId.value?.toString()),
         );
       },
     };
@@ -129,10 +129,11 @@ export const useSessionStore = defineStore("session", () => {
         }
 
         await worker.value.stop();
+        await workerStore.destroy();
 
         account.value = null;
         connectedOn.value = null;
-        managerPeerId.value = "";
+        managerPeerId.value = null;
         managerPublicKey.value = null;
         accessCode.value = undefined;
       },

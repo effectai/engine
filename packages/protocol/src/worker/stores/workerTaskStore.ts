@@ -193,7 +193,6 @@ export const createWorkerTaskStore = ({
     reason,
   }: {
     entityId: string;
-    peerIdStr: string;
     reason: string;
   }): Promise<void> => {
     const taskRecord = await getTask({ entityId });

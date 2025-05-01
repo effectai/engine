@@ -898,6 +898,7 @@ export interface Signals {
   minNonce: string
   maxNonce: string
   amount: bigint
+  paymentAccount: string
 }
 
 export namespace Signals {
@@ -925,6 +926,11 @@ export namespace Signals {
           w.uint64(obj.amount)
         }
 
+        if ((obj.paymentAccount != null && obj.paymentAccount !== '')) {
+          w.uint32(34)
+          w.string(obj.paymentAccount)
+        }
+
         if (opts.lengthDelimited !== false) {
           w.ldelim()
         }
@@ -932,7 +938,8 @@ export namespace Signals {
         const obj: any = {
           minNonce: '',
           maxNonce: '',
-          amount: 0n
+          amount: 0n,
+          paymentAccount: ''
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -951,6 +958,10 @@ export namespace Signals {
             }
             case 3: {
               obj.amount = reader.uint64()
+              break
+            }
+            case 4: {
+              obj.paymentAccount = reader.string()
               break
             }
             default: {
@@ -1201,6 +1212,7 @@ export namespace ProofRequest {
     amount: bigint
     nonce: bigint
     recipient: string
+    paymentAccount: string
   }
 
   export namespace PaymentProof {
@@ -1233,6 +1245,11 @@ export namespace ProofRequest {
             w.string(obj.recipient)
           }
 
+          if ((obj.paymentAccount != null && obj.paymentAccount !== '')) {
+            w.uint32(42)
+            w.string(obj.paymentAccount)
+          }
+
           if (opts.lengthDelimited !== false) {
             w.ldelim()
           }
@@ -1240,7 +1257,8 @@ export namespace ProofRequest {
           const obj: any = {
             amount: 0n,
             nonce: 0n,
-            recipient: ''
+            recipient: '',
+            paymentAccount: ''
           }
 
           const end = length == null ? reader.len : reader.pos + length
@@ -1265,6 +1283,10 @@ export namespace ProofRequest {
               }
               case 4: {
                 obj.recipient = reader.string()
+                break
+              }
+              case 5: {
+                obj.paymentAccount = reader.string()
                 break
               }
               default: {

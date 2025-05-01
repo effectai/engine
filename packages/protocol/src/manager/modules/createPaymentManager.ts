@@ -18,15 +18,18 @@ import {
 import type { PaymentStore } from "../../core/common/stores/paymentStore.js";
 import { createWorkerManager } from "./createWorkerManager.js";
 import { PAYMENT_BATCH_SIZE } from "../consts.js";
+import { ManagerSettings } from "../main.js";
 
 export async function createPaymentManager({
   paymentStore,
   privateKey,
   workerManager,
+  managerSettings,
 }: {
   privateKey: PrivateKey;
   paymentStore: PaymentStore;
   workerManager: ReturnType<typeof createWorkerManager>;
+  managerSettings: ManagerSettings;
 }) {
   const eddsa = await buildEddsa();
   const poseidon = await buildPoseidon();
@@ -41,12 +44,14 @@ export async function createPaymentManager({
     const currentTime = Math.floor(Date.now() / 1000);
     const secondsSinceLastPayout = currentTime - worker.state.lastPayout;
 
+    if (!managerSettings.paymentAccount) {
+      throw new Error("Payment account not set, cannot process payout");
+    }
+
     const payment = await generatePayment({
       peerId,
       amount: BigInt(secondsSinceLastPayout * 1_000_0),
-      paymentAccount: new PublicKey(
-        "8Ex7XokfTdr1MAMZXgN3e5eQWJ6H9u5KbnPC8CLcYgH5",
-      ),
+      paymentAccount: new PublicKey(managerSettings.paymentAccount),
       label: `Payout for ${secondsSinceLastPayout} seconds of online time`,
     });
 
@@ -83,6 +88,8 @@ export async function createPaymentManager({
     const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
     const batchSize = payments.length;
 
+    //make sure the payments all have the same payment account, and it matches our payment account.
+
     const enabled = Array(PAYMENT_BATCH_SIZE).fill(0).fill(1, 0, batchSize);
 
     const padArray = <T>(arr: T[], defaultValue: T): T[] =>
@@ -91,9 +98,26 @@ export async function createPaymentManager({
         .slice(0, PAYMENT_BATCH_SIZE);
 
     const uniqueRecipients = new Set(payments.map((p) => p.recipient));
+    const uniquePaymentAccounts = new Set(
+      payments.map((p) => p.paymentAccount),
+    );
 
     if (uniqueRecipients.size > 1) {
       throw new Error("Only one type of recipient per batch is supported");
+    }
+
+    if (uniquePaymentAccounts.size > 1) {
+      throw new Error(
+        "Only one type of payment account per batch is supported",
+      );
+    }
+
+    const paymentAccount = uniquePaymentAccounts.values().next().value;
+    //get the payment account and check if it matches our payment account.
+    if (paymentAccount !== managerSettings.paymentAccount) {
+      throw new Error(
+        "Payment account does not match the expected payment account",
+      );
     }
 
     const lastNonce = payments[payments.length - 1].nonce;
@@ -145,7 +169,7 @@ export async function createPaymentManager({
       zkeyPath,
     );
 
-    return { proof, publicSignals, pubKey };
+    return { proof, publicSignals, pubKey, paymentAccount };
   };
 
   const generatePayment = async ({
@@ -218,10 +242,8 @@ export async function createPaymentManager({
     payments: ProofRequest.PaymentProof[];
   }) => {
     try {
-      const { proof, pubKey, publicSignals } = await generatePaymentProof(
-        privateKey,
-        payments,
-      );
+      const { proof, pubKey, publicSignals, paymentAccount } =
+        await generatePaymentProof(privateKey, payments);
 
       const proofResponse: EffectProtocolMessage = {
         proofResponse: {
@@ -233,6 +255,7 @@ export async function createPaymentManager({
             minNonce: publicSignals[0],
             maxNonce: publicSignals[1],
             amount: BigInt(publicSignals[2]),
+            paymentAccount: paymentAccount,
           },
           piA: proof.pi_a,
           piB: [

@@ -16,10 +16,38 @@ export const usePayments = () => {
       placeholderData: keepPreviousData,
     });
 
+  const useGetClaimablePayments = () => {
+    const { worker } = storeToRefs(workerStore);
+    const sessionStore = useSessionStore();
+    const { managerPeerId, useGetNonce } = sessionStore.useActiveSession();
+
+    const { data: nonces } = useGetNonce();
+
+    return useQuery({
+      queryKey: ["claimable-payments", paymentCounter],
+      enabled: computed(() => !!nonces.value?.localNonce),
+      queryFn: async () => {
+        if (!worker.value || !managerPeerId.value) {
+          throw new Error("Worker is not initialized");
+        }
+
+        const nonce = nonces.value?.remoteNonce || 0;
+
+        const data = await worker.value.getPaymentsFromNonce({
+          nonce: Number.parseInt(nonce.toString()) + 1,
+          peerId: managerPeerId.value,
+        });
+
+        return data;
+      },
+    });
+  };
+
   const useClaimPayments = () =>
     useMutation({
       mutationFn: async ({ payments }: { payments: Payment[] }) => {
         const { claimWithProof } = usePaymentProgram();
+
         const sessionStore = useSessionStore();
         const { managerPeerId } = sessionStore.useActiveSession();
 
@@ -47,5 +75,6 @@ export const usePayments = () => {
   return {
     useGetPayments,
     useClaimPayments,
+    useGetClaimablePayments,
   };
 };

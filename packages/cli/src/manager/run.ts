@@ -23,8 +23,9 @@ const menu = `
 [0] Start Manager
 [1] Stop Manager
 [2] Show Workers
-[3] Ban Workers
+[3] Show Active Tasks 
 [4] Show Task Templates
+[5] Ban Peers
 [6] Generate access code
 [7] Exit
 `;
@@ -45,6 +46,7 @@ function addLog(message: string) {
 
 async function startManager(
   privateKeyPath: string,
+  paymentAccount: string,
   announceAddr?: string,
   port?: number,
 ) {
@@ -93,7 +95,9 @@ async function stopManager() {
     addLog("Manager not running.");
     return;
   }
+
   await manager.stop();
+
   manager = null;
   addLog("Manager stopped.");
 }
@@ -103,6 +107,7 @@ async function showConnectedPeers() {
     addLog("Manager not running.");
     return;
   }
+
   const peers = manager.workerManager.workerQueue.getQueue();
   addLog("Connected Peers: " + peers.join(", "));
 }
@@ -121,11 +126,21 @@ async function showActiveTasks() {
 
 async function handleInput(
   input: string,
-  options: { privateKey: string; announce?: string; port?: number },
+  options: {
+    paymentAccount: string;
+    privateKey: string;
+    announce?: string;
+    port?: number;
+  },
 ) {
   switch (input.trim()) {
     case "0":
-      await startManager(options.privateKey, options.announce, options.port);
+      await startManager(
+        options.privateKey,
+        options.paymentAccount,
+        options.announce,
+        options.port,
+      );
       break;
     case "1":
       await stopManager();
@@ -136,6 +151,14 @@ async function handleInput(
     case "3":
       await showActiveTasks();
       break;
+    case "4": {
+      // await showTemplates()
+      break;
+    }
+    case "5": {
+      //ban peers
+      break;
+    }
     case "6": {
       if (!manager) {
         addLog("Manager not running.");
@@ -156,13 +179,18 @@ async function handleInput(
   }
 }
 
-async function startPrompt(options: { privateKey: string; announce?: string }) {
+async function startPrompt(options: {
+  paymentAccount: string;
+  privateKey: string;
+  announce?: string;
+}) {
   renderScreen();
   rl.on("line", (input) => handleInput(input, options));
 }
 
 runCommand
   .name("run")
+  .requiredOption("-p, --payment-account <address>", "Payment account address")
   .requiredOption(
     "-k, --private-key <path>",
     "Path to manager private key file",
