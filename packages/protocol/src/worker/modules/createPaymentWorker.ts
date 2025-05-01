@@ -97,11 +97,18 @@ export function createPaymentWorker({
       payments,
     };
 
-    return await entity.sendMessage(peerIdFromString(managerPeerIdStr), {
-      proofRequest: {
-        ...proofRequestMessage,
+    return await entity.sendMessage(
+      peerIdFromString(managerPeerIdStr),
+      {
+        proofRequest: {
+          ...proofRequestMessage,
+        },
       },
-    });
+      {
+        //long timeout to allow for large batches
+        timeout: 60_000,
+      },
+    );
   };
 
   const getMaxNonce = async ({

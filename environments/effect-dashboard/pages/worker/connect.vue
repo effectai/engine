@@ -12,10 +12,7 @@
       <p>Unable to fetch manager nodes. Please try again later.</p>
     </div>
 
-    <div
-      v-else-if="filteredManagers && filteredManagers.length === 0"
-      class="text-gray-500"
-    >
+    <div v-else-if="managers && managers.length === 0" class="text-gray-500">
       <p class="font-bold">No manager nodes available right now.</p>
     </div>
 
@@ -101,7 +98,6 @@ definePageMeta({
 });
 
 const { data: managers, isFetching, isError } = useFetchManagerNodes();
-const filteredManagers = computed(() => managers.value?.filter((m) => m));
 const selectedManager = ref<ManagerInfoResponse | null>(null);
 const accessCode = ref<string | null>(null);
 const stepAccessCode = ref(false);

@@ -132,7 +132,7 @@ const { mutateAsync: mutateClaimPayments, isPending } = useMutation({
       return a.state.nonce > b.state.nonce ? 1 : -1;
     });
 
-    const result = chunkArray(sortedPayments, 60);
+    const result = chunkArray(sortedPayments, 40);
     for (const paymentBatch of result) {
       const payments = paymentBatch.map((payment: PaymentRecord) => {
         return {

@@ -11,7 +11,6 @@ export const useFetchManagerNodes = () => {
     queryFn: async () => {
       const managers = config.public.EFFECT_MANAGERS;
 
-      console.log(managers);
       const results = await Promise.all(
         managers.map(async (manager) => {
           const { data } = await useFetch<ManagerInfoResponse>(manager);
@@ -24,8 +23,6 @@ export const useFetchManagerNodes = () => {
             multiaddr(data.value.announcedAddresses[0]),
           );
 
-          console.log(latency);
-
           return {
             ...data.value,
             latency,
@@ -33,7 +30,9 @@ export const useFetchManagerNodes = () => {
         }),
       );
 
-      return results;
+      return results.filter(
+        (result) => result !== null,
+      ) as ManagerInfoResponse[];
     },
   });
 

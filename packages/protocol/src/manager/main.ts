@@ -20,6 +20,7 @@ import { managerLogger } from "../core/logging.js";
 import { createWorkerManager } from "./modules/createWorkerManager.js";
 import { bigIntToBytes32, compressBabyJubJubPubKey } from "./utils.js";
 import { PublicKey } from "@solana/web3.js";
+import { PAYMENT_BATCH_SIZE } from "./consts.js";
 
 export type ManagerInfoResponse = {
   status: string;
@@ -97,7 +98,7 @@ export const createManager = async ({
     autoManage: settings.autoManage ?? true,
     listen: settings.listen ?? [`/ip4/0.0.0.0/tcp/${settings.port}/ws`],
     announce: settings.announce ?? [],
-    paymentBatchSize: settings.paymentBatchSize ?? 60,
+    paymentBatchSize: settings.paymentBatchSize ?? PAYMENT_BATCH_SIZE,
     requireAccessCodes: settings.requireAccessCodes ?? true,
   };
 
