@@ -45,15 +45,14 @@ definePageMeta({
 });
 
 const config = useRuntimeConfig();
+
 const { useActiveSession, useDisconnect } = useSessionStore();
 const { connectedOn } = useActiveSession();
-
 onMounted(() => {
   if (!connectedOn.value) {
     navigateTo("/worker/connect");
   }
 });
-
 const uptime = useUptime(connectedOn);
 
 const { useGetPayments } = usePayments();
@@ -107,7 +106,6 @@ const totalCompletedTasks = computed(() => {
 
 const { mutateAsync: disconnect } = useDisconnect();
 tryOnBeforeUnmount(async () => {
-  console.log("Unmounting");
   await disconnect();
 });
 </script>

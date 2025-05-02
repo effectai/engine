@@ -165,10 +165,28 @@ export function createTaskWorker({
     taskId: string;
     reason: string;
   }) => {
-    await taskStore.reject({
+    const taskRecord = await taskStore.reject({
       entityId: taskId,
       reason,
     });
+
+    const { managerPeer } = extractMetadata(taskRecord);
+    if (!managerPeer) {
+      throw new Error("no manager peer found");
+    }
+
+    // send completed message to manager
+    const [response, error] = await entity.sendMessage(
+      peerIdFromString(managerPeer),
+      {
+        taskRejected: {
+          timestamp: Math.floor(Date.now() / 1000),
+          worker: entity.toString(),
+          taskId,
+          reason,
+        },
+      },
+    );
 
     events.safeDispatchEvent("task:rejected", {
       detail: {

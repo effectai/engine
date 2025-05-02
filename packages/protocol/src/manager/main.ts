@@ -21,6 +21,10 @@ import { createWorkerManager } from "./modules/createWorkerManager.js";
 import { bigIntToBytes32, compressBabyJubJubPubKey } from "./utils.js";
 import { PublicKey } from "@solana/web3.js";
 import { PAYMENT_BATCH_SIZE } from "./consts.js";
+import { createRequestHandler } from "@remix-run/express";
+
+import { LevelDatastore } from "datastore-level";
+import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 
 export type ManagerInfoResponse = {
   status: string;
@@ -43,6 +47,12 @@ export type ManagerEvents = {
 };
 
 export type ManagerEntity = Awaited<ReturnType<typeof createManagerEntity>>;
+
+export type ManagerContext = {
+  manager: ManagerEntity;
+  taskManager: ReturnType<typeof createTaskManager>;
+  workerManager: ReturnType<typeof createWorkerManager>;
+};
 
 export type ManagerSettings = {
   port: number;
@@ -377,6 +387,55 @@ export const createManager = async ({
     managerLogger.info(`Peer disconnected: ${peerId.toString()}`);
     workerManager.workerQueue.removePeer(peerId.toString());
   });
+
+  //lets register the dash
+
+  const setupManagerDashboard = async () => {
+    async function setupRemix(app: Express, context: ManagerContext) {
+      const build = await import(
+        "./../../dist/manager-dashboard/server/index.js"
+      );
+
+      const remixHandler = createRequestHandler({
+        build,
+        mode: process.env.NODE_ENV,
+        getLoadContext: () => context,
+      });
+
+      app.use((req, res, next) => {
+        // Attach context to request so loaders can access it
+        (req as any).remixContext = context;
+        next();
+      });
+
+      app.all("*", remixHandler);
+    }
+
+    //init express server
+    const express = await import("express");
+    const cors = await import("cors");
+
+    const app = express.default();
+    app.use(cors.default()); // 👈 add this line
+
+    app.get("/favicon.ico", (req: any, res: any) => {
+      res.status(204).end(); // No Content
+    });
+
+    app.use(express.default.json());
+
+    setupRemix(app, {
+      manager: entity,
+      taskManager,
+      workerManager,
+    });
+
+    app.listen(9000, () => {
+      console.log("Server is running on port 9000");
+    });
+  };
+
+  setupManagerDashboard();
 
   return {
     entity,

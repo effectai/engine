@@ -5,6 +5,7 @@ export {
   ManagerSettings,
   ManagerInfoResponse,
   ManagerEvents,
+  ManagerContext,
   computeTemplateId,
   computeTaskId,
 } from "./manager/index.js";

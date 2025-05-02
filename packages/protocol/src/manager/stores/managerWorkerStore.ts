@@ -21,7 +21,7 @@ export interface WorkerBanned {
 }
 
 export interface WorkerState {
-  banned: boolean;
+  peerId: string;
   recipient: string;
   nonce: bigint;
   lastPayout: number;
@@ -30,6 +30,7 @@ export interface WorkerState {
   tasksAccepted: number;
   tasksRejected: number;
   lastActivity: number;
+  banned: boolean;
 }
 
 export interface ManagerWorkerRecord<T> {
@@ -69,6 +70,7 @@ export const createWorkerStore = ({ datastore }: { datastore: Datastore }) => {
         },
       ],
       state: {
+        peerId,
         recipient,
         banned: false,
         nonce,

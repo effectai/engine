@@ -194,7 +194,7 @@ export const createWorkerTaskStore = ({
   }: {
     entityId: string;
     reason: string;
-  }): Promise<void> => {
+  }): Promise<WorkerTaskRecord> => {
     const taskRecord = await getTask({ entityId });
 
     const lastEvent = taskRecord.events[taskRecord.events.length - 1];
@@ -214,6 +214,9 @@ export const createWorkerTaskStore = ({
       Buffer.from(stringifyWithBigInt(taskRecord)),
     );
     batch.delete(new Key(`/tasks/active/${entityId}`));
+    await batch.commit();
+
+    return taskRecord;
   };
 
   const expire = async ({ entityId }: { entityId: string }) => {

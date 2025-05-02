@@ -7,7 +7,7 @@
         PAYMENTS
       </h2>
       <UButton
-        :loading="isPending"
+        v-if="payments && payments.length > 0"
         color="black"
         @click="isOpenClaimModal = true"
         >Claim</UButton

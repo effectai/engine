@@ -2,8 +2,6 @@
   <div></div>
 </template>
 
-<script setup>
-  navigateTo("/migrate");
-</script>
+<script setup></script>
 
 <style lang="scss" scoped></style>

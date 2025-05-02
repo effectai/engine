@@ -1,42 +1,39 @@
 import * as anchor from "@coral-xyz/anchor";
-import { createMigrationClaim } from "../../utils/migration";
 import { toBytes } from "viem";
 import {
-  createAssociatedTokenAccount,
   createAssociatedTokenAccountIdempotentInstructionWithDerivation,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { loadProvider } from "../../utils/provider";
 import chalk from "chalk";
 
-import type { CommandModule } from "yargs";
-import {
-  extractEosPublicKeyBytes,
-  extractKeyFromEosUsername,
-} from "@effectai/utils";
-import type { EffectMigration } from "../../target/types/effect_migration";
-import {
-  EffectMigrationIdl,
-  EffectPayment,
-  EffectPaymentIdl,
-} from "@effectai/shared";
-import { askForConfirmation } from "../utils";
+import { readFileSync } from "fs";
 
-interface MigrationClaimOptions {
-  mint: string;
-  publicKey: string;
-  amount: number;
-  stakeStartTime: number;
-  username?: string;
+import type { CommandModule } from "yargs";
+import { EffectPayment, EffectPaymentIdl } from "@effectai/shared";
+
+interface PaymentsCreateOptions {
+  keypair: string;
 }
 
-export const createPaymentPool: CommandModule<unknown, MigrationClaimOptions> =
+export const createPaymentPool: CommandModule<unknown, PaymentsCreateOptions> =
   {
     command: "create",
     describe: "create a payment pool",
-    handler: async () => {
+    builder: (yargs) => {
+      yargs.option("keypair", {
+        type: "string",
+        demandOption: true,
+        description: "The path to the keypair file",
+      });
+    },
+    handler: async ({ keypair }) => {
       const { payer, provider } = await loadProvider();
+
+      const privateKey = readFileSync(keypair, "utf-8");
+      const secretKey = Uint8Array.from(JSON.parse(privateKey));
+      const kp = Keypair.fromSeed(secretKey.slice(0, 32));
 
       const paymentProgram = new anchor.Program(
         EffectPaymentIdl as anchor.Idl,
@@ -47,11 +44,7 @@ export const createPaymentPool: CommandModule<unknown, MigrationClaimOptions> =
 
       const ata = getAssociatedTokenAddressSync(mint, payer.publicKey);
 
-      const managerPubKey = new PublicKey(
-        "2Y6qpvAMTD63R3i5d99ujekBFkWUjereXrPmEuu5b8mw",
-        // "Zh3DBwEMAxU2uN8rq5Jmo54m2PoUPt6V89UGaiz6EYx",
-      );
-
+      const managerPubKey = kp.publicKey;
       const paymentAccount = anchor.web3.Keypair.generate();
 
       await paymentProgram.methods

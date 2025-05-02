@@ -31,6 +31,10 @@ export class HttpTransport implements Transport<HttpTransportMethods> {
     this.#app = express.default();
     this.#app.use(cors.default()); // 👈 add this line
 
+    this.#app.get("/favicon.ico", (req: any, res: any) => {
+      res.status(204).end(); // No Content
+    });
+
     this.#app.use(express.default.json());
 
     return Promise.resolve();
@@ -46,6 +50,7 @@ export class HttpTransport implements Transport<HttpTransportMethods> {
   }
 
   async start(): Promise<void> {
+    console.log("Starting server..");
     this.#server = this.#app.listen(this.options.port, () => {});
   }
 

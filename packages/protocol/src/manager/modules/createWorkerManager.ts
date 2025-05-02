@@ -1,11 +1,11 @@
-import { Datastore, Key } from "interface-datastore";
+import { type Datastore, Key } from "interface-datastore";
 import {
   createWorkerStore,
-  WorkerRecord,
+  type WorkerRecord,
 } from "../stores/managerWorkerStore.js";
-import { ManagerEntity, ManagerSettings } from "../main.js";
+import type { ManagerSettings } from "../main.js";
 import { managerLogger } from "../../core/logging.js";
-import { ProtocolError } from "../../core/errors.js";
+
 export type PeerIdStr = string;
 
 const createWorkerQueue = () => {
@@ -203,9 +203,9 @@ export const createWorkerManager = ({
 
     let newValue: number | bigint;
     if (typeof currentValue === "bigint") {
-      newValue = currentValue + 1n; // add BigInt 1
+      newValue = currentValue + 1n;
     } else if (typeof currentValue === "number") {
-      newValue = currentValue + 1; // add normal 1
+      newValue = currentValue + 1;
     } else {
       throw new Error(
         `Cannot increment non-number/bigint field: ${String(stateKey)}`,
@@ -224,9 +224,18 @@ export const createWorkerManager = ({
     await workerStore.updateWorker(peerId, update);
   };
 
+  const getWorkers = async (ids: string[]) => {
+    const workers = workerStore.getMany({
+      keys: ids.map((id) => new Key(`/worker/${id}`)),
+    });
+
+    return workers;
+  };
+
   return {
     selectWorker,
     getWorker,
+    getWorkers,
     connectWorker,
     workerStore,
     workerQueue,
