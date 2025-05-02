@@ -1,4 +1,5 @@
 import { runCommand } from "./run.js";
+import { startCommand } from "./start.js";
 import { taskCommand } from "./tasks.js";
 import { templateCommand } from "./templates.js";
 import { program } from "commander";
@@ -11,5 +12,6 @@ program
 program.addCommand(taskCommand);
 program.addCommand(templateCommand);
 program.addCommand(runCommand);
+program.addCommand(startCommand);
 
 program.parse(process.argv);

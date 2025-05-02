@@ -13,8 +13,8 @@
     "axios": "^1.8.4",
     "@libp2p/peer-id": "^5.0.6",
     "@libp2p/crypto": "^5.0.5",
-    "ulid": "3.0.0",
-    "datastore-level": "^11.0.1"
+    "datastore-level": "^11.0.1",
+    "ulid": "3.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
