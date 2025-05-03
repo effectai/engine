@@ -1,8 +1,7 @@
-import { createManager } from "@effectai/protocol";
-import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 import { Command } from "commander";
 import { LevelDatastore } from "datastore-level";
 import { readFileSync } from "node:fs";
+import { createManager, generateKeyPairFromSeed } from "@effectai/protocol";
 
 export const startCommand = new Command();
 
@@ -36,7 +35,7 @@ startCommand
         const datastore = new LevelDatastore("/tmp/manager");
         await datastore.open();
 
-        const manager = await createManager({
+        await createManager({
           privateKey: keypair,
           datastore,
           settings: {

@@ -1,10 +1,13 @@
-import { Command, program } from "commander";
+import { Command } from "commander";
 import axios from "axios";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { peerIdFromPrivateKey } from "@libp2p/peer-id";
-import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
-import { computeTemplateId, type Template } from "@effectai/protocol";
+import {
+  type Template,
+  generateKeyPairFromSeed,
+  peerIdFromPrivateKey,
+  computeTemplateId,
+} from "@effectai/protocol";
 
 export const templateCommand = new Command();
 
@@ -36,7 +39,7 @@ templateCommand
     try {
       const filePath = path.resolve(options.templatePath);
       const content = readFileSync(filePath, "utf-8");
-      const templateName = options.name || path.basename(filePath);
+      // const templateName = options.name || path.basename(filePath);
       const privateKey = readFileSync(options.privateKey, "utf-8");
 
       // convert private key to Uint8Array

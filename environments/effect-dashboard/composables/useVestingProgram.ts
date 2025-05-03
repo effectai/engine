@@ -11,7 +11,7 @@ import {
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { EffectVestingIdl, type EffectVesting } from "@effectai/shared";
+import { EffectVestingIdl, type EffectVesting } from "@effectai/idl";
 import { useDeriveVestingAccounts } from "@effectai/utils";
 
 export type EffectVestingProgramAccounts = anchor.IdlAccounts<EffectVesting>;

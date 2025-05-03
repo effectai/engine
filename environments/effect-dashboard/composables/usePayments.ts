@@ -1,5 +1,4 @@
-import type { Payment } from "@effectai/protocol";
-import type { PublicKey } from "@solana/web3.js";
+// import type { Payment } from "@effectai/protocol";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/vue-query";
 
 export const usePayments = () => {

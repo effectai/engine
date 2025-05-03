@@ -1,9 +1,12 @@
-import { createWorker } from "@effectai/protocol";
-import { type Multiaddr } from "@multiformats/multiaddr";
+import {
+  createWorker,
+  multiaddr,
+  peerIdFromPrivateKey,
+  generateKeyPairFromSeed,
+  type Multiaddr,
+} from "@effectai/protocol";
 import { IDBDatastore } from "datastore-idb";
 import { defineStore } from "pinia";
-import { peerIdFromPrivateKey } from "@libp2p/peer-id";
-import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 
 export const useWorkerStore = defineStore("worker", () => {
   const worker: Ref<null | Awaited<ReturnType<typeof createWorker>>> =

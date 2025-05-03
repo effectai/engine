@@ -10,7 +10,7 @@
     "@codama/nodes-from-anchor": "^1.0.1",
     "@codama/renderers": "^1.0.4",
     "@coral-xyz/anchor": "^0.31.1",
-    "@effectai/shared": "workspace:*",
+    "@effectai/idl": "workspace:*",
     "@effectai/utils": "workspace:*",
     "@types/snarkjs": "^0.7.8",
     "@types/yargs": "^17.0.33",

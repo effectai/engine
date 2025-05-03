@@ -175,8 +175,7 @@
 </template>
 
 <script setup lang="ts">
-import { multiaddr, type Multiaddr } from "@multiformats/multiaddr";
-import type { ManagerInfoResponse } from "@effectai/protocol";
+import { multiaddr, type Multiaddr } from "@effectai/protocol";
 
 definePageMeta({
   layout: "worker",

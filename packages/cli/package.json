@@ -1,18 +1,16 @@
 {
   "name": "@effectai/cli",
-  "type": "module",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
-  "main": "dist/manager.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc"
   },
+  "main": "./dist/index.cjs",
   "dependencies": {
     "@effectai/protocol": "workspace:*",
     "axios": "^1.8.4",
-    "@libp2p/peer-id": "^5.0.6",
-    "@libp2p/crypto": "^5.0.5",
     "datastore-level": "^11.0.1",
     "ulid": "3.0.0"
   },

@@ -2,16 +2,15 @@ import { runCommand } from "./run.js";
 import { startCommand } from "./start.js";
 import { taskCommand } from "./tasks.js";
 import { templateCommand } from "./templates.js";
-import { program } from "commander";
+import { Command } from "commander";
 
-program
-  .name("manager-cli")
-  .description("CLI for interacting with manager node")
-  .version("0.1.0");
+export const managerProgram = new Command();
 
-program.addCommand(taskCommand);
-program.addCommand(templateCommand);
-program.addCommand(runCommand);
-program.addCommand(startCommand);
+managerProgram
+  .name("manager")
+  .description("CLI for interacting with manager node");
 
-program.parse(process.argv);
+managerProgram.addCommand(taskCommand);
+managerProgram.addCommand(templateCommand);
+managerProgram.addCommand(runCommand);
+managerProgram.addCommand(startCommand);

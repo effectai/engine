@@ -11,8 +11,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (
-    !privateKey.value &&
-    !authState.isConnected &&
+    (!privateKey.value || !authState.isConnected) &&
     to.path !== "/worker/login"
   ) {
     return navigateTo("/worker/login");

@@ -1,4 +1,4 @@
-import type { ProofResponse } from "@effectai/protocol";
+// import type { ProofResponse } from "@effectai/protocol";
 
 export function bigIntToBytes32(num) {
   let hex = BigInt(num).toString(16);

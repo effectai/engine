@@ -12,14 +12,15 @@ import {
   EffectPaymentIdl,
   type EffectPayment,
   type EffectStaking,
-} from "@effectai/shared";
-import { buildEddsa } from "circomlibjs";
+} from "@effectai/idl";
+// import { buildEddsa } from "circomlibjs";
 
+import { buildEddsa } from "@effectai/protocol";
 import {
   createAssociatedTokenAccountIdempotentInstructionWithDerivation,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import type { ProofResponse } from "@effectai/protocol";
+// import type { ProofResponse } from "@effectai/protocol";
 import type { SolanaWallet } from "@web3auth/solana-provider";
 
 export type EffectStakingProgramAccounts = IdlAccounts<EffectStaking>;
@@ -49,6 +50,10 @@ const solanaWalletToAnchorWallet = (
 export function usePaymentProgram() {
   const { connection, mint } = useGlobalState();
   const { solanaWallet, account } = useWeb3Auth();
+
+  if (!solanaWallet.value) {
+    throw new Error("Solana wallet is not set..");
+  }
 
   const wallet = solanaWalletToAnchorWallet(solanaWallet.value, account.value);
   const provider = new anchor.AnchorProvider(connection, wallet, {});

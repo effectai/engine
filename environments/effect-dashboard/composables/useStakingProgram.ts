@@ -13,7 +13,7 @@ import {
   PublicKey,
   TransactionInstruction,
 } from "@solana/web3.js";
-import { EffectStakingIdl, type EffectStaking } from "@effectai/shared";
+import { EffectStakingIdl, type EffectStaking } from "@effectai/idl";
 
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { useDeriveStakingRewardAccount } from "@effectai/utils";

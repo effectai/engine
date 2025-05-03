@@ -1,15 +1,29 @@
+export * from "./utils.js";
+export * from "./store.js";
+export * from "./errors.js";
+export * from "./common/types.js";
+export * from "./common/stores/paymentStore.js";
+export * from "./common/stores/templateStore.js";
+export * from "../@generated/effect.protons.js";
+export * from "./transports/index.js";
 export {
-  createManager,
-  ManagerTaskRecord,
-  ManagerEntity,
-  ManagerSettings,
-  ManagerInfoResponse,
-  ManagerEvents,
-  ManagerContext,
-  computeTemplateId,
-  computeTaskId,
-} from "./manager/index.js";
+  createEffectEntity,
+  type Entity,
+  type EntityWithTransports,
+} from "./entity/factory.js";
+export * from "./logging.js";
+export * from "./consts.js";
 
-export * from "./worker/index.js";
+export * from "@libp2p/interface";
+export * from "@libp2p/interface-internal";
+export * from "@libp2p/websockets";
+export { type Datastore, Key } from "interface-datastore";
 
-export * from "./core/index.js";
+export { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
+export { type Multiaddr, multiaddr } from "@multiformats/multiaddr";
+export { peerIdFromString, peerIdFromPrivateKey } from "@libp2p/peer-id";
+
+export {
+  circuitRelayServer,
+  circuitRelayTransport,
+} from "@libp2p/circuit-relay-v2";

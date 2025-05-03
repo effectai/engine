@@ -1,0 +1,28 @@
+{
+  "name": "@effectai/worker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup --config ../../tsup.config.package.ts --platform neutral"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.9.0",
+  "dependencies": {
+    "@effectai/protocol-core": "workspace:*",
+    "@libp2p/ping": "^2.0.29",
+    "@libp2p/webrtc": "^5.0.14"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

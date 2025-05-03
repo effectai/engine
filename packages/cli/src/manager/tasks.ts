@@ -1,4 +1,4 @@
-import { Command, program } from "commander";
+import { Command } from "commander";
 import axios from "axios";
 import { ulid } from "ulid";
 

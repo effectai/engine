@@ -1,13 +1,12 @@
-import { readFileSync } from "fs";
-import readline from "readline";
+import { readFileSync } from "node:fs";
+import readline from "node:readline";
 import { Command } from "commander";
-import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
-import { LevelDatastore } from "datastore-level";
 import {
+  generateKeyPairFromSeed,
   createManager,
-  Task,
   type ManagerTaskRecord,
 } from "@effectai/protocol";
+import { LevelDatastore } from "datastore-level";
 
 export const runCommand = new Command();
 
@@ -82,9 +81,12 @@ async function startManager(
     addLog("Manager started: " + manager.entity.getMultiAddress());
 
     if (manager.events) {
-      manager.entity.node.addEventListener("peer:connect", ({ detail }) => {
-        addLog(`Peer connected: ${detail.toString()}`);
-      });
+      manager.entity.node.addEventListener(
+        "peer:connect",
+        ({ detail }: any) => {
+          addLog(`Peer connected: ${detail.toString()}`);
+        },
+      );
     }
   } catch (err: any) {
     addLog("Failed to start manager: " + err.message);

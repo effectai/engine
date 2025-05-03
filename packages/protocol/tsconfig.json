@@ -1,27 +1,7 @@
 {
-  "compilerOptions": {
-    // Enable latest features
-    "strict": true,
-    "lib": ["ESNext", "DOM"],
-    "moduleResolution": "NodeNext",
-    "module": "NodeNext",
-    "target": "ES2020",
-    "skipLibCheck": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
-    "outDir": "./dist"
-  },
-  "include": ["src"],
-  "exclude": [
-    "node_modules",
-    "**/*.spec.ts",
-    "**/*.test.ts",
-    "**/*.spec.tsx",
-    "**/*.test.tsx",
-    "**/__tests__/**",
-    "**/__mocks__/**"
-  ]
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "@effectai/protocol-core",
+  "extends": "../../tsconfig.base.json",
+  "include": ["./src"],
+  "exclude": ["@generated"]
 }

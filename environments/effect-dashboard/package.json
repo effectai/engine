@@ -14,13 +14,10 @@
   "dependencies": {
     "@coral-xyz/anchor": "0.30.1",
     "@effectai/protocol": "workspace:*",
-    "@effectai/shared": "workspace:*",
+    "@effectai/idl": "workspace:*",
     "@effectai/utils": "workspace:*",
     "@headlessui/vue": "^1.7.23",
     "@heroicons/vue": "^2.2.0",
-    "@libp2p/crypto": "^5.1.1",
-    "@libp2p/peer-id": "^5.0.6",
-    "@multiformats/multiaddr": "^12.3.5",
     "@noble/ed25519": "^2.2.3",
     "@noble/hashes": "^1.8.0",
     "@nuxt/devtools": "latest",
@@ -57,16 +54,15 @@
     "buffer": "^6.0.3",
     "datastore-idb": "^3.0.1",
     "eventemitter3": "^5.0.1",
-    "nuxt": "^3.14.159",
+    "nuxt": "^3.17.1",
     "pinia": "^3.0.2",
     "solana-wallets-vue": "^0.6.1",
     "ulid": "3.0.0",
     "viem": "2.x",
-    "vue": "^3.5.13",
     "vite-plugin-node-polyfills": "0.23.0",
+    "vue": "^3.5.13",
     "vue-confetti-explosion": "^1.0.2",
-    "vue-router": "latest",
-    "circomlibjs": "^0.1.7"
+    "vue-router": "latest"
   },
   "devDependencies": {
     "@types/circomlibjs": "^0.1.6"

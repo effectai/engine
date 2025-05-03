@@ -18,7 +18,7 @@ import { setup } from "../../utils/spl.js";
 import { claimMigration, createMigrationClaim } from "../../utils/migration.js";
 import { useErrorsIDL } from "../../utils/idl.js";
 
-import { effect_migration } from "@effectai/shared";
+import { effect_migration } from "@effectai/idl";
 
 import { createDummyEosTransactionWithMemo } from "../../utils/eos.js";
 
@@ -51,14 +51,13 @@ describe("Migration Program", async () => {
       });
 
       // check if the metadata account was created
-      const claimAccountData = await program.account.migrationAccount.fetch(
-        migrationAccount
-      );
+      const claimAccountData =
+        await program.account.migrationAccount.fetch(migrationAccount);
 
       expect(claimAccountData).to.not.be.null;
       expect(claimAccountData.foreignAddress.byteLength).to.equal(20);
       expect(claimAccountData.foreignAddress).toEqual(
-        Buffer.from(ethPublicKey.slice(2), "hex")
+        Buffer.from(ethPublicKey.slice(2), "hex"),
       );
     });
 
@@ -80,9 +79,8 @@ describe("Migration Program", async () => {
         stakeStartTime: lastYear,
       });
 
-      const migrationAccountData = await provider.connection.getAccountInfo(
-        migrationAccount
-      );
+      const migrationAccountData =
+        await provider.connection.getAccountInfo(migrationAccount);
       expect(migrationAccountData).to.not.be.null;
     });
 
@@ -102,7 +100,7 @@ describe("Migration Program", async () => {
             program,
           });
         }, INVALID_FOREIGN_ADDRESS);
-      }
+      },
     );
   });
 
@@ -111,7 +109,7 @@ describe("Migration Program", async () => {
       const { mint, ata } = await setup({ provider, payer });
 
       const eosPrivatekey = PrivateKey.from(
-        "5K5UuCj9PmMSFTyiWzTtPF4VmUftVqScM3QJd9HorrZGCt4LgLu"
+        "5K5UuCj9PmMSFTyiWzTtPF4VmUftVqScM3QJd9HorrZGCt4LgLu",
       );
 
       const eosPublicKey = eosPrivatekey.toPublic();
@@ -130,13 +128,12 @@ describe("Migration Program", async () => {
         stakeStartTime: lastYear,
       });
 
-      const { tx, session } = await createDummyEosTransactionWithMemo(
-        originalMessage
-      );
+      const { tx, session } =
+        await createDummyEosTransactionWithMemo(originalMessage);
 
       const serializedTransactionBytes = tx.signingData(
         // eos mainnet chain id
-        "aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906"
+        "aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906",
       );
 
       const signature = await session.signTransaction(tx);
@@ -154,7 +151,7 @@ describe("Migration Program", async () => {
 
       // check if the stake account was created
       const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
-        stakeAccount.publicKey
+        stakeAccount.publicKey,
       );
 
       expect(stakeAccountData).to.not.be.null;
@@ -200,7 +197,7 @@ describe("Migration Program", async () => {
       });
 
       const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
-        stakeAccount.publicKey
+        stakeAccount.publicKey,
       );
 
       expect(stakeAccountData).to.not.be.null;
@@ -220,7 +217,7 @@ describe("Migration Program", async () => {
       });
 
       const account = privateKeyToAccount(
-        "0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5"
+        "0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
       );
       const prefix = `\x19Ethereum Signed Message:\n${originalMessage.length}`;
       const message = prefix + originalMessage;
@@ -241,7 +238,7 @@ describe("Migration Program", async () => {
       });
 
       const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
-        stakeAccount.publicKey
+        stakeAccount.publicKey,
       );
 
       expect(stakeAccountData).to.not.be.null;
@@ -253,11 +250,11 @@ describe("Migration Program", async () => {
 
       // get a unix_timestamp from 1 year ago
       const stakeStartTime = Math.floor(
-        new Date().getTime() / 1000 - 365 * 24 * 60 * 60
+        new Date().getTime() / 1000 - 365 * 24 * 60 * 60,
       );
 
       const account = privateKeyToAccount(
-        "0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5"
+        "0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
       );
 
       const prefix = `\x19Ethereum Signed Message:\n${originalMessage.length}`;
@@ -290,14 +287,14 @@ describe("Migration Program", async () => {
 
       // check if the stake account was created
       const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
-        stakeAccount.publicKey
+        stakeAccount.publicKey,
       );
 
       expect(stakeAccountData).to.not.be.null;
 
       // check if the stake account has the correct start time (stake age)
       expect(stakeAccountData.stakeStartTime.toNumber()).to.equal(
-        stakeStartTime
+        stakeStartTime,
       );
 
       // check if the stake vault account was created and has a balance
@@ -307,7 +304,7 @@ describe("Migration Program", async () => {
 
       // check if claim vault is closed
       await expect(() =>
-        provider.connection.getTokenAccountBalance(claimVaultAccount)
+        provider.connection.getTokenAccountBalance(claimVaultAccount),
       ).rejects.toThrowError("could not find account");
 
       // check if migration account is closed
@@ -322,11 +319,11 @@ describe("Migration Program", async () => {
 
         // get a unix_timestamp from 1 year ago
         const stakeStartTime = Math.floor(
-          new Date().getTime() / 1000 - 365 * 24 * 60 * 60
+          new Date().getTime() / 1000 - 365 * 24 * 60 * 60,
         );
 
         const account = privateKeyToAccount(
-          "0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5"
+          "0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
         );
 
         const prefix = `\x19Ethereum Signed Message:\n${originalMessage.length}`;
@@ -358,12 +355,12 @@ describe("Migration Program", async () => {
 
         // check if the stake account was created
         const stakeAccountData = await stakeProgram.account.stakeAccount.fetch(
-          stakeAccount.publicKey
+          stakeAccount.publicKey,
         );
         expect(stakeAccountData).to.not.be.null;
         // check if the stake account has the correct start time (stake age)
         expect(stakeAccountData.stakeStartTime.toNumber()).to.equal(
-          stakeStartTime
+          stakeStartTime,
         );
 
         // check if the stake vault account was created and has a balance
@@ -373,9 +370,9 @@ describe("Migration Program", async () => {
 
         // check if claim vault is created and emptied out
         await expect(() =>
-          provider.connection.getTokenAccountBalance(claimVaultAccount)
+          provider.connection.getTokenAccountBalance(claimVaultAccount),
         ).rejects.toThrowError("could not find account");
-      }
+      },
     );
 
     it.concurrent(
@@ -394,7 +391,7 @@ describe("Migration Program", async () => {
         });
 
         const account = privateKeyToAccount(
-          "0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5"
+          "0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
         );
 
         const signature = await account.signMessage({
@@ -413,7 +410,7 @@ describe("Migration Program", async () => {
             message: Buffer.from("wroong"),
           });
         }, MESSAGE_INVALID);
-      }
+      },
     );
 
     it.concurrent(
@@ -432,7 +429,7 @@ describe("Migration Program", async () => {
         });
 
         const account = privateKeyToAccount(
-          "0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5"
+          "0xd09351350882928165a6bd1cbbe232dd23371cafe68848d2146ba8e8874b27e5",
         );
 
         const prefix = `\x19Ethereum Signed Message:\n${originalMessage.length}`;
@@ -454,7 +451,7 @@ describe("Migration Program", async () => {
             message: Buffer.from(message),
           });
         }, PUBLIC_KEY_MISMATCH);
-      }
+      },
     );
   });
 
@@ -471,9 +468,8 @@ describe("Migration Program", async () => {
         program,
       });
 
-      const balanceBefore = await provider.connection.getTokenAccountBalance(
-        ata
-      );
+      const balanceBefore =
+        await provider.connection.getTokenAccountBalance(ata);
 
       if (!balanceBefore.value.uiAmount) {
         throw new Error("Could not get balance");
@@ -488,19 +484,17 @@ describe("Migration Program", async () => {
         })
         .rpc();
 
-      const migrationAccountData = await provider.connection.getAccountInfo(
-        migrationAccount
-      );
+      const migrationAccountData =
+        await provider.connection.getAccountInfo(migrationAccount);
       expect(migrationAccountData).toBeNull();
 
       // expect to have received the tokens back on the ATA
-      const balanceAfter = await provider.connection.getTokenAccountBalance(
-        ata
-      );
+      const balanceAfter =
+        await provider.connection.getTokenAccountBalance(ata);
 
       // expect the balance after to be +100_000_000
       expect(balanceAfter.value.uiAmount).to.equal(
-        balanceBefore.value.uiAmount + 100
+        balanceBefore.value.uiAmount + 100,
       );
     });
   });
