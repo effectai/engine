@@ -1,5 +1,5 @@
 {
-  "name": "effectai-manager-dashboard",
+  "name": "@effectai/manager-dashboard",
   "private": true,
   "sideEffects": false,
   "type": "module",
