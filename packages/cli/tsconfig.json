@@ -15,6 +15,7 @@
     "noEmitOnError": true,
     "strict": false,
     "skipLibCheck": true,
-    "module": "Node16"
+    "module": "ESNext",
+    "moduleResolution": "bundler"
   }
 }

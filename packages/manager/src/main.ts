@@ -5,12 +5,12 @@ import {
   type PrivateKey,
 } from "@effectai/protocol-core";
 
-import { createPaymentManager } from "./modules/createPaymentManager";
-import { createTaskManager } from "./modules/createTaskManager";
-import { createManagerTaskStore } from "./stores/managerTaskStore";
+import { createPaymentManager } from "./modules/createPaymentManager.js";
+import { createTaskManager } from "./modules/createTaskManager.js";
+import { createManagerTaskStore } from "./stores/managerTaskStore.js";
 
 import { buildEddsa } from "@effectai/zkp";
-import { createWorkerManager } from "./modules/createWorkerManager";
+import { createWorkerManager } from "./modules/createWorkerManager.js";
 import { bigIntToBytes32, compressBabyJubJubPubKey } from "./utils.js";
 
 import { PublicKey } from "@solana/web3.js";
@@ -29,6 +29,7 @@ import {
   createPaymentStore,
   createEffectEntity,
 } from "@effectai/protocol-core";
+import path from "node:path";
 
 export type ManagerInfoResponse = {
   status: string;
@@ -396,8 +397,12 @@ export const createManager = async ({
 
   const setupManagerDashboard = async () => {
     async function setupRemix(app: any, context: ManagerContext) {
+      const { createRequire } = await import("node:module");
+      const require = createRequire(import.meta.url);
       //@ts-ignore
-      const build = await import("./../admin-dashboard/build/server/index.js");
+      const build = await import(
+        require.resolve("../admin-dashboard/build/server/index.js")
+      );
 
       const remixHandler = createRequestHandler({
         build,
@@ -419,6 +424,12 @@ export const createManager = async ({
 
     const app = express.default();
     app.use(cors.default());
+
+    app.use(
+      express.default.static(
+        path.join(__dirname, "../admin-dashboard/build/client"),
+      ),
+    );
 
     app.get("/favicon.ico", (_req: any, res: any) => {
       res.status(204).end();

@@ -1,15 +1,11 @@
 import type { ManagerTaskRecord, Task } from "@effectai/protocol";
 
 import { Badge } from "./ui/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
+import { Separator } from "./ui/separator";
+import { Button } from "./ui/button";
+import { ScrollArea } from "./ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { ClockIcon, CoinsIcon, HashIcon } from "lucide-react";
 
 const getLastEvent = (task: ManagerTaskRecord) => {
@@ -111,7 +107,7 @@ export function TaskView({ tasks }: { tasks: ManagerTaskRecord[] }) {
                 No active tasks
               </p>
               <p className="text-sm text-muted-foreground mt-2">
-                Tasks will appear here when created
+                Tasks will appear here when createdddd
               </p>
             </div>
           )}

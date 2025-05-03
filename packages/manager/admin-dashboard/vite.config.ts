@@ -18,7 +18,6 @@ export default defineConfig({
   plugins: [
     remix({
       // buildDirectory: path.join(__dirname, "../../../dist/manager-dashboard"),
-      serverModuleFormat: "esm",
       future: {
         v3_fetcherPersist: true,
         v3_relativeSplatPath: true,
