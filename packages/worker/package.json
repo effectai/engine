@@ -2,10 +2,10 @@
   "name": "@effectai/worker",
   "version": "1.0.0",
   "description": "",
-  "main": "./dist/index.js",
+  "main": "./dist/index.mjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsup --config ../../tsup.config.package.ts --platform neutral"
+    "build": "tsup --config ../../tsup.config.package.ts"
   },
   "exports": {
     ".": {

@@ -12,12 +12,16 @@ declare module "@remix-run/node" {
 export default defineConfig({
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./app"),
+      // "@": path.resolve(__dirname, "./app"),
     },
   },
+
+  ssr: {
+    noExternal: ["pino", "pino-pretty"],
+  },
+
   plugins: [
     remix({
-      // buildDirectory: path.join(__dirname, "../../../dist/manager-dashboard"),
       future: {
         v3_fetcherPersist: true,
         v3_relativeSplatPath: true,

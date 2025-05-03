@@ -3,6 +3,7 @@ import {
   webSockets,
   TypedEventEmitter,
   type PrivateKey,
+  createLogger,
 } from "@effectai/protocol-core";
 
 import { createPaymentManager } from "./modules/createPaymentManager.js";
@@ -24,11 +25,11 @@ import {
   HttpTransport,
   EffectProtocolMessage,
   Libp2pTransport,
-  managerLogger,
   createTemplateStore,
   createPaymentStore,
   createEffectEntity,
 } from "@effectai/protocol-core";
+
 import path from "node:path";
 
 export type ManagerInfoResponse = {
@@ -109,6 +110,8 @@ export const createManager = async ({
   privateKey: PrivateKey;
   settings: Partial<ManagerSettings>;
 }) => {
+  const logger = createLogger();
+
   const managerSettings: ManagerSettings = {
     port: settings.port ?? 19955,
     autoManage: settings.autoManage ?? true,
@@ -120,9 +123,7 @@ export const createManager = async ({
   };
 
   if (!managerSettings.paymentAccount) {
-    managerLogger.warn(
-      "No payment account provided. Payments will not be processed.",
-    );
+    logger.warn("No payment account provided. Payments will not be processed.");
   }
 
   // create the entity
@@ -389,17 +390,14 @@ export const createManager = async ({
   // Register event listeners
   entity.node.addEventListener("peer:disconnect", (event) => {
     const peerId = event.detail;
-    managerLogger.info(`Peer disconnected: ${peerId.toString()}`);
     workerManager.workerQueue.removePeer(peerId.toString());
   });
-
-  //lets register the dash
 
   const setupManagerDashboard = async () => {
     async function setupRemix(app: any, context: ManagerContext) {
       const { createRequire } = await import("node:module");
       const require = createRequire(import.meta.url);
-      //@ts-ignore
+
       const build = await import(
         require.resolve("../admin-dashboard/build/server/index.js")
       );
@@ -444,7 +442,7 @@ export const createManager = async ({
     });
 
     app.listen(9000, () => {
-      console.log("Server is running on port 9000");
+      console.log("Manager Dashboard started on port 9000");
     });
   };
 

@@ -105,6 +105,7 @@ const totalCompletedTasks = computed(() => {
 });
 
 const { mutateAsync: disconnect } = useDisconnect();
+
 tryOnBeforeUnmount(async () => {
   await disconnect();
 });

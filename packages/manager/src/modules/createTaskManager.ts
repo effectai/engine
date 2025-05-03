@@ -18,7 +18,6 @@ import {
   type TemplateStore,
   type Task,
   type Template,
-  managerLogger,
   peerIdFromString,
 } from "@effectai/protocol-core";
 
@@ -168,7 +167,6 @@ export function createTaskManager({
     lastEvent: TaskAssignedEvent,
   ) => {
     if (isExpired(lastEvent.timestamp, TASK_ACCEPTANCE_TIME)) {
-      managerLogger.info("Worker took too long to accept/reject task");
       await rejectAndReassignTask(taskRecord);
     }
   };
@@ -187,7 +185,6 @@ export function createTaskManager({
     );
 
     if (!latestAssignEvent) {
-      managerLogger.error("No assign event found");
       return;
     }
 
@@ -211,7 +208,6 @@ export function createTaskManager({
     lastEvent: TaskAcceptedEvent,
   ) => {
     if (isExpired(lastEvent.timestamp, taskRecord.state.timeLimitSeconds)) {
-      managerLogger.info("Worker took too long to complete task");
       await rejectAndReassignTask(taskRecord);
     }
   };
@@ -260,7 +256,6 @@ export function createTaskManager({
     const lastEvent = taskRecord.events[taskRecord.events.length - 1];
 
     if (!lastEvent) {
-      managerLogger.error("No events found in taskRecord");
       return;
     }
 
@@ -284,7 +279,6 @@ export function createTaskManager({
         // do nothing..
         break;
       default:
-        managerLogger.error(`Unknown task event type: ${lastEvent}`);
     }
   };
 
@@ -294,7 +288,6 @@ export function createTaskManager({
     });
 
     if (!taskRecord) {
-      managerLogger.error("Task not found");
       return;
     }
 
@@ -307,7 +300,6 @@ export function createTaskManager({
     const worker = await workerManager.selectWorker();
 
     if (!worker) {
-      managerLogger.info("No available workers to assign task to");
       return;
     }
 

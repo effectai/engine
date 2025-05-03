@@ -11,7 +11,6 @@ export {
   type Entity,
   type EntityWithTransports,
 } from "./entity/factory.js";
-export * from "./logging.js";
 export * from "./consts.js";
 
 export * from "@libp2p/interface";
@@ -22,6 +21,8 @@ export { type Datastore, Key } from "interface-datastore";
 export { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 export { type Multiaddr, multiaddr } from "@multiformats/multiaddr";
 export { peerIdFromString, peerIdFromPrivateKey } from "@libp2p/peer-id";
+
+export { createLogger } from "./logging.js";
 
 export {
   circuitRelayServer,

@@ -57,7 +57,7 @@ Before posting tasks, you need to register a task template. This can be done wit
 
 ```
 
-pnpm cli templates register --url <manager-url> --template-path <template-path>
+pnpm cli manager templates register --url <manager-url> --template-path <template-path>
 
 ```
 
@@ -65,9 +65,11 @@ This will return a template-id, which you can use to post tasks.
 
 ### Post a Basic task
 
+You can post a basic task using the following command, most options will be set to default values:
+
 ```
 
-pnpm cli tasks:post --url <manager-url> --template-id <template-id>
+pnpm cli manager tasks --url <manager-url> --template-id <template-id>
 
 ```
 
@@ -77,7 +79,7 @@ You can also customize the task by specifying additional arguments:
 
 ```
 
-pnpm cli tasks:post --url <manager-url> --template-id <template-id> --title <task-title> --reward <task-reward> --data <task-data>
+pnpm cli manager tasks post --url <manager-url> --template-id <template-id> --title <task-title> --reward <task-reward> --data <task-data>
 
 ```
 

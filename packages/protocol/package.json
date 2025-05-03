@@ -2,11 +2,11 @@
   "name": "@effectai/protocol-core",
   "version": "1.0.0",
   "description": "",
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "exports": {
     ".": {
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "require": "./dist/index.js"
     }
   },
   "scripts": {
@@ -42,7 +42,7 @@
     "interface-datastore": "^8.3.1",
     "it-protobuf-stream": "^1.1.5",
     "pino": "^9.6.0",
-    "pino-pretty": "7.0.0",
+    "pino-pretty": "^13.0.0",
     "snarkjs": "^0.7.5",
     "uint8arraylist": "^2.4.8",
     "uint8arrays": "^5.1.0",

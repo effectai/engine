@@ -2,12 +2,10 @@ import { defineConfig } from "tsup";
 
 export default defineConfig((options) => [
   {
-    treeshake: false,
     dts: true,
     clean: true,
     shims: true,
-    format: ["esm"],
-    bundle: false,
+    format: ["esm", "cjs"],
     entry: ["src/**/*.ts", "!src/**/*.spec.ts"],
     platform: "node",
     target: "esnext",

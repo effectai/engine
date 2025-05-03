@@ -4,12 +4,7 @@ import {
   LoaderFunctionArgs,
   type MetaFunction,
 } from "@remix-run/node";
-
-import type { ManagerContext } from "@effectai/protocol";
-import { useFetcher, useLoaderData } from "@remix-run/react";
-import { serializeBigInts } from "~/utils/serialize";
-import WorkerView from "~/components/WorkerView";
-import { TaskView } from "~/components/TaskView";
+import { Link } from "@remix-run/react";
 
 export const meta: MetaFunction = () => {
   return [
@@ -18,31 +13,52 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export const loader = async ({ context }: { context: ManagerContext }) => {
-  const workers = await context.workerManager.getWorkers(
-    context.workerManager.workerQueue.queue,
-  );
-
-  const activeTasks = await context.taskManager.getActiveTasks();
-
-  return json({
-    activeTasks: serializeBigInts(activeTasks),
-    workers: serializeBigInts(workers),
-  });
-};
+//
+// export const loader = async ({ context }: { context: ManagerContext }) => {
+//   const onlineWorkers = await context.workerManager.getWorkers(
+//     context.workerManager.workerQueue.queue,
+//   );
+//
+//   const activeTasks = await context.taskManager.getActiveTasks();
+//   const allWorkers = await context.workerManager.all();
+//
+//   return json({
+//     activeTasks: serializeBigInts(activeTasks),
+//     onlineWorkers: serializeBigInts(onlineWorkers),
+//     allWorkers: serializeBigInts(allWorkers),
+//   });
+// };
 
 export default function App() {
-  const { workers, activeTasks } = useLoaderData<typeof loader>();
-  const fetcher = useFetcher();
-
-  const handleBan = (peerId: string) => {
-    fetcher.submit({ peerId }, { method: "post", action: "/api/ban-worker" });
-  };
+  // const { activeTasks, allWorkers, onlineWorkers } =
+  //   useLoaderData<typeof loader>();
+  // const fetcher = useFetcher();
+  //
+  // const handleBan = (peerId: string) => {
+  //   fetcher.submit(
+  //     { peerId },
+  //     { method: "post", action: "/actions/ban-worker" },
+  //   );
+  // };
+  //
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-      <WorkerView workers={workers} onBan={handleBan} />
-      <TaskView tasks={activeTasks} />
+    <div className="">
+      <h1 className="text-3xl">Manager Dashboard</h1>
+
+      <p className="my-5">
+        This is the manager dashboard for the worker pool. You can view and
+        manage tasks and workers from here.
+      </p>
+
+      <div className="flex gap-2">
+        <Link to="/tasks" className="text-blue-500">
+          Tasks
+        </Link>
+        <Link to="/workers" className="text-blue-500">
+          Workers
+        </Link>
+      </div>
     </div>
   );
 }

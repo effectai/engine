@@ -4,7 +4,7 @@ import {
 } from "../stores/managerWorkerStore.js";
 import type { ManagerSettings } from "../main.js";
 
-import { type Datastore, Key, managerLogger } from "@effectai/protocol-core";
+import { type Datastore, Key, ProtocolError } from "@effectai/protocol-core";
 
 export type PeerIdStr = string;
 
@@ -128,9 +128,10 @@ export const createWorkerManager = ({
           await redeemAccessCode(peerId, accessCode);
         }
         await workerStore.createWorker(peerId, recipient, nonce);
-        managerLogger.info(`New Worker: ${peerId} created`);
       } else {
-        managerLogger.info(`Returning worker ${peerId} connected`);
+        if (workerRecord.state.banned) {
+          throw new ProtocolError("Worker is banned");
+        }
       }
 
       //overwrite the recipient
@@ -175,7 +176,6 @@ export const createWorkerManager = ({
     }
 
     // No available worker found
-    managerLogger.info("No available workers");
     return null;
   };
 
@@ -232,7 +232,12 @@ export const createWorkerManager = ({
     return workers;
   };
 
+  const all = async () => {
+    return await workerStore.all();
+  };
+
   return {
+    all,
     selectWorker,
     getWorker,
     getWorkers,

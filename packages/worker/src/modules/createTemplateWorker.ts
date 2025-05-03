@@ -4,7 +4,6 @@ import {
   type TemplateStore,
   Template,
   TemplateRequest,
-  workerLogger,
   peerIdFromString,
 } from "@effectai/protocol-core";
 
@@ -54,10 +53,6 @@ export function createTemplateWorker({
     templateId: string,
     managerPeer: string,
   ): Promise<Template> => {
-    workerLogger.info(
-      `Requesting template ${templateId} from peer ${managerPeer}`,
-    );
-
     const peerId = peerIdFromString(managerPeer);
     const templateRequest: TemplateRequest = { templateId };
 
@@ -73,7 +68,6 @@ export function createTemplateWorker({
       await cacheTemplate(template, managerPeer);
       return template;
     } catch (error) {
-      workerLogger.error(`Failed to fetch template ${templateId}`, error);
       throw new Error("Template fetch failed");
     }
   };
@@ -87,12 +81,8 @@ export function createTemplateWorker({
         template,
         createdByPeer: sourcePeer,
       });
-      workerLogger.debug(`Cached template ${template.templateId}`);
     } catch (error) {
-      workerLogger.warn(
-        `Failed to cache template ${template.templateId}`,
-        error,
-      );
+      console.error("Failed to cache template:", error);
     }
   };
 
