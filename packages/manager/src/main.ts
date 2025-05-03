@@ -406,7 +406,6 @@ export const createManager = async ({
       });
 
       app.use((req: any, _res: any, next: any) => {
-        // Attach context to request so loaders can access it
         (req as any).remixContext = context;
         next();
       });
@@ -419,10 +418,10 @@ export const createManager = async ({
     const cors = await import("cors");
 
     const app = express.default();
-    app.use(cors.default()); // 👈 add this line
+    app.use(cors.default());
 
     app.get("/favicon.ico", (_req: any, res: any) => {
-      res.status(204).end(); // No Content
+      res.status(204).end();
     });
 
     app.use(express.default.json());
