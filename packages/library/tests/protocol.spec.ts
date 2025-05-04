@@ -8,26 +8,28 @@ import {
   beforeEach,
   afterEach,
 } from "vitest";
-import { peerIdFromString } from "@libp2p/peer-id";
-import { createManager } from "./../src/manager/main.js";
-import { createWorker } from "./../src/worker/main.js";
-import type { Datastore } from "interface-datastore";
 import {
-  createDataStore,
   createDummyTemplate,
-  delay,
   trackManagerEvents,
   trackWorkerEvents,
   waitForTaskEvent,
 } from "./utils.js";
-import { randomBytes } from "node:crypto";
-import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
-import type { Task, Template } from "../src/core/messages/effect.js";
-import type { WorkerTaskRecord } from "../src/worker/stores/workerTaskStore.js";
+import { createDataStore, delay } from "@effectai/test-utils";
 
+import { randomBytes } from "node:crypto";
+
+import {
+  generateKeyPairFromSeed,
+  peerIdFromString,
+  type Task,
+  type Datastore,
+} from "@effectai/protocol-core";
+
+import { createManager } from "@effectai/manager";
+import { createWorker } from "@effectai/worker";
 import { promises } from "node:fs";
+
 import { Keypair } from "@solana/web3.js";
-import { PAYMENT_BATCH_SIZE } from "../src/manager/consts.js";
 
 describe("Complete Task Lifecycle", () => {
   let manager: Awaited<ReturnType<typeof createManager>>;

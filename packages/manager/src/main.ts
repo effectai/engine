@@ -350,6 +350,10 @@ export const createManager = async ({
     //stop libp2p & http transports
     await entity.node.stop();
     await entity.stopHttp();
+
+    //stop express server
+    tearDown();
+
     isStarted = false;
   };
 
@@ -441,12 +445,19 @@ export const createManager = async ({
       workerManager,
     });
 
-    app.listen(9000, () => {
+    const server = app.listen(9000, () => {
       console.log("Manager Dashboard started on port 9000");
     });
+
+    const tearDown = async () => {
+      console.log("Tearing down manager dashboard");
+      server.close();
+    };
+
+    return { tearDown };
   };
 
-  setupManagerDashboard();
+  const { tearDown } = await setupManagerDashboard();
 
   return {
     entity,
