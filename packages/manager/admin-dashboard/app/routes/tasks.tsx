@@ -29,9 +29,9 @@ export default function TasksPage() {
   const [filter, setFilter] = useState("all");
   const { toast } = useToast();
 
+  //TODO:: fix these filters
   const filteredTasks = tasks.filter((task) => {
     if (filter === "all") return true;
-    // Add more filters as needed
     return true;
   });
 

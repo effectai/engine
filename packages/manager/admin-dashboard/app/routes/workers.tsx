@@ -55,6 +55,7 @@ export default function App() {
   //   );
   // };
   //
+  //TODO:: fix these filters
   const filteredWorkers = workers.filter((worker) => {
     if (filter === "all") return true;
     if (filter === "active")
