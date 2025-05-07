@@ -14,19 +14,24 @@
 </template>
 
 <script setup lang="ts">
-  const props = defineProps({
-    address: {
-      required: true,
-      type: String,
-    },
-  });
+const props = defineProps({
+  address: {
+    required: true,
+    type: String,
+  },
+});
 
-  const copied = ref(false);
-  const { copy } = useCopyToClipboard();
-  const copyAddress = () => {
-    copy(props.address);
-    copied.value = true;
-  };
+const copied = ref(false);
+const { copy } = useCopyToClipboard();
+const toast = useToast();
+const copyAddress = () => {
+  copy(props.address);
+  copied.value = true;
+  toast.add({
+    title: "Copied!",
+    description: "Address copied to clipboard",
+  });
+};
 </script>
 
 <style scoped></style>

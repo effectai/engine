@@ -1,6 +1,6 @@
 import { useQuery, keepPreviousData } from "@tanstack/vue-query";
 import { useWorkerStore } from "@/stores/worker";
-import type { WorkerTaskRecord } from "@effectai/protocol";
+// import type { WorkerTaskRecord } from "@effectai/protocol";
 
 const activeTask = ref<WorkerTaskRecord | null>(null);
 
@@ -72,6 +72,10 @@ export const useTasks = () => {
     return await workerStore.worker?.acceptTask({ taskId });
   };
 
+  const rejectTask = async (taskId: string, reason: string) => {
+    return await workerStore.worker?.rejectTask({ taskId, reason });
+  };
+
   return {
     activeTask,
     useGetTasks,
@@ -84,5 +88,6 @@ export const useTasks = () => {
     acceptTask,
     getTaskDeadline,
     useTaskState,
+    rejectTask,
   };
 };

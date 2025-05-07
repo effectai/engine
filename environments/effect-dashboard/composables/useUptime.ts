@@ -1,6 +1,6 @@
 import { ref, computed, watch, onUnmounted } from "vue";
 
-export function useUptime(startTimeRef: Ref<number | undefined>) {
+export function useUptime(startTimeRef: Ref<number | undefined | null>) {
   const now = ref(Date.now());
   let intervalId: number | null = null;
 
@@ -52,7 +52,7 @@ export function useUptime(startTimeRef: Ref<number | undefined>) {
 
   return {
     formattedTime,
-    timeElapsed: computed(() => timeElapsed.value / 1000), // in seconds
+    timeElapsed: computed(() => timeElapsed.value / 1000),
     isRunning: computed(() => startTimeRef.value !== undefined),
   };
 }

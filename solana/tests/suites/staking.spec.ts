@@ -6,7 +6,7 @@ import type { EffectStaking } from "../../target/types/effect_staking.js";
 import { createTokenAccount, mintToAccount, setup } from "../../utils/spl.js";
 import { useConstantsIDL, useErrorsIDL } from "../../utils/idl.js";
 import stakingIDLJson from "../../target/idl/effect_staking.json";
-import { effect_staking } from "@effectai/shared";
+import { effect_staking } from "@effectai/idl";
 import { BN, min } from "bn.js";
 import { useBankRunProvider } from "../helpers.js";
 import {
@@ -43,12 +43,12 @@ describe("Staking Program", async () => {
       });
 
       const stakeAccountData = await program.account.stakeAccount.fetch(
-        stakeAccount.publicKey
+        stakeAccount.publicKey,
       );
 
       // expect to have a stake account
       expect(stakeAccountData.authority.toBase58()).toEqual(
-        wallet.publicKey.toBase58()
+        wallet.publicKey.toBase58(),
       );
     });
 
@@ -68,7 +68,7 @@ describe("Staking Program", async () => {
             userTokenAccount: ata,
           });
         }, DURATION_TOO_SHORT);
-      }
+      },
     );
 
     it.concurrent(
@@ -87,7 +87,7 @@ describe("Staking Program", async () => {
             userTokenAccount: ata,
           });
         }, DURATION_TOO_LONG);
-      }
+      },
     );
 
     it.concurrent("should correctly stake the minimum amount", async () => {
@@ -114,12 +114,12 @@ describe("Staking Program", async () => {
       const stakeAuthority = new anchor.web3.Keypair();
       const stakeAuthAta = getAssociatedTokenAddressSync(
         mint,
-        stakeAuthority.publicKey
+        stakeAuthority.publicKey,
       );
       // airdrop some sol to authority
       const tx = await provider.connection.requestAirdrop(
         stakeAuthority.publicKey,
-        3000000000
+        3000000000,
       );
 
       // wait for the airdrop to confirm
@@ -215,7 +215,7 @@ describe("Staking Program", async () => {
           code: 3011,
           name: "ACCOUNTNOTSYSTEMOWNED",
           msg: "The given account is not owned by the system program",
-        }
+        },
       );
     });
 
@@ -237,7 +237,7 @@ describe("Staking Program", async () => {
       // get reward account
       const rewardAccountData =
         await rewardProgram.account.rewardAccount.fetchNullable(
-          stakingRewardAccount
+          stakingRewardAccount,
         );
 
       expect(rewardAccountData).to.be.null;
@@ -263,7 +263,7 @@ describe("Staking Program", async () => {
       // expect to have a vesting account
       const vestingAccountData =
         await vestingProgram.account.vestingAccount.fetch(
-          vestingAccount.publicKey
+          vestingAccount.publicKey,
         );
 
       expect(vestingAccountData).to.be.not.null;
@@ -312,7 +312,7 @@ describe("Staking Program", async () => {
 
       // fetch stake account
       const account = await bankrunProgram.account.stakeAccount.fetch(
-        stakeAccount.publicKey
+        stakeAccount.publicKey,
       );
 
       // wait 30 days
@@ -328,12 +328,12 @@ describe("Staking Program", async () => {
 
       // fetch stake account
       const account2 = await bankrunProgram.account.stakeAccount.fetch(
-        stakeAccount.publicKey
+        stakeAccount.publicKey,
       );
 
       // expect stake age to be diluted
       expect(account.stakeStartTime.toNumber()).to.be.lessThan(
-        account2.stakeStartTime.toNumber()
+        account2.stakeStartTime.toNumber(),
       );
 
       const dateAfter2000Days = Date.now() / 1000 + 2000 * 24 * 60 * 60;
@@ -361,13 +361,13 @@ describe("Staking Program", async () => {
       });
 
       const stakeAccountData = await program.account.stakeAccount.fetch(
-        stakeAccount.publicKey
+        stakeAccount.publicKey,
       );
       const stakeVaultAccountBalance =
         await provider.connection.getTokenAccountBalance(vaultAccount);
 
       expect(stakeAccountData.authority.toBase58()).toEqual(
-        wallet.publicKey.toBase58()
+        wallet.publicKey.toBase58(),
       );
       expect(stakeAccountData.amount.toNumber()).toEqual(0);
       expect(stakeVaultAccountBalance.value.uiAmount).toEqual(0);
@@ -403,7 +403,7 @@ describe("Staking Program", async () => {
             })
             .rpc();
         }, STAKE_NOT_EMPTY);
-      }
+      },
     );
   });
 });

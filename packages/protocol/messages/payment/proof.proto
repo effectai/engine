@@ -1,0 +1,38 @@
+
+syntax = "proto3";
+
+
+message Signals {
+  string min_nonce = 1;
+  string max_nonce = 2;
+  uint64 amount = 3;
+  string payment_account = 4;
+}
+
+message Matrix {
+  repeated string row = 1;
+}
+
+message ProofResponse {
+  repeated string pi_a = 1;
+  repeated Matrix pi_b = 2;
+  repeated string pi_c = 3;
+  string protocol = 4;
+  string curve = 5;
+  Signals signals = 6;
+  R8Pair r8 = 7;
+}
+
+message ProofRequest {
+  message PaymentProof {
+    PaymentSignature signature = 1;
+    uint64 amount = 2;
+    uint64 nonce = 3;
+    string recipient = 4;
+    string payment_account = 5;
+  }
+
+  uint32 batch_size = 1;
+  repeated PaymentProof payments = 2;
+}
+

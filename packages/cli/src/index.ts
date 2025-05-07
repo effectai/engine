@@ -1,9 +1,13 @@
-const commander = require("commander");
-const program = new commander.Command();
-const programsCommand = program.command("programs");
+import { Command } from "commander";
+import { managerProgram } from "./manager/index.js";
 
-const deployCommand = programsCommand.command("deploy").action(() => {
-  console.log("Deploying programs...");
-});
+export const effectCLI = new Command();
 
-program.parse(process.argv);
+effectCLI
+  .name("effectai-cli")
+  .description("CLI for interacting with Effect AI")
+  .version("0.1.0");
+
+effectCLI.addCommand(managerProgram);
+
+effectCLI.parse(process.argv);

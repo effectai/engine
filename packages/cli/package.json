@@ -1,11 +1,18 @@
 {
   "name": "@effectai/cli",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc"
+  },
+  "main": "./dist/index.cjs",
+  "dependencies": {
+    "@effectai/protocol": "workspace:*",
+    "axios": "^1.8.4",
+    "datastore-level": "^11.0.1",
+    "ulid": "3.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",

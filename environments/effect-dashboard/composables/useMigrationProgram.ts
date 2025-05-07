@@ -14,7 +14,7 @@ import {
 import { useWallet } from "solana-wallets-vue";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program, Idl } from "@coral-xyz/anchor";
-import { EffectMigrationIdl, type EffectMigration } from "@effectai/shared";
+import { EffectMigrationIdl, type EffectMigration } from "@effectai/idl";
 
 import {
   createAssociatedTokenAccountIdempotentInstructionWithDerivation,
@@ -49,12 +49,12 @@ export const useMigrationProgram = () => {
   const migrationProgram = computed(() => {
     return new anchor.Program(
       EffectMigrationIdl as Idl,
-      provider.value || undefined
+      provider.value || undefined,
     ) as unknown as Program<EffectMigration>;
   });
 
   const useGetMigrationVaultBalance = (
-    migrationAccount: MigrationClaimAccount["account"]
+    migrationAccount: MigrationClaimAccount["account"],
   ) => {
     return useQuery({
       queryKey: ["claim", "vault-balance", publicKey],
@@ -75,7 +75,7 @@ export const useMigrationProgram = () => {
   };
 
   const useGetMigrationAccount = (
-    foreignPublicKey: Ref<Uint8Array | undefined | null>
+    foreignPublicKey: Ref<Uint8Array | undefined | null>,
   ): UseQueryReturnType<MigrationClaimAccount["account"], Error> => {
     return useQuery({
       queryKey: ["claim", "accounts", foreignPublicKey.value],
@@ -91,7 +91,7 @@ export const useMigrationProgram = () => {
         });
 
         return await migrationProgram.value.account.migrationAccount.fetchNullable(
-          migrationAccount
+          migrationAccount,
         );
       },
       enabled: computed(() => !!foreignPublicKey.value),
@@ -172,7 +172,7 @@ export const useMigrationProgram = () => {
                   createAssociatedTokenAccountIdempotentInstructionWithDerivation(
                     publicKey.value,
                     publicKey.value,
-                    mint
+                    mint,
                   ),
                 ]),
             ...(stakingAccounts.length === 0
@@ -180,7 +180,7 @@ export const useMigrationProgram = () => {
                   await stakeProgram.value.methods
                     .stake(
                       new anchor.BN(0),
-                      new anchor.BN(30 * SECONDS_PER_DAY)
+                      new anchor.BN(30 * SECONDS_PER_DAY),
                     )
                     .accounts({
                       stakeAccount: stakingAccount.publicKey,

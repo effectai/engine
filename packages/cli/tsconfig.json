@@ -1,18 +1,21 @@
+// {
+//   "$schema": "https://json.schemastore.org/tsconfig",
+//   "display": "@effectai/cli",
+//   "extends": "../../tsconfig.base.json",
+//   "include": ["src"]
+// }
 {
   "compilerOptions": {
-    // Enable latest features
-    "strict": true,
-    "lib": ["ESNext", "DOM"],
-    "moduleResolution": "NodeNext",
-    "module": "NodeNext",
-    "target": "ES6",
-    "skipLibCheck": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
     "declaration": true,
+    "esModuleInterop": true,
+    "declarationMap": true,
     "sourceMap": true,
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
-    "outDir": "./dist"
-  },
-  "include": ["src"],
-  "exclude": ["node_modules"]
+    "noEmitOnError": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler"
+  }
 }

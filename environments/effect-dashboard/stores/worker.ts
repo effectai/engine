@@ -1,114 +1,77 @@
-import { createWorker, Task } from "@effectai/protocol";
-import { multiaddr } from "@multiformats/multiaddr";
-import { PublicKey } from "@solana/web3.js";
-import { useQueryClient } from "@tanstack/vue-query";
+import {
+  createWorker,
+  multiaddr,
+  peerIdFromPrivateKey,
+  generateKeyPairFromSeed,
+  type Multiaddr,
+} from "@effectai/protocol";
 import { IDBDatastore } from "datastore-idb";
 import { defineStore } from "pinia";
-import { useWallet } from "solana-wallets-vue";
 
-export const useWorkerStore = defineStore("worker", {
-  state: () => ({
-    worker: null as Awaited<ReturnType<typeof createWorker>> | null,
-    connectedOn: null as number | null,
-    latency: null as number | null,
-    latencyInterval: null as NodeJS.Timer | null,
-    workerPeerId: null as string | null,
-    managerPeerId: null as string | null,
-    managerPublicKey: null as PublicKey | null,
-    taskUpdateEvent: createEventHook<{ detail: Task }>(),
-    taskCounter: 0,
-    paymentCounter: 0,
-  }),
+export const useWorkerStore = defineStore("worker", () => {
+  const worker: Ref<null | Awaited<ReturnType<typeof createWorker>>> =
+    ref(null);
 
-  getters: {
-    managerRecipientDataAccount: (state) => {
-      const { deriveWorkerManagerDataAccount } = usePaymentProgram();
-      const { publicKey } = useWallet();
+  const workerPeerId: Ref<null | string> = ref(null);
 
-      if (!publicKey.value || !state.managerPublicKey) {
-        return null;
-      }
+  const taskCounter: Ref<number> = ref(0);
+  const paymentCounter: Ref<number> = ref(0);
 
-      return deriveWorkerManagerDataAccount(
-        publicKey.value,
-        new PublicKey(state.managerPublicKey),
-      );
-    },
-  },
+  const ping = async (multiaddr: Multiaddr) => {
+    return await worker.value?.ping(multiaddr);
+  };
 
-  actions: {
-    async initialize(privateKey: Uint8Array) {
-      const datastore = new IDBDatastore("/tmp/worker");
-      await datastore.open();
+  const initialize = async (privateKey: Uint8Array) => {
+    const keypair = await generateKeyPairFromSeed("Ed25519", privateKey);
+    const peerId = peerIdFromPrivateKey(keypair);
+    workerPeerId.value = peerId.toString();
 
-      const config = useRuntimeConfig();
-      const managerNodeMultiAddress = config.public.EFFECT_MANAGER_MULTIADDRESS;
+    const datastore = new IDBDatastore(`/tmp/worker/${peerId.toString()}`);
+    await datastore.open();
 
-      this.worker = await createWorker({
-        datastore,
-        privateKey,
-      });
+    worker.value = await createWorker({
+      datastore,
+      privateKey,
+      autoExpire: true,
+    });
 
-      await this.worker.start();
+    await worker.value.start();
 
-      this.worker.events.addEventListener(
-        "task:created",
-        async ({ detail }) => {
-          this.taskCounter++;
-        },
-      );
+    worker.value.events.addEventListener("task:created", ({ detail }) => {
+      taskCounter.value += 1;
+    });
 
-      this.worker.events.addEventListener("payment:created", ({ detail }) => {
-        this.paymentCounter++;
-      });
+    worker.value.events.addEventListener("payment:created", ({ detail }) => {
+      paymentCounter.value += 1;
+    });
+  };
 
-      // this.latencyInterval = setInterval(async () => {
-      //   if (this.worker && this.connectedOn) {
-      //     const latency = await this.worker.ping(
-      //       multiaddr(managerNodeMultiAddress),
-      //     );
-      //     this.latency = latency;
-      //   }
-      // }, 5000);
-    },
+  const privateKey = useLocalStorage("privateKey", null);
+  watchEffect(async () => {
+    if (!privateKey.value || worker.value) {
+      return;
+    }
 
-    async disconnect() {
-      if (this.worker) {
-        await this.worker.stop();
+    const privateKeyBytes = Buffer.from(privateKey.value, "hex").slice(0, 32);
+    await initialize(privateKeyBytes);
+  });
 
-        this.managerPeerId = null;
-        this.workerPeerId = null;
-        this.managerPublicKey = null;
-        this.connectedOn = null;
-      }
-    },
+  const destroy = async () => {
+    if (worker.value) {
+      await worker.value.stop();
+      worker.value.events.removeEventListener("task:created");
+      worker.value.events.removeEventListener("payment:created");
+      worker.value = null;
+    }
+  };
 
-    async connect(managerMultiAddress: string, currentNonce: bigint) {
-      const { publicKey } = useWallet();
-
-      if (!this.worker) {
-        throw new Error("Worker not initialized");
-      }
-
-      if (!publicKey.value) {
-        throw new Error("Wallet not connected");
-      }
-
-      const result = await this.worker.connect(
-        multiaddr(managerMultiAddress),
-        publicKey.value.toBase58(),
-        currentNonce,
-      );
-
-      if (!result) {
-        throw new Error("Failed to connect to manager");
-      }
-
-      this.managerPublicKey = new PublicKey(result.pubkey);
-      this.connectedOn = Math.floor(Date.now() / 1000);
-      this.managerPeerId =
-        multiaddr(managerMultiAddress).getPeerId()?.toString() || null;
-      this.workerPeerId = this.worker.entity.getPeerId()?.toString() || null;
-    },
-  },
+  return {
+    worker,
+    workerPeerId,
+    initialize,
+    ping,
+    destroy,
+    taskCounter,
+    paymentCounter,
+  };
 });

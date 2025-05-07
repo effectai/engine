@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import type { WorkerTaskRecord } from "@effectai/protocol";
+import type { WorkerTaskRecord } from "@effectai/worker";
 import { useCountdown } from "@vueuse/core";
 const { setActiveTask, getTaskDeadline, useTaskState } = useTasks();
 

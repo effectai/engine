@@ -17,16 +17,16 @@
           class=""
           variant="outline"
           icon="i-lucide-key"
-          @click="disconnect"
+          :disabled="true"
         >
           Export Private Key
         </UButton>
         <UButton
+          :disabled="true"
           color="black"
           class=""
           variant="outline"
           icon="i-lucide-logs"
-          @click="logs"
           >Logs</UButton
         >
       </div>
@@ -75,7 +75,9 @@
             <UIcon name="i-lucide-parking-meter" size="16" />
             NONCE
           </div>
-          <code class="text-emerald-400">{{ maxNonce }}</code>
+          <code class="text-emerald-400" v-if="nonces">{{
+            nonces.nextNonce
+          }}</code>
         </div>
       </div>
     </div>
@@ -83,16 +85,18 @@
 </template>
 
 <script setup lang="ts">
-import { useWallet } from "solana-wallets-vue";
-import { useWorkerStore } from "@/stores/worker";
-
-const { useGetMaxNonce } = usePayments();
-const { data: maxNonce } = useGetMaxNonce();
+const sessionStore = useSessionStore();
+const { managerPeerId, latency } = storeToRefs(sessionStore);
+const { useGetNonce } = sessionStore.useActiveSession();
 
 const workerStore = useWorkerStore();
-const { latency, workerPeerId, managerPeerId } = storeToRefs(workerStore);
+const { workerPeerId } = storeToRefs(workerStore);
 
-const { currentNonce } = usePayments();
+const { data: nonces } = useGetNonce();
+
+const disconnect = async () => {
+  navigateTo("/worker/login");
+};
 </script>
 
 <style scoped></style>

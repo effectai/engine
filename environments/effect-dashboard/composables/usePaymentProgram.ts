@@ -1,4 +1,3 @@
-import { useWallet } from "solana-wallets-vue";
 import * as anchor from "@coral-xyz/anchor";
 import type {
   Program,
@@ -6,98 +5,116 @@ import type {
   ProgramAccount,
   IdlAccounts,
 } from "@coral-xyz/anchor";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
-import { useAnchorProvider } from "./useAnchorProvider";
-import {
-  ComputeBudgetProgram,
-  Keypair,
-  PublicKey,
-  TransactionInstruction,
-} from "@solana/web3.js";
+
+import { useMutation, useQuery } from "@tanstack/vue-query";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import {
   EffectPaymentIdl,
   type EffectPayment,
   type EffectStaking,
-} from "@effectai/shared";
+} from "@effectai/idl";
+// import { buildEddsa } from "circomlibjs";
 
-import { buildEddsa } from "circomlibjs";
-
+import { buildEddsa } from "@effectai/protocol";
 import {
-  createAssociatedTokenAccountIdempotent,
   createAssociatedTokenAccountIdempotentInstructionWithDerivation,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import type { Payment, ProofResponse } from "@effectai/protocol";
-
-const SECONDS_PER_DAY = 86400;
+// import type { ProofResponse } from "@effectai/protocol";
+import type { SolanaWallet } from "@web3auth/solana-provider";
 
 export type EffectStakingProgramAccounts = IdlAccounts<EffectStaking>;
 export type StakingAccount = ProgramAccount<
   EffectStakingProgramAccounts["stakeAccount"]
 >;
 
+const solanaWalletToAnchorWallet = (
+  solanaWallet: SolanaWallet,
+  publicKey: string,
+) => {
+  return {
+    publicKey: new PublicKey(publicKey),
+    signTransaction: async (
+      tx: anchor.web3.Transaction | anchor.web3.VersionedTransaction,
+    ) => {
+      const signedTx = await solanaWallet.signTransaction(tx);
+      return signedTx;
+    },
+    signAllTransactions: async (txs: anchor.web3.Transaction[]) => {
+      const signedTxs = await solanaWallet.signAllTransactions(txs);
+      return signedTxs;
+    },
+  };
+};
+
 export function usePaymentProgram() {
   const { connection, mint } = useGlobalState();
-  const { provider } = useAnchorProvider();
+  const { solanaWallet, account } = useWeb3Auth();
+
+  if (!solanaWallet.value) {
+    throw new Error("Solana wallet is not set..");
+  }
+
+  const wallet = solanaWalletToAnchorWallet(solanaWallet.value, account.value);
+  const provider = new anchor.AnchorProvider(connection, wallet, {});
 
   const paymentProgram = computed(() => {
     return new anchor.Program(
       EffectPaymentIdl as Idl,
-      provider.value || undefined,
+      provider || undefined,
     ) as unknown as Program<EffectPayment>;
   });
 
+  const useClaimWithProof = () =>
+    useMutation({
+      mutationKey: ["claimWithProof"],
+      mutationFn: async (proof: ProofResponse) => {
+        return claimWithProof(proof);
+      },
+    });
+
   const claimWithProof = async (proof: ProofResponse) => {
-    const { publicKey } = useWallet();
-    const workerStore = useWorkerStore();
-    const { managerRecipientDataAccount, managerPublicKey } =
-      storeToRefs(workerStore);
+    const sessionStore = useSessionStore();
+    const { account, managerPublicKey } = sessionStore.useActiveSession();
 
-    if (!publicKey.value) {
-      throw new Error("No public key found");
+    if (!proof.signals) {
+      throw new Error("No valid proof found");
     }
 
-    if (!managerPublicKey.value) {
-      throw new Error("No manager public key found");
+    if (!account.value || !managerPublicKey.value) {
+      throw new Error("No account or manager public key found");
     }
 
-    if (!managerRecipientDataAccount.value) {
-      throw new Error("No manager recipient data account found");
-    }
+    const managerRecipientDataAccount = deriveWorkerManagerDataAccount(
+      account.value,
+      managerPublicKey.value,
+    );
 
-    const ata = getAssociatedTokenAddressSync(mint, publicKey.value);
+    const ata = getAssociatedTokenAddressSync(mint, account.value);
 
     const dataAccount =
       await paymentProgram.value.account.recipientManagerDataAccount.fetchNullable(
-        managerRecipientDataAccount.value,
+        managerRecipientDataAccount,
       );
 
     const eddsa = await buildEddsa();
 
     const tx = await paymentProgram.value.methods
       .claim(
-        new anchor.BN(proof.signals?.minNonce),
-        new anchor.BN(proof.signals?.maxNonce),
-        new anchor.BN(proof.signals?.amount.toString()),
-        bigIntToBytes32(eddsa.F.toObject(proof.R8?.R8_1)),
-        bigIntToBytes32(eddsa.F.toObject(proof.R8?.R8_2)),
+        new anchor.BN(proof.signals.minNonce).toNumber(),
+        new anchor.BN(proof.signals.maxNonce).toNumber(),
+        new anchor.BN(proof.signals.amount.toString()),
+        Array.from(bigIntToBytes32(eddsa.F.toObject(proof.r8?.R8_1))),
+        Array.from(bigIntToBytes32(eddsa.F.toObject(proof.r8?.R8_2))),
         Array.from(convertProofToBytes(proof)),
       )
-      .accounts({
-        recipientManagerDataAccount: managerRecipientDataAccount.value,
-        paymentAccount: new PublicKey(
-          "AahuY9eumjHYtp7qXJLDEFiHVjffZA6U4S8FWkDyDoVb",
-        ),
-        mint,
-        recipientTokenAccount: ata,
-      })
       .preInstructions([
         ...((await connection.getAccountInfo(ata))
           ? []
           : [
               createAssociatedTokenAccountIdempotentInstructionWithDerivation(
-                publicKey.value,
-                publicKey.value,
+                account.value,
+                account.value,
                 mint,
               ),
             ]),
@@ -112,7 +129,15 @@ export function usePaymentProgram() {
                 .instruction(),
             ]),
       ])
+      .accounts({
+        recipientManagerDataAccount: managerRecipientDataAccount,
+        paymentAccount: new PublicKey(proof.signals.paymentAccount),
+        mint,
+        recipientTokenAccount: ata,
+      })
       .rpc();
+
+    return tx;
   };
 
   const deriveWorkerManagerDataAccount = (
@@ -127,23 +152,20 @@ export function usePaymentProgram() {
     return publicKey;
   };
 
-  const useRecipientManagerDataAccount = (managerPublicKey: PublicKey) => {
-    const { publicKey } = useWallet();
-
+  const useRecipientManagerDataAccount = (
+    account: Ref<string | null | undefined>,
+    managerPublicKey: Ref<string | undefined>,
+  ) => {
     return useQuery({
-      queryKey: [
-        "recipientManagerDataAccount",
-        publicKey,
-        managerPublicKey.toBase58(),
-      ],
+      queryKey: ["dataAccount", account, managerPublicKey],
       queryFn: async () => {
-        if (!publicKey.value) {
-          throw new Error("No public key found");
+        if (!account.value || !managerPublicKey.value) {
+          throw new Error("No account or manager public key found");
         }
 
         const managerDataAccount = deriveWorkerManagerDataAccount(
-          publicKey.value,
-          managerPublicKey,
+          new PublicKey(account.value),
+          new PublicKey(managerPublicKey.value),
         );
 
         const dataAccount =
@@ -153,31 +175,15 @@ export function usePaymentProgram() {
 
         return dataAccount;
       },
+      enabled: computed(() => !!account.value && !!managerPublicKey.value),
     });
-  };
-
-  const fetchRemoteNonce = async (
-    workerPublicKey: PublicKey,
-    managerPublicKey: PublicKey,
-  ) => {
-    const managerDataAccount = deriveWorkerManagerDataAccount(
-      workerPublicKey,
-      managerPublicKey,
-    );
-
-    const result =
-      await paymentProgram.value.account.recipientManagerDataAccount.fetchNullable(
-        managerDataAccount,
-      );
-
-    return result ? BigInt(result.nonce) : null;
   };
 
   return {
     program: paymentProgram,
-    fetchRemoteNonce,
-    deriveWorkerManagerDataAccount,
+    useClaimWithProof,
     claimWithProof,
     useRecipientManagerDataAccount,
+    deriveWorkerManagerDataAccount,
   };
 }

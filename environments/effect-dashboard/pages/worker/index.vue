@@ -39,42 +39,21 @@
 </template>
 
 <script lang="ts" setup>
-import { useWorkerStore } from "@/stores/worker";
-import { multiaddr } from "@multiformats/multiaddr";
-import { PublicKey } from "@solana/web3.js";
-import { useWallet } from "solana-wallets-vue";
-
 definePageMeta({
-  middleware: ["auth", "connected"],
+  layout: "worker",
+  middleware: ["auth"],
 });
 
-const workerStore = useWorkerStore();
 const config = useRuntimeConfig();
-const privateKey = useLocalStorage("privateKey", null);
 
-const privateKeyBytes = Buffer.from(privateKey.value, "hex").slice(0, 32);
-const managerPublicKey = new PublicKey(
-  config.public.EFFECT_MANAGER_SOLANA_PUBKEY,
-);
-const { connectedOn } = storeToRefs(workerStore);
+const { useActiveSession, useDisconnect } = useSessionStore();
+const { connectedOn } = useActiveSession();
+onMounted(() => {
+  if (!connectedOn.value) {
+    navigateTo("/worker/connect");
+  }
+});
 const uptime = useUptime(connectedOn);
-
-const managerNodeMultiAddress = config.public.EFFECT_MANAGER_MULTIADDRESS;
-const managerPeerId = multiaddr(managerNodeMultiAddress).getPeerId();
-if (!managerPeerId) {
-  throw new Error("Invalid manager node multiaddress");
-}
-const { publicKey } = useWallet();
-if (!publicKey.value) {
-  throw new Error("No public key found");
-}
-await workerStore.initialize(privateKeyBytes);
-const nonce = await useNextNonce(
-  publicKey.value,
-  managerPublicKey,
-  managerPeerId.toString(),
-);
-await workerStore.connect(managerNodeMultiAddress, nonce);
 
 const { useGetPayments } = usePayments();
 const { data: payments } = useGetPayments();
@@ -125,36 +104,9 @@ const totalCompletedTasks = computed(() => {
   return completedTasks.value.length;
 });
 
+const { mutateAsync: disconnect } = useDisconnect();
+
 tryOnBeforeUnmount(async () => {
-  await workerStore.disconnect();
+  await disconnect();
 });
-
-const payoutInterval = Number.parseInt(config.public.PAYOUT_INTERVAL);
-const interval = useIntervalFn(
-  async () => {
-    if (!workerStore.worker || !workerStore.managerPeerId) {
-      return;
-    }
-
-    await workerStore.worker.requestPayout({
-      managerPeerIdStr: workerStore.managerPeerId,
-    });
-  },
-  payoutInterval,
-  {
-    immediate: false,
-  },
-);
-
-watch(
-  () => connectedOn.value,
-  (newValue) => {
-    if (newValue) {
-      interval.resume();
-    } else {
-      interval.pause();
-    }
-  },
-  { immediate: true },
-);
 </script>
