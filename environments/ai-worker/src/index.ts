@@ -44,16 +44,16 @@ const mainLoop = async () => {
       case "init_p2p":
 	console.log("Initializing p2p");
 
+	state.privateKey = workerKp;
 	state.datastore = new LevelDatastore(storePath);
 	await (state.datastore as LevelDatastore).open();
 
 	await Worker.create();
-	state.current = "init_llm";
 
 	console.log("Creating worker");
 	await state.worker!.start();
 
-	console.log("Starting worker");
+	console.log("Starting worker with code");
 	const workerRecipient = Keypair.fromSecretKey(seed, {
 	  skipValidation: true,
 	});
@@ -61,8 +61,11 @@ const mainLoop = async () => {
 	  multiaddr(p2pBoot),
 	  workerRecipient.publicKey.toBase58(),
 	  1n,
+	  "vx1n4m9f"
 	);
 	console.log("Connected to network");
+
+	state.current = "init_llm";
 
 	break;
 
