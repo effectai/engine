@@ -20,13 +20,13 @@
 (define-public node-pnpm
   (package
     (name "node-pnpm")
-    (version "8.15.6")
+    (version "10.10.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://registry.npmjs.org/pnpm/-/pnpm-" version ".tgz"))
        (sha256
-	(base32 "0vrfzyciqwl87wq82bmqa19gljm10sfkxh0rxwqrndqfk7mixh01"))))
+	(base32 "0c1af3n0w0djbfv9k44r9xxz0w62i03l4cmlnv9685qrm0x523zs"))))
     (build-system node-build-system)
     (arguments
      (list
