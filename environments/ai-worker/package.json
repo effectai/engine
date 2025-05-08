@@ -14,7 +14,6 @@
     "libp2p": "^2.8.2",
 
     "@effectai/protocol": "workspace:*",
-    "@effectai/shared": "workspace:*",
 
     "datastore-core": "^10.0.2",
     "datastore-level": "^11.0.1",
