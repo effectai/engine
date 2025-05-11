@@ -1,0 +1,160 @@
+<div id="app" style="text-align: center">
+    <h1>Effect AI - Sentence Reader</h1>
+  
+    <hr />
+  
+    <div class="mx-auto" style="max-width: 80%">
+    
+    <p class="mb-5">Click <b>Record</b> then read the sentence aloud</p>
+    <div class="box">
+      <p class="is-size-4 has-text-weight-semibold" v-cloak>{{sentence}}</p>
+    </div>
+
+    <button class="button"
+      v-if="!isRecording"
+      @click.prevent="startRecording"
+      class="button is-primary is-large"
+      >
+      Record
+    </button>
+    
+    <button class="button"
+      v-cloak
+      v-else
+      @click.prevent="stopRecording"
+      class="button is-primary is-large"
+      >
+      Stop
+    </button>
+
+    <button class="button"
+      v-cloak
+      v-if="audioUrl!=''"
+      @click.prevent="playAudio"
+      class="button is-primary is-large"
+      >
+      Replay
+    </button>
+
+    <div class="container is-max-tablet box mt-5 ">
+      <label class="label">Instructions:</label>
+      <div class="has-text-left">
+        <li>We welcome different accents!</li>
+        <li>If you see a sentence that offends or upsets you please do use the flag button in the UI.</li>
+        <li>Reading all the words on the page correctly does matter. When listening, check very carefully that what has been recorded is exactly what has been written</li>
+        <li>You need to be able to hear every word of the recording.</li>
+        <li>A little background noise is okay, but if you can hear another person speaking distinct words, the clip should be re-recorded.</li>
+      </div>      
+    </div>
+
+    <!-- <audio v-if="audioUrl" :src="audioUrl"></audio> -->
+    <audio ref="audioPlayer" :src="audioUrl" style="display: none;"></audio>
+
+    <p class="is-size-7 mb-2">By clicking this button, you accept that the sentence contributed here will be added to a publicly available cc-0 licensed dataset.</p>
+
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-primary is-large"
+      :class="{'is-loading': btnLoading}"
+    >
+      Submit
+    </button>
+  </div>
+  
+  <!-- 📚 Load in resources: [Bulma, Effect Network Styling]  -->
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+  
+  <script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+  
+    createApp({
+      data() {
+        return {
+          title: "Effect AI Sentence Creator",
+          recorder: null,      // MediaRecorder instance
+          audioChunks: [],     // Array to hold the audio chunks
+          audioUrl: "",        // The URL of the recorded audio
+          isRecording: false,  // Boolean to track if recording is in progress
+          sentence: ""
+        };
+      },
+      computed: {},
+      created() {},
+      async mounted() {
+
+        // this.sentence = await fetch('https://cors-anywhere.herokuapp.com/https://commonvoice.mozilla.org/api/v1/en/sentences?count=1', {
+        //   headers: {
+        //     "Origin": "http://localhost", // or any string
+        //     "X-Requested-With": "XMLHttpRequest"
+        //   },
+        // });
+        // const json = await this.sentence.json();
+        // console.log(json);
+
+        this.sentence = "Overall, living in Oxford as a student has been an enriching and fulfilling experience."
+        
+
+      },
+      methods: {
+        playAudio(){
+          const audio = this.$refs.audioPlayer; // Access the hidden audio element
+          audio.play(); // Play the audio
+        },
+        stopAudio(){
+          const audio = this.$refs.audioPlayer; // Access the hidden audio element
+          audio.stop(); // Play the audio
+        },
+        async startRecording() {
+          // Request microphone access
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+          this.recorder = new MediaRecorder(stream)
+          this.audioChunks = [] // Clear any previous recordings
+
+          // Collect audio data chunks
+          this.recorder.ondataavailable = (event) => {
+            this.audioChunks.push(event.data)
+          }
+
+          // When recording stops, process the recorded audio
+          this.recorder.onstop = () => {
+            const audioBlob = new Blob(this.audioChunks, { type: "audio/wav" })
+            this.audioUrl = URL.createObjectURL(audioBlob) // Create URL for playback
+          }
+
+          this.recorder.start() // Start recording
+          this.isRecording = true // Set recording status
+        },
+        stopRecording() {
+          if (this.recorder && this.recorder.state === "recording") {
+            this.recorder.stop() // Stop recording
+            this.isRecording = false // Set recording status to false
+          }
+        },
+        async uploadAndSubmit() {
+          this.btnLoading = true;
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  sentence: this.tmpSentence,
+                },
+              },
+              "*"
+            );
+          } catch (error) {
+            console.error("Failed to upload to IPFS", error);
+          }
+          this.btnLoading = false;
+        },
+      },
+    }).mount("#app");
+  </script>
+
+  <style scoped>
+    [v-cloak] {
+      display: none;
+    }
+  </style>
