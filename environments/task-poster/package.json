@@ -1,0 +1,28 @@
+{
+  "name": "@effectai/task-poster",
+  "version": "0.0.0",
+  "description": "UI for posting tasks",
+  "type": "module",
+  "main": "src/server.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src"
+  },
+  "dependencies": {
+    "@cross/kv": "npm:@jsr/cross__kv@^0.17.3",
+    "@effectai/protocol": "workspace:*",
+    "@fast-csv/parse": "^5.0.2",
+    "@libp2p/interface": "^2.7.0",
+    "axios": "^1.8.4",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "connect-livereload": "^0.6.1",
+    "livereload": "^0.9.3",
+    "tsx": "^4.1.2",
+    "typescript": "^5.8.2"
+  }
+}
