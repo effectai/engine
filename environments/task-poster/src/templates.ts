@@ -14,16 +14,40 @@ type APIResponse = {
 export type TemplateRecord = {
   createdAt: number;
   name: string;
+  templateId: string;
 };
 
 const api = axios.create({
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
-  baseURL: "http://localhost:8889",
+  baseURL: "http://mgr1.stage.effect.net:8889",
+  // baseURL: "http://localhost:8889",
 });
 
+export const getTemplates = async () =>
+  await db.listAll<TemplateRecord>(["templates", {}]);
+export const getTemplate = async (id: string) =>
+  await db.get<TemplateRecord>(["templates", id]);
+
+export const renderTemplate = async (
+  tid: string,
+  data: any,
+): Promise<string> => {
+  const template = await getTemplate(tid);
+
+  const templateHtml = template?.data.data.replace(
+    /\$\{([^}]+)\}/g,
+    (_: any, key: any) => {
+      const value = data && data[key.trim()];
+      return value !== undefined ? value : "";
+    },
+  );
+
+  return templateHtml;
+};
+
 const form = (msg = "", values: Record<string, string> = {}): string => `
-<form id="main-form" hx-post="/t/create">
+<form id="main-form" hx-post="/t/create" hx-swap="outerHTML">
   ${msg ? `<p><blockquote>${msg}</blockquote></p>` : ""}
   <fieldset style="width: 100%;">
 

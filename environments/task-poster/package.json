@@ -10,8 +10,9 @@
     "dev": "tsx watch src"
   },
   "dependencies": {
-    "@effectai/protocol": "workspace:*",
     "@cross/kv": "npm:@jsr/cross__kv@^0.17.3",
+    "@effectai/protocol": "workspace:*",
+    "@fast-csv/parse": "^5.0.2",
     "@libp2p/interface": "^2.7.0",
     "axios": "^1.8.4",
     "express": "^4.18.2"
