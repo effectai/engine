@@ -38,20 +38,13 @@ taskCommand
   .option("--id <taskId>", "Custom task ID")
   .action(async (options) => {
     try {
-      //get random image from https://picsum.photos/
-      const imageUrl = `https://picsum.photos/400/400?random=${Math.floor(
-        Math.random() * 1000,
-      )}`;
-
       const task: Task = {
         id: ulid(),
         title: options.title,
         reward: options.reward.toString(),
         timeLimitSeconds: Number.parseInt(options.timeLimit),
         templateId: options.templateId,
-        templateData: JSON.stringify({
-          image_url: imageUrl,
-        }),
+        templateData: JSON.stringify(options.data || {}),
       };
 
       const { data } = await api.post<APIResponse>(`${options.url}/task`, task);
