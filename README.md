@@ -87,7 +87,7 @@ pnpm cli manager tasks post --url <manager-url> --template-id <template-id> --ti
 
 In order for payouts to work, you need to run a local solana validator and deploy the payment contract
 
-1. Install the [Solana CLI](https://solana.com/nl/docs/intro/installation)
+1. Install the [Solana CLI](https://solana.com/docs/intro/installation)
 
 2. Start a local validator
 
