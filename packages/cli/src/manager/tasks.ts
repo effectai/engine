@@ -44,7 +44,7 @@ taskCommand
         reward: options.reward.toString(),
         timeLimitSeconds: Number.parseInt(options.timeLimit),
         templateId: options.templateId,
-        templateData: JSON.stringify(options.data || {}),
+        templateData: options.data || {},
       };
 
       const { data } = await api.post<APIResponse>(`${options.url}/task`, task);
