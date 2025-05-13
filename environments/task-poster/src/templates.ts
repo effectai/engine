@@ -1,6 +1,7 @@
 import { isHtmx, page } from "./html.js";
 import type { Express } from "express";
 import { managerId, db } from "./state.js";
+import * as state from "./state.js";
 import axios from "axios";
 import { type Template, computeTemplateId } from "@effectai/protocol";
 
@@ -20,8 +21,7 @@ export type TemplateRecord = {
 const api = axios.create({
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
-  baseURL: "http://mgr1.stage.effect.net:8889",
-  // baseURL: "http://localhost:8889",
+  baseURL: state.managerUrl,
 });
 
 export const getTemplates = async () =>

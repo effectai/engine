@@ -5,3 +5,6 @@ export const db = new KV();
 
 // state to track the publish proress of CSV files
 export const publishProgress: Record<number, any> = {};
+
+export const managerUrl = `http://localhost:8889`;  // "http://mgr1.stage.effect.net:8889",
+
