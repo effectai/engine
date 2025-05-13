@@ -413,12 +413,15 @@ button {
     right: 10px;
 }
 
-
-
 section { border-top: 1px dashed color-mix(in srgb, var(--foreground) 20%, transparent);
 	  margin-top: 25px; padding-top: 25px; }
+section>h3:first-child { margin-top: 0; }
 
 .block { flex: 1; display: inline-block; margin: 3px; background-color: var(--accent); width: 15px; height: 15px; }
 .block.empty { background-color: transparent; border: 1px solid var(--accent); }
 .block:first-child { margin-left: 0; }
 
+.boxbox { display: flex; flex-flow: row wrap; margin-bottom: 25px; }
+.box { border: 1px solid var(--accent); padding: 10px; flex-grow: 0 }
+
+header { margin-bottom: 25px; border-bottom: 1px solid var(--accent); }

@@ -65,19 +65,25 @@ const addMainRoutes = (app: Express) => {
 
     res.send(
       page(`
-Manager: ${req.params.manager}
+<small>Manager: ${req.params.manager}</small>
 
-<h3>Known Templates</h3>
-<ul><li>${tmpList.join("</li><li>")}</li></ul>
-<a href="/t/create"><button>Create Template</button></a>
+<h3>Known Templates (${tmpList.length})</h3>
+<div class="boxbox">
+  <div class="box">${tmpList.join("</div><div class=\"box\">")}</div>
+</div>
+<a href="/t/create"><button>+ Create Template</button></a>
 
-<h3>Active Datasets</h3>
-<ul><li>${dsList.join("</li><li>")}</li></ul>
-<a href="/d/create"><button>Create Dataset</button></a>
+<section>
+  <h3>Active Datasets (${dsList.length})</h3>
+  ${dsList.length ? `
+  <ul><li>${dsList.join("</li><li>")}</li></ul>` : ''}
+  <a href="/d/create"><button>+ Create Dataset</button></a>
+</section>
 
-<h3>Finished Datasets</h3>
-<ul><li>${oldDs.join("</li><li>")}</li></ul>
-<a href="/d/create"><button>Create Dataset</button></a>
+<section>
+  <h3>Finished Datasets</h3>
+  <ul><li>${oldDs.reverse().join("</li><li>")}</li></ul>
+</section>
 
 `),
     );
