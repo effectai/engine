@@ -1,5 +1,5 @@
 {
-  "name": "@effectai/task-poster",
+  "name": "task-poster",
   "version": "0.0.0",
   "description": "UI for posting tasks",
   "type": "module",

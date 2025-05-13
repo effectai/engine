@@ -37,10 +37,6 @@
               <span class="text-gray-400">Total Staked Tokens</span
               ><span>{{ formatNumber(stakeAmount) }} EFFECT</span>
             </div>
-            <div class="flex justify-between">
-              <span class="text-gray-400">January Stake Bonus</span
-              ><span>20 %</span>
-            </div>
           </div>
 
           <div>
@@ -92,32 +88,32 @@
 <script setup lang="ts">
 const { useUnstake, useGetStakeAccount } = useStakingProgram();
 const { amountFormatted: stakeAmount, data: stakeAccount } =
-	useGetStakeAccount();
+  useGetStakeAccount();
 const { mutateAsync: unstake, isPending } = useUnstake();
 
 const unstakeAmount = ref<number>(0);
 
 const setMaxAmount = () => {
-	unstakeAmount.value = stakeAmount.value;
+  unstakeAmount.value = stakeAmount.value;
 };
 
 const isValid = computed(() => {
-	if (!unstakeAmount.value || !stakeAmount.value) {
-		return false;
-	}
-	const amount = unstakeAmount.value;
-	return amount > 0 && amount <= stakeAmount.value;
+  if (!unstakeAmount.value || !stakeAmount.value) {
+    return false;
+  }
+  const amount = unstakeAmount.value;
+  return amount > 0 && amount <= stakeAmount.value;
 });
 
 const handleSubmit = async () => {
-	if (!stakeAccount.value) {
-		throw new Error("No stake account found");
-	}
+  if (!stakeAccount.value) {
+    throw new Error("No stake account found");
+  }
 
-	const tx = await unstake({
-		amount: unstakeAmount.value,
-		stakeAccount: stakeAccount.value,
-	});
+  const tx = await unstake({
+    amount: unstakeAmount.value,
+    stakeAccount: stakeAccount.value,
+  });
 };
 </script>
 

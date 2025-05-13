@@ -2,6 +2,7 @@ import { vitePlugin as remix } from "@remix-run/dev";
 import path from "node:path";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { watchAndRun } from "vite-plugin-watch-and-run";
 
 declare module "@remix-run/node" {
   interface Future {
@@ -15,12 +16,16 @@ export default defineConfig({
       // "@": path.resolve(__dirname, "./app"),
     },
   },
-
-  ssr: {
-    noExternal: ["pino", "pino-pretty"],
-  },
-
   plugins: [
+    watchAndRun([
+      {
+        name: "gen",
+        watch: path.resolve("app/**/*.(tsx)"),
+        run: "pnpm build",
+        // watchKind: ['add', 'change', 'unlink'], // (default)
+        delay: 300, // (default)
+      },
+    ]),
     remix({
       future: {
         v3_fetcherPersist: true,

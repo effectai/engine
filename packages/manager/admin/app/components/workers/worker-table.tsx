@@ -26,11 +26,11 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { WorkerState } from "../../../dist/stores/managerWorkerStore";
 import { Link } from "@remix-run/react";
+import { WorkerRecord } from "../../../../dist/stores/managerWorkerStore";
 
 interface WorkersTableProps {
-  workers: WorkerState[];
+  workers: WorkerRecord[];
   onBan: (peerId: string) => void;
   onUnban: (peerId: string) => void;
 }
@@ -59,24 +59,25 @@ export function WorkersTable({ workers, onBan, onUnban }: WorkersTableProps) {
             </TableRow>
           ) : (
             workers.map((worker) => {
-              const isActive = Date.now() - worker.lastActivity < 3600000; // 1 hour
+              const isActive = Date.now() - worker.state.lastActivity < 3600000; // 1 hour
               const successRate =
-                worker.tasksCompleted > 0
-                  ? ((worker.tasksCompleted / worker.totalTasks) * 100).toFixed(
-                      1,
-                    )
+                worker.state.tasksCompleted > 0
+                  ? (
+                      (worker.state.tasksCompleted / worker.state.totalTasks) *
+                      100
+                    ).toFixed(1)
                   : "0.0";
 
               return (
                 <TableRow
-                  key={worker.peerId}
+                  key={worker.state.peerId}
                   className={cn(
                     "transition-colors hover:bg-muted/50",
-                    worker.banned && "bg-destructive/5",
+                    worker.state.banned && "bg-destructive/5",
                   )}
                 >
                   <TableCell>
-                    {worker.banned ? (
+                    {worker.state.banned ? (
                       <XCircle className="h-5 w-5 text-destructive" />
                     ) : isActive ? (
                       <CheckCircle className="h-5 w-5 text-green-500" />
@@ -86,17 +87,20 @@ export function WorkersTable({ workers, onBan, onUnban }: WorkersTableProps) {
                   </TableCell>
                   <TableCell className="font-medium">
                     <Link
-                      href={`/workers/${worker.peerId}`}
+                      to={`/workers/${worker.state.peerId}`}
                       className="flex items-center hover:underline"
                     >
-                      {worker.peerId.slice(0, 12)}...
+                      {worker.state.peerId.slice(0, 12)}...
                       <ExternalLink className="ml-1 h-3 w-3" />
                     </Link>
                   </TableCell>
                   <TableCell>
-                    {formatDistanceToNow(new Date(worker.lastActivity), {
-                      addSuffix: true,
-                    })}
+                    {formatDistanceToNow(
+                      new Date(worker.state.lastActivity * 1000),
+                      {
+                        addSuffix: true,
+                      },
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <span
@@ -113,13 +117,16 @@ export function WorkersTable({ workers, onBan, onUnban }: WorkersTableProps) {
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    {worker.tasksCompleted}/{worker.totalTasks}
+                    {worker.state.tasksCompleted}/{worker.state.totalTasks}
                   </TableCell>
                   <TableCell className="text-right">
-                    {worker.lastPayout > 0
-                      ? formatDistanceToNow(new Date(worker.lastPayout), {
-                          addSuffix: true,
-                        })
+                    {worker.state.lastPayout > 0
+                      ? formatDistanceToNow(
+                          new Date(worker.state.lastPayout * 1000),
+                          {
+                            addSuffix: true,
+                          },
+                        )
                       : "Never"}
                   </TableCell>
                   <TableCell>
@@ -134,17 +141,17 @@ export function WorkersTable({ workers, onBan, onUnban }: WorkersTableProps) {
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem
                           onClick={() => {
-                            navigator.clipboard.writeText(worker.peerId);
+                            navigator.clipboard.writeText(worker.state.peerId);
                           }}
                         >
                           Copy ID
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/workers/${worker.peerId}`}>
+                          <Link to={`/workers/${worker.state.peerId}`}>
                             View details
                           </Link>
                         </DropdownMenuItem>
-                        {worker.banned ? (
+                        {worker.state.banned ? (
                           <DropdownMenuItem
                             onClick={() => onUnban(worker.peerId)}
                             className="text-green-500 focus:text-green-500"
@@ -154,7 +161,7 @@ export function WorkersTable({ workers, onBan, onUnban }: WorkersTableProps) {
                           </DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem
-                            onClick={() => onBan(worker.peerId)}
+                            onClick={() => onBan(worker.state.peerId)}
                             className="text-destructive focus:text-destructive"
                           >
                             <ShieldAlert className="mr-2 h-4 w-4" />

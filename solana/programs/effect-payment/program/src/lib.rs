@@ -10,7 +10,7 @@ mod verifying_key;
 use effect_payment_common::EFFECT_PAYMENT;
 pub use instructions::*;
 
-declare_id!(EFFECT_PAYMENT);
+declare_id!("effphQKcAYeN6CkbygjnJUsuYXGUtkikSPZ6B8hSggC");
 
 #[program]
 pub mod effect_payment {

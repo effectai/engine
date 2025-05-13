@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/effect_rewards.json`.
  */
 export type EffectRewards = {
-  "address": "effectrewards",
+  "address": "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi",
   "metadata": {
     "name": "effectRewards",
     "version": "0.1.0",

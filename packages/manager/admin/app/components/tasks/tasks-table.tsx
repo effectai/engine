@@ -27,12 +27,14 @@ import {
 import { Badge } from "~/components/ui/badge";
 import { Task } from "@effectai/protocol-core";
 import { Link } from "@remix-run/react";
+import type { ManagerTaskRecord } from "@effectai/manager";
+import { decodeTime } from "ulid";
 
 interface TasksTableProps {
-  tasks: Task[];
+  tasks: ManagerTaskRecord[];
 }
 
-export function TasksTable({ tasks }: TasksTableProps) {
+export function TasksTable({ tasks, index }: TasksTableProps) {
   return (
     <div className="rounded-md border shadow-sm">
       <Table>
@@ -46,7 +48,8 @@ export function TasksTable({ tasks }: TasksTableProps) {
                 </Button>
               </div>
             </TableHead>
-            <TableHead>Template</TableHead>
+            <TableHead className="">Created</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead className="text-right">
               <div className="flex items-center justify-end space-x-1">
                 <span>Reward</span>
@@ -70,32 +73,36 @@ export function TasksTable({ tasks }: TasksTableProps) {
             tasks.map((task) => {
               return (
                 <TableRow
-                  key={task.id}
+                  key={task.state.id}
                   className="transition-colors hover:bg-muted/50"
                 >
                   <TableCell className="font-medium">
                     <Link
-                      href={`/tasks/${task.id}`}
+                      to={`/tasks/${index}/${task.state.id}`}
                       className="flex items-center hover:underline"
                     >
-                      {task.title}
+                      {task.state.title}
                       <ExternalLink className="ml-1 h-3 w-3" />
                     </Link>
                   </TableCell>
+                  <TableCell className="">
+                    {new Date(decodeTime(task.state.id)).toLocaleString()}
+                  </TableCell>
+
                   <TableCell>
                     <Badge variant="outline" className="font-mono text-xs">
-                      {task.templateId.slice(0, 8)}...
+                      {task.events[task.events.length - 1].type}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono">
-                    {(Number(task.reward) / 1e6).toFixed(6)} EFFECT
+                    {(Number(task.state.reward) / 1e6).toFixed(6)} EFFECT
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end">
                       <Clock className="mr-1 h-3 w-3 text-muted-foreground" />
-                      {task.timeLimitSeconds > 3600
-                        ? `${Math.floor(task.timeLimitSeconds / 3600)} hours`
-                        : `${Math.floor(task.timeLimitSeconds / 60)} minutes`}
+                      {task.state.timeLimitSeconds > 3600
+                        ? `${Math.floor(task.state.timeLimitSeconds / 3600)} hours`
+                        : `${Math.floor(task.state.timeLimitSeconds / 60)} minutes`}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -116,10 +123,12 @@ export function TasksTable({ tasks }: TasksTableProps) {
                           Copy ID
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/tasks/${task.id}`}>View details</Link>
+                          <Link to={`/tasks/${index}/${task.state.id}`}>
+                            View details
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => {}}>
+                        <DropdownMenuItem disabled onClick={() => {}}>
                           <FileText className="mr-2 h-4 w-4" />
                           View Template Data
                         </DropdownMenuItem>

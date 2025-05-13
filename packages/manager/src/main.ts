@@ -17,6 +17,8 @@ import { bigIntToBytes32, compressBabyJubJubPubKey } from "./utils.js";
 import { PublicKey } from "@solana/web3.js";
 import { PAYMENT_BATCH_SIZE } from "./consts.js";
 
+import type { Request, Response, NextFunction } from "express";
+
 import { createRequestHandler } from "@remix-run/express";
 
 import {
@@ -32,17 +34,6 @@ import {
 
 import path from "node:path";
 
-export type ManagerInfoResponse = {
-  status: string;
-  peerId: string;
-  announcedAddresses: string[];
-  requireAccessCodes: boolean;
-  publicKey: string;
-  connectedPeers: number;
-  pendingTasks: number;
-  completedTasks: number;
-};
-
 export type ManagerEvents = {
   "task:created": (task: TaskRecord) => void;
   "task:accepted": CustomEvent<TaskRecord>;
@@ -53,6 +44,8 @@ export type ManagerEvents = {
 };
 
 export type ManagerEntity = Awaited<ReturnType<typeof createManagerEntity>>;
+export type CreateTaskManager = ReturnType<typeof createTaskManager>;
+export type CreateWorkerManager = ReturnType<typeof createWorkerManager>;
 
 export type ManagerContext = {
   manager: ManagerEntity;
@@ -251,8 +244,6 @@ export const createManager = async ({
   entity.post("/task", async (req, res) => {
     const task = req.body;
     try {
-      console.log("Received task:", task);
-      //save task in manager store
       await taskManager.createTask({
         task,
         providerPeerIdStr: entity.getPeerId().toString(),
@@ -319,25 +310,6 @@ export const createManager = async ({
     }
   });
 
-  //TODO::
-  //make post endpoint to ban/remove peers
-  entity.post("/peer/remove", async (req, res) => {
-    const { peerId } = req.body;
-    try {
-      await entity.node.peerStore.delete(peerId);
-      await entity.node.hangUp(peerId);
-      res.json({ status: "Peer removed", peerId });
-    } catch (e: unknown) {
-      console.error("Error removing peer", e);
-      if (e instanceof Error) {
-        res.status(500).json({
-          status: "Error removing peer",
-          error: e.message,
-        });
-      }
-    }
-  });
-
   let isStarted = false;
   const start = async () => {
     //start libp2p & http transports
@@ -398,12 +370,37 @@ export const createManager = async ({
   });
 
   const setupManagerDashboard = async () => {
+    const username = "admin";
+    const password = "!effectai!#65";
+
+    function basicAuth(req: Request, res: Response, next: NextFunction) {
+      const authHeader = req.headers.authorization;
+
+      if (!authHeader || !authHeader.startsWith("Basic ")) {
+        res.setHeader("WWW-Authenticate", 'Basic realm="Remix App"');
+        return res.status(401).send("Authentication required.");
+      }
+
+      const base64Credentials = authHeader.split(" ")[1];
+      const credentials = Buffer.from(base64Credentials, "base64").toString(
+        "ascii",
+      );
+      const [inputUser, inputPass] = credentials.split(":");
+
+      if (inputUser === username && inputPass === password) {
+        return next();
+      }
+
+      res.setHeader("WWW-Authenticate", 'Basic realm="Remix App"');
+      return res.status(401).send("Invalid credentials.");
+    }
+
     async function setupRemix(app: any, context: ManagerContext) {
       const { createRequire } = await import("node:module");
       const require = createRequire(import.meta.url);
 
       const build = await import(
-        require.resolve("../admin-dashboard/build/server/index.js")
+        require.resolve("../admin/build/server/index.js")
       );
 
       const remixHandler = createRequestHandler({
@@ -426,11 +423,10 @@ export const createManager = async ({
 
     const app = express.default();
     app.use(cors.default());
+    app.use(basicAuth);
 
     app.use(
-      express.default.static(
-        path.join(__dirname, "../admin-dashboard/build/client"),
-      ),
+      express.default.static(path.join(__dirname, "../admin/build/client")),
     );
 
     app.get("/favicon.ico", (_req: any, res: any) => {

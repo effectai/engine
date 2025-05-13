@@ -5,56 +5,9 @@ import {
 import type { ManagerSettings } from "../main.js";
 
 import { type Datastore, Key, ProtocolError } from "@effectai/protocol-core";
+import { createAccessCodeStore } from "../stores/managerAccessCodeStore.js";
 
 export type PeerIdStr = string;
-
-const createWorkerQueue = () => {
-  const queue: PeerIdStr[] = [];
-
-  const addPeer = ({ peerIdStr }: { peerIdStr: PeerIdStr }): void => {
-    if (!queue.includes(peerIdStr)) {
-      queue.push(peerIdStr);
-    }
-  };
-
-  const dequeuePeer = (workerPeerId?: PeerIdStr): PeerIdStr | undefined => {
-    if (queue.length === 0) return undefined;
-
-    if (workerPeerId) {
-      const index = queue.findIndex((peer) => peer === workerPeerId);
-      if (index !== -1) {
-        const worker = queue.splice(index, 1)[0];
-        queue.push(worker);
-        return worker;
-      } else {
-        return undefined;
-      }
-    } else {
-      const peer = queue.shift();
-      if (peer) queue.push(peer);
-      return peer;
-    }
-  };
-
-  const removePeer = (peerIdStr: PeerIdStr): void => {
-    const index = queue.indexOf(peerIdStr);
-    if (index !== -1) {
-      queue.splice(index, 1);
-    }
-  };
-
-  const getQueue = (): PeerIdStr[] => {
-    return [...queue];
-  };
-
-  return {
-    queue,
-    addPeer,
-    dequeuePeer,
-    removePeer,
-    getQueue,
-  };
-};
 
 export const createWorkerManager = ({
   datastore,
@@ -68,46 +21,18 @@ export const createWorkerManager = ({
     datastore,
   });
 
+  const accessCodeStore = createAccessCodeStore({ datastore });
+
   const generateAccessCode = async () => {
-    const accessCode = Math.random().toString(36).substring(2, 10);
+    return await accessCodeStore.create();
+  };
 
-    const accessCodeData = {
-      redeemedBy: null,
-      redeemedOn: null,
-      createdAt: Date.now(),
-    };
-
-    await datastore.put(
-      new Key(`access-codes/${accessCode}`),
-      Buffer.from(JSON.stringify(accessCodeData)),
-    );
-
-    return accessCode;
+  const getAccessCodes = async () => {
+    return await accessCodeStore.all();
   };
 
   const redeemAccessCode = async (peerIdStr: string, accessCode: string) => {
-    let result = null;
-    try {
-      result = await datastore.get(new Key(`access-codes/${accessCode}`));
-    } catch (e) {
-      throw new Error("Access code not found");
-    }
-
-    const accessCodeData = JSON.parse(result.toString());
-
-    if (accessCodeData.redeemedBy) {
-      throw new Error("Access code has already been redeemed");
-    }
-
-    accessCodeData.redeemedBy = peerIdStr;
-    accessCodeData.redeemedOn = Date.now();
-
-    await datastore.put(
-      new Key(`access-codes/${accessCode}`),
-      Buffer.from(JSON.stringify(accessCodeData)),
-    );
-
-    return true;
+    return await accessCodeStore.redeem(accessCode, peerIdStr);
   };
 
   const connectWorker = async (
@@ -245,7 +170,56 @@ export const createWorkerManager = ({
     workerStore,
     workerQueue,
     generateAccessCode,
+    getAccessCodes,
     updateWorkerState,
     incrementStateValue,
+  };
+};
+
+const createWorkerQueue = () => {
+  const queue: PeerIdStr[] = [];
+
+  const addPeer = ({ peerIdStr }: { peerIdStr: PeerIdStr }): void => {
+    if (!queue.includes(peerIdStr)) {
+      queue.push(peerIdStr);
+    }
+  };
+
+  const dequeuePeer = (workerPeerId?: PeerIdStr): PeerIdStr | undefined => {
+    if (queue.length === 0) return undefined;
+
+    if (workerPeerId) {
+      const index = queue.findIndex((peer) => peer === workerPeerId);
+
+      if (index !== -1) {
+        const worker = queue.splice(index, 1)[0];
+        queue.push(worker);
+        return worker;
+      }
+      return undefined;
+    }
+
+    const peer = queue.shift();
+    if (peer) queue.push(peer);
+    return peer;
+  };
+
+  const removePeer = (peerIdStr: PeerIdStr): void => {
+    const index = queue.indexOf(peerIdStr);
+    if (index !== -1) {
+      queue.splice(index, 1);
+    }
+  };
+
+  const getQueue = (): PeerIdStr[] => {
+    return [...queue];
+  };
+
+  return {
+    queue,
+    addPeer,
+    dequeuePeer,
+    removePeer,
+    getQueue,
   };
 };

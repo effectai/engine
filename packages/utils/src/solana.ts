@@ -1,8 +1,10 @@
-import { Keypair } from "@solana/web3.js";
+import { Connection, Keypair } from "@solana/web3.js";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import yaml from "yaml";
+
+import * as anchor from "@coral-xyz/anchor";
 
 async function getConfig(): Promise<any> {
   // Path to Solana CLI config file
@@ -11,7 +13,7 @@ async function getConfig(): Promise<any> {
     ".config",
     "solana",
     "cli",
-    "config.yml"
+    "config.yml",
   );
   const configYml = await fs.readFile(CONFIG_FILE_PATH, { encoding: "utf8" });
   return yaml.parse(configYml);
@@ -24,7 +26,7 @@ export async function getRpcUrl(): Promise<string> {
     return config.json_rpc_url;
   } catch (err) {
     console.warn(
-      "Failed to read RPC url from CLI config file, falling back to localhost"
+      "Failed to read RPC url from CLI config file, falling back to localhost",
     );
     return "http://localhost:8899";
   }
@@ -40,7 +42,7 @@ export async function getPayer(): Promise<Keypair> {
     return await createKeypairFromFile(config.keypair_path);
   } catch (err) {
     console.warn(
-      "Failed to create keypair from CLI config file, falling back to new random keypair"
+      "Failed to create keypair from CLI config file, falling back to new random keypair",
     );
     return Keypair.generate();
   }
@@ -50,9 +52,28 @@ export async function getPayer(): Promise<Keypair> {
  * Create a Keypair from a secret key stored in file as bytes' array
  */
 export async function createKeypairFromFile(
-  filePath: string
+  filePath: string,
 ): Promise<Keypair> {
   const secretKeyString = await fs.readFile(filePath, { encoding: "utf8" });
   const secretKey = Uint8Array.from(JSON.parse(secretKeyString));
   return Keypair.fromSecretKey(secretKey);
 }
+
+export const loadProvider = async () => {
+  const rpcUrl = await getRpcUrl();
+  const connection = new Connection(rpcUrl);
+
+  const payer = await getPayer();
+  const wallet = new anchor.Wallet(payer);
+
+  const provider = new anchor.AnchorProvider(connection, wallet);
+
+  const version = await provider.connection.getVersion();
+
+  console.log(`Connected to Solana v${version["solana-core"]}`);
+
+  return {
+    payer,
+    provider,
+  };
+};

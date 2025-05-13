@@ -13,7 +13,7 @@ use effect_common::*;
 pub use errors::*;
 pub use state::*;
 
-declare_id!(EFFECT_REWARDS);
+declare_id!("effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi");
 
 #[program]
 pub mod effect_rewards {

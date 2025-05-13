@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/effect_payment.json`.
  */
 export type EffectPayment = {
-  "address": "effectpayment",
+  "address": "effphQKcAYeN6CkbygjnJUsuYXGUtkikSPZ6B8hSggC",
   "metadata": {
     "name": "effectPayment",
     "version": "0.1.0",
