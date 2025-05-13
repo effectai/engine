@@ -1,6 +1,7 @@
 import axios from "axios";
 import { parseString } from "@fast-csv/parse";
 import { managerId, db, publishProgress } from "./state.js";
+import * as state from "./state.js";
 import type { DatasetRecord } from "./dataset.js";
 
 // TODO: can this come out of the protocol package?
@@ -31,8 +32,7 @@ type Fetcher = {
 const api = axios.create({
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
-  baseURL: "http://mgr1.stage.effect.net:8889",
-  // baseURL: "http://localhost:8889",
+  baseURL: state.managerUrl,
 });
 
 const parseCsv = (csv: string): Promise<any[]> => {
