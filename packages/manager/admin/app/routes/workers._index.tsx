@@ -26,8 +26,7 @@ export default function App() {
   const [filter, setFilter] = useState("all");
   const { allWorkers, onlineWorkers } = useLoaderData<typeof loader>();
 
-  const filteredWorkers = filter === "active" ? onlineWorkers : allWorkers;
-  console.log("workers", filteredWorkers);
+  const filteredWorkers = filter === "online" ? onlineWorkers : allWorkers;
 
   return (
     <div>
