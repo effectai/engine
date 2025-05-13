@@ -315,73 +315,6 @@ export const createManager = async ({
   let isStarted = false;
   let tearDownDash: () => Promise<void>;
 
-  const start = async () => {
-    //start libp2p & http transports
-    await entity.node.start();
-    await entity.startHttp();
-
-    //start manager dashboard
-    if (managerSettings.withAdmin) {
-      const { tearDown } = await setupManagerDashboard();
-      tearDownDash = tearDown;
-    }
-
-    isStarted = true;
-  };
-
-  const stop = async () => {
-    //stop libp2p & http transports
-    await entity.node.stop();
-    await entity.stopHttp();
-
-    //stop express server
-    if (tearDownDash) {
-      tearDownDash();
-    }
-
-    isStarted = false;
-  };
-
-  if (managerSettings.autoManage) {
-    await start();
-
-    const MANAGEMENT_INTERVAL = 5000;
-    let isRunning = false;
-    let lastRunTime = 0;
-
-    const runManagementCycle = async () => {
-      if (isStarted === false) {
-        return;
-      }
-
-      if (isRunning) {
-        console.log("Management cycle skipped - already running");
-        return;
-      }
-
-      try {
-        isRunning = true;
-        lastRunTime = Date.now();
-        await taskManager.manageTasks();
-      } catch (err) {
-        console.error("Management cycle error:", err);
-      } finally {
-        isRunning = false;
-        const elapsed = Date.now() - lastRunTime;
-        const nextRun = Math.max(0, MANAGEMENT_INTERVAL - elapsed);
-        setTimeout(runManagementCycle, nextRun);
-      }
-    };
-
-    runManagementCycle();
-  }
-
-  // Register event listeners
-  entity.node.addEventListener("peer:disconnect", (event) => {
-    const peerId = event.detail;
-    workerManager.disconnectWorker(peerId.toString());
-  });
-
   const setupManagerDashboard = async () => {
     const username = "admin";
     const password = "!effectai!#65";
@@ -465,6 +398,73 @@ export const createManager = async ({
 
     return { tearDown };
   };
+
+  const start = async () => {
+    //start libp2p & http transports
+    await entity.node.start();
+    await entity.startHttp();
+
+    //start manager dashboard
+    if (managerSettings.withAdmin) {
+      const { tearDown } = await setupManagerDashboard();
+      tearDownDash = tearDown;
+    }
+
+    isStarted = true;
+  };
+
+  const stop = async () => {
+    //stop libp2p & http transports
+    await entity.node.stop();
+    await entity.stopHttp();
+
+    //stop express server
+    if (tearDownDash) {
+      tearDownDash();
+    }
+
+    isStarted = false;
+  };
+
+  if (managerSettings.autoManage) {
+    await start();
+
+    const MANAGEMENT_INTERVAL = 5000;
+    let isRunning = false;
+    let lastRunTime = 0;
+
+    const runManagementCycle = async () => {
+      if (isStarted === false) {
+        return;
+      }
+
+      if (isRunning) {
+        console.log("Management cycle skipped - already running");
+        return;
+      }
+
+      try {
+        isRunning = true;
+        lastRunTime = Date.now();
+        await taskManager.manageTasks();
+      } catch (err) {
+        console.error("Management cycle error:", err);
+      } finally {
+        isRunning = false;
+        const elapsed = Date.now() - lastRunTime;
+        const nextRun = Math.max(0, MANAGEMENT_INTERVAL - elapsed);
+        setTimeout(runManagementCycle, nextRun);
+      }
+    };
+
+    runManagementCycle();
+  }
+
+  // Register event listeners
+  entity.node.addEventListener("peer:disconnect", (event) => {
+    const peerId = event.detail;
+    workerManager.disconnectWorker(peerId.toString());
+  });
 
   return {
     entity,
