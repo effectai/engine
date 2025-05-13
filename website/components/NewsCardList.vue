@@ -15,22 +15,22 @@
 import { ref, computed } from "vue";
 
 const props = defineProps<{
-	items: News[];
-	perPage: number;
+  items: News[];
+  perPage: number;
 }>();
 
 const currentPage = ref(1);
 
 const totalPages = computed(() =>
-	Math.ceil(props.items.length / props.perPage),
+  Math.ceil(props.items.length / props.perPage),
 );
 
 const paginatedNews = computed(() => {
-	const start = (currentPage.value - 1) * props.perPage;
-	return props.items.slice(start, start + props.perPage);
+  const start = (currentPage.value - 1) * props.perPage;
+  return props.items.slice(start, start + props.perPage);
 });
 
 function handlePageChange(page: number) {
-	currentPage.value = page;
+  currentPage.value = page;
 }
 </script>

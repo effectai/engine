@@ -2,6 +2,9 @@
 members = [
     "common",
     
+    "programs/effect-payment/common",
+    "programs/effect-payment/program",
+
     "programs/effect-migration/common",
     "programs/effect-migration/program",
 

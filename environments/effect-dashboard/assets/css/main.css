@@ -1,35 +1,40 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400..900&family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Rasa:ital,wght@0,300..700;1,300..700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400..900&family=Raleway:ital,wght@0,100..900;1,100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Rasa:ital,wght@0,300..700;1,300..700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-    body {
-      @apply font-body;
-    }
-    h1, h2, h3, h4, h5, h6 {
-      @apply font-header;
-    }
-  } 
+  body {
+    @apply font-body;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-header;
+  }
+}
 
 .title {
-    font-size: 1.5em;
-    font-weight: bold;
+  font-size: 1.5em;
+  font-weight: bold;
 }
 
 .subtitle {
-    font-size: 1.5em;
-    font-weight: 100;
+  font-size: 1.5em;
+  font-weight: 100;
 }
 
 .navigate-back {
-    font-size: 1em;
-    font-weight: 100;
-    color:blue;
-    text-decoration: underline;
-    font-size:0.8rem;
+  font-size: 1em;
+  font-weight: 100;
+  color: blue;
+  text-decoration: underline;
+  font-size: 0.8rem;
 }
 
 :root {
@@ -37,4 +42,3 @@
   --swv-button-background-color: #000 !important;
   --swv-button-hover-background-color: #000 !important;
 }
-

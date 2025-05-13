@@ -8,10 +8,10 @@ COPY . /usr/src/app
 WORKDIR /usr/src/app
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 RUN pnpm run packages:build
-RUN pnpm deploy --filter=@effectai/task-relay --prod /prod/relay
+RUN pnpm deploy --filter=@effectai/protocol --prod /prod/manager
 
-FROM base AS relay
-COPY --from=build /prod/relay /prod/relay
-WORKDIR /prod/relay
-EXPOSE 8000
-CMD [ "pnpm", "start" ]
+FROM base AS manager
+COPY --from=build /prod/manager /prod/manager
+WORKDIR /prod/manager
+EXPOSE 34859 8888
+CMD [ "pnpm", "manager:start" ]

@@ -1,0 +1,28 @@
+{
+  "name": "@effectai/test-utils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup ./src/ --config ../../tsup.config.package.ts"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.9.0",
+  "dependencies": {
+    "datastore-level": "^11.0.1",
+    "interface-datastore": "^8.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

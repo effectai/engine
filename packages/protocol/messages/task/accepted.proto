@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message TaskAccepted {
+  string task_id = 1;   
+  string worker = 2;     
+  uint32 timestamp = 3; 
+}
+

@@ -246,34 +246,34 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.rainbow-border {
-  --angle: 0deg;
-  border: 1px solid;
-  border-radius: 0.375rem;
-  border-image: conic-gradient(
-      from var(--angle),
-      red,
-      yellow,
-      lime,
-      aqua,
-      blue,
-      magenta,
-      red
-    )
-    1;
-  background: none;
-  animation: 10s rotate linear infinite;
-}
-
-@keyframes rotate {
-  to {
-    --angle: 360deg;
+  .rainbow-border {
+    --angle: 0deg;
+    border: 1px solid;
+    border-radius: 0.375rem;
+    border-image: conic-gradient(
+        from var(--angle),
+        red,
+        yellow,
+        lime,
+        aqua,
+        blue,
+        magenta,
+        red
+      )
+      1;
+    background: none;
+    animation: 10s rotate linear infinite;
   }
-}
 
-@property --angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
+  @keyframes rotate {
+    to {
+      --angle: 360deg;
+    }
+  }
+
+  @property --angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+  }
 </style>

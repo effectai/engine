@@ -41,10 +41,6 @@ export const useBscWallet = (): SourceWallet => {
 			throw new Error("No address found");
 		}
 
-		const balance = await getBalance(config, {
-			address: address.value,
-		});
-
 		return {
 			symbol: "BNB",
 			value: Number(balance.formatted),

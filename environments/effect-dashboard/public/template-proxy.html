@@ -1,0 +1,55 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+    </style>
+    <script>
+      //handle tasks coming from force template
+      const handleTasks = (data) => {
+        switch (data.task) {
+          case "submit":
+            parent.postMessage(data, "*");
+        }
+      };
+
+      const handleEvents = (data) => {
+        switch (data.event) {
+          case "proxy-load":
+            const frame = document.getElementById("proxy-frame");
+            if (data.data) {
+              frame.srcdoc = data.data;
+              parent.postMessage({ event: "proxy-loaded" }, "*");
+            }
+            break;
+        }
+      };
+
+      window.addEventListener("message", function (event) {
+        handleTasks(event.data);
+        handleEvents(event.data);
+      });
+
+      window.addEventListener("DOMContentLoaded", function () {
+        parent.postMessage({ event: "proxy-ready" }, "*");
+      });
+    </script>
+  </head>
+  <body>
+    <iframe
+      id="proxy-frame"
+      sandbox="allow-scripts allow-modals allow-downloads allow-forms allow-popups allow-popups-to-escape-sandbox allow-pointer-lock allow-same-origin"
+      allow="geolocation; microphone; camera; autoplay; fullscreen"
+      allowfullscreen
+    />
+  </body>
+</html>

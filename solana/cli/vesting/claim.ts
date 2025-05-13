@@ -6,32 +6,35 @@ import type { CommandModule } from "yargs";
 import { PublicKey } from "@solana/web3.js";
 
 export const vestingClaimCommand: CommandModule<
-	unknown,
-	{
-		mint: string;
-		account: string;
-	}
+  unknown,
+  {
+    mint: string;
+    account: string;
+  }
 > = {
-	describe: "claims a vesting account",
-	command: "claim",
-	builder: (yargs) =>
-		yargs.option("account", {
-			type: "string",
-			requiresArg: true,
-			description: "The vesting account to claim",
-		}),
-	handler: async ({ account }) => {
-		const { payer, provider } = await loadProvider();
+  describe: "claims a vesting account",
+  command: "claim",
+  builder: (yargs) =>
+    yargs.option("account", {
+      type: "string",
+      requiresArg: true,
+      description: "The vesting account to claim",
+    }),
+  handler: async ({ account }) => {
+    const { payer, provider } = await loadProvider();
 
-		const vestingProgram = new anchor.Program(
-			EffectVestingIdl as anchor.Idl,
-			provider,
-		) as unknown as anchor.Program<EffectVesting>;
+    const vestingProgram = new anchor.Program(
+      EffectVestingIdl as anchor.Idl,
+      provider
+    ) as unknown as anchor.Program<EffectVesting>;
 
-        await vestingProgram.methods.claim().accounts({
-            vestingAccount: new PublicKey(account),
-        }).rpc();
+    await vestingProgram.methods
+      .claim()
+      .accounts({
+        vestingAccount: new PublicKey(account),
+      })
+      .rpc();
 
-        console.log(`Claimed tokens for account ${account}`);
-    },
+    console.log(`Claimed tokens for account ${account}`);
+  },
 };

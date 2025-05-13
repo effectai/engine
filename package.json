@@ -1,39 +1,56 @@
 {
-	"name": "effect-tasks",
-	"private": true,
-	"sideEffects": false,
-	"packageManager": "pnpm@8.15.6",
-	"type": "module",
-	"version": "1.0.0",
-	"exports": {
-		".": {
-			"import": "./dist/index.js"
-		}
-	},
-	"scripts": {
-		"purge": "rm -rf node_modules pnpm-lock.yaml && pnpm recursive exec -- rm -rf node_modules dist",
-		"dev": "pnpm turbo dev",
-		"dashboard:generate-staging": "pnpm --filter effect-dashboard run generate-staging",
-		"dashboard:generate-prod": "pnpm --filter effect-dashboard run generate-prod",
-		"website:generate": "pnpm --filter effect-website run generate",
-		"manager:start": "pnpm --filter @effectai/task-manager run start",
-		"relay:start": "pnpm --filter @effectai/task-relay run start",
-		"packages:build": "pnpm turbo build --filter @effectai/*",
-		"provider:start": "pnpm --filter @effectai/task-provider run start",
-		"docs:dev": "pnpm --filter docs run dev",
-		"test": "vitest"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
-		"turbo": "2.2.3",
-		"vitest": "^2.1.3"
-	},
-	"engines": {
-		"node": ">=20.0.0"
-	},
-	"pnpm": {
-		"overrides": {
-			"@vue/devtools": "7.6.4"
-		}
-	}
+  "name": "effect-tasks",
+  "private": true,
+  "sideEffects": false,
+  "packageManager": "pnpm@10.9.0+sha512.0486e394640d3c1fb3c9d43d49cf92879ff74f8516959c235308f5a8f62e2e19528a65cdc2a3058f587cde71eba3d5b56327c8c33a97e4c4051ca48a10ca2d5f",
+  "type": "module",
+  "version": "1.0.0",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "purge": "rm -rf node_modules pnpm-lock.yaml && pnpm recursive exec -- rm -rf node_modules dist",
+    "dev": "pnpm turbo dev",
+    "build": "turbo run build",
+    "cli": "node packages/cli/dist/index.js",
+    "dashboard:generate-staging": "pnpm --filter effect-dashboard run generate-staging",
+    "dashboard:generate-prod": "pnpm --filter effect-dashboard run generate-prod",
+    "website:generate": "pnpm --filter effect-website run generate",
+    "manager:start": "node packages/cli/dist/index.js manager run -k ./packages/library/tests/keys/manager.json --no-payments",
+    "packages:build": "pnpm turbo build --filter @effectai/*",
+    "docs:dev": "pnpm --filter docs run dev",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "turbo": "2.2.3",
+    "vitest": "^2.1.3",
+    "tsup": "^8.3.5"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@vue/devtools": "7.6.4"
+    },
+    "ignoredBuiltDependencies": ["usb", "utf-8-validate", "vue-demi"],
+    "onlyBuiltDependencies": [
+      "@biomejs/biome",
+      "@ipshipyard/node-datachannel",
+      "@parcel/watcher",
+      "bigint-buffer",
+      "blake-hash",
+      "bufferutil",
+      "classic-level",
+      "core-js",
+      "esbuild",
+      "keccak",
+      "protobufjs",
+      "sharp",
+      "tiny-secp256k1"
+    ]
+  }
 }

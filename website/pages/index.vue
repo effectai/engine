@@ -295,112 +295,112 @@ import { dapps } from "~/constants/dapps.js";
 
 //fetch news content and sort by created\
 const { data: news } = await useAsyncData("news", async () => {
-	const data = await queryContent("/news").where({ published: true }).find();
+  const data = await queryContent("/news").where({ published: true }).find();
 
-	//sort on created date
-	return data.sort((a, b) => {
-		return new Date(b.created).getTime() - new Date(a.created).getTime();
-	});
+  //sort on created date
+  return data.sort((a, b) => {
+    return new Date(b.created).getTime() - new Date(a.created).getTime();
+  });
 });
 
 useSeoMeta({
-	ogDescription:
-		"Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
-	title: "Effect AI - Decentralized Intelligence",
-	ogImage: "/img/effect-logo-black.png",
-	ogTitle: "Effect AI - Decentralized Intelligence",
-	description:
-		"Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
+  ogDescription:
+    "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
+  title: "Effect AI - Decentralized Intelligence",
+  ogImage: "/img/effect-logo-black.png",
+  ogTitle: "Effect AI - Decentralized Intelligence",
+  description:
+    "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
 });
 </script>
 
 <style lang="scss" scoped>
-@use "bulma/sass/utilities/mixins";
+  @use "bulma/sass/utilities/mixins";
 
-.effect-box {
-  padding: 2rem;
+  .effect-box {
+    padding: 2rem;
 
-  h2 {
-    margin-bottom: 8rem;
-  }
-}
-
-#main-hero {
-  background-size: cover;
-  background-repeat: no-repeat;
-}
-
-.grid-container {
-  margin-right: calc(60% - 50vw);
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: auto;
-}
-
-.fluid-container {
-  width: 100%;
-  overflow: hidden;
-  padding: 8rem 0 8rem 4rem;
-
-  @include mixins.desktop {
-    padding: 6rem 0rem;
-  }
-}
-
-.be-part-of {
-  @include mixins.mobile {
-    margin-bottom: 3rem;
-  }
-}
-
-.effect-box {
-  border: 1px solid #515053;
-}
-
-.grid-item {
-  aspect-ratio: 1/1;
-  border: 1px solid #515053;
-  padding: 20px;
-  font-size: 30px;
-  text-align: center;
-  position: relative;
-  grid-column: span 2;
-  grid-row: span 2;
-  display: flex;
-  justify-content: center;
-
-  label {
-    color: #d7d7d7;
-    position: absolute;
-    left: 40px;
-    font-size: 12px;
+    h2 {
+      margin-bottom: 8rem;
+    }
   }
 
-  img {
-    max-width: 60%;
-    max-height: 60%;
-    object-fit: contain;
+  #main-hero {
+    background-size: cover;
+    background-repeat: no-repeat;
   }
-}
 
-.item-0 {
-  grid-column: 2 / span 2;
-  grid-row: span 2;
-}
+  .grid-container {
+    margin-right: calc(60% - 50vw);
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: auto;
+  }
 
-.item-2 {
-  grid-column: 6 / span 2;
-  grid-row: 0;
-}
+  .fluid-container {
+    width: 100%;
+    overflow: hidden;
+    padding: 8rem 0 8rem 4rem;
 
-.quote-text {
-  font-size: 46px;
-  font-weight: 500;
-  line-height: 64.4px;
-  letter-spacing: -0.02em;
-}
+    @include mixins.desktop {
+      padding: 6rem 0rem;
+    }
+  }
 
-.button.is-outlined:hover {
-  --bulma-button-border-width: max(1px, 0.0625em);
-}
+  .be-part-of {
+    @include mixins.mobile {
+      margin-bottom: 3rem;
+    }
+  }
+
+  .effect-box {
+    border: 1px solid #515053;
+  }
+
+  .grid-item {
+    aspect-ratio: 1/1;
+    border: 1px solid #515053;
+    padding: 20px;
+    font-size: 30px;
+    text-align: center;
+    position: relative;
+    grid-column: span 2;
+    grid-row: span 2;
+    display: flex;
+    justify-content: center;
+
+    label {
+      color: #d7d7d7;
+      position: absolute;
+      left: 40px;
+      font-size: 12px;
+    }
+
+    img {
+      max-width: 60%;
+      max-height: 60%;
+      object-fit: contain;
+    }
+  }
+
+  .item-0 {
+    grid-column: 2 / span 2;
+    grid-row: span 2;
+  }
+
+  .item-2 {
+    grid-column: 6 / span 2;
+    grid-row: 0;
+  }
+
+  .quote-text {
+    font-size: 46px;
+    font-weight: 500;
+    line-height: 64.4px;
+    letter-spacing: -0.02em;
+  }
+
+  .button.is-outlined:hover {
+    --bulma-button-border-width: max(1px, 0.0625em);
+  }
 </style>

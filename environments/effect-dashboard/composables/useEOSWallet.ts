@@ -8,15 +8,12 @@ import {
 	TransactionHeader,
 	type Session,
 } from "@wharfkit/session";
-import type {
-	SourceWallet,
-	WalletConnectionMeta
-} from "~/types/types";
+import type { SourceWallet, WalletConnectionMeta } from "~/types/types";
 import { extractEosPublicKeyBytes } from "@effectai/utils";
 
 import { SessionKit } from "@wharfkit/session";
 import { WebRenderer } from "@wharfkit/web-renderer";
-import { WalletPluginAnchor } from "@effectai/wallet-plugin-anchor";
+import { WalletPluginAnchor } from "@wharfkit/wallet-plugin-anchor";
 import { WalletPluginWombat } from "@wharfkit/wallet-plugin-wombat";
 import { WalletPluginTokenPocket } from "@wharfkit/wallet-plugin-tokenpocket";
 
@@ -132,7 +129,9 @@ export const useEosWallet = (): SourceWallet => {
 			session.value.actor,
 		);
 
-		const activePermission = res.getPermission(session.value.permission.toString());
+		const activePermission = res.getPermission(
+			session.value.permission.toString(),
+		);
 		const publicKey = activePermission.required_auth.keys[0].key.toString();
 		const compressedPk = extractEosPublicKeyBytes(publicKey);
 
@@ -172,21 +171,20 @@ export const useEosWallet = (): SourceWallet => {
 		const transaction = await session.value.transact(tx, { broadcast: false });
 		const serializedTxBytes = transaction.resolved?.signingData;
 
-
 		if (!serializedTxBytes) {
 			throw new Error("Could not serialize transaction");
 		}
 
 		let sigToUse = null;
-		for(const signature of transaction.signatures) {
+		for (const signature of transaction.signatures) {
 			const sig = Signature.from(signature);
-			if(sig.verifyMessage(serializedTxBytes, PublicKey.from(publicKey))){
+			if (sig.verifyMessage(serializedTxBytes, PublicKey.from(publicKey))) {
 				sigToUse = sig;
 				break;
 			}
 		}
 
-		if(!sigToUse){
+		if (!sigToUse) {
 			throw new Error("Could not verify signature");
 		}
 
@@ -206,7 +204,9 @@ export const useEosWallet = (): SourceWallet => {
 			session.value.actor,
 		);
 
-		const activePermission = res.getPermission(session.value.permission.toString());
+		const activePermission = res.getPermission(
+			session.value.permission.toString(),
+		);
 		const publicKey = activePermission.required_auth.keys[0].key.toString();
 		const compressedPk = extractEosPublicKeyBytes(publicKey);
 

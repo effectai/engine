@@ -1,61 +1,77 @@
-import type { PublicKey } from "@solana/web3.js"
-import type { UseQueryReturnType } from "@tanstack/vue-query"
+import type { PublicKey } from "@solana/web3.js";
+import type { UseQueryReturnType } from "@tanstack/vue-query";
 
 export type FormattedBalanceReturnType = {
-    value: number
-    symbol: string
-}
+  value: number;
+  symbol: string;
+};
 
 export type WalletConnectionMeta = {
-    name: string | undefined
-    icon: string | undefined
-    chain: string
-    permission?: string
-    chainId?: string
-    // flag to indicate if the wallet has a different permission than the active permission.
-    hasDifferentPermissions?: boolean
-}
+  name: string | undefined;
+  icon: string | undefined;
+  chain: string;
+  permission?: string;
+  chainId?: string;
+  // flag to indicate if the wallet has a different permission than the active permission.
+  hasDifferentPermissions?: boolean;
+};
 
 export type WalletBase = {
-    address: Ref<string | undefined>
-    walletMeta: Ref<WalletConnectionMeta | null | undefined>
-    isConnected: Ref<boolean>
+  address: Ref<string | undefined>;
+  walletMeta: Ref<WalletConnectionMeta | null | undefined>;
+  isConnected: Ref<boolean>;
 
-    getEfxBalance: () => Promise<FormattedBalanceReturnType>
-    useGetEfxBalanceQuery?: () => UseQueryReturnType<FormattedBalanceReturnType, Error>
+  getEfxBalance: () => Promise<FormattedBalanceReturnType>;
+  useGetEfxBalanceQuery?: () => UseQueryReturnType<
+    FormattedBalanceReturnType,
+    Error
+  >;
 
-    getNativeBalance: () => Promise<FormattedBalanceReturnType>
-    useGetNativeBalanceQuery?: () => UseQueryReturnType<FormattedBalanceReturnType, Error>;
+  getNativeBalance: () => Promise<FormattedBalanceReturnType>;
+  useGetNativeBalanceQuery?: () => UseQueryReturnType<
+    FormattedBalanceReturnType,
+    Error
+  >;
 
-    getBalance: (address: string) => Promise<FormattedBalanceReturnType>
+  getBalance: (address: string) => Promise<FormattedBalanceReturnType>;
 
-    connect: () => void;
-    disconnect: () => void;
-}
+  connect: () => void;
+  disconnect: () => void;
+};
 
-// Target Chain Wallet Adapter Type (solana) 
+// Target Chain Wallet Adapter Type (solana)
 export type TargetWalletAdapter = WalletBase & {
-    useGetBalanceQuery: (account?: Ref<PublicKey | null | string>) => UseQueryReturnType<FormattedBalanceReturnType, Error>;
-    useGetTokenAccountBalanceQuery: (account: Ref<PublicKey | null | undefined>) => UseQueryReturnType<FormattedBalanceReturnType, Error>;
-}
+  useGetBalanceQuery: (
+    account?: Ref<PublicKey | null | string>
+  ) => UseQueryReturnType<FormattedBalanceReturnType, Error>;
+  useGetTokenAccountBalanceQuery: (
+    account: Ref<PublicKey | null | undefined>
+  ) => UseQueryReturnType<FormattedBalanceReturnType, Error>;
+};
 
 export type SourceWallet = WalletBase & {
-    getForeignPublicKey: () => Promise<Uint8Array>;
-    authorizeTokenClaim: (destinationAddress: string) => Promise<{
-        foreignPublicKey: Uint8Array;
-        signature: Uint8Array;
-        message: Uint8Array;
-    }>;
-}
+  getForeignPublicKey: () => Promise<Uint8Array>;
+  authorizeTokenClaim: (destinationAddress: string) => Promise<{
+    foreignPublicKey: Uint8Array;
+    signature: Uint8Array;
+    message: Uint8Array;
+  }>;
+};
 
 // Source Chain Wallet Adapter Type (eos, bsc)
 export type SourceWalletAdapter = SourceWallet & {
-    useGetNativeBalanceQuery: () => UseQueryReturnType<FormattedBalanceReturnType, Error>;
-    useGetEfxBalanceQuery: () => UseQueryReturnType<FormattedBalanceReturnType, Error>
-    useGetForeignPublicKeyQuery: () => UseQueryReturnType<Uint8Array, Error>;
-    authorizeTokenClaim: (destinationAddress: string) => Promise<{
-        foreignPublicKey: Uint8Array;
-        signature: Uint8Array;
-        message: Uint8Array;
-    }>;
-}
+  useGetNativeBalanceQuery: () => UseQueryReturnType<
+    FormattedBalanceReturnType,
+    Error
+  >;
+  useGetEfxBalanceQuery: () => UseQueryReturnType<
+    FormattedBalanceReturnType,
+    Error
+  >;
+  useGetForeignPublicKeyQuery: () => UseQueryReturnType<Uint8Array, Error>;
+  authorizeTokenClaim: (destinationAddress: string) => Promise<{
+    foreignPublicKey: Uint8Array;
+    signature: Uint8Array;
+    message: Uint8Array;
+  }>;
+};

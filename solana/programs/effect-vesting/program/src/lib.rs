@@ -10,7 +10,7 @@ use instructions::*;
 use effect_common::*;
 
 
-declare_id!(EFFECT_VESTING);
+declare_id!("effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S");
 
 #[program]
 pub mod effect_vesting {

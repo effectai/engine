@@ -3,13 +3,12 @@ import { PublicKey } from "@solana/web3.js";
 export const useDeriveMigrationAccounts = ({
 	mint,
 	foreignAddress,
-	programId
+	programId,
 }: {
 	mint: PublicKey;
 	foreignAddress: Uint8Array;
 	programId: PublicKey;
 }) => {
-
 	const [migrationAccount] = PublicKey.findProgramAddressSync(
 		[mint.toBuffer(), foreignAddress],
 		programId,
@@ -18,22 +17,21 @@ export const useDeriveMigrationAccounts = ({
 	const [vaultAccount] = PublicKey.findProgramAddressSync(
 		[migrationAccount.toBuffer()],
 		programId,
-	)
+	);
 
-    return {
+	return {
 		migrationAccount,
-		vaultAccount
-    };
-}
+		vaultAccount,
+	};
+};
 
 export const useDeriveVestingAccounts = ({
 	vestingAccount,
-	programId
+	programId,
 }: {
 	vestingAccount: PublicKey;
 	programId: PublicKey;
 }) => {
-
 	const [vestingVaultAccount] = PublicKey.findProgramAddressSync(
 		[vestingAccount.toBuffer()],
 		programId,
@@ -47,32 +45,32 @@ export const useDeriveVestingAccounts = ({
 
 export const useDeriveRewardAccounts = ({
 	programId,
-	mint
+	mint,
 }: {
 	mint: PublicKey;
 	programId: PublicKey;
 }) => {
 	const [reflectionAccount] = PublicKey.findProgramAddressSync(
 		[Buffer.from("reflection"), mint.toBuffer()],
-		programId
+		programId,
 	);
 
 	const [reflectionVaultAccount] = PublicKey.findProgramAddressSync(
 		[reflectionAccount.toBuffer()],
-		programId
+		programId,
 	);
 
 	const [intermediaryReflectionVaultAccount] = PublicKey.findProgramAddressSync(
 		[reflectionVaultAccount.toBuffer()],
-		programId
+		programId,
 	);
 
 	return {
 		reflectionAccount,
 		reflectionVaultAccount,
-		intermediaryReflectionVaultAccount
+		intermediaryReflectionVaultAccount,
 	};
-}
+};
 
 export const useDeriveStakingRewardAccount = ({
 	stakingAccount,
@@ -81,16 +79,15 @@ export const useDeriveStakingRewardAccount = ({
 	stakingAccount: PublicKey;
 	programId: PublicKey;
 }) => {
-
 	const [stakingRewardAccount] = PublicKey.findProgramAddressSync(
 		[stakingAccount.toBuffer()],
-		programId
+		programId,
 	);
 
 	return {
 		stakingRewardAccount,
 	};
-}
+};
 
 export const useDeriveStakeAccounts = ({
 	stakingAccount,
@@ -99,7 +96,6 @@ export const useDeriveStakeAccounts = ({
 	stakingAccount: PublicKey;
 	programId: PublicKey;
 }) => {
-
 	const [rewardAccount] = PublicKey.findProgramAddressSync(
 		[stakingAccount.toBuffer()],
 		programId,

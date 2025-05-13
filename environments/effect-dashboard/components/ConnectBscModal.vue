@@ -1,32 +1,31 @@
 <script setup lang="ts">
-import { useConnect, useChainId, useAccount } from "@wagmi/vue";
+  import { useConnect, useChainId, useAccount } from "@wagmi/vue";
 
-import { createAppKit } from '@reown/appkit/vue'
-import { bsc, type AppKitNetwork } from '@reown/appkit/networks'
-import { wagmiAdapter } from './../plugins/wagmi'
+  import { createAppKit } from "@reown/appkit/vue";
+  import { bsc, type AppKitNetwork } from "@reown/appkit/networks";
+  import { wagmiAdapter } from "./../plugins/wagmi";
 
-const projectId = '79d9a7fe570c471146ae1cbc2f6b05cf'
+  const projectId = "79d9a7fe570c471146ae1cbc2f6b05cf";
 
-const metadata = {
-  name: 'Effect AI',
-  description: 'Effect AI Dashboard',
-  url: 'https://dashboard.effect.ai', // origin must match your domain & subdomain
-  icons: ['']
-}
+  const metadata = {
+    name: "Effect AI",
+    description: "Effect AI Dashboard",
+    url: "https://dashboard.effect.ai", // origin must match your domain & subdomain
+    icons: [""],
+  };
 
-const networks: [AppKitNetwork, ...AppKitNetwork[]] = [bsc]
+  const networks: [AppKitNetwork, ...AppKitNetwork[]] = [bsc];
 
-
-const modal = createAppKit({
-  features: {
-    email: false,
-    socials: false,
-  },
-  adapters: [wagmiAdapter],
-  networks,
-  projectId,
-  metadata,
-})
+  const modal = createAppKit({
+    features: {
+      email: false,
+      socials: false,
+    },
+    adapters: [wagmiAdapter],
+    networks,
+    projectId,
+    metadata,
+  });
 </script>
 
 <template>

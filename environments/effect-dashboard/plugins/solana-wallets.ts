@@ -19,5 +19,5 @@ const walletOptions = {
 };
 
 export default defineNuxtPlugin((nuxtApp) => {
-    nuxtApp.vueApp.use(SolanaWallets, walletOptions);
-})
+  nuxtApp.vueApp.use(SolanaWallets, walletOptions);
+});

@@ -1,10 +1,23 @@
-import { useWallet } from "solana-wallets-vue"
+export default defineNuxtRouteMiddleware(async (to) => {
+  if (process.server) return;
 
-export default defineNuxtRouteMiddleware((to, from) => {
-    const { publicKey } = useWallet()
+  const sessionStore = useSessionStore();
+  const { connectedOn } = storeToRefs(sessionStore);
 
-    if (!publicKey.value) {
-        console.log("User is not authenticated, redirecting to login page")
-        return navigateTo("/")
-    }
-})
+  const { privateKey, init, web3auth, authState } = useWeb3Auth();
+
+  if (!web3auth.value) {
+    await init();
+  }
+
+  if (
+    (!privateKey.value || !authState.isConnected) &&
+    to.path !== "/worker/login"
+  ) {
+    return navigateTo("/worker/login");
+  }
+
+  if (!connectedOn.value && to.path !== "/worker/connect") {
+    return navigateTo("/worker/connect");
+  }
+});

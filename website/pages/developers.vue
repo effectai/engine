@@ -1,5 +1,3 @@
 <template>
-    <div>
-        Developers Page
-    </div>
+  <div>Developers Page</div>
 </template>

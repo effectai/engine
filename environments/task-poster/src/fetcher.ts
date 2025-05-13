@@ -1,0 +1,150 @@
+import axios from "axios";
+import { parseString } from "@fast-csv/parse";
+import { managerId, db, publishProgress } from "./state.js";
+import * as state from "./state.js";
+import type { DatasetRecord } from "./dataset.js";
+
+// TODO: can this come out of the protocol package?
+type Task = {
+  id?: string;
+  title: string;
+  reward: number;
+  timeLimitSeconds: number;
+  templateId: string;
+  templateData: string;
+};
+type APIResponse = {
+  status: string;
+  data?: any;
+  error?: string;
+};
+
+type Fetcher = {
+  lastImport: number | undefined;
+  datasetId: number;
+  type: "csv";
+  data: string;
+  taskIdx: number;
+  totalTasks: number;
+  dataSample: any;
+};
+
+const api = axios.create({
+  timeout: 5000,
+  headers: { "Content-Type": "application/json" },
+  baseURL: state.managerUrl,
+});
+
+const parseCsv = (csv: string): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    const data: any[] = [];
+
+    parseString(csv, { headers: true })
+      .on("error", (error) => reject(error))
+      .on("data", (row) => data.push(row))
+      .on("end", (rowCount: number) => {
+        console.log(`CSV: Parsed ${rowCount} rows`);
+        resolve(data);
+      });
+  });
+};
+
+export const createCsvFetcher = async (ds: DatasetRecord, csv: string) => {
+  const csvData = await parseCsv(csv);
+
+  const f: Fetcher = {
+    lastImport: undefined,
+    datasetId: ds.id,
+    type: "csv",
+    data: csv,
+    taskIdx: 0,
+    totalTasks: csvData.length,
+    dataSample: csvData[0],
+  };
+
+  await db.set<Fetcher>(["fetcher", ds.id, ds.activeFetcher], f);
+};
+
+// get the current active fetcher for a dataset
+export const getFetcher = async (ds: DatasetRecord) => {
+  // TODO: generalize from csv (we only have CSV fetcher at the moment)
+  const f = await db.get<Fetcher>(["fetcher", ds.id, ds.activeFetcher]);
+  return f!.data;
+};
+
+const delay = (m: number): Promise<void> =>
+  new Promise((r) => setTimeout(r, m));
+
+export const getTasks = async (ds: DatasetRecord, fetcher: Fetcher) => {
+  const csvData = await parseCsv(fetcher.data);
+
+  return csvData.map(
+    (d, idx) =>
+      ({
+        id: `d${ds.id.toString()}f${ds.activeFetcher}t${idx}`,
+        title: `${ds.name}`,
+        reward: ds.price,
+        timeLimitSeconds: 600,
+        templateId: ds.template,
+        templateData: JSON.stringify(d),
+      }) as Task,
+  );
+};
+
+export const getPendingTasks = async (ds: DatasetRecord, f: Fetcher) => {
+  const tasks = await getTasks(ds, f);
+  return tasks.slice(f.taskIdx);
+};
+
+export const importTasks = async (ds: DatasetRecord) => {
+  const fetcher = await db.get<Fetcher>(["fetcher", ds.id, ds.activeFetcher]);
+
+  if (fetcher!.data.taskIdx >= fetcher!.data.totalTasks) {
+    console.log(`Skip import of ${ds.id}: no pending tasks`);
+    return;
+  }
+
+  const pendingTasks = await getPendingTasks(ds, fetcher!.data);
+  const tasks = pendingTasks.slice(0, ds.batchSize);
+
+  console.log(
+    `Starting import of ds ${ds.id} for ${tasks.length} of ` +
+      `${pendingTasks.length} pending`,
+  );
+
+  // track state for progress bar
+  publishProgress[ds.id] = {
+    current: 0,
+    max: tasks.length,
+    failed: 0,
+  };
+
+  for (const task of tasks) {
+    // TODO: remove delay / think about throttling
+    await delay(1000);
+
+    try {
+      // TODO: save posted tasks in DB, for result tracking etc
+      const { data } = await api.post<APIResponse>("/task", task);
+      publishProgress[ds.id].current += 1;
+    } catch (e) {
+      // TODO: save errors in db, retries with backoff
+      publishProgress[ds.id].failed += 1;
+      console.log(`Error posting task ${task} ${e}`);
+    }
+  }
+
+  publishProgress[ds.id] = undefined;
+  fetcher!.data.taskIdx += tasks.length;
+  fetcher!.data.lastImport = Date.now();
+  await db.set<Fetcher>(fetcher!.key, fetcher!.data);
+};
+
+export const startAutoImport = async (ds: DatasetRecord) => {
+  if (ds.frequency < 10000) {
+    console.log(`Skip dataset ${ds.id}, frequency can't be less than 10s`);
+    return;
+  }
+  console.log(`Starting auto importing of ${ds.id} every ${ds.frequency}ms`);
+  setInterval(() => importTasks(ds), ds.frequency);
+};

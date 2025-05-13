@@ -26,22 +26,23 @@ Hey everyone! I’m Rochelle T., and most of you know me as the community manage
 Here are the most important rules to follow for the snapshot:
 
 - **Keep Your EFX and NFX Tokens on EOS and BSC Chains:**  
-Ensure your EFX/NFX tokens are stored in a wallet you control on either EOS or BSC networks.
+  Ensure your EFX/NFX tokens are stored in a wallet you control on either EOS or BSC networks.
 
 - **Avoid Exchange Wallets:**  
-Tokens held in an exchange wallet or liquidity pool during the snapshot will not be included in the migration and will be lost. Transfer your tokens to a personal wallet before the snapshot date.
+  Tokens held in an exchange wallet or liquidity pool during the snapshot will not be included in the migration and will be lost. Transfer your tokens to a personal wallet before the snapshot date.
 
 - **Double-Check Your Wallet Control:**  
-Make sure you have access to the private keys or recovery phrases for your wallet to retain control of your tokens.
+  Make sure you have access to the private keys or recovery phrases for your wallet to retain control of your tokens.
 
 ## Step 2: Set Up a Wallet on Solana
-  On January 5th, the new EFFECT tokens will be claimable on Solana. To prepare:
+
+On January 5th, the new EFFECT tokens will be claimable on Solana. To prepare:
 
 - **Choose a Solana Wallet:**  
-We recommend using <a href="https://phantom.com/" target="_blank">**Phantom**</a> or <a href="https://backpack.app/" target="_blank">**Backpack**</a>, as they are user-friendly and widely supported in the Solana ecosystem.
+  We recommend using <a href="https://phantom.com/" target="_blank">**Phantom**</a> or <a href="https://backpack.app/" target="_blank">**Backpack**</a>, as they are user-friendly and widely supported in the Solana ecosystem.
 
 - **Set Up and Secure Your Wallet:**  
-Download your wallet from its official source, set a strong password, and back up your recovery phrase securely. Make sure you have a small amount of SOL in the wallet for the claiming transaction.
+  Download your wallet from its official source, set a strong password, and back up your recovery phrase securely. Make sure you have a small amount of SOL in the wallet for the claiming transaction.
 
 ## Step 3: Wait for Official Announcements on 5 January
 
@@ -50,12 +51,10 @@ Download your wallet from its official source, set a strong password, and back u
 After the snapshot, Effect AI will release details about the claim process. Here’s what to watch for:
 
 - **Claim Portal:**  
-The official claim portal for swapping your old EFX tokens to the new EFFECT tokens on Solana will be released by Effect AI on 5 January, 2025, on our OFFICIAL WEBSITE ONLY.
+  The official claim portal for swapping your old EFX tokens to the new EFFECT tokens on Solana will be released by Effect AI on 5 January, 2025, on our OFFICIAL WEBSITE ONLY.
 
 - **New EFFECT Token Contract Address:**  
-The new token’s contract address will be announced via Effect AI’s official channels.
-
-
+  The new token’s contract address will be announced via Effect AI’s official channels.
 
 ---
 
@@ -99,8 +98,7 @@ Yes, as long as you have access to your wallet, you can use them to connect to t
 
 ## 7. What is the contract address of $EFX?
 
-
-> Note: We do not advise to purchase any EFX or NFX **after** the snapshot on **1 January, 2025**. If you are looking to buy $EFX prior to the snapshot, it can be found here: 
+> Note: We do not advise to purchase any EFX or NFX **after** the snapshot on **1 January, 2025**. If you are looking to buy $EFX prior to the snapshot, it can be found here:
 
 **BSC Token Contract:** [0xc51ef828319b131b595b7ec4b28210ecf4d05ad0](https://bscscan.com/token/0xC51Ef828319b131B595b7ec4B28210eCf4d05aD0)
 
@@ -117,27 +115,28 @@ Yes, as long as you have access to your wallet, you can use them to connect to t
 **$EFX on** <a href="https://coinmarketcap.com/currencies/effect-ai/" target="_blank">CoinMarketCap</a>
 
 ---
+
 ---
 
 ## Beware of Scammers
 
 As with any blockchain migration, scammers will try to exploit users during the process. Follow these safety tips:
 
-- **NEVER Share Private Keys or Recovery Phrases:** 
-No legitimate migration process will require you to share sensitive wallet information.
+- **NEVER Share Private Keys or Recovery Phrases:**
+  No legitimate migration process will require you to share sensitive wallet information.
 
-- **Only Use Official Channels:** 
-Always check for announcements on Effect AI’s website and verified social media accounts.
+- **Only Use Official Channels:**
+  Always check for announcements on Effect AI’s website and verified social media accounts.
 
-- **Verify Links:** 
-Always double-check URLs to ensure they are from Effect AI’s official website.
+- **Verify Links:**
+  Always double-check URLs to ensure they are from Effect AI’s official website.
 
 - **Avoid Third-Party Tools:**
-Use only the official claim portal and wallets recommended by Effect AI.
+  Use only the official claim portal and wallets recommended by Effect AI.
 
-- **Do not use a scam claim portal:** 
-Only visit the <a href="https://effect.ai" target="_blank">**Effect AI website**</a> to access the claim portal. 
- 
+- **Do not use a scam claim portal:**
+  Only visit the <a href="https://effect.ai" target="_blank">**Effect AI website**</a> to access the claim portal.
+
 If you encounter suspicious activity or have questions, report them to Effect AI’s support team immediately.
 
 ---

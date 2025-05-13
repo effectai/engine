@@ -3,20 +3,19 @@ import * as anchor from "@coral-xyz/anchor";
 import { Connection } from "@solana/web3.js";
 
 export const loadProvider = async () => {
-	const rpcUrl = await getRpcUrl();
-	const connection = new Connection(rpcUrl)
-	
-	const payer = await getPayer();
-	const wallet = new anchor.Wallet(payer);
+  const rpcUrl = await getRpcUrl();
+  const connection = new Connection(rpcUrl);
 
-	const provider = new anchor.AnchorProvider(connection, wallet);
+  const payer = await getPayer();
+  const wallet = new anchor.Wallet(payer);
 
-	const version = await provider.connection.getVersion();
-	console.log(`Connected to Solana v${version["solana-core"]}`);
+  const provider = new anchor.AnchorProvider(connection, wallet);
 
+  const version = await provider.connection.getVersion();
+  console.log(`Connected to Solana v${version["solana-core"]}`);
 
-    return {
-        payer,
-        provider,
-    }
+  return {
+    payer,
+    provider,
+  };
 };

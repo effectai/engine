@@ -1,11 +1,25 @@
 {
   "name": "@effectai/cli",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc"
+  },
+  "main": "./dist/index.js",
+  "dependencies": {
+    "@effectai/protocol": "workspace:*",
+    "@effectai/idl": "workspace:*",
+    "@effectai/utils": "workspace:*",
+    "@solana/spl-token": "^0.4.9",
+    "@solana/web3.js": "^1.98.2",
+    "viem": "2.21.45",
+    "@coral-xyz/anchor": "^0.31.1",
+    "axios": "^1.8.4",
+    "datastore-level": "^11.0.1",
+    "ulid": "3.0.0",
+    "bn.js": "^5.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
