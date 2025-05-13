@@ -27,7 +27,7 @@
   </div>
   <div class="flex items-center gap-4">
     <div class="text-emerald-400 font-medium">
-      {{ formatBigIntToAmount(taskRecord.state?.reward) }} EFFECT
+      {{ taskRecord.state?.reward }} EFFECT
     </div>
 
     <UButton

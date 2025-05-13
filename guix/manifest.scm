@@ -14,5 +14,5 @@
 	"less"
 
 	;; these are packaged locally in guix/extra/packages.scm
-	"solana"
+	;; "solana"
 	"node-pnpm"))
