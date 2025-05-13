@@ -1,7 +1,8 @@
 import { fileURLToPath } from "url";
 import path from "path";
+import type { Express } from "express";
 
-export const addLiveReload = async (app): any => {
+export const addLiveReload = async (app: Express) => {
   console.log("LiveReload is enabled");
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);

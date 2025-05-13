@@ -112,13 +112,19 @@ const form = async (msg = "", values: FormValues = {}): Promise<string> =>
       <small>Initial CSV dataset to be used for tasks. First row must define ` +
   `the header. You will be able to add more data later.</small></label>
       <textarea placeholder="CSV" id="csv" name="csv" rows="3">` +
-  `${values.csv || ""}</textarea>
+    `${values.csv || ""}</textarea>
+      <select name="delimiter">
+	${[[",", "Comma"], ["\t", "Tab"], [";", "Semicolon"]].map(([v, n]) =>
+	  `<option ${values.delimiter == v ? "selected " : ""}value="${v}">`+
+	    `${n} separated</option>`
+	)}
+      </select>
     </section>
 
     <section class="columns gap">
       <div class="column">
 	<label for="frequency"><strong>Batch frequency</strong><br/>
-<small>How frequent new data is fetched and posted.</small></label>
+<small>How frequent new data is fetched and posted.</small></labbel>
 	<input
 	  placeholder="Seconds"
 	  type="number"
@@ -180,8 +186,8 @@ const validations: ValidationMap = {
     return !v
       ? "Batch size is required"
       : isNaN(num)
-        ? "Must be a number"
-        : num <= 0 && "Must be greater than 0";
+	? "Must be a number"
+	: num <= 0 && "Must be greater than 0";
   },
 
   price: (v: any) => {
@@ -189,11 +195,13 @@ const validations: ValidationMap = {
     return !v
       ? "Price is required"
       : isNaN(num)
-        ? "Must be a number"
-        : num <= 0 && "Price must be greater than 0";
+	? "Must be a number"
+	: num <= 0 && "Price must be greater than 0";
   },
 
   template: (v: string) => (!v || v.length === 0) && "Template is required",
+  delimiter: (v: string) =>
+    ![",", "\t", ";"].includes(v) && "Invalid CSV delimiter",
 };
 
 const parseCsv = (csv: string): Promise<any[]> => {
@@ -204,8 +212,8 @@ const parseCsv = (csv: string): Promise<any[]> => {
       .on("error", (error) => reject(error))
       .on("data", (row) => data.push(row))
       .on("end", (rowCount: number) => {
-        console.log(`Parsed ${rowCount} rows`);
-        resolve(data);
+	console.log(`Parsed ${rowCount} rows`);
+	resolve(data);
       });
   });
 };
@@ -223,7 +231,7 @@ const validateForm = async (values: FormValues) => {
     try {
       const taskData = await parseCsv(values.csv);
       if (taskData.length === 0)
-        errors["csv"] = `CSV needs at least 1 data row`;
+	errors["csv"] = `CSV needs at least 1 data row`;
     } catch (e) {
       errors["csv"] = `CSV ${e}`;
     }
@@ -254,7 +262,7 @@ const importProgress = async (ds: DatasetRecord) => {
     .fill(".")
     .map((_) => '<div class="block"></div>')
     .join("");
-  
+
   const pendingDots = Array(fetcher.totalTasks - currentIdx)
     .fill(".")
     .map((_) => '<div class="block empty"></div>')
@@ -320,7 +328,7 @@ export const startAutoImport = async () => {
 	ds!.data.status = "finished";
 	await db.set<DatasetRecord>(ds!.key, ds!.data);
       }
-    }    
+    }
 
     // pause on the main loop
     await new Promise(r => setTimeout(r, 10000));
@@ -340,26 +348,26 @@ export const addDatasetRoutes = (app: Express): void => {
 
     if (valid) {
       try {
-        // use time in nanoseconds as incremental dataset ID (not perfect)
-        id = Number(process.hrtime.bigint());
+	// use time in nanoseconds as incremental dataset ID (not perfect)
+	id = Number(process.hrtime.bigint());
 
-        const { csv, ...datasetFields } = req.body;
-        const dataset: DatasetRecord = {
-          ...datasetFields,
-          id,
-          activeFetcher: 0,
-          status: "draft",
-        };
+	const { csv, delimiter, ...datasetFields } = req.body;
+	const dataset: DatasetRecord = {
+	  ...datasetFields,
+	  id,
+	  activeFetcher: 0,
+	  status: "draft",
+	};
 
-        await db.set<DatasetRecord>(["dataset", id], dataset);
-        await createCsvFetcher(dataset, csv);
+	await db.set<DatasetRecord>(["dataset", id], dataset);
+	await createCsvFetcher(dataset, csv, delimiter);
 
-        console.log(`Created dataset ${id}`);
-        msg = `<p>Success! Dataset ${id}</p>`;
+	console.log(`Created dataset ${id}`);
+	msg = `<p>Success! Dataset ${id}</p>`;
       } catch (e) {
-        msg = '<h4 style="margin-top: 0;">Error creating dataset:</h4>';
-        valid = false;
-        console.log(e);
+	msg = '<h4 style="margin-top: 0;">Error creating dataset:</h4>';
+	valid = false;
+	console.log(e);
       }
     } else {
       msg = '<h4 style="margin-top: 0;">Could not create dataset:</h4>' + msg;
@@ -395,10 +403,11 @@ export const addDatasetRoutes = (app: Express): void => {
       fetcher = await getFetcher(dataset!.data);
 
       renderedTemplate = await renderTemplate(
-        dataset!.data.template,
-        fetcher.dataSample,
+	dataset!.data.template,
+	fetcher.dataSample,
       );
     } catch (e) {
+
       res.status(500);
       console.log(`Error parsing task template ${e}`);
       res.send(page("<h1>Error while parsing task template"));
@@ -407,10 +416,10 @@ export const addDatasetRoutes = (app: Express): void => {
 
     res.send(
       page(
-        await confirmForm(id, dataset.data!, {
-          ...dataset!.data,
-          renderedTemplate,
-        }),
+	await confirmForm(id, dataset.data!, {
+	  ...dataset!.data,
+	  renderedTemplate,
+	}),
       ),
     );
   });
