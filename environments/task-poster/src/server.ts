@@ -86,7 +86,7 @@ Manager: ${req.params.manager}
 
 const main = async () => {
   const dbFile = process.env.DB_FILE || "mydatabase.db";
-  const port = parseInt(process.env.PORT || "3000");
+  const port = parseInt(process.env.PORT || "3001");
 
   console.log(`Opening database at ${dbFile}`);
   await state.db.open(dbFile);

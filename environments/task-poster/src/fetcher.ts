@@ -24,6 +24,7 @@ type Fetcher = {
   datasetId: number;
   type: "csv";
   data: string;
+  delimiter: "," | "\t" | ";";
   taskIdx: number;
   totalTasks: number;
   dataSample: any;
@@ -35,11 +36,11 @@ const api = axios.create({
   baseURL: state.managerUrl,
 });
 
-const parseCsv = (csv: string): Promise<any[]> => {
+const parseCsv = (csv: string, delimiter: string = ","): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     const data: any[] = [];
 
-    parseString(csv, { headers: true })
+    parseString(csv, { headers: true,  delimiter })
       .on("error", (error) => reject(error))
       .on("data", (row) => data.push(row))
       .on("end", (rowCount: number) => {
@@ -49,8 +50,12 @@ const parseCsv = (csv: string): Promise<any[]> => {
   });
 };
 
-export const createCsvFetcher = async (ds: DatasetRecord, csv: string) => {
-  const csvData = await parseCsv(csv);
+export const createCsvFetcher  = async (
+  ds: DatasetRecord,
+  csv: string,
+  delimiter: "\t" | "," | ";" = ","
+) => {
+  const csvData = await parseCsv(csv, delimiter);
 
   const f: Fetcher = {
     lastImport: undefined,
@@ -60,6 +65,7 @@ export const createCsvFetcher = async (ds: DatasetRecord, csv: string) => {
     taskIdx: 0,
     totalTasks: csvData.length,
     dataSample: csvData[0],
+    delimiter,
   };
 
   await db.set<Fetcher>(["fetcher", ds.id, ds.activeFetcher], f);

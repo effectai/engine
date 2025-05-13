@@ -16,6 +16,7 @@ export type TemplateRecord = {
   createdAt: number;
   name: string;
   templateId: string;
+  data: string;
 };
 
 const api = axios.create({
@@ -35,7 +36,7 @@ export const renderTemplate = async (
 ): Promise<string> => {
   const template = await getTemplate(tid);
 
-  const templateHtml = template?.data.data.replace(
+  const templateHtml = template!.data.data.replace(
     /\$\{([^}]+)\}/g,
     (_: any, key: any) => {
       const value = data && data[key.trim()];
@@ -59,7 +60,7 @@ const form = (msg = "", values: Record<string, string> = {}): string => `
       id="name"
       ${values.name ? `value="${values.name}"` : ""}
       name="name"/>
-  
+
     <!-- <label for="html">HTML</label> -->
     <textarea
       placeholder="<html>"
@@ -95,24 +96,24 @@ export const addTemplateRoutes = (app: Express): void => {
       const templateId = computeTemplateId(managerId, req.body.html);
 
       const template: Template = {
-        templateId,
-        data: req.body.html,
-        createdAt: Date.now(),
+	templateId,
+	data: req.body.html,
+	createdAt: Date.now(),
       };
 
       try {
-        const { data } = await api.post<APIResponse>("/template/register", {
-          template,
-          providerPeerIdStr: managerId,
-        });
+	const { data } = await api.post<APIResponse>("/template/register", {
+	  template,
+	  providerPeerIdStr: managerId,
+	});
 
-        const templateEntry = { ...template, name: req.body.name };
-        await db.set(["templates", templateId], templateEntry);
+	const templateEntry = { ...template, name: req.body.name };
+	await db.set(["templates", templateId], templateEntry);
 
-        msg = `<p>Success! ${data.status}:</p><p>${data.id}</p>`;
+	msg = `<p>Success! ${data.status}:</p><p>${data.id}</p>`;
       } catch (e) {
-        msg = "Error during template registration.";
-        valid = false;
+	msg = "Error during template registration.";
+	valid = false;
       }
     }
 
