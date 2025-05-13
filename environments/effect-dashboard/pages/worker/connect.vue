@@ -25,7 +25,7 @@
     <div v-if="isFetching" class="p-6 text-center">
       <div class="flex justify-center items-center space-x-2 text-gray-500">
         <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin" />
-        <span>Fetching manager nodes...</span>
+        <span>Discovering Manager Nodes...</span>
       </div>
     </div>
 
@@ -133,14 +133,6 @@
                   </span>
                 </div>
 
-                <!-- Version -->
-                <div class="flex items-center gap-1">
-                  <UIcon name="i-heroicons-tag" class="w-4 h-4 text-gray-400" />
-                  <span class="text-gray-700 dark:text-gray-300">
-                    v{{ manager.version }}
-                  </span>
-                </div>
-
                 <!-- Latency -->
                 <div class="flex items-center gap-1">
                   <UIcon
@@ -150,6 +142,13 @@
                   <span class="text-gray-700 dark:text-gray-300">
                     {{ manager.latency }}ms
                   </span>
+                </div>
+
+                <!-- Version -->
+                <div class="flex items-center gap-1">
+                  <UBadge leading-icon="i-heroicons-tag" color="gray" size="xs"
+                    >alpha v{{ manager.version }}
+                  </UBadge>
                 </div>
               </div>
             </template>
