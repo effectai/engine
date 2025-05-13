@@ -18,9 +18,9 @@
               {{ activeTask?.state.title }}
             </h3>
             <div class="flex justify-end gap-2">
-              <UButton color="black" variant="outline">
-                Show Instructions
-              </UButton>
+              <!-- <UButton color="black" variant="outline"> -->
+                <!-- Show Instructions -->
+              <!-- </UButton> -->
               <div class="flex space-x-2" v-if="showAcceptTaskButton">
                 <UButton color="black" @click.stop="handlerAcceptTask">
                   <UIcon name="i-heroicons-check-circle-20-solid" />
@@ -40,6 +40,15 @@
               />
             </div>
           </div>
+        </template>
+
+        <template #footer>
+              <div class="flex space-x-2" v-if="showForceSubmitTaskButton">
+                <UButton  variant="outline" color="black" @click.stop="reportAndSkipTask">
+                  <UIcon name="i-heroicons-exclamation-circle-20-solid" />
+                  Report & Skip Task
+                </UButton>
+              </div>
         </template>
 
         <template #default>
@@ -89,6 +98,11 @@ const showAcceptTaskButton = computed(() => {
   return taskState.value === "create";
 });
 
+const showForceSubmitTaskButton = computed(() => {
+  if (!activeTask.value) return false;
+  return taskState.value !== "create";
+});
+
 const toast = useToast();
 const queryClient = useQueryClient();
 
@@ -133,6 +147,20 @@ const handlerRejectTask = async () => {
     queryKey: ["tasks", "active"],
   });
 
+  setActiveTask(null);
+};
+
+const reportAndSkipTask = async () => {
+  if (!activeTask.value) return;
+  await completeTask(activeTask.value.state.id, "<TASK REPORTED AND SKIPPED>");
+  toast.add({
+    title: "Task Reported",
+    color: "red",
+    description: "Report was submitted and task is skipped.",
+  });
+  await queryClient.invalidateQueries({
+    queryKey: ["tasks"],
+  });
   setActiveTask(null);
 };
 

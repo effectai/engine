@@ -6,21 +6,22 @@ import { getTemplates, getTemplate, renderTemplate } from "./templates.js";
 import { type Template, computeTemplateId } from "@effectai/protocol";
 import { KVTransactionResult } from "@cross/kv";
 import * as fetcher from "./fetcher.js";
+import type { FetcherRecord } from "./fetcher.js";
 import {
   getFetcher,
   importTasks,
   createCsvFetcher,
   getTasks,
-  startAutoImport,
 } from "./fetcher.js";
 
-type DatasetStatus = "active" | "draft";
+type DatasetStatus = "active" | "draft" | "finished";
 const statusValues: DatasetStatus[] = ["active", "draft"];
 
 export const datasetIndex = {
   byStatus: {
     active: new Set<number>(),
     draft: new Set<number>(),
+    finished: new Set<number>(),
   } as Record<DatasetStatus, Set<number>>,
 };
 
@@ -28,7 +29,7 @@ type FormValues = Record<string, any>;
 
 export type DatasetRecord = {
   id: number;
-  status: "draft" | "active";
+  status: DatasetStatus,
   activeFetcher: number;
   name: string;
   endpoint?: string;
@@ -61,6 +62,10 @@ export const initialize = async () => {
       datasetIndex.byStatus[v].delete(id),
     );
     datasetIndex.byStatus[data.data.status].add(id);
+  });
+
+  db.watch(["fetcher", {}, {}], (data: KVTransactionResult<FetcherRecord>) => {
+    console.log(`Trace: saved fetcher ${data.key}`);
   });
 };
 
@@ -249,7 +254,7 @@ const importProgress = async (ds: DatasetRecord) => {
     .fill(".")
     .map((_) => '<div class="block"></div>')
     .join("");
-
+  
   const pendingDots = Array(fetcher.totalTasks - currentIdx)
     .fill(".")
     .map((_) => '<div class="block empty"></div>')
@@ -295,10 +300,32 @@ ${
 </form>
 `;
 
-const activateDataset = async (dataset: KVTransactionResult<DatasetRecord>) => {
-  dataset.data.status = "active";
-  await db.set(dataset.key, dataset.data);
-};
+// starts auto-importing of active datasets
+export const startAutoImport = async () => {
+  while (true) {
+    const activeDatasets = await getActiveDatasets("active");
+    console.log(`Checking all ${activeDatasets.length} active datasets`);
+
+    // import tasks for every active campaign
+    // TODO: weirdest KV db bug when making this async as below (some fetchers
+    // stop getting saved). spent hours debugging that. I believe we need to
+    // move to an other KV store.
+    // to make it async, use:
+    // await Promise.all(activeDatasets.map(async (ds) => {
+    for (const ds of activeDatasets) {
+      const imported = await fetcher.importTasks(ds!.data);
+
+      if (!imported || imported === 0) {
+	console.log(`Dataset ${ds!.data.id} finished`);
+	ds!.data.status = "finished";
+	await db.set<DatasetRecord>(ds!.key, ds!.data);
+      }
+    }    
+
+    // pause on the main loop
+    await new Promise(r => setTimeout(r, 10000));
+  }
+}
 
 export const addDatasetRoutes = (app: Express): void => {
   app.get("/d/create", async (_req, res) => {
@@ -394,7 +421,7 @@ export const addDatasetRoutes = (app: Express): void => {
 
     // activate the dataset
     dataset!.data.status = "active";
-    await db.set(dataset!.key, dataset!.data);
+    await db.set<DatasetRecord>(dataset!.key, dataset!.data);
 
     // finish the HTTP request
     res.setHeader("HX-Location", `/d/${id}`);
@@ -404,6 +431,6 @@ export const addDatasetRoutes = (app: Express): void => {
     await importTasks(dataset!.data);
 
     // start auto importing from now on
-    await startAutoImport(dataset!.data);
+    await fetcher.importTasks(dataset!.data);
   });
 };
