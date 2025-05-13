@@ -89,7 +89,7 @@ export const getTasks = async (ds: DatasetRecord, fetcher: Fetcher) => {
       ({
         id: `d${ds.id.toString()}f${ds.activeFetcher}t${idx}`,
         title: `${ds.name}`,
-        reward: ds.price,
+        reward: ds.price * 1000000,
         timeLimitSeconds: 600,
         templateId: ds.template,
         templateData: JSON.stringify(d),
