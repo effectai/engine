@@ -18,9 +18,9 @@
               {{ activeTask?.state.title }}
             </h3>
             <div class="flex justify-end gap-2">
-              <UButton color="black" variant="outline">
-                Show Instructions
-              </UButton>
+              <!-- <UButton color="black" variant="outline"> -->
+                <!-- Show Instructions -->
+              <!-- </UButton> -->
               <div class="flex space-x-2" v-if="showAcceptTaskButton">
                 <UButton color="black" @click.stop="handlerAcceptTask">
                   <UIcon name="i-heroicons-check-circle-20-solid" />
