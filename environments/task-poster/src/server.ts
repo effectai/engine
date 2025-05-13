@@ -15,12 +15,13 @@ import {
   getDatasets,
   getActiveDatasets,
   datasetIndex,
+  startAutoImport,
 } from "./dataset.js";
 import * as dataset from "./dataset.js";
 import * as fetcher from "./fetcher.js";
 
 const addMainRoutes = (app: Express) => {
-  app.get("/", (req, res) => {
+  app.get("/", async (req, res) => {
     res.send(
       page(`
 <p>Select a manager:</p>
@@ -58,6 +59,10 @@ const addMainRoutes = (app: Express) => {
       (d) => `<a href="/d/${d!.data.id}">${d!.data.name} (${d!.data.id})</a>`,
     );
 
+    const oldDs = (await getActiveDatasets("finished"))
+      .map((d) => `<a href="/d/${d!.data.id}">${d!.data.name} (${d!.data.id})</a>`,
+    );
+
     res.send(
       page(`
 Manager: ${req.params.manager}
@@ -66,9 +71,14 @@ Manager: ${req.params.manager}
 <ul><li>${tmpList.join("</li><li>")}</li></ul>
 <a href="/t/create"><button>Create Template</button></a>
 
-<h3>Known Datasets</h3>
+<h3>Active Datasets</h3>
 <ul><li>${dsList.join("</li><li>")}</li></ul>
 <a href="/d/create"><button>Create Dataset</button></a>
+
+<h3>Finished Datasets</h3>
+<ul><li>${oldDs.join("</li><li>")}</li></ul>
+<a href="/d/create"><button>Create Dataset</button></a>
+
 `),
     );
   });
@@ -98,13 +108,12 @@ const main = async () => {
   addMainRoutes(app);
   addTemplateRoutes(app);
   addDatasetRoutes(app);
-
-  const activeDatasets = await getActiveDatasets("active");
-  for (const ds of activeDatasets) fetcher.startAutoImport(ds!.data);
-
+  
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);
   });
+
+  await startAutoImport();
 };
 
 await main();

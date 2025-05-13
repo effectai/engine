@@ -96,12 +96,20 @@ export const getPendingTasks = async (ds: DatasetRecord, f: Fetcher) => {
   return tasks.slice(f.taskIdx);
 };
 
+// returns the number of tasks imported. 0 = finished, -1 = other error
 export const importTasks = async (ds: DatasetRecord) => {
   const fetcher = await db.get<Fetcher>(["fetcher", ds.id, ds.activeFetcher]);
 
+  // check for import lock
+  if (publishProgress[ds.id]) {
+    console.log(`Error: tryting to run on a locked dataset ${ds.id}`);
+    return -1;
+  }
+    
+  // short wire if finished
   if (fetcher!.data.taskIdx >= fetcher!.data.totalTasks) {
     console.log(`Skip import of ${ds.id}: no pending tasks`);
-    return;
+    return 0;
   }
 
   const pendingTasks = await getPendingTasks(ds, fetcher!.data);
@@ -121,7 +129,7 @@ export const importTasks = async (ds: DatasetRecord) => {
 
   for (const task of tasks) {
     // TODO: remove delay / think about throttling
-    await delay(1000);
+    await delay(400);
 
     try {
       // TODO: save posted tasks in DB, for result tracking etc
@@ -129,22 +137,16 @@ export const importTasks = async (ds: DatasetRecord) => {
       publishProgress[ds.id].current += 1;
     } catch (e) {
       // TODO: save errors in db, retries with backoff
-      publishProgress[ds.id].failed += 1;
       console.log(`Error posting task ${task} ${e}`);
+      publishProgress[ds.id].failed += 1;
     }
   }
 
   publishProgress[ds.id] = undefined;
   fetcher!.data.taskIdx += tasks.length;
   fetcher!.data.lastImport = Date.now();
+  
   await db.set<Fetcher>(fetcher!.key, fetcher!.data);
-};
 
-export const startAutoImport = async (ds: DatasetRecord) => {
-  if (ds.frequency < 10000) {
-    console.log(`Skip dataset ${ds.id}, frequency can't be less than 10s`);
-    return;
-  }
-  console.log(`Starting auto importing of ${ds.id} every ${ds.frequency}ms`);
-  setInterval(() => importTasks(ds), ds.frequency);
+  return tasks.length;
 };
