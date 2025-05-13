@@ -58,10 +58,10 @@ describe("createWorkerManager", () => {
       expect(worker).toBeDefined();
 
       //expect access code to be redeemed
-      const result = await datastore.get(new Key(`access-codes/${code}`));
-      const accessCode = JSON.parse(result.toString());
+      const [result] = await workerManager.getAccessCodes();
 
-      expect(accessCode.redeemedBy).to.equal(mockPeerId);
+      expect(result.events.some((e) => e.type === "redeem")).toBe(true);
+      expect(result.state.code).to.equal(code);
     });
 
     it("should throw an InvalidAccessCode error if given a wrong access code", () => {});

@@ -30,28 +30,28 @@
 </template>
 
 <script setup lang="ts">
-  const route = useRoute();
+const route = useRoute();
 
-  const navigation = ref([
-    {
-      name: "Stake",
-      href: "/stake",
-      icon: "lucide:wallet",
-      current: computed(() => route.path.includes("/stake")),
-    },
-    {
-      name: "Migrate",
-      href: "/migrate",
-      icon: "lucide:forward",
-      current: computed(() => route.path.includes("migrate")),
-    },
-    {
-      name: "Worker",
-      href: "/worker",
-      icon: "lucide:cpu",
-      current: computed(() => route.path.includes("/worker")),
-    }
-  ]);
+const navigation = ref([
+  {
+    name: "Worker",
+    href: "/worker",
+    icon: "lucide:cpu",
+    current: computed(() => route.path.includes("/worker")),
+  },
+  {
+    name: "Stake",
+    href: "/stake",
+    icon: "lucide:wallet",
+    current: computed(() => route.path.includes("/stake")),
+  },
+  {
+    name: "Migrate",
+    href: "/migrate",
+    icon: "lucide:forward",
+    current: computed(() => route.path.includes("migrate")),
+  },
+]);
 </script>
 
 <style scoped></style>

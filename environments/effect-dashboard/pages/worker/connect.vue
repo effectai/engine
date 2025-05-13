@@ -22,7 +22,6 @@
       </div>
     </template>
 
-    <!-- Loading State -->
     <div v-if="isFetching" class="p-6 text-center">
       <div class="flex justify-center items-center space-x-2 text-gray-500">
         <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin" />
@@ -30,8 +29,9 @@
       </div>
     </div>
 
-    <!-- Error State -->
     <div v-else-if="isError" class="p-6">
+      {{ isError }}
+      {{ error }}
       <UAlert
         icon="i-heroicons-exclamation-circle"
         color="red"
@@ -41,7 +41,6 @@
       />
     </div>
 
-    <!-- Empty State -->
     <div v-else-if="managers && managers.length === 0" class="p-6 text-center">
       <UAlert
         icon="i-heroicons-information-circle"
@@ -182,7 +181,7 @@ definePageMeta({
   middleware: ["auth"],
 });
 
-const { data: managers, isFetching, isError } = useFetchManagerNodes();
+const { data: managers, isFetching, isError, error } = useFetchManagerNodes();
 const selectedManager = ref<ManagerInfoResponse | null>(null);
 const accessCode = ref<string | null>(null);
 const stepAccessCode = ref(false);

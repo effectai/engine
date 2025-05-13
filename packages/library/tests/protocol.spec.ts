@@ -74,6 +74,7 @@ describe("Complete Task Lifecycle", () => {
         listen: ["/ip4/0.0.0.0/tcp/0/ws"],
         autoManage: false,
         requireAccessCodes: false,
+        withAdmin: false,
         paymentAccount: pk.publicKey.toBase58(),
       },
     });

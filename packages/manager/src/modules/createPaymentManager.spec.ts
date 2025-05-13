@@ -15,7 +15,8 @@ describe("createPaymentManager", () => {
   // create spy for signPayment
   vi.mock("../utils.js", () => ({
     signPayment: vi.fn(),
-    int2hex: vi.fn(), // <-- if you need int2hex too
+    int2hex: vi.fn(),
+    computePaymentId: vi.fn(),
   }));
 
   beforeEach(() => {

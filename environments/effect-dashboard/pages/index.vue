@@ -2,6 +2,8 @@
   <div></div>
 </template>
 
-<script setup></script>
+<script setup>
+navigateTo("/worker");
+</script>
 
 <style lang="scss" scoped></style>

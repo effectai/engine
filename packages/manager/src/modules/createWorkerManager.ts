@@ -35,6 +35,19 @@ export const createWorkerManager = ({
     return await accessCodeStore.redeem(accessCode, peerIdStr);
   };
 
+  const disconnectWorker = async (peerIdStr: string) => {
+    //check if peer is connected
+    if (!workerQueue.queue.includes(peerIdStr)) {
+      throw new Error("Worker not connected");
+    }
+
+    await workerStore.updateWorker(peerIdStr, {
+      lastActivity: Math.floor(Date.now() / 1000),
+    });
+
+    workerQueue.removePeer(peerIdStr);
+  };
+
   const connectWorker = async (
     peerId: string,
     recipient: string,
@@ -59,9 +72,13 @@ export const createWorkerManager = ({
         }
       }
 
-      //overwrite the recipient
+      const currentTime = Math.floor(Date.now() / 1000);
+
+      // overwrite the recipient
       await workerStore.updateWorker(peerId, {
         recipient,
+        lastPayout: currentTime,
+        lastActivity: currentTime,
       });
 
       // add worker to queue
@@ -162,13 +179,15 @@ export const createWorkerManager = ({
   };
 
   return {
+    workerStore,
+    workerQueue,
+
     all,
     selectWorker,
     getWorker,
     getWorkers,
     connectWorker,
-    workerStore,
-    workerQueue,
+    disconnectWorker,
     generateAccessCode,
     getAccessCodes,
     updateWorkerState,

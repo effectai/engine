@@ -61,6 +61,7 @@ export type ManagerSettings = {
   paymentBatchSize: number;
   requireAccessCodes: boolean;
   paymentAccount: string | null;
+  withAdmin: boolean;
 };
 
 export const createManagerEntity = async ({
@@ -113,6 +114,7 @@ export const createManager = async ({
     paymentBatchSize: settings.paymentBatchSize ?? PAYMENT_BATCH_SIZE,
     requireAccessCodes: settings.requireAccessCodes ?? true,
     paymentAccount: settings.paymentAccount ?? null,
+    withAdmin: settings.withAdmin ?? true,
   };
 
   if (!managerSettings.paymentAccount) {
@@ -311,10 +313,19 @@ export const createManager = async ({
   });
 
   let isStarted = false;
+  let tearDownDash: () => Promise<void>;
+
   const start = async () => {
     //start libp2p & http transports
     await entity.node.start();
     await entity.startHttp();
+
+    //start manager dashboard
+    if (managerSettings.withAdmin) {
+      const { tearDown } = await setupManagerDashboard();
+      tearDownDash = tearDown;
+    }
+
     isStarted = true;
   };
 
@@ -324,7 +335,9 @@ export const createManager = async ({
     await entity.stopHttp();
 
     //stop express server
-    tearDown();
+    if (tearDownDash) {
+      tearDownDash();
+    }
 
     isStarted = false;
   };
@@ -366,7 +379,7 @@ export const createManager = async ({
   // Register event listeners
   entity.node.addEventListener("peer:disconnect", (event) => {
     const peerId = event.detail;
-    workerManager.workerQueue.removePeer(peerId.toString());
+    workerManager.disconnectWorker(peerId.toString());
   });
 
   const setupManagerDashboard = async () => {
@@ -452,8 +465,6 @@ export const createManager = async ({
 
     return { tearDown };
   };
-
-  const { tearDown } = await setupManagerDashboard();
 
   return {
     entity,
