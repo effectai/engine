@@ -23,7 +23,14 @@
         </template>
 
         <template #default>
-          <!-- Wallet Info Section -->
+          <UAlert
+            title="Claiming not available yet"
+            color="yellow"
+            icon="i-heroicons-exclamation-triangle"
+            description="Claiming is currently unavailable. Payments to your wallet will be enabled later during the alpha testing phase."
+          >
+          </UAlert>
+
           <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
             <div class="flex items-center gap-2 flex-wrap">
               <BlockchainAddress v-if="account" :address="account" />
@@ -38,7 +45,6 @@
             </p>
           </div>
 
-          <!-- Claimable Payments Section -->
           <div class="space-y-4">
             <div class="flex justify-between items-center">
               <span class="text-gray-700 dark:text-gray-300"
@@ -67,7 +73,7 @@
             <UButton
               @click="mutateClaimPayments"
               :loading="isClaimingPayments"
-              :disabled="!canClaim"
+              :disabled="true"
               color="black"
               variant="solid"
               size="md"

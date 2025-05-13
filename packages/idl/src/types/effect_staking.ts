@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/effect_staking.json`.
  */
 export type EffectStaking = {
-  "address": "effectstaking",
+  "address": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e",
   "metadata": {
     "name": "effectStaking",
     "version": "0.1.0",

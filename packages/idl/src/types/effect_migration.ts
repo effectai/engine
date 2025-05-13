@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/effect_migration.json`.
  */
 export type EffectMigration = {
-  "address": "effectmigration",
+  "address": "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR",
   "metadata": {
     "name": "effectMigration",
     "version": "0.1.0",

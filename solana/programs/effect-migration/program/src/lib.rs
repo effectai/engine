@@ -10,7 +10,7 @@ mod security;
 use effect_migration_common::EFFECT_MIGRATION;
 pub use instructions::*;
 
-declare_id!(EFFECT_MIGRATION);
+declare_id!("effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR");
 
 #[program]
 pub mod effect_migration {

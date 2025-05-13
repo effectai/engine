@@ -20,7 +20,7 @@
           <p class="font-medium text-gray-900">
             {{
               formatTimestampToTimeAgo(
-                migrationAccount.stakeStartTime.toNumber() * 1000
+                migrationAccount.stakeStartTime.toNumber() * 1000,
               )
             }}
           </p>
@@ -38,7 +38,7 @@
             <p class="font-medium text-gray-900">
               {{
                 formatNumber(
-                  calculateStakeAge(migrationAccount.stakeStartTime.toNumber())
+                  calculateStakeAge(migrationAccount.stakeStartTime.toNumber()),
                 )
               }}
             </p>
@@ -65,59 +65,59 @@
 </template>
 
 <script setup lang="ts">
-  const props = defineProps<{
-    migrationAccount: EffectMigrationProgramAccounts["migrationAccount"];
-    signature: Uint8Array | null;
-    foreignPublicKey: Uint8Array | null | undefined;
-    message: Uint8Array | null;
-  }>();
+const props = defineProps<{
+  migrationAccount: EffectMigrationProgramAccounts["migrationAccount"];
+  signature: Uint8Array | null;
+  foreignPublicKey: Uint8Array | null | undefined;
+  message: Uint8Array | null;
+}>();
 
-  const { useGetMigrationVaultBalance, useClaim } = useMigrationProgram();
-  const { data: vaultBalance } = useGetMigrationVaultBalance(
-    props.migrationAccount
-  );
+const { useGetMigrationVaultBalance, useClaim } = useMigrationProgram();
+const { data: vaultBalance } = useGetMigrationVaultBalance(
+  props.migrationAccount,
+);
 
-  const balance = computed(
-    () =>
-      vaultBalance.value?.value.uiAmount &&
-      formatNumber(vaultBalance.value?.value.uiAmount)
-  );
+const balance = computed(
+  () =>
+    vaultBalance.value?.value.uiAmount &&
+    formatNumber(vaultBalance.value?.value.uiAmount),
+);
 
-  const canClaim = computed(() => {
-    return !!props.signature && !!props.foreignPublicKey && !!props.message;
-  });
+const canClaim = computed(() => {
+  return !!props.signature && !!props.foreignPublicKey && !!props.message;
+});
 
-  const emit = defineEmits<(e: "claim", transactionId: string) => void>();
-  const toast = useToast();
-  const { mutateAsync: claimTokens, isPending } = useClaim();
-  const router = useRouter();
-  const handleClaim = async () => {
-    try {
-      if (!props.signature || !props.foreignPublicKey || !props.message) {
-        console.warn("missing signature, foreignPublicKey or message");
-        return;
-      }
-
-      const transactionId = await claimTokens({
-        signature: props.signature,
-        foreignPublicKey: props.foreignPublicKey,
-        message: props.message,
-      });
-      emit("claim", transactionId);
-      toast.add({
-        title: "Success",
-        description: "Claimed tokens successfully",
-        color: "green",
-      });
-
-      router.push("/stake?confetti=true");
-    } catch (e) {
-      console.log(e);
-      toast.add({
-        title: "Error",
-        description: "Something went wrong",
-        color: "red",
-      });
+const emit = defineEmits<(e: "claim", transactionId: string) => void>();
+const toast = useToast();
+const { mutateAsync: claimTokens, isPending } = useClaim();
+const router = useRouter();
+const handleClaim = async () => {
+  try {
+    if (!props.signature || !props.foreignPublicKey || !props.message) {
+      console.warn("missing signature, foreignPublicKey or message");
+      return;
     }
-  };
+
+    const transactionId = await claimTokens({
+      signature: props.signature,
+      foreignPublicKey: props.foreignPublicKey,
+      message: props.message,
+    });
+    emit("claim", transactionId);
+    toast.add({
+      title: "Success",
+      description: "Claimed tokens successfully",
+      color: "green",
+    });
+
+    router.push("/stake?confetti=true");
+  } catch (e) {
+    console.log(e);
+    toast.add({
+      title: "Error",
+      description: "Something went wrong",
+      color: "red",
+    });
+  }
+};
 </script>

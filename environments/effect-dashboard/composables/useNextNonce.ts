@@ -8,18 +8,17 @@ export const useNextNonce = (
   const { useRecipientManagerDataAccount } = usePaymentProgram();
   const { account } = useWeb3Auth();
 
-  const {
-    data: recipientManagerDataAccount,
-    isLoading: isRemoteLoading,
-    error: remoteError,
-  } = useRecipientManagerDataAccount(account, managerPublicKey);
-
+  // const {
+  //   data: recipientManagerDataAccount,
+  //   isLoading: isRemoteLoading,
+  //   error: remoteError,
+  // } = useRecipientManagerDataAccount(account, managerPublicKey);
+  //
   return useQuery({
     enabled: computed(
       () =>
-        recipientManagerDataAccount.value !== undefined &&
-        !!worker.value &&
-        !!managerPeerIdStr.value,
+        // recipientManagerDataAccount.value !== undefined &&
+        !!worker.value && !!managerPeerIdStr.value,
     ),
     queryKey: computed(() => [
       "nextNonce",
@@ -31,7 +30,8 @@ export const useNextNonce = (
         throw new Error("Worker or manager peer ID missing");
       }
 
-      const remoteNonce = recipientManagerDataAccount.value?.nonce ?? null;
+      // const remoteNonce = recipientManagerDataAccount.value?.nonce ?? null;
+      const remoteNonce = null;
 
       const maxLocalNonce =
         (await worker.value.getMaxNonce({
