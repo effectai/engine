@@ -253,7 +253,7 @@
           </h1>
         </div>
       </div>
-      <NewsCardList :items="news" class="my-7" />
+      <NewsCardList :perPage="3" :items="news" class="my-7" />
     </div>
   </SimpleSection>
 
@@ -291,31 +291,27 @@
 </template>
 
 <script setup lang="ts">
-  import { dapps } from "~/constants/dapps.js";
+import { dapps } from "~/constants/dapps.js";
 
-  //fetch news content and sort by created\
-  const { data: news } = await useAsyncData("news", async () => {
-    const data = await queryContent("/news")
-      .where({ published: true })
-      .limit(3)
-      .sort({ created: -1 })
-      .find();
+//fetch news content and sort by created\
+const { data: news } = await useAsyncData("news", async () => {
+  const data = await queryContent("/news").where({ published: true }).find();
 
-    //sort on created date
-    return data.sort((a, b) => {
-      return new Date(b.created).getTime() - new Date(a.created).getTime();
-    });
+  //sort on created date
+  return data.sort((a, b) => {
+    return new Date(b.created).getTime() - new Date(a.created).getTime();
   });
+});
 
-  useSeoMeta({
-    ogDescription:
-      "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
-    title: "Effect AI - Decentralized Intelligence",
-    ogImage: "/img/effect-logo-black.png",
-    ogTitle: "Effect AI - Decentralized Intelligence",
-    description:
-      "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
-  });
+useSeoMeta({
+  ogDescription:
+    "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
+  title: "Effect AI - Decentralized Intelligence",
+  ogImage: "/img/effect-logo-black.png",
+  ogTitle: "Effect AI - Decentralized Intelligence",
+  description:
+    "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
+});
 </script>
 
 <style lang="scss" scoped>
