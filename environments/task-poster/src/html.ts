@@ -17,7 +17,9 @@ export const page = (body: string): string => `
   </style>
 </head>
 <body>
-  <h1><a href="/">Task Terminal</a></h1>
+  <header>
+    <h1><a href="/">Task Terminal</a></h1>
+  </header>
   ${body}
 
 </body>
