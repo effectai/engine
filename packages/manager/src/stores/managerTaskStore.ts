@@ -11,6 +11,7 @@ import {
   createEntityStore,
   stringifyWithBigInt,
   parseWithBigInt,
+  isValid,
 } from "@effectai/protocol-core";
 
 export type ManagerTaskEvent =
@@ -105,6 +106,10 @@ export const createManagerTaskStore = ({
     task: Task;
     providerPeerIdStr: string;
   }): Promise<ManagerTaskRecord> => {
+    if (!isValid(task.id)) {
+      throw new TaskValidationError("Task ID is not a valid ULID");
+    }
+
     const record: ManagerTaskRecord = {
       events: [
         {

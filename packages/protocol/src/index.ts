@@ -28,3 +28,5 @@ export {
   circuitRelayServer,
   circuitRelayTransport,
 } from "@libp2p/circuit-relay-v2";
+
+export { isValid } from "ulid";

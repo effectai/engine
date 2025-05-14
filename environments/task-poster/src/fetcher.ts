@@ -3,16 +3,11 @@ import { parseString } from "@fast-csv/parse";
 import { managerId, db, publishProgress } from "./state.js";
 import * as state from "./state.js";
 import type { DatasetRecord } from "./dataset.js";
+import { stringifyWithBigInt, Task } from "@effectai/protocol";
+import { ulid } from "ulid";
 
 // TODO: can this come out of the protocol package?
-type Task = {
-  id?: string;
-  title: string;
-  reward: number;
-  timeLimitSeconds: number;
-  templateId: string;
-  templateData: string;
-};
+
 type APIResponse = {
   status: string;
   data?: any;
@@ -40,7 +35,7 @@ const parseCsv = (csv: string, delimiter: string = ","): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     const data: any[] = [];
 
-    parseString(csv, { headers: true,  delimiter })
+    parseString(csv, { headers: true, delimiter })
       .on("error", (error) => reject(error))
       .on("data", (row) => data.push(row))
       .on("end", (rowCount: number) => {
@@ -50,10 +45,10 @@ const parseCsv = (csv: string, delimiter: string = ","): Promise<any[]> => {
   });
 };
 
-export const createCsvFetcher  = async (
+export const createCsvFetcher = async (
   ds: DatasetRecord,
   csv: string,
-  delimiter: "\t" | "," | ";" = ","
+  delimiter: "\t" | "," | ";" = ",",
 ) => {
   const csvData = await parseCsv(csv, delimiter);
 
@@ -84,17 +79,14 @@ const delay = (m: number): Promise<void> =>
 export const getTasks = async (ds: DatasetRecord, fetcher: Fetcher) => {
   const csvData = await parseCsv(fetcher.data);
 
-  return csvData.map(
-    (d, idx) =>
-      ({
-        id: `d${ds.id.toString()}f${ds.activeFetcher}t${idx}`,
-        title: `${ds.name}`,
-        reward: ds.price * 1000000,
-        timeLimitSeconds: 600,
-        templateId: ds.template,
-        templateData: JSON.stringify(d),
-      }) as Task,
-  );
+  return csvData.map((d, idx) => ({
+    id: ulid(),
+    title: `${ds.name}`,
+    reward: BigInt(ds.price * 1000000),
+    timeLimitSeconds: 600,
+    templateId: ds.template,
+    templateData: JSON.stringify(d),
+  }));
 };
 
 export const getPendingTasks = async (ds: DatasetRecord, f: Fetcher) => {
@@ -111,7 +103,7 @@ export const importTasks = async (ds: DatasetRecord) => {
     console.log(`Error: tryting to run on a locked dataset ${ds.id}`);
     return -1;
   }
-    
+
   // short wire if finished
   if (fetcher!.data.taskIdx >= fetcher!.data.totalTasks) {
     console.log(`Skip import of ${ds.id}: no pending tasks`);
@@ -139,7 +131,14 @@ export const importTasks = async (ds: DatasetRecord) => {
 
     try {
       // TODO: save posted tasks in DB, for result tracking etc
-      const { data } = await api.post<APIResponse>("/task", task);
+
+      const serializedTask = {
+        ...task,
+        //convert bigint to string for serialization
+        reward: task.reward.toString(),
+      };
+
+      const { data } = await api.post<APIResponse>("/task", serializedTask);
       publishProgress[ds.id].current += 1;
     } catch (e) {
       // TODO: save errors in db, retries with backoff
@@ -151,7 +150,7 @@ export const importTasks = async (ds: DatasetRecord) => {
   publishProgress[ds.id] = undefined;
   fetcher!.data.taskIdx += tasks.length;
   fetcher!.data.lastImport = Date.now();
-  
+
   await db.set<Fetcher>(fetcher!.key, fetcher!.data);
 
   return tasks.length;
