@@ -16,7 +16,7 @@
     <UTable
       v-if="isSuccess"
       :loading="payments === null"
-      :rows="mutatedPayments"
+      :rows="rows"
       :loading-state="{
         icon: 'i-heroicons-arrow-path-20-solid',
         label: 'Waiting for tasks...',
@@ -39,9 +39,9 @@
       :progress="{ color: 'primary', animation: 'carousel' }"
       class="w-full"
       :columns="[
-        { sortable: true, key: 'state.nonce', label: 'Nonce', sort: sortNonce },
+        { key: 'state.nonce', label: 'Nonce' },
         { key: 'state.label', label: 'label' },
-        { key: 'claimed', label: 'status', sortable: true },
+        { key: 'claimed', label: 'status' },
         { key: 'recipient', label: 'Recipient' },
         { key: 'amount', label: 'Amount' },
       ]"
@@ -65,6 +65,12 @@
         <span>{{ sliceBoth(row.state.paymentAccount) }}</span>
       </template>
     </UTable>
+
+    <UPagination
+      v-model="page"
+      :page-count="pageCount"
+      :total="payments.length"
+    />
   </UCard>
 </template>
 
@@ -76,29 +82,44 @@ const { useGetNonce } = sessionStore.useActiveSession();
 const { data: nonces, isSuccess } = useGetNonce();
 
 const isOpenClaimModal = ref(false);
+const page = ref(1);
+const pageCount = 15;
 
 const mutatedPayments = computed(
   () =>
-    payments.value?.map(
-      (p) =>
-        (nonces.value && {
-          ...p,
-          claimed: nonces.value.remoteNonce ?? 0n >= p.state.nonce,
-        }) ||
-        [],
-    ) || [],
+    payments.value
+      ?.map(
+        (p) =>
+          (nonces.value && {
+            ...p,
+            claimed: nonces.value.remoteNonce ?? 0n >= p.state.nonce,
+          }) ||
+          [],
+      )
+      .sort((a, b) => {
+        const parsedA = Number.parseInt(a.state.nonce);
+        const parsedB = Number.parseInt(b.state.nonce);
+
+        return parsedA - parsedB;
+      }) || [],
 );
 
-const sortNonce = (a: bigint, b: bigint) => {
-  if (a > b) {
-    return 1;
+const rows = computed(() => {
+  return mutatedPayments.value.slice(
+    (page.value - 1) * pageCount,
+    page.value * pageCount,
+  );
+});
+
+const sortNonce = (a: string, b: string, direction: string) => {
+  const parsedA = Number.parseInt(a);
+  const parsedB = Number.parseInt(b);
+
+  if (direction === "asc") {
+    return parsedA - parsedB;
   }
 
-  if (b > a) {
-    return -1;
-  }
-
-  return 0;
+  return parsedB - parsedA;
 };
 </script>
 

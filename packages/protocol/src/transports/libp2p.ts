@@ -308,6 +308,8 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
       const { payload } = extractMessageType(response);
       return [payload as MessageResponse<T>, null];
     } catch (error) {
+      console.error("Failed to send message:", error);
+
       if (error instanceof EffectProtocolError) {
         return [null, error];
       }

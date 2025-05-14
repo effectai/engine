@@ -27,11 +27,14 @@
             title="Claiming not available yet"
             color="yellow"
             icon="i-heroicons-exclamation-triangle"
-            description="Claiming is currently unavailable. Payments to your wallet will be enabled later during the alpha testing phase."
+            description="Claiming is currently unavailable. Claiming payments to your wallet will be enabled later during the alpha testing phase."
           >
           </UAlert>
 
-          <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+          <div
+            v-show="false"
+            class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg"
+          >
             <div class="flex items-center gap-2 flex-wrap">
               <BlockchainAddress v-if="account" :address="account" />
               <span class="text-gray-400 dark:text-gray-500">|</span>
@@ -57,6 +60,7 @@
 
             <!-- Warning Message -->
             <UAlert
+              v-show="false"
               v-if="balance.value <= 0.01"
               icon="i-heroicons-exclamation-triangle"
               color="red"

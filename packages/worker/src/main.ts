@@ -28,6 +28,7 @@ export interface WorkerEvents {
   "task:completed": (task: TaskRecord) => void;
   "task:accepted": CustomEvent<Task>;
   "task:rejected": (task: TaskRecord) => void;
+  "task:expired": (task: TaskRecord) => void;
   "payment:created": CustomEvent<Payment>;
 }
 
@@ -133,6 +134,18 @@ export const createWorker = async ({
     await entity.node.stop();
   };
 
+  // request a manager to identify itself
+  const identify = async (manager: Multiaddr) => {
+    const [response, _error] = await entity.sendMessage(manager, {
+      identifyRequest: {
+        timestamp: Math.floor(Date.now() / 1000),
+      },
+    });
+
+    return response;
+  };
+
+  //connect to an identified manager
   const connect = async (
     manager: Multiaddr,
     recipient: string,
@@ -162,7 +175,6 @@ export const createWorker = async ({
 
   if (autoExpire) {
     setInterval(async () => {
-      //cleanup stale tasks / move to expired
       await cleanup();
     }, 1000);
   }
@@ -185,6 +197,7 @@ export const createWorker = async ({
     requestPayout,
     requestPaymentProof,
 
+    identify,
     connect,
     start,
     stop,

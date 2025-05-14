@@ -12,23 +12,6 @@
         >
           Disconnect
         </UButton>
-        <UButton
-          color="black"
-          class=""
-          variant="outline"
-          icon="i-lucide-key"
-          :disabled="true"
-        >
-          Export Private Key
-        </UButton>
-        <UButton
-          :disabled="true"
-          color="black"
-          class=""
-          variant="outline"
-          icon="i-lucide-logs"
-          >Logs</UButton
-        >
       </div>
     </div>
 

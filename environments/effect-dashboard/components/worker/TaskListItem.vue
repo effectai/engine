@@ -55,9 +55,6 @@ const props = defineProps<{
 const taskState = useTaskState(props.taskRecord);
 const { time, type } = getTaskDeadline(props.taskRecord);
 const countdown = useCountdown(time, {
-  onComplete: () => {
-    //TODO::
-  },
   immediate: true,
 });
 

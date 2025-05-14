@@ -12,6 +12,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsup ./src/ --config ../../tsup.config.package.ts --platform neutral",
+    "dev": "tsup ./src/ --config ../../tsup.config.package.ts --platform neutral --watch",
     "protons-build": "protons ./messages/effect.proto --out-dir ./@generated/effect.protons.ts"
   },
   "keywords": [],

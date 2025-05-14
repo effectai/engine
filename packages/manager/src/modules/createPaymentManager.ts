@@ -179,6 +179,10 @@ export async function createPaymentManager({
   }) => {
     const peer = await workerManager.getWorker(peerId.toString());
 
+    if (!peer) {
+      throw new Error("Peer not found");
+    }
+
     const payment = Payment.decode(
       Payment.encode({
         amount,

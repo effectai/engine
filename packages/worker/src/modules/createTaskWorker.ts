@@ -238,7 +238,6 @@ export function createTaskWorker({
   const cleanup = async () => {
     const tasks = await taskStore.all({
       prefix: "tasks/active",
-      limit: 100,
     });
 
     const now = Math.floor(Date.now() / 1000);
@@ -263,6 +262,7 @@ export function createTaskWorker({
 
     for (const task of expiredTasks) {
       await taskStore.expire({ entityId: task.state.id });
+      events.safeDispatchEvent("task:expired", { detail: task });
     }
   };
 

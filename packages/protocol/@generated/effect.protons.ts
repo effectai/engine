@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/no-unnecessary-boolean-literal-compare */
 /* eslint-disable @typescript-eslint/no-empty-interface */
-//@ts-nocheck
+// @ts-nocheck
 
 import {
   type Codec,
@@ -171,6 +171,195 @@ export namespace EffectAcknowledgment {
   };
 }
 
+export interface EffectIdentifyRequest {
+  timestamp: number;
+}
+
+export namespace EffectIdentifyRequest {
+  let _codec: Codec<EffectIdentifyRequest>;
+
+  export const codec = (): Codec<EffectIdentifyRequest> => {
+    if (_codec == null) {
+      _codec = message<EffectIdentifyRequest>(
+        (obj, w, opts = {}) => {
+          if (opts.lengthDelimited !== false) {
+            w.fork();
+          }
+
+          if (obj.timestamp != null && obj.timestamp !== 0) {
+            w.uint32(8);
+            w.uint32(obj.timestamp);
+          }
+
+          if (opts.lengthDelimited !== false) {
+            w.ldelim();
+          }
+        },
+        (reader, length, opts = {}) => {
+          const obj: any = {
+            timestamp: 0,
+          };
+
+          const end = length == null ? reader.len : reader.pos + length;
+
+          while (reader.pos < end) {
+            const tag = reader.uint32();
+
+            switch (tag >>> 3) {
+              case 1: {
+                obj.timestamp = reader.uint32();
+                break;
+              }
+              default: {
+                reader.skipType(tag & 7);
+                break;
+              }
+            }
+          }
+
+          return obj;
+        },
+      );
+    }
+
+    return _codec;
+  };
+
+  export const encode = (obj: Partial<EffectIdentifyRequest>): Uint8Array => {
+    return encodeMessage(obj, EffectIdentifyRequest.codec());
+  };
+
+  export const decode = (
+    buf: Uint8Array | Uint8ArrayList,
+    opts?: DecodeOptions<EffectIdentifyRequest>,
+  ): EffectIdentifyRequest => {
+    return decodeMessage(buf, EffectIdentifyRequest.codec(), opts);
+  };
+}
+
+export interface EffectIdentifyResponse {
+  name?: string;
+  version: string;
+  pubkey: string;
+  batchSize: number;
+  taskTimeout: number;
+  requiresAccessCode: boolean;
+}
+
+export namespace EffectIdentifyResponse {
+  let _codec: Codec<EffectIdentifyResponse>;
+
+  export const codec = (): Codec<EffectIdentifyResponse> => {
+    if (_codec == null) {
+      _codec = message<EffectIdentifyResponse>(
+        (obj, w, opts = {}) => {
+          if (opts.lengthDelimited !== false) {
+            w.fork();
+          }
+
+          if (obj.name != null) {
+            w.uint32(10);
+            w.string(obj.name);
+          }
+
+          if (obj.version != null && obj.version !== "") {
+            w.uint32(18);
+            w.string(obj.version);
+          }
+
+          if (obj.pubkey != null && obj.pubkey !== "") {
+            w.uint32(26);
+            w.string(obj.pubkey);
+          }
+
+          if (obj.batchSize != null && obj.batchSize !== 0) {
+            w.uint32(32);
+            w.uint32(obj.batchSize);
+          }
+
+          if (obj.taskTimeout != null && obj.taskTimeout !== 0) {
+            w.uint32(40);
+            w.uint32(obj.taskTimeout);
+          }
+
+          if (
+            obj.requiresAccessCode != null &&
+            obj.requiresAccessCode !== false
+          ) {
+            w.uint32(48);
+            w.bool(obj.requiresAccessCode);
+          }
+
+          if (opts.lengthDelimited !== false) {
+            w.ldelim();
+          }
+        },
+        (reader, length, opts = {}) => {
+          const obj: any = {
+            version: "",
+            pubkey: "",
+            batchSize: 0,
+            taskTimeout: 0,
+            requiresAccessCode: false,
+          };
+
+          const end = length == null ? reader.len : reader.pos + length;
+
+          while (reader.pos < end) {
+            const tag = reader.uint32();
+
+            switch (tag >>> 3) {
+              case 1: {
+                obj.name = reader.string();
+                break;
+              }
+              case 2: {
+                obj.version = reader.string();
+                break;
+              }
+              case 3: {
+                obj.pubkey = reader.string();
+                break;
+              }
+              case 4: {
+                obj.batchSize = reader.uint32();
+                break;
+              }
+              case 5: {
+                obj.taskTimeout = reader.uint32();
+                break;
+              }
+              case 6: {
+                obj.requiresAccessCode = reader.bool();
+                break;
+              }
+              default: {
+                reader.skipType(tag & 7);
+                break;
+              }
+            }
+          }
+
+          return obj;
+        },
+      );
+    }
+
+    return _codec;
+  };
+
+  export const encode = (obj: Partial<EffectIdentifyResponse>): Uint8Array => {
+    return encodeMessage(obj, EffectIdentifyResponse.codec());
+  };
+
+  export const decode = (
+    buf: Uint8Array | Uint8ArrayList,
+    opts?: DecodeOptions<EffectIdentifyResponse>,
+  ): EffectIdentifyResponse => {
+    return decodeMessage(buf, EffectIdentifyResponse.codec(), opts);
+  };
+}
+
 export interface RequestToWork {
   timestamp: number;
   recipient: string;
@@ -269,94 +458,6 @@ export namespace RequestToWork {
   };
 }
 
-export interface RequestToWorkResponse {
-  timestamp: number;
-  pubkey: string;
-  batchSize: number;
-}
-
-export namespace RequestToWorkResponse {
-  let _codec: Codec<RequestToWorkResponse>;
-
-  export const codec = (): Codec<RequestToWorkResponse> => {
-    if (_codec == null) {
-      _codec = message<RequestToWorkResponse>(
-        (obj, w, opts = {}) => {
-          if (opts.lengthDelimited !== false) {
-            w.fork();
-          }
-
-          if (obj.timestamp != null && obj.timestamp !== 0) {
-            w.uint32(8);
-            w.uint32(obj.timestamp);
-          }
-
-          if (obj.pubkey != null && obj.pubkey !== "") {
-            w.uint32(18);
-            w.string(obj.pubkey);
-          }
-
-          if (obj.batchSize != null && obj.batchSize !== 0) {
-            w.uint32(24);
-            w.uint32(obj.batchSize);
-          }
-
-          if (opts.lengthDelimited !== false) {
-            w.ldelim();
-          }
-        },
-        (reader, length, opts = {}) => {
-          const obj: any = {
-            timestamp: 0,
-            pubkey: "",
-            batchSize: 0,
-          };
-
-          const end = length == null ? reader.len : reader.pos + length;
-
-          while (reader.pos < end) {
-            const tag = reader.uint32();
-
-            switch (tag >>> 3) {
-              case 1: {
-                obj.timestamp = reader.uint32();
-                break;
-              }
-              case 2: {
-                obj.pubkey = reader.string();
-                break;
-              }
-              case 3: {
-                obj.batchSize = reader.uint32();
-                break;
-              }
-              default: {
-                reader.skipType(tag & 7);
-                break;
-              }
-            }
-          }
-
-          return obj;
-        },
-      );
-    }
-
-    return _codec;
-  };
-
-  export const encode = (obj: Partial<RequestToWorkResponse>): Uint8Array => {
-    return encodeMessage(obj, RequestToWorkResponse.codec());
-  };
-
-  export const decode = (
-    buf: Uint8Array | Uint8ArrayList,
-    opts?: DecodeOptions<RequestToWorkResponse>,
-  ): RequestToWorkResponse => {
-    return decodeMessage(buf, RequestToWorkResponse.codec(), opts);
-  };
-}
-
 export interface EffectProtocolMessage {
   task?: Task;
   taskAccepted?: TaskAccepted;
@@ -371,7 +472,8 @@ export interface EffectProtocolMessage {
   error?: EffectError;
   ack?: EffectAcknowledgment;
   requestToWork?: RequestToWork;
-  requestToWorkResponse?: RequestToWorkResponse;
+  identifyRequest?: EffectIdentifyRequest;
+  identifyResponse?: EffectIdentifyResponse;
 }
 
 export namespace EffectProtocolMessage {
@@ -450,9 +552,14 @@ export namespace EffectProtocolMessage {
             RequestToWork.codec().encode(obj.requestToWork, w);
           }
 
-          if (obj.requestToWorkResponse != null) {
+          if (obj.identifyRequest != null) {
             w.uint32(114);
-            RequestToWorkResponse.codec().encode(obj.requestToWorkResponse, w);
+            EffectIdentifyRequest.codec().encode(obj.identifyRequest, w);
+          }
+
+          if (obj.identifyResponse != null) {
+            w.uint32(122);
+            EffectIdentifyResponse.codec().encode(obj.identifyResponse, w);
           }
 
           if (opts.lengthDelimited !== false) {
@@ -591,14 +698,23 @@ export namespace EffectProtocolMessage {
                 break;
               }
               case 14: {
-                obj.requestToWorkResponse =
-                  RequestToWorkResponse.codec().decode(
-                    reader,
-                    reader.uint32(),
-                    {
-                      limits: opts.limits?.requestToWorkResponse,
-                    },
-                  );
+                obj.identifyRequest = EffectIdentifyRequest.codec().decode(
+                  reader,
+                  reader.uint32(),
+                  {
+                    limits: opts.limits?.identifyRequest,
+                  },
+                );
+                break;
+              }
+              case 15: {
+                obj.identifyResponse = EffectIdentifyResponse.codec().decode(
+                  reader,
+                  reader.uint32(),
+                  {
+                    limits: opts.limits?.identifyResponse,
+                  },
+                );
                 break;
               }
               default: {

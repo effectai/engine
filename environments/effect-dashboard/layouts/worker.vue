@@ -124,7 +124,7 @@
                 </MenuButton>
 
                 <MenuItems
-                  class="absolute right-0 mt-2 w-40 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none z-50"
+                  class="absolute right-0 mt-2 w-40 origin-top-right divide-y divide-gray-100 rounded-md bg-white dark:text-black shadow-lg ring-1 ring-black/5 focus:outline-none z-50"
                 >
                   <MenuItem v-slot="">
                     <button

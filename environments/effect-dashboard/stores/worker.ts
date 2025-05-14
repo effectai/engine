@@ -41,6 +41,10 @@ export const useWorkerStore = defineStore("worker", () => {
       taskCounter.value += 1;
     });
 
+    worker.value.events.addEventListener("task:expired", ({ detail }) => {
+      taskCounter.value += 1;
+    });
+
     worker.value.events.addEventListener("payment:created", ({ detail }) => {
       paymentCounter.value += 1;
     });
