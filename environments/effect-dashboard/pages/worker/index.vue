@@ -7,7 +7,7 @@
       label="Time Online"
       :value="uptime.formattedTime"
     >
-      <small class="text-xs text-emerald-500 font-mono italic"
+      <small class="text-xs font-mono"
         >payout every
         {{ Number.parseInt(config.public.PAYOUT_INTERVAL) / 1000 / 60 }}
         minutes</small
