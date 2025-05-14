@@ -3,8 +3,8 @@ import { parseString } from "@fast-csv/parse";
 import { managerId, db, publishProgress } from "./state.js";
 import * as state from "./state.js";
 import type { DatasetRecord } from "./dataset.js";
-import { stringifyWithBigInt, Task } from "@effectai/protocol";
 import { ulid } from "ulid";
+import { Task } from "@effectai/protocol";
 
 // TODO: can this come out of the protocol package?
 
@@ -79,14 +79,17 @@ const delay = (m: number): Promise<void> =>
 export const getTasks = async (ds: DatasetRecord, fetcher: Fetcher) => {
   const csvData = await parseCsv(fetcher.data);
 
-  return csvData.map((d, idx) => ({
-    id: ulid(),
-    title: `${ds.name}`,
-    reward: BigInt(ds.price * 1000000),
-    timeLimitSeconds: 600,
-    templateId: ds.template,
-    templateData: JSON.stringify(d),
-  }));
+  return csvData.map(
+    (d, idx) =>
+      ({
+        id: ulid(),
+        title: `${ds.name}`,
+        reward: BigInt(ds.price * 1000000),
+        timeLimitSeconds: 600,
+        templateId: ds.template,
+        templateData: JSON.stringify(d),
+      }) as Task,
+  );
 };
 
 export const getPendingTasks = async (ds: DatasetRecord, f: Fetcher) => {
