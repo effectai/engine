@@ -192,8 +192,6 @@ export const createManager = async ({
         },
       };
 
-      console.log("returning", message);
-
       return message;
     })
     .onMessage(

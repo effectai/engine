@@ -38,7 +38,6 @@ export const createWorkerManager = ({
   const disconnectWorker = async (peerIdStr: string) => {
     //check if peer is connected
     if (!workerQueue.queue.includes(peerIdStr)) {
-      console.warn("worker is not connected.");
       return;
     }
 

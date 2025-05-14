@@ -28,7 +28,7 @@ import { Badge } from "~/components/ui/badge";
 import { Task } from "@effectai/protocol-core";
 import { Link } from "@remix-run/react";
 import type { ManagerTaskRecord } from "@effectai/manager";
-import { decodeTime } from "ulid";
+import { decodeTime, isValid } from "ulid";
 
 interface TasksTableProps {
   tasks: ManagerTaskRecord[];
@@ -86,7 +86,9 @@ export function TasksTable({ tasks, index }: TasksTableProps) {
                     </Link>
                   </TableCell>
                   <TableCell className="">
-                    {new Date(decodeTime(task.state.id)).toLocaleString()}
+                    {isValid(task.state.id)
+                      ? new Date(decodeTime(task.state.id)).toLocaleString()
+                      : "Invalid ID"}
                   </TableCell>
 
                   <TableCell>
