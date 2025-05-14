@@ -33,10 +33,6 @@ export const createWorkerManager = ({
 
   const redeemAccessCode = async (peerIdStr: string, accessCode: string) => {
     await accessCodeStore.redeem(accessCode, peerIdStr);
-
-    await updateWorkerState(peerIdStr, {
-      accessCodeRedeemed: accessCode,
-    });
   };
 
   const disconnectWorker = async (peerIdStr: string) => {
@@ -70,7 +66,12 @@ export const createWorkerManager = ({
           }
           await redeemAccessCode(peerId, accessCode);
         }
-        await workerStore.createWorker(peerId, recipient, nonce);
+
+        await workerStore.createWorker(peerId, {
+          nonce,
+          recipient,
+          accessCodeRedeemed: accessCode,
+        });
       } else {
         if (workerRecord.state.banned) {
           throw new ProtocolError("Worker is banned");

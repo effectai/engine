@@ -57,8 +57,7 @@ export const createWorkerStore = ({ datastore }: { datastore: Datastore }) => {
 
   const createWorker = async (
     peerId: string,
-    recipient: string,
-    nonce: bigint,
+    state: Partial<WorkerState> & Pick<WorkerState, "recipient" | "nonce">,
   ) => {
     const record = await coreStore.getSafe({ entityId: peerId });
 
@@ -75,14 +74,15 @@ export const createWorkerStore = ({ datastore }: { datastore: Datastore }) => {
       ],
       state: {
         peerId,
-        recipient,
+        recipient: state.recipient,
         banned: false,
-        nonce,
+        nonce: state.nonce,
         lastPayout: Math.floor(Date.now() / 1000),
         tasksAccepted: 0,
         totalTasks: 0,
         tasksCompleted: 0,
         tasksRejected: 0,
+        accessCodeRedeemed: state.accessCodeRedeemed,
         lastActivity: Math.floor(Date.now() / 1000),
       },
     };
