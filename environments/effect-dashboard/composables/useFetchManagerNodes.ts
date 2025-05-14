@@ -19,12 +19,17 @@ export const useFetchManagerNodes = () => {
             return null;
           }
 
+          const identify = await workerStore.worker?.identify(
+            multiaddr(data.value.announcedAddresses[0]),
+          );
+
           const latency = await workerStore.ping(
             multiaddr(data.value.announcedAddresses[0]),
           );
 
           return {
             ...data.value,
+            ...identify,
             latency,
           };
         }),

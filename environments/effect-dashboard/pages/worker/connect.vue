@@ -160,7 +160,7 @@
             color="gray"
             variant="solid"
             :disabled="!selectedManager || !nextNonce"
-            @click="stepAccessCode = true"
+            @click="attemptConnection"
             :loading="isPending || isFetchingNonce"
             class="font-medium"
           >
@@ -241,6 +241,14 @@ const connectHandler = async () => {
 const extractHost = (multiaddr: string) => {
   const parts = multiaddr.split("/");
   return parts[2];
+};
+
+const attemptConnection = () => {
+  if (selectedManager.value.requiresAccessCode) {
+    stepAccessCode.value = true;
+  } else {
+    connectHandler();
+  }
 };
 </script>
 

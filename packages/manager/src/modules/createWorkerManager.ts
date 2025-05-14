@@ -32,7 +32,11 @@ export const createWorkerManager = ({
   };
 
   const redeemAccessCode = async (peerIdStr: string, accessCode: string) => {
-    return await accessCodeStore.redeem(accessCode, peerIdStr);
+    await accessCodeStore.redeem(accessCode, peerIdStr);
+
+    await updateWorkerState(peerIdStr, {
+      accessCodeRedeemed: accessCode,
+    });
   };
 
   const disconnectWorker = async (peerIdStr: string) => {
@@ -90,11 +94,11 @@ export const createWorkerManager = ({
     }
   };
 
-  const getWorker = async (peerId: string) => {
-    const worker = await workerStore.get({ entityId: peerId });
+  const getWorker = async (peerId: string): Promise<WorkerRecord | null> => {
+    const worker = await workerStore.getSafe({ entityId: peerId });
 
     if (!worker) {
-      throw new Error("Worker not found");
+      return null;
     }
 
     return worker;

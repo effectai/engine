@@ -34,6 +34,7 @@ export interface WorkerState {
   tasksRejected: number;
   lastActivity: number;
   banned: boolean;
+  accessCodeRedeemed?: string;
 }
 
 export interface ManagerWorkerRecord<T> {

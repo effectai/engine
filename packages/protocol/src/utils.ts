@@ -104,6 +104,7 @@ export function shouldExpectResponse(message: EffectProtocolMessage): boolean {
     "payment" in message ||
     "proofRequest" in message ||
     "requestToWork" in message ||
+    "identifyRequest" in message ||
     false
   );
 }

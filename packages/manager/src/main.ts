@@ -121,6 +121,16 @@ export const createManager = async ({
     logger.warn("No payment account provided. Payments will not be processed.");
   }
 
+  const eddsa = await buildEddsa();
+  const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
+
+  const compressedPubKey = compressBabyJubJubPubKey(
+    bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
+    bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
+  );
+
+  const solanaPublicKey = new PublicKey(compressedPubKey);
+
   // create the entity
   const entity = await createManagerEntity({
     datastore,
@@ -163,6 +173,29 @@ export const createManager = async ({
 
   // register message handlers
   entity
+    .onMessage("identifyRequest", async (_payload, { peerId }) => {
+      //check if we've already onboarded this peer
+      const worker = await workerManager.getWorker(peerId.toString());
+
+      let requiresAccessCode = false;
+      if (!worker && managerSettings.requireAccessCodes) {
+        requiresAccessCode = true;
+      }
+
+      const message: EffectProtocolMessage = {
+        identifyResponse: {
+          pubkey: solanaPublicKey.toBase58(),
+          batchSize: 50,
+          taskTimeout: 60000,
+          version: "0.0.1",
+          requiresAccessCode,
+        },
+      };
+
+      console.log("returning", message);
+
+      return message;
+    })
     .onMessage(
       "requestToWork",
       async ({ recipient, nonce, accessCode }, { peerId }) => {
@@ -172,24 +205,6 @@ export const createManager = async ({
           nonce,
           accessCode,
         );
-
-        const eddsa = await buildEddsa();
-        const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
-
-        const compressedPubKey = compressBabyJubJubPubKey(
-          bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
-          bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
-        );
-
-        const solanaPublicKey = new PublicKey(compressedPubKey);
-
-        return {
-          requestToWorkResponse: {
-            timestamp: Math.floor(Date.now() / 1000),
-            pubkey: solanaPublicKey.toBase58(),
-            batchSize: managerSettings.paymentBatchSize,
-          },
-        };
       },
     )
     .onMessage("task", async (task, { peerId }) => {
@@ -263,17 +278,6 @@ export const createManager = async ({
   });
 
   entity.get("/", async (_req, res) => {
-    const pendingTasks = await taskManager.getActiveTasks();
-    const completedTasks = await taskManager.getCompletedTasks();
-
-    const eddsa = await buildEddsa();
-    const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
-
-    const compressedPubKey = compressBabyJubJubPubKey(
-      bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
-      bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
-    );
-
     const announcedAddresses =
       managerSettings.announce.length === 0
         ? [entity.getMultiAddress()?.[0]]
@@ -287,8 +291,6 @@ export const createManager = async ({
       announcedAddresses,
       publicKey: new PublicKey(compressedPubKey),
       connectedPeers: workerManager.workerQueue.queue.length,
-      pendingTasks: pendingTasks.length,
-      completedTasks: completedTasks.length,
     });
   });
 

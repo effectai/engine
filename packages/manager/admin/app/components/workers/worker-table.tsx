@@ -44,6 +44,7 @@ export function WorkersTable({ workers, onBan, onUnban }: WorkersTableProps) {
             <TableHead className="w-[50px]">Status</TableHead>
             <TableHead>ID</TableHead>
             <TableHead>Last Activity</TableHead>
+            <TableHead>Access Code</TableHead>
             <TableHead className="text-right">Success Rate</TableHead>
             <TableHead className="text-right">Tasks</TableHead>
             <TableHead className="text-right">Last Payout</TableHead>
@@ -102,6 +103,7 @@ export function WorkersTable({ workers, onBan, onUnban }: WorkersTableProps) {
                       },
                     )}
                   </TableCell>
+                  <TableCell>{worker.state.accessCodeRedeemed}</TableCell>
                   <TableCell className="text-right">
                     <span
                       className={cn(
