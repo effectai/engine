@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "export-idl": "cp ./target/idl/* ./../packages/idl/src/idl/",
+    "export-types": "cp ./target/types/* ./../packages/idl/src/types/",
+    "export": "pnpm export-idl && pnpm export-types"
   },
   "dependencies": {
     "@codama/nodes-from-anchor": "^1.0.1",

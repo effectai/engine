@@ -284,51 +284,6 @@ export type EffectMigration = {
   ],
   "errors": [
     {
-      "code": 6000,
-      "name": "messageInvalid",
-      "msg": "Invalid message provided."
-    },
-    {
-      "code": 6001,
-      "name": "invalidSignature",
-      "msg": "Invalid signature provided."
-    },
-    {
-      "code": 6002,
-      "name": "publicKeyMismatch",
-      "msg": "Public key does not match the foreign public key."
-    },
-    {
-      "code": 6003,
-      "name": "invalidClaimAccount",
-      "msg": "Invalid claim account provided."
-    },
-    {
-      "code": 6004,
-      "name": "invalidRecoveryId",
-      "msg": "Invalid recovery id."
-    },
-    {
-      "code": 6005,
-      "name": "invalidActions",
-      "msg": "Invalid action provided."
-    },
-    {
-      "code": 6006,
-      "name": "memoMismatch",
-      "msg": "The memo in the transaction does not match the expected value."
-    },
-    {
-      "code": 6007,
-      "name": "memoNotFound",
-      "msg": "Memo field not found in actions."
-    },
-    {
-      "code": 6008,
-      "name": "invalidMint",
-      "msg": "Invalid mint provided."
-    },
-    {
       "code": 6009,
       "name": "invalidForeignAddress",
       "msg": "Invalid Foreign Address"
@@ -337,11 +292,6 @@ export type EffectMigration = {
       "code": 6010,
       "name": "invalidStakeStartTime",
       "msg": "Invalid Stake Start Time"
-    },
-    {
-      "code": 6011,
-      "name": "claimingNotStarted",
-      "msg": "Claming not started yet."
     }
   ],
   "types": [
