@@ -1,0 +1,120 @@
+<div id="app" style="text-align: center">
+  <h1>Effect AI - Animals With Attributes</h1>
+
+  <hr />
+
+  <!-- Wrap the image or canvas element with a block element (container) -->
+  <div class="mx-auto" style="max-width: 80%">
+
+    <div>
+      <div class="is-size-5" v-if="loading">
+        Loading ...
+      </div>
+
+      <img
+        @load="loading = false"
+        id="image"
+        ref="image"
+        :src="imageSource"
+        style="max-width: 400px; height: auto; margin: 0 auto; display: block"
+      />
+    </div>
+
+    <hr />
+
+    <label class="label">Which animal is this?</label>
+    <div class="columns is-mobile is-multiline is-centered">
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          @click="this.answer='Dog'">Dog</button>
+      </div>
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          @click="this.answer='Cow'">Cow</button>
+      </div>
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          @click="this.answer='Dolphin'">Dolphin</button>
+      </div>
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          @click="this.answer='Walrus'">Walrus</button>
+      </div>
+    </div>
+
+    <div class="columns is-mobile is-multiline is-centered">
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          @click="this.answer='Lion'">Lion</button>
+      </div>
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          @click="this.answer='Pig'">Pig</button>
+      </div>
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          @click="this.answer='Raccoon'">Raccoon</button>
+      </div>
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          @click="this.answer='Other'">Other</button>
+      </div>
+    </div>
+
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-primary is-large"
+      :class="{'is-loading': btnLoading}"
+    >
+      Submit
+    </button>
+  </div>
+
+  <!-- 📚 Load in resources: [Bulma, Effect Network Styling]  -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css"
+  />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    createApp({
+      data() {
+        return {
+          title: "Effect AI Image Labeler",
+          imageSource: "${image_url}",
+          btnLoading: false,
+          ipfsClient: null,
+          answer: "",
+          loading: true,
+        };
+      },
+      computed: {},
+      created() {},
+      mounted() {},
+      methods: {
+        async uploadAndSubmit() {
+          this.btnLoading = true;
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  label: this.answer,
+                  image: this.imageSource,
+                },
+              },
+              "*",
+            );
+          } catch (error) {
+            console.error("Failed to upload to IPFS", error);
+          }
+          this.btnLoading = false;
+        },
+      },
+    }).mount("#app");
+  </script>
+</div>
