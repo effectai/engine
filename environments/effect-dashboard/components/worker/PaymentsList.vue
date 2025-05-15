@@ -68,6 +68,9 @@
 
     <UPagination
       v-model="page"
+      :active-button="{ variant: 'outline', color: 'white' }"
+      :inactive-button="{ color: 'gray' }"
+      v-if="payments"
       :page-count="pageCount"
       :total="payments.length"
     />
@@ -100,7 +103,7 @@ const mutatedPayments = computed(
         const parsedA = Number.parseInt(a.state.nonce);
         const parsedB = Number.parseInt(b.state.nonce);
 
-        return parsedA - parsedB;
+        return parsedB - parsedA;
       }) || [],
 );
 
