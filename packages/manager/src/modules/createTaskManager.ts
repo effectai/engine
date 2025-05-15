@@ -19,7 +19,17 @@ import {
   type Task,
   type Template,
   peerIdFromString,
+  parseWithBigInt,
 } from "@effectai/protocol-core";
+
+export interface PaginatedResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  perPage: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
 
 export function createTaskManager({
   manager,
@@ -34,7 +44,6 @@ export function createTaskManager({
   managerSettings,
 }: {
   manager: ManagerEntity;
-
   paymentManager: Awaited<ReturnType<typeof createPaymentManager>>;
   workerManager: ReturnType<typeof createWorkerManager>;
 
@@ -338,8 +347,70 @@ export function createTaskManager({
     return tasks;
   };
 
-  const getCompletedTasks = async () => {
+  async function getPaginatedTasks(
+    status: "active" | "completed",
+    page: number = 1,
+    perPage: number = 10,
+  ): Promise<PaginatedResult<Task>> {
+    // Validate inputs
+    if (page < 1) page = 1;
+    if (perPage < 1) perPage = 10;
+
+    // Create query with filters
+    const query = {
+      prefix: `/tasks/${status}/`,
+      offset: (page - 1) * perPage,
+      limit: perPage,
+    };
+
+    // Execute query
+    const results: any[] = [];
+    for await (const result of taskStore.datastore.query(query)) {
+      results.push(result);
+    }
+
+    // Get total count (this might be expensive for large datasets)
+    let total = 0;
+    const countQuery = {
+      prefix: `/tasks/${status}/`,
+    };
+
+    for await (const _ of taskStore.datastore.queryKeys(countQuery)) {
+      total++;
+    }
+
+    // Parse results
+    const items = results
+      .map((result) => {
+        try {
+          return parseWithBigInt(result.value.toString()) as Task;
+        } catch (err) {
+          console.error("Failed to parse task", err);
+          return null;
+        }
+      })
+      .filter(Boolean) as Task[];
+
+    return {
+      items,
+      total,
+      page,
+      perPage,
+      hasNext: page * perPage < total,
+      hasPrevious: page > 1,
+    };
+  }
+
+  const getCompletedTasks = async ({
+    offset,
+    limit,
+  }: {
+    offset: number;
+    limit: number;
+  }) => {
     const tasks = await taskStore.all({
+      offset,
+      limit,
       prefix: "tasks/completed",
     });
 
@@ -382,5 +453,7 @@ export function createTaskManager({
 
     getActiveTasks,
     getCompletedTasks,
+
+    getPaginatedTasks,
   };
 }

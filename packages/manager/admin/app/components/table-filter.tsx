@@ -1,13 +1,32 @@
+import { useLocation, Link } from "@remix-run/react";
 import { Filter } from "lucide-react";
-import { cn } from "~/lib/utils";
-import { Button } from "~/components/ui/button";
+import { Button } from "./ui/button";
+import { cn } from "./../lib/utils";
 
 interface TableFilterProps {
-  filters: { key: string; total: number }[];
-  setFilter: (filter: string) => void;
+  filters: {
+    key: string;
+    total: number;
+  }[];
+  setFilter?: (filter: string) => void;
+  queryParam?: string;
+  currentFilter?: string;
 }
 
-export function TableFilter({ filters, setFilter }: TableFilterProps) {
+export function TableFilter({
+  filters,
+  queryParam = "filter",
+  currentFilter,
+}: TableFilterProps) {
+  const location = useLocation();
+
+  const buildFilterUrl = (filterKey: string) => {
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set(queryParam, filterKey);
+    searchParams.delete("page"); // Reset to first page when filter changes
+    return `${location.pathname}?${searchParams.toString()}`;
+  };
+
   return (
     <div className="flex flex-col md:flex-row items-start md:items-center gap-4 rounded-lg border p-4">
       <div className="flex items-center gap-2">
@@ -17,17 +36,21 @@ export function TableFilter({ filters, setFilter }: TableFilterProps) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto">
         {filters.map((filter) => (
           <Button
-            variant={filter.key === "active" ? "default" : "outline"}
-            onClick={() => setFilter(filter.key)}
+            asChild
+            variant={filter.key === currentFilter ? "default" : "outline"}
             key={filter.key}
             size="sm"
             className={cn(
               "justify-start md:justify-center capitalize",
-              filter.key === "active" && "shadow-sm",
+              filter.key === currentFilter && "shadow-sm",
             )}
           >
-            {filter.key}
-            <span className="ml-auto md:ml-2 text-xs">{filter.total}</span>
+            <Link to={buildFilterUrl(filter.key)}>
+              {filter.key}
+              <span className="ml-auto md:ml-2 text-xs">
+                {filter.key === currentFilter ? filter.total : "-"}
+              </span>
+            </Link>
           </Button>
         ))}
       </div>

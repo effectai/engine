@@ -82,16 +82,19 @@ export const createEntityStore = <
   const all = async ({
     filters = undefined,
     limit = undefined,
+    offset = undefined,
     prefix = defaultPrefix,
   }: {
     prefix?: string;
     filters?: QueryFilter[];
     limit?: number;
+    offset?: number;
   } = {}): Promise<EntityRecord[]> => {
     const entities: EntityRecord[] = [];
     for await (const entry of datastore.query({
       limit,
       filters,
+      offset,
       prefix: `/${prefix}/`,
     })) {
       entities.push(parse(new TextDecoder().decode(entry.value)));
