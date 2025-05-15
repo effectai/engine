@@ -51,7 +51,7 @@ export function createTaskWorker({
 
   const getTasks = async ({
     prefix = undefined,
-    limit = 50,
+    limit,
   }: {
     prefix?: string;
     limit?: number;
