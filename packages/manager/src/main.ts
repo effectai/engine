@@ -177,10 +177,16 @@ export const createManager = async ({
       //check if we've already onboarded this peer
       const worker = await workerManager.getWorker(peerId.toString());
 
+      //check if this worker requires an access code.
       let requiresAccessCode = false;
       if (!worker && managerSettings.requireAccessCodes) {
         requiresAccessCode = true;
       }
+
+      //check if this worker is in the queue
+      const isConnected = workerManager.workerQueue.queue.includes(
+        peerId.toString(),
+      );
 
       const message: EffectProtocolMessage = {
         identifyResponse: {
@@ -189,6 +195,7 @@ export const createManager = async ({
           taskTimeout: 60000,
           version: "0.0.1",
           requiresAccessCode,
+          isConnected,
         },
       };
 

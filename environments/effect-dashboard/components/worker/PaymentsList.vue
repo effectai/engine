@@ -113,17 +113,6 @@ const rows = computed(() => {
     page.value * pageCount,
   );
 });
-
-const sortNonce = (a: string, b: string, direction: string) => {
-  const parsedA = Number.parseInt(a);
-  const parsedB = Number.parseInt(b);
-
-  if (direction === "asc") {
-    return parsedA - parsedB;
-  }
-
-  return parsedB - parsedA;
-};
 </script>
 
 <style scoped></style>

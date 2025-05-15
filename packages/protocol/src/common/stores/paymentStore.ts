@@ -104,7 +104,6 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
     for await (const key of datastore.queryKeys({
       prefix,
       orders: [numericDesc],
-      limit: 100,
     })) {
       const parts = key.toString().split("/");
       const nonce = Number.parseInt(parts[parts.length - 1], 10);

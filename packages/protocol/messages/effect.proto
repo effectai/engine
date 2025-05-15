@@ -24,6 +24,7 @@ optional string name = 1;
   uint32 batch_size = 4;
   uint32 task_timeout = 5;
   bool requires_access_code = 6;
+  bool is_connected = 7;
 }
 
 message RequestToWork {

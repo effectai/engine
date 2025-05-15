@@ -48,13 +48,13 @@ export const createEntityStore = <
     entityId,
   }: {
     entityId: string;
-  }): Promise<EntityRecord | undefined> => {
+  }): Promise<EntityRecord | null> => {
     try {
       return await get({ entityId });
     } catch (e: unknown) {
       if (e instanceof Error) {
         if (e?.message?.includes("NotFound")) {
-          return undefined;
+          return null;
         }
       }
 
@@ -81,7 +81,7 @@ export const createEntityStore = <
 
   const all = async ({
     filters = undefined,
-    limit = 100,
+    limit = undefined,
     prefix = defaultPrefix,
   }: {
     prefix?: string;
