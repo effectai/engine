@@ -107,18 +107,16 @@
               />
 
               <!-- Wallet dropdown -->
-              <Menu
-                as="div"
-                class="relative inline-block text-left"
-                v-if="user"
-              >
+              <Menu as="div" class="relative inline-block text-left">
                 <MenuButton
                   class="-m-1.5 flex items-center p-1.5 focus:outline-none"
                 >
                   <UAvatar
+                    v-if="!!privateKey"
+                    alt="Anonymous"
                     :src="user?.profileImage"
                     size="sm"
-                    class="hidden lg:block mr-3"
+                    class="hidden mr-3 p-2 lg:flex justify-center items-center h-full lg:w-12"
                   />
                   {{ name }}
                 </MenuButton>
@@ -154,7 +152,6 @@
 </template>
 
 <script setup lang="ts">
-import { WalletMultiButton } from "solana-wallets-vue";
 import { ref } from "vue";
 import {
   Dialog,
@@ -169,8 +166,7 @@ import {
 
 import { Bars3Icon, XMarkIcon } from "@heroicons/vue/24/outline";
 
-const { privateKey, authState, useGetUserInfo, init, useLogout } =
-  useWeb3Auth();
+const { privateKey, authState, useGetUserInfo, init, useLogout } = useAuth();
 
 const { mutateAsync: logout } = useLogout({
   onSuccess: () => {
@@ -181,7 +177,15 @@ const { mutateAsync: logout } = useLogout({
 const { data: user } = useGetUserInfo();
 const sidebarOpen = ref(false);
 
-const name = computed(() => user.value?.email || user.value?.name);
+const loginMethod = useLocalStorage("loginMethod", null);
+const name = computed(() => {
+  if (loginMethod.value === "privateKey") {
+    return "Anonymous";
+  }
+  if (user.value?.email) return user.value.email;
+  if (user.value?.name) return user.value.name;
+  return null;
+});
 
 useSeoMeta({
   title: "Effect AI | Portal",
