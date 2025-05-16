@@ -39,8 +39,8 @@ const parseCsv = (csv: string, delimiter: string = ","): Promise<any[]> => {
       .on("error", (error) => reject(error))
       .on("data", (row) => data.push(row))
       .on("end", (rowCount: number) => {
-	console.log(`CSV: Parsed ${rowCount} rows`);
-	resolve(data);
+        console.log(`CSV: Parsed ${rowCount} rows`);
+        resolve(data);
       });
   });
 };
@@ -82,12 +82,12 @@ export const getTasks = async (ds: DatasetRecord, fetcher: Fetcher) => {
   return csvData.map(
     (d, idx) =>
       ({
-	id: ulid(),
-	title: `${ds.name}`,
-	reward: BigInt(ds.price * 1000000),
-	timeLimitSeconds: 600,
-	templateId: ds.template,
-	templateData: JSON.stringify(d),
+        id: ulid(),
+        title: `${ds.name}`,
+        reward: BigInt(ds.price * 1000000),
+        timeLimitSeconds: 600,
+        templateId: ds.template,
+        templateData: JSON.stringify(d),
       }) as Task,
   );
 };
@@ -102,14 +102,14 @@ export const importTasks = async (ds: DatasetRecord) => {
   const fetcher = await db.get<Fetcher>(["fetcher", ds.id, ds.activeFetcher]);
 
   // check if it's already time
-  const remaining = fetcher!.data.lastImport ?
-    (fetcher!.data.lastImport + ds.frequency * 1000) - Date.now() : 0;
+  const remaining = fetcher!.data.lastImport
+    ? fetcher!.data.lastImport + ds.frequency * 1000 - Date.now()
+    : 0;
 
   if (remaining > 0) {
     console.log(`Fetcher ${fetcher.key} import ${remaining / 1000}s remaining`);
     return -1;
   }
-
 
   // check for import lock
   if (publishProgress[ds.id]) {
@@ -146,9 +146,9 @@ export const importTasks = async (ds: DatasetRecord) => {
       // TODO: save posted tasks in DB, for result tracking etc
 
       const serializedTask = {
-	...task,
-	//convert bigint to string for serialization
-	reward: task.reward.toString(),
+        ...task,
+        //convert bigint to string for serialization
+        reward: task.reward.toString(),
       };
 
       const { data } = await api.post<APIResponse>("/task", serializedTask);

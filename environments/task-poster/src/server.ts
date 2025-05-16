@@ -21,7 +21,8 @@ import * as dataset from "./dataset.js";
 import * as fetcher from "./fetcher.js";
 
 const addMainRoutes = (app: Express) => {
-  app.get("/", async (req, res) => {
+  // TODO: this screen on longer works, move it to settings
+  app.get("/select-manager", async (req, res) => {
     res.send(
       page(`
 <p>Select a manager:</p>
@@ -48,10 +49,13 @@ const addMainRoutes = (app: Express) => {
     }
   });
 
-  app.get("/m/:manager", async (req, res) => {
+  app.get("/", async (req, res) => {
     const templates = await getTemplates();
     const tmpList = templates.map(
-      (t) => `${t.data.name || "[no name]"} (${t.data.createdAt})`,
+      (t) => `
+<a class="box" href="/t/test/${t.data.templateId}">
+  ${t.data.name || "[no name]"} (${t.data.createdAt})
+</a>`,
     );
 
     const datasets = await getActiveDatasets("active");
@@ -59,24 +63,26 @@ const addMainRoutes = (app: Express) => {
       (d) => `<a href="/d/${d!.data.id}">${d!.data.name} (${d!.data.id})</a>`,
     );
 
-    const oldDs = (await getActiveDatasets("finished"))
-      .map((d) => `<a href="/d/${d!.data.id}">${d!.data.name} (${d!.data.id})</a>`,
+    const oldDs = (await getActiveDatasets("finished")).map(
+      (d) => `<a href="/d/${d!.data.id}">${d!.data.name} (${d!.data.id})</a>`,
     );
 
     res.send(
       page(`
-<small>Manager: ${req.params.manager}</small>
+<small>Manager: ${state.managerId}</small>
 
 <h3>Known Templates (${tmpList.length})</h3>
-<div class="boxbox">
-  <div class="box">${tmpList.join("</div><div class=\"box\">")}</div>
-</div>
+<div class="boxbox">${tmpList.join("")}</div>
 <a href="/t/create"><button>+ Create Template</button></a>
 
 <section>
   <h3>Active Datasets (${dsList.length})</h3>
-  ${dsList.length ? `
-  <ul><li>${dsList.join("</li><li>")}</li></ul>` : ''}
+  ${
+    dsList.length
+      ? `
+  <ul><li>${dsList.join("</li><li>")}</li></ul>`
+      : ""
+  }
   <a href="/d/create"><button>+ Create Dataset</button></a>
 </section>
 
@@ -114,7 +120,7 @@ const main = async () => {
   addMainRoutes(app);
   addTemplateRoutes(app);
   addDatasetRoutes(app);
-  
+
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);
   });

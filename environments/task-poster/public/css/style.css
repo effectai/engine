@@ -422,6 +422,7 @@ section>h3:first-child { margin-top: 0; }
 .block:first-child { margin-left: 0; }
 
 .boxbox { display: flex; flex-flow: row wrap; margin-bottom: 25px; }
-.box { border: 1px solid var(--accent); padding: 10px; flex-grow: 0 }
+.box { border: 1px solid var(--accent); padding: 10px; flex-grow: 0; text-decoration: none; }
 
-header { margin-bottom: 25px; border-bottom: 1px solid var(--accent); }
+header { margin-bottom: 25px; border-bottom: 0px solid var(--accent); }
+.btns > button { margin: 0 5px; }
