@@ -49,7 +49,7 @@ const solanaWalletToAnchorWallet = (
 
 export function usePaymentProgram() {
   const { connection, mint } = useGlobalState();
-  const { solanaWallet, account } = useWeb3Auth();
+  const { solanaWallet, account } = useAuth();
 
   if (!solanaWallet.value) {
     throw new Error("Solana wallet is not set..");

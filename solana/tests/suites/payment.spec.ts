@@ -3,12 +3,13 @@ import { randomBytes } from "crypto";
 import { describe, expect, it } from "vitest";
 import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
-import type { EffectPayment } from "../../target/types/effect_payment.js";
 import { useAnchor } from "../helpers.js";
 import { setup } from "../../utils/spl.js";
 
 import * as snarkjs from "snarkjs";
 import { PublicKey } from "@solana/web3.js";
+
+import type { EffectPayment } from "../../target/types/effect_payment.js";
 
 const { BN } = anchor;
 const int2hex = (i) => "0x" + BigInt(i).toString(16);

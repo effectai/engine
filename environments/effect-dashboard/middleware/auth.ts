@@ -4,16 +4,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const sessionStore = useSessionStore();
   const { connectedOn } = storeToRefs(sessionStore);
 
-  const { privateKey, init, web3auth, authState } = useWeb3Auth();
+  const { privateKey, init, web3auth, authState } = useAuth();
 
   if (!web3auth.value) {
     await init();
   }
 
-  if (
-    (!privateKey.value || !authState.isConnected) &&
-    to.path !== "/worker/login"
-  ) {
+  if (!privateKey.value && to.path !== "/worker/login") {
     return navigateTo("/worker/login");
   }
 

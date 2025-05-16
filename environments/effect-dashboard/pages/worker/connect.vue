@@ -117,7 +117,10 @@
                     name="i-heroicons-server"
                     class="w-4 h-4 text-gray-400"
                   />
-                  <span class="text-gray-900 dark:text-gray-200">
+                  <span
+                    class="text-gray-900 dark:text-gray-200"
+                    v-if="manager.announcedAddresses"
+                  >
                     {{ extractHost(manager.announcedAddresses[0]) }}
                   </span>
                 </div>
@@ -128,7 +131,10 @@
                     name="i-heroicons-finger-print"
                     class="w-4 h-4 text-gray-400"
                   />
-                  <span class="text-gray-700 dark:text-gray-300">
+                  <span
+                    class="text-gray-700 dark:text-gray-300"
+                    v-if="manager.peerId"
+                  >
                     {{ sliceBoth(manager.peerId) }}
                   </span>
                 </div>
@@ -185,7 +191,7 @@ const selectedManager = ref<ManagerInfoResponse | null>(null);
 const accessCode = ref<string | null>(null);
 const stepAccessCode = ref(false);
 
-const { account } = useWeb3Auth();
+const { account } = useAuth();
 const { useConnect } = useSessionStore();
 const { mutateAsync: connect, isPending } = useConnect();
 const selectedManagerPublicKey = computed(() => {

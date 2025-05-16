@@ -48,13 +48,13 @@ export const createEntityStore = <
     entityId,
   }: {
     entityId: string;
-  }): Promise<EntityRecord | undefined> => {
+  }): Promise<EntityRecord | null> => {
     try {
       return await get({ entityId });
     } catch (e: unknown) {
       if (e instanceof Error) {
         if (e?.message?.includes("NotFound")) {
-          return undefined;
+          return null;
         }
       }
 
@@ -81,17 +81,20 @@ export const createEntityStore = <
 
   const all = async ({
     filters = undefined,
-    limit = 100,
+    limit = undefined,
+    offset = undefined,
     prefix = defaultPrefix,
   }: {
     prefix?: string;
     filters?: QueryFilter[];
     limit?: number;
+    offset?: number;
   } = {}): Promise<EntityRecord[]> => {
     const entities: EntityRecord[] = [];
     for await (const entry of datastore.query({
       limit,
       filters,
+      offset,
       prefix: `/${prefix}/`,
     })) {
       entities.push(parse(new TextDecoder().decode(entry.value)));

@@ -51,7 +51,7 @@ export function createTaskWorker({
 
   const getTasks = async ({
     prefix = undefined,
-    limit = 50,
+    limit,
   }: {
     prefix?: string;
     limit?: number;
@@ -222,8 +222,17 @@ export function createTaskWorker({
       const templateHtml = template.data.replace(
         /\$\{([^}]+)\}/g,
         (_: any, key: any) => {
-          const value = templateData[key.trim()];
-          return value !== undefined ? value : "";
+          const keyName = key.trim();
+          const rawValue = templateData[keyName];
+
+          if (rawValue === undefined) return "";
+
+          const escapedValue =
+            typeof rawValue === "string"
+              ? rawValue.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+              : rawValue;
+
+          return escapedValue;
         },
       );
 

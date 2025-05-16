@@ -49,7 +49,7 @@ export function createPaymentWorker({
 
   const getPayments = async ({
     prefix,
-    limit = 100,
+    limit,
   }: {
     prefix?: string;
     limit?: number;

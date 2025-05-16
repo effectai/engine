@@ -15,9 +15,6 @@ export type EffectVesting = {
   "instructions": [
     {
       "name": "claim",
-      "docs": [
-        "Claim emission from a [PoolAccount](#pool-account) with claim type [`0`](#claim-type)"
-      ],
       "discriminator": [
         62,
         198,
@@ -66,9 +63,6 @@ export type EffectVesting = {
     },
     {
       "name": "close",
-      "docs": [
-        "Close a [PoolAccount](#pool-account) and [VaultAccount](#vault-account)."
-      ],
       "discriminator": [
         98,
         165,
@@ -117,9 +111,6 @@ export type EffectVesting = {
     },
     {
       "name": "open",
-      "docs": [
-        "Open a [PoolAccount](#pool-account) and [VaultAccount](#vault-account)."
-      ],
       "discriminator": [
         228,
         220,
@@ -200,9 +191,6 @@ export type EffectVesting = {
     },
     {
       "name": "updateRecipient",
-      "docs": [
-        "Update the beneficiary in a [PoolAccount](#pool-account)."
-      ],
       "discriminator": [
         55,
         190,

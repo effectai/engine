@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/no-unnecessary-boolean-literal-compare */
 /* eslint-disable @typescript-eslint/no-empty-interface */
-// @ts-nocheck
+//@ts-nocheck
 
 import {
   type Codec,
@@ -244,6 +244,7 @@ export interface EffectIdentifyResponse {
   batchSize: number;
   taskTimeout: number;
   requiresAccessCode: boolean;
+  isConnected: boolean;
 }
 
 export namespace EffectIdentifyResponse {
@@ -290,6 +291,11 @@ export namespace EffectIdentifyResponse {
             w.bool(obj.requiresAccessCode);
           }
 
+          if (obj.isConnected != null && obj.isConnected !== false) {
+            w.uint32(56);
+            w.bool(obj.isConnected);
+          }
+
           if (opts.lengthDelimited !== false) {
             w.ldelim();
           }
@@ -301,6 +307,7 @@ export namespace EffectIdentifyResponse {
             batchSize: 0,
             taskTimeout: 0,
             requiresAccessCode: false,
+            isConnected: false,
           };
 
           const end = length == null ? reader.len : reader.pos + length;
@@ -331,6 +338,10 @@ export namespace EffectIdentifyResponse {
               }
               case 6: {
                 obj.requiresAccessCode = reader.bool();
+                break;
+              }
+              case 7: {
+                obj.isConnected = reader.bool();
                 break;
               }
               default: {

@@ -913,20 +913,6 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "effect-common",
- "effect-migration-common",
- "effect-staking",
- "effect-staking-common",
- "libsecp256k1 0.7.2",
- "sha2 0.10.9",
-]
-
-[[package]]
-name = "effect-migration-common"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "effect-common",
  "libsecp256k1 0.7.2",
  "sha2 0.10.9",
 ]
@@ -940,18 +926,7 @@ dependencies = [
  "ark-bn254 0.5.0",
  "ark-serialize 0.5.0",
  "effect-common",
- "effect-payment-common",
  "groth16-solana",
-]
-
-[[package]]
-name = "effect-payment-common"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "effect-common",
- "sha2 0.10.9",
 ]
 
 [[package]]
@@ -961,39 +936,10 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "effect-common",
- "effect-rewards-common",
- "effect-staking",
- "effect-staking-common",
- "effect-vesting",
- "effect-vesting-common",
-]
-
-[[package]]
-name = "effect-rewards-common"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "effect-common",
- "libsecp256k1 0.7.2",
- "sha2 0.10.9",
 ]
 
 [[package]]
 name = "effect-staking"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "effect-common",
- "effect-migration-common",
- "effect-rewards-common",
- "effect-staking-common",
- "effect-vesting",
-]
-
-[[package]]
-name = "effect-staking-common"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
@@ -1008,18 +954,6 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "effect-common",
- "effect-vesting-common",
-]
-
-[[package]]
-name = "effect-vesting-common"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "effect-common",
- "libsecp256k1 0.7.2",
- "sha2 0.10.9",
 ]
 
 [[package]]
