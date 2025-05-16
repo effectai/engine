@@ -173,7 +173,6 @@ export const useAuth = () => {
 
     const accounts = await solanaWallet.value.requestAccounts();
     account.value = accounts[0];
-    console.log("Account:", account.value);
   };
 
   watchEffect(async () => {

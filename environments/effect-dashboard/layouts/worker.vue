@@ -167,9 +167,11 @@ import {
 import { Bars3Icon, XMarkIcon } from "@heroicons/vue/24/outline";
 
 const { privateKey, authState, useGetUserInfo, init, useLogout } = useAuth();
+const { destroy } = useWorkerStore();
 
 const { mutateAsync: logout } = useLogout({
   onSuccess: () => {
+    destroy();
     navigateTo("/worker/login");
   },
 });
