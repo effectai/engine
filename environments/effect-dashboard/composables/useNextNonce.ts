@@ -6,7 +6,7 @@ export const useNextNonce = (
 ) => {
   const { worker } = storeToRefs(useWorkerStore());
   const { useRecipientManagerDataAccount } = usePaymentProgram();
-  const { account } = useAuth();
+  const { account } = useWeb3Auth();
 
   // const {
   //   data: recipientManagerDataAccount,

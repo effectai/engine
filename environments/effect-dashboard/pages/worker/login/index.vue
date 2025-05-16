@@ -76,10 +76,11 @@
             color="white"
             variant="outline"
             class="justify-start gap-2"
+            :disabled="true"
             @click="navigateTo('/worker/login/with-private-key')"
           >
-            <UIcon name="material-symbols:key" />
-            Private Key
+            <UIcon name="i-logos-solana-icon" />
+            Private Key (coming soon)
           </UButton>
         </div>
       </div>
@@ -87,9 +88,9 @@
   </div>
 </template>
 <script setup lang="ts">
-import { WALLET_ADAPTERS } from "@web3auth/base";
+import { UX_MODE, WALLET_ADAPTERS } from "@web3auth/base";
 
-const { web3auth, authState, privateKey, init } = useAuth();
+const { web3auth, authState, privateKey, init } = useWeb3Auth();
 
 onMounted(() => {
   init();
@@ -103,7 +104,6 @@ watchEffect(() => {
   if (!privateKey.value) {
     return;
   }
-
   navigateTo("/worker/connect");
 });
 

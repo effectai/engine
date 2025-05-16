@@ -21,18 +21,15 @@ import {
 
 const web3auth: Ref<Web3AuthNoModal | null> = shallowRef(null);
 const account = ref<string | null>(null);
-
 const authState = reactive({
   isConnected: false,
   isLoading: false,
   error: null as Error | null,
 });
-
 const solanaWallet = ref<SolanaWallet | null>(null);
 
-export const useAuth = () => {
+export const useWeb3Auth = () => {
   const privateKey = useLocalStorage<string | null>("privateKey", null);
-  const loginMethod = useLocalStorage<string | null>("loginMethod", null);
 
   const clientId =
     "BIcF8x3jW7FR6hqAedtD8s0sjsyCsGSRk_sLnuCdDThbaYyk7op5q8J_F3ywacftuWmzHrL39PFZjYocu5vHQMU";
@@ -73,9 +70,23 @@ export const useAuth = () => {
     web3auth.value.on("connected", async () => {
       authState.isLoading = false;
       authState.isConnected = true;
-      privateKey.value = await web3auth.value.provider?.request({
-        method: "solanaPrivateKey",
-      });
+      try {
+        privateKey.value = await web3auth.value.provider?.request({
+          method: "solanaPrivateKey",
+        });
+
+        const wallet = new SolanaWallet(web3auth.value.provider);
+        solanaWallet.value = wallet;
+
+        try {
+          const accounts = await wallet.requestAccounts();
+          account.value = accounts[0];
+        } catch (e) {
+          console.error("Failed to request accounts", e);
+        }
+      } catch (e) {
+        authState.error = e as Error;
+      }
     });
 
     web3auth.value.on("connecting", () => {
@@ -139,17 +150,12 @@ export const useAuth = () => {
       ...opts,
       mutationFn: async () => {
         if (!web3auth.value) throw new Error("Web3Auth not initialized");
-
-        privateKey.value = null;
-        loginMethod.value = null;
-
-        if (authState.isConnected) {
-          await web3auth.value.logout();
-        }
+        await web3auth.value.logout();
       },
       onSuccess: (...args) => {
         authState.isConnected = false;
         account.value = null;
+        privateKey.value = null;
 
         opts.onSuccess?.(...args);
       },
@@ -158,32 +164,6 @@ export const useAuth = () => {
       },
     });
 
-  const setProvider = async () => {
-    if (!privateKey.value) {
-      console.warn("No private key found");
-      return;
-    }
-
-    const provider = await SolanaPrivateKeyProvider.getProviderInstance({
-      chainConfig,
-      privKey: privateKey.value,
-    });
-
-    solanaWallet.value = new SolanaWallet(provider);
-
-    const accounts = await solanaWallet.value.requestAccounts();
-    account.value = accounts[0];
-    console.log("Account:", account.value);
-  };
-
-  watchEffect(async () => {
-    if (!privateKey.value || account.value) {
-      return;
-    }
-
-    setProvider();
-  });
-
   return {
     web3auth,
     privateKeyProvider,
@@ -191,7 +171,6 @@ export const useAuth = () => {
     solanaWallet,
     account,
     authState,
-    setProvider,
     useGetUserInfo,
     init,
     useLogout,
