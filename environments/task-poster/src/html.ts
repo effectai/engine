@@ -9,8 +9,7 @@ export const page = (body: string): string => `
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTMX + TypeScript + Node.js Example</title>
-  <!-- Include HTMX from CDN -->
+  <title>Task Terminal - Effect</title>
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <link rel="stylesheet" href="/css/style.css">
   <style>
