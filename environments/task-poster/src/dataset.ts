@@ -1,4 +1,4 @@
-import { isHtmx, page } from "./html.js";
+import { isHtmx, page, make404, make500 } from "./html.js";
 import type { Express } from "express";
 import { managerId, db, publishProgress } from "./state.js";
 import { parseString } from "@fast-csv/parse";
@@ -6,7 +6,7 @@ import { getTemplates, getTemplate, renderTemplate } from "./templates.js";
 import { type Template, computeTemplateId } from "@effectai/protocol";
 import { KVTransactionResult } from "@cross/kv";
 import * as fetcher from "./fetcher.js";
-import type { FetcherRecord } from "./fetcher.js";
+import type { Fetcher } from "./fetcher.js";
 import {
   getFetcher,
   importTasks,
@@ -14,22 +14,19 @@ import {
   getTasks,
 } from "./fetcher.js";
 
-type DatasetStatus = "active" | "draft" | "finished";
-const statusValues: DatasetStatus[] = ["active", "draft"];
+type DatasetStatus = "active" | "draft" | "finished" | "archived";
+const statusValues: DatasetStatus[] = ["active", "draft", "finished", "archived"];
 
 export const datasetIndex = {
-  byStatus: {
-    active: new Set<number>(),
-    draft: new Set<number>(),
-    finished: new Set<number>(),
-  } as Record<DatasetStatus, Set<number>>,
+  byStatus: {} as Record<DatasetStatus, Set<number>>,
 };
+statusValues.forEach(s => datasetIndex.byStatus[s] = new Set<number>());
 
 type FormValues = Record<string, any>;
 
 export type DatasetRecord = {
   id: number;
-  status: DatasetStatus,
+  status: DatasetStatus;
   activeFetcher: number;
   name: string;
   endpoint?: string;
@@ -59,12 +56,12 @@ export const initialize = async () => {
   db.watch(["dataset", {}], (data: KVTransactionResult<DatasetRecord>) => {
     const id = data.data.id;
     statusValues.forEach((v: DatasetStatus) =>
-      datasetIndex.byStatus[v].delete(id),
+      datasetIndex.byStatus[v] ? datasetIndex.byStatus[v].delete(id) : null,
     );
     datasetIndex.byStatus[data.data.status].add(id);
   });
 
-  db.watch(["fetcher", {}, {}], (data: KVTransactionResult<FetcherRecord>) => {
+  db.watch(["fetcher", {}, {}], (data: KVTransactionResult<Fetcher>) => {
     console.log(`Trace: saved fetcher ${data.key}`);
   });
 };
@@ -112,12 +109,17 @@ const form = async (msg = "", values: FormValues = {}): Promise<string> =>
       <small>Initial CSV dataset to be used for tasks. First row must define ` +
   `the header. You will be able to add more data later.</small></label>
       <textarea placeholder="CSV" id="csv" name="csv" rows="3">` +
-    `${values.csv || ""}</textarea>
+  `${values.csv || ""}</textarea>
       <select name="delimiter">
-	${[[",", "Comma"], ["\t", "Tab"], [";", "Semicolon"]].map(([v, n]) =>
-	  `<option ${values.delimiter == v ? "selected " : ""}value="${v}">`+
-	    `${n} separated</option>`
-	)}
+	${[
+    [",", "Comma"],
+    ["\t", "Tab"],
+    [";", "Semicolon"],
+  ].map(
+    ([v, n]) =>
+      `<option ${values.delimiter == v ? "selected " : ""}value="${v}">` +
+      `${n} separated</option>`,
+  )}
       </select>
     </section>
 
@@ -186,8 +188,8 @@ const validations: ValidationMap = {
     return !v
       ? "Batch size is required"
       : isNaN(num)
-	? "Must be a number"
-	: num <= 0 && "Must be greater than 0";
+        ? "Must be a number"
+        : num <= 0 && "Must be greater than 0";
   },
 
   price: (v: any) => {
@@ -195,8 +197,8 @@ const validations: ValidationMap = {
     return !v
       ? "Price is required"
       : isNaN(num)
-	? "Must be a number"
-	: num <= 0 && "Price must be greater than 0";
+        ? "Must be a number"
+        : num <= 0 && "Price must be greater than 0";
   },
 
   template: (v: string) => (!v || v.length === 0) && "Template is required",
@@ -212,8 +214,8 @@ const parseCsv = (csv: string): Promise<any[]> => {
       .on("error", (error) => reject(error))
       .on("data", (row) => data.push(row))
       .on("end", (rowCount: number) => {
-	console.log(`Parsed ${rowCount} rows`);
-	resolve(data);
+        console.log(`Parsed ${rowCount} rows`);
+        resolve(data);
       });
   });
 };
@@ -231,7 +233,7 @@ const validateForm = async (values: FormValues) => {
     try {
       const taskData = await parseCsv(values.csv);
       if (taskData.length === 0)
-	errors["csv"] = `CSV needs at least 1 data row`;
+        errors["csv"] = `CSV needs at least 1 data row`;
     } catch (e) {
       errors["csv"] = `CSV ${e}`;
     }
@@ -299,13 +301,15 @@ ${await importProgress(ds)}
   srcdoc="${escapeHTML(values.renderedTemplate)}"></iframe>
 </div>
 <form hx-post="/d/${id}" hx-swap="outerHTML">
-${
-  ds.status === "active"
-    ? `<button disabled>Add More Data (coming soon)</button>`
-    : `<button type="submit">Publish</button>
-</div>`
-}
+<section>
+${ds.status === "draft"
+    ? `<button hx-post="/d/${id}?action=publish">Publish</button>`
+    :  ds.status === "active"
+      ? `<button hx-post="/d/${id}?action=archive">Archive</button>`
+      : ``}
+</div>
 </form>
+</section>
 `;
 
 // starts auto-importing of active datasets
@@ -324,16 +328,16 @@ export const startAutoImport = async () => {
       const imported = await fetcher.importTasks(ds!.data);
 
       if (!imported || imported === 0) {
-	console.log(`Dataset ${ds!.data.id} finished`);
-	ds!.data.status = "finished";
-	await db.set<DatasetRecord>(ds!.key, ds!.data);
+        console.log(`Dataset ${ds!.data.id} finished`);
+        ds!.data.status = "finished";
+        await db.set<DatasetRecord>(ds!.key, ds!.data);
       }
     }
 
     // pause on the main loop
-    await new Promise(r => setTimeout(r, 10000));
+    await new Promise((r) => setTimeout(r, 10000));
   }
-}
+};
 
 export const addDatasetRoutes = (app: Express): void => {
   app.get("/d/create", async (_req, res) => {
@@ -348,26 +352,26 @@ export const addDatasetRoutes = (app: Express): void => {
 
     if (valid) {
       try {
-	// use time in nanoseconds as incremental dataset ID (not perfect)
-	id = Number(process.hrtime.bigint());
+        // use time in nanoseconds as incremental dataset ID (not perfect)
+        id = Number(process.hrtime.bigint());
 
-	const { csv, delimiter, ...datasetFields } = req.body;
-	const dataset: DatasetRecord = {
-	  ...datasetFields,
-	  id,
-	  activeFetcher: 0,
-	  status: "draft",
-	};
+        const { csv, delimiter, ...datasetFields } = req.body;
+        const dataset: DatasetRecord = {
+          ...datasetFields,
+          id,
+          activeFetcher: 0,
+          status: "draft",
+        };
 
-	await db.set<DatasetRecord>(["dataset", id], dataset);
-	await createCsvFetcher(dataset, csv, delimiter);
+        await db.set<DatasetRecord>(["dataset", id], dataset);
+        await createCsvFetcher(dataset, csv, delimiter);
 
-	console.log(`Created dataset ${id}`);
-	msg = `<p>Success! Dataset ${id}</p>`;
+        console.log(`Created dataset ${id}`);
+        msg = `<p>Success! Dataset ${id}</p>`;
       } catch (e) {
-	msg = '<h4 style="margin-top: 0;">Error creating dataset:</h4>';
-	valid = false;
-	console.log(e);
+        msg = '<h4 style="margin-top: 0;">Error creating dataset:</h4>';
+        valid = false;
+        console.log(e);
       }
     } else {
       msg = '<h4 style="margin-top: 0;">Could not create dataset:</h4>' + msg;
@@ -385,6 +389,8 @@ export const addDatasetRoutes = (app: Express): void => {
   app.get("/d/:id/progress", async (req, res) => {
     const id = Number(req.params.id);
     const dataset = await db.get<DatasetRecord>(["dataset", id]);
+    if (!dataset) return make404(res);
+
     res.send(await importProgress(dataset!.data));
   });
 
@@ -392,22 +398,15 @@ export const addDatasetRoutes = (app: Express): void => {
     const id = Number(req.params.id);
     const dataset = await db.get<DatasetRecord>(["dataset", id]);
 
-    if (!dataset) {
-      res.status(404);
-      res.end();
-      return;
-    }
+    if (!dataset) return make404(res);
 
-    let tasks, fetcher, renderedTemplate;
+    let fetcher, renderedTemplate;
     try {
       fetcher = await getFetcher(dataset!.data);
 
-      renderedTemplate = await renderTemplate(
-	dataset!.data.template,
-	fetcher.dataSample,
-      );
+      const tpl = await getTemplate(dataset!.data.template);
+      renderedTemplate = await renderTemplate(tpl!.data.data, fetcher.dataSample);
     } catch (e) {
-
       res.status(500);
       console.log(`Error parsing task template ${e}`);
       res.send(page("<h1>Error while parsing task template"));
@@ -415,11 +414,13 @@ export const addDatasetRoutes = (app: Express): void => {
     }
 
     res.send(
-      page(
-	await confirmForm(id, dataset.data!, {
-	  ...dataset!.data,
-	  renderedTemplate,
-	}),
+      page(`
+<div id="page">
+        ${await confirmForm(id, dataset.data!, {
+          ...dataset!.data,
+          renderedTemplate,
+        })}
+`,
       ),
     );
   });
@@ -428,18 +429,38 @@ export const addDatasetRoutes = (app: Express): void => {
     const id = Number(req.params.id);
     const dataset = await db.get<DatasetRecord>(["dataset", id]);
 
-    // activate the dataset
-    dataset!.data.status = "active";
-    await db.set<DatasetRecord>(dataset!.key, dataset!.data);
+    if (!dataset) return make404(res);
 
-    // finish the HTTP request
-    res.setHeader("HX-Location", `/d/${id}`);
-    res.end();
+    if (req.query.action == "publish") {
+      if (dataset!.data.status !== "draft") return make500(res);
 
-    // start the fetcher
-    await importTasks(dataset!.data);
+      // activate the dataset
+      dataset!.data.status = "active";
+      await db.set<DatasetRecord>(dataset!.key, dataset!.data);
 
-    // start auto importing from now on
-    await fetcher.importTasks(dataset!.data);
+      // finish the HTTP request
+      res.setHeader("HX-Location", `/d/${id}`);
+      res.end();
+
+      // start the fetcher
+      await importTasks(dataset!.data);
+
+      // start auto importing from now on
+      await fetcher.importTasks(dataset!.data);
+    } else if (req.query.action === "archive") {
+      if (dataset!.data.status !== "active") return make500(res);
+      console.log(`Trace: archiving dataset ${id}`);
+
+      dataset!.data.status = "archived";
+      await db.set<DatasetRecord>(dataset!.key, dataset!.data);
+
+      const msg = "Successfully archived dataset";
+      res.send(`
+      <div id="page" hx-swap-oob="true">
+        <blockquote>${msg}</blockquote>
+        <p><a href="/"><button>Home</button></a></p>
+      </div>
+      `);
+    }
   });
 };

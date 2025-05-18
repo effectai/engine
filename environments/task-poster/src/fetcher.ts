@@ -97,9 +97,19 @@ export const getPendingTasks = async (ds: DatasetRecord, f: Fetcher) => {
   return tasks.slice(f.taskIdx);
 };
 
-// returns the number of tasks imported. 0 = finished, -1 = other error
+// returns the number of tasks imported. 0 = finished, -1 = do not import now
 export const importTasks = async (ds: DatasetRecord) => {
   const fetcher = await db.get<Fetcher>(["fetcher", ds.id, ds.activeFetcher]);
+
+  // check if it's already time
+  const remaining = fetcher!.data.lastImport
+    ? fetcher!.data.lastImport + ds.frequency * 1000 - Date.now()
+    : 0;
+
+  if (remaining > 0) {
+    console.log(`Fetcher ${fetcher.key} import ${remaining / 1000}s remaining`);
+    return -1;
+  }
 
   // check for import lock
   if (publishProgress[ds.id]) {
