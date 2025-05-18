@@ -9,9 +9,7 @@ export const usePayments = () => {
     useQuery({
       queryKey: ["payments", paymentCounter],
       queryFn: async () => {
-        const data = await workerStore.worker?.getPayments({
-          limit: 500,
-        });
+        const data = await workerStore.worker?.getPayments({});
         return data;
       },
       placeholderData: keepPreviousData,
