@@ -1,4 +1,5 @@
-import type { Request } from "express";
+import type { Request, Response } from "express";
+
 
 export const isHtmx = (req: Request): boolean => !!req.headers["hx-request"];
 
@@ -25,3 +26,15 @@ export const page = (body: string): string => `
 </body>
 </html>
 `;
+
+export const make404 = (res: Response) => {
+  res.status(404);
+  res.send(page(`<h1>404</h1><h2>Not Found</h2>`));
+  res.end();
+};
+
+export const make500 = (res: Response) => {
+  res.status(500);
+  res.send(page(`<h1>500</h1><h2>Server Error</h2>`));
+  res.end();
+};

@@ -11,13 +11,13 @@
   </div>
 
   <div>
-    <button class="button is-danger is-medium"
+    <button class="button is-danger is-outlined is-medium"
     @click="this.answer='No'">No</button>
 
-    <button class="button is-medium mx-3"
+    <button class="button is-outlined is-medium mx-3"
     @click="this.answer='Skip'">Skip</button>
 
-    <button class="button is-success is-medium"
+    <button class="button is-success is-outlined is-medium"
     @click="this.answer='Yes'">Yes</button>
   </div>
 
@@ -53,11 +53,12 @@
   createApp({
     data() {
       return {
-        title: "Effect AI Sentence Creator",
+        title: "Effect AI Sentence Verifier",
         btnLoading: false,
         ipfsClient: null,
         sentence: "${sentence}",
-        answer: ""
+        answer: "",
+        loading: true,
       };
     },
     computed: {},

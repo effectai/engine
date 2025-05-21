@@ -17,6 +17,7 @@ export type TemplateRecord = {
   name: string;
   templateId: string;
   data: string;
+  status: "draft" | "active" | "archived";
 };
 
 const api = axios.create({
@@ -25,26 +26,50 @@ const api = axios.create({
   baseURL: state.managerUrl,
 });
 
+const escapeHTML = (html: string): string =>
+  html
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 export const getTemplates = async () =>
   await db.listAll<TemplateRecord>(["templates", {}]);
 export const getTemplate = async (id: string) =>
   await db.get<TemplateRecord>(["templates", id]);
 
 export const renderTemplate = async (
-  tid: string,
+  html: string,
   data: any,
 ): Promise<string> => {
-  const template = await getTemplate(tid);
-
-  const templateHtml = template!.data.data.replace(
+  const templateHtml = html.replace(
     /\$\{([^}]+)\}/g,
     (_: any, key: any) => {
-      const value = data && data[key.trim()];
-      return value !== undefined ? value : "";
+      const keyName = key.trim();
+      const rawValue = data[keyName];
+      if (rawValue === undefined) return "";
+      const escapedValue =
+	typeof rawValue === "string"
+	  ? rawValue.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+	  : rawValue;
+      return escapedValue;
     },
   );
 
   return templateHtml;
+
+};
+
+const findTemplateFields = (html: string) => {
+  const re = /\$\{([^}]+)\}/g;
+  const matches: string[][] = [];
+  let m;
+  do {
+    const m = re.exec(html);
+    if (m) matches.push(m.slice(0, 3));
+  } while (m);
+  return matches;
 };
 
 const form = (msg = "", values: Record<string, string> = {}): string => `
@@ -68,10 +93,53 @@ const form = (msg = "", values: Record<string, string> = {}): string => `
       name="html"
       rows="10">${values.html || ""}</textarea>
 
-    <button type="submit">Save</button>
+    <button type="submit">Preview</button>
   </fieldset>
 </form>
 `;
+
+
+const templateDataForm = (
+  html: string,
+  fields: string[][],
+  values: Record<string, string> = {},
+) => `
+<form hx-post="/t/test">
+${fields.map(
+  ([_, name]) => `
+<label for="f${name}">${name}</label>
+<input
+  ${values[name] ? `value="${escapeHTML(values[name])}" ` : ""}
+  id="f${name}" name="${name}" type="text"></input>
+<textarea style="display: none;" name="html">${html}</textarea>
+<button type="submit">Preview</button>
+</form>
+`,
+)}
+`;
+
+const templatePreviewFrame =
+  async (html: string, data: Record<string, string> = {}) => {
+    const renderedTemplate = await renderTemplate(html, data);
+    const fields = findTemplateFields(html);
+    return `
+<h2>Preview</h2>
+<div>
+  <iframe
+    id="templateFrame"
+    height="450px"
+    width="100%"
+  srcdoc="${escapeHTML(renderedTemplate)}"></iframe>
+</div>
+
+<h2>Task Data</h2>
+${fields.length ?
+  `<p>You use this form to preview the template with example data</p>
+${templateDataForm(html, fields)}` :
+  "<p>This template has no fields.</p>"}
+`
+  };
+
 
 export const addTemplateRoutes = (app: Express): void => {
   app.get("/t/create", (_req, res) => {
@@ -92,8 +160,9 @@ export const addTemplateRoutes = (app: Express): void => {
       msg += `HTML can't be empty`;
     }
 
-    if (valid) {
+    if (valid && req.query.action === "publish") {
       const templateId = computeTemplateId(managerId, req.body.html);
+      console.log(`Publishing new template ${templateId}...`)
 
       const template: Template = {
 	templateId,
@@ -106,27 +175,87 @@ export const addTemplateRoutes = (app: Express): void => {
 	  template,
 	  providerPeerIdStr: managerId,
 	});
-
-	const templateEntry = { ...template, name: req.body.name };
-	await db.set(["templates", templateId], templateEntry);
-
 	msg = `<p>Success! ${data.status}:</p><p>${data.id}</p>`;
       } catch (e) {
+	console.log(`Errors during registration`, e);
 	msg = "Error during template registration.";
 	valid = false;
       }
+
+      const templateEntry = {
+	...template, name: req.body.name, status: "draft"
+      };
+      await db.set<TemplateRecord>(["templates", templateId], templateEntry);
     }
 
-    if (valid) {
+    if (req.query.action === "edit") {
+      res.send(form(undefined, req.body));
+    } else if (valid && req.query.action === "publish") {
       res.send(`
-<div id="main-form" hx-swap-oob="true">
-  <blockquote>${msg}</blockquote>
-  <p><a href="/m/${managerId}"><button>Home</button></a></p>
-</div>
-`);
+      <div id="page" hx-swap-oob="true">
+	<blockquote>${msg}</blockquote>
+	<p><a href="/"><button>Home</button></a></p>
+      </div>
+      `);
+    } else if (valid) {
+      res.send(`
+<div id="page">
+  ${await templatePreviewFrame(req.body.html)}
+  <section>
+<form>
+    <textarea style="display: none;" name="html">${req.body.html}</textarea>
+    <input type="hidden" name="name" value="${req.body.name}">
+    <div class="btns">
+      <button hx-target="#page" hx-post="/t/create?action=edit">< Edit</button>
+      <button hx-target="#page" hx-post="/t/create?action=publish">! Publish</button>
+    </div>
+  </section>
+</form>
+</div>`);
     } else {
-      console.log(req.params);
-      res.send(form(msg, req.body));
+    // invalid parameters
+    res.send(form(msg, req.body));
     }
+  });
+
+
+  app.get("/t/test/:id", async (req, res) => {
+    const tid = req.params.id;
+    const tpl = await getTemplate(tid);
+    if (!tpl) {
+      res.status(404);
+      res.send('not found');
+      res.end();
+      return;
+    }
+    res.send(
+      page(`<strong>Template ${tpl?.data.name}</strong>
+${await templatePreviewFrame(tpl!.data.data)}
+`));
+  });
+
+  app.post("/t/test", async (req, res) => {
+    // const tid = req.params.tid;
+    // const tpl = await getTemplate(tid);
+    const html = req.body.html;
+
+    if (!html) {
+      res.status(404);
+      res.send('not found');
+      res.end();
+      return;
+    }
+
+    const renderedTemplate = await renderTemplate(html, req.body);
+    const fields = findTemplateFields(html);
+
+    res.send(`
+<iframe
+  hx-swap-oob="true"
+  id="templateFrame"
+  height="450px"
+  width="100%"
+  srcdoc="${escapeHTML(renderedTemplate)}"></iframe>
+${templateDataForm(html, fields, req.body)}`);
   });
 };
