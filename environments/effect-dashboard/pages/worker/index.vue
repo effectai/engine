@@ -93,7 +93,9 @@ const totalEarned = computed(() => {
     return acc + payment.state.amount;
   }, 0n);
 
-  return `${formatBigIntToAmount(total).toFixed(2)} EFFECT`;
+  const formattedTotal = formatBigIntToAmount(total).toFixed(2)
+
+  return `${Number(formattedTotal).toLocaleString()} EFFECT`;
 });
 
 const totalCompletedTasks = computed(() => {
