@@ -166,6 +166,23 @@ export const createEntityStore = <
     }
   };
 
+  const paginatedQuery = async ({
+    page,
+    perPage,
+  }: {
+    page: number;
+    perPage: number;
+  }): Promise<EntityRecord[]> => {
+    const offset = (page - 1) * perPage;
+    const limit = perPage;
+
+    return await all({
+      filters: [],
+      limit,
+      offset,
+    });
+  };
+
   return {
     has,
     get,
@@ -177,5 +194,6 @@ export const createEntityStore = <
     datastore,
     getSafe,
     getMany,
+    paginatedQuery,
   };
 };

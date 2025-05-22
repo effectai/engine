@@ -108,7 +108,6 @@ export function createPaymentWorker({
         },
       },
       {
-        //long timeout to allow for large batches
         timeout: 60_000,
       },
     );

@@ -50,6 +50,24 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
     parse: (data) => parsePaymentRecord(data),
   });
 
+  const countAmount = async ({
+    peerId,
+  }: {
+    peerId: string;
+  }): Promise<number> => {
+    let amount = 0;
+    for await (const item of datastore.query({
+      prefix: `/payments/${peerId}/`,
+    })) {
+      amount += Number.parseFloat(
+        parsePaymentRecord(
+          new TextDecoder().decode(item.value),
+        ).state.amount.toString(),
+      );
+    }
+    return amount;
+  };
+
   const getFrom = async ({
     peerId,
     nonce,
@@ -142,6 +160,7 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
     create,
     getHighestNonce,
     getFrom,
+    countAmount,
   };
 };
 

@@ -21,7 +21,6 @@ import {
   createTemplateStore,
   generateKeyPairFromSeed,
   circuitRelayTransport,
-  peerIdFromString,
 } from "@effectai/protocol-core";
 
 export interface WorkerEvents {
@@ -146,21 +145,6 @@ export const createWorker = async ({
     if (!response) {
       throw new Error("Failed to identify manager");
     }
-
-    const managerPeerIdStr = manager.getPeerId();
-
-    if (!managerPeerIdStr) {
-      throw new Error("Couldnt get peerId from manager");
-    }
-
-    //save the manager's identified data in peerStore
-    entity.node.peerStore.merge(peerIdFromString(managerPeerIdStr), {
-      metadata: {
-        type: Buffer.from("manager"),
-        publicKey: Buffer.from(response.pubkey),
-        version: Buffer.from(response.version),
-      },
-    });
 
     return response;
   };
