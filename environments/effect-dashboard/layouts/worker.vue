@@ -107,14 +107,17 @@
               />
 
               <!-- Wallet dropdown -->
-              <Menu as="div" class="relative inline-block text-left">
+              <Menu
+                v-if="isAuthenticated"
+                as="div"
+                class="relative inline-block text-left"
+              >
                 <MenuButton
                   class="-m-1.5 flex items-center p-1.5 focus:outline-none"
                 >
                   <UAvatar
-                    v-if="!!privateKey"
                     alt="Anonymous"
-                    :src="user?.profileImage"
+                    :src="image"
                     size="sm"
                     class="hidden mr-3 p-2 lg:flex justify-center items-center h-full lg:w-12"
                   />
@@ -126,7 +129,7 @@
                 >
                   <MenuItem v-slot="">
                     <button
-                      @click="logout"
+                      @click="logoutHandler"
                       class="w-full px-4 py-2 text-sm text-left"
                     >
                       Log out
@@ -166,28 +169,28 @@ import {
 
 import { Bars3Icon, XMarkIcon } from "@heroicons/vue/24/outline";
 
-const { privateKey, authState, useGetUserInfo, init, useLogout } = useAuth();
-const { destroy } = useWorkerStore();
-
-const { mutateAsync: logout } = useLogout({
-  onSuccess: () => {
-    destroy();
-    navigateTo("/worker/login");
-  },
-});
-
+const authStore = useAuthStore();
+const { isAuthenticated } = storeToRefs(authStore);
+const { useGetUserInfo } = useWeb3Auth();
 const { data: user } = useGetUserInfo();
-const sidebarOpen = ref(false);
 
-const loginMethod = useLocalStorage("loginMethod", null);
-const name = computed(() => {
-  if (loginMethod.value === "privateKey") {
-    return "Anonymous";
-  }
-  if (user.value?.email) return user.value.email;
-  if (user.value?.name) return user.value.name;
-  return null;
-});
+const { useLogout } = useAuth();
+const { mutateAsync: logout } = useLogout();
+
+//if no user is found, default to def
+const name = computed(() => user.value?.email || "anonymous worker");
+const image = computed(
+  () =>
+    user.value?.profileImage ||
+    "https://icons.iconarchive.com/icons/pictogrammers/material/256/incognito-icon.png",
+);
+
+const logoutHandler = async () => {
+  await logout();
+  navigateTo("/login");
+};
+
+const sidebarOpen = ref(false);
 
 useSeoMeta({
   title: "Effect AI | Portal",

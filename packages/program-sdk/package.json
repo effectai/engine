@@ -1,0 +1,36 @@
+{
+  "name": "@effectai/program-sdk",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "run": "node ./dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.9.0",
+  "dependencies": {
+    "@solana/kit": "^2.1.1",
+    "@effectai/idl": "workspace:*",
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/web3.js": "^2.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "codama": "^1.3.0",
+    "@codama/nodes-from-anchor": "^1.1.14",
+    "@codama/renderers-js": "^1.2.13",
+    "@types/node": "^22.10.1"
+  }
+}

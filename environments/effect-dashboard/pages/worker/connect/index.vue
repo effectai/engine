@@ -191,9 +191,9 @@ const selectedManager = ref<ManagerInfoResponse | null>(null);
 const accessCode = ref<string | null>(null);
 const stepAccessCode = ref(false);
 
-const { account } = useAuth();
-const { useConnect } = useSessionStore();
-const { mutateAsync: connect, isPending } = useConnect();
+const authStore = useAuthStore();
+const { account } = storeToRefs(authStore);
+
 const selectedManagerPublicKey = computed(() => {
   return selectedManager.value?.publicKey.toString();
 });
@@ -208,6 +208,8 @@ const { data: nextNonce, isFetching: isFetchingNonce } = useNextNonce(
 );
 
 const toast = useToast();
+const { useConnect } = useSession();
+const { isPending, mutateAsync: connect } = useConnect();
 const connectHandler = async () => {
   if (selectedManager.value) {
     const selected = multiaddr(selectedManager.value.announcedAddresses[0]);
@@ -225,14 +227,11 @@ const connectHandler = async () => {
     try {
       await connect({
         account: account.value,
-        managerPeerId: selectedManager.value.peerId,
         managerMultiAddress: selected.toString(),
-        managerPublicKey: selectedManager.value.publicKey,
         nextNonce: nextNonce.value.nextNonce,
         accessCode: accessCode.value ?? undefined,
       });
-
-      navigateTo("/worker");
+      navigateTo(`/worker/connect/${selectedManagerPeerId.value}`);
     } catch (e) {
       console.error("Error connecting to manager: ", e);
       toast.add({
@@ -250,7 +249,10 @@ const extractHost = (multiaddr: string) => {
 };
 
 const attemptConnection = () => {
-  if (selectedManager.value.requiresAccessCode) {
+  if (
+    selectedManager.value.requiresRegistration === true &&
+    selectedManager.value.isRegistered === false
+  ) {
     stepAccessCode.value = true;
   } else {
     connectHandler();

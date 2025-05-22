@@ -8,6 +8,5 @@ export default defineConfig((options) => [
     format: ["esm", "cjs"],
     entry: ["src/**/*.ts", "!src/**/*.spec.ts"],
     platform: "node",
-    target: "esnext",
   },
 ]);

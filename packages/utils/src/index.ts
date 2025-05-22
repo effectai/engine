@@ -6,3 +6,4 @@ export {
   createKeypairFromFile,
   loadProvider,
 } from "./solana.js";
+export * from "./node.js";

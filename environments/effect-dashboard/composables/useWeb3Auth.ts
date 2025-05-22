@@ -20,22 +20,13 @@ import {
 } from "@tanstack/vue-query";
 
 const web3auth: Ref<Web3AuthNoModal | null> = shallowRef(null);
-const account = ref<string | null>(null);
 
-const authState = reactive({
-  isConnected: false,
-  isLoading: false,
-  error: null as Error | null,
-});
-
-const solanaWallet = ref<SolanaWallet | null>(null);
-
-export const useAuth = () => {
-  const privateKey = useLocalStorage<string | null>("privateKey", null);
-  const loginMethod = useLocalStorage<string | null>("loginMethod", null);
-
+export const useWeb3Auth = () => {
   const clientId =
     "BIcF8x3jW7FR6hqAedtD8s0sjsyCsGSRk_sLnuCdDThbaYyk7op5q8J_F3ywacftuWmzHrL39PFZjYocu5vHQMU";
+
+  const privateKey = useLocalStorage<string | null>("privateKey", null);
+  const isConnected = ref(false);
 
   const chainConfig = {
     chainNamespace: CHAIN_NAMESPACES.SOLANA,
@@ -67,71 +58,35 @@ export const useAuth = () => {
     chainConfig,
   };
 
-  const bindEventListeners = () => {
-    if (!web3auth.value) return;
+  const useGetUserInfo = () => {
+    const authStore = useAuthStore();
+    const { account } = storeToRefs(authStore);
 
-    web3auth.value.on("connected", async () => {
-      authState.isLoading = false;
-      authState.isConnected = true;
-      privateKey.value = await web3auth.value.provider?.request({
-        method: "solanaPrivateKey",
-      });
-    });
-
-    web3auth.value.on("connecting", () => {
-      authState.isLoading = true;
-    });
-
-    web3auth.value.on("disconnected", () => {
-      authState.isConnected = false;
-    });
-
-    web3auth.value.on("errored", (error) => {
-      authState.error = error;
-      authState.isLoading = false;
-    });
-  };
-
-  const initMutation = () =>
-    useMutation({
-      mutationFn: async () => {
-        if (!web3auth.value) throw new Error("Web3Auth not initialized");
-
-        bindEventListeners();
-        authState.isLoading = true;
-
-        await web3auth.value.init();
-      },
-      onSuccess: () => {
-        if (!web3auth.value) return;
-        authState.isConnected = web3auth.value.status === "connected";
-      },
-      onError: (error: unknown) => {
-        authState.error = error as Error;
-      },
-      onSettled: () => {
-        authState.isLoading = false;
-      },
-    });
-
-  const useGetUserInfo = () =>
-    useQuery({
+    return useQuery({
       queryKey: ["userInfo", account],
       queryFn: async () => {
         if (!web3auth.value) throw new Error("Web3Auth not initialized");
         const userInfo = await web3auth.value.getUserInfo();
         return userInfo as UserInfo;
       },
-      enabled: computed(() => !!web3auth.value && !!authState.isConnected),
+      enabled: computed(() => !!web3auth.value),
       staleTime: 1000 * 60 * 10, // 10 minutes
     });
+  };
 
   const init = async () => {
     web3auth.value = new Web3AuthNoModal(web3AuthOptions);
-    if (!web3auth.value) throw new Error("Web3Auth not initialized");
     web3auth.value.configureAdapter(authAdapter);
 
-    await initMutation().mutateAsync();
+    web3auth.value.once("connected", async ({ provider, adapter }) => {
+      isConnected.value = true;
+
+      privateKey.value = await provider.request({
+        method: "solanaPrivateKey",
+      });
+    });
+
+    await web3auth.value.init();
   };
 
   const useLogout = (opts: MutationOptions<void, unknown> = {}) =>
@@ -139,58 +94,18 @@ export const useAuth = () => {
       ...opts,
       mutationFn: async () => {
         if (!web3auth.value) throw new Error("Web3Auth not initialized");
-
-        privateKey.value = null;
-        loginMethod.value = null;
-
-        if (authState.isConnected) {
-          await web3auth.value.logout();
-        }
+        if (!web3auth.value.connected) return;
+        await web3auth.value.logout();
       },
       onSuccess: (...args) => {
-        authState.isConnected = false;
-        account.value = null;
-
         opts.onSuccess?.(...args);
       },
-      onError: (error: unknown) => {
-        authState.error = error as Error;
-      },
     });
-
-  const setProvider = async () => {
-    if (!privateKey.value) {
-      console.warn("No private key found");
-      return;
-    }
-
-    const provider = await SolanaPrivateKeyProvider.getProviderInstance({
-      chainConfig,
-      privKey: privateKey.value,
-    });
-
-    solanaWallet.value = new SolanaWallet(provider);
-
-    const accounts = await solanaWallet.value.requestAccounts();
-    account.value = accounts[0];
-  };
-
-  watchEffect(async () => {
-    if (!privateKey.value || account.value) {
-      return;
-    }
-
-    setProvider();
-  });
 
   return {
     web3auth,
     privateKeyProvider,
-    privateKey,
-    solanaWallet,
-    account,
-    authState,
-    setProvider,
+    chainConfig,
     useGetUserInfo,
     init,
     useLogout,
