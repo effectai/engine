@@ -7,21 +7,32 @@ export const usePayout = () => {
   const { worker } = storeToRefs(workerStore);
 
   const { managerPeerId } = storeToRefs(sessionStore);
+
+  const lastRunTimestamp = ref<number>(Date.now());
+  const intervalMs = Number.parseInt(config.public.PAYOUT_INTERVAL);
+
   const isReady = computed(() => !!worker.value && !!managerPeerId.value);
 
   return useQuery({
     queryKey: ["payout"],
     queryFn: async () => {
+      const now = Date.now();
       if (!worker.value || !managerPeerId.value) return;
+
+      if (now - lastRunTimestamp.value < intervalMs) {
+        console.log("Payout interval not reached");
+        return;
+      }
 
       return await worker.value.requestPayout({
         managerPeerIdStr: managerPeerId.value,
       });
     },
+    refetchOnReconnect: false,
     refetchOnMount: false,
-    refetchIntervalInBackground: true,
     refetchOnWindowFocus: false,
-    enabled: isReady,
     refetchInterval: Number.parseInt(config.public.PAYOUT_INTERVAL),
+    refetchIntervalInBackground: true,
+    enabled: isReady,
   });
 };
