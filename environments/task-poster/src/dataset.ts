@@ -70,12 +70,12 @@ export const initialize = async () => {
 const addVal = (values: FormValues, key: string): string =>
   `${values[key] ? `value="${values[key]}"` : ""}`;
 
-const form = async (msg = "", values: FormValues = {}): Promise<string> =>
-  `
-<form id="main-form" hx-post="/d/create" hx-swap="outerHTML">
-  ${msg ? `<p><blockquote>${msg}</blockquote></p>` : ""}
+const form = async (msg = "", values: FormValues = {}) : Promise<string> => `
+<form id="main-form" hx-post="/d/create" hx-swap="outerHTML show:window:top">
+  <div id="messages">
+    ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
+  </div>
   <fieldset>
-
     <legend>New Dataset</legend>
     <label for="name"><strong>Name</strong></label>
     <input

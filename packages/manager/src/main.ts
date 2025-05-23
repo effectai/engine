@@ -15,7 +15,7 @@ import { createWorkerManager } from "./modules/createWorkerManager.js";
 import { bigIntToBytes32, compressBabyJubJubPubKey } from "./utils.js";
 
 import { PublicKey } from "@solana/web3.js";
-import { PAYMENT_BATCH_SIZE } from "./consts.js";
+import { PAYMENT_BATCH_SIZE, TASK_ACCEPTANCE_TIME, VERSION } from "./consts.js";
 
 import type { Request, Response, NextFunction } from "express";
 
@@ -78,7 +78,7 @@ export const createManagerEntity = async ({
   return await createEffectEntity({
     protocol: {
       name: "effectai",
-      version: "1.0.0",
+      version: VERSION,
       scheme: EffectProtocolMessage,
     },
     transports: [
@@ -177,24 +177,24 @@ export const createManager = async ({
       //check if we've already onboarded this peer
       const worker = await workerManager.getWorker(peerId.toString());
 
-      //check if this worker requires an access code.
-      let requiresAccessCode = false;
-      if (!worker && managerSettings.requireAccessCodes) {
-        requiresAccessCode = true;
-      }
-
       //check if this worker is in the queue
       const isConnected = workerManager.workerQueue.queue.includes(
         peerId.toString(),
       );
 
+      if (!entity.node.peerId.publicKey) {
+        throw new Error("Peer ID is not set");
+      }
+
       const message: EffectProtocolMessage = {
         identifyResponse: {
+          peer: entity.node.peerId.publicKey.raw,
           pubkey: solanaPublicKey.toBase58(),
-          batchSize: 50,
-          taskTimeout: 60000,
-          version: "0.0.1",
-          requiresAccessCode,
+          batchSize: PAYMENT_BATCH_SIZE,
+          taskTimeout: TASK_ACCEPTANCE_TIME,
+          version: VERSION,
+          requiresRegistration: managerSettings.requireAccessCodes,
+          isRegistered: !!worker,
           isConnected,
         },
       };
@@ -210,6 +210,14 @@ export const createManager = async ({
           nonce,
           accessCode,
         );
+
+        return {
+          requestToWorkResponse: {
+            timestamp: Math.floor(Date.now() / 1000),
+            pubkey: solanaPublicKey.toBase58(),
+            peer: entity.node.peerId.toString(),
+          },
+        };
       },
     )
     .onMessage("task", async (task, { peerId }) => {
@@ -291,7 +299,7 @@ export const createManager = async ({
     res.json({
       status: "running",
       peerId: entity.getPeerId().toString(),
-      version: "0.0.1",
+      version: VERSION,
       requireAccessCodes: managerSettings.requireAccessCodes,
       announcedAddresses,
       publicKey: new PublicKey(compressedPubKey),
@@ -469,8 +477,7 @@ export const createManager = async ({
 
   // Register event listeners
   entity.node.addEventListener("peer:disconnect", (event) => {
-    const peerId = event.detail;
-    workerManager.disconnectWorker(peerId.toString());
+    workerManager.disconnectWorker(event.detail.toString());
   });
 
   return {

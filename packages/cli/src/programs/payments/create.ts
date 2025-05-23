@@ -42,7 +42,6 @@ export function registerCreatePaymentPoolCommand(program: Command) {
       ) as unknown as anchor.Program<EffectPayment>;
 
       const mint = new PublicKey(options.mint);
-
       const ata = getAssociatedTokenAddressSync(mint, payer.publicKey);
 
       const managerPubKey = kp.publicKey;

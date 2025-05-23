@@ -109,8 +109,23 @@ const main = async () => {
   console.log("Initializing HTTP server");
   const app = express();
   app.use(express.static("public"));
-  app.use(express.urlencoded({ extended: true }));
-  app.use(express.json());
+  app.use(express.urlencoded({ limit: '2mb', extended: true }));
+  app.use(express.json({ limit: '2mb' }));
+
+  // gracefull error when files are too lar1ge
+  app.use((err, req, res, next) => {
+    if (err.status === 413) {
+      // TODO: use htmx-ext-response-targets for a 413
+      res.setHeader("HX-Retarget", "#messages");
+      res.status(200).send(`
+<div id="messages">
+  <p><blockquote>
+    The data is too large. Try submitting less data.
+  </blockquote></p>
+</div>`);
+      next(err);
+    }
+  });
 
   // only add livereload when the flag is provided on dev
   const liveReloadEnabled = process.argv.includes("--livereload");

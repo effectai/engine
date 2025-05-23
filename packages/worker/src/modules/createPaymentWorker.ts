@@ -26,7 +26,6 @@ export function createPaymentWorker({
   }) => {
     await paymentStore.create({ peerId: managerPeerId.toString(), payment });
 
-    //emit event
     events.safeDispatchEvent("payment:created", { detail: payment });
 
     return payment;
@@ -45,6 +44,22 @@ export function createPaymentWorker({
     });
 
     return payments;
+  };
+
+  const getPaginatedPayments = async ({
+    perPage,
+    page,
+    prefix,
+  }: {
+    perPage: number;
+    page: number;
+    prefix?: string;
+  }) => {
+    return await paymentStore.getPaginatedPayments({
+      prefix,
+      page,
+      perPage,
+    });
   };
 
   const getPayments = async ({
@@ -108,7 +123,6 @@ export function createPaymentWorker({
         },
       },
       {
-        //long timeout to allow for large batches
         timeout: 60_000,
       },
     );
@@ -124,12 +138,24 @@ export function createPaymentWorker({
     });
   };
 
+  const countPaymentAmount = async ({
+    managerPeerIdStr,
+  }: {
+    managerPeerIdStr: string;
+  }) => {
+    return await paymentStore.countAmount({
+      peerId: managerPeerIdStr,
+    });
+  };
+
   return {
     createPayment,
     requestPayout,
     getPayments,
+    getPaginatedPayments,
     requestPaymentProof,
     getMaxNonce,
     getPaymentsFromNonce,
+    countPaymentAmount,
   };
 }

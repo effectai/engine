@@ -3,6 +3,7 @@ import type {
   EffectProtocolMessage,
   Payment,
   ProofResponse,
+  RequestToWorkResponse,
   Task,
   Template,
 } from "../../@generated/effect.protons.js";
@@ -45,7 +46,7 @@ export type ResponseMap = {
                         : K extends "ack"
                           ? never
                           : K extends "requestToWork"
-                            ? AckResponse
+                            ? RequestToWorkResponse
                             : K extends "identifyRequest"
                               ? EffectIdentifyResponse
                               : never;

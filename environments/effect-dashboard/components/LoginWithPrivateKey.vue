@@ -6,7 +6,7 @@
           class="p-0 py-2"
           variant="link"
           color="black"
-          @click="navigateTo('/worker/login')"
+          @click="emit('back')"
         >
           <UIcon name="lucide:arrow-left" />
           Back to Login
@@ -52,31 +52,24 @@ import { generateMnemonic, mnemonicToSeed } from "bip39";
 import { sha512 } from "@noble/hashes/sha512";
 import { Keypair } from "@solana/web3.js";
 
-definePageMeta({
-  layout: "worker",
-});
-
 const mnemonic = ref("");
 
+const { login } = useAuthStore();
+
+const emit = defineEmits(["back"]);
 const generateSeedPhrase = () => {
-  mnemonic.value = generateMnemonic(128); // 128 bits = 12 words
+  mnemonic.value = generateMnemonic(128);
 };
 
 const isValid = computed(() => {
   return mnemonic.value.split(" ").length === 12;
 });
 
-const { privateKey, authState, setProvider } = useAuth();
-const loginMethod = useLocalStorage("loginMethod", null);
 const connect = async () => {
   const seed = await mnemonicToSeed(mnemonic.value);
-  const ed25519privateKey = sha512(seed.slice(0, 32)); // Hash the seed to get a 32-byte private key
+  const ed25519privateKey = sha512(seed.slice(0, 32));
   const pk = Keypair.fromSeed(ed25519privateKey.slice(0, 32));
-  privateKey.value = Buffer.from(pk.secretKey).toString("hex");
-  loginMethod.value = "privateKey";
-  await setProvider();
-  await nextTick();
-  navigateTo("/worker");
+  await login(Buffer.from(pk.secretKey).toString("hex"));
 };
 </script>
 

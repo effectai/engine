@@ -12,16 +12,7 @@
       "docs": [
         "Close a [StakeAccount](#stake-account) and [VaultAccount](#vault-account)."
       ],
-      "discriminator": [
-        98,
-        165,
-        201,
-        177,
-        108,
-        65,
-        206,
-        96
-      ],
+      "discriminator": [98, 165, 201, 177, 108, 65, 206, 96],
       "accounts": [
         {
           "name": "recipient_token_account",
@@ -47,9 +38,7 @@
           "name": "authority",
           "writable": true,
           "signer": true,
-          "relations": [
-            "stake_account"
-          ]
+          "relations": ["stake_account"]
         },
         {
           "name": "token_program",
@@ -60,16 +49,7 @@
     },
     {
       "name": "stake",
-      "discriminator": [
-        206,
-        176,
-        202,
-        18,
-        200,
-        209,
-        179,
-        108
-      ],
+      "discriminator": [206, 176, 202, 18, 200, 209, 179, 108],
       "accounts": [
         {
           "name": "mint",
@@ -127,16 +107,7 @@
     },
     {
       "name": "stake_genesis",
-      "discriminator": [
-        254,
-        31,
-        23,
-        18,
-        216,
-        245,
-        224,
-        83
-      ],
+      "discriminator": [254, 31, 23, 18, 216, 245, 224, 83],
       "accounts": [
         {
           "name": "authority",
@@ -180,7 +151,7 @@
               }
             ],
             "program": {
-              "kind": "account",
+              "kind": "const",
               "path": "migration_program"
             }
           }
@@ -218,16 +189,7 @@
       "docs": [
         "Top-up `amount` of [NOS](/tokens/token) of a [StakeAccount](#stake-account)."
       ],
-      "discriminator": [
-        126,
-        42,
-        49,
-        78,
-        225,
-        151,
-        99,
-        77
-      ],
+      "discriminator": [126, 42, 49, 78, 225, 151, 99, 77],
       "accounts": [
         {
           "name": "user_token_account",
@@ -252,9 +214,7 @@
         {
           "name": "authority",
           "signer": true,
-          "relations": [
-            "stake_account"
-          ]
+          "relations": ["stake_account"]
         },
         {
           "name": "token_program",
@@ -270,27 +230,14 @@
     },
     {
       "name": "unstake",
-      "docs": [
-        "Start the unstake duration."
-      ],
-      "discriminator": [
-        90,
-        95,
-        107,
-        42,
-        205,
-        124,
-        50,
-        225
-      ],
+      "docs": ["Start the unstake duration."],
+      "discriminator": [90, 95, 107, 42, 205, 124, 50, 225],
       "accounts": [
         {
           "name": "authority",
           "writable": true,
           "signer": true,
-          "relations": [
-            "stake_account"
-          ]
+          "relations": ["stake_account"]
         },
         {
           "name": "stake_account",
@@ -318,7 +265,7 @@
               }
             ],
             "program": {
-              "kind": "account",
+              "kind": "const",
               "path": "reward_program"
             }
           }
@@ -339,7 +286,7 @@
               }
             ],
             "program": {
-              "kind": "account",
+              "kind": "const",
               "path": "vesting_program"
             }
           }
@@ -383,29 +330,11 @@
   "accounts": [
     {
       "name": "MigrationAccount",
-      "discriminator": [
-        129,
-        168,
-        118,
-        35,
-        238,
-        212,
-        16,
-        172
-      ]
+      "discriminator": [129, 168, 118, 35, 238, 212, 16, 172]
     },
     {
       "name": "StakeAccount",
-      "discriminator": [
-        80,
-        158,
-        67,
-        124,
-        50,
-        189,
-        192,
-        255
-      ]
+      "discriminator": [80, 158, 67, 124, 50, 189, 192, 255]
     }
   ],
   "errors": [
@@ -568,3 +497,4 @@
     }
   ]
 }
+

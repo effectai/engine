@@ -15,7 +15,6 @@ import {
   extractKeyFromEosUsername,
 } from "@effectai/utils";
 import type { EffectMigration } from "../../target/types/effect_migration";
-import { EffectMigrationIdl } from "@effectai/shared";
 import { askForConfirmation } from "../utils";
 
 interface MigrationClaimOptions {
@@ -64,12 +63,12 @@ export const createMigrationClaimCommand: CommandModule<
 
     const migrationProgram = new anchor.Program(
       EffectMigrationIdl as anchor.Idl,
-      provider
+      provider,
     ) as unknown as anchor.Program<EffectMigration>;
 
     const ata = getAssociatedTokenAddressSync(
       new PublicKey(mint),
-      payer.publicKey
+      payer.publicKey,
     );
 
     // check if ata exists
@@ -80,7 +79,7 @@ export const createMigrationClaimCommand: CommandModule<
         provider.connection,
         payer,
         new PublicKey(mint),
-        payer.publicKey
+        payer.publicKey,
       );
     }
 
@@ -101,8 +100,8 @@ export const createMigrationClaimCommand: CommandModule<
 
     const confirm = await askForConfirmation(
       `Are you sure you want to create a migration claim for: ${publicKey} with amount: ${amount} and stake start time: ${stakeStartTime} (${new Date(
-        stakeStartTime * 1000
-      ).toLocaleDateString()})?`
+        stakeStartTime * 1000,
+      ).toLocaleDateString()})?`,
     );
 
     if (!confirm) {
@@ -122,8 +121,8 @@ export const createMigrationClaimCommand: CommandModule<
     console.log(
       chalk.green.bold(
         "Migration claim created at",
-        migrationAccount.toString()
-      )
+        migrationAccount.toString(),
+      ),
     );
   },
 };

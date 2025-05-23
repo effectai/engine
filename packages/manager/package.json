@@ -19,6 +19,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.9.0",
   "dependencies": {
+    "ulid": "3.0.0",
     "@effectai/protocol-core": "workspace:*",
     "@effectai/zkp": "workspace:*",
     "@libp2p/interface": "^2.7.0",

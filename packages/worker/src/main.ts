@@ -91,6 +91,8 @@ export const createWorker = async ({
   const {
     createPayment,
     getPayments,
+    getPaginatedPayments,
+    countPaymentAmount,
     requestPayout,
     getPaymentsFromNonce,
     requestPaymentProof,
@@ -141,6 +143,10 @@ export const createWorker = async ({
         timestamp: Math.floor(Date.now() / 1000),
       },
     });
+
+    if (!response) {
+      throw new Error("Failed to identify manager");
+    }
 
     return response;
   };
@@ -194,6 +200,8 @@ export const createWorker = async ({
 
     getPayments,
     getPaymentsFromNonce,
+    getPaginatedPayments,
+    countPaymentAmount,
     requestPayout,
     requestPaymentProof,
 

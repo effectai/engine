@@ -13,7 +13,7 @@ export const useWorkerStore = defineStore("worker", () => {
     ref(null);
 
   const workerPeerId: Ref<null | string> = ref(null);
-
+  const isInitialized: Ref<boolean> = ref(false);
   const taskCounter: Ref<number> = ref(0);
   const paymentCounter: Ref<number> = ref(0);
 
@@ -48,6 +48,8 @@ export const useWorkerStore = defineStore("worker", () => {
     worker.value.events.addEventListener("payment:created", ({ detail }) => {
       paymentCounter.value += 1;
     });
+
+    isInitialized.value = true;
   };
 
   const privateKey = useLocalStorage("privateKey", null);

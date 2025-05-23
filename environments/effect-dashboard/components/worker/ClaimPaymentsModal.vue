@@ -95,7 +95,9 @@
 <script setup lang="ts">
 import { useMutation } from "@tanstack/vue-query";
 import type { PaymentRecord } from "@effectai/worker";
-const { account } = useAuth();
+
+const authStore = useAuthStore();
+const { account } = storeToRefs(authStore);
 
 const { useGetBalanceQuery } = useSolanaWallet();
 const { useGetClaimablePayments, useClaimPayments } = usePayments();

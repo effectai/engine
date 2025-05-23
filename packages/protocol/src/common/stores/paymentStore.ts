@@ -6,6 +6,7 @@ import {
   objectToBytes,
 } from "../../utils.js";
 import { Payment } from "../../../@generated/effect.protons.js";
+import { isValid } from "ulid";
 
 export interface PaymentEvent {
   type: string;
@@ -50,6 +51,24 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
     parse: (data) => parsePaymentRecord(data),
   });
 
+  const countAmount = async ({
+    peerId,
+  }: {
+    peerId: string;
+  }): Promise<number> => {
+    let amount = 0;
+    for await (const item of datastore.query({
+      prefix: `/payments/${peerId}/`,
+    })) {
+      amount += Number.parseFloat(
+        parsePaymentRecord(
+          new TextDecoder().decode(item.value),
+        ).state.amount.toString(),
+      );
+    }
+    return amount;
+  };
+
   const getFrom = async ({
     peerId,
     nonce,
@@ -81,16 +100,16 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
     peerId,
   }: {
     peerId: string;
-  }): Promise<number> => {
+  }): Promise<bigint> => {
     const prefix = `/payments/${peerId}/`;
 
-    const numericDesc = (a: Key, b: Key): -1 | 0 | 1 => {
-      const getNonce = (key: Key): number => {
-        const parts = key.toString().split("/");
-        const nonceStr = parts[parts.length - 1];
-        return Number.parseInt(nonceStr, 10) || 0;
-      };
+    const getNonce = (key: Key): bigint => {
+      const parts = key.toString().split("/");
+      const nonceStr = parts[parts.length - 1];
+      return BigInt(nonceStr);
+    };
 
+    const numericDesc = (a: Key, b: Key): -1 | 0 | 1 => {
       const aVal = getNonce(a);
       const bVal = getNonce(b);
 
@@ -100,14 +119,12 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
       return 0;
     };
 
-    let highestNonce = 0;
+    let highestNonce = 0n;
     for await (const key of datastore.queryKeys({
       prefix,
       orders: [numericDesc],
     })) {
-      const parts = key.toString().split("/");
-      const nonce = Number.parseInt(parts[parts.length - 1], 10);
-      return nonce;
+      return getNonce(key);
     }
 
     return highestNonce;
@@ -130,11 +147,30 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
       state: payment,
     };
 
-    const entityId = `${peerId}/${payment.nonce}`;
+    if (!isValid(payment.id)) {
+      throw new Error("Payment id is not a valid ulid");
+    }
 
+    const entityId = `${peerId}/${payment.nonce}`;
     await coreStore.put({ entityId, record });
 
     return record;
+  };
+
+  const getPaginatedPayments = async ({
+    perPage,
+    page,
+    prefix,
+  }: {
+    perPage: number;
+    page: number;
+    prefix?: string;
+  }) => {
+    return await coreStore.paginatedQuery({
+      prefix,
+      page,
+      perPage,
+    });
   };
 
   return {
@@ -142,6 +178,8 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
     create,
     getHighestNonce,
     getFrom,
+    countAmount,
+    getPaginatedPayments,
   };
 };
 

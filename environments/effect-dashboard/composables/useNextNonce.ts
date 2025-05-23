@@ -4,9 +4,10 @@ export const useNextNonce = (
   managerPublicKey: Ref<string | undefined>,
   managerPeerIdStr: Ref<string | undefined>,
 ) => {
-  const { worker } = storeToRefs(useWorkerStore());
+  const { worker, paymentCounter } = storeToRefs(useWorkerStore());
   const { useRecipientManagerDataAccount } = usePaymentProgram();
-  const { account } = useAuth();
+  const authStore = useAuthStore();
+  const { account } = storeToRefs(authStore);
 
   // const {
   //   data: recipientManagerDataAccount,
@@ -22,8 +23,9 @@ export const useNextNonce = (
     ),
     queryKey: computed(() => [
       "nextNonce",
-      account.value,
+      account,
       managerPublicKey.value,
+      paymentCounter,
     ]),
     queryFn: async () => {
       if (!worker.value || !managerPeerIdStr.value) {

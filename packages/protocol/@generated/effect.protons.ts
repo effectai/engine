@@ -240,10 +240,12 @@ export namespace EffectIdentifyRequest {
 export interface EffectIdentifyResponse {
   name?: string;
   version: string;
+  peer: Uint8Array;
   pubkey: string;
   batchSize: number;
   taskTimeout: number;
-  requiresAccessCode: boolean;
+  requiresRegistration: boolean;
+  isRegistered: boolean;
   isConnected: boolean;
 }
 
@@ -268,31 +270,41 @@ export namespace EffectIdentifyResponse {
             w.string(obj.version);
           }
 
-          if (obj.pubkey != null && obj.pubkey !== "") {
+          if (obj.peer != null && obj.peer.byteLength > 0) {
             w.uint32(26);
+            w.bytes(obj.peer);
+          }
+
+          if (obj.pubkey != null && obj.pubkey !== "") {
+            w.uint32(34);
             w.string(obj.pubkey);
           }
 
           if (obj.batchSize != null && obj.batchSize !== 0) {
-            w.uint32(32);
+            w.uint32(40);
             w.uint32(obj.batchSize);
           }
 
           if (obj.taskTimeout != null && obj.taskTimeout !== 0) {
-            w.uint32(40);
+            w.uint32(48);
             w.uint32(obj.taskTimeout);
           }
 
           if (
-            obj.requiresAccessCode != null &&
-            obj.requiresAccessCode !== false
+            obj.requiresRegistration != null &&
+            obj.requiresRegistration !== false
           ) {
-            w.uint32(48);
-            w.bool(obj.requiresAccessCode);
+            w.uint32(56);
+            w.bool(obj.requiresRegistration);
+          }
+
+          if (obj.isRegistered != null && obj.isRegistered !== false) {
+            w.uint32(64);
+            w.bool(obj.isRegistered);
           }
 
           if (obj.isConnected != null && obj.isConnected !== false) {
-            w.uint32(56);
+            w.uint32(72);
             w.bool(obj.isConnected);
           }
 
@@ -303,10 +315,12 @@ export namespace EffectIdentifyResponse {
         (reader, length, opts = {}) => {
           const obj: any = {
             version: "",
+            peer: uint8ArrayAlloc(0),
             pubkey: "",
             batchSize: 0,
             taskTimeout: 0,
-            requiresAccessCode: false,
+            requiresRegistration: false,
+            isRegistered: false,
             isConnected: false,
           };
 
@@ -325,22 +339,30 @@ export namespace EffectIdentifyResponse {
                 break;
               }
               case 3: {
-                obj.pubkey = reader.string();
+                obj.peer = reader.bytes();
                 break;
               }
               case 4: {
-                obj.batchSize = reader.uint32();
+                obj.pubkey = reader.string();
                 break;
               }
               case 5: {
-                obj.taskTimeout = reader.uint32();
+                obj.batchSize = reader.uint32();
                 break;
               }
               case 6: {
-                obj.requiresAccessCode = reader.bool();
+                obj.taskTimeout = reader.uint32();
                 break;
               }
               case 7: {
+                obj.requiresRegistration = reader.bool();
+                break;
+              }
+              case 8: {
+                obj.isRegistered = reader.bool();
+                break;
+              }
+              case 9: {
                 obj.isConnected = reader.bool();
                 break;
               }
@@ -469,6 +491,94 @@ export namespace RequestToWork {
   };
 }
 
+export interface RequestToWorkResponse {
+  timestamp: number;
+  pubkey: string;
+  peer: string;
+}
+
+export namespace RequestToWorkResponse {
+  let _codec: Codec<RequestToWorkResponse>;
+
+  export const codec = (): Codec<RequestToWorkResponse> => {
+    if (_codec == null) {
+      _codec = message<RequestToWorkResponse>(
+        (obj, w, opts = {}) => {
+          if (opts.lengthDelimited !== false) {
+            w.fork();
+          }
+
+          if (obj.timestamp != null && obj.timestamp !== 0) {
+            w.uint32(8);
+            w.uint32(obj.timestamp);
+          }
+
+          if (obj.pubkey != null && obj.pubkey !== "") {
+            w.uint32(18);
+            w.string(obj.pubkey);
+          }
+
+          if (obj.peer != null && obj.peer !== "") {
+            w.uint32(26);
+            w.string(obj.peer);
+          }
+
+          if (opts.lengthDelimited !== false) {
+            w.ldelim();
+          }
+        },
+        (reader, length, opts = {}) => {
+          const obj: any = {
+            timestamp: 0,
+            pubkey: "",
+            peer: "",
+          };
+
+          const end = length == null ? reader.len : reader.pos + length;
+
+          while (reader.pos < end) {
+            const tag = reader.uint32();
+
+            switch (tag >>> 3) {
+              case 1: {
+                obj.timestamp = reader.uint32();
+                break;
+              }
+              case 2: {
+                obj.pubkey = reader.string();
+                break;
+              }
+              case 3: {
+                obj.peer = reader.string();
+                break;
+              }
+              default: {
+                reader.skipType(tag & 7);
+                break;
+              }
+            }
+          }
+
+          return obj;
+        },
+      );
+    }
+
+    return _codec;
+  };
+
+  export const encode = (obj: Partial<RequestToWorkResponse>): Uint8Array => {
+    return encodeMessage(obj, RequestToWorkResponse.codec());
+  };
+
+  export const decode = (
+    buf: Uint8Array | Uint8ArrayList,
+    opts?: DecodeOptions<RequestToWorkResponse>,
+  ): RequestToWorkResponse => {
+    return decodeMessage(buf, RequestToWorkResponse.codec(), opts);
+  };
+}
+
 export interface EffectProtocolMessage {
   task?: Task;
   taskAccepted?: TaskAccepted;
@@ -483,6 +593,7 @@ export interface EffectProtocolMessage {
   error?: EffectError;
   ack?: EffectAcknowledgment;
   requestToWork?: RequestToWork;
+  requestToWorkResponse?: RequestToWorkResponse;
   identifyRequest?: EffectIdentifyRequest;
   identifyResponse?: EffectIdentifyResponse;
 }
@@ -563,13 +674,18 @@ export namespace EffectProtocolMessage {
             RequestToWork.codec().encode(obj.requestToWork, w);
           }
 
-          if (obj.identifyRequest != null) {
+          if (obj.requestToWorkResponse != null) {
             w.uint32(114);
+            RequestToWorkResponse.codec().encode(obj.requestToWorkResponse, w);
+          }
+
+          if (obj.identifyRequest != null) {
+            w.uint32(122);
             EffectIdentifyRequest.codec().encode(obj.identifyRequest, w);
           }
 
           if (obj.identifyResponse != null) {
-            w.uint32(122);
+            w.uint32(130);
             EffectIdentifyResponse.codec().encode(obj.identifyResponse, w);
           }
 
@@ -709,6 +825,17 @@ export namespace EffectProtocolMessage {
                 break;
               }
               case 14: {
+                obj.requestToWorkResponse =
+                  RequestToWorkResponse.codec().decode(
+                    reader,
+                    reader.uint32(),
+                    {
+                      limits: opts.limits?.requestToWorkResponse,
+                    },
+                  );
+                break;
+              }
+              case 15: {
                 obj.identifyRequest = EffectIdentifyRequest.codec().decode(
                   reader,
                   reader.uint32(),
@@ -718,7 +845,7 @@ export namespace EffectProtocolMessage {
                 );
                 break;
               }
-              case 15: {
+              case 16: {
                 obj.identifyResponse = EffectIdentifyResponse.codec().decode(
                   reader,
                   reader.uint32(),
@@ -870,6 +997,7 @@ export namespace PaymentMessage {
 }
 
 export interface Payment {
+  id: string;
   amount: bigint;
   recipient: string;
   paymentAccount: string;
@@ -887,6 +1015,11 @@ export namespace Payment {
         (obj, w, opts = {}) => {
           if (opts.lengthDelimited !== false) {
             w.fork();
+          }
+
+          if (obj.id != null && obj.id !== "") {
+            w.uint32(10);
+            w.string(obj.id);
           }
 
           if (obj.amount != null && obj.amount !== 0n) {
@@ -925,6 +1058,7 @@ export namespace Payment {
         },
         (reader, length, opts = {}) => {
           const obj: any = {
+            id: "",
             amount: 0n,
             recipient: "",
             paymentAccount: "",
@@ -937,6 +1071,10 @@ export namespace Payment {
             const tag = reader.uint32();
 
             switch (tag >>> 3) {
+              case 1: {
+                obj.id = reader.string();
+                break;
+              }
               case 2: {
                 obj.amount = reader.uint64();
                 break;

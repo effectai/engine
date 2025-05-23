@@ -72,74 +72,91 @@
     createApp({
       data() {
         return {
-          title: "Effect AI Sentence Creator",
+          title: "Effect AI Sentence Reader",
           recorder: null,      // MediaRecorder instance
           audioChunks: [],     // Array to hold the audio chunks
-          audioUrl: "",        // The URL of the recorded audio
-          isRecording: false,  // Boolean to track if recording is in progress
-          sentence: ""
+          audioUrl: "",        
+          isRecording: false,  
+          sentence: "${sentence}",
+          audioBlob: "",
+          ipfsCID: "",
+          ipfsHOST: "${ipfsHOST}",
         };
       },
       computed: {},
       created() {},
-      async mounted() {
-
-        // this.sentence = await fetch('https://cors-anywhere.herokuapp.com/https://commonvoice.mozilla.org/api/v1/en/sentences?count=1', {
-        //   headers: {
-        //     "Origin": "http://localhost", // or any string
-        //     "X-Requested-With": "XMLHttpRequest"
-        //   },
-        // });
-        // const json = await this.sentence.json();
-        // console.log(json);
-
-        this.sentence = "Overall, living in Oxford as a student has been an enriching and fulfilling experience."
-        
-
-      },
+      mounted() {},
       methods: {
         playAudio(){
-          const audio = this.$refs.audioPlayer; // Access the hidden audio element
-          audio.play(); // Play the audio
+          const audio = this.$refs.audioPlayer; 
+          audio.play(); 
         },
         stopAudio(){
-          const audio = this.$refs.audioPlayer; // Access the hidden audio element
-          audio.stop(); // Play the audio
+          const audio = this.$refs.audioPlayer; 
+          audio.stop(); 
         },
         async startRecording() {
-          // Request microphone access
+         
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
           this.recorder = new MediaRecorder(stream)
-          this.audioChunks = [] // Clear any previous recordings
+          this.audioChunks = [] 
 
-          // Collect audio data chunks
+          
           this.recorder.ondataavailable = (event) => {
             this.audioChunks.push(event.data)
           }
 
-          // When recording stops, process the recorded audio
+         
           this.recorder.onstop = () => {
-            const audioBlob = new Blob(this.audioChunks, { type: "audio/wav" })
-            this.audioUrl = URL.createObjectURL(audioBlob) // Create URL for playback
+            this.audioBlob = new Blob(this.audioChunks, { type: "audio/wav" })
+            this.audioUrl = URL.createObjectURL(this.audioBlob) 
           }
 
-          this.recorder.start() // Start recording
-          this.isRecording = true // Set recording status
+          this.recorder.start()
+          this.isRecording = true 
         },
         stopRecording() {
           if (this.recorder && this.recorder.state === "recording") {
-            this.recorder.stop() // Stop recording
-            this.isRecording = false // Set recording status to false
+            this.recorder.stop() 
+            this.isRecording = false 
           }
         },
+
+        async storeRecording(){
+          const file = new File([this.audioBlob], "recording.wav", { type: "audio/wav" });
+
+          const formData = new FormData();
+
+          formData.append('path', file);
+          try {
+            const response = await fetch(this.ipfsHOST, {
+              method: 'POST',
+              body: formData,
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`Upload failed: ${errorText}`);
+            }
+
+            const result = await response.json();
+            this.ipfsCID = result.Hash;
+
+          } catch (error) {
+            console.error('Error uploading to IPFS:', error);
+          }
+        },
+
         async uploadAndSubmit() {
           this.btnLoading = true;
           try {
+            await this.storeRecording();
             parent.postMessage(
               {
                 task: "submit",
                 values: {
-                  sentence: this.tmpSentence,
+                  sentence: this.sentence,
+                  ipfsCID: this.ipfsCID,
                 },
               },
               "*"

@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center justify-center">
-    <div v-if="authState.isLoading" class="w-full max-w-md mt-10 space-y-8 p-8">
+    <div v-if="authStore.isLoading" class="w-full max-w-md mt-10 space-y-8 p-8">
       <p class="text-center text-gray-400 text-2xl flex items-center gap-2">
         <UIcon
           name="i-heroicons-arrow-path-20-solid"
@@ -19,7 +19,7 @@
         </p>
       </div>
 
-      <div class="space-y-4">
+      <div class="space-y-4" v-if="!option">
         <div class="flex flex-wrap gap-2 text-center">
           <UButton
             block
@@ -76,12 +76,15 @@
             color="white"
             variant="outline"
             class="justify-start gap-2"
-            @click="navigateTo('/worker/login/with-private-key')"
+            @click="option = 'privateKey'"
           >
             <UIcon name="material-symbols:key" />
             Private Key
           </UButton>
         </div>
+      </div>
+      <div v-else>
+        <LoginWithPrivateKey />
       </div>
     </div>
   </div>
@@ -89,38 +92,43 @@
 <script setup lang="ts">
 import { WALLET_ADAPTERS } from "@web3auth/base";
 
-const { web3auth, authState, privateKey, init } = useAuth();
-
-onMounted(() => {
-  init();
-});
-
 definePageMeta({
   layout: "worker",
+  middleware: "auth",
 });
 
-watchEffect(() => {
-  if (!privateKey.value) {
-    return;
-  }
+const authStore = useAuthStore();
+const { web3auth } = useWeb3Auth();
+const option: Ref<string | null> = ref(null);
 
-  navigateTo("/worker/connect");
+const route = useRoute();
+const router = useRouter();
+
+// After successful login:
+watchEffect(async () => {
+  if (authStore.isAuthenticated) {
+    const returnTo = route.query.returnTo;
+    const redirectPath = returnTo
+      ? decodeURIComponent(returnTo as string)
+      : "/worker/connect";
+    await router.push(redirectPath);
+  }
 });
 
 const loginWithGoogle = async () => {
-  await web3auth.value.connectTo(WALLET_ADAPTERS.AUTH, {
+  await web3auth.value?.connectTo(WALLET_ADAPTERS.AUTH, {
     loginProvider: "google",
   });
 };
 
 const loginWithGithub = async () => {
-  await web3auth.value.connectTo(WALLET_ADAPTERS.AUTH, {
+  await web3auth.value?.connectTo(WALLET_ADAPTERS.AUTH, {
     loginProvider: "github",
   });
 };
 
 const loginWithDiscord = async () => {
-  await web3auth.value.connectTo(WALLET_ADAPTERS.AUTH, {
+  await web3auth.value?.connectTo(WALLET_ADAPTERS.AUTH, {
     loginProvider: "discord",
   });
 };

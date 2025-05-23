@@ -45,14 +45,11 @@ export async function createEffectEntity<
     protocol: config.protocol,
   };
 
-  // Initialize all transports
   await Promise.all(config.transports.map((t) => t.initialize(entity)));
 
-  // Initialize transports and merge methods
   for (const transport of config.transports) {
     entity.transports.push(transport);
 
-    // Merge send methods into the entity
     const methods = transport.getMethods();
     Object.assign(entity, methods);
   }

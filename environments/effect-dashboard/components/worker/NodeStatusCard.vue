@@ -73,18 +73,19 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 const sessionStore = useSessionStore();
-const { managerPeerId, latency } = storeToRefs(sessionStore);
+const { managerPeerId } = storeToRefs(sessionStore);
 const { useGetNonce } = sessionStore.useActiveSession();
 
 const workerStore = useWorkerStore();
 const { workerPeerId } = storeToRefs(workerStore);
 
 const { data: nonces } = useGetNonce();
+const { data: latency } = usePing();
 
 const isCopied = ref(false)
 
 const disconnect = async () => {
-  navigateTo("/worker/login");
+  navigateTo("/worker/connect");
 };
 
 function copyToClipboard(text: string) {

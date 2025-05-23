@@ -356,25 +356,21 @@ export function createTaskManager({
     if (page < 1) page = 1;
     if (perPage < 1) perPage = 10;
 
-    // Create query with filters
     const query = {
       prefix: `/tasks/${status}/`,
       offset: (page - 1) * perPage,
       limit: perPage,
     };
 
-    // Execute query
     const results: any[] = [];
     for await (const result of taskStore.datastore.query(query)) {
       results.push(result);
     }
 
-    // Get total count (this might be expensive for large datasets)
     let total = 0;
     const countQuery = {
       prefix: `/tasks/${status}/`,
     };
-
     for await (const _ of taskStore.datastore.queryKeys(countQuery)) {
       total++;
     }

@@ -1,5 +1,5 @@
 import { NotFoundError } from "@libp2p/interface";
-import { Datastore, Key, QueryFilter } from "interface-datastore";
+import { Datastore, Key, QueryFilter, QueryOrder } from "interface-datastore";
 
 export interface BaseEvent {
   type: string;
@@ -166,6 +166,66 @@ export const createEntityStore = <
     }
   };
 
+  const paginatedQuery = async ({
+    prefix,
+    page,
+    perPage = 25,
+    orders,
+  }: {
+    page: number;
+    perPage?: number;
+    prefix?: string;
+    orders?: QueryOrder[];
+  }): Promise<{
+    items: EntityRecord[];
+    total: number;
+    page: number;
+    perPage: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  }> => {
+    const query = {
+      prefix,
+      offset: (page - 1) * perPage,
+      limit: perPage,
+      orders,
+    };
+
+    const results: any[] = [];
+    for await (const result of datastore.query(query)) {
+      results.push(result);
+    }
+
+    let total = 0;
+    const countQuery = {
+      prefix,
+    };
+
+    for await (const _ of datastore.queryKeys(countQuery)) {
+      total++;
+    }
+
+    const items = results
+      .map((result) => {
+        try {
+          return parse(new TextDecoder().decode(result.value));
+        } catch (err) {
+          console.error("Failed to parse task", err);
+          return null;
+        }
+      })
+      .filter(Boolean) as EntityRecord[];
+
+    return {
+      items,
+      total,
+      page,
+      perPage,
+      hasNext: page * perPage < total,
+      hasPrevious: page > 1,
+    };
+  };
+
   return {
     has,
     get,
@@ -177,5 +237,6 @@ export const createEntityStore = <
     datastore,
     getSafe,
     getMany,
+    paginatedQuery,
   };
 };

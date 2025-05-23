@@ -1,14 +1,12 @@
-import { multiaddr, type Multiaddr } from "@multiformats/multiaddr";
+import { multiaddr, type Multiaddr } from "@effectai/protocol";
 import { PublicKey } from "@solana/web3.js";
-import { useMutation } from "@tanstack/vue-query";
 
 type SessionPayload = {
   account: string;
   connectedOn: number;
-  managerPeerId: string;
   managerMultiAddress: string;
   managerPublicKey: string;
-  latency?: number;
+  managerPeerId: string;
   accessCode?: string;
 };
 
@@ -18,7 +16,6 @@ export const useSessionStore = defineStore("session", () => {
   const managerPeerId: Ref<string | null> = ref(null);
   const managerPublicKey: Ref<PublicKey | null> = ref(null);
   const managerMultiAddress: Ref<string | null> = ref(null);
-  const latency: Ref<number | null> = ref(null);
   const accessCode = ref<string | undefined>(undefined);
 
   const setSession = (payload: SessionPayload) => {
@@ -56,47 +53,17 @@ export const useSessionStore = defineStore("session", () => {
     };
   };
 
-  const useConnect = () =>
-    useMutation({
-      onSuccess: (data, opts) => {
-        setSession({
-          account: opts.account,
-          connectedOn: Math.floor(Date.now() / 1000),
-          managerPeerId: opts.managerPeerId,
-          managerPublicKey: opts.managerPublicKey,
-          accessCode: opts.accessCode,
-          managerMultiAddress: opts.managerMultiAddress,
-        });
-      },
-      mutationFn: async ({
-        account,
-        managerMultiAddress,
-        managerPublicKey,
-        accessCode,
-        nextNonce,
-      }: {
-        account: string;
-        managerMultiAddress: string;
-        managerPeerId: string;
-        managerPublicKey: string;
-        nextNonce: bigint;
-        accessCode?: string;
-      }): Promise<Awaited<ReturnType<typeof connect>>> => {
-        return await connect(
-          account,
-          managerMultiAddress,
-          nextNonce,
-          accessCode,
-        );
-      },
-    });
-
-  const connect = async (
-    account: string,
-    managerMultiAddress: string,
-    currentNonce: bigint,
-    accessCode?: string,
-  ) => {
+  const connect = async ({
+    managerMultiAddress,
+    account,
+    currentNonce,
+    accessCode,
+  }: {
+    managerMultiAddress: Multiaddr;
+    account: string;
+    currentNonce: bigint;
+    accessCode?: string;
+  }) => {
     const workerStore = useWorkerStore();
     const { worker } = storeToRefs(workerStore);
 
@@ -104,8 +71,14 @@ export const useSessionStore = defineStore("session", () => {
       throw new Error("Worker not initialized");
     }
 
+    const managerPeerId = managerMultiAddress.getPeerId();
+
+    if (!managerPeerId) {
+      throw new Error("Manager multiaddress is not valid");
+    }
+
     const result = await worker.value.connect(
-      multiaddr(managerMultiAddress),
+      managerMultiAddress,
       account,
       currentNonce,
       accessCode,
@@ -115,93 +88,46 @@ export const useSessionStore = defineStore("session", () => {
       throw new Error("Failed to connect to manager");
     }
 
+    setSession({
+      connectedOn: Math.floor(Date.now() / 1000),
+      account,
+      accessCode,
+      managerPeerId: result.peer,
+      managerPublicKey: result.pubkey,
+      managerMultiAddress: managerMultiAddress.toString(),
+    });
+
     return result;
   };
 
-  const useDisconnect = () =>
-    useMutation({
-      mutationFn: async () => {
-        const workerStore = useWorkerStore();
-        const { worker } = storeToRefs(workerStore);
+  const disconnect = async () => {
+    const workerStore = useWorkerStore();
+    const { worker } = storeToRefs(workerStore);
 
-        if (!worker.value) {
-          throw new Error("Worker not initialized");
-        }
-
-        await worker.value.stop();
-        await workerStore.destroy();
-
-        account.value = null;
-        connectedOn.value = null;
-        managerPeerId.value = null;
-        managerPublicKey.value = null;
-        accessCode.value = undefined;
-      },
-    });
-
-  const config = useRuntimeConfig();
-  const payoutInterval = Number.parseInt(config.public.PAYOUT_INTERVAL);
-
-  const payoutIntervalControls = useIntervalFn(
-    async () => {
-      const workerStore = useWorkerStore();
-      const { worker } = storeToRefs(workerStore);
-
-      if (!worker.value) {
-        throw new Error("Worker not initialized");
-      }
-
-      await worker.value.requestPayout({
-        managerPeerIdStr: managerPeerId.value,
-      });
-    },
-    payoutInterval,
-    {
-      immediate: false,
-    },
-  );
-
-  const latencyIntervalControls = useIntervalFn(
-    async () => {
-      const workerStore = useWorkerStore();
-      const { worker } = storeToRefs(workerStore);
-
-      if (!worker.value) {
-        throw new Error("Worker not initialized");
-      }
-
-      if (!managerMultiAddress.value) {
-        console.warn("Manager multiaddress is not set");
-        return;
-      }
-
-      latency.value = await worker.value.ping(
-        multiaddr(managerMultiAddress.value),
-      );
-    },
-    5000,
-    {
-      immediate: false,
-    },
-  );
-
-  watchEffect(() => {
-    if (!connectedOn.value) {
-      return;
+    if (!worker.value) {
+      throw new Error("Worker not initialized");
     }
 
-    latencyIntervalControls.resume();
-    payoutIntervalControls.resume();
-  });
+    await worker.value.stop();
+    await workerStore.destroy();
+
+    account.value = null;
+    connectedOn.value = null;
+    managerPeerId.value = null;
+    managerPublicKey.value = null;
+    accessCode.value = undefined;
+  };
 
   return {
     connectedOn,
     account,
     managerPeerId,
     managerPublicKey,
-    latency,
+    managerMultiAddress,
+
     useActiveSession,
-    useConnect,
-    useDisconnect,
+
+    connect,
+    disconnect,
   };
 });
