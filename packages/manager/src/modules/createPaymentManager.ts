@@ -14,6 +14,7 @@ import { buildEddsa, buildPoseidon, groth16 } from "@effectai/zkp";
 import { PAYMENT_BATCH_SIZE } from "../consts.js";
 import type { createWorkerManager } from "./createWorkerManager";
 import type { ManagerSettings } from "../main.js";
+import { ulid } from "ulid";
 
 export async function createPaymentManager({
   paymentStore,
@@ -185,6 +186,7 @@ export async function createPaymentManager({
 
     const payment = Payment.decode(
       Payment.encode({
+        id: ulid(),
         amount,
         recipient: peer.state.recipient,
         paymentAccount: paymentAccount.toBase58(),
@@ -221,7 +223,7 @@ export async function createPaymentManager({
         events: [
           {
             type: "payment:created",
-            timestamp: Date.now(),
+            timestamp: Math.floor(Date.now() / 1000),
           },
         ],
       },

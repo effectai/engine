@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/no-unnecessary-boolean-literal-compare */
 /* eslint-disable @typescript-eslint/no-empty-interface */
-// @ts-nocheck
+//@ts-nocheck
 
 import {
   type Codec,
@@ -997,6 +997,7 @@ export namespace PaymentMessage {
 }
 
 export interface Payment {
+  id: string;
   amount: bigint;
   recipient: string;
   paymentAccount: string;
@@ -1014,6 +1015,11 @@ export namespace Payment {
         (obj, w, opts = {}) => {
           if (opts.lengthDelimited !== false) {
             w.fork();
+          }
+
+          if (obj.id != null && obj.id !== "") {
+            w.uint32(10);
+            w.string(obj.id);
           }
 
           if (obj.amount != null && obj.amount !== 0n) {
@@ -1052,6 +1058,7 @@ export namespace Payment {
         },
         (reader, length, opts = {}) => {
           const obj: any = {
+            id: "",
             amount: 0n,
             recipient: "",
             paymentAccount: "",
@@ -1064,6 +1071,10 @@ export namespace Payment {
             const tag = reader.uint32();
 
             switch (tag >>> 3) {
+              case 1: {
+                obj.id = reader.string();
+                break;
+              }
               case 2: {
                 obj.amount = reader.uint64();
                 break;

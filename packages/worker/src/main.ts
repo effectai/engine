@@ -91,6 +91,8 @@ export const createWorker = async ({
   const {
     createPayment,
     getPayments,
+    getPaginatedPayments,
+    countPaymentAmount,
     requestPayout,
     getPaymentsFromNonce,
     requestPaymentProof,
@@ -198,6 +200,8 @@ export const createWorker = async ({
 
     getPayments,
     getPaymentsFromNonce,
+    getPaginatedPayments,
+    countPaymentAmount,
     requestPayout,
     requestPaymentProof,
 
