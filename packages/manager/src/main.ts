@@ -4,6 +4,8 @@ import {
   TypedEventEmitter,
   type PrivateKey,
   createLogger,
+  PROTOCOL_VERSION,
+  PROTOCOL_NAME,
 } from "@effectai/protocol-core";
 
 import { createPaymentManager } from "./modules/createPaymentManager.js";
@@ -15,7 +17,7 @@ import { createWorkerManager } from "./modules/createWorkerManager.js";
 import { bigIntToBytes32, compressBabyJubJubPubKey } from "./utils.js";
 
 import { PublicKey } from "@solana/web3.js";
-import { PAYMENT_BATCH_SIZE, TASK_ACCEPTANCE_TIME, VERSION } from "./consts.js";
+import { PAYMENT_BATCH_SIZE, TASK_ACCEPTANCE_TIME } from "./consts.js";
 
 import type { Request, Response, NextFunction } from "express";
 
@@ -77,8 +79,8 @@ export const createManagerEntity = async ({
 }) => {
   return await createEffectEntity({
     protocol: {
-      name: "effectai",
-      version: VERSION,
+      name: PROTOCOL_NAME,
+      version: PROTOCOL_VERSION,
       scheme: EffectProtocolMessage,
     },
     transports: [
@@ -104,6 +106,8 @@ export const createManager = async ({
   privateKey: PrivateKey;
   settings: Partial<ManagerSettings>;
 }) => {
+  const startTime = Date.now();
+  let cycle = 0;
   const logger = createLogger();
 
   const managerSettings: ManagerSettings = {
@@ -192,7 +196,7 @@ export const createManager = async ({
           pubkey: solanaPublicKey.toBase58(),
           batchSize: PAYMENT_BATCH_SIZE,
           taskTimeout: TASK_ACCEPTANCE_TIME,
-          version: VERSION,
+          version: PROTOCOL_VERSION,
           requiresRegistration: managerSettings.requireAccessCodes,
           isRegistered: !!worker,
           isConnected,
@@ -297,9 +301,11 @@ export const createManager = async ({
         : managerSettings.announce;
 
     res.json({
-      status: "running",
       peerId: entity.getPeerId().toString(),
-      version: VERSION,
+      version: PROTOCOL_VERSION,
+      isStarted,
+      startTime,
+      cycle,
       requireAccessCodes: managerSettings.requireAccessCodes,
       announcedAddresses,
       publicKey: new PublicKey(compressedPubKey),
@@ -444,39 +450,18 @@ export const createManager = async ({
   if (managerSettings.autoManage) {
     await start();
 
-    const MANAGEMENT_INTERVAL = 5000;
-    let isRunning = false;
-    let lastRunTime = 0;
-
-    const runManagementCycle = async () => {
-      if (isStarted === false) {
-        return;
-      }
-
-      if (isRunning) {
-        console.log("Management cycle skipped - already running");
-        return;
-      }
-
-      try {
-        isRunning = true;
-        lastRunTime = Date.now();
-        await taskManager.manageTasks();
-      } catch (err) {
-        console.error("Management cycle error:", err);
-      } finally {
-        isRunning = false;
-        const elapsed = Date.now() - lastRunTime;
-        const nextRun = Math.max(0, MANAGEMENT_INTERVAL - elapsed);
-        setTimeout(runManagementCycle, nextRun);
-      }
-    };
-
-    runManagementCycle();
+    while (true) {
+      cycle++;
+      await taskManager.manageTasks();
+    }
   }
 
-  // Register event listeners
+  entity.node.addEventListener("peer:connect", (event) => {
+    console.log("peer connect", event.detail.toString());
+  });
+
   entity.node.addEventListener("peer:disconnect", (event) => {
+    console.log("peer disconnect", event.detail.toString());
     workerManager.disconnectWorker(event.detail.toString());
   });
 

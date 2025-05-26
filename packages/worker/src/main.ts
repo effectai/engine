@@ -3,7 +3,7 @@ import { createPaymentWorker } from "./modules/createPaymentWorker.js";
 import { createTaskWorker } from "./modules/createTaskWorker.js";
 import { createWorkerTaskStore } from "./stores/workerTaskStore.js";
 import { createTemplateWorker } from "./modules/createTemplateWorker.js";
-import type { PingService } from "@libp2p/ping";
+// import type { PingService } from "@libp2p/ping";
 
 import {
   Libp2pTransport,
@@ -21,6 +21,8 @@ import {
   createTemplateStore,
   generateKeyPairFromSeed,
   circuitRelayTransport,
+  PROTOCOL_NAME,
+  PROTOCOL_VERSION,
 } from "@effectai/protocol-core";
 
 export interface WorkerEvents {
@@ -41,8 +43,8 @@ export const createWorkerEntity = async ({
 }) => {
   return await createEffectEntity({
     protocol: {
-      name: "effectai",
-      version: "1.0.0",
+      name: PROTOCOL_NAME,
+      version: PROTOCOL_VERSION,
       scheme: EffectProtocolMessage,
     },
     transports: [
@@ -174,9 +176,10 @@ export const createWorker = async ({
     return response;
   };
 
-  const ping = async (manager: Multiaddr) => {
-    const pingService = entity.node.services.ping as PingService;
-    return await pingService.ping(manager);
+  const ping = async (_manager: Multiaddr) => {
+    // const pingService = entity.node.services.ping as PingService;
+    return 5;
+    // return await pingService.ping(manager);
   };
 
   if (autoExpire) {

@@ -186,7 +186,6 @@ export const createWorkerManager = ({
   return {
     workerStore,
     workerQueue,
-
     all,
     selectWorker,
     getWorker,
@@ -218,8 +217,10 @@ const createWorkerQueue = () => {
       if (index !== -1) {
         const worker = queue.splice(index, 1)[0];
         queue.push(worker);
+
         return worker;
       }
+
       return undefined;
     }
 
