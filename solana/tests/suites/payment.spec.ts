@@ -36,8 +36,8 @@ describe("Payment Program", async () => {
       .rpc();
   });
 
-  it("can claim a payment", async () => {
-    const { mint, ata } = await setup({ payer, provider, amount: 10_000_000 });
+  it("can claim multiple proofs", async () => {
+    const { mint, ata } = await setup({ payer, provider, amount: 100_000_000 });
 
     const paymentAccount = anchor.web3.Keypair.generate();
 
@@ -55,66 +55,119 @@ describe("Payment Program", async () => {
     );
     const solanaPubKey = new PublicKey(compressedPubKey);
 
-    const batchSize = 7;
-    const maxBatchSize = 40;
+    const [recipientManagerDataAccount] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [payer.publicKey.toBuffer(), solanaPubKey.toBuffer()],
+        program.programId,
+      );
 
-    const nonces = Array.from({ length: batchSize }, (value, key) =>
-      int2hex(key + 1),
-    );
+    const recentSlot = await provider.connection.getSlot("finalized");
+    const [lookupTableInst, lookupTableAddress] =
+      anchor.web3.AddressLookupTableProgram.createLookupTable({
+        authority: payer.publicKey,
+        payer: payer.publicKey,
+        recentSlot,
+      });
 
-    const sigs = nonces.map((n) =>
-      eddsa.signPoseidon(
-        prvKey,
-        poseidon([
-          int2hex(n),
-          int2hex(payer.publicKey.toBuffer().readBigUInt64BE()),
-          int2hex(1_000_000),
-        ]),
-      ),
-    );
-
-    const padArray = <T>(arr: T[], defaultValue: T): T[] =>
-      arr
-        .concat(Array(maxBatchSize - arr.length).fill(defaultValue))
-        .slice(0, maxBatchSize);
-
-    const enabled = Array(maxBatchSize).fill(0);
-    enabled.fill(1, 0, batchSize);
-
-    const lastNonce = Math.max(...nonces.map((n) => Number(n)));
-
-    const proofInputs = {
-      receiver: int2hex(payer.publicKey.toBuffer().readBigUInt64BE()),
-      pubX: eddsa.F.toObject(pubKey[0]),
-      pubY: eddsa.F.toObject(pubKey[1]),
-      nonce: padArray(
-        nonces.map((p) => int2hex(Number(p))),
-        int2hex(lastNonce),
-      ),
-      enabled,
-      payAmount: padArray(Array(batchSize).fill(int2hex(1_000_000)), 0),
-      R8x: padArray(
-        sigs.map((s) => eddsa.F.toObject(s.R8[0])),
-        0,
-      ),
-      R8y: padArray(
-        sigs.map((s) => eddsa.F.toObject(s.R8[1])),
-        0,
-      ),
-      S: padArray(
-        sigs.map((s) => s.S),
-        0,
-      ),
-    };
-
-    const { proof, publicSignals } = await snarkjs.groth16.fullProve(
-      proofInputs,
-      "../packages/zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
-      "../packages/zkp/circuits/PaymentBatch_0001.zkey",
-    );
+    const extendInstruction =
+      anchor.web3.AddressLookupTableProgram.extendLookupTable({
+        payer: payer.publicKey,
+        authority: payer.publicKey,
+        lookupTable: lookupTableAddress,
+        addresses: [
+          recipientManagerDataAccount,
+          paymentAccount.publicKey,
+          mint,
+          ata,
+        ],
+      });
 
     await program.methods
-      .createPaymentPool(solanaPubKey, new anchor.BN(10_000_000))
+      .init(solanaPubKey)
+      .postInstructions([lookupTableInst, extendInstruction])
+      .accounts({
+        mint,
+      })
+      .rpc();
+
+    const lookupTableAccount = (
+      await provider.connection.getAddressLookupTable(lookupTableAddress)
+    ).value;
+
+    if (!lookupTableAccount) {
+      throw new Error("Lookup table not found");
+    }
+
+    const batchSize = 7;
+    const maxBatchSize = 40;
+    const proofs = 3;
+
+    const proofResults = [];
+
+    for (let i = 0; i < proofs; i++) {
+      const nonces = Array.from({ length: batchSize }, (value, key) =>
+        int2hex(i * batchSize + key + 1),
+      );
+
+      const sigs = nonces.map((n) =>
+        eddsa.signPoseidon(
+          prvKey,
+          poseidon([
+            int2hex(n),
+            int2hex(payer.publicKey.toBuffer().readBigUInt64BE()),
+            int2hex(1_000_000),
+          ]),
+        ),
+      );
+
+      const padArray = <T>(arr: T[], defaultValue: T): T[] =>
+        arr
+          .concat(Array(maxBatchSize - arr.length).fill(defaultValue))
+          .slice(0, maxBatchSize);
+
+      const enabled = Array(maxBatchSize).fill(0);
+      enabled.fill(1, 0, batchSize);
+
+      const lastNonce = Math.max(...nonces.map((n) => Number(n)));
+
+      const proofInputs = {
+        receiver: int2hex(payer.publicKey.toBuffer().readBigUInt64BE()),
+        pubX: eddsa.F.toObject(pubKey[0]),
+        pubY: eddsa.F.toObject(pubKey[1]),
+        nonce: padArray(
+          nonces.map((p) => int2hex(Number(p))),
+          int2hex(lastNonce),
+        ),
+        enabled,
+        payAmount: padArray(Array(batchSize).fill(int2hex(1_000_000)), 0),
+        R8x: padArray(
+          sigs.map((s) => eddsa.F.toObject(s.R8[0])),
+          0,
+        ),
+        R8y: padArray(
+          sigs.map((s) => eddsa.F.toObject(s.R8[1])),
+          0,
+        ),
+        S: padArray(
+          sigs.map((s) => s.S),
+          0,
+        ),
+      };
+
+      const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+        proofInputs,
+        "../packages/zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
+        "../packages/zkp/circuits/PaymentBatch_0001.zkey",
+      );
+
+      proofResults.push({
+        proof,
+        publicSignals,
+      });
+    }
+
+    await program.methods
+      .createPaymentPool(solanaPubKey, new anchor.BN(100_000_000))
       .accounts({
         paymentAccount: paymentAccount.publicKey,
         mint,
@@ -123,28 +176,22 @@ describe("Payment Program", async () => {
       .signers([paymentAccount])
       .rpc();
 
-    // Ensure recipient paymentDataAccount exists
-    const [recipientManagerDataAccount] =
-      await anchor.web3.PublicKey.findProgramAddress(
-        [payer.publicKey.toBuffer(), solanaPubKey.toBuffer()],
-        program.programId,
-      );
+    const modifyCuIx = anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({
+      units: 400_000,
+    });
 
-    await program.methods
-      .init(solanaPubKey)
-      .accounts({
-        mint,
-      })
-      .rpc();
-
-    const tx = await program.methods
-      .claim(
-        new BN(publicSignals[0]),
-        new BN(publicSignals[1]),
-        new BN(publicSignals[2]),
+    const ix = await program.methods
+      .claimProofs(
         bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
         bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
-        Array.from(convertProofToBytes(proof)),
+        [
+          ...proofResults.map(({ proof, publicSignals }) => ({
+            minNonce: Number(publicSignals[0]),
+            maxNonce: Number(publicSignals[1]),
+            totalAmount: Number(publicSignals[2]),
+            proof: Array.from(convertProofToBytes(proof)),
+          })),
+        ],
       )
       .accounts({
         recipientManagerDataAccount,
@@ -152,18 +199,31 @@ describe("Payment Program", async () => {
         mint,
         recipientTokenAccount: ata,
       })
-      .rpc();
+      .instruction();
+
+    const recentBlockhash = await provider.connection.getLatestBlockhash();
+    const messageV0 = new anchor.web3.TransactionMessage({
+      payerKey: payer.publicKey,
+      recentBlockhash: recentBlockhash.blockhash,
+      instructions: [modifyCuIx, ix],
+    }).compileToV0Message([lookupTableAccount]);
+
+    const transactionV0 = new anchor.web3.VersionedTransaction(messageV0);
+    transactionV0.sign([payer]);
+    const txid = await provider.connection.sendTransaction(transactionV0);
+
+    await provider.connection.confirmTransaction(txid);
 
     //get token account
     const ataBalance = await provider.connection.getTokenAccountBalance(ata);
-    expect(ataBalance.value.uiAmount).toBe(batchSize);
+    expect(ataBalance.value.uiAmount).toBe(batchSize * proofs);
     //get nonce account
     const recipientManagerDataAccountData =
       await program.account.recipientManagerDataAccount.fetch(
         recipientManagerDataAccount,
       );
-    expect(recipientManagerDataAccountData.nonce).toBe(batchSize);
-  }, 20000);
+    expect(recipientManagerDataAccountData.nonce).toBe(batchSize * proofs);
+  }, 40000);
 });
 
 function bigIntToBytes32(num) {
