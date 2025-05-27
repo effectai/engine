@@ -84,6 +84,10 @@ export async function createPaymentManager({
     const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
     const batchSize = payments.length;
 
+    if (!managerSettings.paymentAccount) {
+      throw new Error("Payment account not set, cannot process payout");
+    }
+
     //make sure the payments all have the same payment account, and it matches our payment account.
     const enabled = Array(PAYMENT_BATCH_SIZE).fill(0).fill(1, 0, batchSize);
 
@@ -93,27 +97,31 @@ export async function createPaymentManager({
         .slice(0, PAYMENT_BATCH_SIZE);
 
     const uniqueRecipients = new Set(payments.map((p) => p.recipient));
-    const uniquePaymentAccounts = new Set(
-      payments.map((p) => p.paymentAccount),
-    );
-
+    // const uniquePaymentAccounts = new Set(
+    //   payments.map((p) => p.paymentAccount),
+    // );
+    //
     if (uniqueRecipients.size > 1) {
       throw new Error("Only one type of recipient per batch is supported");
     }
 
-    if (uniquePaymentAccounts.size > 1) {
-      throw new Error(
-        "Only one type of payment account per batch is supported",
-      );
-    }
+    //
+    // if (uniquePaymentAccounts.size > 1) {
+    //   throw new Error(
+    //     "Only one type of payment account per batch is supported",
+    //   );
+    // }
 
-    const paymentAccount = uniquePaymentAccounts.values().next().value;
-    //get the payment account and check if it matches our payment account.
-    if (paymentAccount !== managerSettings.paymentAccount) {
-      throw new Error(
-        "Payment account does not match the expected payment account",
-      );
-    }
+    //TODO:: check payment account..
+    // const paymentAccount = uniquePaymentAccounts.values().next().value;
+    const paymentAccount = managerSettings.paymentAccount;
+
+    // //get the payment account and check if it matches our payment account.
+    // if (paymentAccount !== managerSettings.paymentAccount) {
+    //   throw new Error(
+    //     "Payment account does not match the expected payment account",
+    //   );
+    // }
 
     const lastNonce = payments[payments.length - 1].nonce;
     const recipient = payments[0]?.recipient || "0";
@@ -150,12 +158,12 @@ export async function createPaymentManager({
 
     const wasmPath = path.resolve(
       __dirname,
-      "../../../../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
+      "../../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
     );
 
     const zkeyPath = path.resolve(
       __dirname,
-      "../../../../zkp/circuits/PaymentBatch_0001.zkey",
+      "../../zkp/circuits/PaymentBatch_0001.zkey",
     );
 
     const { publicSignals, proof } = await groth16.fullProve(
@@ -270,6 +278,7 @@ export async function createPaymentManager({
 
       return proofResponse;
     } catch (e) {
+      console.error(e);
       throw new Error("Error generating proof");
     }
   };

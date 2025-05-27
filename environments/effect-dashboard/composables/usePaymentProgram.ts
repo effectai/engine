@@ -13,7 +13,6 @@ import {
   type EffectPayment,
   type EffectStaking,
 } from "@effectai/idl";
-// import { buildEddsa } from "circomlibjs";
 
 import { buildEddsa } from "@effectai/protocol";
 import {
@@ -48,7 +47,8 @@ const solanaWalletToAnchorWallet = (
 };
 
 export function usePaymentProgram() {
-  const { connection, mint } = useGlobalState();
+  const { mint } = useGlobalState();
+  const { connection } = useConnection();
   const authStore = useAuthStore();
   const { solanaWallet, account } = storeToRefs(authStore);
   const wallet = solanaWalletToAnchorWallet(solanaWallet.value, account.value);
@@ -95,7 +95,7 @@ export function usePaymentProgram() {
 
     const eddsa = await buildEddsa();
 
-    const tx = await paymentProgram.value.methods
+    return await paymentProgram.value.methods
       .claim(
         new anchor.BN(proof.signals.minNonce).toNumber(),
         new anchor.BN(proof.signals.maxNonce).toNumber(),
@@ -131,9 +131,7 @@ export function usePaymentProgram() {
         mint,
         recipientTokenAccount: ata,
       })
-      .rpc();
-
-    return tx;
+      .instruction();
   };
 
   const deriveWorkerManagerDataAccount = (

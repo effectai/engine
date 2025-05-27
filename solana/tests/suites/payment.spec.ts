@@ -16,7 +16,6 @@ const int2hex = (i) => "0x" + BigInt(i).toString(16);
 
 describe("Payment Program", async () => {
   const program = anchor.workspace.EffectPayment as Program<EffectPayment>;
-  console.log(program.programId.toBase58());
   const { provider, wallet, payer, expectAnchorError } = useAnchor();
   const authority1 = anchor.web3.Keypair.generate();
   const eddsa = await buildEddsa();
@@ -27,7 +26,7 @@ describe("Payment Program", async () => {
     const paymentAccount = anchor.web3.Keypair.generate();
 
     await program.methods
-      .createPaymentPool([authority1.publicKey], new anchor.BN(1000))
+      .createPaymentPool(authority1.publicKey, new anchor.BN(1000))
       .accounts({
         paymentAccount: paymentAccount.publicKey,
         mint,
@@ -57,7 +56,7 @@ describe("Payment Program", async () => {
     const solanaPubKey = new PublicKey(compressedPubKey);
 
     const batchSize = 7;
-    const maxBatchSize = 60;
+    const maxBatchSize = 40;
 
     const nonces = Array.from({ length: batchSize }, (value, key) =>
       int2hex(key + 1),
@@ -115,7 +114,7 @@ describe("Payment Program", async () => {
     );
 
     await program.methods
-      .createPaymentPool([solanaPubKey], new anchor.BN(10_000_000))
+      .createPaymentPool(solanaPubKey, new anchor.BN(10_000_000))
       .accounts({
         paymentAccount: paymentAccount.publicKey,
         mint,

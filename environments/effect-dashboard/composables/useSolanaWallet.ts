@@ -5,7 +5,7 @@ import { useWallet } from "solana-wallets-vue";
 import type { TargetWalletAdapter, WalletConnectionMeta } from "~/types/types";
 
 export const useSolanaWallet = (): TargetWalletAdapter => {
-  const { connection } = useGlobalState();
+  const { connection } = useConnection();
   const { connect, disconnect, wallet, publicKey } = useWallet();
 
   const address = computed(() => publicKey.value?.toBase58());
@@ -15,7 +15,7 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
       wallet.value && {
         name: wallet.value.adapter.name,
         icon: wallet.value.adapter.icon,
-      }
+      },
   );
 
   const isConnected = computed(() => publicKey.value !== null);
@@ -77,7 +77,7 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
   };
 
   const useGetTokenAccountBalanceQuery = (
-    account: Ref<PublicKey | undefined>
+    account: Ref<PublicKey | undefined>,
   ) => {
     return useQuery({
       queryKey: ["token-account-balance", account, account.value?.toBase58()],
@@ -93,7 +93,7 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
 
         try {
           const balance = await connection.getTokenAccountBalance(
-            account.value
+            account.value,
           );
           return {
             value: balance.value.uiAmount || 0,

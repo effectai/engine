@@ -9,17 +9,18 @@ export const useNextNonce = (
   const authStore = useAuthStore();
   const { account } = storeToRefs(authStore);
 
-  // const {
-  //   data: recipientManagerDataAccount,
-  //   isLoading: isRemoteLoading,
-  //   error: remoteError,
-  // } = useRecipientManagerDataAccount(account, managerPublicKey);
-  //
+  const {
+    data: recipientManagerDataAccount,
+    isLoading: isRemoteLoading,
+    error: remoteError,
+  } = useRecipientManagerDataAccount(account, managerPublicKey);
+
   return useQuery({
     enabled: computed(
       () =>
-        // recipientManagerDataAccount.value !== undefined &&
-        !!worker.value && !!managerPeerIdStr.value,
+        recipientManagerDataAccount.value !== undefined &&
+        !!worker.value &&
+        !!managerPeerIdStr.value,
     ),
     queryKey: computed(() => [
       "nextNonce",
@@ -32,8 +33,7 @@ export const useNextNonce = (
         throw new Error("Worker or manager peer ID missing");
       }
 
-      // const remoteNonce = recipientManagerDataAccount.value?.nonce ?? null;
-      const remoteNonce = null;
+      const remoteNonce = recipientManagerDataAccount.value?.nonce ?? null;
 
       const maxLocalNonce =
         (await worker.value.getMaxNonce({

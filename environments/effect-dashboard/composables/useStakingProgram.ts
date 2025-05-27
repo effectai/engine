@@ -27,7 +27,7 @@ export type StakingAccount = ProgramAccount<
 
 export function useStakingProgram() {
   const appConfig = useRuntimeConfig();
-  const { connection } = useGlobalState();
+  const { connection } = useConnection();
   const { publicKey } = useWallet();
   const { provider } = useAnchorProvider();
 

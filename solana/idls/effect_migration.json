@@ -9,12 +9,23 @@
   "instructions": [
     {
       "name": "claim_stake",
-      "discriminator": [62, 145, 133, 242, 244, 59, 53, 139],
+      "discriminator": [
+        62,
+        145,
+        133,
+        242,
+        244,
+        59,
+        53,
+        139
+      ],
       "accounts": [
         {
           "name": "authority",
           "signer": true,
-          "relations": ["stake_account"]
+          "relations": [
+            "stake_account"
+          ]
         },
         {
           "name": "recipient_token_account",
@@ -56,7 +67,7 @@
             ],
             "program": {
               "kind": "const",
-              "path": "staking_program"
+              "value": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
             }
           }
         },
@@ -99,7 +110,16 @@
     },
     {
       "name": "create_stake_claim",
-      "discriminator": [209, 124, 209, 232, 131, 66, 118, 116],
+      "discriminator": [
+        209,
+        124,
+        209,
+        232,
+        131,
+        66,
+        118,
+        116
+      ],
       "accounts": [
         {
           "name": "migration_account",
@@ -172,7 +192,16 @@
     },
     {
       "name": "destroy_claim",
-      "discriminator": [223, 1, 238, 215, 51, 229, 149, 94],
+      "discriminator": [
+        223,
+        1,
+        238,
+        215,
+        51,
+        229,
+        149,
+        94
+      ],
       "accounts": [
         {
           "name": "migration_account",
@@ -222,59 +251,32 @@
   "accounts": [
     {
       "name": "MigrationAccount",
-      "discriminator": [129, 168, 118, 35, 238, 212, 16, 172]
+      "discriminator": [
+        129,
+        168,
+        118,
+        35,
+        238,
+        212,
+        16,
+        172
+      ]
     },
     {
       "name": "StakeAccount",
-      "discriminator": [80, 158, 67, 124, 50, 189, 192, 255]
+      "discriminator": [
+        80,
+        158,
+        67,
+        124,
+        50,
+        189,
+        192,
+        255
+      ]
     }
   ],
   "errors": [
-    {
-      "code": 6000,
-      "name": "MessageInvalid",
-      "msg": "Invalid message provided."
-    },
-    {
-      "code": 6001,
-      "name": "InvalidSignature",
-      "msg": "Invalid signature provided."
-    },
-    {
-      "code": 6002,
-      "name": "PublicKeyMismatch",
-      "msg": "Public key does not match the foreign public key."
-    },
-    {
-      "code": 6003,
-      "name": "InvalidClaimAccount",
-      "msg": "Invalid claim account provided."
-    },
-    {
-      "code": 6004,
-      "name": "InvalidRecoveryId",
-      "msg": "Invalid recovery id."
-    },
-    {
-      "code": 6005,
-      "name": "InvalidActions",
-      "msg": "Invalid action provided."
-    },
-    {
-      "code": 6006,
-      "name": "MemoMismatch",
-      "msg": "The memo in the transaction does not match the expected value."
-    },
-    {
-      "code": 6007,
-      "name": "MemoNotFound",
-      "msg": "Memo field not found in actions."
-    },
-    {
-      "code": 6008,
-      "name": "InvalidMint",
-      "msg": "Invalid mint provided."
-    },
     {
       "code": 6009,
       "name": "InvalidForeignAddress",
@@ -284,11 +286,6 @@
       "code": 6010,
       "name": "InvalidStakeStartTime",
       "msg": "Invalid Stake Start Time"
-    },
-    {
-      "code": 6011,
-      "name": "ClaimingNotStarted",
-      "msg": "Claming not started yet."
     }
   ],
   "types": [
@@ -349,4 +346,3 @@
     }
   ]
 }
-

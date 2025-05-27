@@ -1,10 +1,5 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 
-const config = useRuntimeConfig();
-const rpcUrl = config.public.EFFECT_SOLANA_RPC_NODE_URL;
-
-export const connection = new Connection(rpcUrl, "confirmed");
-
 export const publicKeyString = ref<string | null>(null);
 
 export const useGlobalState = () => {
@@ -19,7 +14,6 @@ export const useGlobalState = () => {
   const mint = new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT);
 
   return {
-    connection,
     mint,
   };
 };

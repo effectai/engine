@@ -345,15 +345,20 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
     if (isMultiaddr(address)) {
       const connection = await this.libp2p.dial(address);
       return {
-        stream: await connection.newStream(this.entity.protocol.name),
+        stream: await connection.newStream(
+          `/${this.entity.protocol.name}/${this.entity.protocol.version}`,
+        ),
         shouldClose: true,
       };
     }
 
     let connection = this.libp2p.getConnections(address)[0];
     if (!connection) connection = await this.libp2p.dial(address);
+
     return {
-      stream: await connection.newStream(this.entity.protocol.name),
+      stream: await connection.newStream(
+        `/${this.entity.protocol.name}/${this.entity.protocol.version}`,
+      ),
       shouldClose: true,
     };
   }

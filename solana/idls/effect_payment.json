@@ -155,10 +155,8 @@
       ],
       "args": [
         {
-          "name": "authorities",
-          "type": {
-            "vec": "pubkey"
-          }
+          "name": "authority",
+          "type": "pubkey"
         },
         {
           "name": "amount",
@@ -294,10 +292,8 @@
             "type": "pubkey"
           },
           {
-            "name": "authorities",
-            "type": {
-              "vec": "pubkey"
-            }
+            "name": "manager_authority",
+            "type": "pubkey"
           }
         ]
       }

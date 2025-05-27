@@ -65,12 +65,14 @@ pub fn handler(
     let expected_seeds = &[ctx.accounts.authority.key.as_ref(), manager_key.as_ref()];
     let (expected_pda, _) = Pubkey::find_program_address(expected_seeds, ctx.program_id);
 
+    // Check if the PDA of the recipient manager data account matches the expected PDA
     require_keys_eq!(
         expected_pda,
         ctx.accounts.recipient_manager_data_account.key(),
         PaymentErrors::InvalidPDA
     );
 
+    // Check if the manager key is authorized on the given payment account
     require!(
         ctx.accounts
             .payment_account

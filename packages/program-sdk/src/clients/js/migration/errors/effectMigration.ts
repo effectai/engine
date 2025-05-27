@@ -14,62 +14,22 @@ import {
 } from '@solana/kit';
 import { EFFECT_MIGRATION_PROGRAM_ADDRESS } from '../programs';
 
-/** MessageInvalid: Invalid message provided. */
-export const EFFECT_MIGRATION_ERROR__MESSAGE_INVALID = 0x1770; // 6000
-/** InvalidSignature: Invalid signature provided. */
-export const EFFECT_MIGRATION_ERROR__INVALID_SIGNATURE = 0x1771; // 6001
-/** PublicKeyMismatch: Public key does not match the foreign public key. */
-export const EFFECT_MIGRATION_ERROR__PUBLIC_KEY_MISMATCH = 0x1772; // 6002
-/** InvalidClaimAccount: Invalid claim account provided. */
-export const EFFECT_MIGRATION_ERROR__INVALID_CLAIM_ACCOUNT = 0x1773; // 6003
-/** InvalidRecoveryId: Invalid recovery id. */
-export const EFFECT_MIGRATION_ERROR__INVALID_RECOVERY_ID = 0x1774; // 6004
-/** InvalidActions: Invalid action provided. */
-export const EFFECT_MIGRATION_ERROR__INVALID_ACTIONS = 0x1775; // 6005
-/** MemoMismatch: The memo in the transaction does not match the expected value. */
-export const EFFECT_MIGRATION_ERROR__MEMO_MISMATCH = 0x1776; // 6006
-/** MemoNotFound: Memo field not found in actions. */
-export const EFFECT_MIGRATION_ERROR__MEMO_NOT_FOUND = 0x1777; // 6007
-/** InvalidMint: Invalid mint provided. */
-export const EFFECT_MIGRATION_ERROR__INVALID_MINT = 0x1778; // 6008
 /** InvalidForeignAddress: Invalid Foreign Address */
 export const EFFECT_MIGRATION_ERROR__INVALID_FOREIGN_ADDRESS = 0x1779; // 6009
 /** InvalidStakeStartTime: Invalid Stake Start Time */
 export const EFFECT_MIGRATION_ERROR__INVALID_STAKE_START_TIME = 0x177a; // 6010
-/** ClaimingNotStarted: Claming not started yet. */
-export const EFFECT_MIGRATION_ERROR__CLAIMING_NOT_STARTED = 0x177b; // 6011
 
 export type EffectMigrationError =
-  | typeof EFFECT_MIGRATION_ERROR__CLAIMING_NOT_STARTED
-  | typeof EFFECT_MIGRATION_ERROR__INVALID_ACTIONS
-  | typeof EFFECT_MIGRATION_ERROR__INVALID_CLAIM_ACCOUNT
   | typeof EFFECT_MIGRATION_ERROR__INVALID_FOREIGN_ADDRESS
-  | typeof EFFECT_MIGRATION_ERROR__INVALID_MINT
-  | typeof EFFECT_MIGRATION_ERROR__INVALID_RECOVERY_ID
-  | typeof EFFECT_MIGRATION_ERROR__INVALID_SIGNATURE
-  | typeof EFFECT_MIGRATION_ERROR__INVALID_STAKE_START_TIME
-  | typeof EFFECT_MIGRATION_ERROR__MEMO_MISMATCH
-  | typeof EFFECT_MIGRATION_ERROR__MEMO_NOT_FOUND
-  | typeof EFFECT_MIGRATION_ERROR__MESSAGE_INVALID
-  | typeof EFFECT_MIGRATION_ERROR__PUBLIC_KEY_MISMATCH;
+  | typeof EFFECT_MIGRATION_ERROR__INVALID_STAKE_START_TIME;
 
 let effectMigrationErrorMessages:
   | Record<EffectMigrationError, string>
   | undefined;
 if (process.env.NODE_ENV !== 'production') {
   effectMigrationErrorMessages = {
-    [EFFECT_MIGRATION_ERROR__CLAIMING_NOT_STARTED]: `Claming not started yet.`,
-    [EFFECT_MIGRATION_ERROR__INVALID_ACTIONS]: `Invalid action provided.`,
-    [EFFECT_MIGRATION_ERROR__INVALID_CLAIM_ACCOUNT]: `Invalid claim account provided.`,
     [EFFECT_MIGRATION_ERROR__INVALID_FOREIGN_ADDRESS]: `Invalid Foreign Address`,
-    [EFFECT_MIGRATION_ERROR__INVALID_MINT]: `Invalid mint provided.`,
-    [EFFECT_MIGRATION_ERROR__INVALID_RECOVERY_ID]: `Invalid recovery id.`,
-    [EFFECT_MIGRATION_ERROR__INVALID_SIGNATURE]: `Invalid signature provided.`,
     [EFFECT_MIGRATION_ERROR__INVALID_STAKE_START_TIME]: `Invalid Stake Start Time`,
-    [EFFECT_MIGRATION_ERROR__MEMO_MISMATCH]: `The memo in the transaction does not match the expected value.`,
-    [EFFECT_MIGRATION_ERROR__MEMO_NOT_FOUND]: `Memo field not found in actions.`,
-    [EFFECT_MIGRATION_ERROR__MESSAGE_INVALID]: `Invalid message provided.`,
-    [EFFECT_MIGRATION_ERROR__PUBLIC_KEY_MISMATCH]: `Public key does not match the foreign public key.`,
   };
 }
 

@@ -456,12 +456,7 @@ export const createManager = async ({
     }
   }
 
-  entity.node.addEventListener("peer:connect", (event) => {
-    console.log("peer connect", event.detail.toString());
-  });
-
   entity.node.addEventListener("peer:disconnect", (event) => {
-    console.log("peer disconnect", event.detail.toString());
     workerManager.disconnectWorker(event.detail.toString());
   });
 

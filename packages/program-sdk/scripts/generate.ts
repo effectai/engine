@@ -31,7 +31,7 @@ const targets = [
   },
 ];
 
-const idl_folder = path.join(__dirname, "../../../solana/idls");
+const idl_folder = path.join(__dirname, "../../../solana/idls/");
 const loadIdl = (relativePath: string) => {
   return JSON.parse(readFileSync(path.join(idl_folder, relativePath), "utf-8"));
 };

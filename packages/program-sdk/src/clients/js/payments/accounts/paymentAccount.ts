@@ -17,8 +17,6 @@ import {
   fixEncoderSize,
   getAddressDecoder,
   getAddressEncoder,
-  getArrayDecoder,
-  getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getStructDecoder,
@@ -52,14 +50,14 @@ export type PaymentAccount = {
   owner: Address;
   mint: Address;
   tokenAccount: Address;
-  authorities: Array<Address>;
+  managerAuthority: Address;
 };
 
 export type PaymentAccountArgs = {
   owner: Address;
   mint: Address;
   tokenAccount: Address;
-  authorities: Array<Address>;
+  managerAuthority: Address;
 };
 
 export function getPaymentAccountEncoder(): Encoder<PaymentAccountArgs> {
@@ -69,7 +67,7 @@ export function getPaymentAccountEncoder(): Encoder<PaymentAccountArgs> {
       ['owner', getAddressEncoder()],
       ['mint', getAddressEncoder()],
       ['tokenAccount', getAddressEncoder()],
-      ['authorities', getArrayEncoder(getAddressEncoder())],
+      ['managerAuthority', getAddressEncoder()],
     ]),
     (value) => ({ ...value, discriminator: PAYMENT_ACCOUNT_DISCRIMINATOR })
   );
@@ -81,7 +79,7 @@ export function getPaymentAccountDecoder(): Decoder<PaymentAccount> {
     ['owner', getAddressDecoder()],
     ['mint', getAddressDecoder()],
     ['tokenAccount', getAddressDecoder()],
-    ['authorities', getArrayDecoder(getAddressDecoder())],
+    ['managerAuthority', getAddressDecoder()],
   ]);
 }
 
@@ -151,4 +149,8 @@ export async function fetchAllMaybePaymentAccount(
   return maybeAccounts.map((maybeAccount) =>
     decodePaymentAccount(maybeAccount)
   );
+}
+
+export function getPaymentAccountSize(): number {
+  return 136;
 }

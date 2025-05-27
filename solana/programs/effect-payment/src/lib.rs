@@ -30,12 +30,8 @@ pub mod effect_payment {
         claim::handler(ctx, min_nonce, max_nonce, total_amount, pub_x, pub_y, proof)
     }
 
-    pub fn create_payment_pool(
-        ctx: Context<Create>,
-        authorities: Vec<Pubkey>,
-        amount: u64,
-    ) -> Result<()> {
-        create::handler(ctx, authorities, amount)
+    pub fn create_payment_pool(ctx: Context<Create>, authority: Pubkey, amount: u64) -> Result<()> {
+        create::handler(ctx, authority, amount)
     }
 
     //initialize a recipient/manager data account that holds the nonce

@@ -12,8 +12,6 @@ import {
   fixEncoderSize,
   getAddressDecoder,
   getAddressEncoder,
-  getArrayDecoder,
-  getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getProgramDerivedAddress,
@@ -109,12 +107,12 @@ export type CreatePaymentPoolInstruction<
 
 export type CreatePaymentPoolInstructionData = {
   discriminator: ReadonlyUint8Array;
-  authorities: Array<Address>;
+  authority: Address;
   amount: bigint;
 };
 
 export type CreatePaymentPoolInstructionDataArgs = {
-  authorities: Array<Address>;
+  authority: Address;
   amount: number | bigint;
 };
 
@@ -122,7 +120,7 @@ export function getCreatePaymentPoolInstructionDataEncoder(): Encoder<CreatePaym
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['authorities', getArrayEncoder(getAddressEncoder())],
+      ['authority', getAddressEncoder()],
       ['amount', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: CREATE_PAYMENT_POOL_DISCRIMINATOR })
@@ -132,7 +130,7 @@ export function getCreatePaymentPoolInstructionDataEncoder(): Encoder<CreatePaym
 export function getCreatePaymentPoolInstructionDataDecoder(): Decoder<CreatePaymentPoolInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['authorities', getArrayDecoder(getAddressDecoder())],
+    ['authority', getAddressDecoder()],
     ['amount', getU64Decoder()],
   ]);
 }
@@ -165,7 +163,7 @@ export type CreatePaymentPoolAsyncInput<
   systemProgram?: Address<TAccountSystemProgram>;
   tokenProgram?: Address<TAccountTokenProgram>;
   rent?: Address<TAccountRent>;
-  authorities: CreatePaymentPoolInstructionDataArgs['authorities'];
+  authorityArg: CreatePaymentPoolInstructionDataArgs['authority'];
   amount: CreatePaymentPoolInstructionDataArgs['amount'];
 };
 
@@ -231,7 +229,7 @@ export async function getCreatePaymentPoolInstructionAsync<
   >;
 
   // Original args.
-  const args = { ...input };
+  const args = { ...input, authority: input.authorityArg };
 
   // Resolve default values.
   if (!accounts.paymentVaultTokenAccount.value) {
@@ -306,7 +304,7 @@ export type CreatePaymentPoolInput<
   systemProgram?: Address<TAccountSystemProgram>;
   tokenProgram?: Address<TAccountTokenProgram>;
   rent?: Address<TAccountRent>;
-  authorities: CreatePaymentPoolInstructionDataArgs['authorities'];
+  authorityArg: CreatePaymentPoolInstructionDataArgs['authority'];
   amount: CreatePaymentPoolInstructionDataArgs['amount'];
 };
 
@@ -370,7 +368,7 @@ export function getCreatePaymentPoolInstruction<
   >;
 
   // Original args.
-  const args = { ...input };
+  const args = { ...input, authority: input.authorityArg };
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {

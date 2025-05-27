@@ -23,18 +23,7 @@
         </template>
 
         <template #default>
-          <UAlert
-            title="Claiming not available yet"
-            color="yellow"
-            icon="i-heroicons-exclamation-triangle"
-            description="Claiming is currently unavailable. Claiming payments to your wallet will be enabled later during the alpha testing phase."
-          >
-          </UAlert>
-
-          <div
-            v-show="false"
-            class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg"
-          >
+          <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
             <div class="flex items-center gap-2 flex-wrap">
               <BlockchainAddress v-if="account" :address="account" />
               <span class="text-gray-400 dark:text-gray-500">|</span>
@@ -53,7 +42,7 @@
               <span class="text-gray-700 dark:text-gray-300"
                 >Claimable payments</span
               >
-              <UBadge color="gray" variant="solid">
+              <UBadge v-if="claimablePayments" color="gray" variant="solid">
                 {{ claimablePayments.length }}
               </UBadge>
             </div>
@@ -77,7 +66,7 @@
             <UButton
               @click="mutateClaimPayments"
               :loading="isClaimingPayments"
-              :disabled="true"
+              :disabled="!canClaim"
               color="black"
               variant="solid"
               size="md"
@@ -95,6 +84,7 @@
 <script setup lang="ts">
 import { useMutation } from "@tanstack/vue-query";
 import type { PaymentRecord } from "@effectai/worker";
+import { Transaction, TransactionInstruction } from "@solana/web3.js";
 
 const authStore = useAuthStore();
 const { account } = storeToRefs(authStore);
@@ -121,9 +111,9 @@ const canClaim = computed(() => {
 });
 
 const emit = defineEmits(["update:modelValue"]);
-
 const data = useVModel(props, "modelValue", emit);
 
+const { connection } = useConnection();
 const { data: balance } = useGetBalanceQuery(account);
 const { data: claimablePayments } = useGetClaimablePayments();
 
@@ -151,7 +141,26 @@ const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
           };
         });
 
-        await claimPayments({ payments });
+        const result = await claimPayments({ payments });
+        const ix = new TransactionInstruction(result);
+
+        const tx = new Transaction().add(ix);
+        const serializedTx = tx.serialize({ requireAllSignatures: false });
+        const txSize = serializedTx.length; // Includes transaction overhead
+
+        console.log("Transaction size:", txSize);
+
+        // try {
+        //   const confirmed = await connection.confirmTransaction(tx);
+        //   if (!confirmed.value.err) {
+        //     console.log("Transaction confirmed:", tx);
+        //   } else {
+        //     console.error("Transaction failed:", confirmed.value.err);
+        //     return;
+        //   }
+        // } catch (e) {
+        //   return;
+        // }
       }
     },
   });
