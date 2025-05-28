@@ -27,7 +27,7 @@ export type StakingAccount = ProgramAccount<
   EffectStakingProgramAccounts["stakeAccount"]
 >;
 
-const solanaWalletToAnchorWallet = (
+export const solanaWalletToAnchorWallet = (
   solanaWallet: SolanaWallet,
   publicKey: string,
 ) => {
@@ -93,9 +93,11 @@ export function usePaymentProgram() {
         managerRecipientDataAccount,
       );
 
+    console.log(dataAccount);
+
     const eddsa = await buildEddsa();
 
-    return await paymentProgram.value.methods
+    const ix = await paymentProgram.value.methods
       .claim(
         new anchor.BN(proof.signals.minNonce).toNumber(),
         new anchor.BN(proof.signals.maxNonce).toNumber(),
@@ -132,6 +134,8 @@ export function usePaymentProgram() {
         recipientTokenAccount: ata,
       })
       .instruction();
+
+    console.log(ix);
   };
 
   const deriveWorkerManagerDataAccount = (

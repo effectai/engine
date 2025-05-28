@@ -143,8 +143,18 @@ const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
 
         const result = await claimPayments({ payments });
         const ix = new TransactionInstruction(result);
+        const authStore = useAuthStore();
+        const { solanaWallet, account } = storeToRefs(authStore);
+        const wallet = solanaWalletToAnchorWallet(
+          solanaWallet.value,
+          account.value,
+        );
 
+        const recentBlockhash = await connection.getLatestBlockhash();
         const tx = new Transaction().add(ix);
+
+        tx.recentBlockhash = recentBlockhash.blockhash;
+        tx.feePayer = wallet.publicKey;
         const serializedTx = tx.serialize({ requireAllSignatures: false });
         const txSize = serializedTx.length; // Includes transaction overhead
 

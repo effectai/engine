@@ -1,0 +1,5 @@
+solana airdrop 10 GGqak36ECpZP5HbZse41bynygPR2ciYsTVPsriocqjWH
+spl-token create-token ./solana/tests/keys/mint44RzfitV8sqFGrLnh6sLNAS2jxaw1KhaSsYGT3P.json --decimals 6
+spl-token create-account mint44RzfitV8sqFGrLnh6sLNAS2jxaw1KhaSsYGT3P
+spl-token mint mint44RzfitV8sqFGrLnh6sLNAS2jxaw1KhaSsYGT3P 5000000
+solana airdrop 10 D7fMoACKfsdeGwyM3j7u7iRovEf9o86JmvjUPAXNyHvt
