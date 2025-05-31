@@ -425,6 +425,11 @@ export const createManager = async ({
     await entity.node.start();
     await entity.startHttp();
 
+    console.log('Manager listening on:');
+    entity.node.getMultiaddrs().forEach((addr) => {
+      console.log(addr.toString())
+    });
+
     //start manager dashboard
     if (managerSettings.withAdmin) {
       const { tearDown } = await setupManagerDashboard();
