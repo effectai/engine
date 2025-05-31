@@ -1,0 +1,26 @@
+[package]
+name = "rust-worker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+libp2p = { version = "0.55", features = [
+    "tcp",
+    "websocket",
+    "noise",
+    "yamux",
+    "ping",
+    "identify",
+    "relay",
+    "request-response",
+    "macros",
+    "tokio",
+    "dns"
+] }
+tokio = { version = "1.0", features = ["full"] }
+prost = "0.13"
+futures = "0.3"
+async-trait = "0.1"
+
+[build-dependencies]
+prost-build = "0.13"
