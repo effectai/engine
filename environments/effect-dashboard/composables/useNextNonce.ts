@@ -33,7 +33,9 @@ export const useNextNonce = (
         throw new Error("Worker or manager peer ID missing");
       }
 
-      const remoteNonce = recipientManagerDataAccount.value?.nonce ?? null;
+      const remoteNonce = recipientManagerDataAccount.value?.exists
+        ? recipientManagerDataAccount.value.data.nonce
+        : null;
 
       const maxLocalNonce =
         (await worker.value.getMaxNonce({

@@ -64,7 +64,11 @@
     "vue-confetti-explosion": "^1.0.2",
     "vue-router": "latest",
     "@solana/kit": "^2.1.1",
-    "@solana/functional": "^2.1.1"
+    "@effectai/program-sdk": "workspace:*",
+    "@solana-program/token": "^0.5.1",
+    "@solana-program/address-lookup-table": "^0.7.0",
+    "@solana-program/compute-budget": "^0.7.0",
+    "p-limit": "^6.2.0"
   },
   "devDependencies": {
     "@types/circomlibjs": "^0.1.6"

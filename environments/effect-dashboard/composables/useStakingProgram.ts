@@ -41,7 +41,6 @@ export function useStakingProgram() {
   });
 
   const { rewardsProgram } = useRewardProgram();
-
   const queryClient = useQueryClient();
 
   const useUnstake = () =>

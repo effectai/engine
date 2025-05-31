@@ -2,19 +2,31 @@ import type { PeerId, PrivateKey } from "@libp2p/interface";
 import { PublicKey } from "@solana/web3.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { signPayment, int2hex, computePaymentId } from "../utils.js";
+import {
+  signPayment,
+  int2hex,
+  computePaymentId,
+  ProofToProofResponseMessage,
+} from "../utils.js";
 import {
   type ProofRequest,
-  type EffectProtocolMessage,
   type PaymentStore,
   Payment,
 } from "@effectai/protocol-core";
-import { buildEddsa, buildPoseidon, groth16 } from "@effectai/zkp";
+
+import {
+  buildEddsa,
+  buildPoseidon,
+  groth16,
+  type Groth16Proof,
+  type PublicSignals,
+} from "@effectai/zkp";
 
 import { PAYMENT_BATCH_SIZE } from "../consts.js";
 import type { createWorkerManager } from "./createWorkerManager";
 import type { ManagerSettings } from "../main.js";
 import { ulid } from "ulid";
+import { VerifierKeyJson } from "@effectai/zkp";
 
 export async function createPaymentManager({
   paymentStore,
@@ -72,6 +84,158 @@ export async function createPaymentManager({
 
     return payment;
   };
+
+  async function bulkPaymentProofs({
+    privateKey,
+    recipient,
+    r8_x,
+    r8_y,
+    proofs,
+  }: {
+    privateKey: PrivateKey;
+    recipient: PublicKey;
+    r8_x: bigint;
+    r8_y: bigint;
+    proofs: {
+      proof: Groth16Proof;
+      publicSignals: PublicSignals;
+    }[];
+  }) {
+    let minNonce: bigint | null = null;
+    let maxNonce: bigint | null = null;
+    let sumAmount = 0n;
+
+    const verificationTasks = proofs.map(async (proof) => {
+      console.log(proof, proof.publicSignals);
+
+      const isValid = await groth16.verify(
+        VerifierKeyJson,
+        [
+          proof.publicSignals[0],
+          proof.publicSignals[1],
+          proof.publicSignals[2],
+          r8_x.toString(),
+          r8_y.toString(),
+        ],
+        proof.proof,
+      );
+
+      if (!isValid)
+        throw new Error(
+          `Invalid proof for nonce ${proof.publicSignals[0]} - ${proof.publicSignals[1]}`,
+        );
+
+      const currentNonce = BigInt(proof.publicSignals[0]);
+      const currentMaxNonce = BigInt(proof.publicSignals[1]);
+      const currentAmount = BigInt(proof.publicSignals[2]);
+
+      minNonce =
+        minNonce === null
+          ? currentNonce
+          : currentNonce < minNonce
+            ? currentNonce
+            : minNonce;
+      maxNonce =
+        maxNonce === null
+          ? currentMaxNonce
+          : currentMaxNonce > maxNonce
+            ? currentMaxNonce
+            : maxNonce;
+      sumAmount += currentAmount;
+    });
+
+    try {
+      await Promise.all(verificationTasks);
+
+      //TODO:: do some verification here on min_nonce and max nonce etc.
+      const genTempPay = async ({
+        amount,
+        recipient,
+        paymentAccount,
+        nonce,
+      }: {
+        amount: bigint;
+        recipient: string;
+        paymentAccount: PublicKey;
+        nonce: bigint;
+      }) => {
+        const payment = Payment.decode(
+          Payment.encode({
+            id: ulid(),
+            amount,
+            recipient,
+            paymentAccount: paymentAccount.toBase58(),
+            nonce,
+            label: "temp",
+          }),
+        );
+
+        const signature = await signPayment(
+          payment,
+          privateKey.raw.slice(0, 32),
+          eddsa,
+          poseidon,
+        );
+
+        payment.signature = {
+          S: signature.S.toString(),
+          R8: {
+            R8_1: new Uint8Array(signature.R8[0]),
+            R8_2: new Uint8Array(signature.R8[1]),
+          },
+        };
+
+        return payment;
+      };
+
+      if (minNonce === null || maxNonce === null) {
+        throw new Error(
+          "No valid proofs found, cannot create temporary payments",
+        );
+      }
+
+      if (!managerSettings.paymentAccount) {
+        throw new Error(
+          "Payment account not set, cannot create temporary payments",
+        );
+      }
+
+      //create 2 temporarly payments with the min and max nonce.
+      const payments = [
+        genTempPay({
+          amount: sumAmount / 2n,
+          //TODO::extract from public signals..
+          recipient: recipient.toBase58(),
+          //TODO :: extract from public signals..
+          paymentAccount: new PublicKey(managerSettings.paymentAccount),
+          nonce: minNonce,
+        }),
+        genTempPay({
+          amount: sumAmount / 2n,
+          recipient: recipient.toBase58(),
+          paymentAccount: new PublicKey(managerSettings.paymentAccount),
+          nonce: maxNonce,
+        }),
+      ];
+
+      //create a new proof with these payments
+      const { proof, publicSignals, pubKey } = await generatePaymentProof(
+        privateKey,
+        await Promise.all(payments),
+      );
+
+      return ProofToProofResponseMessage(
+        proof,
+        publicSignals,
+        pubKey[0],
+        pubKey[1],
+        managerSettings.paymentAccount,
+      );
+    } catch (error) {
+      console.error("Batch verification failed:", error);
+      throw error;
+    }
+  }
 
   const generatePaymentProof = async (
     privateKey: PrivateKey,
@@ -245,38 +409,19 @@ export async function createPaymentManager({
     payments,
   }: {
     privateKey: PrivateKey;
-    peerId: PeerId;
     payments: ProofRequest.PaymentProof[];
   }) => {
     try {
       const { proof, pubKey, publicSignals, paymentAccount } =
         await generatePaymentProof(privateKey, payments);
 
-      const proofResponse: EffectProtocolMessage = {
-        proofResponse: {
-          r8: {
-            R8_1: pubKey[0],
-            R8_2: pubKey[1],
-          },
-          signals: {
-            minNonce: publicSignals[0],
-            maxNonce: publicSignals[1],
-            amount: BigInt(publicSignals[2]),
-            paymentAccount: paymentAccount,
-          },
-          piA: proof.pi_a,
-          piB: [
-            { row: [proof.pi_b[0][0], proof.pi_b[0][1]] },
-            { row: [proof.pi_b[1][0], proof.pi_b[1][1]] },
-            { row: [proof.pi_b[2][0], proof.pi_b[2][1]] },
-          ],
-          piC: proof.pi_c,
-          protocol: proof.protocol,
-          curve: proof.curve,
-        },
-      };
-
-      return proofResponse;
+      return ProofToProofResponseMessage(
+        proof,
+        publicSignals,
+        pubKey[0],
+        pubKey[1],
+        paymentAccount,
+      );
     } catch (e) {
       console.error(e);
       throw new Error("Error generating proof");
@@ -288,5 +433,6 @@ export async function createPaymentManager({
     generatePaymentProof,
     processPayoutRequest,
     processProofRequest,
+    bulkPaymentProofs,
   };
 }

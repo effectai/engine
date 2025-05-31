@@ -60,5 +60,6 @@ message EffectProtocolMessage {
     RequestToWorkResponse request_to_work_response = 14;
     EffectIdentifyRequest identify_request = 15;
     EffectIdentifyResponse identify_response = 16;
+    BulkProofRequest bulk_proof_request = 17;
   }
 }

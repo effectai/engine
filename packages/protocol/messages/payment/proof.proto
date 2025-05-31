@@ -23,6 +23,10 @@ message ProofResponse {
   R8Pair r8 = 7;
 }
 
+message BulkProofRequest {
+  repeated ProofResponse proofs = 1;
+}
+
 message ProofRequest {
   message PaymentProof {
     PaymentSignature signature = 1;
@@ -35,4 +39,6 @@ message ProofRequest {
   uint32 batch_size = 1;
   repeated PaymentProof payments = 2;
 }
+
+
 

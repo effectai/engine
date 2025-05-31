@@ -47,7 +47,7 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
   };
 
   const useGetEfxBalanceQuery = () => {
-    const { mint } = useGlobalState();
+    const { mint } = useEffectConfig();
     const { publicKey } = useWallet();
 
     return useQuery({

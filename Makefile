@@ -33,7 +33,7 @@ packages/zkp/circuits/${CIRCUIT}_verification.json: packages/zkp/circuits/${CIRC
 	mv ${CIRCUIT}_verification.json $@
 
 # Create .rs version of verifying key
-solana/programs/effect-payment/program/src/verifying_key.rs: packages/zkp/circuits/${CIRCUIT}_verification.json
+solana/programs/effect-payment/src/verifying_key.rs: packages/zkp/circuits/${CIRCUIT}_verification.json
 	pnpm -C packages/zkp run generate_verification_key \
 		../../$< \
 		$(dir ../../$@)

@@ -98,6 +98,10 @@ export function registerCreatePaymentPoolCommand(program: Command) {
       await sendAndConfirmTransaction(signedTx, {
         commitment: "confirmed",
       });
+
+      console.log("created!", paymentAccount.address);
+
+      return;
     });
 
   return program;

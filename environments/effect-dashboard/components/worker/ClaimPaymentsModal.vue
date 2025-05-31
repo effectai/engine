@@ -59,6 +59,26 @@
               class="mt-2"
             />
           </div>
+          <UProgress :value="claimingProgress" indicator>
+            <template #step-0="{ step }">
+              <span class="text-lime-500">
+                <UIcon name="i-heroicons-arrow-down-circle" />
+                {{ progress }}
+              </span>
+            </template>
+
+            <template #step-1="{ step }">
+              <span class="text-amber-500">
+                <UIcon name="i-heroicons-circle-stack" /> {{ step }}
+              </span>
+            </template>
+
+            <template #step-2="{ step }">
+              <span class="text-blue-500">
+                <UIcon name="i-heroicons-hand-thumb-up" /> {{ step }}
+              </span>
+            </template>
+          </UProgress>
         </template>
 
         <template #footer>
@@ -83,15 +103,12 @@
 
 <script setup lang="ts">
 import { useMutation } from "@tanstack/vue-query";
-import type { PaymentRecord } from "@effectai/worker";
-import { Transaction, TransactionInstruction } from "@solana/web3.js";
 
 const authStore = useAuthStore();
 const { account } = storeToRefs(authStore);
 
 const { useGetBalanceQuery } = useSolanaWallet();
 const { useGetClaimablePayments, useClaimPayments } = usePayments();
-const { mutateAsync: claimPayments } = useClaimPayments();
 
 const props = defineProps<{
   modelValue: boolean;
@@ -113,9 +130,13 @@ const canClaim = computed(() => {
 const emit = defineEmits(["update:modelValue"]);
 const data = useVModel(props, "modelValue", emit);
 
-const { connection } = useConnection();
 const { data: balance } = useGetBalanceQuery(account);
 const { data: claimablePayments } = useGetClaimablePayments();
+const { mutateAsync: claimPayments, progress } = useClaimPayments();
+
+const claimingProgress = computed(
+  () => progress.currentProof / progress.totalProofs,
+);
 
 const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
   useMutation({
@@ -124,54 +145,7 @@ const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
         console.error("No claimable payments found");
         return;
       }
-
-      const sortedPayments = claimablePayments?.value.toSorted((a, b) => {
-        return a.state.nonce > b.state.nonce ? 1 : -1;
-      });
-
-      const result = chunkArray(sortedPayments, 40);
-      for (const paymentBatch of result) {
-        const payments = paymentBatch.map((payment: PaymentRecord) => {
-          return {
-            nonce: payment.state.nonce,
-            recipient: payment.state.recipient,
-            amount: payment.state.amount,
-            paymentAccount: payment.state.paymentAccount,
-            signature: payment.state.signature,
-          };
-        });
-
-        const result = await claimPayments({ payments });
-        const ix = new TransactionInstruction(result);
-        const authStore = useAuthStore();
-        const { solanaWallet, account } = storeToRefs(authStore);
-        const wallet = solanaWalletToAnchorWallet(
-          solanaWallet.value,
-          account.value,
-        );
-
-        const recentBlockhash = await connection.getLatestBlockhash();
-        const tx = new Transaction().add(ix);
-
-        tx.recentBlockhash = recentBlockhash.blockhash;
-        tx.feePayer = wallet.publicKey;
-        const serializedTx = tx.serialize({ requireAllSignatures: false });
-        const txSize = serializedTx.length; // Includes transaction overhead
-
-        console.log("Transaction size:", txSize);
-
-        // try {
-        //   const confirmed = await connection.confirmTransaction(tx);
-        //   if (!confirmed.value.err) {
-        //     console.log("Transaction confirmed:", tx);
-        //   } else {
-        //     console.error("Transaction failed:", confirmed.value.err);
-        //     return;
-        //   }
-        // } catch (e) {
-        //   return;
-        // }
-      }
+      await claimPayments({ payments: claimablePayments.value });
     },
   });
 </script>

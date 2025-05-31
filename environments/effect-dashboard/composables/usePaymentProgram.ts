@@ -6,6 +6,33 @@ import type {
   IdlAccounts,
 } from "@coral-xyz/anchor";
 
+import {
+  address,
+  createKeyPairSignerFromPrivateKeyBytes,
+  getProgramDerivedAddress,
+  getAddressEncoder,
+  pipe,
+  createTransactionMessage,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstructions,
+  signTransactionMessageWithSigners,
+  sendAndConfirmTransactionFactory,
+  compressTransactionMessageUsingAddressLookupTables,
+  appendTransactionMessageInstruction,
+  createKeyPairSignerFromBytes,
+  SolanaError,
+  type SolanaErrorCodeWithCause,
+} from "@solana/kit";
+
+import {
+  fetchMaybeAddressLookupTableFromSeeds,
+  getCreateLookupTableInstructionAsync,
+  getExtendLookupTableInstruction,
+} from "@solana-program/address-lookup-table";
+
+import { getSetComputeUnitLimitInstruction } from "@solana-program/compute-budget";
+
 import { useMutation, useQuery } from "@tanstack/vue-query";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import {
@@ -15,139 +42,205 @@ import {
 } from "@effectai/idl";
 
 import { buildEddsa } from "@effectai/protocol";
+import type { ProofResponse } from "@effectai/protocol";
+
 import {
-  createAssociatedTokenAccountIdempotentInstructionWithDerivation,
-  getAssociatedTokenAddressSync,
-} from "@solana/spl-token";
-// import type { ProofResponse } from "@effectai/protocol";
-import type { SolanaWallet } from "@web3auth/solana-provider";
+  EFFECT_PAYMENT_PROGRAM_ADDRESS,
+  fetchMaybeRecipientManagerDataAccount,
+  getClaimProofsInstructionAsync,
+  getInitInstructionAsync,
+  getAssociatedTokenAccount,
+} from "@effectai/program-sdk";
+
+import {
+  getCreateAssociatedTokenInstructionAsync,
+  fetchMaybeToken,
+} from "@solana-program/token";
 
 export type EffectStakingProgramAccounts = IdlAccounts<EffectStaking>;
 export type StakingAccount = ProgramAccount<
   EffectStakingProgramAccounts["stakeAccount"]
 >;
 
-export const solanaWalletToAnchorWallet = (
-  solanaWallet: SolanaWallet,
-  publicKey: string,
-) => {
-  return {
-    publicKey: new PublicKey(publicKey),
-    signTransaction: async (
-      tx: anchor.web3.Transaction | anchor.web3.VersionedTransaction,
-    ) => {
-      const signedTx = await solanaWallet.signTransaction(tx);
-      return signedTx;
-    },
-    signAllTransactions: async (txs: anchor.web3.Transaction[]) => {
-      const signedTxs = await solanaWallet.signAllTransactions(txs);
-      return signedTxs;
-    },
-  };
-};
-
 export function usePaymentProgram() {
-  const { mint } = useGlobalState();
-  const { connection } = useConnection();
+  const { mint } = useEffectConfig();
+  const { rpc, rpcSubscriptions } = useSolanaRpc();
   const authStore = useAuthStore();
-  const { solanaWallet, account } = storeToRefs(authStore);
-  const wallet = solanaWalletToAnchorWallet(solanaWallet.value, account.value);
-  const provider = new anchor.AnchorProvider(connection, wallet, {});
+  const { privateKey } = storeToRefs(authStore);
 
-  const paymentProgram = computed(() => {
-    return new anchor.Program(
-      EffectPaymentIdl as Idl,
-      provider || undefined,
-    ) as unknown as Program<EffectPayment>;
+  const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
+    rpc,
+    rpcSubscriptions,
   });
 
   const useClaimWithProof = () =>
     useMutation({
       mutationKey: ["claimWithProof"],
-      mutationFn: async (proof: ProofResponse) => {
-        return claimWithProof(proof);
+      mutationFn: async (proofs: ProofResponse[]) => {
+        return claimWithProofs(proofs);
       },
     });
 
-  const claimWithProof = async (proof: ProofResponse) => {
+  const claimWithProofs = async (proofs: ProofResponse[]) => {
     const sessionStore = useSessionStore();
     const { account, managerPublicKey } = sessionStore.useActiveSession();
 
-    if (!proof.signals) {
-      throw new Error("No valid proof found");
-    }
+    const signer = await createKeyPairSignerFromBytes(
+      Buffer.from(privateKey.value, "hex"),
+    );
 
     if (!account.value || !managerPublicKey.value) {
       throw new Error("No account or manager public key found");
     }
 
-    const managerRecipientDataAccount = deriveWorkerManagerDataAccount(
-      account.value,
-      managerPublicKey.value,
+    const ata = await getAssociatedTokenAccount({
+      mint: address(mint.toBase58()),
+      owner: address(account.value.toBase58()),
+    });
+
+    const [recipientManagerDataAccount] = await getProgramDerivedAddress({
+      programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
+      seeds: [
+        getAddressEncoder().encode(address(account.value.toBase58())),
+        getAddressEncoder().encode(address(managerPublicKey.value.toBase58())),
+      ],
+    });
+
+    const recentSlot = await rpc.getSlot({ commitment: "finalized" }).send();
+
+    const dataAccount = await fetchMaybeRecipientManagerDataAccount(
+      rpc,
+      recipientManagerDataAccount,
     );
 
-    const ata = getAssociatedTokenAddressSync(mint, account.value);
-
-    const dataAccount =
-      await paymentProgram.value.account.recipientManagerDataAccount.fetchNullable(
-        managerRecipientDataAccount,
-      );
-
-    console.log(dataAccount);
+    const config = useRuntimeConfig();
+    const paymentAccount = config.public.PAYMENT_ACCOUNT;
 
     const eddsa = await buildEddsa();
 
-    const ix = await paymentProgram.value.methods
-      .claim(
-        new anchor.BN(proof.signals.minNonce).toNumber(),
-        new anchor.BN(proof.signals.maxNonce).toNumber(),
-        new anchor.BN(proof.signals.amount.toString()),
-        Array.from(bigIntToBytes32(eddsa.F.toObject(proof.r8?.R8_1))),
-        Array.from(bigIntToBytes32(eddsa.F.toObject(proof.r8?.R8_2))),
-        Array.from(convertProofToBytes(proof)),
-      )
-      .preInstructions([
-        ...((await connection.getAccountInfo(ata))
-          ? []
-          : [
-              createAssociatedTokenAccountIdempotentInstructionWithDerivation(
-                account.value,
-                account.value,
-                mint,
-              ),
-            ]),
-        ...(dataAccount
-          ? []
-          : [
-              await paymentProgram.value.methods
-                .init(managerPublicKey.value)
-                .accounts({
-                  mint,
-                })
-                .instruction(),
-            ]),
-      ])
-      .accounts({
-        recipientManagerDataAccount: managerRecipientDataAccount,
-        paymentAccount: new PublicKey(proof.signals.paymentAccount),
-        mint,
-        recipientTokenAccount: ata,
-      })
-      .instruction();
+    const lookupAccount = await fetchMaybeAddressLookupTableFromSeeds(rpc, {
+      authority: signer.address,
+      recentSlot,
+    });
 
-    console.log(ix);
-  };
+    const initRecipientManagerDataAccountIx = await getInitInstructionAsync({
+      authority: signer,
+      mint: address(mint.toBase58()),
+      managerAuthority: address(managerPublicKey.value.toBase58()),
+    });
 
-  const deriveWorkerManagerDataAccount = (
-    worker: PublicKey,
-    manager: PublicKey,
-  ) => {
-    const [publicKey] = PublicKey.findProgramAddressSync(
-      [worker.toBuffer(), manager.toBuffer()],
-      paymentProgram.value.programId,
-    );
+    //create lookup table if it doesn't exist (in a seperate tx)
+    // if (!lookupAccount.exists || !lookupAccount) {
+    //   console.log("creating lookup table..");
+    //   const initLookupTableIx = await getCreateLookupTableInstructionAsync({
+    //     authority: signer,
+    //     recentSlot,
+    //   });
+    //
+    //   const extendLookupTableIx = getExtendLookupTableInstruction({
+    //     authority: signer,
+    //     address: lookupAccount.address,
+    //     payer: signer,
+    //     addresses: [address(mint.toBase58()), recipientManagerDataAccount, ata],
+    //   });
+    //
+    //   const initRecentBlockhash = await rpc.getLatestBlockhash().send();
+    //   const initTransactionMessage = pipe(
+    //     createTransactionMessage({ version: 0 }),
+    //     (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+    //     (tx) =>
+    //       setTransactionMessageLifetimeUsingBlockhash(
+    //         initRecentBlockhash.value,
+    //         tx,
+    //       ),
+    //     (tx) =>
+    //       appendTransactionMessageInstructions(
+    //         [initLookupTableIx, extendLookupTableIx],
+    //         tx,
+    //       ),
+    //   );
+    //
+    //   const signedTx = await signTransactionMessageWithSigners(
+    //     initTransactionMessage,
+    //   );
+    //
+    //   await sendAndConfirmTransaction(signedTx, {
+    //     commitment: "finalized",
+    //   });
+    // }
 
-    return publicKey;
+    const tokenAccount = await fetchMaybeToken(rpc, ata);
+
+    const setComputeIx = getSetComputeUnitLimitInstruction({
+      units: 400_000,
+    });
+
+    const createAtaIx = await getCreateAssociatedTokenInstructionAsync({
+      mint: address(mint.toBase58()),
+      payer: signer,
+      owner: signer.address,
+    });
+
+    const claimProofIx = await getClaimProofsInstructionAsync({
+      paymentAccount: address(paymentAccount),
+      mint: address(mint.toBase58()),
+      recipientManagerDataAccount,
+      recipientTokenAccount: ata,
+      pubX: bigIntToBytes32(eddsa.F.toObject(proofs[0].r8?.R8_1)),
+      pubY: bigIntToBytes32(eddsa.F.toObject(proofs[0].r8?.R8_2)),
+      authority: signer,
+      proofData: [
+        ...proofs.map((proof) => ({
+          minNonce: Number(proof.signals!.minNonce),
+          maxNonce: Number(proof.signals!.maxNonce),
+          totalAmount: Number(proof.signals!.amount),
+          proof: convertProofToBytes(proof),
+        })),
+      ],
+    });
+
+    try {
+      const recentBlockhash = await rpc.getLatestBlockhash().send();
+      const transactionMessage = pipe(
+        createTransactionMessage({ version: 0 }),
+        (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+        (tx) =>
+          setTransactionMessageLifetimeUsingBlockhash(
+            recentBlockhash.value,
+            tx,
+          ),
+        // (tx) =>
+        //   compressTransactionMessageUsingAddressLookupTables(tx, lookupAccount),
+        (tx) =>
+          appendTransactionMessageInstructions(
+            dataAccount.exists ? [] : [initRecipientManagerDataAccountIx],
+            tx,
+          ),
+        (tx) =>
+          appendTransactionMessageInstructions(
+            tokenAccount.exists ? [] : [createAtaIx],
+            tx,
+          ),
+        (tx) =>
+          appendTransactionMessageInstructions(
+            [setComputeIx, claimProofIx],
+            tx,
+          ),
+      );
+
+      const signedTx =
+        await signTransactionMessageWithSigners(transactionMessage);
+
+      await sendAndConfirmTransaction(signedTx, {
+        commitment: "finalized",
+      });
+    } catch (e: any) {
+      if (e instanceof SolanaError) {
+        console.error(e.stack, e.context, e.cause);
+      }
+
+      throw e;
+    }
   };
 
   const useRecipientManagerDataAccount = (
@@ -161,15 +254,19 @@ export function usePaymentProgram() {
           throw new Error("No account or manager public key found");
         }
 
-        const managerDataAccount = deriveWorkerManagerDataAccount(
-          new PublicKey(account.value),
-          new PublicKey(managerPublicKey.value),
-        );
+        const [recipientManagerDataAccountAddress] =
+          await getProgramDerivedAddress({
+            programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
+            seeds: [
+              getAddressEncoder().encode(address(account.value)),
+              getAddressEncoder().encode(address(managerPublicKey.value)),
+            ],
+          });
 
-        const dataAccount =
-          await paymentProgram.value.account.recipientManagerDataAccount.fetchNullable(
-            managerDataAccount,
-          );
+        const dataAccount = await fetchMaybeRecipientManagerDataAccount(
+          rpc,
+          recipientManagerDataAccountAddress,
+        );
 
         return dataAccount;
       },
@@ -178,10 +275,8 @@ export function usePaymentProgram() {
   };
 
   return {
-    program: paymentProgram,
     useClaimWithProof,
-    claimWithProof,
+    claimWithProofs,
     useRecipientManagerDataAccount,
-    deriveWorkerManagerDataAccount,
   };
 }

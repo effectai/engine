@@ -43,13 +43,15 @@ export type ResponseMap = {
                       ? never
                       : K extends "error"
                         ? never
-                        : K extends "ack"
-                          ? never
-                          : K extends "requestToWork"
-                            ? RequestToWorkResponse
-                            : K extends "identifyRequest"
-                              ? EffectIdentifyResponse
-                              : never;
+                        : K extends "bulkProofRequest"
+                          ? ProofResponse
+                          : K extends "ack"
+                            ? never
+                            : K extends "requestToWork"
+                              ? RequestToWorkResponse
+                              : K extends "identifyRequest"
+                                ? EffectIdentifyResponse
+                                : never;
 };
 
 export type MessageResponse<T extends EffectProtocolMessage> = {

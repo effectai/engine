@@ -98,6 +98,7 @@ export const createWorker = async ({
     requestPayout,
     getPaymentsFromNonce,
     requestPaymentProof,
+    requestBulkProofs,
     getMaxNonce,
   } = createPaymentWorker({
     entity,
@@ -178,8 +179,9 @@ export const createWorker = async ({
 
   const ping = async (_manager: Multiaddr) => {
     // const pingService = entity.node.services.ping as PingService;
-    return 5;
     // return await pingService.ping(manager);
+    //FIX:: ping protocol breaks after some time
+    return 0;
   };
 
   if (autoExpire) {
@@ -207,7 +209,7 @@ export const createWorker = async ({
     countPaymentAmount,
     requestPayout,
     requestPaymentProof,
-
+    requestBulkProofs,
     identify,
     connect,
     start,

@@ -39,7 +39,7 @@ const loadIdl = (relativePath: string) => {
 const generateClient = (name: string, idlPath: string) => {
   const idl = loadIdl(idlPath);
   const codama = createFromRoot(rootNodeFromAnchor(idl));
-  const pathToGeneratedFolder = path.join(__dirname, "../src/clients/js", name);
+  const pathToGeneratedFolder = path.join(__dirname, "../src", name);
   const options = {};
   codama.accept(renderVisitor(pathToGeneratedFolder, options));
 };

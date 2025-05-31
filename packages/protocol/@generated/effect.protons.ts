@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/no-unnecessary-boolean-literal-compare */
 /* eslint-disable @typescript-eslint/no-empty-interface */
-//@ts-nocheck
+// @ts-nocheck
 
 import {
   type Codec,
@@ -596,6 +596,7 @@ export interface EffectProtocolMessage {
   requestToWorkResponse?: RequestToWorkResponse;
   identifyRequest?: EffectIdentifyRequest;
   identifyResponse?: EffectIdentifyResponse;
+  bulkProofRequest?: BulkProofRequest;
 }
 
 export namespace EffectProtocolMessage {
@@ -687,6 +688,11 @@ export namespace EffectProtocolMessage {
           if (obj.identifyResponse != null) {
             w.uint32(130);
             EffectIdentifyResponse.codec().encode(obj.identifyResponse, w);
+          }
+
+          if (obj.bulkProofRequest != null) {
+            w.uint32(138);
+            BulkProofRequest.codec().encode(obj.bulkProofRequest, w);
           }
 
           if (opts.lengthDelimited !== false) {
@@ -851,6 +857,16 @@ export namespace EffectProtocolMessage {
                   reader.uint32(),
                   {
                     limits: opts.limits?.identifyResponse,
+                  },
+                );
+                break;
+              }
+              case 17: {
+                obj.bulkProofRequest = BulkProofRequest.codec().decode(
+                  reader,
+                  reader.uint32(),
+                  {
+                    limits: opts.limits?.bulkProofRequest,
                   },
                 );
                 break;
@@ -1631,6 +1647,87 @@ export namespace ProofResponse {
     opts?: DecodeOptions<ProofResponse>,
   ): ProofResponse => {
     return decodeMessage(buf, ProofResponse.codec(), opts);
+  };
+}
+
+export interface BulkProofRequest {
+  proofs: ProofResponse[];
+}
+
+export namespace BulkProofRequest {
+  let _codec: Codec<BulkProofRequest>;
+
+  export const codec = (): Codec<BulkProofRequest> => {
+    if (_codec == null) {
+      _codec = message<BulkProofRequest>(
+        (obj, w, opts = {}) => {
+          if (opts.lengthDelimited !== false) {
+            w.fork();
+          }
+
+          if (obj.proofs != null) {
+            for (const value of obj.proofs) {
+              w.uint32(10);
+              ProofResponse.codec().encode(value, w);
+            }
+          }
+
+          if (opts.lengthDelimited !== false) {
+            w.ldelim();
+          }
+        },
+        (reader, length, opts = {}) => {
+          const obj: any = {
+            proofs: [],
+          };
+
+          const end = length == null ? reader.len : reader.pos + length;
+
+          while (reader.pos < end) {
+            const tag = reader.uint32();
+
+            switch (tag >>> 3) {
+              case 1: {
+                if (
+                  opts.limits?.proofs != null &&
+                  obj.proofs.length === opts.limits.proofs
+                ) {
+                  throw new MaxLengthError(
+                    'Decode error - map field "proofs" had too many elements',
+                  );
+                }
+
+                obj.proofs.push(
+                  ProofResponse.codec().decode(reader, reader.uint32(), {
+                    limits: opts.limits?.proofs$,
+                  }),
+                );
+                break;
+              }
+              default: {
+                reader.skipType(tag & 7);
+                break;
+              }
+            }
+          }
+
+          return obj;
+        },
+      );
+    }
+
+    return _codec;
+  };
+
+  export const encode = (obj: Partial<BulkProofRequest>): Uint8Array => {
+    return encodeMessage(obj, BulkProofRequest.codec());
+  };
+
+  export const decode = (
+    buf: Uint8Array | Uint8ArrayList,
+    opts?: DecodeOptions<BulkProofRequest>,
+  ): BulkProofRequest => {
+    return decodeMessage(buf, BulkProofRequest.codec(), opts);
   };
 }
 
