@@ -10,8 +10,6 @@ template VerifyPaymentBatch(n) {
     signal output maxNonce;
     signal output totalAmount;
 
-    // TODO: make receiver a public signal, so we can check it in the
-    // solana program
     signal input receiver;
 
     signal input pubX;
@@ -63,4 +61,4 @@ template VerifyPaymentBatch(n) {
     totalAmount <== total[n];
 }
 
-component main {public [pubX, pubY]} = VerifyPaymentBatch(60);
+component main {public [pubX, pubY, receiver]} = VerifyPaymentBatch(60);

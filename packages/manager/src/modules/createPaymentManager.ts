@@ -114,6 +114,7 @@ export async function createPaymentManager({
           proof.publicSignals[0],
           proof.publicSignals[1],
           proof.publicSignals[2],
+          proof.publicSignals[3],
           r8_x.toString(),
           r8_y.toString(),
         ],
