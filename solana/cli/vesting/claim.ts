@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { EffectVestingIdl, type EffectVesting } from "@effectai/shared";
+import { EffectVestingIdl, type EffectVesting } from "@effectai/idl";
 import { loadProvider } from "../../utils/provider";
 
 import type { CommandModule } from "yargs";
@@ -25,7 +25,7 @@ export const vestingClaimCommand: CommandModule<
 
     const vestingProgram = new anchor.Program(
       EffectVestingIdl as anchor.Idl,
-      provider
+      provider,
     ) as unknown as anchor.Program<EffectVesting>;
 
     await vestingProgram.methods

@@ -8,7 +8,7 @@ import {
   extractEosPublicKeyBytes,
   useDeriveMigrationAccounts,
 } from "@effectai/utils";
-import { EffectMigrationIdl } from "@effectai/shared";
+import { EffectMigrationIdl } from "@effectai/idl";
 import { toBytes } from "viem";
 
 export const fetchMigrationAccount: CommandModule<unknown, { mint: string }> = {
@@ -18,7 +18,7 @@ export const fetchMigrationAccount: CommandModule<unknown, { mint: string }> = {
     const { payer, provider } = await loadProvider();
     const migrationProgram = new anchor.Program(
       EffectMigrationIdl as anchor.Idl,
-      provider
+      provider,
     ) as unknown as anchor.Program<EffectMigration>;
 
     const publicKey = toBytes("0x6194Cc27681f0Fc188E3C81E2b0220Ba0A645046");

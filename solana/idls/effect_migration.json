@@ -66,8 +66,8 @@
               }
             ],
             "program": {
-              "kind": "const",
-              "value": "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
+              "kind": "account",
+              "path": "staking_program"
             }
           }
         },

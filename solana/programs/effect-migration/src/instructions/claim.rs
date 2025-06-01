@@ -11,14 +11,9 @@ use crate::utils::{eos_format, ethereum_format, get_expected_message_bytes, hash
 use crate::{errors::MigrationError, vault_seed, genesis_stake};
 use anchor_lang::prelude::Pubkey;
 
-
-use crate::*;
-
-/// CHECK:
-use effect_staking::{
-    accounts::StakeAccount,
-    program::EffectStaking, 
-};
+declare_program!(effect_staking);
+use effect_staking::accounts::StakeAccount;
+use effect_staking::program::EffectStaking;
 
 #[derive(Accounts)]
 #[instruction(signature: Vec<u8>, message: Vec<u8>)]

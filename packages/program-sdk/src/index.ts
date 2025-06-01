@@ -14,4 +14,10 @@ export {
   getOpenInstructionAsync,
   EFFECT_VESTING_PROGRAM_ADDRESS,
 } from "./vesting";
+export {
+  EFFECT_REWARDS_PROGRAM_ADDRESS,
+  getInitInstructionAsync as getInitRewardsInstructionAsync,
+  getStakeAccountDecoder,
+  getInitIntermediaryVaultInstructionAsync,
+} from "./rewards";
 export * from "./helpers.js";

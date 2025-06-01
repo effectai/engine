@@ -11,9 +11,11 @@ import {
   extractKeyFromEosUsername,
   loadProvider,
   askForConfirmation,
+  useDeriveMigrationAccounts,
 } from "@effectai/utils";
 import { EffectMigration, EffectMigrationIdl } from "@effectai/idl";
 import {
+  EFFECT_MIGRATION_PROGRAM_ADDRESS,
   EFFECT_VESTING_PROGRAM_ADDRESS,
   getAssociatedTokenAccount,
   getCreateStakeClaimInstructionAsync,
@@ -21,10 +23,17 @@ import {
 import { PublicKey } from "@solana/web3.js";
 import {
   address,
+  appendTransactionMessageInstructions,
   createKeyPairSignerFromPrivateKeyBytes,
+  createTransactionMessage,
+  pipe,
   sendAndConfirmTransactionFactory,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  signTransactionMessageWithSigners,
 } from "@solana/kit";
 import { loadSolanaContext } from "../../helpers.js";
+import { getCreateAssociatedTokenInstructionAsync } from "@solana-program/token";
 
 interface MigrationClaimOptions {
   mint: string;
@@ -89,17 +98,11 @@ export const registerCreateMigrationClaim = (program: Command) => {
       });
 
       // check if ata exists
-      const ataInfo = await rpc.getAccountInfo(ata).send();
-
-      if (!ataInfo) {
-        // create ata
-        await createAssociatedTokenAccount(
-          provider.connection,
-          payer,
-          new PublicKey(mint),
-          payer.publicKey,
-        );
-      }
+      const ataInfo = await rpc
+        .getAccountInfo(address(ata), {
+          encoding: "jsonParsed",
+        })
+        .send();
 
       let publicKeyBytes = null;
 
@@ -130,12 +133,50 @@ export const registerCreateMigrationClaim = (program: Command) => {
         return;
       }
 
-      const result = await getCreateStakeClaimInstructionAsync({
+      const createAtaIx = await getCreateAssociatedTokenInstructionAsync({
+        mint,
+        payer: signer,
+        owner: signer.address,
+      });
+
+      const { vaultAccount, migrationAccount } = useDeriveMigrationAccounts({
+        mint: new PublicKey(mint),
+        foreignAddress: publicKeyBytes,
+        programId: new PublicKey(EFFECT_MIGRATION_PROGRAM_ADDRESS),
+      });
+
+      console.log("migrationaccount", migrationAccount.toBase58());
+      const instruction = await getCreateStakeClaimInstructionAsync({
+        migrationAccount: address(migrationAccount.toBase58()),
         userTokenAccount: ata,
         stakeStartTime,
         foreignAddress: publicKeyBytes,
         mint: address(mint),
         amount: amount * 10 ** 6,
+        authority: signer,
+      });
+
+      const recentBlockhash = await rpc.getLatestBlockhash().send();
+      const transactionMessage = pipe(
+        createTransactionMessage({ version: 0 }),
+        (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+        (tx) =>
+          setTransactionMessageLifetimeUsingBlockhash(
+            recentBlockhash.value,
+            tx,
+          ),
+        (tx) =>
+          appendTransactionMessageInstructions(
+            ataInfo.value ? [instruction] : [createAtaIx, instruction],
+            tx,
+          ),
+      );
+
+      const signedTx =
+        await signTransactionMessageWithSigners(transactionMessage);
+
+      await sendAndConfirmTransaction(signedTx, {
+        commitment: "confirmed",
       });
 
       //

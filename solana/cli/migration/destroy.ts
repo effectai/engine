@@ -6,7 +6,7 @@ import { loadProvider } from "../../utils/provider";
 import type { CommandModule } from "yargs";
 
 import type { EffectMigration } from "../../target/types/effect_migration";
-import { EffectMigrationIdl } from "@effectai/shared";
+import { EffectMigrationIdl } from "@effectai/idl";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
 interface MigrationClaimOptions {
@@ -38,7 +38,7 @@ export const destroyMigrationClaimCommand: CommandModule<
 
     const migrationProgram = new anchor.Program(
       EffectMigrationIdl as anchor.Idl,
-      provider
+      provider,
     ) as unknown as anchor.Program<EffectMigration>;
 
     const mintKey = new PublicKey(mint);
@@ -46,7 +46,7 @@ export const destroyMigrationClaimCommand: CommandModule<
     const ata = getAssociatedTokenAddressSync(
       new PublicKey(mint),
       new PublicKey("nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"),
-      true
+      true,
     );
 
     const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({

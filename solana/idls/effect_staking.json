@@ -180,8 +180,8 @@
               }
             ],
             "program": {
-              "kind": "const",
-              "value": "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
+              "kind": "account",
+              "path": "migration_program"
             }
           }
         },
@@ -318,8 +318,8 @@
               }
             ],
             "program": {
-              "kind": "const",
-              "value": "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi"
+              "kind": "account",
+              "path": "reward_program"
             }
           }
         },
@@ -339,8 +339,8 @@
               }
             ],
             "program": {
-              "kind": "const",
-              "value": "effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S"
+              "kind": "account",
+              "path": "vesting_program"
             }
           }
         },

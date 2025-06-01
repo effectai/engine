@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { EffectVestingIdl, type EffectVesting } from "@effectai/shared";
+import { EffectVestingIdl, type EffectVesting } from "@effectai/idl";
 import { loadProvider } from "../../utils/provider";
 
 import type { CommandModule } from "yargs";
@@ -60,7 +60,7 @@ export const vestingCreateCommand: CommandModule<
 
     const vestingProgram = new anchor.Program(
       EffectVestingIdl as anchor.Idl,
-      provider
+      provider,
     ) as unknown as anchor.Program<EffectVesting>;
 
     const vestingUntil = startTime + duration; // in seconds
@@ -78,7 +78,7 @@ export const vestingCreateCommand: CommandModule<
 - tokens released per hour: ${amount / (duration / 3600)}
 - tokens released per day: ${amount / (duration / 86400)}
 
-Please confirm`
+Please confirm`,
     );
 
     if (!confirmed) {
@@ -101,7 +101,7 @@ Please confirm`
     console.log("Vesting account created", vestingAccount.publicKey.toBase58());
 
     const topupConfirm = await askForConfirmation(
-      `topup vesting account with ${amount} tokens ?`
+      `topup vesting account with ${amount} tokens ?`,
     );
 
     if (!topupConfirm) {
@@ -116,7 +116,7 @@ Please confirm`
 
     const ata = getAssociatedTokenAddressSync(
       new PublicKey(mint),
-      payer.publicKey
+      payer.publicKey,
     );
 
     const topupTransaction = new Transaction().add(
@@ -133,8 +133,8 @@ Please confirm`
         // amount
         new BN(amount * 1e6).toNumber(),
         // mint decimals
-        6
-      )
+        6,
+      ),
     );
 
     topupTransaction.recentBlockhash = (

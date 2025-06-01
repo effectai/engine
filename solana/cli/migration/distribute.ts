@@ -17,7 +17,7 @@ import {
 } from "@effectai/utils";
 import { toBytes } from "viem";
 import { ComputeBudgetProgram, Transaction } from "@solana/web3.js";
-import { EffectMigrationIdl } from "@effectai/shared";
+import { EffectMigrationIdl } from "@effectai/idl";
 
 type DistributionRow = {
   foreign_key: string;
@@ -51,7 +51,7 @@ export const distributeMigrationCommand: CommandModule<
     const { payer, provider } = await loadProvider();
     const migrationProgram = new anchor.Program(
       EffectMigrationIdl as anchor.Idl,
-      provider
+      provider,
     ) as unknown as anchor.Program<EffectMigration>;
 
     const mintKey = new anchor.web3.PublicKey(mint);
@@ -67,7 +67,7 @@ export const distributeMigrationCommand: CommandModule<
 
     // read the distribution file
     const rows: DistributionRow[] = JSON.parse(
-      readFileSync(distribution_file, "utf-8")
+      readFileSync(distribution_file, "utf-8"),
     );
 
     const claimsLeft = rows.filter((r) => r.status === 0);
@@ -78,7 +78,7 @@ export const distributeMigrationCommand: CommandModule<
         provider.connection.rpcEndpoint
       } totalling ${claimsLeft
         .reduce((acc, row) => acc + Number.parseFloat(row.amount), 0)
-        .toFixed(2)}/${balance.value.uiAmount} EFFECT`
+        .toFixed(2)}/${balance.value.uiAmount} EFFECT`,
     );
 
     if (!confirmed) {
@@ -88,7 +88,7 @@ export const distributeMigrationCommand: CommandModule<
 
     for (const row of rows.filter((row: DistributionRow) => row.status === 0)) {
       console.log(
-        chalk.green(`Distributing ${row.amount} EFFECT to ${row.foreign_key}`)
+        chalk.green(`Distributing ${row.amount} EFFECT to ${row.foreign_key}`),
       );
 
       const foreignKeyBytes = row.foreign_key.startsWith("0x")
@@ -98,8 +98,8 @@ export const distributeMigrationCommand: CommandModule<
       if (!foreignKeyBytes) {
         console.log(
           chalk.red(
-            `Error distributing ${row.amount} EFFECT to ${row.foreign_key}`
-          )
+            `Error distributing ${row.amount} EFFECT to ${row.foreign_key}`,
+          ),
         );
         continue;
       }
@@ -107,8 +107,8 @@ export const distributeMigrationCommand: CommandModule<
       if (!row.stake_age) {
         console.log(
           chalk.red(
-            `Error distributing ${row.amount} EFFECT to ${row.foreign_key} (INVALID STAKE_AGE)`
-          )
+            `Error distributing ${row.amount} EFFECT to ${row.foreign_key} (INVALID STAKE_AGE)`,
+          ),
         );
         continue;
       }
@@ -122,7 +122,7 @@ export const distributeMigrationCommand: CommandModule<
           .createStakeClaim(
             Buffer.from(foreignKeyBytes),
             new BN(row.stake_age),
-            new BN(Number.parseFloat(row.amount) * 1_000_000)
+            new BN(Number.parseFloat(row.amount) * 1_000_000),
           )
           .preInstructions([addPriorityFee])
           .accounts({
@@ -143,13 +143,13 @@ export const distributeMigrationCommand: CommandModule<
           ) {
             console.log(
               chalk.red(
-                `Error distributing ${row.amount} EFFECT to ${row.foreign_key} (ALREADY EXISTS)`
-              )
+                `Error distributing ${row.amount} EFFECT to ${row.foreign_key} (ALREADY EXISTS)`,
+              ),
             );
 
             // ask to do a topup instead
             const confirmed = await askForConfirmation(
-              `Do you want to topup ${row.foreign_key} with ${row.amount} EFFECT?`
+              `Do you want to topup ${row.foreign_key} with ${row.amount} EFFECT?`,
             );
 
             if (confirmed) {
@@ -162,7 +162,7 @@ export const distributeMigrationCommand: CommandModule<
               console.log(
                 `Topping up ${vaultAccount.toBase58()} with ${
                   row.amount
-                } EFFECT...`
+                } EFFECT...`,
               );
 
               const priorityFee = ComputeBudgetProgram.setComputeUnitPrice({
@@ -179,11 +179,11 @@ export const distributeMigrationCommand: CommandModule<
                     payer.publicKey,
                     // amount
                     new BN(
-                      Number.parseFloat(row.amount) * 1_000_000
+                      Number.parseFloat(row.amount) * 1_000_000,
                     ).toNumber(),
                     // mint decimals
-                    6
-                  )
+                    6,
+                  ),
                 );
 
                 topupTransaction.recentBlockhash = (
@@ -206,12 +206,12 @@ export const distributeMigrationCommand: CommandModule<
                       row.status = 1; // mark as to be confirmed
                       writeFileSync(
                         distribution_file,
-                        JSON.stringify(rows, null, 2)
+                        JSON.stringify(rows, null, 2),
                       );
                     }
                   }
                   console.log(
-                    `Error topping up ${row.foreign_key} with ${row.amount} EFFECT`
+                    `Error topping up ${row.foreign_key} with ${row.amount} EFFECT`,
                   );
                   console.log(chalk.red(e.message));
                 }
@@ -220,8 +220,8 @@ export const distributeMigrationCommand: CommandModule<
           } else {
             console.log(
               chalk.red(
-                `Error distributing ${row.amount} EFFECT to ${row.foreign_key}`
-              )
+                `Error distributing ${row.amount} EFFECT to ${row.foreign_key}`,
+              ),
             );
             console.log(chalk.red(e.message));
           }
