@@ -5,6 +5,7 @@ export const useAuth = () => {
     const { useDisconnect } = useSession();
     const { useLogout } = useWeb3Auth();
     const { logout } = useAuthStore();
+    const { destroy } = useWorkerStore();
 
     const { mutateAsync: disconnect } = useDisconnect();
     const { mutateAsync: logoutWeb3Auth } = useLogout();
@@ -15,9 +16,9 @@ export const useAuth = () => {
         await disconnect();
         //logout from web3auth
         await logoutWeb3Auth();
-
         //clear auth state
         logout();
+        await destroy();
       },
     });
   };

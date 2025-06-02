@@ -23,7 +23,7 @@ export const useFetchManagerNodes = () => {
             multiaddr(data.value.announcedAddresses[0]),
           );
 
-          const latency = await workerStore.ping(
+          const latency = await workerStore.worker?.ping(
             multiaddr(data.value.announcedAddresses[0]),
           );
 

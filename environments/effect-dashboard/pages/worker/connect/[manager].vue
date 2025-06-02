@@ -1,5 +1,6 @@
 <template>
   <WorkerNodeStatusCard class="my-5" />
+  <WorkerClaimPaymentsModal v-model="isOpenClaimModal" />
   <WorkerTaskModal />
   <div class="grid grid-cols-1 md:grid-cols-4 gap-4 my-5">
     <WorkerStatisticCard
@@ -17,7 +18,11 @@
       icon="i-lucide-dollar-sign"
       label="Total Earned"
       :value="totalEarned"
-    />
+    >
+      <a href="#" @click="isOpenClaimModal = true" class="underline"
+        >claim payments</a
+      >
+    </WorkerStatisticCard>
     <WorkerStatisticCard
       icon="i-lucide-activity"
       label="Tasks Completed"
@@ -31,7 +36,6 @@
     </WorkerStatisticCard>
   </div>
   <WorkerTaskList class="my-5" />
-  <WorkerPaymentsList />
 </template>
 
 <script lang="ts" setup>
@@ -41,26 +45,29 @@ definePageMeta({
 });
 
 const config = useRuntimeConfig();
+const isOpenClaimModal = ref(false);
 
 const { useActiveSession } = useSessionStore();
 const { connectedOn } = useActiveSession();
 
 const uptime = useUptime(connectedOn);
 
-const { useGetPayments } = usePayments();
-const { data: payments } = useGetPayments();
+const { useGetTotalAmountFromPayments } = usePayments();
+const { data: totalPaymentAmount } = useGetTotalAmountFromPayments();
 
 const { useGetTasks } = useTasks();
 const { data: completedTasks } = useGetTasks(ref("completed"));
 const { data: rejectedTasks } = useGetTasks(ref("rejected"));
+
 const { data: expiredTasks } = useGetTasks(ref("expired"));
 
 const { data: _payout } = usePayout();
 const { data: identify } = useIdentify();
+
 watch(
   () => identify.value?.isConnected,
-  (isConnected) => {
-    if (isConnected === false) {
+  (isConnected, oldValue) => {
+    if (isConnected === false && oldValue === true) {
       navigateTo("/worker/connect");
     }
   },
@@ -88,15 +95,11 @@ const performanceScore = computed(() => {
 });
 
 const totalEarned = computed(() => {
-  if (!payments.value) {
+  if (!totalPaymentAmount.value) {
     return formatNumber(0);
   }
 
-  const total = payments.value.reduce((acc, payment) => {
-    return acc + payment.state.amount;
-  }, 0n);
-
-  return `${formatBigIntToAmount(total).toFixed(2)} EFFECT`;
+  return `${formatBigIntToAmount(totalPaymentAmount.value).toFixed(2)} EFFECT`;
 });
 
 const totalCompletedTasks = computed(() => {

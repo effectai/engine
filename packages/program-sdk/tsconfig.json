@@ -1,22 +1,22 @@
-// {
-//   "$schema": "https://json.schemastore.org/tsconfig",
-//   "display": "@effectai/program-sdk",
-//   "extends": "../../tsconfig.base.json",
-//   "include": ["src"]
-// }
 {
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "declaration": true,
-    "esModuleInterop": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "noEmitOnError": true,
-    "strict": false,
-    "skipLibCheck": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler"
-  },
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "@effectai/program-sdk",
+  "extends": "../../tsconfig.base.json",
   "include": ["src"]
 }
+// {
+//   "compilerOptions": {
+//     "outDir": "./dist",
+//     "rootDir": "./src",
+//     "declaration": true,
+//     "esModuleInterop": true,
+//     "declarationMap": true,
+//     "sourceMap": true,
+//     "noEmitOnError": true,
+//     "strict": false,
+//     "skipLibCheck": true,
+//     "module": "ESNext",
+//     "moduleResolution": "bundler"
+//   },
+//   "include": ["src"]
+// }

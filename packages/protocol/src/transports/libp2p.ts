@@ -136,11 +136,13 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
         denyOutboundConnection: async () => false,
       },
       connectionManager: {
-        //TODO::
         maxConnections: 1000,
-        inboundUpgradeTimeout: 10000,
         maxParallelDials: 100,
         dialTimeout: 30000,
+        inboundStreamProtocolNegotiationTimeout: 1e4,
+        inboundUpgradeTimeout: 1e4,
+        outboundStreamProtocolNegotiationTimeout: 1e4,
+        outboundUpgradeTimeout: 1e4,
       },
       transports: this.options.transports,
       streamMuxers: [yamux()],
@@ -156,7 +158,7 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
 
   private setupProtocolHandler(): void {
     this.libp2p.handle(
-      this.entity.protocol.name,
+      `/${this.entity.protocol.name}/${this.entity.protocol.version}`,
       async ({ stream, connection }) => {
         await this.handleIncomingStream(stream, connection);
       },
@@ -343,15 +345,20 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
     if (isMultiaddr(address)) {
       const connection = await this.libp2p.dial(address);
       return {
-        stream: await connection.newStream(this.entity.protocol.name),
+        stream: await connection.newStream(
+          `/${this.entity.protocol.name}/${this.entity.protocol.version}`,
+        ),
         shouldClose: true,
       };
     }
 
     let connection = this.libp2p.getConnections(address)[0];
     if (!connection) connection = await this.libp2p.dial(address);
+
     return {
-      stream: await connection.newStream(this.entity.protocol.name),
+      stream: await connection.newStream(
+        `/${this.entity.protocol.name}/${this.entity.protocol.version}`,
+      ),
       shouldClose: true,
     };
   }

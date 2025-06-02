@@ -596,6 +596,7 @@ export interface EffectProtocolMessage {
   requestToWorkResponse?: RequestToWorkResponse;
   identifyRequest?: EffectIdentifyRequest;
   identifyResponse?: EffectIdentifyResponse;
+  bulkProofRequest?: BulkProofRequest;
 }
 
 export namespace EffectProtocolMessage {
@@ -687,6 +688,11 @@ export namespace EffectProtocolMessage {
           if (obj.identifyResponse != null) {
             w.uint32(130);
             EffectIdentifyResponse.codec().encode(obj.identifyResponse, w);
+          }
+
+          if (obj.bulkProofRequest != null) {
+            w.uint32(138);
+            BulkProofRequest.codec().encode(obj.bulkProofRequest, w);
           }
 
           if (opts.lengthDelimited !== false) {
@@ -855,6 +861,16 @@ export namespace EffectProtocolMessage {
                 );
                 break;
               }
+              case 17: {
+                obj.bulkProofRequest = BulkProofRequest.codec().decode(
+                  reader,
+                  reader.uint32(),
+                  {
+                    limits: opts.limits?.bulkProofRequest,
+                  },
+                );
+                break;
+              }
               default: {
                 reader.skipType(tag & 7);
                 break;
@@ -997,12 +1013,14 @@ export namespace PaymentMessage {
 }
 
 export interface Payment {
+  id: string;
   amount: bigint;
   recipient: string;
   paymentAccount: string;
   nonce: bigint;
   signature?: PaymentSignature;
   label?: string;
+  version: string;
 }
 
 export namespace Payment {
@@ -1014,6 +1032,11 @@ export namespace Payment {
         (obj, w, opts = {}) => {
           if (opts.lengthDelimited !== false) {
             w.fork();
+          }
+
+          if (obj.id != null && obj.id !== "") {
+            w.uint32(10);
+            w.string(obj.id);
           }
 
           if (obj.amount != null && obj.amount !== 0n) {
@@ -1046,16 +1069,23 @@ export namespace Payment {
             w.string(obj.label);
           }
 
+          if (obj.version != null && obj.version !== "") {
+            w.uint32(66);
+            w.string(obj.version);
+          }
+
           if (opts.lengthDelimited !== false) {
             w.ldelim();
           }
         },
         (reader, length, opts = {}) => {
           const obj: any = {
+            id: "",
             amount: 0n,
             recipient: "",
             paymentAccount: "",
             nonce: 0n,
+            version: "",
           };
 
           const end = length == null ? reader.len : reader.pos + length;
@@ -1064,6 +1094,10 @@ export namespace Payment {
             const tag = reader.uint32();
 
             switch (tag >>> 3) {
+              case 1: {
+                obj.id = reader.string();
+                break;
+              }
               case 2: {
                 obj.amount = reader.uint64();
                 break;
@@ -1092,6 +1126,10 @@ export namespace Payment {
               }
               case 7: {
                 obj.label = reader.string();
+                break;
+              }
+              case 8: {
+                obj.version = reader.string();
                 break;
               }
               default: {
@@ -1279,8 +1317,9 @@ export namespace PaymentSignature {
 export interface Signals {
   minNonce: string;
   maxNonce: string;
-  amount: bigint;
   paymentAccount: string;
+  recipient: string;
+  amount: bigint;
 }
 
 export namespace Signals {
@@ -1304,14 +1343,19 @@ export namespace Signals {
             w.string(obj.maxNonce);
           }
 
-          if (obj.amount != null && obj.amount !== 0n) {
-            w.uint32(24);
-            w.uint64(obj.amount);
+          if (obj.paymentAccount != null && obj.paymentAccount !== "") {
+            w.uint32(26);
+            w.string(obj.paymentAccount);
           }
 
-          if (obj.paymentAccount != null && obj.paymentAccount !== "") {
+          if (obj.recipient != null && obj.recipient !== "") {
             w.uint32(34);
-            w.string(obj.paymentAccount);
+            w.string(obj.recipient);
+          }
+
+          if (obj.amount != null && obj.amount !== 0n) {
+            w.uint32(40);
+            w.uint64(obj.amount);
           }
 
           if (opts.lengthDelimited !== false) {
@@ -1322,8 +1366,9 @@ export namespace Signals {
           const obj: any = {
             minNonce: "",
             maxNonce: "",
-            amount: 0n,
             paymentAccount: "",
+            recipient: "",
+            amount: 0n,
           };
 
           const end = length == null ? reader.len : reader.pos + length;
@@ -1341,11 +1386,15 @@ export namespace Signals {
                 break;
               }
               case 3: {
-                obj.amount = reader.uint64();
+                obj.paymentAccount = reader.string();
                 break;
               }
               case 4: {
-                obj.paymentAccount = reader.string();
+                obj.recipient = reader.string();
+                break;
+              }
+              case 5: {
+                obj.amount = reader.uint64();
                 break;
               }
               default: {
@@ -1455,8 +1504,8 @@ export namespace Matrix {
 export interface ProofResponse {
   piA: string[];
   piB: Matrix[];
-  piC: string[];
   protocol: string;
+  piC: string[];
   curve: string;
   signals?: Signals;
   r8?: R8Pair;
@@ -1487,16 +1536,16 @@ export namespace ProofResponse {
             }
           }
 
+          if (obj.protocol != null && obj.protocol !== "") {
+            w.uint32(34);
+            w.string(obj.protocol);
+          }
+
           if (obj.piC != null) {
             for (const value of obj.piC) {
               w.uint32(26);
               w.string(value);
             }
-          }
-
-          if (obj.protocol != null && obj.protocol !== "") {
-            w.uint32(34);
-            w.string(obj.protocol);
           }
 
           if (obj.curve != null && obj.curve !== "") {
@@ -1522,8 +1571,8 @@ export namespace ProofResponse {
           const obj: any = {
             piA: [],
             piB: [],
-            piC: [],
             protocol: "",
+            piC: [],
             curve: "",
           };
 
@@ -1563,6 +1612,10 @@ export namespace ProofResponse {
                 );
                 break;
               }
+              case 4: {
+                obj.protocol = reader.string();
+                break;
+              }
               case 3: {
                 if (
                   opts.limits?.piC != null &&
@@ -1574,10 +1627,6 @@ export namespace ProofResponse {
                 }
 
                 obj.piC.push(reader.string());
-                break;
-              }
-              case 4: {
-                obj.protocol = reader.string();
                 break;
               }
               case 5: {
@@ -1620,6 +1669,87 @@ export namespace ProofResponse {
     opts?: DecodeOptions<ProofResponse>,
   ): ProofResponse => {
     return decodeMessage(buf, ProofResponse.codec(), opts);
+  };
+}
+
+export interface BulkProofRequest {
+  proofs: ProofResponse[];
+}
+
+export namespace BulkProofRequest {
+  let _codec: Codec<BulkProofRequest>;
+
+  export const codec = (): Codec<BulkProofRequest> => {
+    if (_codec == null) {
+      _codec = message<BulkProofRequest>(
+        (obj, w, opts = {}) => {
+          if (opts.lengthDelimited !== false) {
+            w.fork();
+          }
+
+          if (obj.proofs != null) {
+            for (const value of obj.proofs) {
+              w.uint32(10);
+              ProofResponse.codec().encode(value, w);
+            }
+          }
+
+          if (opts.lengthDelimited !== false) {
+            w.ldelim();
+          }
+        },
+        (reader, length, opts = {}) => {
+          const obj: any = {
+            proofs: [],
+          };
+
+          const end = length == null ? reader.len : reader.pos + length;
+
+          while (reader.pos < end) {
+            const tag = reader.uint32();
+
+            switch (tag >>> 3) {
+              case 1: {
+                if (
+                  opts.limits?.proofs != null &&
+                  obj.proofs.length === opts.limits.proofs
+                ) {
+                  throw new MaxLengthError(
+                    'Decode error - map field "proofs" had too many elements',
+                  );
+                }
+
+                obj.proofs.push(
+                  ProofResponse.codec().decode(reader, reader.uint32(), {
+                    limits: opts.limits?.proofs$,
+                  }),
+                );
+                break;
+              }
+              default: {
+                reader.skipType(tag & 7);
+                break;
+              }
+            }
+          }
+
+          return obj;
+        },
+      );
+    }
+
+    return _codec;
+  };
+
+  export const encode = (obj: Partial<BulkProofRequest>): Uint8Array => {
+    return encodeMessage(obj, BulkProofRequest.codec());
+  };
+
+  export const decode = (
+    buf: Uint8Array | Uint8ArrayList,
+    opts?: DecodeOptions<BulkProofRequest>,
+  ): BulkProofRequest => {
+    return decodeMessage(buf, BulkProofRequest.codec(), opts);
   };
 }
 

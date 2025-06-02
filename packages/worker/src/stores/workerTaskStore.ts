@@ -228,18 +228,11 @@ export const createWorkerTaskStore = ({
   const expire = async ({ entityId }: { entityId: string }) => {
     const taskRecord = await getTask({ entityId });
 
-    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
-
-    if (lastEvent.type !== "create") {
-      throw new TaskValidationError("Task was not created.");
-    }
-
     taskRecord.events.push({
       timestamp: Math.floor(Date.now() / 1000),
       type: "expire",
     });
 
-    //move task to expired index
     const batch = coreStore.datastore.batch();
     batch.put(
       new Key(`/tasks/expired/${entityId}`),

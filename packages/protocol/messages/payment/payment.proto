@@ -1,6 +1,8 @@
 syntax = "proto3";
 
 message Payment { 
+  // ulid
+  string id = 1;
 
   // Amount to be payed out as float
   uint64 amount = 2;
@@ -18,6 +20,8 @@ message Payment {
   PaymentSignature signature = 6;
 
   optional string label = 7;
+
+  string version = 8;
 }   
 
 message R8Pair {

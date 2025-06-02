@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { type EffectRewards, EffectRewardsIdl } from "@effectai/shared";
+import { type EffectRewards, EffectRewardsIdl } from "@effectai/idl";
 import chalk from "chalk";
 import { loadProvider } from "../../utils/provider";
 
@@ -25,7 +25,7 @@ export const rewardsAddFee: CommandModule<
 
     const rewardProgram = new anchor.Program(
       EffectRewardsIdl as anchor.Idl,
-      provider
+      provider,
     ) as unknown as anchor.Program<EffectRewards>;
 
     const result = await rewardProgram.methods

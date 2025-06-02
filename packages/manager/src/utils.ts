@@ -1,6 +1,15 @@
 import { PublicKey } from "@solana/web3.js";
-import { buildEddsa, type Point } from "@effectai/zkp";
-import type { Payment } from "@effectai/protocol-core";
+import {
+  buildEddsa,
+  Groth16Proof,
+  PublicSignals,
+  type Point,
+} from "@effectai/zkp";
+import type {
+  EffectProtocolMessage,
+  Payment,
+  ProofResponse,
+} from "@effectai/protocol-core";
 import { createHash } from "node:crypto";
 
 export const signPayment = async (
@@ -86,4 +95,62 @@ export const computeTemplateId = (provider: string, template_html: string) => {
   const input = `${provider}:${template_html}`;
   const sha256 = createHash("sha256").update(input).digest("hex");
   return sha256;
+};
+
+export function proofResponseToGroth16Proof(
+  proofResponse: ProofResponse,
+): Groth16Proof {
+  return {
+    protocol: proofResponse.protocol,
+    pi_a: proofResponse.piA,
+    pi_b: [
+      proofResponse.piB[0].row,
+      proofResponse.piB[1].row,
+      proofResponse.piB[2].row,
+    ],
+    pi_c: proofResponse.piC,
+    curve: proofResponse.curve,
+  };
+}
+
+export function ProofToProofResponseMessage(
+  proof: Groth16Proof,
+  publicSignals: PublicSignals,
+  pub_x: Uint8Array,
+  pub_y: Uint8Array,
+  paymentAccount: string,
+): EffectProtocolMessage {
+  return {
+    proofResponse: {
+      r8: {
+        R8_1: pub_x,
+        R8_2: pub_y,
+      },
+      signals: {
+        minNonce: publicSignals[0],
+        maxNonce: publicSignals[1],
+        amount: BigInt(publicSignals[2]),
+        recipient: publicSignals[3],
+        paymentAccount: paymentAccount,
+      },
+      piA: proof.pi_a,
+      piB: [
+        { row: [proof.pi_b[0][0], proof.pi_b[0][1]] },
+        { row: [proof.pi_b[1][0], proof.pi_b[1][1]] },
+        { row: [proof.pi_b[2][0], proof.pi_b[2][1]] },
+      ],
+      piC: proof.pi_c,
+      protocol: proof.protocol,
+      curve: proof.curve,
+    },
+  };
+}
+
+export const hexToPublicKey = (hexString: string) => {
+  const bigIntVal = BigInt(`0x${hexString}`);
+
+  const buffer = Buffer.alloc(8);
+  buffer.writeBigUInt64BE(bigIntVal);
+
+  return new PublicKey(buffer);
 };

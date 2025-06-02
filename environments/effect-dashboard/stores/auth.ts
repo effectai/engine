@@ -42,6 +42,7 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const solanaWallet = ref<SolanaWallet | null>(null);
+
   watchEffect(async () => {
     if (privateKey.value) {
       await initializeSolanaWallet();
@@ -56,6 +57,7 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const login = async (key: string) => {
+    console.log("logging in..");
     privateKey.value = key;
   };
 

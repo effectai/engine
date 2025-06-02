@@ -15,7 +15,7 @@ import {
   type EffectMigration,
   EffectStakingIdl,
   EffectStaking,
-} from "@effectai/shared";
+} from "@effectai/idl";
 import { PublicKey } from "@solana/web3.js";
 import pLimit from "p-limit";
 import { BN } from "bn.js";
@@ -30,22 +30,22 @@ export const fetchStats: CommandModule<unknown, { mint: string }> = {
 
     const vestingProgram = new anchor.Program(
       EffectVestingIdl as anchor.Idl,
-      provider
+      provider,
     ) as unknown as anchor.Program<EffectVesting>;
 
     const migrationProgram = new anchor.Program(
       EffectMigrationIdl as anchor.Idl,
-      provider
+      provider,
     ) as unknown as anchor.Program<EffectMigration>;
 
     const rewardProgram = new anchor.Program(
       EffectRewardsIdl as anchor.Idl,
-      provider
+      provider,
     ) as unknown as anchor.Program<EffectRewards>;
 
     const stakingProram = new anchor.Program(
       EffectStakingIdl as anchor.Idl,
-      provider
+      provider,
     ) as unknown as anchor.Program<EffectStaking>;
 
     const vestingAccounts = await vestingProgram.account.vestingAccount.all();
@@ -62,7 +62,7 @@ export const fetchStats: CommandModule<unknown, { mint: string }> = {
     const limit = pLimit(CONCURRENT_LIMIT);
 
     const fetchVestingVaultBalances = async (
-      accounts: typeof vestingAccounts
+      accounts: typeof vestingAccounts,
     ) => {
       const tasks = accounts.map((account) =>
         limit(async () => {
@@ -73,14 +73,15 @@ export const fetchStats: CommandModule<unknown, { mint: string }> = {
 
           console.log(
             "Fetching balance for account: ",
-            account.publicKey.toString()
+            account.publicKey.toString(),
           );
-          const accountInfo = await provider.connection.getTokenAccountBalance(
-            vestingVaultAccount
-          );
+          const accountInfo =
+            await provider.connection.getTokenAccountBalance(
+              vestingVaultAccount,
+            );
 
           return accountInfo.value.uiAmount || 0;
-        })
+        }),
       );
       return await Promise.all(tasks);
     };
@@ -107,16 +108,16 @@ export const fetchStats: CommandModule<unknown, { mint: string }> = {
       .toNumber();
 
     const developmentFund = new PublicKey(
-      "9oPYQNEi1tp9bNjWCZx5ibkL2n8SP7Nnkt1oZ9VoBhRq"
+      "9oPYQNEi1tp9bNjWCZx5ibkL2n8SP7Nnkt1oZ9VoBhRq",
     );
     const daoTreasuryAccount = new PublicKey(
-      "Gw4PdHrwnSKkjDcazqKarvh6qFA9FLegq2hUw75q6SR2"
+      "Gw4PdHrwnSKkjDcazqKarvh6qFA9FLegq2hUw75q6SR2",
     );
     const stakingTreasuryAccount = new PublicKey(
-      "6UmiLmF7yJrcAMCjdUd686RU2cz8tdXsaHcadRQvUP1R"
+      "6UmiLmF7yJrcAMCjdUd686RU2cz8tdXsaHcadRQvUP1R",
     );
     const liquidityTreasuryAccount = new PublicKey(
-      "F79r42pn3yvSxfhiteb1FHey7mANRpK2KVNpiUGTvSg"
+      "F79r42pn3yvSxfhiteb1FHey7mANRpK2KVNpiUGTvSg",
     );
     const exemptions = [
       developmentFund,
@@ -127,11 +128,10 @@ export const fetchStats: CommandModule<unknown, { mint: string }> = {
 
     const totalExemptionsBalances = await Promise.all(
       exemptions.map(async (account) => {
-        const accountInfo = await provider.connection.getTokenAccountBalance(
-          account
-        );
+        const accountInfo =
+          await provider.connection.getTokenAccountBalance(account);
         return accountInfo.value.uiAmount || 0;
-      })
+      }),
     );
 
     const totalExemptions = totalExemptionsBalances.reduce((a, b) => a + b, 0);

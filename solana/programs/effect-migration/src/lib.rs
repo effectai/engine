@@ -11,8 +11,6 @@ pub use instructions::*;
 
 declare_id!("effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR");
 
-declare_program!(effect_staking);
-
 #[program]
 pub mod effect_migration {
 

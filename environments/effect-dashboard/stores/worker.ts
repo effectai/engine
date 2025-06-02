@@ -18,7 +18,7 @@ export const useWorkerStore = defineStore("worker", () => {
   const paymentCounter: Ref<number> = ref(0);
 
   const ping = async (multiaddr: Multiaddr) => {
-    return await worker.value?.ping(multiaddr);
+    // return await worker.value?.ping(multiaddr);
   };
 
   const initialize = async (privateKey: Uint8Array) => {

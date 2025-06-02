@@ -6,6 +6,8 @@ import {
   type PeerId,
   TypedEventEmitter,
   peerIdFromString,
+  ProofResponse,
+  BulkProofRequest,
 } from "@effectai/protocol-core";
 
 export function createPaymentWorker({
@@ -26,7 +28,6 @@ export function createPaymentWorker({
   }) => {
     await paymentStore.create({ peerId: managerPeerId.toString(), payment });
 
-    //emit event
     events.safeDispatchEvent("payment:created", { detail: payment });
 
     return payment;
@@ -45,6 +46,22 @@ export function createPaymentWorker({
     });
 
     return payments;
+  };
+
+  const getPaginatedPayments = async ({
+    perPage,
+    page,
+    prefix,
+  }: {
+    perPage: number;
+    page: number;
+    prefix?: string;
+  }) => {
+    return await paymentStore.getPaginatedPayments({
+      prefix,
+      page,
+      perPage,
+    });
   };
 
   const getPayments = async ({
@@ -113,6 +130,27 @@ export function createPaymentWorker({
     );
   };
 
+  const requestBulkProofs = async (
+    managerPeerIdStr: string,
+    proofs: ProofResponse[],
+  ) => {
+    const proofRequestMessage: BulkProofRequest = {
+      proofs,
+    };
+
+    return await entity.sendMessage(
+      peerIdFromString(managerPeerIdStr),
+      {
+        bulkProofRequest: {
+          ...proofRequestMessage,
+        },
+      },
+      {
+        timeout: 60_000,
+      },
+    );
+  };
+
   const getMaxNonce = async ({
     managerPeerIdStr,
   }: {
@@ -123,12 +161,25 @@ export function createPaymentWorker({
     });
   };
 
+  const countPaymentAmount = async ({
+    managerPeerIdStr,
+  }: {
+    managerPeerIdStr: string;
+  }) => {
+    return await paymentStore.countAmount({
+      peerId: managerPeerIdStr,
+    });
+  };
+
   return {
     createPayment,
     requestPayout,
     getPayments,
+    getPaginatedPayments,
     requestPaymentProof,
     getMaxNonce,
     getPaymentsFromNonce,
+    countPaymentAmount,
+    requestBulkProofs,
   };
 }

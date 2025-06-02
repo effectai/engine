@@ -16,7 +16,7 @@
     <UTable
       v-if="isSuccess"
       :loading="payments === null"
-      :rows="rows"
+      :rows="mutatedPayments"
       :loading-state="{
         icon: 'i-heroicons-arrow-path-20-solid',
         label: 'Waiting for tasks...',
@@ -72,47 +72,36 @@
       :inactive-button="{ color: 'gray' }"
       v-if="payments"
       :page-count="pageCount"
-      :total="payments.length"
+      :total="payments.total"
     />
   </UCard>
 </template>
 
 <script setup lang="ts">
 const { useGetPayments, useClaimPayments } = usePayments();
-const { data: payments } = useGetPayments();
 const sessionStore = useSessionStore();
 const { useGetNonce } = sessionStore.useActiveSession();
 const { data: nonces, isSuccess } = useGetNonce();
 
 const isOpenClaimModal = ref(false);
 const page = ref(1);
-const pageCount = 15;
+
+const { data: payments } = useGetPayments(page);
+const pageCount = 20;
 
 const mutatedPayments = computed(
   () =>
-    payments.value
-      ?.map(
+    (payments.value &&
+      payments.value.items?.map(
         (p) =>
           (nonces.value && {
             ...p,
             claimed: nonces.value.remoteNonce ?? 0n >= p.state.nonce,
           }) ||
           [],
-      )
-      .sort((a, b) => {
-        const parsedA = Number.parseInt(a.state.nonce);
-        const parsedB = Number.parseInt(b.state.nonce);
-
-        return parsedB - parsedA;
-      }) || [],
+      )) ||
+    [],
 );
-
-const rows = computed(() => {
-  return mutatedPayments.value.slice(
-    (page.value - 1) * pageCount,
-    page.value * pageCount,
-  );
-});
 </script>
 
 <style scoped></style>

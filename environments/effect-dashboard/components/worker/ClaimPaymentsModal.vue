@@ -23,18 +23,7 @@
         </template>
 
         <template #default>
-          <UAlert
-            title="Claiming not available yet"
-            color="yellow"
-            icon="i-heroicons-exclamation-triangle"
-            description="Claiming is currently unavailable. Claiming payments to your wallet will be enabled later during the alpha testing phase."
-          >
-          </UAlert>
-
-          <div
-            v-show="false"
-            class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg"
-          >
+          <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
             <div class="flex items-center gap-2 flex-wrap">
               <BlockchainAddress v-if="account" :address="account" />
               <span class="text-gray-400 dark:text-gray-500">|</span>
@@ -53,7 +42,7 @@
               <span class="text-gray-700 dark:text-gray-300"
                 >Claimable payments</span
               >
-              <UBadge color="gray" variant="solid">
+              <UBadge v-if="claimablePayments" color="gray" variant="solid">
                 {{ claimablePayments.length }}
               </UBadge>
             </div>
@@ -70,6 +59,8 @@
               class="mt-2"
             />
           </div>
+          <UProgress :value="claimingProgress" indicator v-if="isPending">
+          </UProgress>
         </template>
 
         <template #footer>
@@ -77,7 +68,7 @@
             <UButton
               @click="mutateClaimPayments"
               :loading="isClaimingPayments"
-              :disabled="true"
+              :disabled="!canClaim"
               color="black"
               variant="solid"
               size="md"
@@ -93,15 +84,13 @@
 </template>
 
 <script setup lang="ts">
-import { useMutation } from "@tanstack/vue-query";
-import type { PaymentRecord } from "@effectai/worker";
+import { useMutation, useQueryClient } from "@tanstack/vue-query";
 
 const authStore = useAuthStore();
 const { account } = storeToRefs(authStore);
 
 const { useGetBalanceQuery } = useSolanaWallet();
 const { useGetClaimablePayments, useClaimPayments } = usePayments();
-const { mutateAsync: claimPayments } = useClaimPayments();
 
 const props = defineProps<{
   modelValue: boolean;
@@ -121,37 +110,52 @@ const canClaim = computed(() => {
 });
 
 const emit = defineEmits(["update:modelValue"]);
-
 const data = useVModel(props, "modelValue", emit);
 
 const { data: balance } = useGetBalanceQuery(account);
-const { data: claimablePayments } = useGetClaimablePayments();
+const { data: claimablePayments, refetch } = useGetClaimablePayments();
+const {
+  mutateAsync: claimPayments,
+  currentProof,
+  currentPhase,
+  totalProofs,
+  isPending,
+} = useClaimPayments();
 
+const claimingProgress = computed(
+  () => (currentProof.value / totalProofs.value) * 100 || 0,
+);
+
+const toast = useToast();
+const queryClient = useQueryClient();
 const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
   useMutation({
     mutationFn: async () => {
-      if (!claimablePayments.value) {
-        console.error("No claimable payments found");
-        return;
-      }
+      try {
+        if (!claimablePayments.value) {
+          console.error("No claimable payments found");
+          return;
+        }
 
-      const sortedPayments = claimablePayments?.value.toSorted((a, b) => {
-        return a.state.nonce > b.state.nonce ? 1 : -1;
-      });
+        await claimPayments({ payments: claimablePayments.value });
 
-      const result = chunkArray(sortedPayments, 40);
-      for (const paymentBatch of result) {
-        const payments = paymentBatch.map((payment: PaymentRecord) => {
-          return {
-            nonce: payment.state.nonce,
-            recipient: payment.state.recipient,
-            amount: payment.state.amount,
-            paymentAccount: payment.state.paymentAccount,
-            signature: payment.state.signature,
-          };
+        //invalidate remote nonce query
+        await queryClient.invalidateQueries({
+          queryKey: ["remoteNonce"],
         });
 
-        await claimPayments({ payments });
+        toast.add({
+          title: "Payments Claimed",
+          description:
+            "Your claimable payments have been successfully transferred to your wallet.",
+        });
+      } catch (error) {
+        toast.add({
+          title: "Error Claiming Payments",
+          description: error instanceof Error ? error.message : "Unknown error",
+          color: "red",
+        });
+        console.error("Error claiming payments:", error);
       }
     },
   });

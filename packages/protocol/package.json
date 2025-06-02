@@ -11,8 +11,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsup ./src/ --config ../../tsup.config.package.ts --platform neutral",
-    "dev": "tsup ./src/ --config ../../tsup.config.package.ts --platform neutral --watch",
+    "build": "tsup --config ../../tsup.config.package.ts --platform neutral",
+    "dev": "tsup --config ../../tsup.config.package.ts --platform neutral --watch",
     "protons-build": "protons ./messages/effect.proto --out-dir ./@generated/effect.protons.ts"
   },
   "keywords": [],
@@ -20,17 +20,17 @@
   "license": "ISC",
   "packageManager": "pnpm@10.9.0",
   "dependencies": {
-    "libp2p": "^2.8.2",
-    "@libp2p/circuit-relay-v2": "^3.2.8",
+    "libp2p": "^2.8.8",
+    "@libp2p/circuit-relay-v2": "^3.2.14",
     "@libp2p/crypto": "^5.0.5",
     "@libp2p/identify": "^3.0.27",
-    "@libp2p/interface": "^2.7.0",
-    "@libp2p/interface-internal": "^2.3.9",
+    "@libp2p/interface": "^2.10.2",
+    "@libp2p/interface-internal": "^2.3.14",
     "@libp2p/mplex": "^11.0.8",
     "@libp2p/peer-id": "^5.0.6",
     "@libp2p/peer-store": "^11.0.10",
     "@libp2p/ping": "^2.0.27",
-    "@libp2p/tcp": "10.0.15",
+    "@libp2p/tcp": "^10.0.15",
     "@libp2p/utils": "^6.6.0",
     "@libp2p/webrtc": "^5.0.14",
     "@libp2p/websockets": "^9.2.8",
@@ -51,6 +51,7 @@
     "@solana/web3.js": "^1.98.2"
   },
   "devDependencies": {
+    "@effectai/test-utils": "workspace:*",
     "protons-runtime": "^5.5.0",
     "protons": "^7.6.0",
     "@types/cors": "^2.8.17",

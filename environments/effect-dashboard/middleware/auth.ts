@@ -3,7 +3,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const { isInitialized, isAuthenticated } = storeToRefs(authStore);
 
   if (!isInitialized.value) {
-    console.log("Initializing auth store from middleware");
     await authStore.init();
   }
 

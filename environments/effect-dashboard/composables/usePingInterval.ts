@@ -17,6 +17,6 @@ export const usePing = () => {
       return await worker.value.ping(multiaddr(managerMultiAddress.value));
     },
     enabled: isReady,
-    refetchInterval: 5000,
+    refetchInterval: 90_000,
   });
 };

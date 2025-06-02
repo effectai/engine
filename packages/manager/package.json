@@ -19,6 +19,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.9.0",
   "dependencies": {
+    "ulid": "3.0.0",
     "@effectai/protocol-core": "workspace:*",
     "@effectai/zkp": "workspace:*",
     "@libp2p/interface": "^2.7.0",
@@ -26,7 +27,8 @@
     "@remix-run/express": "^2.16.5",
     "datastore-level": "^11.0.1",
     "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "bs58": "^6.0.0"
   },
   "devDependencies": {
     "@effectai/test-utils": "workspace:*",

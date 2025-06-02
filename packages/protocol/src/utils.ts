@@ -105,6 +105,7 @@ export function shouldExpectResponse(message: EffectProtocolMessage): boolean {
     "proofRequest" in message ||
     "requestToWork" in message ||
     "identifyRequest" in message ||
+    "bulkProofRequest" in message ||
     false
   );
 }

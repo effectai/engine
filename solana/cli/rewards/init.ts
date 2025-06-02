@@ -1,5 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
-import { type EffectRewards, EffectRewardsIdl } from "@effectai/shared";
+import { EffectRewards } from "../../target/types/effect_rewards";
+import EffectRewardsIdl from "../../idls/effect_rewards.json";
 import chalk from "chalk";
 import { loadProvider } from "../../utils/provider";
 
@@ -21,7 +22,7 @@ export const rewardsInitCommand: CommandModule<unknown, { mint: string }> = {
 
     const rewardProgram = new anchor.Program(
       EffectRewardsIdl as anchor.Idl,
-      provider
+      provider,
     ) as unknown as anchor.Program<EffectRewards>;
 
     await rewardProgram.methods
@@ -39,7 +40,7 @@ export const rewardsInitCommand: CommandModule<unknown, { mint: string }> = {
       .rpc();
 
     console.log(
-      chalk.green.bold(`Reflection account initialized for mint ${mint}`)
+      chalk.green.bold(`Reflection account initialized for mint ${mint}`),
     );
   },
 };

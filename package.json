@@ -21,6 +21,8 @@
     "task-terminal:start": "cd environments/task-poster && node --import=tsx src/server.ts",
     "manager:start": "node packages/cli/dist/index.js manager run -k ./packages/library/tests/keys/manager.json --no-payments",
     "packages:build": "pnpm turbo build --filter @effectai/*",
+    "packages:build:prod": "pnpm turbo build --filter @effectai/* --concurrency=2",
+    "packages:dev": "pnpm turbo dev --filter @effectai/*",
     "docs:dev": "pnpm --filter docs run dev",
     "test": "vitest"
   },

@@ -8,6 +8,44 @@ import path from "path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+export function transformIdl(idl: TransformedIdl): TransformedIdl {
+  return {
+    ...idl,
+    instructions: idl.instructions.map((instruction) => {
+      const accounts = instruction.accounts.map((account) => {
+        if (
+          account.pda?.program?.kind === "account" &&
+          account.pda.program.path
+        ) {
+          // Find the referenced program account
+          const programAccount = instruction.accounts.find(
+            (acc) => acc.name === account.pda?.program?.path,
+          );
+
+          if (programAccount?.address) {
+            return {
+              ...account,
+              pda: {
+                ...account.pda,
+                program: {
+                  kind: "const",
+                  value: programAccount.address,
+                },
+              },
+            };
+          }
+        }
+        return account;
+      });
+
+      return {
+        ...instruction,
+        accounts,
+      };
+    }),
+  };
+}
+
 const targets = [
   {
     name: "payments",
@@ -31,15 +69,16 @@ const targets = [
   },
 ];
 
-const idl_folder = path.join(__dirname, "../../../solana/idls");
+const idl_folder = path.join(__dirname, "../../../solana/idls/");
 const loadIdl = (relativePath: string) => {
   return JSON.parse(readFileSync(path.join(idl_folder, relativePath), "utf-8"));
 };
 
 const generateClient = (name: string, idlPath: string) => {
-  const idl = loadIdl(idlPath);
+  const idl = transformIdl(loadIdl(idlPath));
+
   const codama = createFromRoot(rootNodeFromAnchor(idl));
-  const pathToGeneratedFolder = path.join(__dirname, "../src/clients/js", name);
+  const pathToGeneratedFolder = path.join(__dirname, "../src", name);
   const options = {};
   codama.accept(renderVisitor(pathToGeneratedFolder, options));
 };

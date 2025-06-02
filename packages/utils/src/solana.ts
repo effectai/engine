@@ -5,6 +5,7 @@ import path from "node:path";
 import yaml from "yaml";
 
 import * as anchor from "@coral-xyz/anchor";
+import { rpc } from "@coral-xyz/anchor/dist/cjs/utils";
 
 async function getConfig(): Promise<any> {
   // Path to Solana CLI config file
@@ -29,6 +30,24 @@ export async function getRpcUrl(): Promise<string> {
       "Failed to read RPC url from CLI config file, falling back to localhost",
     );
     return "http://localhost:8899";
+  }
+}
+
+export async function getWebsocketUrl(json_rpc_url: string): Promise<string> {
+  try {
+    const config = await getConfig();
+    if (!config.websocket_url) throw new Error("Missing Websocket URL");
+    return config.websocket_url;
+  } catch (err) {
+    if (json_rpc_url === "http://localhost:8899") {
+      return "ws://localhost:8900";
+    } else {
+      if (json_rpc_url.startsWith("https")) {
+        return json_rpc_url.replace("https", "wss");
+      } else {
+        return json_rpc_url.replace("http", "ws");
+      }
+    }
   }
 }
 
@@ -63,6 +82,8 @@ export const loadProvider = async () => {
   const rpcUrl = await getRpcUrl();
   const connection = new Connection(rpcUrl);
 
+  const websocketUrl = await getWebsocketUrl(rpcUrl);
+
   const payer = await getPayer();
   const wallet = new anchor.Wallet(payer);
 
@@ -73,6 +94,8 @@ export const loadProvider = async () => {
   console.log(`Connected to Solana v${version["solana-core"]}`);
 
   return {
+    rpcUrl,
+    websocketUrl,
     payer,
     provider,
   };

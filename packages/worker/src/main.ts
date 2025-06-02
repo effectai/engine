@@ -3,7 +3,7 @@ import { createPaymentWorker } from "./modules/createPaymentWorker.js";
 import { createTaskWorker } from "./modules/createTaskWorker.js";
 import { createWorkerTaskStore } from "./stores/workerTaskStore.js";
 import { createTemplateWorker } from "./modules/createTemplateWorker.js";
-import type { PingService } from "@libp2p/ping";
+// import type { PingService } from "@libp2p/ping";
 
 import {
   Libp2pTransport,
@@ -21,7 +21,10 @@ import {
   createTemplateStore,
   generateKeyPairFromSeed,
   circuitRelayTransport,
+  PROTOCOL_NAME,
+  PROTOCOL_VERSION,
 } from "@effectai/protocol-core";
+import { PingService } from "@libp2p/ping";
 
 export interface WorkerEvents {
   "task:created": CustomEvent<Task>;
@@ -41,8 +44,8 @@ export const createWorkerEntity = async ({
 }) => {
   return await createEffectEntity({
     protocol: {
-      name: "effectai",
-      version: "1.0.0",
+      name: PROTOCOL_NAME,
+      version: PROTOCOL_VERSION,
       scheme: EffectProtocolMessage,
     },
     transports: [
@@ -91,9 +94,12 @@ export const createWorker = async ({
   const {
     createPayment,
     getPayments,
+    getPaginatedPayments,
+    countPaymentAmount,
     requestPayout,
     getPaymentsFromNonce,
     requestPaymentProof,
+    requestBulkProofs,
     getMaxNonce,
   } = createPaymentWorker({
     entity,
@@ -198,9 +204,11 @@ export const createWorker = async ({
 
     getPayments,
     getPaymentsFromNonce,
+    getPaginatedPayments,
+    countPaymentAmount,
     requestPayout,
     requestPaymentProof,
-
+    requestBulkProofs,
     identify,
     connect,
     start,

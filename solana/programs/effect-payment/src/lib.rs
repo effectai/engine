@@ -15,27 +15,19 @@ declare_id!("effphQKcAYeN6CkbygjnJUsuYXGUtkikSPZ6B8hSggC");
 
 #[program]
 pub mod effect_payment {
-
     use super::*;
 
-    pub fn claim(
-        ctx: Context<Claim>,
-        min_nonce: u32,
-        max_nonce: u32,
-        total_amount: u64,
+    pub fn claim_proofs(
+        ctx: Context<ClaimMultiple>,
         pub_x: [u8; 32],
         pub_y: [u8; 32],
-        proof: [u8; 256],
+        proof_data: Vec<ProofData>,
     ) -> Result<()> {
-        claim::handler(ctx, min_nonce, max_nonce, total_amount, pub_x, pub_y, proof)
+        claim_proofs::handler(ctx, pub_x, pub_y, proof_data)
     }
 
-    pub fn create_payment_pool(
-        ctx: Context<Create>,
-        authorities: Vec<Pubkey>,
-        amount: u64,
-    ) -> Result<()> {
-        create::handler(ctx, authorities, amount)
+    pub fn create_payment_pool(ctx: Context<Create>, authority: Pubkey, amount: u64) -> Result<()> {
+        create::handler(ctx, authority, amount)
     }
 
     //initialize a recipient/manager data account that holds the nonce
