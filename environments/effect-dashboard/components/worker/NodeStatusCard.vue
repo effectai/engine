@@ -89,7 +89,7 @@ const workerStore = useWorkerStore();
 const { workerPeerId } = storeToRefs(workerStore);
 
 const { data: nonces } = useGetNonce();
-// const { data: latency } = usePing();
+const { data: latency } = usePing();
 
 const { useDisconnect } = useSession();
 const isCopied = ref(false);

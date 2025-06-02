@@ -24,6 +24,7 @@ import {
   PROTOCOL_NAME,
   PROTOCOL_VERSION,
 } from "@effectai/protocol-core";
+import { PingService } from "@libp2p/ping";
 
 export interface WorkerEvents {
   "task:created": CustomEvent<Task>;
@@ -177,11 +178,9 @@ export const createWorker = async ({
     return response;
   };
 
-  const ping = async (_manager: Multiaddr) => {
-    // const pingService = entity.node.services.ping as PingService;
-    // return await pingService.ping(manager);
-    //FIX:: ping protocol breaks after some time
-    return 0;
+  const ping = async (manager: Multiaddr) => {
+    const pingService = entity.node.services.ping as PingService;
+    return await pingService.ping(manager);
   };
 
   if (autoExpire) {

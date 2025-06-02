@@ -131,23 +131,32 @@ const queryClient = useQueryClient();
 const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
   useMutation({
     mutationFn: async () => {
-      if (!claimablePayments.value) {
-        console.error("No claimable payments found");
-        return;
+      try {
+        if (!claimablePayments.value) {
+          console.error("No claimable payments found");
+          return;
+        }
+
+        await claimPayments({ payments: claimablePayments.value });
+
+        //invalidate remote nonce query
+        await queryClient.invalidateQueries({
+          queryKey: ["remoteNonce"],
+        });
+
+        toast.add({
+          title: "Payments Claimed",
+          description:
+            "Your claimable payments have been successfully transferred to your wallet.",
+        });
+      } catch (error) {
+        toast.add({
+          title: "Error Claiming Payments",
+          description: error instanceof Error ? error.message : "Unknown error",
+          color: "red",
+        });
+        console.error("Error claiming payments:", error);
       }
-
-      await claimPayments({ payments: claimablePayments.value });
-
-      //invalidate remote nonce query
-      await queryClient.invalidateQueries({
-        queryKey: ["remoteNonce"],
-      });
-
-      toast.add({
-        title: "Payments Claimed",
-        description:
-          "Your claimable payments have been successfully transferred to your wallet.",
-      });
     },
   });
 </script>
