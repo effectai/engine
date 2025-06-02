@@ -245,7 +245,10 @@ export async function createPaymentManager({
   ) => {
     //TODO:: verify & validate payments
     payments.sort((a, b) => Number(a.nonce) - Number(b.nonce));
-    console.log("INFO: Generating payment proof for payments:", payments);
+    console.log(
+      "INFO: Generating payment proof for payments:",
+      payments.length,
+    );
     const eddsa = await buildEddsa();
     const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
     const batchSize = payments.length;
