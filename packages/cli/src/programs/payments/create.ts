@@ -1,79 +1,107 @@
-import * as anchor from "@coral-xyz/anchor";
-import {
-  createAssociatedTokenAccountIdempotentInstructionWithDerivation,
-  getAssociatedTokenAddressSync,
-} from "@solana/spl-token";
-import { Keypair, PublicKey } from "@solana/web3.js";
-import chalk from "chalk";
-import BN from "bn.js";
-
-import { readFileSync } from "node:fs";
-
-import { type EffectPayment, EffectPaymentIdl } from "@effectai/idl";
 import { loadProvider } from "@effectai/utils";
 import type { Command } from "commander";
 
-interface PaymentsCreateOptions {
-  keypair: string;
-  mint: string;
-  amount: number;
-}
+import {
+  getAssociatedTokenAccount,
+  getCreatePaymentPoolInstructionAsync,
+} from "@effectai/program-sdk";
+import { loadSolanaContext } from "../../helpers.js";
+
+import {
+  generateKeyPairSigner,
+  address,
+  createKeyPairSignerFromPrivateKeyBytes,
+  pipe,
+  appendTransactionMessageInstructions,
+  createTransactionMessage,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  signTransactionMessageWithSigners,
+  sendAndConfirmTransactionFactory,
+} from "@solana/kit";
+
+import { getCreateAssociatedTokenInstructionAsync } from "@solana-program/token";
 
 export function registerCreatePaymentPoolCommand(program: Command) {
   program
     .command("create")
     .description("create a payment pool")
-    .requiredOption("--keypair <path>", "The path to the keypair file")
+    .requiredOption(
+      "--address <path>",
+      "The public key of the manager base58 encoded",
+    )
     .requiredOption("--mint <key>", "The mint address")
     .requiredOption(
       "--amount <number>",
       "the amount to transfer into the payment account",
     )
     .action(async (options) => {
-      const { payer, provider } = await loadProvider();
+      const { payer, provider, websocketUrl } = await loadProvider();
+      const { rpc, rpcSubscriptions } = await loadSolanaContext();
 
-      const privateKey = readFileSync(options.keypair, "utf-8");
-      const secretKey = Uint8Array.from(JSON.parse(privateKey));
-      const kp = Keypair.fromSeed(secretKey.slice(0, 32));
+      const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
+        rpc,
+        rpcSubscriptions,
+      });
 
-      const paymentProgram = new anchor.Program(
-        EffectPaymentIdl as anchor.Idl,
-        provider,
-      ) as unknown as anchor.Program<EffectPayment>;
-
-      const mint = new PublicKey(options.mint);
-      const ata = getAssociatedTokenAddressSync(mint, payer.publicKey);
-
-      const managerPubKey = kp.publicKey;
-      const paymentAccount = anchor.web3.Keypair.generate();
-
-      await paymentProgram.methods
-        .createPaymentPool([managerPubKey], new BN(options.amount / 1e6))
-        .accounts({
-          paymentAccount: paymentAccount.publicKey,
-          mint,
-          userTokenAccount: ata,
-        })
-        .preInstructions([
-          ...((await provider.connection.getAccountInfo(ata))
-            ? []
-            : [
-                createAssociatedTokenAccountIdempotentInstructionWithDerivation(
-                  payer.publicKey,
-                  payer.publicKey,
-                  mint,
-                ),
-              ]),
-        ])
-        .signers([paymentAccount])
-        .rpc();
-
-      console.log(
-        chalk.green(
-          "Payment pool created",
-          paymentAccount.publicKey.toBase58(),
-        ),
+      const mint = address(options.mint);
+      const signer = await createKeyPairSignerFromPrivateKeyBytes(
+        payer.secretKey.slice(0, 32),
       );
+
+      const ata = await getAssociatedTokenAccount({
+        mint,
+        owner: signer.address,
+      });
+
+      const paymentAccount = await generateKeyPairSigner();
+      const account = await rpc
+        .getAccountInfo(address(ata), {
+          encoding: "jsonParsed",
+        })
+        .send();
+
+      const createAtaIx = await getCreateAssociatedTokenInstructionAsync({
+        mint,
+        payer: signer,
+        owner: signer.address,
+      });
+
+      const instruction = await getCreatePaymentPoolInstructionAsync({
+        authorityArg: address(options.address),
+        authority: signer,
+        amount: BigInt(options.amount * 1e6),
+        paymentAccount,
+        mint,
+        userTokenAccount: ata,
+      });
+
+      const recentBlockhash = await rpc.getLatestBlockhash().send();
+      const transactionMessage = pipe(
+        createTransactionMessage({ version: 0 }),
+        (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+        (tx) =>
+          setTransactionMessageLifetimeUsingBlockhash(
+            recentBlockhash.value,
+            tx,
+          ),
+        (tx) =>
+          appendTransactionMessageInstructions(
+            account.value ? [instruction] : [createAtaIx, instruction],
+            tx,
+          ),
+      );
+
+      const signedTx =
+        await signTransactionMessageWithSigners(transactionMessage);
+
+      await sendAndConfirmTransaction(signedTx, {
+        commitment: "confirmed",
+      });
+
+      console.log("created!", paymentAccount.address);
+
+      return;
     });
 
   return program;

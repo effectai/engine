@@ -8,13 +8,19 @@ import {
   PROTOCOL_NAME,
 } from "@effectai/protocol-core";
 
+import bs58 from "bs58";
+
 import { createPaymentManager } from "./modules/createPaymentManager.js";
 import { createTaskManager } from "./modules/createTaskManager.js";
 import { createManagerTaskStore } from "./stores/managerTaskStore.js";
 
 import { buildEddsa } from "@effectai/zkp";
 import { createWorkerManager } from "./modules/createWorkerManager.js";
-import { bigIntToBytes32, compressBabyJubJubPubKey } from "./utils.js";
+import {
+  bigIntToBytes32,
+  compressBabyJubJubPubKey,
+  proofResponseToGroth16Proof,
+} from "./utils.js";
 
 import { PublicKey } from "@solana/web3.js";
 import { PAYMENT_BATCH_SIZE, TASK_ACCEPTANCE_TIME } from "./consts.js";
@@ -251,10 +257,47 @@ export const createManager = async ({
       });
     })
     .onMessage("proofRequest", async (proofRequest, { peerId }) => {
+      //FIX:: temp check
+      const recipient = proofRequest.payments[0].recipient;
+      if (!peerId.publicKey) {
+        throw new Error("Peer ID public key is not set");
+      }
+
+      if (!Buffer.from(peerId.publicKey.raw).equals(bs58.decode(recipient))) {
+        throw new Error("Forbidden");
+      }
+
       return await paymentManager.processProofRequest({
         privateKey,
-        peerId,
         payments: proofRequest.payments,
+      });
+    })
+    .onMessage("bulkProofRequest", async (proofRequest, { peerId }) => {
+      const worker = await workerManager.getWorker(peerId.toString());
+      const recipient = worker?.state.recipient;
+
+      if (!recipient) {
+        throw new Error("Worker not found or recipient not set");
+      }
+
+      if (!proofRequest.proofs.every((p) => p.signals)) {
+        throw new Error("All proofs must have signals for bulk payment");
+      }
+
+      return await paymentManager.bulkPaymentProofs({
+        recipient: new PublicKey(recipient),
+        privateKey,
+        r8_x: eddsa.F.toObject(pubKey[0]),
+        r8_y: eddsa.F.toObject(pubKey[1]),
+        proofs: proofRequest.proofs.map((p) => ({
+          proof: proofResponseToGroth16Proof(p),
+          publicSignals: [
+            p.signals!.minNonce.toString(),
+            p.signals!.maxNonce.toString(),
+            p.signals!.amount.toString(),
+            p.signals!.recipient,
+          ],
+        })),
       });
     })
     .onMessage("payoutRequest", async (_payoutRequest, { peerId }) => {
@@ -458,15 +501,11 @@ export const createManager = async ({
     while (true) {
       cycle++;
       await taskManager.manageTasks();
+      await new Promise((res) => setTimeout(res, 1000));
     }
   }
 
-  entity.node.addEventListener("peer:connect", (event) => {
-    console.log("peer connect", event.detail.toString());
-  });
-
   entity.node.addEventListener("peer:disconnect", (event) => {
-    console.log("peer disconnect", event.detail.toString());
     workerManager.disconnectWorker(event.detail.toString());
   });
 

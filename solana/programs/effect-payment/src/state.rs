@@ -13,7 +13,7 @@ pub struct PaymentAccount {
     pub owner: Pubkey,
     pub mint: Pubkey,
     pub token_account: Pubkey,
-    pub authorities: Vec<Pubkey>,
+    pub manager_authority: Pubkey,
 }
 
 #[account]
@@ -26,12 +26,12 @@ impl PaymentAccount {
 
     pub fn initialize(
         &mut self,
-        authorities: Vec<Pubkey>,
+        manager_authority: Pubkey,
         mint: Pubkey,
         token_account: Pubkey,
         owner: Pubkey,
     ) -> Result<()> {
-        self.authorities = authorities;
+        self.manager_authority = manager_authority;
         self.mint = mint;
         self.token_account = token_account;
         self.owner = owner;
@@ -40,6 +40,6 @@ impl PaymentAccount {
     }
 
     pub fn is_authorized(&self, authority: &Pubkey) -> bool {
-        self.authorities.contains(authority)
+        self.manager_authority.eq(authority)
     }
 }

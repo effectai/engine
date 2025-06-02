@@ -3,6 +3,8 @@ CIRCOM   ?= circom
 CIRCUIT  ?= PaymentBatch
 TAU_SIZE ?= 19
 
+BASE      = packages/zkp
+
 # Compilation of the circuit
 %.r1cs %_js: packages/zkp/circuits/${CIRCUIT}.circom
 	$(CIRCOM) $^ --r1cs --wasm --output packages/zkp/circuits
@@ -21,19 +23,23 @@ packages/zkp/setup/pot${TAU_SIZE}_final.ptau: | packages/zkp/setup
 		packages/zkp/setup/pot${TAU_SIZE}_0000.ptau
 
 # Second phase of ceremony
-packages/zkp/circuits/${CIRCUIT}_0001.zkey: packages/zkp/circuits/${CIRCUIT}.r1cs | packages/zkp/setup/pot${TAU_SIZE}_final.ptau
+${BASE}/circuits/${CIRCUIT}_0001.zkey: ${BASE}/circuits/${CIRCUIT}.r1cs | packages/zkp/setup/pot${TAU_SIZE}_final.ptau
 	$(SNARKJS) groth16 setup $^ $| ${CIRCUIT}_0000.zkey
 	$(SNARKJS) zkey contribute ${CIRCUIT}_0000.zkey ${CIRCUIT}_0001.zkey --name="First" -v -e='random'
 	rm ${CIRCUIT}_0000.zkey
 	mv ${CIRCUIT}_0001.zkey $@
 
 # Export the verification key
-packages/zkp/circuits/${CIRCUIT}_verification.json: packages/zkp/circuits/${CIRCUIT}_0001.zkey
+.PHONY: zkp-vkey
+zkp-vkey: ${BASE}/circuits/${CIRCUIT}_verification.json
+${BASE}/circuits/${CIRCUIT}_verification.json: packages/zkp/circuits/${CIRCUIT}_0001.zkey
 	$(SNARKJS) zkey export verificationkey $^ ${CIRCUIT}_verification.json
 	mv ${CIRCUIT}_verification.json $@
 
 # Create .rs version of verifying key
-solana/programs/effect-payment/program/src/verifying_key.rs: packages/zkp/circuits/${CIRCUIT}_verification.json
+.PHONY: verifying-key
+verifying-key: solana/programs/effect-payment/src/verifying_key.rs
+solana/programs/effect-payment/src/verifying_key.rs: ${BASE}/circuits/${CIRCUIT}_verification.json
 	pnpm -C packages/zkp run generate_verification_key \
 		../../$< \
 		$(dir ../../$@)

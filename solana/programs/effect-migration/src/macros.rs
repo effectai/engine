@@ -1,5 +1,3 @@
-use anchor_lang::prelude::*;
-
 #[macro_export]
 macro_rules! vault_seed {
     ($claim_key:expr, $program_id:expr) => {{
@@ -7,8 +5,6 @@ macro_rules! vault_seed {
         [$claim_key.as_ref(), &[bump]]
     }};
 }
-
-declare_program!(effect_staking);
 
 #[macro_export]
 macro_rules! genesis_stake {

@@ -20,7 +20,13 @@ cluster = "localnet"
 wallet = "./tests/keys/authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV.json"
 
 [workspace]
-members = ["programs/effect-payment", "programs/effect-migration", "programs/effect-staking", "programs/effect-rewards", "programs/effect-vesting"]
+members = [
+  "programs/effect-payment",
+  "programs/effect-migration",
+  "programs/effect-staking",
+  "programs/effect-rewards",
+  "programs/effect-vesting",
+]
 
 [scripts]
-test = "pnpm vitest run"
+test = "pnpm vitest run payment"

@@ -38,7 +38,7 @@ export const useMigrationProgram = () => {
   const config = useRuntimeConfig();
 
   const { publicKey } = useWallet();
-  const { connection } = useGlobalState();
+  const { connection } = useConnection();
 
   const { provider } = useAnchorProvider();
   const { rewardsProgram } = useStakingProgram();

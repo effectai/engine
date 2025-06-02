@@ -17,4 +17,10 @@ pub enum PaymentErrors {
 
     #[msg("Invalid PDA")]
     InvalidPDA,
+
+    #[msg("Arithmetic overflow occurred.")]
+    ArithmeticOverflow,
+
+    #[msg("Invalid Recipient")]
+    InvalidRecipient,
 }

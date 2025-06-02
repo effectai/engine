@@ -1,5 +1,7 @@
 // import type { Payment } from "@effectai/protocol";
+import type { Payment, PaymentRecord } from "@effectai/protocol";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/vue-query";
+import pLimit from "p-limit";
 
 export const usePayments = () => {
   const workerStore = useWorkerStore();
@@ -48,7 +50,17 @@ export const usePayments = () => {
     const { account } = storeToRefs(sessionStore);
 
     return useQuery({
-      queryKey: ["claimable-payments", paymentCounter, account],
+      queryKey: [
+        "claimable-payments",
+        paymentCounter,
+        account,
+        nonces.value
+          ? {
+              localNonce: nonces.value.localNonce?.toString(),
+              remoteNonce: nonces.value.remoteNonce?.toString(),
+            }
+          : null,
+      ],
       enabled: computed(() => !!nonces.value?.localNonce),
       queryFn: async () => {
         if (!worker.value || !managerPeerId.value) {
@@ -67,34 +79,90 @@ export const usePayments = () => {
     });
   };
 
-  const useClaimPayments = () =>
-    useMutation({
-      mutationFn: async ({ payments }: { payments: Payment[] }) => {
-        const { claimWithProof } = usePaymentProgram();
+  const useClaimPayments = () => {
+    const totalProofs = ref(0);
+    const currentProof = ref(0);
+    const currentPhase = ref(
+      "idle" as "generating_proofs" | "bulking" | "submitting",
+    );
 
+    const mutation = useMutation({
+      onSuccess: () => {
+        // Increment the payment counter after successful claim to refresh queries.
+        paymentCounter.value++;
+      },
+      mutationFn: async ({ payments }: { payments: PaymentRecord[] }) => {
+        const workerStore = useWorkerStore();
+        const { worker } = storeToRefs(workerStore);
+
+        const { claimWithProofs } = usePaymentProgram();
         const sessionStore = useSessionStore();
         const { managerPeerId } = sessionStore.useActiveSession();
 
-        if (!workerStore.worker || !managerPeerId.value) {
-          throw new Error("Session data is not initialized");
-        }
+        const sortedPayments = payments
+          .toSorted((a, b) => {
+            return a.state.nonce > b.state.nonce ? 1 : -1;
+          })
+          .map((p) => p.state);
 
-        const [proof, error] = await workerStore.worker.requestPaymentProof(
-          managerPeerId.value,
-          payments,
+        const paymentBatches = chunkArray(sortedPayments, 60);
+        const proofLimit = pLimit(1);
+
+        currentPhase.value = "generating_proofs";
+        totalProofs.value = paymentBatches.length + 2;
+
+        //request batches in parallel
+        const proofPromises = paymentBatches.map(async (batch) =>
+          proofLimit(async () => {
+            currentProof.value++;
+
+            if (!worker.value || !managerPeerId.value) {
+              throw new Error("worker is not initialized..");
+            }
+
+            const [proof, error] = await worker.value.requestPaymentProof(
+              managerPeerId.value,
+              batch,
+            );
+
+            if (error || !proof) {
+              throw new Error(`Error while generating proof ${error}`);
+            }
+
+            return proof;
+          }),
         );
 
-        if (error || !proof) {
-          console.error("Error claiming payments", error);
-          throw error;
+        if (!worker.value || !managerPeerId.value) {
+          throw new Error("worker is not initialized..");
         }
 
-        //use proof to claim from smart contract
-        const result = await claimWithProof(proof);
+        const proofs = (await Promise.all(proofPromises)).filter(Boolean);
 
-        return result;
+        currentPhase.value = "bulking";
+        const [bulkedProof, error] = await worker.value.requestBulkProofs(
+          managerPeerId.value,
+          proofs,
+        );
+
+        currentProof.value++;
+        if (!bulkedProof || error) {
+          throw new Error(`something went wrong while proofing. ${error}`);
+        }
+
+        currentPhase.value = "submitting";
+        await claimWithProofs([bulkedProof]);
+        currentProof.value++;
       },
     });
+
+    return {
+      ...mutation,
+      currentProof,
+      currentPhase,
+      totalProofs,
+    };
+  };
 
   return {
     useGetPayments,

@@ -27,7 +27,7 @@ export type StakingAccount = ProgramAccount<
 
 export function useStakingProgram() {
   const appConfig = useRuntimeConfig();
-  const { connection } = useGlobalState();
+  const { connection } = useConnection();
   const { publicKey } = useWallet();
   const { provider } = useAnchorProvider();
 
@@ -41,7 +41,6 @@ export function useStakingProgram() {
   });
 
   const { rewardsProgram } = useRewardProgram();
-
   const queryClient = useQueryClient();
 
   const useUnstake = () =>

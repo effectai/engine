@@ -6,6 +6,8 @@ import {
   type PeerId,
   TypedEventEmitter,
   peerIdFromString,
+  ProofResponse,
+  BulkProofRequest,
 } from "@effectai/protocol-core";
 
 export function createPaymentWorker({
@@ -128,6 +130,27 @@ export function createPaymentWorker({
     );
   };
 
+  const requestBulkProofs = async (
+    managerPeerIdStr: string,
+    proofs: ProofResponse[],
+  ) => {
+    const proofRequestMessage: BulkProofRequest = {
+      proofs,
+    };
+
+    return await entity.sendMessage(
+      peerIdFromString(managerPeerIdStr),
+      {
+        bulkProofRequest: {
+          ...proofRequestMessage,
+        },
+      },
+      {
+        timeout: 60_000,
+      },
+    );
+  };
+
   const getMaxNonce = async ({
     managerPeerIdStr,
   }: {
@@ -157,5 +180,6 @@ export function createPaymentWorker({
     getMaxNonce,
     getPaymentsFromNonce,
     countPaymentAmount,
+    requestBulkProofs,
   };
 }

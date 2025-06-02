@@ -18,6 +18,7 @@ import type { VestingAccount } from "./useVestingProgram";
 export const useRewardProgram = () => {
   const { provider } = useAnchorProvider();
   const { publicKey } = useWallet();
+  const { connection } = useConnection();
 
   const rewardsProgram = computed(() => {
     return new anchor.Program(
