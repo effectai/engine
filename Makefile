@@ -50,7 +50,9 @@ clean:
 	rm packages/zkp/circuits/${CIRCUIT}_verification.json
 	rm -rf packages/zkp/circuits/${CIRCUIT}_js
 
-guixify:
-	guix shell -m guix/manifest.scm -L guix/extra --expose=/root/manager-key.json --container --network --emulate-fhs
+guixify: guix shell -m guix/manifest.scm -L guix/extra \
+    --expose=/root/manager-key.json \
+    --expose=/root/manager-data \
+    --container --network --emulate-fhs
 
 .PHONY: clean guixify
