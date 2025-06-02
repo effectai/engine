@@ -130,6 +130,7 @@ export function ProofToProofResponseMessage(
         minNonce: publicSignals[0],
         maxNonce: publicSignals[1],
         amount: BigInt(publicSignals[2]),
+        recipient: publicSignals[3],
         paymentAccount: paymentAccount,
       },
       piA: proof.pi_a,
@@ -144,3 +145,12 @@ export function ProofToProofResponseMessage(
     },
   };
 }
+
+export const hexToPublicKey = (hexString: string) => {
+  const bigIntVal = BigInt(`0x${hexString}`);
+
+  const buffer = Buffer.alloc(8);
+  buffer.writeBigUInt64BE(bigIntVal);
+
+  return new PublicKey(buffer);
+};

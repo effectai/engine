@@ -26,12 +26,15 @@ export const EFFECT_PAYMENT_ERROR__INVALID_PAYMENT = 0x1773; // 6003
 export const EFFECT_PAYMENT_ERROR__INVALID_P_D_A = 0x1774; // 6004
 /** ArithmeticOverflow: Arithmetic overflow occurred. */
 export const EFFECT_PAYMENT_ERROR__ARITHMETIC_OVERFLOW = 0x1775; // 6005
+/** InvalidRecipient: Invalid Recipient */
+export const EFFECT_PAYMENT_ERROR__INVALID_RECIPIENT = 0x1776; // 6006
 
 export type EffectPaymentError =
   | typeof EFFECT_PAYMENT_ERROR__ARITHMETIC_OVERFLOW
   | typeof EFFECT_PAYMENT_ERROR__INVALID_PAYMENT
   | typeof EFFECT_PAYMENT_ERROR__INVALID_P_D_A
   | typeof EFFECT_PAYMENT_ERROR__INVALID_PROOF
+  | typeof EFFECT_PAYMENT_ERROR__INVALID_RECIPIENT
   | typeof EFFECT_PAYMENT_ERROR__SIG_VERIFICATION_FAILED
   | typeof EFFECT_PAYMENT_ERROR__UNAUTHORIZED;
 
@@ -42,6 +45,7 @@ if (process.env.NODE_ENV !== 'production') {
     [EFFECT_PAYMENT_ERROR__INVALID_PAYMENT]: `Invalid Payment`,
     [EFFECT_PAYMENT_ERROR__INVALID_P_D_A]: `Invalid PDA`,
     [EFFECT_PAYMENT_ERROR__INVALID_PROOF]: `Invalid Proof`,
+    [EFFECT_PAYMENT_ERROR__INVALID_RECIPIENT]: `Invalid Recipient`,
     [EFFECT_PAYMENT_ERROR__SIG_VERIFICATION_FAILED]: `Signature verification failed.`,
     [EFFECT_PAYMENT_ERROR__UNAUTHORIZED]: `Unauthorized.`,
   };

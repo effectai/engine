@@ -51,7 +51,8 @@ pub struct ClaimMultiple<'info> {
 pub struct ProofData {
     min_nonce: u32,
     max_nonce: u32,
-    total_amount: u32,
+    total_amount: u64,
+    recipient: [u8; 32],
     proof: [u8; 256],
 }
 
@@ -74,6 +75,7 @@ pub fn handler(
         ctx.accounts.recipient_manager_data_account.key(),
         PaymentErrors::InvalidPDA
     );
+
     // Verify manager authorization
     require!(
         ctx.accounts
@@ -83,6 +85,14 @@ pub fn handler(
     );
 
     for proof_data in &proofs {
+        // let recipient_pubkey = Pubkey::from(proof_data.recipient);
+
+        //TODO:: Verify recipient matches authority
+        // require!(
+        //     recipient_pubkey == ctx.accounts.authority.key(),
+        //     PaymentErrors::InvalidRecipient
+        // );
+        //
         // Verify nonce sequence
         require!(
             proof_data.min_nonce > last_max_nonce,
@@ -106,7 +116,8 @@ pub fn handler(
         let public_inputs = [
             u32_to_32_byte_be_array(proof_data.min_nonce),
             u32_to_32_byte_be_array(proof_data.max_nonce),
-            u32_to_32_byte_be_array(proof_data.total_amount),
+            u64_to_32_byte_be_array(proof_data.total_amount),
+            proof_data.recipient,
             pub_x,
             pub_y,
         ];
@@ -119,14 +130,14 @@ pub fn handler(
         require!(result, PaymentErrors::InvalidProof);
 
         total_transfer_amount = total_transfer_amount
-            .checked_add(proof_data.total_amount as u64)
+            .checked_add(proof_data.total_amount)
             .ok_or(PaymentErrors::ArithmeticOverflow)?;
     }
 
     // Update nonce to the last max_nonce in the batch
     ctx.accounts.recipient_manager_data_account.nonce = last_max_nonce;
 
-    // Transfer the total amount
+    // Transfer the total amount of all the proofs.
     if total_transfer_amount > 0 {
         transfer_tokens_from_vault!(
             ctx.accounts,

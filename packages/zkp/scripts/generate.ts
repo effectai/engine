@@ -5,6 +5,8 @@ import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { performance } from "node:perf_hooks";
+import { publicKey } from "@coral-xyz/anchor/dist/cjs/utils";
+import { PublicKey } from "@solana/web3.js";
 
 export const int2hex = (i: string | number | bigint | boolean) =>
   `0x${BigInt(i).toString(16)}`;
@@ -17,7 +19,7 @@ export const signPayment = async (payment: any, privateKey: Uint8Array) => {
     privateKey,
     poseidon([
       int2hex(payment.nonce.toString()),
-      int2hex("0"),
+      int2hex(new PublicKey(payment.recipient).toBuffer().readBigUInt64BE()),
       int2hex(payment.amount),
     ]),
   );
@@ -44,7 +46,7 @@ const generatePaymentProof = async (privateKey: any, payments: any) => {
   const recipient = payments[0]?.recipient || "0";
 
   const proofInputs = {
-    receiver: int2hex(recipient),
+    receiver: int2hex(new PublicKey(recipient).toBuffer().readBigUInt64BE()),
     pubX: eddsa.F.toObject(pubKey[0]),
     pubY: eddsa.F.toObject(pubKey[1]),
     nonce: padArray(
@@ -82,6 +84,7 @@ const generate = async () => {
 
   for (let i = 0; i < n; i++) {
     const payment = {
+      recipient: new PublicKey("authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"),
       nonce: BigInt(i),
       amount: 500n,
     };

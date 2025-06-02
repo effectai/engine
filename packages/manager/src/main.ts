@@ -8,6 +8,8 @@ import {
   PROTOCOL_NAME,
 } from "@effectai/protocol-core";
 
+import bs58 from "bs58";
+
 import { createPaymentManager } from "./modules/createPaymentManager.js";
 import { createTaskManager } from "./modules/createTaskManager.js";
 import { createManagerTaskStore } from "./stores/managerTaskStore.js";
@@ -254,7 +256,17 @@ export const createManager = async ({
         workerPeerIdStr: peerId.toString(),
       });
     })
-    .onMessage("proofRequest", async (proofRequest, {}) => {
+    .onMessage("proofRequest", async (proofRequest, { peerId }) => {
+      //FIX:: temp check
+      const recipient = proofRequest.payments[0].recipient;
+      if (!peerId.publicKey) {
+        throw new Error("Peer ID public key is not set");
+      }
+
+      if (!Buffer.from(peerId.publicKey.raw).equals(bs58.decode(recipient))) {
+        throw new Error("Forbidden");
+      }
+
       return await paymentManager.processProofRequest({
         privateKey,
         payments: proofRequest.payments,
@@ -283,6 +295,7 @@ export const createManager = async ({
             p.signals!.minNonce.toString(),
             p.signals!.maxNonce.toString(),
             p.signals!.amount.toString(),
+            p.signals!.recipient,
           ],
         })),
       });

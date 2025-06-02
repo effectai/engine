@@ -18,23 +18,17 @@ import {
   appendTransactionMessageInstructions,
   signTransactionMessageWithSigners,
   sendAndConfirmTransactionFactory,
-  compressTransactionMessageUsingAddressLookupTables,
-  appendTransactionMessageInstruction,
   createKeyPairSignerFromBytes,
   SolanaError,
   type SolanaErrorCodeWithCause,
 } from "@solana/kit";
 
 import {
-  fetchMaybeAddressLookupTableFromSeeds,
-  getCreateLookupTableInstructionAsync,
-  getExtendLookupTableInstruction,
-} from "@solana-program/address-lookup-table";
-
-import { getSetComputeUnitLimitInstruction } from "@solana-program/compute-budget";
+  getSetComputeUnitLimitInstruction,
+  getSetComputeUnitPriceInstruction,
+} from "@solana-program/compute-budget";
 
 import { useMutation, useQuery } from "@tanstack/vue-query";
-import { Keypair, PublicKey } from "@solana/web3.js";
 import {
   EffectPaymentIdl,
   type EffectPayment,
@@ -106,8 +100,6 @@ export function usePaymentProgram() {
       ],
     });
 
-    const recentSlot = await rpc.getSlot({ commitment: "finalized" }).send();
-
     const dataAccount = await fetchMaybeRecipientManagerDataAccount(
       rpc,
       recipientManagerDataAccount,
@@ -118,61 +110,20 @@ export function usePaymentProgram() {
 
     const eddsa = await buildEddsa();
 
-    const lookupAccount = await fetchMaybeAddressLookupTableFromSeeds(rpc, {
-      authority: signer.address,
-      recentSlot,
-    });
-
     const initRecipientManagerDataAccountIx = await getInitInstructionAsync({
       authority: signer,
       mint: address(mint.toBase58()),
       managerAuthority: address(managerPublicKey.value.toBase58()),
     });
 
-    //create lookup table if it doesn't exist (in a seperate tx)
-    // if (!lookupAccount.exists || !lookupAccount) {
-    //   console.log("creating lookup table..");
-    //   const initLookupTableIx = await getCreateLookupTableInstructionAsync({
-    //     authority: signer,
-    //     recentSlot,
-    //   });
-    //
-    //   const extendLookupTableIx = getExtendLookupTableInstruction({
-    //     authority: signer,
-    //     address: lookupAccount.address,
-    //     payer: signer,
-    //     addresses: [address(mint.toBase58()), recipientManagerDataAccount, ata],
-    //   });
-    //
-    //   const initRecentBlockhash = await rpc.getLatestBlockhash().send();
-    //   const initTransactionMessage = pipe(
-    //     createTransactionMessage({ version: 0 }),
-    //     (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-    //     (tx) =>
-    //       setTransactionMessageLifetimeUsingBlockhash(
-    //         initRecentBlockhash.value,
-    //         tx,
-    //       ),
-    //     (tx) =>
-    //       appendTransactionMessageInstructions(
-    //         [initLookupTableIx, extendLookupTableIx],
-    //         tx,
-    //       ),
-    //   );
-    //
-    //   const signedTx = await signTransactionMessageWithSigners(
-    //     initTransactionMessage,
-    //   );
-    //
-    //   await sendAndConfirmTransaction(signedTx, {
-    //     commitment: "finalized",
-    //   });
-    // }
-
     const tokenAccount = await fetchMaybeToken(rpc, ata);
 
     const setComputeIx = getSetComputeUnitLimitInstruction({
       units: 400_000,
+    });
+
+    const setPriorityFeeIx = getSetComputeUnitPriceInstruction({
+      microLamports: 100_000,
     });
 
     const createAtaIx = await getCreateAssociatedTokenInstructionAsync({
@@ -189,14 +140,18 @@ export function usePaymentProgram() {
       pubX: bigIntToBytes32(eddsa.F.toObject(proofs[0].r8?.R8_1)),
       pubY: bigIntToBytes32(eddsa.F.toObject(proofs[0].r8?.R8_2)),
       authority: signer,
-      proofData: [
-        ...proofs.map((proof) => ({
-          minNonce: Number(proof.signals!.minNonce),
-          maxNonce: Number(proof.signals!.maxNonce),
-          totalAmount: Number(proof.signals!.amount),
+      proofData: proofs.map((proof) => {
+        if (!proof.signals) {
+          throw new Error("Proof signals are missing!");
+        }
+        return {
+          minNonce: Number(proof.signals.minNonce),
+          maxNonce: Number(proof.signals.maxNonce),
+          totalAmount: Number(proof.signals.amount),
+          recipient: bigIntToBytes32(proof.signals.recipient),
           proof: convertProofToBytes(proof),
-        })),
-      ],
+        };
+      }),
     });
 
     try {
@@ -223,7 +178,7 @@ export function usePaymentProgram() {
           ),
         (tx) =>
           appendTransactionMessageInstructions(
-            [setComputeIx, claimProofIx],
+            [setComputeIx, setPriorityFeeIx, claimProofIx],
             tx,
           ),
       );
@@ -248,11 +203,13 @@ export function usePaymentProgram() {
     managerPublicKey: Ref<string | undefined>,
   ) => {
     return useQuery({
-      queryKey: ["dataAccount", account, managerPublicKey],
+      queryKey: computed(() => ["remoteNonce", account, managerPublicKey]),
       queryFn: async () => {
         if (!account.value || !managerPublicKey.value) {
           throw new Error("No account or manager public key found");
         }
+
+        console.log("refetching data account..");
 
         const [recipientManagerDataAccountAddress] =
           await getProgramDerivedAddress({

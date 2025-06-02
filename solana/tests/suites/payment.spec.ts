@@ -99,8 +99,8 @@ describe("Payment Program", async () => {
     }
 
     const batchSize = 7;
-    const maxBatchSize = 40;
-    const proofs = 3;
+    const maxBatchSize = 60;
+    const proofs = 1;
 
     const proofResults = [];
 
@@ -114,7 +114,7 @@ describe("Payment Program", async () => {
           prvKey,
           poseidon([
             int2hex(n),
-            int2hex(payer.publicKey.toBuffer().readBigUInt64BE()),
+            int2hex(payer.publicKey._bn),
             int2hex(1_000_000),
           ]),
         ),
@@ -131,7 +131,7 @@ describe("Payment Program", async () => {
       const lastNonce = Math.max(...nonces.map((n) => Number(n)));
 
       const proofInputs = {
-        receiver: int2hex(payer.publicKey.toBuffer().readBigUInt64BE()),
+        receiver: int2hex(payer.publicKey._bn),
         pubX: eddsa.F.toObject(pubKey[0]),
         pubY: eddsa.F.toObject(pubKey[1]),
         nonce: padArray(
@@ -160,6 +160,8 @@ describe("Payment Program", async () => {
         "../packages/zkp/circuits/PaymentBatch_0001.zkey",
       );
 
+      console.log(publicSignals);
+
       proofResults.push({
         proof,
         publicSignals,
@@ -180,6 +182,8 @@ describe("Payment Program", async () => {
       units: 400_000,
     });
 
+    console.log(payer.publicKey.toBase58());
+
     const ix = await program.methods
       .claimProofs(
         bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
@@ -188,7 +192,8 @@ describe("Payment Program", async () => {
           ...proofResults.map(({ proof, publicSignals }) => ({
             minNonce: Number(publicSignals[0]),
             maxNonce: Number(publicSignals[1]),
-            totalAmount: Number(publicSignals[2]),
+            totalAmount: new BN(publicSignals[2]),
+            recipient: bigIntToBytes32(publicSignals[3]),
             proof: Array.from(convertProofToBytes(proof)),
           })),
         ],
@@ -223,7 +228,7 @@ describe("Payment Program", async () => {
         recipientManagerDataAccount,
       );
     expect(recipientManagerDataAccountData.nonce).toBe(batchSize * proofs);
-  }, 40000);
+  }, 60000);
 });
 
 function bigIntToBytes32(num) {

@@ -50,7 +50,17 @@ export const usePayments = () => {
     const { account } = storeToRefs(sessionStore);
 
     return useQuery({
-      queryKey: ["claimable-payments", paymentCounter, account],
+      queryKey: [
+        "claimable-payments",
+        paymentCounter,
+        account,
+        nonces.value
+          ? {
+              localNonce: nonces.value.localNonce?.toString(),
+              remoteNonce: nonces.value.remoteNonce?.toString(),
+            }
+          : null,
+      ],
       enabled: computed(() => !!nonces.value?.localNonce),
       queryFn: async () => {
         if (!worker.value || !managerPeerId.value) {
@@ -70,11 +80,11 @@ export const usePayments = () => {
   };
 
   const useClaimPayments = () => {
-    const progress = reactive({
-      currentPhase: "idle" as "generating_proofs" | "bulking" | "submitting",
-      totalProofs: 0,
-      currentProof: 0,
-    });
+    const totalProofs = ref(0);
+    const currentProof = ref(0);
+    const currentPhase = ref(
+      "idle" as "generating_proofs" | "bulking" | "submitting",
+    );
 
     const mutation = useMutation({
       onSuccess: () => {
@@ -98,13 +108,13 @@ export const usePayments = () => {
         const paymentBatches = chunkArray(sortedPayments, 60);
         const proofLimit = pLimit(1);
 
-        progress.currentPhase = "generating_proofs";
-        progress.totalProofs = paymentBatches.length + 2;
+        currentPhase.value = "generating_proofs";
+        totalProofs.value = paymentBatches.length + 2;
 
         //request batches in parallel
-        const proofPromises = paymentBatches.splice(0, 2).map(async (batch) =>
+        const proofPromises = paymentBatches.map(async (batch) =>
           proofLimit(async () => {
-            progress.currentProof++;
+            currentProof.value++;
 
             if (!worker.value || !managerPeerId.value) {
               throw new Error("worker is not initialized..");
@@ -129,27 +139,28 @@ export const usePayments = () => {
 
         const proofs = (await Promise.all(proofPromises)).filter(Boolean);
 
-        progress.currentPhase = "bulking";
+        currentPhase.value = "bulking";
         const [bulkedProof, error] = await worker.value.requestBulkProofs(
           managerPeerId.value,
           proofs,
         );
 
-        progress.currentProof++;
+        currentProof.value++;
         if (!bulkedProof || error) {
           throw new Error(`something went wrong while proofing. ${error}`);
         }
 
-        progress.currentPhase = "submitting";
+        currentPhase.value = "submitting";
         await claimWithProofs([bulkedProof]);
-
-        progress.currentProof++;
+        currentProof.value++;
       },
     });
 
     return {
       ...mutation,
-      progress,
+      currentProof,
+      currentPhase,
+      totalProofs,
     };
   };
 

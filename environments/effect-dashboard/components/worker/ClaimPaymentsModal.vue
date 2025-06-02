@@ -59,25 +59,7 @@
               class="mt-2"
             />
           </div>
-          <UProgress :value="claimingProgress" indicator>
-            <template #step-0="{ step }">
-              <span class="text-lime-500">
-                <UIcon name="i-heroicons-arrow-down-circle" />
-                {{ progress }}
-              </span>
-            </template>
-
-            <template #step-1="{ step }">
-              <span class="text-amber-500">
-                <UIcon name="i-heroicons-circle-stack" /> {{ step }}
-              </span>
-            </template>
-
-            <template #step-2="{ step }">
-              <span class="text-blue-500">
-                <UIcon name="i-heroicons-hand-thumb-up" /> {{ step }}
-              </span>
-            </template>
+          <UProgress :value="claimingProgress" indicator v-if="isPending">
           </UProgress>
         </template>
 
@@ -102,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { useMutation } from "@tanstack/vue-query";
+import { useMutation, useQueryClient } from "@tanstack/vue-query";
 
 const authStore = useAuthStore();
 const { account } = storeToRefs(authStore);
@@ -131,13 +113,21 @@ const emit = defineEmits(["update:modelValue"]);
 const data = useVModel(props, "modelValue", emit);
 
 const { data: balance } = useGetBalanceQuery(account);
-const { data: claimablePayments } = useGetClaimablePayments();
-const { mutateAsync: claimPayments, progress } = useClaimPayments();
+const { data: claimablePayments, refetch } = useGetClaimablePayments();
+const {
+  mutateAsync: claimPayments,
+  currentProof,
+  currentPhase,
+  totalProofs,
+  isPending,
+} = useClaimPayments();
 
 const claimingProgress = computed(
-  () => progress.currentProof / progress.totalProofs,
+  () => (currentProof.value / totalProofs.value) * 100 || 0,
 );
 
+const toast = useToast();
+const queryClient = useQueryClient();
 const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
   useMutation({
     mutationFn: async () => {
@@ -145,7 +135,19 @@ const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
         console.error("No claimable payments found");
         return;
       }
+
       await claimPayments({ payments: claimablePayments.value });
+
+      //invalidate remote nonce query
+      await queryClient.invalidateQueries({
+        queryKey: ["remoteNonce"],
+      });
+
+      toast.add({
+        title: "Payments Claimed",
+        description:
+          "Your claimable payments have been successfully transferred to your wallet.",
+      });
     },
   });
 </script>

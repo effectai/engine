@@ -20,6 +20,8 @@ message Payment {
   PaymentSignature signature = 6;
 
   optional string label = 7;
+
+  string version = 8;
 }   
 
 message R8Pair {

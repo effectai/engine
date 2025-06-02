@@ -27,6 +27,7 @@ import type { createWorkerManager } from "./createWorkerManager";
 import type { ManagerSettings } from "../main.js";
 import { ulid } from "ulid";
 import { VerifierKeyJson } from "@effectai/zkp";
+import { performance } from "node:perf_hooks";
 
 export async function createPaymentManager({
   paymentStore,
@@ -101,13 +102,13 @@ export async function createPaymentManager({
       publicSignals: PublicSignals;
     }[];
   }) {
+    console.log("INFO: bulkPaymentProofs called with proofs:", proofs.length);
+
     let minNonce: bigint | null = null;
     let maxNonce: bigint | null = null;
     let sumAmount = 0n;
 
     const verificationTasks = proofs.map(async (proof) => {
-      console.log(proof, proof.publicSignals);
-
       const isValid = await groth16.verify(
         VerifierKeyJson,
         [
@@ -244,7 +245,7 @@ export async function createPaymentManager({
   ) => {
     //TODO:: verify & validate payments
     payments.sort((a, b) => Number(a.nonce) - Number(b.nonce));
-
+    console.log("INFO: Generating payment proof for payments:", payments);
     const eddsa = await buildEddsa();
     const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
     const batchSize = payments.length;
@@ -331,11 +332,14 @@ export async function createPaymentManager({
       "../../zkp/circuits/PaymentBatch_0001.zkey",
     );
 
+    const startTime = performance.now();
     const { publicSignals, proof } = await groth16.fullProve(
       proofInputs,
       wasmPath,
       zkeyPath,
     );
+    const endTime = performance.now();
+    console.log("INFO: Proof generation took:", endTime - startTime, "ms");
 
     return { proof, publicSignals, pubKey, paymentAccount };
   };

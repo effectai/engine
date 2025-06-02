@@ -265,6 +265,11 @@
       "code": 6005,
       "name": "ArithmeticOverflow",
       "msg": "Arithmetic overflow occurred."
+    },
+    {
+      "code": 6006,
+      "name": "InvalidRecipient",
+      "msg": "Invalid Recipient"
     }
   ],
   "types": [
@@ -307,7 +312,16 @@
           },
           {
             "name": "total_amount",
-            "type": "u32"
+            "type": "u64"
+          },
+          {
+            "name": "recipient",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           },
           {
             "name": "proof",

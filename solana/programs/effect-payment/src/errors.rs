@@ -20,4 +20,7 @@ pub enum PaymentErrors {
 
     #[msg("Arithmetic overflow occurred.")]
     ArithmeticOverflow,
+
+    #[msg("Invalid Recipient")]
+    InvalidRecipient,
 }

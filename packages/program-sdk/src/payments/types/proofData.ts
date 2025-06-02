@@ -16,6 +16,8 @@ import {
   getStructEncoder,
   getU32Decoder,
   getU32Encoder,
+  getU64Decoder,
+  getU64Encoder,
   type Codec,
   type Decoder,
   type Encoder,
@@ -25,17 +27,25 @@ import {
 export type ProofData = {
   minNonce: number;
   maxNonce: number;
-  totalAmount: number;
+  totalAmount: bigint;
+  recipient: ReadonlyUint8Array;
   proof: ReadonlyUint8Array;
 };
 
-export type ProofDataArgs = ProofData;
+export type ProofDataArgs = {
+  minNonce: number;
+  maxNonce: number;
+  totalAmount: number | bigint;
+  recipient: ReadonlyUint8Array;
+  proof: ReadonlyUint8Array;
+};
 
 export function getProofDataEncoder(): Encoder<ProofDataArgs> {
   return getStructEncoder([
     ['minNonce', getU32Encoder()],
     ['maxNonce', getU32Encoder()],
-    ['totalAmount', getU32Encoder()],
+    ['totalAmount', getU64Encoder()],
+    ['recipient', fixEncoderSize(getBytesEncoder(), 32)],
     ['proof', fixEncoderSize(getBytesEncoder(), 256)],
   ]);
 }
@@ -44,7 +54,8 @@ export function getProofDataDecoder(): Decoder<ProofData> {
   return getStructDecoder([
     ['minNonce', getU32Decoder()],
     ['maxNonce', getU32Decoder()],
-    ['totalAmount', getU32Decoder()],
+    ['totalAmount', getU64Decoder()],
+    ['recipient', fixDecoderSize(getBytesDecoder(), 32)],
     ['proof', fixDecoderSize(getBytesDecoder(), 256)],
   ]);
 }

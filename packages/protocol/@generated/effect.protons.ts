@@ -1020,6 +1020,7 @@ export interface Payment {
   nonce: bigint;
   signature?: PaymentSignature;
   label?: string;
+  version: string;
 }
 
 export namespace Payment {
@@ -1068,6 +1069,11 @@ export namespace Payment {
             w.string(obj.label);
           }
 
+          if (obj.version != null && obj.version !== "") {
+            w.uint32(66);
+            w.string(obj.version);
+          }
+
           if (opts.lengthDelimited !== false) {
             w.ldelim();
           }
@@ -1079,6 +1085,7 @@ export namespace Payment {
             recipient: "",
             paymentAccount: "",
             nonce: 0n,
+            version: "",
           };
 
           const end = length == null ? reader.len : reader.pos + length;
@@ -1119,6 +1126,10 @@ export namespace Payment {
               }
               case 7: {
                 obj.label = reader.string();
+                break;
+              }
+              case 8: {
+                obj.version = reader.string();
                 break;
               }
               default: {
@@ -1306,8 +1317,9 @@ export namespace PaymentSignature {
 export interface Signals {
   minNonce: string;
   maxNonce: string;
-  amount: bigint;
   paymentAccount: string;
+  recipient: string;
+  amount: bigint;
 }
 
 export namespace Signals {
@@ -1331,14 +1343,19 @@ export namespace Signals {
             w.string(obj.maxNonce);
           }
 
-          if (obj.amount != null && obj.amount !== 0n) {
-            w.uint32(24);
-            w.uint64(obj.amount);
+          if (obj.paymentAccount != null && obj.paymentAccount !== "") {
+            w.uint32(26);
+            w.string(obj.paymentAccount);
           }
 
-          if (obj.paymentAccount != null && obj.paymentAccount !== "") {
+          if (obj.recipient != null && obj.recipient !== "") {
             w.uint32(34);
-            w.string(obj.paymentAccount);
+            w.string(obj.recipient);
+          }
+
+          if (obj.amount != null && obj.amount !== 0n) {
+            w.uint32(40);
+            w.uint64(obj.amount);
           }
 
           if (opts.lengthDelimited !== false) {
@@ -1349,8 +1366,9 @@ export namespace Signals {
           const obj: any = {
             minNonce: "",
             maxNonce: "",
-            amount: 0n,
             paymentAccount: "",
+            recipient: "",
+            amount: 0n,
           };
 
           const end = length == null ? reader.len : reader.pos + length;
@@ -1368,11 +1386,15 @@ export namespace Signals {
                 break;
               }
               case 3: {
-                obj.amount = reader.uint64();
+                obj.paymentAccount = reader.string();
                 break;
               }
               case 4: {
-                obj.paymentAccount = reader.string();
+                obj.recipient = reader.string();
+                break;
+              }
+              case 5: {
+                obj.amount = reader.uint64();
                 break;
               }
               default: {
@@ -1482,8 +1504,8 @@ export namespace Matrix {
 export interface ProofResponse {
   piA: string[];
   piB: Matrix[];
-  piC: string[];
   protocol: string;
+  piC: string[];
   curve: string;
   signals?: Signals;
   r8?: R8Pair;
@@ -1514,16 +1536,16 @@ export namespace ProofResponse {
             }
           }
 
+          if (obj.protocol != null && obj.protocol !== "") {
+            w.uint32(34);
+            w.string(obj.protocol);
+          }
+
           if (obj.piC != null) {
             for (const value of obj.piC) {
               w.uint32(26);
               w.string(value);
             }
-          }
-
-          if (obj.protocol != null && obj.protocol !== "") {
-            w.uint32(34);
-            w.string(obj.protocol);
           }
 
           if (obj.curve != null && obj.curve !== "") {
@@ -1549,8 +1571,8 @@ export namespace ProofResponse {
           const obj: any = {
             piA: [],
             piB: [],
-            piC: [],
             protocol: "",
+            piC: [],
             curve: "",
           };
 
@@ -1590,6 +1612,10 @@ export namespace ProofResponse {
                 );
                 break;
               }
+              case 4: {
+                obj.protocol = reader.string();
+                break;
+              }
               case 3: {
                 if (
                   opts.limits?.piC != null &&
@@ -1601,10 +1627,6 @@ export namespace ProofResponse {
                 }
 
                 obj.piC.push(reader.string());
-                break;
-              }
-              case 4: {
-                obj.protocol = reader.string();
                 break;
               }
               case 5: {

@@ -13,6 +13,15 @@
         >
           Disconnect
         </UButton>
+        <UButton
+          color="black"
+          class=""
+          variant="outline"
+          icon="i-lucide-key"
+          @click="copyPrivateKey"
+        >
+          Copy Private Key
+        </UButton>
       </div>
     </div>
 
@@ -97,6 +106,18 @@ function copyToClipboard(text: string) {
     isCopied.value = false;
   }, 1500);
 }
+
+const authStore = useAuthStore();
+const { privateKey } = storeToRefs(authStore);
+const { copy } = useCopyToClipboard();
+const toast = useToast();
+const copyPrivateKey = () => {
+  copy(privateKey.value);
+  toast.add({
+    title: "Private Key Copied",
+    description: "Your private key has been copied to the clipboard.",
+  });
+};
 </script>
 
 <style scoped>

@@ -23,10 +23,15 @@ export const useNextNonce = (
         !!managerPeerIdStr.value,
     ),
     queryKey: computed(() => [
-      "nextNonce",
+      "nonce",
       account,
       managerPublicKey.value,
       paymentCounter,
+      recipientManagerDataAccount.value
+        ? {
+            nonce: recipientManagerDataAccount.value.data?.nonce,
+          }
+        : null,
     ]),
     queryFn: async () => {
       if (!worker.value || !managerPeerIdStr.value) {
