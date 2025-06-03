@@ -247,6 +247,11 @@ export function createTaskManager({
       { payment },
     );
 
+    //update state
+    await workerManager.updateWorkerState(event.submissionByPeer, (state) => ({
+      totalEarned: state.totalEarned + taskRecord.state.reward,
+    }));
+
     //sendout task completed event
     events.safeDispatchEvent("task:completed", { detail: taskRecord });
 

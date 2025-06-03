@@ -92,10 +92,11 @@ const { data: nonces } = useGetNonce();
 const { data: latency } = usePing();
 
 const { useDisconnect } = useSession();
+const { mutateAsync: disconnectSession } = useDisconnect();
 const isCopied = ref(false);
 
 const disconnect = async () => {
-  await useDisconnect().mutateAsync();
+  await disconnectSession();
   navigateTo("/worker/connect");
 };
 

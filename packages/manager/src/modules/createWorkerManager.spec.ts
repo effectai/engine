@@ -96,9 +96,9 @@ describe("createWorkerManager", () => {
       expect(selectedWorker).toBe("worker1");
 
       //make worker 2 busy
-      await workerManager.updateWorkerState("worker2", {
+      await workerManager.updateWorkerState("worker2", () => ({
         totalTasks: 3,
-      });
+      }));
 
       //expect worker 2 to be busy
       selectedWorker = await workerManager.selectWorker();
