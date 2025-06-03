@@ -117,7 +117,7 @@ export function WorkersTable({ workers, onBan, onUnban }: WorkersTableProps) {
                       ? (
                           BigInt(worker.state.totalEarned) / BigInt(1e6)
                         ).toString()
-                      : "0"}{" "}
+                      : "0"}
                     EFFECT
                   </TableCell>
                   <TableCell>

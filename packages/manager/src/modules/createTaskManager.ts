@@ -249,7 +249,7 @@ export function createTaskManager({
 
     //update state
     await workerManager.updateWorkerState(event.submissionByPeer, (state) => ({
-      totalEarned: state.totalEarned + taskRecord.state.reward,
+      totalEarned: state.totalEarned + BigInt(taskRecord.state.reward),
     }));
 
     //sendout task completed event

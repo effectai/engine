@@ -67,7 +67,7 @@ export async function createPaymentManager({
     //update last payout time
     await workerManager.updateWorkerState(peerId.toString(), (state) => ({
       lastPayout: currentTime,
-      totalEarned: state.totalEarned + payment.amount,
+      totalEarned: state.totalEarned + BigInt(payment.amount),
     }));
 
     //insert payment into the store
