@@ -31,6 +31,7 @@ export const useSolanaWallet = (): TargetWalletAdapter => {
     return useQuery({
       queryKey: ["solana-balance", accountToUse],
       enabled: computed(() => !!accountToUse !== null),
+      refetchInterval: 15_000,
       queryFn: async () => {
         if (!accountToUse.value) {
           throw new Error("No public key");

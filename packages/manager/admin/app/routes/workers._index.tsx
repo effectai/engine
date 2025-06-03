@@ -7,7 +7,7 @@ import { WorkersTable } from "~/components/workers/worker-table";
 
 import { useState } from "react";
 import { TableFilter } from "~/components/table-filter";
-import type { ManagerContext } from "@effectai/manager";
+import type { ManagerContext } from "../../../dist";
 
 export const loader = async ({ context }: { context: ManagerContext }) => {
   const onlineWorkers = await context.workerManager.getWorkers(

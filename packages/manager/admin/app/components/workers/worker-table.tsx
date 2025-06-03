@@ -47,7 +47,7 @@ export function WorkersTable({ workers, onBan, onUnban }: WorkersTableProps) {
             <TableHead>Access Code</TableHead>
             <TableHead className="text-right">Success Rate</TableHead>
             <TableHead className="text-right">Tasks</TableHead>
-            <TableHead className="text-right">Last Payout</TableHead>
+            <TableHead className="text-right">Total Earned</TableHead>
             <TableHead className="w-[70px]"></TableHead>
           </TableRow>
         </TableHeader>
@@ -60,7 +60,6 @@ export function WorkersTable({ workers, onBan, onUnban }: WorkersTableProps) {
             </TableRow>
           ) : (
             workers.map((worker) => {
-              const isActive = Date.now() - worker.state.lastActivity < 3600000; // 1 hour
               const successRate =
                 worker.state.tasksCompleted > 0
                   ? (
@@ -77,15 +76,7 @@ export function WorkersTable({ workers, onBan, onUnban }: WorkersTableProps) {
                     worker.state.banned && "bg-destructive/5",
                   )}
                 >
-                  <TableCell>
-                    {worker.state.banned ? (
-                      <XCircle className="h-5 w-5 text-destructive" />
-                    ) : isActive ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <Clock className="h-5 w-5 text-muted-foreground" />
-                    )}
-                  </TableCell>
+                  <TableCell>{worker.state.banned}</TableCell>
                   <TableCell className="font-medium">
                     <Link
                       to={`/workers/${worker.state.peerId}`}
@@ -122,14 +113,12 @@ export function WorkersTable({ workers, onBan, onUnban }: WorkersTableProps) {
                     {worker.state.tasksCompleted}/{worker.state.totalTasks}
                   </TableCell>
                   <TableCell className="text-right">
-                    {worker.state.lastPayout > 0
-                      ? formatDistanceToNow(
-                          new Date(worker.state.lastPayout * 1000),
-                          {
-                            addSuffix: true,
-                          },
-                        )
-                      : "Never"}
+                    {worker.state.totalEarned
+                      ? (
+                          BigInt(worker.state.totalEarned) / BigInt(1e6)
+                        ).toString()
+                      : "0"}{" "}
+                    EFFECT
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
