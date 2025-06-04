@@ -43,7 +43,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     },
     {
       title: "Paid Out",
-      value: (totalAmount / BigInt(1e6)).toString(),
+      value: (BigInt(totalAmount) / BigInt(1e6)).toString(),
     },
   ];
 
