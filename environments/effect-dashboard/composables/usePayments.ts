@@ -139,20 +139,24 @@ export const usePayments = () => {
 
         const proofs = (await Promise.all(proofPromises)).filter(Boolean);
 
-        currentPhase.value = "bulking";
-        const [bulkedProof, error] = await worker.value.requestBulkProofs(
-          managerPeerId.value,
-          proofs,
-        );
+        if (proofs.length > 1) {
+          const [bulkedProof, error] = await worker.value.requestBulkProofs(
+            managerPeerId.value,
+            proofs,
+          );
 
-        currentProof.value++;
-        if (!bulkedProof || error) {
-          throw new Error(`something went wrong while proofing. ${error}`);
+          if (!bulkedProof || error) {
+            throw new Error(
+              `Something went wrong while bulking proofs. ${error}`,
+            );
+          }
+
+          await claimWithProofs([bulkedProof]);
+        } else if (proofs.length === 1) {
+          await claimWithProofs(proofs);
+        } else {
+          throw new Error("No valid proofs to submit");
         }
-
-        currentPhase.value = "submitting";
-        await claimWithProofs([bulkedProof]);
-        currentProof.value++;
       },
     });
 

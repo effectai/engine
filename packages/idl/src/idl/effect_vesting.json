@@ -242,46 +242,6 @@
       "code": 6000,
       "name": "Unauthorized",
       "msg": "Unauthorized"
-    },
-    {
-      "code": 6001,
-      "name": "NotStarted",
-      "msg": "This pool has not started yet."
-    },
-    {
-      "code": 6002,
-      "name": "Underfunded",
-      "msg": "This pool does not have enough funds."
-    },
-    {
-      "code": 6003,
-      "name": "NotCloseable",
-      "msg": "This pool is not closeable."
-    },
-    {
-      "code": 6004,
-      "name": "WrongClaimType",
-      "msg": "This pool has a different claim type."
-    },
-    {
-      "code": 6005,
-      "name": "WrongBeneficiary",
-      "msg": "This pool does not match the beneficiary."
-    },
-    {
-      "code": 6006,
-      "name": "InvalidTokenAccount",
-      "msg": "This pool has an invalid token account."
-    },
-    {
-      "code": 6007,
-      "name": "InvalidVault",
-      "msg": "Invalid vault"
-    },
-    {
-      "code": 6008,
-      "name": "ClaimFailed",
-      "msg": "Claim failed"
     }
   ],
   "types": [

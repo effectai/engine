@@ -33,6 +33,7 @@ export interface WorkerState {
   tasksAccepted: number;
   tasksRejected: number;
   lastActivity: number;
+  totalEarned: bigint;
   banned: boolean;
   accessCodeRedeemed?: string;
 }
@@ -82,6 +83,7 @@ export const createWorkerStore = ({ datastore }: { datastore: Datastore }) => {
         totalTasks: 0,
         tasksCompleted: 0,
         tasksRejected: 0,
+        totalEarned: BigInt(0),
         accessCodeRedeemed: state.accessCodeRedeemed,
         lastActivity: Math.floor(Date.now() / 1000),
       },
@@ -92,13 +94,13 @@ export const createWorkerStore = ({ datastore }: { datastore: Datastore }) => {
     return newRecord;
   };
 
-  const updateWorker = async (peerId: string, update: Partial<WorkerState>) => {
-    const record = await coreStore.getSafe({ entityId: peerId });
+  const updateWorker = async (
+    peerId: string,
+    updater: (current: WorkerRecord["state"]) => Partial<WorkerRecord["state"]>,
+  ) => {
+    const record = await coreStore.get({ entityId: peerId });
 
-    if (!record) {
-      throw new Error("Worker not found");
-    }
-
+    const update = updater(record.state);
     Object.assign(record.state, update);
 
     await coreStore.put({ entityId: peerId, record });

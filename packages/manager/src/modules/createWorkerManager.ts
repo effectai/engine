@@ -41,9 +41,9 @@ export const createWorkerManager = ({
       return;
     }
 
-    await workerStore.updateWorker(peerIdStr, {
+    await workerStore.updateWorker(peerIdStr, () => ({
       lastActivity: Math.floor(Date.now() / 1000),
-    });
+    }));
 
     workerQueue.removePeer(peerIdStr);
   };
@@ -78,13 +78,10 @@ export const createWorkerManager = ({
       }
 
       const currentTime = Math.floor(Date.now() / 1000);
-
-      // overwrite the recipient
-      await workerStore.updateWorker(peerId, {
-        recipient,
+      await workerStore.updateWorker(peerId, () => ({
         lastPayout: currentTime,
         lastActivity: currentTime,
-      });
+      }));
 
       // add worker to queue
       workerQueue.addPeer({ peerIdStr: peerId });
@@ -159,17 +156,12 @@ export const createWorkerManager = ({
       );
     }
 
-    await workerStore.updateWorker(peerId, {
+    await workerStore.updateWorker(peerId, () => ({
       [stateKey]: newValue,
-    });
+    }));
   };
 
-  const updateWorkerState = async (
-    peerId: string,
-    update: Partial<WorkerRecord["state"]>,
-  ) => {
-    await workerStore.updateWorker(peerId, update);
-  };
+  const updateWorkerState = workerStore.updateWorker;
 
   const getWorkers = async (ids: string[]) => {
     const workers = workerStore.getMany({

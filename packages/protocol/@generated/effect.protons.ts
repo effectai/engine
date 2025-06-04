@@ -1020,7 +1020,6 @@ export interface Payment {
   nonce: bigint;
   signature?: PaymentSignature;
   label?: string;
-  version: string;
 }
 
 export namespace Payment {
@@ -1069,11 +1068,6 @@ export namespace Payment {
             w.string(obj.label);
           }
 
-          if (obj.version != null && obj.version !== "") {
-            w.uint32(66);
-            w.string(obj.version);
-          }
-
           if (opts.lengthDelimited !== false) {
             w.ldelim();
           }
@@ -1085,7 +1079,6 @@ export namespace Payment {
             recipient: "",
             paymentAccount: "",
             nonce: 0n,
-            version: "",
           };
 
           const end = length == null ? reader.len : reader.pos + length;
@@ -1126,10 +1119,6 @@ export namespace Payment {
               }
               case 7: {
                 obj.label = reader.string();
-                break;
-              }
-              case 8: {
-                obj.version = reader.string();
                 break;
               }
               default: {

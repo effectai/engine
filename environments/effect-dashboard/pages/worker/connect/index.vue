@@ -30,8 +30,6 @@
     </div>
 
     <div v-else-if="isError" class="p-6">
-      {{ isError }}
-      {{ error }}
       <UAlert
         icon="i-heroicons-exclamation-circle"
         color="red"

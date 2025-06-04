@@ -209,8 +209,6 @@ export function usePaymentProgram() {
           throw new Error("No account or manager public key found");
         }
 
-        console.log("refetching data account..");
-
         const [recipientManagerDataAccountAddress] =
           await getProgramDerivedAddress({
             programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,

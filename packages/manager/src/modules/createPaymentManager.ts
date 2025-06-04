@@ -65,9 +65,10 @@ export async function createPaymentManager({
     });
 
     //update last payout time
-    await workerManager.updateWorkerState(peerId.toString(), {
+    await workerManager.updateWorkerState(peerId.toString(), (state) => ({
       lastPayout: currentTime,
-    });
+      totalEarned: state.totalEarned + BigInt(payment.amount),
+    }));
 
     //insert payment into the store
     await paymentStore.put({
@@ -245,7 +246,10 @@ export async function createPaymentManager({
   ) => {
     //TODO:: verify & validate payments
     payments.sort((a, b) => Number(a.nonce) - Number(b.nonce));
-    console.log("INFO: Generating payment proof for payments:", payments);
+    console.log(
+      "INFO: Generating payment proof for payments:",
+      payments.length,
+    );
     const eddsa = await buildEddsa();
     const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
     const batchSize = payments.length;
@@ -388,9 +392,9 @@ export async function createPaymentManager({
     };
 
     //update nonce
-    await workerManager.updateWorkerState(peerId.toString(), {
+    await workerManager.updateWorkerState(peerId.toString(), () => ({
       nonce: peer.state.nonce + BigInt(1),
-    });
+    }));
 
     //save payment in store.
     await paymentStore.put({

@@ -56,7 +56,10 @@ export type CreateTaskManager = ReturnType<typeof createTaskManager>;
 export type CreateWorkerManager = ReturnType<typeof createWorkerManager>;
 
 export type ManagerContext = {
-  manager: ManagerEntity;
+  getCycle: () => number;
+  resume: () => void;
+  pause: () => void;
+  entity: ManagerEntity;
   taskManager: ReturnType<typeof createTaskManager>;
   workerManager: ReturnType<typeof createWorkerManager>;
 };
@@ -377,6 +380,7 @@ export const createManager = async ({
   });
 
   let isStarted = false;
+  let isPaused = false;
   let tearDownDash: () => Promise<void>;
 
   const setupManagerDashboard = async () => {
@@ -446,7 +450,10 @@ export const createManager = async ({
     app.use(express.default.json());
 
     setupRemix(app, {
-      manager: entity,
+      resume,
+      pause,
+      getCycle,
+      entity,
       taskManager,
       workerManager,
     });
@@ -463,14 +470,28 @@ export const createManager = async ({
     return { tearDown };
   };
 
+  const pause = () => {
+    logger.info("Pausing manager...");
+    isPaused = true;
+  };
+
+  const resume = () => {
+    logger.info("Resuming manager...");
+    isPaused = false;
+  };
+
+  const getCycle = () => {
+    return cycle;
+  };
+
   const start = async () => {
     //start libp2p & http transports
     await entity.node.start();
     await entity.startHttp();
 
-    console.log('Manager listening on:');
+    console.log("Manager listening on:");
     entity.node.getMultiaddrs().forEach((addr) => {
-      console.log(addr.toString())
+      console.log(addr.toString());
     });
 
     //start manager dashboard
@@ -498,7 +519,7 @@ export const createManager = async ({
   if (managerSettings.autoManage) {
     await start();
 
-    while (true) {
+    while (!isPaused) {
       cycle++;
       await taskManager.manageTasks();
       await new Promise((res) => setTimeout(res, 1000));
@@ -518,5 +539,8 @@ export const createManager = async ({
 
     start,
     stop,
+    pause,
+    resume,
+    getCycle,
   };
 };

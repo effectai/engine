@@ -19,7 +19,6 @@ import {
   type Task,
   type Template,
   peerIdFromString,
-  parseWithBigInt,
 } from "@effectai/protocol-core";
 
 export interface PaginatedResult<T> {
@@ -247,6 +246,11 @@ export function createTaskManager({
       { payment },
     );
 
+    //update state
+    await workerManager.updateWorkerState(event.submissionByPeer, (state) => ({
+      totalEarned: state.totalEarned + BigInt(taskRecord.state.reward),
+    }));
+
     //sendout task completed event
     events.safeDispatchEvent("task:completed", { detail: taskRecord });
 
@@ -347,55 +351,16 @@ export function createTaskManager({
     return tasks;
   };
 
-  async function getPaginatedTasks(
-    status: "active" | "completed",
-    page: number = 1,
-    perPage: number = 10,
-  ): Promise<PaginatedResult<Task>> {
-    // Validate inputs
-    if (page < 1) page = 1;
-    if (perPage < 1) perPage = 10;
-
-    const query = {
-      prefix: `/tasks/${status}/`,
-      offset: (page - 1) * perPage,
-      limit: perPage,
-    };
-
-    const results: any[] = [];
-    for await (const result of taskStore.datastore.query(query)) {
-      results.push(result);
-    }
-
+  const getCompletedTaskCount = async () => {
     let total = 0;
-    const countQuery = {
-      prefix: `/tasks/${status}/`,
-    };
-    for await (const _ of taskStore.datastore.queryKeys(countQuery)) {
+    for await (const _ of taskStore.datastore.queryKeys({
+      prefix: "/tasks/completed",
+    })) {
       total++;
     }
 
-    // Parse results
-    const items = results
-      .map((result) => {
-        try {
-          return parseWithBigInt(result.value.toString()) as Task;
-        } catch (err) {
-          console.error("Failed to parse task", err);
-          return null;
-        }
-      })
-      .filter(Boolean) as Task[];
-
-    return {
-      items,
-      total,
-      page,
-      perPage,
-      hasNext: page * perPage < total,
-      hasPrevious: page > 1,
-    };
-  }
+    return total;
+  };
 
   const getCompletedTasks = async ({
     offset,
@@ -449,7 +414,6 @@ export function createTaskManager({
 
     getActiveTasks,
     getCompletedTasks,
-
-    getPaginatedTasks,
+    getCompletedTaskCount,
   };
 }

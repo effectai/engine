@@ -17,15 +17,6 @@ export default defineConfig({
     },
   },
   plugins: [
-    watchAndRun([
-      {
-        name: "gen",
-        watch: path.resolve("app/**/*.(tsx)"),
-        run: "pnpm build",
-        // watchKind: ['add', 'change', 'unlink'], // (default)
-        delay: 300, // (default)
-      },
-    ]),
     remix({
       future: {
         v3_fetcherPersist: true,
