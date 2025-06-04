@@ -26,10 +26,12 @@
     <div class="columns is-mobile is-multiline is-centered">
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
+          :class="{ 'is-primary': this.isMutant == 'Yes' }"
           @click="this.isMutant='Yes'">Yes</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
+          :class="{ 'is-primary': this.isMutant == 'No' }"
           @click="this.isMutant='No'">No</button>
       </div>
     </div>
@@ -38,17 +40,19 @@
     <div class="columns is-mobile is-multiline is-centered">
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
+          :class="{ 'is-primary': this.hasHat == 'Yes' }"
           @click="this.hasHat='Yes'">Yes</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
+          :class="{ 'is-primary': this.hasHat == 'No' }"
           @click="this.hasHat='No'">No</button>
       </div>
     </div>
 
     <button
       @click.prevent="uploadAndSubmit"
-      class="button is-primary is-large"
+      class="button is-success is-large"
       :class="{'is-loading': btnLoading}"
     >
       Submit
@@ -69,14 +73,14 @@
     createApp({
       data() {
         return {
-          title: "Effect AI Image Labeler",
-          // imageSource: "${image_url}",
-          imageSource: "https://ipfs.io/ipfs/QmNLijobERK4VhSDZdKjt5SrezdRM6k813qcSHd68f3Mqg",
+          title: "Effect AI NFT Metadata Collector",
+          imageSource: "${image_url}",
           btnLoading: false,
           ipfsClient: null,
           isMutant: "",
           hasHat: "",
           loading: true,
+          isActive: false
         };
       },
       computed: {},
@@ -90,7 +94,8 @@
               {
                 task: "submit",
                 values: {
-                  label: this.answer,
+                  isMutant: this.isMutant,
+                  hasHat: this.hasHat,
                   image: this.imageSource,
                 },
               },
