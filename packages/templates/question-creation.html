@@ -1,5 +1,5 @@
 <div id="app" style="text-align: center">
-    <h1>Effect AI - Sentence Creator</h1>
+    <h1>Effect AI - Question Creator</h1>
   
     <hr />
   
@@ -7,27 +7,28 @@
     <div class="mx-auto" style="max-width: 80%">
 
       <div class="container is-max-desktop">
-        <label class="label has-text-left">Sentence:</label>
+        <label class="label has-text-left">Question:</label>
         <textarea
           class="textarea"
-          placeholder="Enter your sentence here"
+          placeholder="Enter your question here"
           type="text" 
-          v-model="tmpSentence"
+          v-model="tmpQuestion"
         >
         </textarea>
       </div>
 
       <div class="container is-max-desktop box">
-        <label class="label">Instructions:</label>
+        <label class="label">What questions can I add?</label>
         <div class="has-text-left">
-          <li>No copyright restrictions (cc-0)</li>
-          <li>Fewer than 15 words per sentence</li>
-          <li>Use correct grammar</li>
-          <li>Use correct spelling and punctuation</li>
-          <li>No numbers and special characters</li>
-          <li>No foreign letters</li>
-          <li>Include appropriate citation</li>
-          <li>Ideally natural and conversational (it should be easy to read the sentence)</li>
+          <label class="label">DO:</label>
+          <li>Use correct spelling and grammar</li>
+          <li>Choose simple questions that are easy for anyone to understand, regardless of culture or context</li>
+          <li>Make sure they can be answered in just a couple of sentences</li>
+          <br>
+          <label class="label">DO NOT:</label>
+          <li>Solicit personally identifying information (like names or financial information)</li>
+          <li>Express or solicit prejudiced or offensive sentiments</li>
+          <li>Ask sensitive questions</li>
         </div>
       </div>
     
@@ -35,7 +36,7 @@
 
     <button
       @click.prevent="uploadAndSubmit"
-      class="button is-primary is-large"
+      class="button is-success is-large"
       :class="{'is-loading': btnLoading}"
     >
       Submit
@@ -53,8 +54,8 @@
     createApp({
       data() {
         return {
-          title: "Effect AI Sentence Creator",
-          tmpSentence: "",
+          title: "Effect AI Question Creator",
+          tmpQuestion: "",
           labels: [],
           btnLoading: false,
           ipfsClient: null,
@@ -71,7 +72,7 @@
               {
                 task: "submit",
                 values: {
-                  sentence: this.tmpSentence,
+                  question: this.tmpQuestion,
                 },
               },
               "*"
