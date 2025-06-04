@@ -354,7 +354,7 @@ export function createTaskManager({
   const getCompletedTaskCount = async () => {
     let total = 0;
     for await (const _ of taskStore.datastore.queryKeys({
-      prefix: "tasks/completed",
+      prefix: "/tasks/completed",
     })) {
       total++;
     }
