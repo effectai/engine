@@ -33,6 +33,11 @@
     
     <p class="is-size-7 mb-2">By clicking this button, you accept that the sentence contributed here will be added to a publicly available cc-0 licensed dataset.</p>
 
+    <p style="color: red;"
+    :class="{'is-hidden mb-3': !notComplete}">
+      Task incomplete - Please complete all sections of the task
+    </p>
+
     <button
       @click.prevent="uploadAndSubmit"
       class="button is-success is-large"
@@ -58,6 +63,7 @@
           labels: [],
           btnLoading: false,
           ipfsClient: null,
+          notComplete: false,
         };
       },
       computed: {},
@@ -66,19 +72,23 @@
       methods: {
         async uploadAndSubmit() {
           this.btnLoading = true;
-          try {
-            parent.postMessage(
-              {
-                task: "submit",
-                values: {
-                  sentence: this.tmpSentence,
-                },
-              },
-              "*"
-            );
-          } catch (error) {
-            console.error("Failed to upload to IPFS", error);
+          if(this.tmpSentence == ""){
+            this.notComplete = true
           }
+          else
+            try {
+              parent.postMessage(
+                {
+                  task: "submit",
+                  values: {
+                    sentence: this.tmpSentence,
+                  },
+                },
+                "*"
+              );
+            } catch (error) {
+              console.error("Failed to upload to IPFS", error);
+            }
           this.btnLoading = false;
         },
       },

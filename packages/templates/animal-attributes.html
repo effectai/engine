@@ -61,6 +61,11 @@
       </div>
     </div>
 
+    <p style="color: red;"
+    :class="{'is-hidden mb-3': !notComplete}">
+      Task incomplete - Please complete all sections of the task
+    </p>
+
     <button
       @click.prevent="uploadAndSubmit"
       class="button is-success is-large"
@@ -90,6 +95,7 @@
           ipfsClient: null,
           answer: "",
           loading: true,
+          notComplete: false,
         };
       },
       computed: {},
@@ -98,20 +104,24 @@
       methods: {
         async uploadAndSubmit() {
           this.btnLoading = true;
-          try {
-            parent.postMessage(
-              {
-                task: "submit",
-                values: {
-                  animal: this.answer,
-                  image: this.imageSource,
-                },
-              },
-              "*",
-            );
-          } catch (error) {
-            console.error("Failed to upload to IPFS", error);
+          if(this.answer == ""){
+            this.notComplete = true
           }
+          else
+            try {
+              parent.postMessage(
+                {
+                  task: "submit",
+                  values: {
+                    animal: this.answer,
+                    image: this.imageSource,
+                  },
+                },
+                "*",
+              );
+            } catch (error) {
+              console.error("Failed to upload to IPFS", error);
+            }
           this.btnLoading = false;
         },
       },
