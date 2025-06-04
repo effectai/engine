@@ -6,6 +6,7 @@ import { Button } from "~/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
 import type { ManagerTaskRecord } from "../../../../dist";
 import { Link, useNavigate } from "@remix-run/react";
+import { formatReward, sliceBoth } from "@/app/lib/utils";
 
 export const columns: ColumnDef<ManagerTaskRecord>[] = [
   {
@@ -18,7 +19,7 @@ export const columns: ColumnDef<ManagerTaskRecord>[] = [
           to={`/tasks/${taskId}`}
           className="text-blue-500 hover:text-blue-700"
         >
-          {taskId}
+          {sliceBoth(taskId)}
         </Link>
       );
     },
@@ -68,13 +69,19 @@ export const columns: ColumnDef<ManagerTaskRecord>[] = [
         </Button>
       );
     },
+    cell: ({ row }) => {
+      return formatReward(row.original.state.reward);
+    },
   },
   {
     accessorKey: "state.timeLimitSeconds",
-    header: "Time Limit (s)",
+    header: "Time Limit (ms)",
   },
   {
     accessorKey: "state.templateId",
     header: "Template ID",
+    cell: ({ row }) => {
+      return sliceBoth(row.original.state.templateId);
+    },
   },
 ];

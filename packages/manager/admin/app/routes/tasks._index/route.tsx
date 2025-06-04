@@ -1,6 +1,6 @@
 import { useLoaderData, useSearchParams } from "@remix-run/react";
 import { DataTable } from "~/components/data-table";
-import { columns } from "./../tasks/columns";
+import { columns } from "./columns";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {

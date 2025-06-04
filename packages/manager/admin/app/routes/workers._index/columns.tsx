@@ -44,7 +44,7 @@ export const columns: ColumnDef<WorkerRecord>[] = [
     },
   },
   {
-    accessorKey: "state.accessCode",
+    accessorKey: "state.accessCodeRedeemed",
     header: "Access Code",
   },
   {
