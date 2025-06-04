@@ -70,7 +70,7 @@ export const columns: ColumnDef<ManagerTaskRecord>[] = [
       );
     },
     cell: ({ row }) => {
-      return formatReward(row.original.state.reward);
+      return formatReward(BigInt(row.original.state.reward));
     },
   },
   {
