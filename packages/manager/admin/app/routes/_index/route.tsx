@@ -6,15 +6,13 @@ import { useLoaderData } from "@remix-run/react";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const activeTasks = await context.taskManager.getActiveTasks();
-  const completedTasks = await context.taskManager.getPaginatedTasks({
-    perPage: 1,
-    page: 0,
-    prefix: "tasks/completed",
-  });
-  const totalTasks = completedTasks.total + activeTasks.length;
+  const completedTasks = await context.taskManager.getCompletedTaskCount();
+  const totalTasks = completedTasks + activeTasks.length;
+
   const workerQueue = context.workerManager.workerQueue.queue;
   const workers = await context.workerManager.all();
   const cycle = context.getCycle();
+
   const totalAmount = workers.reduce(
     (acc, worker) => acc + (worker.state?.totalEarned ?? 0n),
     0n,
@@ -31,7 +29,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     },
     {
       title: "Completed Tasks",
-      value: completedTasks.total,
+      value: completedTasks,
     },
     {
       title: "Active Tasks",
@@ -43,7 +41,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     },
     {
       title: "Paid Out",
-      value: (BigInt(totalAmount) / BigInt(1e6)).toString(),
+      value: `${(BigInt(totalAmount) / BigInt(1e6)).toString()} EFFECT`,
     },
   ];
 

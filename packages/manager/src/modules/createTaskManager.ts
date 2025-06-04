@@ -351,20 +351,15 @@ export function createTaskManager({
     return tasks;
   };
 
-  const getPaginatedTasks = async ({
-    perPage,
-    page,
-    prefix,
-  }: {
-    perPage: number;
-    page: number;
-    prefix?: string;
-  }) => {
-    return await taskStore.paginatedQuery({
-      prefix,
-      perPage,
-      page,
-    });
+  const getCompletedTaskCount = async () => {
+    let total = 0;
+    for await (const _ of taskStore.datastore.queryKeys({
+      prefix: "tasks/completed",
+    })) {
+      total++;
+    }
+
+    return total;
   };
 
   const getCompletedTasks = async ({
@@ -419,7 +414,6 @@ export function createTaskManager({
 
     getActiveTasks,
     getCompletedTasks,
-
-    getPaginatedTasks,
+    getCompletedTaskCount,
   };
 }

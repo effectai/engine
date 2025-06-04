@@ -1,18 +1,51 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { sliceBoth } from "@/app/lib/utils";
+import { formatReward, sliceBoth } from "@/app/lib/utils";
 import { Link, useNavigate } from "@remix-run/react";
-import type { WorkerRecord } from "../../../../dist/stores/managerWorkerStore";
+import type {
+  WorkerRecord,
+  WorkerState,
+} from "../../../../dist/stores/managerWorkerStore";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/app/components/ui/button";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Circle, CircleOff } from "lucide-react";
+import { Badge } from "@/app/components/ui/badge";
 
-const calculateSuccessRate = (item: WorkerRecord) => {
+const calculateSuccessRate = (item: WorkerData) => {
   return (item.state.tasksCompleted / item.state.totalTasks) * 100;
 };
 
-export const columns: ColumnDef<WorkerRecord>[] = [
+export type WorkerData = {
+  state: WorkerState & {
+    isOnline: boolean;
+  };
+};
+
+export const columns: ColumnDef<WorkerData>[] = [
+  {
+    accessorKey: "state.isOnline",
+    header: "Status",
+    cell: ({ row }) => {
+      const isOnline = row.original.state.isOnline as boolean;
+
+      return (
+        <Badge variant={isOnline ? "default" : "destructive"} className="gap-2">
+          {isOnline ? (
+            <>
+              <Circle className="h-3 w-3 fill-current" />
+              Online
+            </>
+          ) : (
+            <>
+              <CircleOff className="h-3 w-3" />
+              Offline
+            </>
+          )}
+        </Badge>
+      );
+    },
+  },
   {
     accessorKey: "state.id",
     header: "ID",
@@ -78,7 +111,7 @@ export const columns: ColumnDef<WorkerRecord>[] = [
 
       return (
         <span>
-          {successRate}% ({row.original.state.tasksCompleted} /{" "}
+          {successRate}% ({row.original.state.tasksCompleted}/
           {row.original.state.totalTasks})
         </span>
       );
@@ -100,7 +133,7 @@ export const columns: ColumnDef<WorkerRecord>[] = [
     cell: ({ row }) => {
       return row.original.state.totalEarned ? (
         <span>
-          {(BigInt(row.original.state.totalEarned) / BigInt(1e6)).toString()}
+          {formatReward(BigInt(row.original.state.totalEarned))} EFFECT
         </span>
       ) : (
         0n
