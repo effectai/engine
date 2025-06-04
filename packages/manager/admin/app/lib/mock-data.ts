@@ -70,3 +70,9 @@ export const mockTasks: ManagerTaskRecord[] = Array.from(
     };
   },
 );
+export const getMockTasks = () => {
+  return {
+    total: mockTasks.length,
+    data: mockTasks,
+  };
+};

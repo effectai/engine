@@ -19,7 +19,6 @@ import {
   type Task,
   type Template,
   peerIdFromString,
-  parseWithBigInt,
 } from "@effectai/protocol-core";
 
 export interface PaginatedResult<T> {
@@ -352,55 +351,21 @@ export function createTaskManager({
     return tasks;
   };
 
-  async function getPaginatedTasks(
-    status: "active" | "completed",
-    page: number = 1,
-    perPage: number = 10,
-  ): Promise<PaginatedResult<Task>> {
-    // Validate inputs
-    if (page < 1) page = 1;
-    if (perPage < 1) perPage = 10;
-
-    const query = {
-      prefix: `/tasks/${status}/`,
-      offset: (page - 1) * perPage,
-      limit: perPage,
-    };
-
-    const results: any[] = [];
-    for await (const result of taskStore.datastore.query(query)) {
-      results.push(result);
-    }
-
-    let total = 0;
-    const countQuery = {
-      prefix: `/tasks/${status}/`,
-    };
-    for await (const _ of taskStore.datastore.queryKeys(countQuery)) {
-      total++;
-    }
-
-    // Parse results
-    const items = results
-      .map((result) => {
-        try {
-          return parseWithBigInt(result.value.toString()) as Task;
-        } catch (err) {
-          console.error("Failed to parse task", err);
-          return null;
-        }
-      })
-      .filter(Boolean) as Task[];
-
-    return {
-      items,
-      total,
-      page,
+  const getPaginatedTasks = async ({
+    perPage,
+    page,
+    prefix,
+  }: {
+    perPage: number;
+    page: number;
+    prefix?: string;
+  }) => {
+    return await taskStore.paginatedQuery({
+      prefix,
       perPage,
-      hasNext: page * perPage < total,
-      hasPrevious: page > 1,
-    };
-  }
+      page,
+    });
+  };
 
   const getCompletedTasks = async ({
     offset,

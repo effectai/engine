@@ -6,4 +6,7 @@
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { install } from "@solana/webcrypto-ed25519-polyfill";
+install();
+</script>
