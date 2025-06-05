@@ -519,11 +519,18 @@ export const createManager = async ({
   if (managerSettings.autoManage) {
     await start();
 
-    while (!isPaused) {
-      cycle++;
-      await taskManager.manageTasks();
-      await new Promise((res) => setTimeout(res, 1000));
-    }
+    let isManaging = false;
+
+    setInterval(async () => {
+      if (isPaused || isManaging) return;
+      isManaging = true;
+      try {
+        cycle++;
+        await taskManager.manageTasks();
+      } finally {
+        isManaging = false;
+      }
+    }, 1000);
   }
 
   entity.node.addEventListener("peer:disconnect", (event) => {
