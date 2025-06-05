@@ -1,4 +1,3 @@
-import { runCommand } from "./run.js";
 import { startCommand } from "./start.js";
 import { taskCommand } from "./tasks.js";
 import { templateCommand } from "./templates.js";
@@ -12,5 +11,4 @@ managerProgram
 
 managerProgram.addCommand(taskCommand);
 managerProgram.addCommand(templateCommand);
-managerProgram.addCommand(runCommand);
 managerProgram.addCommand(startCommand);

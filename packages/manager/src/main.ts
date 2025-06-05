@@ -25,10 +25,6 @@ import {
 import { PublicKey } from "@solana/web3.js";
 import { PAYMENT_BATCH_SIZE, TASK_ACCEPTANCE_TIME } from "./consts.js";
 
-import type { Request, Response, NextFunction } from "express";
-
-import { createRequestHandler } from "@remix-run/express";
-
 import {
   type Payment,
   type TaskRecord,
@@ -40,7 +36,8 @@ import {
   createEffectEntity,
 } from "@effectai/protocol-core";
 
-import path from "node:path";
+import { createManagerControls } from "./modules/createManagerControls.js";
+import { setupManagerDashboard } from "./modules/createAdminDashboard.js";
 
 export type ManagerEvents = {
   "task:created": (task: TaskRecord) => void;
@@ -48,7 +45,11 @@ export type ManagerEvents = {
   "task:rejected": (task: TaskRecord) => void;
   "task:submission": (task: TaskRecord) => void;
   "task:completed": CustomEvent<TaskRecord>;
+
   "payment:created": (payment: Payment) => void;
+
+  "manager:start": CustomEvent<void>;
+  "manager:stop": CustomEvent<void>;
 };
 
 export type ManagerEntity = Awaited<ReturnType<typeof createManagerEntity>>;
@@ -116,7 +117,6 @@ export const createManager = async ({
   settings: Partial<ManagerSettings>;
 }) => {
   const startTime = Date.now();
-  let cycle = 0;
   const logger = createLogger();
 
   const managerSettings: ManagerSettings = {
@@ -379,163 +379,36 @@ export const createManager = async ({
     }
   });
 
-  let isStarted = false;
-  let isPaused = false;
-  let tearDownDash: () => Promise<void>;
-
-  const setupManagerDashboard = async () => {
-    const username = "admin";
-    const password = "!effectai!#65";
-
-    function basicAuth(req: Request, res: Response, next: NextFunction) {
-      const authHeader = req.headers.authorization;
-
-      if (!authHeader || !authHeader.startsWith("Basic ")) {
-        res.setHeader("WWW-Authenticate", 'Basic realm="Remix App"');
-        return res.status(401).send("Authentication required.");
-      }
-
-      const base64Credentials = authHeader.split(" ")[1];
-      const credentials = Buffer.from(base64Credentials, "base64").toString(
-        "ascii",
-      );
-      const [inputUser, inputPass] = credentials.split(":");
-
-      if (inputUser === username && inputPass === password) {
-        return next();
-      }
-
-      res.setHeader("WWW-Authenticate", 'Basic realm="Remix App"');
-      return res.status(401).send("Invalid credentials.");
-    }
-
-    async function setupRemix(app: any, context: ManagerContext) {
-      const { createRequire } = await import("node:module");
-      const require = createRequire(import.meta.url);
-
-      const build = await import(
-        require.resolve("../admin/build/server/index.js")
-      );
-
-      const remixHandler = createRequestHandler({
-        build,
-        mode: process.env.NODE_ENV,
-        getLoadContext: () => context,
-      });
-
-      app.use((req: any, _res: any, next: any) => {
-        (req as any).remixContext = context;
-        next();
-      });
-
-      app.all("*", remixHandler);
-    }
-
-    //init express server
-    const express = await import("express");
-    const cors = await import("cors");
-
-    const app = express.default();
-    app.use(cors.default());
-    app.use(basicAuth);
-
-    app.use(
-      express.default.static(path.join(__dirname, "../admin/build/client")),
-    );
-
-    app.get("/favicon.ico", (_req: any, res: any) => {
-      res.status(204).end();
-    });
-
-    app.use(express.default.json());
-
-    setupRemix(app, {
-      resume,
-      pause,
-      getCycle,
+  const { isStarted, pause, resume, getCycle, start, stop, cycle } =
+    createManagerControls({
+      events,
       entity,
+      logger,
       taskManager,
+      managerSettings,
+    });
+
+  const { tearDown } = await setupManagerDashboard({
+    context: {
+      taskManager,
+      entity,
       workerManager,
-    });
+      getCycle,
+      pause,
+      resume,
+    },
+  });
 
-    const server = app.listen(9000, () => {
-      console.log("Manager Dashboard started on port 9000");
-    });
-
-    const tearDown = async () => {
-      console.log("Tearing down manager dashboard");
-      server.close();
-    };
-
-    return { tearDown };
-  };
-
-  const pause = () => {
-    logger.info("Pausing manager...");
-    isPaused = true;
-  };
-
-  const resume = () => {
-    logger.info("Resuming manager...");
-    isPaused = false;
-  };
-
-  const getCycle = () => {
-    return cycle;
-  };
-
-  const start = async () => {
-    //start libp2p & http transports
-    await entity.node.start();
-    await entity.startHttp();
-
-    console.log("Manager listening on:");
-    entity.node.getMultiaddrs().forEach((addr) => {
-      console.log(addr.toString());
-    });
-
-    //start manager dashboard
-    if (managerSettings.withAdmin) {
-      const { tearDown } = await setupManagerDashboard();
-      tearDownDash = tearDown;
-    }
-
-    isStarted = true;
-  };
-
-  const stop = async () => {
-    //stop libp2p & http transports
-    await entity.node.stop();
-    await entity.stopHttp();
-
-    //stop express server
-    if (tearDownDash) {
-      tearDownDash();
-    }
-
-    isStarted = false;
-  };
-
-  if (managerSettings.autoManage) {
-    await start();
-
-    let isManaging = false;
-
-    setInterval(async () => {
-      if (isPaused || isManaging) return;
-      isManaging = true;
-      try {
-        cycle++;
-        await taskManager.manageTasks();
-      } finally {
-        isManaging = false;
-      }
-    }, 1000);
-  }
+  events.addEventListener("manager:stop", async () => {
+    await tearDown();
+  });
 
   entity.node.addEventListener("peer:disconnect", (event) => {
     workerManager.disconnectWorker(event.detail.toString());
   });
+
+  // start the manager
+  await start();
 
   return {
     entity,
@@ -544,10 +417,6 @@ export const createManager = async ({
     taskManager,
     workerManager,
 
-    start,
     stop,
-    pause,
-    resume,
-    getCycle,
   };
 };
