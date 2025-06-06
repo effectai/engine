@@ -8,18 +8,19 @@
         <h1
           class="title mb-6 is-size-2-tablet is-size-3 has-text-dark has-text-weight-light is-auto-phrase"
         >
-          <span> Supercharging </span>
-          <span> AI Agents </span>
-          <span> with Human Intelligence </span>
+          <span>A Protocol For Decentralized </span>
+          <span>Capability-Based Task Processing</span>
         </h1>
       </template>
 
       <template #subtitle>
         <p class="subtitle mb-5 has-text-dark">
           <span class="pr-6">
-            Effect AI is a permissionless protocol designed to supply, assign,
-            and execute human-driven AI tasks, supercharging <b>AI agents</b> &
-            <b>LLM models</b> to achieve next-level performance and accuracy.
+            AI's next revolution isn't about better models, it's about networked
+            capabilities. The Effect AI Protocol introduces a peer-to-peer
+            decentralized interopable ecosystem that transforms skills, data
+            streams, algorithms, inference, and computational resources into
+            liquid, tradable assets.
           </span>
         </p>
       </template>
@@ -40,7 +41,7 @@
                     class="button is-black is-rounded is-outlined is-flex is-medium"
                     style="gap: 14px; font-weight: 400"
                   >
-                    Documentation
+                    Litepaper
                     <span class="icon">
                       <i class="icon">
                         <svg
@@ -66,14 +67,14 @@
             <div class="column">
               <nuxt-link
                 class="is-flex"
-                to="https://dao.effect.network"
+                to="https://portal.effect.ai"
                 exact-active-class="is-active"
               >
                 <button
                   class="button is-black is-rounded is-flex is-medium"
                   style="gap: 10px"
                 >
-                  Governance
+                  Join our Alpha
                 </button>
               </nuxt-link>
             </div>
@@ -82,37 +83,6 @@
       </template>
     </HeroSection>
   </div>
-
-  <SimpleSection
-    class="is-flex is-justify-content-center is-flex-direction-column"
-  >
-    <div class="container">
-      <div class="is-flex is-justify-content-center is-flex-direction-column">
-        <h2
-          class="is-flex is-justify-content-center is-size-3 has-text-weight-medium has-text-primary has-text-left"
-        >
-          The New $EFFECT Token
-        </h2>
-        <p class="is-justify-content-center my-5 has-text-centered">
-          Starting January 5th 2025, you can claim your EFFECT tokens via the
-          official Claim Portal at
-          <a href="https://portal.effect.ai">portal.effect.ai</a>.
-        </p>
-        <nuxt-link
-          class="is-flex is-justify-content-center"
-          to="https://portal.effect.ai"
-          exact-active-class="is-active"
-        >
-          <button
-            class="button is-black is-rounded is-flex is-medium"
-            style="gap: 10px"
-          >
-            Go to Portal
-          </button>
-        </nuxt-link>
-      </div>
-    </div>
-  </SimpleSection>
 
   <SimpleSection class="has-text-light has-background-dark">
     <div class="container">
@@ -192,18 +162,19 @@
                 Complete Tasks
               </h2>
               <p class="is-size-5 has-text-weight-normal has-text-left">
-                Complete tasks and earn EFX directly to your wallet.
+                Complete tasks and earn EFFECT directly to your wallet.
               </p>
               <div class="mt-5 has-text-left">
-                <button
-                  class="button is-white is-rounded is-outlined is-flex is-medium"
-                  style="gap: 10px"
-                >
-                  Coming soon
-                  <span class="icon">
-                    <i class="fas fa-arrow-right"></i>
-                  </span>
-                </button>
+                <a href="https://portal.effect.ai/worker"
+                  ><button
+                    class="button is-white is-rounded is-outlined is-flex is-medium"
+                    style="gap: 10px"
+                  >
+                    Start earning
+                    <span class="icon">
+                      <i class="fas fa-arrow-right"></i>
+                    </span></button
+                ></a>
               </div>
             </div>
           </div>
