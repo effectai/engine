@@ -1,0 +1,86 @@
+<div id="app" style="text-align: center">
+    <h1>Effect AI - Sentence Creator</h1>
+  
+    <hr />
+  
+    <!-- Wrap the image or canvas element with a block element (container) -->
+    <div class="mx-auto" style="max-width: 80%">
+
+      <div class="container is-max-desktop">
+        <label class="label has-text-left">Sentence:</label>
+        <textarea
+          class="textarea"
+          placeholder="Enter your sentence here"
+          type="text" 
+          v-model="tmpSentence"
+        >
+        </textarea>
+      </div>
+
+      <div class="container is-max-desktop box">
+        <label class="label">Instructions:</label>
+        <div class="has-text-left">
+          <li>No copyright restrictions (cc-0)</li>
+          <li>Fewer than 15 words per sentence</li>
+          <li>Use correct grammar</li>
+          <li>Use correct spelling and punctuation</li>
+          <li>No numbers and special characters</li>
+          <li>No foreign letters</li>
+          <li>Include appropriate citation</li>
+          <li>Ideally natural and conversational (it should be easy to read the sentence)</li>
+        </div>
+      </div>
+    
+    <p class="is-size-7 mb-2">By clicking this button, you accept that the sentence contributed here will be added to a publicly available cc-0 licensed dataset.</p>
+
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-success is-large"
+      :class="{'is-loading': btnLoading}"
+    >
+      Submit
+    </button>
+  </div>
+  
+  <!-- 📚 Load in resources: [Bulma, Effect Network Styling]  -->
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+  
+  <script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+  
+    createApp({
+      data() {
+        return {
+          title: "Effect AI Sentence Creator",
+          tmpSentence: "",
+          labels: [],
+          btnLoading: false,
+          ipfsClient: null,
+        };
+      },
+      computed: {},
+      created() {},
+      mounted() {},
+      methods: {
+        async uploadAndSubmit() {
+          this.btnLoading = true;
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  sentence: this.tmpSentence,
+                },
+              },
+              "*"
+            );
+          } catch (error) {
+            console.error("Failed to upload to IPFS", error);
+          }
+          this.btnLoading = false;
+        },
+      },
+    }).mount("#app");
+  </script>

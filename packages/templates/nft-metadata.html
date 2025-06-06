@@ -1,5 +1,5 @@
 <div id="app" style="text-align: center">
-  <h1>Effect AI - Animals With Attributes</h1>
+  <h1>Effect AI - NFT Metadata Collector</h1>
 
   <hr />
 
@@ -22,42 +22,31 @@
 
     <hr />
 
-    <label class="label">Which animal is this?</label>
+    <label class="label">Is this a mutant?</label>
     <div class="columns is-mobile is-multiline is-centered">
       <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
-          @click="this.answer='Dog'">Dog</button>
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.isMutant == 'Yes' }"
+          @click="this.isMutant='Yes'">Yes</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
-          @click="this.answer='Cow'">Cow</button>
-      </div>
-      <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
-          @click="this.answer='Dolphin'">Dolphin</button>
-      </div>
-      <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
-          @click="this.answer='Walrus'">Walrus</button>
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.isMutant == 'No' }"
+          @click="this.isMutant='No'">No</button>
       </div>
     </div>
 
+    <label class="label">Does it have a hat?</label>
     <div class="columns is-mobile is-multiline is-centered">
       <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
-          @click="this.answer='Lion'">Lion</button>
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.hasHat == 'Yes' }"
+          @click="this.hasHat='Yes'">Yes</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
-          @click="this.answer='Pig'">Pig</button>
-      </div>
-      <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
-          @click="this.answer='Raccoon'">Raccoon</button>
-      </div>
-      <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
-          @click="this.answer='Other'">Other</button>
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.hasHat == 'No' }"
+          @click="this.hasHat='No'">No</button>
       </div>
     </div>
 
@@ -84,12 +73,14 @@
     createApp({
       data() {
         return {
-          title: "Effect AI Image Labeler",
+          title: "Effect AI NFT Metadata Collector",
           imageSource: "${image_url}",
           btnLoading: false,
           ipfsClient: null,
-          answer: "",
+          isMutant: "",
+          hasHat: "",
           loading: true,
+          isActive: false
         };
       },
       computed: {},
@@ -103,7 +94,8 @@
               {
                 task: "submit",
                 values: {
-                  animal: this.answer,
+                  isMutant: this.isMutant,
+                  hasHat: this.hasHat,
                   image: this.imageSource,
                 },
               },
