@@ -87,16 +87,32 @@
   <SimpleSection class="has-text-light has-background-dark">
     <div class="container">
       <div class="columns is-mobile is-multiline">
-        <div
-          class="be-part-of column is-full-mobile mb-4-mobile is-one-third-tablet has-text-left"
-        >
-          <p class="is-size-3 has-text-medium">
-            Be part of the <br />
-            AI future:
+        <div class="column is-full-mobile mb-4-mobile has-text-left">
+          <p class="is-size-2 has-text-medium">
+            Building Towards a <br />
+            Decentralized AI Future Together. <br />
           </p>
         </div>
+      </div>
+
+      <Contributors
+        class="is-flex is-justify-content-center mt-5"
+        :repoOwner="'effectai'"
+        :repoName="'effect-dao'"
+        :maxContributors="10"
+        :title="'Core Contributors'"
+        :featured="[
+          'jeisses',
+          'Jeffrieh',
+          'laurensV',
+          'MiggySmallz',
+          'rochelle8044',
+        ]"
+      >
+      </Contributors>
+      <div class="is-flex is-justify-content-center is-fullwidth mt-6">
         <div
-          class="column is-full-mobile has-text-left has-text-centered-mobile"
+          class="column is-full-mobile has-text-right has-text-centered-mobile"
         >
           <p class="is-size-2 has-text-weight-bold">23</p>
           <p class="is-size-5 has-text-grey-light has-text-weight-medium">
@@ -104,7 +120,7 @@
           </p>
         </div>
         <div
-          class="column is-full-mobile has-text-left has-text-centered-mobile"
+          class="column is-full-mobile has-text-right has-text-centered-mobile"
         >
           <p class="is-size-2 has-text-weight-bold">2.1M</p>
           <p class="is-size-5 has-text-grey-light has-text-weight-medium">
@@ -112,13 +128,24 @@
           </p>
         </div>
         <div
-          class="column is-full-mobile has-text-left has-text-centered-mobile"
+          class="column is-full-mobile has-text-right has-text-centered-mobile"
         >
           <p class="is-size-2 has-text-weight-bold">205</p>
           <p class="is-size-5 has-text-grey-light has-text-weight-medium">
             Proposals created
           </p>
         </div>
+      </div>
+
+      <div>
+        <button
+          class="button is-white is-rounded is-outlined is-flex is-medium mt-6"
+        >
+          Governance
+          <span class="icon">
+            <i class="fas fa-arrow-right"></i>
+          </span>
+        </button>
       </div>
     </div>
   </SimpleSection>
