@@ -8,8 +8,8 @@
         <h1
           class="title mb-6 is-size-2-tablet is-size-3 has-text-dark has-text-weight-light is-auto-phrase"
         >
-          <span>A Protocol For Decentralized </span>
-          <span>Capability-Based Task Processing</span>
+        <span>A Decentralized Protocol for </span>
+          <span>Capability-Driven Task Execution</span>
         </h1>
       </template>
 
