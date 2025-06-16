@@ -192,18 +192,24 @@
                 Complete Tasks
               </h2>
               <p class="is-size-5 has-text-weight-normal has-text-left">
-                Complete tasks and earn EFX directly to your wallet.
+                Complete tasks and earn $EFFECT directly to your wallet.
               </p>
               <div class="mt-5 has-text-left">
-                <button
+                <nuxt-link
+                  class="is-flex"
+                  to="https://portal.effect.ai/worker"
+                  exact-active-class="is-active"
+                >
+                  <button
                   class="button is-white is-rounded is-outlined is-flex is-medium"
                   style="gap: 10px"
-                >
-                  Coming soon
-                  <span class="icon">
-                    <i class="fas fa-arrow-right"></i>
-                  </span>
-                </button>
+                  >
+                    Alpha Phase in progress..
+                    <span class="icon">
+                      <i class="fas fa-arrow-right"></i>
+                    </span>
+                  </button>
+                </nuxt-link>
               </div>
             </div>
           </div>
