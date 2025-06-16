@@ -1,0 +1,174 @@
+<div id="app" style="text-align: center">
+  <h1>Effect AI - NFT Metadata Collector</h1>
+
+  <hr />
+
+  <!-- Wrap the image or canvas element with a block element (container) -->
+  <div class="mx-auto" style="max-width: 80%">
+
+    <div>
+      <div class="is-size-5" v-if="loading">
+        Loading ...
+      </div>
+
+      <img
+        @load="loading = false"
+        id="image"
+        ref="image"
+        :src="imageSource"
+        style="max-width: 400px; height: auto; margin: 0 auto; display: block"
+      />
+    </div>
+
+    <hr />
+
+    <label class="label">Does it have an earring?</label>
+    <div class="columns is-mobile is-multiline is-centered">
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.hasEaring == 'Yes' }"
+          @click="this.hasEaring='Yes'">Yes</button>
+      </div>
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.hasEaring == 'No' }"
+          @click="this.hasEaring='No'">No</button>
+      </div>
+    </div>
+
+    <label class="label">Does it have teeth showing?</label>
+    <div class="columns is-mobile is-multiline is-centered">
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.hasTeeth == 'Yes' }"
+          @click="this.hasTeeth='Yes'">Yes</button>
+      </div>
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.hasTeeth == 'No' }"
+          @click="this.hasTeeth='No'">No</button>
+      </div>
+    </div>
+
+    <label class="label">What color is the background?</label>
+    <div class="columns is-mobile is-multiline is-centered">
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+          style="background-color: #40677c;"
+          @click="this.bgColor='#40677c'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #e3e5aa;"
+        @click="this.bgColor='#e3e5aa'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #a9e7f5;"
+        @click="this.bgColor='#a9e7f5'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #6f5d70;"
+        @click="this.bgColor='#6f5d70'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #48e8b8;"
+        @click="this.bgColor='#48e8b8'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #cccecf;"
+        @click="this.bgColor='#cccecf'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #707237;"
+        @click="this.bgColor='#707237'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #e89433;"
+        @click="this.bgColor='#e89433'"></button>
+      </div>
+    </div>
+
+    <div class="is-flex is-justify-content-center">
+      <div class="mr-3"><p>Color selected:</p></div>
+
+      <div :style="{backgroundColor: bgColor, width: '100px', height: '20px'}"></div>
+    </div>
+
+    <p style="color: red;"
+    :class="{'is-hidden': !notComplete}">
+      Task incomplete - Please complete all sections of the task
+    </p>
+
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-success is-large mt-5"
+      :class="{'is-loading': btnLoading}"
+    >
+      Submit
+    </button>
+  </div>
+
+  <!-- 📚 Load in resources: [Bulma, Effect Network Styling]  -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css"
+  />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    createApp({
+      data() {
+        return {
+          title: "Effect AI NFT Metadata Collector",
+          imageSource: "${image_url}",
+          btnLoading: false,
+          ipfsClient: null,
+          bgColor: "",
+          loading: true,
+          isActive: false,
+          notComplete: false,
+          hasTeeth: "",
+          hasEaring: ""
+        };
+      },
+      computed: {},
+      created() {},
+      mounted() {},
+      methods: {
+        async uploadAndSubmit() {
+          this.btnLoading = true;
+          if(this.hasTeeth == "" || this.hasEaring == "" || this.bgColor == ""){
+            this.notComplete = true
+          }
+          else
+            try {
+              parent.postMessage(
+                {
+                  task: "submit",
+                  values: {
+                    bgColor: this.bgColor,
+                    hasTeeth: this.hasTeeth,
+                    hasEaring: this.hasEaring,
+                    image: this.imageSource,
+                  },
+                },
+                "*",
+              );
+            } catch (error) {
+              console.error("Failed to upload to IPFS", error);
+            }
+          this.btnLoading = false;
+        },
+      },
+    }).mount("#app");
+  </script>
+</div>

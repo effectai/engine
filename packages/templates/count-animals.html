@@ -1,5 +1,5 @@
 <div id="app" style="text-align: center">
-  <h1>Effect AI - Animals With Attributes</h1>
+  <h1>Effect AI - Animal Counter</h1>
 
   <hr />
 
@@ -22,51 +22,34 @@
 
     <hr />
 
-    <label class="label">Which animal is this?</label>
+    <label class="label">How many animals are in the picture?</label>
     <div class="columns is-mobile is-multiline is-centered">
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
-          :class="{ 'is-primary': this.answer == 'Dog' }"
-          @click="this.answer='Dog'">Dog</button>
+          :class="{ 'is-primary': this.answer == '1' }"
+          @click="this.answer='1'">1</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
-          :class="{ 'is-primary': this.answer == 'Cow' }"
-          @click="this.answer='Cow'">Cow</button>
+          :class="{ 'is-primary': this.answer == '2' }"
+          @click="this.answer='2'">2</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
-          :class="{ 'is-primary': this.answer == 'Dolphin' }"
-          @click="this.answer='Dolphin'">Dolphin</button>
+          :class="{ 'is-primary': this.answer == '3' }"
+          @click="this.answer='3'">3</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
-          :class="{ 'is-primary': this.answer == 'Walrus' }"
-          @click="this.answer='Walrus'">Walrus</button>
+          :class="{ 'is-primary': this.answer == '4' }"
+          @click="this.answer='4'">4</button>
+      </div>
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.answer == '5+' }"
+          @click="this.answer='5+'">5+</button>
       </div>
     </div>
-
-    <div class="columns is-mobile is-multiline is-centered">
-      <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-medium"
-          :class="{ 'is-primary': this.answer == 'Lion' }"
-          @click="this.answer='Lion'">Lion</button>
-      </div>
-      <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-medium"
-          :class="{ 'is-primary': this.answer == 'Pig' }"
-          @click="this.answer='Pig'">Pig</button>
-      </div>
-      <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-medium"
-          :class="{ 'is-primary': this.answer == 'Raccoon' }"
-          @click="this.answer='Raccoon'">Raccoon</button>
-      </div>
-      <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-medium"
-          :class="{ 'is-primary': this.answer == 'Other' }"
-          @click="this.answer='Other'">Other</button>
-      </div>
     </div>
 
     <p style="color: red;"
@@ -76,7 +59,7 @@
 
     <button
       @click.prevent="uploadAndSubmit"
-      class="button is-success is-large"
+      class="button is-success is-large mt-5"
       :class="{'is-loading': btnLoading}"
     >
       Submit
@@ -121,7 +104,7 @@
                 {
                   task: "submit",
                   values: {
-                    animal: this.answer,
+                    animalCount: this.answer,
                     image: this.imageSource,
                   },
                 },

@@ -1,5 +1,5 @@
 <div id="app" style="text-align: center">
-  <h1>Effect AI - Sentence Varification</h1>
+  <h1>Effect AI - Sentence Verification </h1>
 
   <hr />
 
@@ -11,13 +11,16 @@
   </div>
 
   <div>
-    <button class="button is-danger is-outlined is-medium"
+    <button class="button is-medium"
+    :class="{ 'is-danger': this.answer == 'No' }"
     @click="this.answer='No'">No</button>
 
-    <button class="button is-dark is-outlined is-medium mx-3"
+    <button class="button is-medium mx-3"
+    :class="{ 'is-dark': this.answer == 'Skip' }"
     @click="this.answer='Skip'">Skip</button>
 
-    <button class="button is-success is-outlined is-medium"
+    <button class="button is-medium"
+    :class="{ 'is-success': this.answer == 'Yes' }"
     @click="this.answer='Yes'">Yes</button>
   </div>
 
