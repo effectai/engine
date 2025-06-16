@@ -240,3 +240,5 @@ const createWorkerQueue = () => {
     getQueue,
   };
 };
+
+export type WorkerManager = ReturnType<typeof createWorkerManager>;

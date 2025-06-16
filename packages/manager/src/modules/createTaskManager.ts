@@ -417,3 +417,5 @@ export function createTaskManager({
     getCompletedTaskCount,
   };
 }
+
+export type TaskManager = ReturnType<typeof createTaskManager>;
