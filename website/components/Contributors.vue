@@ -47,28 +47,39 @@ const {
   },
 );
 
-const withFeatured = computed(() => {
-  if (!contributors.value) return [];
+const stats = [
+  { value: 23, label: "Apps in Ecosystem" },
+  { value: "2.1M", label: "Tasks Completed" },
+  { value: "205", label: "Proposals Passed" },
+  { value: "932", label: "Total Commits" },
+];
 
-  const featuredLogins = new Set(props.featured.map((f) => f.toLowerCase()));
+const mixedData = computed(() => {
+  const result = [];
+  const maxLength = Math.min(stats.length, contributors.value.length);
 
-  const c = contributors.value.map((contributor) => ({
-    ...contributor,
-    isFeatured: featuredLogins.has(contributor.login.toLowerCase()),
-  }));
+  for (let i = 0; i < maxLength; i++) {
+    if (i < stats.length) {
+      result.push({ type: "stat", data: stats[i] });
+    }
+    if (i < contributors.value.length) {
+      result.push({ type: "contributor", data: contributors.value[i] });
+    }
+  }
 
-  const multipleOf4 = Math.floor((c.length - 5) / 4) * 4;
-  return c.slice(0, 5 + multipleOf4);
+  return result;
 });
 
-const sortedContributors = computed(() => {
-  if (!contributors.value) return [];
-
-  return withFeatured.value.sort((a, b) => {
-    if (a.isFeatured && !b.isFeatured) return -1;
-    if (!a.isFeatured && b.isFeatured) return 1;
-    return b.contributions - a.contributions;
-  });
+const paired = computed(() => {
+  const pairs = [];
+  for (let i = 0; i < mixedData.value.length; i += 2) {
+    let pair = mixedData.value.slice(i, i + 2);
+    if ((i / 2) % 2 === 0) {
+      pair = pair.reverse();
+    }
+    pairs.push(pair);
+  }
+  return pairs;
 });
 </script>
 
@@ -85,51 +96,50 @@ const sortedContributors = computed(() => {
         Failed to load contributors. Please try again later.
       </div>
 
-      <div
-        v-else-if="sortedContributors.length === 0"
-        class="notification is-warning"
-      >
+      <div v-else-if="mixedData.length === 0" class="notification is-warning">
         No matching contributors found.
       </div>
 
-      <div v-else class="grid-container">
-        <div
-          v-for="(contributor, index) in sortedContributors"
-          :key="contributor.id"
-          class="grid-item"
-          :class="[
-            'item-' + index,
-            {
-              'is-featured': contributor.isFeatured,
-            },
-          ]"
-        >
-          <label class="is-size-7">{{ index + 1 }}</label>
-          <a
-            :href="contributor.html_url"
-            target="_blank"
-            rel="noopener noreferrer"
-            class=""
-          >
-            <figure class="image">
-              <img
-                :class="{
-                  'is-rounded': contributor.isFeatured,
-                }"
-                :src="contributor.avatar_url"
-                :alt="contributor.login"
-                loading="lazy"
-              />
-            </figure>
-            <div v-if="contributor.isFeatured">
-              <h3 class="title is-5 mt-3 mb-1 has-text-white">
-                {{ contributor.login }}
-              </h3>
-              <p class="subtitle is-6 has-text-grey has-text-centered">
-                {{ contributor.contributions }} contributions
-              </p>
-            </div>
-          </a>
+      <div v-else class="is-flex flex-container">
+        <div v-for="(pair, i) in paired">
+          <div v-for="(item, index) in pair" :key="item.id" class="grid-item">
+            <!-- <label class="is-size-7">{{ i * 2 + index + 1 }}</label> -->
+            <a
+              v-if="item.type === 'contributor'"
+              :href="item.data.html_url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class=""
+            >
+              <figure class="image">
+                <img
+                  :src="item.data.avatar_url"
+                  :alt="item.login"
+                  loading="lazy"
+                />
+              </figure>
+              <div class="grid-content">
+                <h3 class="title is-5 mt-3 has-text-white">
+                  {{ item.data.login }}
+                </h3>
+                <p class="subtitle is-6 has-text-white has-text-centered">
+                  {{ item.data.contributions }} contributions
+                </p>
+              </div>
+            </a>
+            <a v-else class="w-full">
+              <div
+                class="is-size-2 is-flex is-flex-direction-column is-justify-content-center is-align-items-center"
+              >
+                <h2 class="is-size-2 has-text-weight-bold has-text-grey-light">
+                  {{ item.data.value }}
+                </h2>
+                <p class="is-size-5 has-text-grey-light has-text-weight-medium">
+                  {{ item.data.label }}
+                </p>
+              </div>
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -137,71 +147,64 @@ const sortedContributors = computed(() => {
 </template>
 
 <style scoped lang="scss">
-  .grid-container {
-    padding-right: 25px;
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-template-rows: auto;
+  .flex-container {
+    margin-left: min(calc(33% + 10px), calc(30% + 50vw));
+
+    justify-content: end;
+    align-items: center;
+    gap: 4px;
+
+    > div {
+      margin: 2px;
+    }
+
+    > :nth-child(2) {
+      margin-top: -300px;
+    }
+
+    > :nth-child(3) {
+      margin-top: 150px;
+    }
+
+    > :nth-child(4) {
+      margin-top: -180px;
+    }
+  }
+
+  @media screen and (max-width: 768px) {
+    .flex-container {
+      > :nth-child(2),
+      > :nth-child(3),
+      > :nth-child(4) {
+        margin: 0 !important;
+      }
+    }
+  }
+
+  label {
+    position: absolute;
   }
 
   .grid-item {
-    aspect-ratio: 1/1;
-    border: 1px solid #515053;
-    padding: 5px;
-    font-size: 30px;
-    text-align: center;
     position: relative;
+    border: 1px solid #e5e7eb;
+    margin: 4px 0px;
+    width: 250px;
+    height: 250px;
 
-    &:not(.is-featured) {
-      img {
-        max-width: 100%;
-      }
-    }
-
-    &.is-featured {
-      grid-column: span 2;
-      grid-row: span 2;
-    }
-
-    grid-column: span 1;
-    grid-row: span 1;
     display: flex;
-
-    a {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-    }
-
-    label {
-      color: #d7d7d7;
-      position: absolute;
-      left: 40px;
-      font-size: 12px;
-    }
-
-    figure {
-      display: flex;
-      justify-content: center;
-    }
+    align-items: center;
 
     img {
-      max-width: 50%;
+      padding: 7px;
+      filter: grayscale(100%) brightness(50%);
     }
   }
 
-  .item-0 {
-    grid-column: 2 / span 2 !important;
-    grid-row: span 2 !important;
-  }
-
-  .item-2 {
-    grid-column: 6 / span 2 !important;
-    grid-row: 0 !important;
-  }
-
-  .item-7 {
-    grid-column: 5;
+  .grid-content {
+    margin-left: 25px;
+    position: absolute;
+    bottom: 10px;
+    color: black;
   }
 </style>
