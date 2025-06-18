@@ -1,8 +1,8 @@
-import {
-  createWorkerStore,
-  type WorkerRecord,
-} from "../stores/managerWorkerStore.js";
 import type { ManagerSettings } from "../main.js";
+import {
+  type WorkerRecord,
+  createWorkerStore,
+} from "../stores/managerWorkerStore.js";
 
 import { type Datastore, Key, ProtocolError } from "@effectai/protocol-core";
 import { createAccessCodeStore } from "../stores/managerAccessCodeStore.js";
@@ -74,6 +74,17 @@ export const createWorkerManager = ({
       } else {
         if (workerRecord.state.banned) {
           throw new ProtocolError("Worker is banned");
+        }
+
+        if (!workerRecord.state.accessCodeRedeemed) {
+          if (managerSettings.requireAccessCodes) {
+            if (!accessCode) {
+              throw new Error(
+                "Access code is required to connect an existing worker",
+              );
+            }
+            await redeemAccessCode(peerId, accessCode);
+          }
         }
       }
 

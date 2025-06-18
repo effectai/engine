@@ -1,40 +1,43 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  Payment,
+  type PaymentStore,
+  type ProofRequest,
+} from "@effectai/protocol-core";
 import type { PeerId, PrivateKey } from "@libp2p/interface";
 import { PublicKey } from "@solana/web3.js";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 import {
-  signPayment,
-  int2hex,
-  computePaymentId,
   ProofToProofResponseMessage,
+  computePaymentId,
+  int2hex,
+  signPayment,
 } from "../utils.js";
-import {
-  type ProofRequest,
-  type PaymentStore,
-  Payment,
-} from "@effectai/protocol-core";
 
 import {
+  type Groth16Proof,
+  type PublicSignals,
   buildEddsa,
   buildPoseidon,
   groth16,
-  type Groth16Proof,
-  type PublicSignals,
 } from "@effectai/zkp";
 
-import { PAYMENT_BATCH_SIZE } from "../consts.js";
-import type { createWorkerManager } from "./createWorkerManager";
-import type { ManagerSettings } from "../main.js";
-import { ulid } from "ulid";
-import { VerifierKeyJson } from "@effectai/zkp";
 import { performance } from "node:perf_hooks";
+import { VerifierKeyJson } from "@effectai/zkp";
+import { ulid } from "ulid";
+import { PAYMENT_BATCH_SIZE } from "../consts.js";
+import type { createLogger } from "../logging.js";
+import type { ManagerSettings } from "../main.js";
+import type { createWorkerManager } from "./createWorkerManager";
 
 export async function createPaymentManager({
+  logger,
   paymentStore,
   privateKey,
   workerManager,
   managerSettings,
 }: {
+  logger: ReturnType<typeof createLogger>;
   privateKey: PrivateKey;
   paymentStore: PaymentStore;
   workerManager: ReturnType<typeof createWorkerManager>;
@@ -103,7 +106,10 @@ export async function createPaymentManager({
       publicSignals: PublicSignals;
     }[];
   }) {
-    console.log("INFO: bulkPaymentProofs called with proofs:", proofs.length);
+    logger.log.info(
+      { recipient, proofs: proofs.length },
+      "Bulking payment proofs",
+    );
 
     let minNonce: bigint | null = null;
     let maxNonce: bigint | null = null;
@@ -246,10 +252,9 @@ export async function createPaymentManager({
   ) => {
     //TODO:: verify & validate payments
     payments.sort((a, b) => Number(a.nonce) - Number(b.nonce));
-    console.log(
-      "INFO: Generating payment proof for payments:",
-      payments.length,
-    );
+
+    logger.log.info({ payments: payments.length }, "Generating payment proof");
+
     const eddsa = await buildEddsa();
     const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
     const batchSize = payments.length;
@@ -343,7 +348,11 @@ export async function createPaymentManager({
       zkeyPath,
     );
     const endTime = performance.now();
-    console.log("INFO: Proof generation took:", endTime - startTime, "ms");
+
+    logger.log.info(
+      { totalTime: endTime - startTime },
+      "Proof generation finished",
+    );
 
     return { proof, publicSignals, pubKey, paymentAccount };
   };
@@ -432,7 +441,7 @@ export async function createPaymentManager({
         paymentAccount,
       );
     } catch (e) {
-      console.error(e);
+      logger.log.error(e, "Error generating proof");
       throw new Error("Error generating proof");
     }
   };

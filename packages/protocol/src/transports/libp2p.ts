@@ -3,8 +3,8 @@ import { yamux } from "@chainsafe/libp2p-yamux";
 import { identify } from "@libp2p/identify";
 import type {
   Connection,
-  Libp2p,
   Transport as InternalLibp2pTransport,
+  Libp2p,
   PeerId,
   PrivateKey,
   Stream,
@@ -12,18 +12,18 @@ import type {
 import { ping } from "@libp2p/ping";
 import { type ServiceFactoryMap, createLibp2p } from "libp2p";
 
-import { isMultiaddr, type Multiaddr } from "@multiformats/multiaddr";
+import { type Multiaddr, isMultiaddr } from "@multiformats/multiaddr";
+import type { Datastore } from "interface-datastore";
 import { type MessageStream, pbStream } from "it-protobuf-stream";
-import { extractMessageType, shouldExpectResponse } from "../utils.js";
+import { EffectProtocolMessage } from "../../@generated/effect.protons.js";
 import type { MessageResponse } from "../common/types.js";
-import { EffectProtocolError } from "../errors.js";
 import type {
   Entity,
   EntityWithTransports,
   Transport,
 } from "../entity/factory.js";
-import type { Datastore } from "interface-datastore";
-import { EffectProtocolMessage } from "../../@generated/effect.protons.js";
+import { EffectProtocolError } from "../errors.js";
+import { extractMessageType, shouldExpectResponse } from "../utils.js";
 
 type EffectMessageType = keyof EffectProtocolMessage;
 

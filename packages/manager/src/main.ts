@@ -1,11 +1,10 @@
 import {
   type Datastore,
-  webSockets,
-  TypedEventEmitter,
-  type PrivateKey,
-  createLogger,
-  PROTOCOL_VERSION,
   PROTOCOL_NAME,
+  PROTOCOL_VERSION,
+  type PrivateKey,
+  TypedEventEmitter,
+  webSockets,
 } from "@effectai/protocol-core";
 
 import bs58 from "bs58";
@@ -26,18 +25,20 @@ import { PublicKey } from "@solana/web3.js";
 import { PAYMENT_BATCH_SIZE, TASK_ACCEPTANCE_TIME } from "./consts.js";
 
 import {
+  EffectProtocolMessage,
+  HttpTransport,
+  Libp2pTransport,
   type Payment,
   type TaskRecord,
-  HttpTransport,
-  EffectProtocolMessage,
-  Libp2pTransport,
-  createTemplateStore,
-  createPaymentStore,
   createEffectEntity,
+  createPaymentStore,
+  createTemplateStore,
 } from "@effectai/protocol-core";
 
-import { createManagerControls } from "./modules/createManagerControls.js";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { createLogger } from "./logging.js";
 import { setupManagerDashboard } from "./modules/createAdminDashboard.js";
+import { createManagerControls } from "./modules/createManagerControls.js";
 
 export type ManagerEvents = {
   "task:created": (task: TaskRecord) => void;
@@ -117,7 +118,12 @@ export const createManager = async ({
   settings: Partial<ManagerSettings>;
 }) => {
   const startTime = Date.now();
-  const logger = createLogger();
+
+  const context = new AsyncLocalStorage<{
+    peerId: string;
+  }>();
+
+  const logger = createLogger("manager", context);
 
   const managerSettings: ManagerSettings = {
     port: settings.port ?? 19955,
@@ -131,7 +137,9 @@ export const createManager = async ({
   };
 
   if (!managerSettings.paymentAccount) {
-    logger.warn("No payment account provided. Payments will not be processed.");
+    logger.log.warn(
+      "No payment account provided. Payments will not be processed.",
+    );
   }
 
   const eddsa = await buildEddsa();
@@ -167,6 +175,7 @@ export const createManager = async ({
   });
 
   const paymentManager = await createPaymentManager({
+    logger,
     workerManager,
     privateKey,
     paymentStore,
@@ -207,7 +216,7 @@ export const createManager = async ({
           taskTimeout: TASK_ACCEPTANCE_TIME,
           version: PROTOCOL_VERSION,
           requiresRegistration: managerSettings.requireAccessCodes,
-          isRegistered: !!worker,
+          isRegistered: !!worker && !!worker.state.accessCodeRedeemed,
           isConnected,
         },
       };
@@ -270,10 +279,15 @@ export const createManager = async ({
         throw new Error("Forbidden");
       }
 
-      return await paymentManager.processProofRequest({
-        privateKey,
-        payments: proofRequest.payments,
-      });
+      logger.context.run(
+        { peerId: peerId.toString(), payments: proofRequest.payments.length },
+        async () => {
+          return await paymentManager.processProofRequest({
+            privateKey,
+            payments: proofRequest.payments,
+          });
+        },
+      );
     })
     .onMessage("bulkProofRequest", async (proofRequest, { peerId }) => {
       const worker = await workerManager.getWorker(peerId.toString());
@@ -287,20 +301,22 @@ export const createManager = async ({
         throw new Error("All proofs must have signals for bulk payment");
       }
 
-      return await paymentManager.bulkPaymentProofs({
-        recipient: new PublicKey(recipient),
-        privateKey,
-        r8_x: eddsa.F.toObject(pubKey[0]),
-        r8_y: eddsa.F.toObject(pubKey[1]),
-        proofs: proofRequest.proofs.map((p) => ({
-          proof: proofResponseToGroth16Proof(p),
-          publicSignals: [
-            p.signals!.minNonce.toString(),
-            p.signals!.maxNonce.toString(),
-            p.signals!.amount.toString(),
-            p.signals!.recipient,
-          ],
-        })),
+      logger.context.run({ peerId: peerId.toString() }, async () => {
+        return await paymentManager.bulkPaymentProofs({
+          recipient: new PublicKey(recipient),
+          privateKey,
+          r8_x: eddsa.F.toObject(pubKey[0]),
+          r8_y: eddsa.F.toObject(pubKey[1]),
+          proofs: proofRequest.proofs.map((p) => ({
+            proof: proofResponseToGroth16Proof(p),
+            publicSignals: [
+              p.signals!.minNonce.toString(),
+              p.signals!.maxNonce.toString(),
+              p.signals!.amount.toString(),
+              p.signals!.recipient,
+            ],
+          })),
+        });
       });
     })
     .onMessage("payoutRequest", async (_payoutRequest, { peerId }) => {
@@ -409,6 +425,10 @@ export const createManager = async ({
 
   // start the manager
   await start();
+  logger.log.info(
+    `Manager started on port ${managerSettings.port} with settings:`,
+    managerSettings,
+  );
 
   return {
     entity,
