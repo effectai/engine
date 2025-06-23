@@ -5,12 +5,16 @@ import { Form, useLoaderData } from "@remix-run/react";
 
 export async function loader({ request, context, params }: LoaderFunctionArgs) {
   const id = params.id;
+
+  if (!id) {
+    throw new Response("Worker ID is required", { status: 400 });
+  }
+
   const worker = await context.workerManager.getWorker(id);
 
   if (!worker) {
     throw new Response("Worker not found", { status: 404 });
   }
-
   return {
     worker,
   };
@@ -28,6 +32,9 @@ export default function Component() {
           </Button>
           <Button type="submit" name="intent" value="ban">
             Ban
+          </Button>
+          <Button type="submit" name="intent" value="revoke">
+            Revoke Access Code
           </Button>
         </Form>
       </div>
@@ -57,6 +64,12 @@ export const action = async ({
     await context.workerManager.updateWorkerState(id, (state) => ({
       banned: true,
     }));
+    context.workerManager.workerQueue.removePeer(id);
+  } else if (intent === "revoke") {
+    await context.workerManager.updateWorkerState(id, (state) => ({
+      accessCodeRedeemed: undefined,
+    }));
+
     context.workerManager.workerQueue.removePeer(id);
   }
 
