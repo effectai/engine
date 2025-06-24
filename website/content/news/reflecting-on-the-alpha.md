@@ -56,6 +56,18 @@ Some of the tasks our community completed included:
 
 - Sentence validation and text quality review
 
+<center>
+
+|| Phase 1 | Phase 2 |
+|--------------|:-----:|:-----------:|
+| **Workers Onboarded** | 20 | 35 |
+| **Task Types Introduced** | 3 | 6 |
+| **Datasets Verified** | 1 | 4 |
+| **Tasks Completed** | 5,200+ | 42,000+ |
+| **EFFECT Paid Out**| 15,000+ EFFECT | 80,000+ EFFECT|
+
+</center>
+
 ---
 
 ## Voices from the Community
