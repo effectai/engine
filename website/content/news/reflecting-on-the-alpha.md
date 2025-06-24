@@ -17,7 +17,6 @@ created: "2025-06-25"
 published: true
 ---
 Over the past few months, we’ve been testing and improving the Effect AI platform through a series of Alpha phases, and today, we want to share what’s happened so far! These first two phases brought together a diverse group of early contributors who helped us shape the foundation of a new kind of decentralized data platform.
-From validating real-world data to exploring new task flows, the Alpha proved that it’s possible to align ethical, inclusive data work with the efficiency and affordability that modern AI projects demand.
 
 From validating real-world data to exploring new task flows, the Alpha proved that it’s possible to align ethical, inclusive data work with the efficiency and affordability that modern AI projects demand
 
