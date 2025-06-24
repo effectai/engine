@@ -1,5 +1,5 @@
 <div id="app" style="text-align: center">
-  <h1>Effect AI - NFT Metadata Collector</h1>
+  <h1>Effect AI - Animal Counter</h1>
 
   <hr />
 
@@ -22,32 +22,34 @@
 
     <hr />
 
-    <label class="label">Is this a mutant?</label>
+    <label class="label">How many animals are in the picture?</label>
     <div class="columns is-mobile is-multiline is-centered">
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
-          :class="{ 'is-primary': this.isMutant == 'Yes' }"
-          @click="this.isMutant='Yes'">Yes</button>
+          :class="{ 'is-primary': this.answer == '1' }"
+          @click="this.answer='1'">1</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
-          :class="{ 'is-primary': this.isMutant == 'No' }"
-          @click="this.isMutant='No'">No</button>
+          :class="{ 'is-primary': this.answer == '2' }"
+          @click="this.answer='2'">2</button>
+      </div>
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.answer == '3' }"
+          @click="this.answer='3'">3</button>
+      </div>
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.answer == '4' }"
+          @click="this.answer='4'">4</button>
+      </div>
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.answer == '5+' }"
+          @click="this.answer='5+'">5+</button>
       </div>
     </div>
-
-    <label class="label">Does it have a hat?</label>
-    <div class="columns is-mobile is-multiline is-centered">
-      <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-medium"
-          :class="{ 'is-primary': this.hasHat == 'Yes' }"
-          @click="this.hasHat='Yes'">Yes</button>
-      </div>
-      <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-medium"
-          :class="{ 'is-primary': this.hasHat == 'No' }"
-          @click="this.hasHat='No'">No</button>
-      </div>
     </div>
 
     <p style="color: red;"
@@ -57,7 +59,7 @@
 
     <button
       @click.prevent="uploadAndSubmit"
-      class="button is-success is-large"
+      class="button is-success is-large mt-5"
       :class="{'is-loading': btnLoading}"
     >
       Submit
@@ -78,14 +80,12 @@
     createApp({
       data() {
         return {
-          title: "Effect AI NFT Metadata Collector",
+          title: "Effect AI Image Labeler",
           imageSource: "${image_url}",
           btnLoading: false,
           ipfsClient: null,
-          isMutant: "",
-          hasHat: "",
+          answer: "",
           loading: true,
-          isActive: false,
           notComplete: false,
         };
       },
@@ -95,7 +95,7 @@
       methods: {
         async uploadAndSubmit() {
           this.btnLoading = true;
-          if(this.isMutant == "" || this.hasHat == ""){
+          if(this.answer == ""){
             this.notComplete = true
           }
           else
@@ -104,8 +104,7 @@
                 {
                   task: "submit",
                   values: {
-                    isMutant: this.isMutant,
-                    hasHat: this.hasHat,
+                    animalCount: this.answer,
                     image: this.imageSource,
                   },
                 },

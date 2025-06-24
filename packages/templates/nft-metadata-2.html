@@ -22,42 +22,92 @@
 
     <hr />
 
-    <label class="label">Is this a mutant?</label>
+    <label class="label">Does it have an earring?</label>
     <div class="columns is-mobile is-multiline is-centered">
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
-          :class="{ 'is-primary': this.isMutant == 'Yes' }"
-          @click="this.isMutant='Yes'">Yes</button>
+          :class="{ 'is-primary': this.hasEaring == 'Yes' }"
+          @click="this.hasEaring='Yes'">Yes</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
-          :class="{ 'is-primary': this.isMutant == 'No' }"
-          @click="this.isMutant='No'">No</button>
+          :class="{ 'is-primary': this.hasEaring == 'No' }"
+          @click="this.hasEaring='No'">No</button>
       </div>
     </div>
 
-    <label class="label">Does it have a hat?</label>
+    <label class="label">Does it have teeth showing?</label>
     <div class="columns is-mobile is-multiline is-centered">
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
-          :class="{ 'is-primary': this.hasHat == 'Yes' }"
-          @click="this.hasHat='Yes'">Yes</button>
+          :class="{ 'is-primary': this.hasTeeth == 'Yes' }"
+          @click="this.hasTeeth='Yes'">Yes</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
-          :class="{ 'is-primary': this.hasHat == 'No' }"
-          @click="this.hasHat='No'">No</button>
+          :class="{ 'is-primary': this.hasTeeth == 'No' }"
+          @click="this.hasTeeth='No'">No</button>
       </div>
+    </div>
+
+    <label class="label">What color is the background?</label>
+    <div class="columns is-mobile is-multiline is-centered">
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+          style="background-color: #40677c;"
+          @click="this.bgColor='#40677c'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #e3e5aa;"
+        @click="this.bgColor='#e3e5aa'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #a9e7f5;"
+        @click="this.bgColor='#a9e7f5'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #6f5d70;"
+        @click="this.bgColor='#6f5d70'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #48e8b8;"
+        @click="this.bgColor='#48e8b8'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #cccecf;"
+        @click="this.bgColor='#cccecf'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #707237;"
+        @click="this.bgColor='#707237'"></button>
+      </div>
+      <div class="column is-narrow">
+        <button class="button is-medium" 
+        style="background-color: #e89433;"
+        @click="this.bgColor='#e89433'"></button>
+      </div>
+    </div>
+
+    <div class="is-flex is-justify-content-center">
+      <div class="mr-3"><p>Color selected:</p></div>
+
+      <div :style="{backgroundColor: bgColor, width: '100px', height: '20px'}"></div>
     </div>
 
     <p style="color: red;"
-    :class="{'is-hidden mb-3': !notComplete}">
+    :class="{'is-hidden': !notComplete}">
       Task incomplete - Please complete all sections of the task
     </p>
 
     <button
       @click.prevent="uploadAndSubmit"
-      class="button is-success is-large"
+      class="button is-success is-large mt-5"
       :class="{'is-loading': btnLoading}"
     >
       Submit
@@ -82,11 +132,12 @@
           imageSource: "${image_url}",
           btnLoading: false,
           ipfsClient: null,
-          isMutant: "",
-          hasHat: "",
+          bgColor: "",
           loading: true,
           isActive: false,
           notComplete: false,
+          hasTeeth: "",
+          hasEaring: ""
         };
       },
       computed: {},
@@ -95,7 +146,7 @@
       methods: {
         async uploadAndSubmit() {
           this.btnLoading = true;
-          if(this.isMutant == "" || this.hasHat == ""){
+          if(this.hasTeeth == "" || this.hasEaring == "" || this.bgColor == ""){
             this.notComplete = true
           }
           else
@@ -104,8 +155,9 @@
                 {
                   task: "submit",
                   values: {
-                    isMutant: this.isMutant,
-                    hasHat: this.hasHat,
+                    bgColor: this.bgColor,
+                    hasTeeth: this.hasTeeth,
+                    hasEaring: this.hasEaring,
                     image: this.imageSource,
                   },
                 },

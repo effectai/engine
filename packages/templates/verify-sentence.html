@@ -1,5 +1,5 @@
 <div id="app" style="text-align: center">
-  <h1>Effect AI - Sentence Varification</h1>
+  <h1>Effect AI - Sentence Verification </h1>
 
   <hr />
 
@@ -11,13 +11,16 @@
   </div>
 
   <div>
-    <button class="button is-danger is-outlined is-medium"
+    <button class="button is-medium"
+    :class="{ 'is-danger': this.answer == 'No' }"
     @click="this.answer='No'">No</button>
 
-    <button class="button is-dark is-outlined is-medium mx-3"
+    <button class="button is-medium mx-3"
+    :class="{ 'is-dark': this.answer == 'Skip' }"
     @click="this.answer='Skip'">Skip</button>
 
-    <button class="button is-success is-outlined is-medium"
+    <button class="button is-medium"
+    :class="{ 'is-success': this.answer == 'Yes' }"
     @click="this.answer='Yes'">Yes</button>
   </div>
 
@@ -32,6 +35,11 @@
       <li>Ideally natural and conversational (it should be easy to read the sentence)</li>
     </div>      
   </div>
+
+  <p style="color: red;"
+  :class="{'is-hidden mb-3': !notComplete}">
+    Task incomplete - Please complete all sections of the task
+  </p>
 
   <button
     @click.prevent="uploadAndSubmit"
@@ -59,6 +67,7 @@
         sentence: "${sentence}",
         answer: "",
         loading: true,
+        notComplete: false,
       };
     },
     computed: {},
@@ -67,20 +76,24 @@
     methods: {
       async uploadAndSubmit() {
         this.btnLoading = true;
-        try {
-          parent.postMessage(
-            {
-              task: "submit",
-              values: {
-                sentence: this.sentence,
-                answer: this.answer
+        if(this.answer == ""){
+            this.notComplete = true
+          }
+        else
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  sentence: this.sentence,
+                  answer: this.answer
+                },
               },
-            },
-            "*"
-          );
-        } catch (error) {
-          console.error("Failed to upload to IPFS", error);
-        }
+              "*"
+            );
+          } catch (error) {
+            console.error("Failed to upload to IPFS", error);
+          }
         this.btnLoading = false;
       },
     },
