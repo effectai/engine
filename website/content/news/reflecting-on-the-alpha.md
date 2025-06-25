@@ -2,7 +2,7 @@
 title: "Reflecting on the Alpha: Building the Future of Effect AI Together"
 description: "Over the past few months, we’ve been testing and improving the Effect AI platform through a series of Alpha phases, and today, we want to share what’s happened so far!"
 image:
-  src: "/img/news/BlogBG-06.jpg"
+  src: "/img/news/effectnli.jpg"
 author: "Miguel"
 head:
   meta:
