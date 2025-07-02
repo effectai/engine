@@ -1,0 +1,119 @@
+<div id="app" style="text-align: center">
+  <h1>Effect AI - Sensitive Data Tagger</h1>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
+
+  <p class="mb-5">Highlight and tag the important/secret data</p>
+  <div @mouseup="handleTextSelection" class="box">
+    <p class="is-size-4 has-text-weight-semibold">{{sentence}}</p>
+  </div>
+
+  <div class="mb-5">
+    <label class="label">Tags</label>
+    <div class="buttons is-centered">
+      <button class="button is-normal" @click="this.selectedTag='[NAME]'">[NAME]</button>
+      <button class="button is-normal" @click="this.selectedTag='[DATE_1]'">[DATE_1]</button>
+      <button class="button is-normal" @click="this.selectedTag='[TIME_1]'">[TIME_1]</button>
+    </div>
+  </div>
+
+  <div class="">
+    <p>Selection: <b>{{ selection }}</b></p>
+    <p>Tag: <b>{{ selectedTag }}</b></p>
+    <button class="button is-success mt-3" @click="addSelection">Add</button>
+  </div>
+
+  <div class="container is-max-desktop box mt-5 ">
+    <label class="label">Current Tag Pairs:</label>
+
+    <div class="mb-2" v-for="([selection, tagSelected], index) in selectionList" :key="index">
+      {{ selection }} -> {{ tagSelected }} 
+
+      <button class="button is-small is-danger"
+      @click="removeSelection(index)">Remove</button>
+    </div>      
+
+  </div>
+
+  <p style="color: red;"
+  :class="{'is-hidden mb-3': !notComplete}">
+    Task incomplete - Please complete all sections of the task
+  </p>
+
+  <button
+    @click.prevent="uploadAndSubmit"
+    class="button is-success is-large"
+    :class="{'is-loading': btnLoading}"
+  >
+    Submit
+  </button>
+</div>
+
+<!-- 📚 Load in resources: [Bulma, Effect Network Styling]  -->
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+<link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+<script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
+<script type="module">
+  import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+  createApp({
+    data() {
+      return {
+        title: "Effect AI Sentence Verifier",
+        btnLoading: false,
+        ipfsClient: null,
+        // sentence: "${sentence}",
+        sentence: "Hi, my name is Sarah Thompson and I was born on March 14, 1990. You can reach me at sarah.t90@gmail.com or call me at +1 416-555-2390. I live in Toronto, Canada, and work at MedTech Group as a clinical researcher.",
+        // sentence: "Hi, my name is [NAME_GIVEN_1] [NAME_SURNAME_1] and I was born on [DOB_1]. You can reach me at [EMAIL_ADDRESS_1] or call me at [PHONE_NUMBER_1]. I live in [LOCATION_CITY_1], [LOCATION_COUNTRY_1], and work at [ORGANIZATION_1] as a [OCCUPATION_1].",
+        answer: "",
+        loading: true,
+        notComplete: false,
+        selection: "",
+        selectionList: [],
+        selectedTag: ""
+      };
+    },
+    computed: {},
+    created() {},
+    mounted() {},
+    methods: {
+      handleTextSelection() {
+        const selection = window.getSelection()
+        const text = selection?.toString().trim()
+
+        this.selection = text
+      },
+      addSelection(){
+        this.selectionList.push([this.selection,this.selectedTag])
+      },
+      removeSelection(index){
+        this.selectionList.splice(index, 1)
+      },
+      async uploadAndSubmit() {
+        this.btnLoading = true;
+        if(this.answer == ""){
+            this.notComplete = true
+          }
+        else
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  sentence: this.sentence,
+                  answer: this.answer
+                },
+              },
+              "*"
+            );
+          } catch (error) {
+            console.error("Failed to upload to IPFS", error);
+          }
+        this.btnLoading = false;
+      },
+    },
+  }).mount("#app");
+</script>
