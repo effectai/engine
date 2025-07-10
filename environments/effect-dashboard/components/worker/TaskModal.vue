@@ -94,7 +94,7 @@ const isTemplateReady = ref(false);
 
 const isOpen = computed(() => !!activeTask.value);
 const isOpenTaskInfoModal = ref(false);
-const currentTaskInstructions = ref('s');
+const currentTaskInstructions = ref('');
 
 const taskState = computed(
   () => activeTask.value && useTaskState(activeTask.value),
