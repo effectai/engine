@@ -1,4 +1,8 @@
 <template>
+  <WorkerShowInformationModal 
+    v-model="isOpenTaskInfoModal"
+    :instructions="currentTaskInstructions" 
+  />
   <div
     v-if="activeTask"
     class="fixed inset-0 z-50 flex items-center justify-center"
@@ -18,9 +22,9 @@
               {{ activeTask?.state.title }}
             </h3>
             <div class="flex justify-end gap-2">
-              <!-- <UButton color="black" variant="outline"> -->
-                <!-- Show Instructions -->
-              <!-- </UButton> -->
+              <UButton color="black" variant="outline" @click="isOpenTaskInfoModal = true">
+                Show Instructions
+              </UButton>
               <div class="flex space-x-2" v-if="showAcceptTaskButton">
                 <UButton color="black" @click.stop="handlerAcceptTask">
                   <UIcon name="i-heroicons-check-circle-20-solid" />
@@ -61,6 +65,7 @@
               ref="template"
               @submit="handlerSubmitTask"
               @ready="isTemplateReady = true"
+              @instructions="currentTaskInstructions = $event"
             />
           </div>
         </template>
@@ -88,6 +93,8 @@ const template = ref<TemplateComponent | null>(null);
 const isTemplateReady = ref(false);
 
 const isOpen = computed(() => !!activeTask.value);
+const isOpenTaskInfoModal = ref(false);
+const currentTaskInstructions = ref('s');
 
 const taskState = computed(
   () => activeTask.value && useTaskState(activeTask.value),
