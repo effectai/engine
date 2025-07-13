@@ -15,8 +15,8 @@
               />
               <UButton
                 @click="setMaxAmount"
-                color="black"
-                class="absolute bg-brand-highlight right-2 top-1/2 -translate-y-1/2 px-4 py-1 bg-gray-800 rounded-md text-sm"
+                color="neutral"
+                class="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1 rounded-md text-sm"
               >
                 MAX</UButton
               >
@@ -71,7 +71,7 @@
             :loading="isPending"
             :disabled="!isValid"
             @click="handleSubmit"
-            color="white"
+            color="neutral"
             class="flex justify-center w-full"
           >
             <span v-if="unstakeAmount > 0">

@@ -3,7 +3,6 @@ import { useMutation } from "@tanstack/vue-query";
 export const useAuth = () => {
   const useLogout = () => {
     const { useDisconnect } = useSession();
-    const { useLogout } = useWeb3Auth();
     const { logout } = useAuthStore();
     const { destroy } = useWorkerStore();
 

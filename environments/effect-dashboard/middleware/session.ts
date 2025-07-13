@@ -36,7 +36,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
 
     if (!peer || !peer.addresses[0]) {
-      return navigateTo("/worker/connect");
+      return navigateTo("/worker");
     }
 
     //add peer to the address

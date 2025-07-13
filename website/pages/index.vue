@@ -8,19 +8,19 @@
         <h1
           class="title mb-6 is-size-2-tablet is-size-3 has-text-dark has-text-weight-light is-auto-phrase"
         >
-        <span>A Decentralized Protocol for </span>
-          <span>Capability-Driven Task Execution</span>
+          <span>A Decentralized </span>
+          <span>Capability-Driven Task Execution Engine</span>
         </h1>
       </template>
 
       <template #subtitle>
         <p class="subtitle mb-5 has-text-dark">
           <span class="pr-6">
-            AI's next revolution isn't about better models, it's about networked
-            capabilities. The Effect AI Protocol introduces a peer-to-peer
-            decentralized interopable ecosystem that transforms skills, data
+            AI's next revolution isn't about better models — it's about
+            networked capabilities. The Effect AI Protocol introduces a
+            peer-to-peer decentralized ecosystem that transforms skills, data
             streams, algorithms, inference, and computational resources into
-            liquid, tradable assets.
+            liquid, interoperable assets.
           </span>
         </p>
       </template>
@@ -41,7 +41,7 @@
                     class="button is-black is-rounded is-outlined is-flex is-medium"
                     style="gap: 14px; font-weight: 400"
                   >
-                    Litepaper
+                    Whitepaper
                     <span class="icon">
                       <i class="icon">
                         <svg
@@ -86,7 +86,7 @@
 
   <section class="fluid-container has-background-dark">
     <div class="container">
-      <div class="columns is-gapless">
+      <div class="columns">
         <div class="column is-one-third">
           <p
             class="is-size-7 has-text-light has-text-weight-medium is-uppercase mb-5"
@@ -97,14 +97,15 @@
             Building the Future of AI Together
           </div>
           <div>
-            <button
-              class="button is-white is-rounded is-outlined is-flex is-medium mt-6"
-            >
-              Governance
-              <span class="icon ml-1">
-                <i class="fas fa-arrow-right"></i>
-              </span>
-            </button>
+            <a href="https://github.com/effectai">
+              <button
+                class="button is-white is-rounded is-outlined is-flex is-medium mt-6"
+              >
+                Contribute
+                <span class="icon ml-1">
+                  <i class="fab fa-github"></i>
+                </span></button
+            ></a>
           </div>
         </div>
         <div class="column">
@@ -135,20 +136,17 @@
           <div class="column is-two-fifth">
             <div class="columns h-full">
               <div class="column is-four-fifths">
-                <p class="is-size-5 has-text-weight-normal has-text-left">
-                  Effect Workforce
-                </p>
+                <p class="is-size-5 has-text-weight-normal has-text-left"></p>
               </div>
             </div>
           </div>
           <div class="column quote-text is-two-thirds">
             <p class="is-size-3 has-text-left has-text-weight-medium">
-              Empowering a global human workforce to shape the future of AI,
-              combining blockchain and P2P technology to deliver smarter,
-              inclusive, and impactful AI solutions.
+              Whether we are based on carbon or on silicon makes no fundamental
+              difference; we should each be treated with appropriate respect.
             </p>
-            <p class="is-size-3 has-text-left has-text-weight-medium">
-              — you're shaping the future of technology.
+            <p class="is-size-3 mt-5 has-text-left has-text-weight-medium">
+              — Arthur C. Clarke
             </p>
           </div>
         </div>
@@ -307,7 +305,7 @@ useSeoMeta({
   }
 
   .grid-container {
-    margin-right: calc(60% - 50vw);
+    margin-right: calc(50% - 50vw);
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     grid-template-rows: auto;

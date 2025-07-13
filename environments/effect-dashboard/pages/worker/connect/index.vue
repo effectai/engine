@@ -42,7 +42,7 @@
     <div v-else-if="managers && managers.length === 0" class="p-6 text-center">
       <UAlert
         icon="i-heroicons-information-circle"
-        color="blue"
+        color="info"
         variant="subtle"
         title="No Nodes Available"
         description="There are currently no manager nodes available."
@@ -92,7 +92,8 @@
           :key="index"
           class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
         >
-          <URadio
+          <URadioGroup
+	    :items="[manager]"
             v-model="selectedManager"
             :value="manager"
             class="w-full"
@@ -150,13 +151,13 @@
 
                 <!-- Version -->
                 <div class="flex items-center gap-1">
-                  <UBadge leading-icon="i-heroicons-tag" color="gray" size="xs"
+                  <UBadge leading-icon="i-heroicons-tag" color="neutral" size="sm"
                     >alpha v{{ manager.version }}
                   </UBadge>
                 </div>
               </div>
             </template>
-          </URadio>
+          </URadioGroup>
         </div>
 
         <div class="flex justify-end pt-4">

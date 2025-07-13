@@ -1,5 +1,5 @@
-import { useQuery, keepPreviousData } from "@tanstack/vue-query";
 import { useWorkerStore } from "@/stores/worker";
+import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 // import type { WorkerTaskRecord } from "@effectai/protocol";
 
 const activeTask = ref<WorkerTaskRecord | null>(null);
@@ -16,13 +16,20 @@ export const useTasks = () => {
     return useQuery({
       queryKey: ["tasks", index, taskCounter],
       queryFn: async () => {
-        const tasks = await workerStore.worker?.getTasks({
+        console.log("Fetching tasks for index:", index.value);
+        if (!workerStore.worker) {
+          throw new Error("Worker is not initialized");
+        }
+
+        console.log("Worker is initialized, fetching tasks...");
+        console.log(workerStore.worker);
+
+        const tasks = await workerStore.worker.getTasks({
           prefix: `tasks/${index.value}`,
         });
 
         return tasks;
       },
-      placeholderData: keepPreviousData,
     });
   };
 

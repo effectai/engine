@@ -1,28 +1,22 @@
 export default defineAppConfig({
   ui: {
-    primary: "green",
-    gray: "dark",
-    card: {
-      background: "bg-white dark:!bg-[#1C1A1F]",
+    colors: {
+      primary: "emerald",
+      neutral: "zinc",
     },
-    button: {
-      default: {
-        size: "md",
+    card: {
+      defaultVariants: {
+        variant: "subtle",
       },
-      padding: {
-        xs: "py-2 px-2",
-        sm: "py-2 px-3",
-        md: "py-2 px-4",
-        lg: "py-4 px-5",
-      },
-      rounded: "rounded-md",
-      color: {
-        highlight: {
-          outline:
-            "border-highlight text-highlight hover:bg-highlight hover:text-black",
-          solid: "bg-highlight text-black hover:bg-highlight-600",
+      variants: {
+        variant: {
+          mono: {
+            header: "bg-stone-100 dark:bg-[#1c1917]",
+            root: "bg-stone-200 dark:bg-[#333]",
+            body: "p-0 sm:p-0",
+          },
         },
       },
     },
-  },
+  }, // Add other UI configurations as needed
 });

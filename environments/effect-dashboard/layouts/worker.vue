@@ -69,7 +69,7 @@
       class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col"
     >
       <div
-        class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white dark:bg-brand-black dark:border-black px-6 pb-4"
+        class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 dark:bg-brand-black dark:border-black px-6 pb-4"
       >
         <div class="flex h-16 shrink-0 items-center">
           <nuxt-link to="/">
@@ -155,27 +155,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
 import {
   Dialog,
   DialogPanel,
   Menu,
-  MenuItems,
-  MenuItem,
   MenuButton,
+  MenuItem,
+  MenuItems,
   TransitionChild,
   TransitionRoot,
 } from "@headlessui/vue";
+import { ref } from "vue";
 
 import { Bars3Icon, XMarkIcon } from "@heroicons/vue/24/outline";
 
-const authStore = useAuthStore();
-const { isAuthenticated } = storeToRefs(authStore);
-const { useGetUserInfo } = useWeb3Auth();
-const { data: user } = useGetUserInfo();
+// const { useGetUserInfo } = useWeb3Auth();
+// const { data: user } = useGetUserInfo();
 
-const { useLogout } = useAuth();
-const { mutateAsync: logout } = useLogout();
+// const { useLogout } = useAuth();
+// const { mutateAsync: logout } = useLogout();
 
 //if no user is found, default to def
 const name = computed(() => user.value?.email || "anonymous worker");

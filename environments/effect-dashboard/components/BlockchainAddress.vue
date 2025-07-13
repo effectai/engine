@@ -22,7 +22,7 @@ const props = defineProps({
 });
 
 const copied = ref(false);
-const { copy } = useCopyToClipboard();
+const { copy } = useClipboard();
 const toast = useToast();
 const copyAddress = () => {
   copy(props.address);
