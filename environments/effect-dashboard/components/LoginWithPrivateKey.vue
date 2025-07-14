@@ -53,10 +53,8 @@ import { sha512 } from "@noble/hashes/sha512";
 import { Keypair } from "@solana/web3.js";
 
 const mnemonic = ref("");
-
-const { login } = useAuthStore();
-
 const emit = defineEmits(["back"]);
+const { loginWithPrivateKey } = useAuth();
 
 const generateSeedPhrase = () => {
   mnemonic.value = generateMnemonic(128);
@@ -70,7 +68,8 @@ const connect = async () => {
   const seed = await mnemonicToSeed(mnemonic.value);
   const ed25519privateKey = sha512(seed.slice(0, 32));
   const pk = Keypair.fromSeed(ed25519privateKey.slice(0, 32));
-  await login(Buffer.from(pk.secretKey).toString("hex"), "privateKey");
+  await loginWithPrivateKey(Buffer.from(pk.secretKey).toString("hex"));
+  navigateTo("/worker");
 };
 </script>
 

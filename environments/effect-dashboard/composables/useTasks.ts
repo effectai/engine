@@ -16,13 +16,9 @@ export const useTasks = () => {
     return useQuery({
       queryKey: ["tasks", index, taskCounter],
       queryFn: async () => {
-        console.log("Fetching tasks for index:", index.value);
         if (!workerStore.worker) {
           throw new Error("Worker is not initialized");
         }
-
-        console.log("Worker is initialized, fetching tasks...");
-        console.log(workerStore.worker);
 
         const tasks = await workerStore.worker.getTasks({
           prefix: `tasks/${index.value}`,

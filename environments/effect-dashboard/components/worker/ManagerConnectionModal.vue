@@ -9,14 +9,14 @@
       }"
     >
       <UButton
-        color="glass"
+        color="neutral"
         size="lg"
-        variant="solid"
-        class="cursor-pointer bg-gradient-to-r from-slate-300 to-slate-500 text-black hover:from-slate-400 hover:to-slate-600 transition-colors w-full"
+        variant="outline"
+        class=""
         icon="i-lucide-link"
         @click="isOpen = true"
       >
-        Connect</UButton
+        Connect To Manager</UButton
       >
       <template #body>
         <div v-if="isFetching" class="p-6 text-center">
@@ -49,7 +49,7 @@
           />
         </div>
 
-        <WorkerManagerListItem
+        <WorkerManagersListItem
           v-for="(manager, index) in managers"
           :key="index"
           :id="manager.id"

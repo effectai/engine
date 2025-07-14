@@ -1,4 +1,4 @@
-import { multiaddr } from "@effectai/protocol";
+import { multiaddr, type Multiaddr } from "@effectai/protocol";
 import { useMutation } from "@tanstack/vue-query";
 
 export const useSession = () => {
@@ -6,19 +6,23 @@ export const useSession = () => {
     const { connect } = useSessionStore();
 
     return useMutation({
-      mutationFn: async ({
-        account,
-        nextNonce,
-        managerMultiAddress,
-        accessCode,
-      }: {
-        account: string;
-        managerMultiAddress: string;
-        nextNonce: bigint;
-        accessCode?: string;
-      }): Promise<Awaited<ReturnType<typeof connect>>> => {
+      mutationFn: async (
+        multiaddr: string | Multiaddr,
+        {
+          account,
+          nextNonce,
+          managerMultiAddress,
+          accessCode,
+        }: {
+          account: string;
+          managerMultiAddress: string;
+          nextNonce: bigint;
+          accessCode?: string;
+        },
+      ): Promise<Awaited<ReturnType<typeof connect>>> => {
         return await connect({
-          managerMultiAddress: multiaddr(managerMultiAddress),
+          multiaddr:
+            typeof multiaddr === "string" ? multiaddr : multiaddr.toString(),
           account,
           currentNonce: nextNonce,
           accessCode,

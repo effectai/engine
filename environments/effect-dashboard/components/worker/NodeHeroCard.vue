@@ -17,27 +17,14 @@
             <div
               class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center backdrop-blur-sm"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="lucide lucide-network w-6 h-6 text-black"
-              >
-                <rect x="16" y="16" width="6" height="6" rx="1"></rect>
-                <rect x="2" y="16" width="6" height="6" rx="1"></rect>
-                <rect x="9" y="2" width="6" height="6" rx="1"></rect>
-                <path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"></path>
-                <path d="M12 12V8"></path>
-              </svg>
+              <img
+                :src="userInfo.profileImage"
+                alt="Profile Picture"
+                class="w-10 h-10 rounded-full object-cover"
+              />
             </div>
             <div>
-              <h2 class="text-2xl font-bold">{{ username }}</h2>
+              <h2 class="text-2xl font-bold">{{ userInfo.username }}</h2>
               <p class="text-gray-300 text-sm">Worker Node • Europe-West</p>
             </div>
           </div>
@@ -47,7 +34,9 @@
             >
               <span class="text-gray-300 text-sm">Peer ID</span>
               <div class="flex items-center space-x-2">
-                <span class="font-mono text-sm">12D3KooW...9x6PipXh</span
+                <span class="font-mono text-sm" v-if="peerId">{{
+                  sliceBoth(peerId)
+                }}</span
                 ><button
                   class="p-1 hover:bg-white/20 rounded transition-colors"
                 >
@@ -124,8 +113,15 @@
               </div>
             </div>
           </div>
-          <div class="mt-6">
+          <div class="mt-6 flex items-center gap-3">
             <WorkerManagerConnectionModal v-model="isOpen" />
+            <UButton
+              class=""
+              icon="i-heroicons-document-text"
+              size="lg"
+              color="neutral"
+              >View Identity Document</UButton
+            >
           </div>
         </div>
         <div class="col-span-3 flex items-center justify-center">
@@ -261,7 +257,7 @@ const {
 
 const { level, progress, experience, experiencePerLevel } = useWorkerLevel();
 
-const { username } = useAuth();
+const { userInfo } = useAuth();
 
 const capabilities = computed(() => {
   return peerId.value?.capabilities || [];

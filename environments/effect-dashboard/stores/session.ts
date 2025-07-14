@@ -1,133 +1,89 @@
 import { multiaddr, type Multiaddr } from "@effectai/protocol";
 import { PublicKey } from "@solana/web3.js";
 
-type SessionPayload = {
-  account: string;
-  connectedOn: number;
-  managerMultiAddress: string;
-  managerPublicKey: string;
-  managerPeerId: string;
-  accessCode?: string;
-};
+interface Session {
+  account: PublicKey;
+  connectedAt: Date;
+  manager: {
+    peerId: string;
+    publicKey: PublicKey;
+    multiaddr: Multiaddr;
+  };
+  metadata?: {
+    accessCode?: string;
+    nonce?: bigint;
+  };
+}
 
 export const useSessionStore = defineStore("session", () => {
-  const account: Ref<PublicKey | null> = ref(null);
-  const connectedOn: Ref<number | null> = ref(null);
-  const managerPeerId: Ref<string | null> = ref(null);
-  const managerPublicKey: Ref<PublicKey | null> = ref(null);
-  const managerMultiAddress: Ref<string | null> = ref(null);
-  const accessCode = ref<string | undefined>(undefined);
+  // State
+  const current = shallowRef<Session | null>(null);
+  const status = ref<"idle" | "connecting" | "active" | "error">("idle");
+  const error = shallowRef<Error | null>(null);
 
-  const setSession = (payload: SessionPayload) => {
-    account.value = new PublicKey(payload.account);
-    connectedOn.value = payload.connectedOn;
-    managerPeerId.value = payload.managerPeerId;
-    managerPublicKey.value = new PublicKey(payload.managerPublicKey);
-    managerMultiAddress.value = payload.managerMultiAddress;
-    accessCode.value = payload.accessCode;
+  // Derived state
+  const isActive = computed(() => status.value === "active");
+  const manager = computed(() => current.value?.manager ?? null);
+
+  const establish = async (
+    multiaddr: string,
+    { recipient, currentNonce, accessCode },
+  ) => {
+    const worker = useWorkerStore();
+
+    try {
+      status.value = "connecting";
+      error.value = null;
+
+      const result = await worker.connect({
+        target: params.target,
+        identity: params.identity.toString(),
+        auth: params.auth,
+      });
+
+      if (!result) throw new Error("Connection handshake failed");
+
+      current.value = {
+        account: params.identity,
+        connectedAt: new Date(),
+        manager: {
+          peerId: result.peerId,
+          publicKey: result.publicKey,
+          multiaddr: params.target,
+        },
+        metadata: {
+          accessCode: params.auth?.code,
+          nonce: params.currentNonce,
+        },
+      };
+
+      status.value = "active";
+      return result;
+    } catch (err) {
+      status.value = "error";
+      error.value = err instanceof Error ? err : new Error(String(err));
+      throw error.value;
+    }
   };
 
-  const useActiveSession = () => {
-    if (
-      !connectedOn.value ||
-      !account.value ||
-      !managerPeerId.value ||
-      !managerPublicKey.value
-    ) {
-      throw new Error("No active session");
+  const terminate = async () => {
+    if (!current.value) return;
+
+    try {
+      await useWorkerStore().disconnect();
+    } finally {
+      current.value = null;
+      status.value = "idle";
     }
-
-    return {
-      account,
-      managerPublicKey,
-      connectedOn,
-      managerMultiAddress,
-      managerPeerId,
-      accessCode,
-      useGetNonce: () => {
-        return useNextNonce(
-          ref(managerPublicKey.value?.toString()),
-          ref(managerPeerId.value?.toString()),
-        );
-      },
-    };
-  };
-
-  const connect = async ({
-    managerMultiAddress,
-    account,
-    currentNonce,
-    accessCode,
-  }: {
-    managerMultiAddress: Multiaddr;
-    account: string;
-    currentNonce: bigint;
-    accessCode?: string;
-  }) => {
-    const workerStore = useWorkerStore();
-    const { worker } = storeToRefs(workerStore);
-
-    if (!worker.value) {
-      throw new Error("Worker not initialized");
-    }
-
-    const managerPeerId = managerMultiAddress.getPeerId();
-
-    if (!managerPeerId) {
-      throw new Error("Manager multiaddress is not valid");
-    }
-
-    const result = await worker.value.connect(
-      managerMultiAddress,
-      account,
-      currentNonce,
-      accessCode,
-    );
-
-    if (!result) {
-      throw new Error("Failed to connect to manager");
-    }
-
-    setSession({
-      connectedOn: Math.floor(Date.now() / 1000),
-      account,
-      accessCode,
-      managerPeerId: result.peer,
-      managerPublicKey: result.pubkey,
-      managerMultiAddress: managerMultiAddress.toString(),
-    });
-
-    return result;
-  };
-
-  const disconnect = async () => {
-    const workerStore = useWorkerStore();
-    const { worker } = storeToRefs(workerStore);
-
-    if (!worker.value) {
-      throw new Error("Worker not initialized");
-    }
-
-    await worker.value.stop();
-    await workerStore.destroy();
-
-    account.value = null;
-    connectedOn.value = null;
-    managerPeerId.value = null;
-    managerPublicKey.value = null;
-    accessCode.value = undefined;
   };
 
   return {
-    connectedOn,
-    account,
-    managerPeerId,
-    managerPublicKey,
-    managerMultiAddress,
-
-    useActiveSession,
-
-    connect,
-    disconnect,
+    current: readonly(current),
+    status: readonly(status),
+    error: readonly(error),
+    isActive,
+    manager,
+    establish,
+    terminate,
   };
 });

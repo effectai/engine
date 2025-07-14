@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center justify-center">
-    <div v-if="authStore.isLoading" class="w-full max-w-md mt-10 space-y-8 p-8">
+    <div v-if="isLoading" class="w-full max-w-md mt-10 space-y-8 p-8">
       <p class="text-center text-gray-400 text-2xl flex items-center gap-2">
         <UIcon
           name="i-heroicons-arrow-path-20-solid"
@@ -91,44 +91,31 @@
 </template>
 <script setup lang="ts">
 import { WALLET_ADAPTERS } from "@web3auth/base";
+const { web3Auth, check, bep3auth } = useAuth();
 
 definePageMeta({
   layout: "worker",
-  middleware: "auth",
 });
-
-const authStore = useAuthStore();
-await authStore.autoConnect();
 
 const option: Ref<string | null> = ref(null);
 
 const route = useRoute();
 const router = useRouter();
 
-watchEffect(async () => {
-  if (authStore.isAuthenticated) {
-    const returnTo = route.query.returnTo;
-    const redirectPath = returnTo
-      ? decodeURIComponent(returnTo as string)
-      : "/worker";
-    await router.push(redirectPath);
-  }
-});
-
 const loginWithGoogle = async () => {
-  await authStore.web3auth.connectTo(WALLET_ADAPTERS.AUTH, {
+  await web3Auth.value.connectTo(WALLET_ADAPTERS.AUTH, {
     loginProvider: "google",
   });
 };
 
 const loginWithGithub = async () => {
-  await authStore.web3auth.connectTo(WALLET_ADAPTERS.AUTH, {
+  await web3Auth.value.connectTo(WALLET_ADAPTERS.AUTH, {
     loginProvider: "github",
   });
 };
 
 const loginWithDiscord = async () => {
-  await authStore.web3auth.connectTo(WALLET_ADAPTERS.AUTH, {
+  await web3Auth.value.connectTo(WALLET_ADAPTERS.AUTH, {
     loginProvider: "discord",
   });
 };

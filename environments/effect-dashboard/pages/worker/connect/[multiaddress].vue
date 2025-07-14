@@ -39,9 +39,31 @@
 </template>
 
 <script lang="ts" setup>
+import { multiaddr } from "@effectai/protocol";
+import { fromString, toString } from "uint8arrays";
 definePageMeta({
   layout: "worker",
-  middleware: ["auth", "session"],
+  middleware: ["auth"],
+});
+
+const route = useRoute();
+onBeforeMount(() => {
+  //get multiaddress from route params
+  const encodedMultiAddress = route.params.multiaddress as string;
+  const decodedBytes = fromString(encodedMultiAddress, "base64url");
+
+  try {
+    const decodedMultiaddr = multiaddr(decodedBytes);
+
+    //connect to this multi addr
+    const { useConnect } = useSession();
+    const { mutateAsync: connect } = useConnect();
+
+    connect(toString(decodedMultiaddr.bytes, "base64url"), {});
+  } catch (error) {
+    console.error("Error decoding multiaddr:", error);
+    navigateTo("/worker");
+  }
 });
 
 const config = useRuntimeConfig();
@@ -112,6 +134,7 @@ const totalCompletedTasks = computed(() => {
 
 const { useDisconnect } = useSession();
 const { mutateAsync: disconnect } = useDisconnect();
+
 tryOnBeforeUnmount(async () => {
   await disconnect();
 });

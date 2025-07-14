@@ -108,7 +108,7 @@
 
               <!-- Wallet dropdown -->
               <Menu
-                v-if="isAuthenticated"
+                v-if="username"
                 as="div"
                 class="relative inline-block text-left"
               >
@@ -117,11 +117,11 @@
                 >
                   <UAvatar
                     alt="Anonymous"
-                    :src="image"
+                    :src="profilePicture || image"
                     size="sm"
                     class="hidden mr-3 p-2 lg:flex justify-center items-center h-full lg:w-12"
                   />
-                  {{ name }}
+                  {{ username }}
                 </MenuButton>
 
                 <MenuItems
@@ -169,19 +169,10 @@ import { ref } from "vue";
 
 import { Bars3Icon, XMarkIcon } from "@heroicons/vue/24/outline";
 
-// const { useGetUserInfo } = useWeb3Auth();
-// const { data: user } = useGetUserInfo();
+const { userInfo, logout } = useAuth();
 
-// const { useLogout } = useAuth();
-// const { mutateAsync: logout } = useLogout();
-
-//if no user is found, default to def
-const name = computed(() => user.value?.email || "anonymous worker");
-const image = computed(
-  () =>
-    user.value?.profileImage ||
-    "https://icons.iconarchive.com/icons/pictogrammers/material/256/incognito-icon.png",
-);
+const username = computed(() => userInfo.value?.username || "");
+const profilePicture = computed(() => userInfo.value?.profilePicture || "");
 
 const logoutHandler = async () => {
   await logout();

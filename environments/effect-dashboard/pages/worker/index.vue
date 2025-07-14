@@ -4,6 +4,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
       <WorkerCapabilitiesList v-coming-soon />
       <UCard
+        v-coming-soon
         variant="mono"
         class="mb-4 p-0 max-h-[400px] overflow-y-scroll rounded-xlll text-black dark:text-white relative"
       >
@@ -75,37 +76,12 @@ definePageMeta({
   middleware: ["auth"],
 });
 
-const totalUptime = ref("12h 34m");
+// Wait for the worker node to be initialized
+
 const totalEarned = ref("$1,234.56");
 const totalCompletedTasks = ref(42);
 const performanceScore = ref("95%");
-
-const managers = ref([
-  {
-    id: 1,
-    url: "https://manager1.example.com",
-    region: "us-west",
-    announcedAddresses: ["https://manager1.example.com/ipfs/QmExampleAddress1"],
-    version: "1.0.0",
-    peerId: "QmExamplePeerId1",
-  },
-  {
-    id: 2,
-    url: "https://manager2.example.com",
-    region: "us-east",
-    announcedAddresses: ["https://manager2.example.com/ipfs/QmExampleAddress2"],
-    version: "1.0.0",
-    peerId: "wasd12aafb33asa32",
-  },
-  {
-    id: 3,
-    url: "https://manager3.example.com",
-    region: "eu-central",
-    announcedAddresses: ["https://manager3.example.com/ipfs/QmExampleAddress3"],
-    version: "1.0.0",
-    peerId: "peer3",
-  },
-]);
+const { username } = useAuth();
 
 const payments = ref([
   {

@@ -31,6 +31,7 @@ export default defineNuxtConfig({
       PAYMENT_ACCOUNT: process.env.PAYMENT_ACCOUNT,
       EFFECT_ACTIVE_REWARD_VESTING_ACCOUNT:
         process.env.EFFECT_ACTIVE_REWARD_VESTING_ACCOUNT,
+      WEB3_AUTH_CLIENT_ID: process.env.WEB3AUTH_CLIENT_ID,
     },
   },
   devtools: { enabled: false },
