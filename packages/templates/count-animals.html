@@ -83,7 +83,6 @@
           title: "Effect AI Image Labeler",
           imageSource: "${image_url}",
           btnLoading: false,
-          ipfsClient: null,
           answer: "",
           loading: true,
           notComplete: false,
@@ -104,8 +103,12 @@
                 {
                   task: "submit",
                   values: {
-                    animalCount: this.answer,
-                    image: this.imageSource,
+                    taskTitle: this.title,
+                    answer:{
+                      animalCount: this.answer,
+                      image: this.imageSource,
+                    }
+                    
                   },
                 },
                 "*",

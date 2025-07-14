@@ -81,7 +81,6 @@
           title: "Effect AI NFT Metadata Collector",
           imageSource: "${image_url}",
           btnLoading: false,
-          ipfsClient: null,
           isMutant: "",
           hasHat: "",
           loading: true,
@@ -104,9 +103,13 @@
                 {
                   task: "submit",
                   values: {
-                    isMutant: this.isMutant,
-                    hasHat: this.hasHat,
-                    image: this.imageSource,
+                    taskTitle: this.title,
+                    answer: {
+                      isMutant: this.isMutant,
+                      hasHat: this.hasHat,
+                      image: this.imageSource,
+                    }
+                    
                   },
                 },
                 "*",

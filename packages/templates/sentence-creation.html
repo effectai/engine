@@ -60,9 +60,7 @@
         return {
           title: "Effect AI Sentence Creator",
           tmpSentence: "",
-          labels: [],
           btnLoading: false,
-          ipfsClient: null,
           notComplete: false,
         };
       },
@@ -81,7 +79,8 @@
                 {
                   task: "submit",
                   values: {
-                    sentence: this.tmpSentence,
+                    taskTitle: this.title,
+                    answer: this.tmpSentence,
                   },
                 },
                 "*"

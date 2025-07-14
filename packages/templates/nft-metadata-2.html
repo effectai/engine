@@ -131,7 +131,6 @@
           title: "Effect AI NFT Metadata Collector",
           imageSource: "${image_url}",
           btnLoading: false,
-          ipfsClient: null,
           bgColor: "",
           loading: true,
           isActive: false,
@@ -155,10 +154,14 @@
                 {
                   task: "submit",
                   values: {
-                    bgColor: this.bgColor,
-                    hasTeeth: this.hasTeeth,
-                    hasEaring: this.hasEaring,
-                    image: this.imageSource,
+                    taskTitle: this.title,
+                    answer:{
+                      bgColor: this.bgColor,
+                      hasTeeth: this.hasTeeth,
+                      hasEaring: this.hasEaring,
+                      image: this.imageSource,
+                    }
+                    
                   },
                 },
                 "*",

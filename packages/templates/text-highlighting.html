@@ -62,10 +62,10 @@
   createApp({
     data() {
       return {
-        title: "Effect AI Sentence Verifier",
+        title: "Effect AI Sentence Redaction",
         btnLoading: false,
-        ipfsClient: null,
-        sentence: "${sentence}",
+        // sentence: "${sentence}",
+        sentence: "Hi, my name is Sarah Thompson and I was born on March 14, 1990. You can reach me at sarah.t90@gmail.com or call me at +1 416-555-2390. I live in Toronto, Canada, and work at MedTech Group as a clinical researcher.",
         loading: true,
         notComplete: false,
         selection: "",
@@ -117,8 +117,9 @@
               {
                 task: "submit",
                 values: {
+                  taskTitle: this.title,
                   sentence: this.sentence,
-                  selectionList: JSON.parse(JSON.stringify(this.selectionList))
+                  answer: JSON.parse(JSON.stringify(this.selectionList))
                 },
               },
               "*"

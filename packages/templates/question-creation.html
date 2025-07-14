@@ -61,9 +61,7 @@
         return {
           title: "Effect AI Question Creator",
           tmpQuestion: "",
-          labels: [],
           btnLoading: false,
-          ipfsClient: null,
           notComplete: false,
         };
       },
@@ -82,7 +80,8 @@
                 {
                   task: "submit",
                   values: {
-                    question: this.tmpQuestion,
+                    taskTitle: this.title,
+                    answer: this.tmpQuestion,
                   },
                 },
                 "*"

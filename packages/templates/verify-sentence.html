@@ -63,7 +63,6 @@
       return {
         title: "Effect AI Sentence Verifier",
         btnLoading: false,
-        ipfsClient: null,
         sentence: "${sentence}",
         answer: "",
         loading: true,
@@ -85,6 +84,7 @@
               {
                 task: "submit",
                 values: {
+                  taskTitle: this.title,
                   sentence: this.sentence,
                   answer: this.answer
                 },

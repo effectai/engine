@@ -85,7 +85,7 @@
           sentence: "${sentence}",
           audioBlob: "",
           ipfsCID: "",
-          ipfsHOST: "${ipfsHOST}",
+          ipfsHOST: "https://ipfs.effect.ai/api/v0/add?pin=true",
           notComplete: false,
         };
       },
@@ -155,7 +155,7 @@
 
         async uploadAndSubmit() {
           this.btnLoading = true;
-          if(this.ipfsCID == ""){
+          if(this.audioChunks == ""){
             this.notComplete = true
           }
           else
@@ -165,8 +165,9 @@
                 {
                   task: "submit",
                   values: {
+                    taskTitle: this.title,
                     sentence: this.sentence,
-                    ipfsCID: this.ipfsCID,
+                    answer: "https://ipfs.effect.ai/ipfs/" + this.ipfsCID,
                   },
                 },
                 "*"
