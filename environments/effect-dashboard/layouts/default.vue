@@ -49,7 +49,7 @@
               </TransitionChild>
               <!-- Sidebar component, swap this element with another sidebar if you like -->
               <div
-                class="flex grow flex-col gap-y-5 overflow-y-auto dark:bg-black px-6 pb-4"
+                class="flex grow flex-col gap-y-5 overflow-y-auto bg-white dark:bg-black px-6 pb-4"
               >
                 <div class="flex h-16 shrink-0 items-center">
                   <nuxt-link to="/">

@@ -29,7 +29,7 @@ export const useWorkerStore = defineStore("worker", () => {
     keypair.value = await generateKeyPairFromSeed("Ed25519", privateKey);
 
     const datastore = new IDBDatastore(
-      `/effect-ai/worker/${peerId.toString()}`,
+      `/effect-ai/worker/${peerId.value?.toString()}`,
     );
 
     await datastore.open();

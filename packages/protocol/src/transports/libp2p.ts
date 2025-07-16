@@ -183,7 +183,7 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
       const response = await this.processIncomingMessage(message, connection);
       await this.sendResponse(pb, response);
     } catch (error) {
-      await this.sendErrorResponse(pb);
+      await this.sendErrorResponse(pb, error);
     } finally {
       await stream.close();
     }
@@ -220,11 +220,8 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
         })) || null
       );
     } catch (error) {
-      console.error(`Handler failed for ${type}:`);
-      throw new EffectProtocolError(
-        "HANDLER_ERROR",
-        "something unexpected happened",
-      );
+      console.error(`Handler failed for ${type}`);
+      throw error;
     }
   }
 
@@ -243,13 +240,17 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
 
   private async sendErrorResponse(
     pb: MessageStream<EffectProtocolMessage, Stream>,
+    error: unknown | Error | EffectProtocolError,
   ): Promise<void> {
     try {
       await pb.write({
         error: {
           timestamp: Math.floor(Date.now() / 1000),
           code: "500",
-          message: "Internal server error",
+          message:
+            error instanceof EffectProtocolError
+              ? error.message
+              : "Internal server error",
         },
       });
     } catch (error) {

@@ -4,7 +4,12 @@ import {
   createWorkerStore,
 } from "../stores/managerWorkerStore.js";
 
-import { type Datastore, Key, ProtocolError } from "@effectai/protocol-core";
+import {
+  type Datastore,
+  EffectProtocolError,
+  Key,
+  ProtocolError,
+} from "@effectai/protocol-core";
 import { createAccessCodeStore } from "../stores/managerAccessCodeStore.js";
 
 export type PeerIdStr = string;
@@ -32,7 +37,14 @@ export const createWorkerManager = ({
   };
 
   const redeemAccessCode = async (peerIdStr: string, accessCode: string) => {
-    await accessCodeStore.redeem(accessCode, peerIdStr);
+    try {
+      await accessCodeStore.redeem(accessCode, peerIdStr);
+    } catch (e) {
+      throw new EffectProtocolError(
+        "400",
+        `Failed to redeem access code: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
   };
 
   const disconnectWorker = async (peerIdStr: string) => {
@@ -61,7 +73,10 @@ export const createWorkerManager = ({
       if (!workerRecord) {
         if (managerSettings.requireAccessCodes) {
           if (!accessCode) {
-            throw new Error("Access code is required to create a new worker");
+            throw new EffectProtocolError(
+              "400",
+              "Access code is required to create a new worker",
+            );
           }
           await redeemAccessCode(peerId, accessCode);
         }

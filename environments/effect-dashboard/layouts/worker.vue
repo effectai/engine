@@ -117,9 +117,9 @@
                 >
                   <UAvatar
                     alt="Anonymous"
-                    :src="profilePicture || image"
+                    :src="profilePicture"
                     size="sm"
-                    class="hidden mr-3 p-2 lg:flex justify-center items-center h-full lg:w-12"
+                    class="mx-2"
                   />
                   {{ username }}
                 </MenuButton>
@@ -172,7 +172,7 @@ import { Bars3Icon, XMarkIcon } from "@heroicons/vue/24/outline";
 const { userInfo, logout } = useAuth();
 
 const username = computed(() => userInfo.value?.username || "");
-const profilePicture = computed(() => userInfo.value?.profilePicture || "");
+const profilePicture = computed(() => userInfo.value?.profileImage || "");
 
 const logoutHandler = async () => {
   await logout();

@@ -7,6 +7,7 @@ import {
 import {
   CHAIN_NAMESPACES,
   UX_MODE,
+  WALLET_ADAPTERS,
   WEB3AUTH_NETWORK,
   type Web3AuthNoModalOptions,
 } from "@web3auth/base";
@@ -71,9 +72,11 @@ export const useAuth = () => {
       };
 
       const web3authInstance = new Web3AuthNoModal(web3AuthOptions);
+      const redirectUrl = `${window.location.origin}/web3auth-callback`;
       const authAdapter = new AuthAdapter({
         privateKeyProvider,
         adapterSettings: {
+          redirectUrl,
           uxMode: UX_MODE.REDIRECT,
         },
       });
@@ -88,15 +91,22 @@ export const useAuth = () => {
     }
   };
 
-  const loginWithWeb3Auth = async () => {
+  const loginWithWeb3Auth = async (loginProvider?: string) => {
     if (!web3Auth.value) {
       await init();
     }
 
     try {
       // Ensure Web3Auth is initialized and connected
-      if (web3Auth.value?.status !== "connected") {
+      if (web3Auth.value?.status !== "ready") {
         throw new Error("Failed to connect");
+      }
+
+      if (loginProvider) {
+        console.log("Connecting with provider:", loginProvider);
+        await web3Auth.value.connectTo(WALLET_ADAPTERS.AUTH, {
+          loginProvider,
+        });
       }
 
       const privateKey = await web3Auth.value.provider?.request({
@@ -150,6 +160,7 @@ export const useAuth = () => {
     }
 
     provider.value = null;
+
     userInfo.value = null;
     isAuthenticated.value = false;
 
@@ -165,17 +176,24 @@ export const useAuth = () => {
     if (authMethod === "web3auth") {
       await init();
       if (web3Auth.value?.status === "connected") {
-        const privateKey = await web3Auth.value.provider?.request({
+        const pk = await web3Auth.value.provider?.request({
           method: "solanaPrivateKey",
         });
 
-        if (!privateKey) {
+        if (!pk) {
           error.value = "Failed to retrieve private key from Web3Auth";
           return;
         }
 
-        privateKey.value = privateKey as string;
-        userInfo.value = await web3Auth.value.getUserInfo();
+        userInfo.value = await web3Auth.value?.getUserInfo().then((user) => ({
+          username: user.name || "Web3Auth User",
+          profileImage:
+            user.profileImage ||
+            "https://avatars.dicebear.com/api/identicon/default.svg",
+        }));
+
+        privateKey.value = pk as string;
+
         isAuthenticated.value = true;
       }
     } else if (authMethod === "privateKey") {
@@ -203,6 +221,7 @@ export const useAuth = () => {
             32,
           );
 
+          console.log("Initializing worker with private key:", privateKeyBytes);
           await initialize(privateKeyBytes);
         } catch (e) {
           error.value = "Failed to initialize worker with private key";
@@ -224,5 +243,6 @@ export const useAuth = () => {
     error,
     web3Auth,
     privateKey,
+    account,
   };
 };

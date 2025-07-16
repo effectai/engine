@@ -16,7 +16,7 @@
       <div class="flex items-center gap-1">
         <UIcon name="i-heroicons-server" class="w-4 h-4 text-gray-400" />
         <span
-          class="text-gray-900 dark:text-gray-200"
+          class="text-gray-900 dark:text-gray-200 text-center"
           v-if="announcedAddresses"
         >
           {{ extractHost(announcedAddresses[0]) }}
@@ -36,12 +36,20 @@
           {{ latency || "~" }} ms
         </span>
       </div>
-      <UButton color="neutral" size="xs">Connect</UButton>
+
+      <nuxt-link
+        :to="`worker/connect/${encodeMultiAddress(announcedAddresses[0])}`"
+        class="mt-2"
+        ><UButton color="neutral" size="xs">Connect</UButton></nuxt-link
+      >
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { multiaddr, type Multiaddr } from "@effectai/protocol";
+import { toString } from "uint8arrays";
+
 const props = defineProps<{
   id: number;
   url: string;
@@ -51,13 +59,24 @@ const props = defineProps<{
   announcedAddresses: string[];
 }>();
 
-const extractHost = (url: string): string => {
+const encodeMultiAddress = (ma: string): string => {
   try {
-    const parsedUrl = new URL(url);
-    return parsedUrl.hostname;
+    const multi = multiaddr(ma);
+    const bytes = multi.bytes;
+    return toString(bytes, "base64url");
   } catch (error) {
-    console.error("Invalid URL:", url, error);
-    return url; // Fallback to the original URL if parsing fails
+    console.error("Invalid multiaddr:", ma, error);
+    return ma; // Fallback to the original multiaddr if parsing fails
+  }
+};
+
+const extractHost = (ma: string): string => {
+  try {
+    const multi = multiaddr(ma);
+    return multi.nodeAddress().address;
+  } catch (error) {
+    console.error("Invalid multiaddr:", ma, error);
+    return ma.toString(); // Fallback to the original multiaddr if parsing fails
   }
 };
 </script>

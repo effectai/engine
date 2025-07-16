@@ -1,14 +1,21 @@
-import { multiaddr, type Multiaddr } from "@effectai/protocol";
+import {
+  multiaddr,
+  peerIdFromString,
+  type Multiaddr,
+  type PeerId,
+} from "@effectai/protocol";
 import { PublicKey } from "@solana/web3.js";
+
+export interface Manager {
+  peerId: PeerId;
+  publicKey: PublicKey;
+  multiaddr: Multiaddr;
+}
 
 interface Session {
   account: PublicKey;
   connectedAt: Date;
-  manager: {
-    peerId: string;
-    publicKey: PublicKey;
-    multiaddr: Multiaddr;
-  };
+  manager: Manager;
   metadata?: {
     accessCode?: string;
     nonce?: bigint;
@@ -21,13 +28,31 @@ export const useSessionStore = defineStore("session", () => {
   const status = ref<"idle" | "connecting" | "active" | "error">("idle");
   const error = shallowRef<Error | null>(null);
 
+  const now = useNow({ interval: 1000 });
+
   // Derived state
   const isActive = computed(() => status.value === "active");
   const manager = computed(() => current.value?.manager ?? null);
 
+  // Computed uptime (in seconds)
+  const uptimeSeconds = computed(() => {
+    if (!isActive.value) return 0;
+    return Math.floor(
+      (now.value.getTime() - current.value?.connectedAt.getTime()) / 1000,
+    );
+  });
+
   const establish = async (
-    multiaddr: string,
-    { recipient, currentNonce, accessCode },
+    multiAddress: string,
+    {
+      recipient,
+      currentNonce,
+      accessCode,
+    }: {
+      recipient: string;
+      currentNonce: bigint;
+      accessCode?: string;
+    },
   ) => {
     const worker = useWorkerStore();
 
@@ -35,25 +60,25 @@ export const useSessionStore = defineStore("session", () => {
       status.value = "connecting";
       error.value = null;
 
-      const result = await worker.connect({
-        target: params.target,
-        identity: params.identity.toString(),
-        auth: params.auth,
+      const result = await worker.instance?.connect(multiaddr(multiAddress), {
+        recipient,
+        nonce: currentNonce,
+        accessCode,
       });
 
       if (!result) throw new Error("Connection handshake failed");
 
       current.value = {
-        account: params.identity,
+        account: new PublicKey(recipient),
         connectedAt: new Date(),
         manager: {
-          peerId: result.peerId,
-          publicKey: result.publicKey,
-          multiaddr: params.target,
+          peerId: peerIdFromString(result.peer),
+          publicKey: new PublicKey(result.pubkey),
+          multiaddr: multiaddr(multiAddress),
         },
         metadata: {
-          accessCode: params.auth?.code,
-          nonce: params.currentNonce,
+          accessCode,
+          nonce: currentNonce,
         },
       };
 
@@ -70,7 +95,7 @@ export const useSessionStore = defineStore("session", () => {
     if (!current.value) return;
 
     try {
-      await useWorkerStore().disconnect();
+      //TODO:: Implement the actual disconnection logic
     } finally {
       current.value = null;
       status.value = "idle";
@@ -85,5 +110,6 @@ export const useSessionStore = defineStore("session", () => {
     manager,
     establish,
     terminate,
+    uptimeSeconds,
   };
 });

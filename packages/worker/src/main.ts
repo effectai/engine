@@ -157,12 +157,18 @@ export const createWorker = async ({
 
   //connect to an identified manager
   const connect = async (
-    manager: Multiaddr,
-    recipient: string,
-    nonce: bigint,
-    accessCode?: string,
+    multiaddress: Multiaddr,
+    {
+      recipient,
+      nonce,
+      accessCode,
+    }: {
+      recipient: string;
+      nonce: bigint;
+      accessCode?: string;
+    },
   ) => {
-    const [response, error] = await entity.sendMessage(manager, {
+    const [response, error] = await entity.sendMessage(multiaddress, {
       requestToWork: {
         timestamp: Math.floor(Date.now() / 1000),
         recipient,

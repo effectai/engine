@@ -18,13 +18,13 @@
               class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center backdrop-blur-sm"
             >
               <img
-                :src="userInfo.profileImage"
+                :src="profileImage"
                 alt="Profile Picture"
                 class="w-10 h-10 rounded-full object-cover"
               />
             </div>
             <div>
-              <h2 class="text-2xl font-bold">{{ userInfo.username }}</h2>
+              <h2 class="text-2xl font-bold">{{ username }}</h2>
               <p class="text-gray-300 text-sm">Worker Node • Europe-West</p>
             </div>
           </div>
@@ -35,9 +35,10 @@
               <span class="text-gray-300 text-sm">Peer ID</span>
               <div class="flex items-center space-x-2">
                 <span class="font-mono text-sm" v-if="peerId">{{
-                  sliceBoth(peerId)
+                  sliceBoth(peerId.toString())
                 }}</span
                 ><button
+                  @click="copy(peerId.toString())"
                   class="p-1 hover:bg-white/20 rounded transition-colors"
                 >
                   <svg
@@ -77,10 +78,11 @@
               <div
                 class="p-3 bg-white/10 bg-opacity-10 rounded-lg backdrop-blur-sm"
               >
-                <p class="text-gray-300 text-xs">Peformance Score</p>
-                <p class="text-xl font-bold">{{ performanceScore }}%</p>
+                <p class="text-gray-300 text-xs">Tasks rejected</p>
+                <p class="text-xl font-bold">{{ tasksRejected }}</p>
               </div>
             </div>
+
             <div class="grid grid-cols-2 gap-3">
               <div
                 class="p-3 bg-white/10 bg-opacity-10 rounded-lg backdrop-blur-sm"
@@ -108,8 +110,8 @@
               <div
                 class="p-3 bg-white/10 bg-opacity-10 rounded-lg backdrop-blur-sm"
               >
-                <p class="text-gray-300 text-xs">Tasks rejected</p>
-                <p class="text-xl font-bold">{{ tasksRejected }}</p>
+                <p class="text-gray-300 text-xs">Peformance Score</p>
+                <p class="text-xl font-bold">{{ performanceScore }}%</p>
               </div>
             </div>
           </div>
@@ -120,8 +122,10 @@
               icon="i-heroicons-document-text"
               size="lg"
               color="neutral"
-              >View Identity Document</UButton
+              :disabled="true"
             >
+              View Identity Document
+            </UButton>
           </div>
         </div>
         <div class="col-span-3 flex items-center justify-center">
@@ -143,8 +147,8 @@
                 stroke-width="6"
                 fill="none"
                 stroke-linecap="round"
-                stroke-dasharray="282.7433388230814"
-                stroke-dashoffset="70.68583470577033"
+                :stroke-dasharray="circumference"
+                :stroke-dashoffset="dashoffset"
                 class="transition-all duration-1000 ease-out"
               ></circle>
             </svg>
@@ -189,7 +193,7 @@
                   <circle cx="12" cy="8" r="6"></circle>
                   <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
                 </svg>
-                <p class="text-2xl font-bold">5</p>
+                <p class="text-2xl font-bold">0</p>
                 <p class="text-xs text-gray-300">Active Capabilities</p>
               </div>
               <div
@@ -217,25 +221,18 @@
             <div
               class="text-center p-4 bg-white/10 bg-opacity-10 rounded-lg backdrop-blur-sm"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="lucide lucide-dollar-sign w-6 h-6 mx-auto mb-2 text-blue-400"
-              >
-                <line x1="12" x2="12" y1="2" y2="22"></line>
-                <path
-                  d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"
-                ></path>
-              </svg>
-              <p class="text-2xl font-bold">{{ totalEffectEarnings }} EFFECT</p>
-              <p class="text-xs text-gray-300">Total Earnings</p>
+              <div class="flex gap-4 items-center justify-center">
+                <img
+                  src="@/assets/img/effect-coin.jpg"
+                  class="w-10 rounded-full"
+                />
+                <div>
+                  <p class="text-2xl font-bold">
+                    {{ totalEffectEarnings }} EFFECT
+                  </p>
+                  <p class="text-xs text-gray-300">Total Earnings</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -257,11 +254,29 @@ const {
 
 const { level, progress, experience, experiencePerLevel } = useWorkerLevel();
 
+const radius = computed(() => 45);
+const circumference = computed(() => 2 * Math.PI * radius.value);
+const normalizedPercentage = computed(() =>
+  Math.min(Math.max(progress.value, 0), 100),
+);
+const dashoffset = computed(
+  () => circumference.value * (1 - normalizedPercentage.value / 100),
+);
+
 const { userInfo } = useAuth();
+const username = computed(() => userInfo.value?.username || "Unknown User");
+const profileImage = computed(() => {
+  return (
+    userInfo.value?.profileImage ||
+    "https://avatars.dicebear.com/api/identicon/default.svg"
+  );
+});
 
 const capabilities = computed(() => {
   return peerId.value?.capabilities || [];
 });
+
+const { copy } = useClipboard();
 
 const isOpen = ref(false);
 </script>

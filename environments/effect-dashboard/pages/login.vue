@@ -91,31 +91,27 @@
 </template>
 <script setup lang="ts">
 import { WALLET_ADAPTERS } from "@web3auth/base";
-const { web3Auth, check, bep3auth } = useAuth();
+const { web3Auth, loginWithWeb3Auth } = useAuth();
 
 definePageMeta({
   layout: "worker",
+  middleware: ["auth"],
 });
 
 const option: Ref<string | null> = ref(null);
 
-const route = useRoute();
-const router = useRouter();
-
 const loginWithGoogle = async () => {
-  await web3Auth.value.connectTo(WALLET_ADAPTERS.AUTH, {
-    loginProvider: "google",
-  });
+  loginWithWeb3Auth("google");
 };
 
 const loginWithGithub = async () => {
-  await web3Auth.value.connectTo(WALLET_ADAPTERS.AUTH, {
+  await web3Auth.value?.connectTo(WALLET_ADAPTERS.AUTH, {
     loginProvider: "github",
   });
 };
 
 const loginWithDiscord = async () => {
-  await web3Auth.value.connectTo(WALLET_ADAPTERS.AUTH, {
+  await web3Auth.value?.connectTo(WALLET_ADAPTERS.AUTH, {
     loginProvider: "discord",
   });
 };

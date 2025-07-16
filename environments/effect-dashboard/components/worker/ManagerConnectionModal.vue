@@ -8,16 +8,7 @@
         class: 'rounded-full',
       }"
     >
-      <UButton
-        color="neutral"
-        size="lg"
-        variant="outline"
-        class=""
-        icon="i-lucide-link"
-        @click="isOpen = true"
-      >
-        Connect To Manager</UButton
-      >
+      <WorkerPulseBorderButton label="Connect" />
       <template #body>
         <div v-if="isFetching" class="p-6 text-center">
           <div class="flex justify-center items-center space-x-2 text-gray-500">

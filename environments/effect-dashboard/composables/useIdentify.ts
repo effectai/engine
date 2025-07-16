@@ -1,25 +1,56 @@
-import { multiaddr } from "@effectai/protocol";
-import { useQuery } from "@tanstack/vue-query";
+import { multiaddr, type Multiaddr } from "@effectai/protocol";
+import { useQuery, useQueryClient } from "@tanstack/vue-query";
+
 export const useIdentify = () => {
-  const sessionStore = useSessionStore();
+  const { instance } = storeToRefs(useWorkerStore());
+  const { account } = useAuth();
 
-  const workerStore = useWorkerStore();
-  const { worker } = storeToRefs(workerStore);
-  const { account } = storeToRefs(sessionStore);
+  const queryClient = useQueryClient();
 
-  const { managerMultiAddress } = storeToRefs(sessionStore);
-  const isReady = computed(() => !!worker.value && !!managerMultiAddress.value);
+  const identifyQueryFn = (multiaddress: MaybeRef<string>) => {
+    if (!multiaddress || !instance.value) {
+      throw new Error("Multiaddress or worker instance is not available");
+    }
+    const multiaddrInstance = multiaddr(multiaddress as string);
+    console.log("Identifying multiaddr:", multiaddress);
+    return instance.value?.identify(multiaddrInstance);
+  };
 
-  return useQuery({
-    queryKey: ["identify", account],
-    queryFn: async () => {
-      if (!worker.value || !managerMultiAddress.value) return;
-
-      return await worker.value.identify(multiaddr(managerMultiAddress.value));
-    },
-    enabled: isReady,
+  const identifyQuery = (
+    multiaddress: MaybeRef<string>,
+    account: Ref<string | null>,
+  ) => ({
+    queryKey: ["identify", multiaddress, account],
+    queryFn: async () => identifyQueryFn(multiaddress),
+    enabled: !!instance.value,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     refetchInterval: 10000,
   });
+
+  const useIdentifyQuery = (multiaddress: MaybeRef<string>) => {
+    const isReady = computed(() => !!instance.value && !!multiaddress);
+
+    return useQuery({
+      ...identifyQuery(multiaddress, account),
+      enabled: isReady.value,
+    });
+  };
+
+  const useIdentifyAsyncQuery = async (multiaddress: string) => {
+    if (!account.value) {
+      throw new Error("Account is not available");
+    }
+
+    const data = await queryClient.ensureQueryData(
+      identifyQuery(multiaddress, account),
+    );
+
+    return data;
+  };
+
+  return {
+    useIdentifyQuery,
+    useIdentifyAsyncQuery,
+  };
 };

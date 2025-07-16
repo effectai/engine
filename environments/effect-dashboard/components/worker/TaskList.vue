@@ -56,9 +56,8 @@
 </template>
 
 <script setup lang="ts">
-const { useGetTasks } = useTasks();
-const index = ref("active");
-const { data: tasks = [] } = useGetTasks(index);
+const { useGetActiveTasks } = useTasks();
+const { data: tasks = [] } = useGetActiveTasks(ref("active"));
 </script>
 
 <style scoped>

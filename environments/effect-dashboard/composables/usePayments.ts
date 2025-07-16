@@ -1,58 +1,43 @@
 // import type { Payment } from "@effectai/protocol";
 import type { Payment, PaymentRecord } from "@effectai/protocol";
-import { keepPreviousData, useMutation, useQuery } from "@tanstack/vue-query";
+import { useMutation, useQuery } from "@tanstack/vue-query";
 import pLimit from "p-limit";
 
 export const usePayments = () => {
   const workerStore = useWorkerStore();
-  const { paymentCounter } = storeToRefs(workerStore);
+  const { instance } = storeToRefs(workerStore);
 
   const useGetTotalAmountFromPayments = () => {
     const sessionStore = useSessionStore();
-    const { managerPeerId } = sessionStore.useActiveSession();
-    const { worker } = storeToRefs(workerStore);
+    const { manager } = storeToRefs(sessionStore);
 
     return useQuery({
-      queryKey: ["payment-amount", paymentCounter, managerPeerId],
+      queryKey: ["payment-amount", manager.value?.peerId],
       queryFn: async () => {
-        if (!managerPeerId.value) {
-          return;
+        if (!manager.value?.peerId) {
+          throw new Error("Manager peerId not set.");
         }
 
-        return await worker.value?.countPaymentAmount({
-          managerPeerIdStr: managerPeerId.value,
+        return await instance.value?.countPaymentAmount({
+          managerPeerIdStr: manager.value?.peerId,
         });
       },
-      enabled: computed(() => !!worker.value && !!managerPeerId.value),
+      enabled: computed(() => !!instance.value && !!manager.value?.peerId),
     });
   };
 
-  const useGetPayments = (page: Ref<number>) =>
-    useQuery({
-      queryKey: ["payments", paymentCounter, page],
-      queryFn: async () => {
-        const data = await workerStore.worker?.getPaginatedPayments({
-          page: page.value,
-          perPage: 20,
-        });
-
-        return data;
-      },
-      enabled: computed(() => !!workerStore.worker),
-    });
-
   const useGetClaimablePayments = () => {
     const { worker } = storeToRefs(workerStore);
-    const sessionStore = useSessionStore();
-    const { managerPeerId, useGetNonce } = sessionStore.useActiveSession();
 
-    const { data: nonces } = useGetNonce();
-    const { account } = storeToRefs(sessionStore);
+    const { managerPeerId, managerPublicKey } = useSession();
+    const { useGetNoncesQuery } = useNonce();
+    const { data: nonces } = useGetNoncesQuery(managerPublicKey, managerPeerId);
+
+    const { account } = useAuth();
 
     return useQuery({
       queryKey: [
         "claimable-payments",
-        paymentCounter,
         account,
         nonces.value
           ? {
@@ -169,7 +154,6 @@ export const usePayments = () => {
   };
 
   return {
-    useGetPayments,
     useClaimPayments,
     useGetClaimablePayments,
     useGetTotalAmountFromPayments,

@@ -4,14 +4,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
   await checkSession();
 
   if (to.path === "/login" && isAuthenticated.value) {
-    return navigateTo("/");
+    return navigateTo("/worker");
   }
 
   if (to.path !== "/login" && !isAuthenticated.value) {
     return navigateTo("/login");
   }
 
-  if (!isAuthenticated.value) {
+  if (!isAuthenticated.value && to.path !== "/login") {
     return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`);
   }
 });

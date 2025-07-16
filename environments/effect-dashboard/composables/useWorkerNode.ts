@@ -1,6 +1,6 @@
 export const useWorkerNode = () => {
   const workerStore = useWorkerStore();
-  const { workerPeerId } = storeToRefs(workerStore);
+  const { peerId } = storeToRefs(workerStore);
 
   const { useGetTasks } = useTasks();
   const { data: completedTasks } = useGetTasks(ref("completed"));
@@ -11,9 +11,11 @@ export const useWorkerNode = () => {
 
   const totalEffectEarnings = computed(() => {
     return (
-      completedTasks.value?.reduce((total, task) => {
-        return total + (task.state.reward || BigInt(0));
-      }, BigInt(0)) || 0
+      Number(
+        completedTasks.value?.reduce((total, task) => {
+          return total + (task.state.reward || BigInt(0));
+        }, BigInt(0)) || 0n,
+      ) / 1e6
     );
   });
 
@@ -24,10 +26,9 @@ export const useWorkerNode = () => {
       if (totalTasks < 50) return 2;
       if (totalTasks < 100) return 3;
       if (totalTasks < 200) return 4;
-      return 5; // Level 5 for tasks >= 200
+      return 5;
     });
 
-    //show experience per level
     const experiencePerLevel = computed(() => {
       return {
         1: 25000,
@@ -40,7 +41,7 @@ export const useWorkerNode = () => {
 
     const progress = computed(() => {
       const currentLevel = level.value;
-      const currentExperience = totalEffectEarnings.value;
+      const currentExperience = Number(totalEffectEarnings.value);
       const requiredExperience =
         experiencePerLevel.value[currentLevel] || 25000;
 
@@ -55,8 +56,6 @@ export const useWorkerNode = () => {
     };
   };
   const daysInNetwork = computed(() => {
-    //for now get the date of the first task
-
     const firstTaskDate = completedTasks.value?.[0]?.createdAt;
     if (!firstTaskDate) return 0;
 
@@ -72,11 +71,11 @@ export const useWorkerNode = () => {
     const completed = totalTasksCompleted.value;
     const rejected = tasksRejected.value;
     if (completed + rejected === 0) return 0; // Avoid division by zero
-    return (completed / (completed + rejected)) * 100; // Return as a percentage
+    return ((completed / (completed + rejected)) * 100).toFixed(2); // Return as a percentage
   });
 
   return {
-    peerId: workerPeerId,
+    peerId,
     totalTasksCompleted,
     tasksRejected,
     totalEffectEarnings,

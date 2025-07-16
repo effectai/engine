@@ -21,6 +21,7 @@ import {
   createKeyPairSignerFromBytes,
   SolanaError,
   type SolanaErrorCodeWithCause,
+  type MaybeAccount,
 } from "@solana/kit";
 
 import {
@@ -59,8 +60,7 @@ export type StakingAccount = ProgramAccount<
 export function usePaymentProgram() {
   const { mint } = useEffectConfig();
   const { rpc, rpcSubscriptions } = useSolanaRpc();
-  const authStore = useAuthStore();
-  const { privateKey } = storeToRefs(authStore);
+  const { privateKey } = useAuth();
 
   const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
     rpc,
@@ -76,27 +76,31 @@ export function usePaymentProgram() {
     });
 
   const claimWithProofs = async (proofs: ProofResponse[]) => {
-    const sessionStore = useSessionStore();
-    const { account, managerPublicKey } = sessionStore.useActiveSession();
+    const { account, privateKey } = useAuth();
+    const { manager } = useSession();
+
+    if (!privateKey.value) {
+      throw new Error("Private key is not set");
+    }
 
     const signer = await createKeyPairSignerFromBytes(
       Buffer.from(privateKey.value, "hex"),
     );
 
-    if (!account.value || !managerPublicKey.value) {
+    if (!account.value || !manager.value) {
       throw new Error("No account or manager public key found");
     }
 
     const ata = await getAssociatedTokenAccount({
       mint: address(mint.toBase58()),
-      owner: address(account.value.toBase58()),
+      owner: address(account.value),
     });
 
     const [recipientManagerDataAccount] = await getProgramDerivedAddress({
       programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
       seeds: [
-        getAddressEncoder().encode(address(account.value.toBase58())),
-        getAddressEncoder().encode(address(managerPublicKey.value.toBase58())),
+        getAddressEncoder().encode(address(account.value)),
+        getAddressEncoder().encode(address(manager.value.publicKey.toString())),
       ],
     });
 
@@ -198,9 +202,31 @@ export function usePaymentProgram() {
     }
   };
 
-  const useRecipientManagerDataAccount = (
+  const getRecipientManagerDataAccount = async (
+    account: string,
+    managerPublicKey: string,
+  ): Promise<
+    MaybeAccount<IdlAccounts<EffectPayment>["recipientManagerDataAccount"]>
+  > => {
+    const [recipientManagerDataAccountAddress] = await getProgramDerivedAddress(
+      {
+        programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
+        seeds: [
+          getAddressEncoder().encode(address(account)),
+          getAddressEncoder().encode(address(managerPublicKey)),
+        ],
+      },
+    );
+
+    return fetchMaybeRecipientManagerDataAccount(
+      rpc,
+      recipientManagerDataAccountAddress,
+    );
+  };
+
+  const useRecipientManagerDataAccountQuery = (
     account: Ref<string | null | undefined>,
-    managerPublicKey: Ref<string | undefined>,
+    managerPublicKey: Ref<string | undefined | null>,
   ) => {
     return useQuery({
       queryKey: computed(() => ["remoteNonce", account, managerPublicKey]),
@@ -209,21 +235,10 @@ export function usePaymentProgram() {
           throw new Error("No account or manager public key found");
         }
 
-        const [recipientManagerDataAccountAddress] =
-          await getProgramDerivedAddress({
-            programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
-            seeds: [
-              getAddressEncoder().encode(address(account.value)),
-              getAddressEncoder().encode(address(managerPublicKey.value)),
-            ],
-          });
-
-        const dataAccount = await fetchMaybeRecipientManagerDataAccount(
-          rpc,
-          recipientManagerDataAccountAddress,
+        return getRecipientManagerDataAccount(
+          account.value,
+          managerPublicKey.value,
         );
-
-        return dataAccount;
       },
       enabled: computed(() => !!account.value && !!managerPublicKey.value),
     });
@@ -232,6 +247,7 @@ export function usePaymentProgram() {
   return {
     useClaimWithProof,
     claimWithProofs,
-    useRecipientManagerDataAccount,
+    getRecipientManagerDataAccount,
+    useRecipientManagerDataAccountQuery,
   };
 }
