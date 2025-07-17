@@ -340,6 +340,31 @@ export const createManager = async ({
     }
   });
 
+entity.get("/tasks/:templateid", async (_req, res) => {
+  const tasks =  await taskManager.getCompletedTasks({ offset: 0, limit: 10000 });
+  const templateid = _req.params.templateid;
+
+  const filteredTasks = tasks.filter(
+    (task) => task.state.templateId === templateid
+  );
+
+  const taskList = await Promise.all(
+  filteredTasks.map(async (task) => {
+    const submissionEvent = task.events.find((e) => e.type === "submission");
+
+    return {
+      taskId: task.state.id,
+      templateId: task.state.templateId,
+      title: task.state.title,
+      result: submissionEvent?.result ? JSON.parse(submissionEvent.result) : null,
+    };
+
+  })
+);
+  
+res.json(taskList)
+});
+
   entity.get("/", async (_req, res) => {
     const announcedAddresses =
       managerSettings.announce.length === 0
