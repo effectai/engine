@@ -1,3 +1,4 @@
+// Modify the last 4 bits of the last byte
 import {
   createWorker,
   multiaddr,
@@ -13,6 +14,7 @@ export const useWorkerStore = defineStore("worker", () => {
   const instance: Ref<null | Awaited<ReturnType<typeof createWorker>>> =
     ref(null);
   const status = ref<"idle" | "initializing" | "active" | "error">("idle");
+
   const keypair = ref<null | Ed25519PrivateKey>(null);
 
   const peerId = computed(() => {
@@ -26,7 +28,11 @@ export const useWorkerStore = defineStore("worker", () => {
 
   const initialize = async (privateKey: Uint8Array) => {
     status.value = "initializing";
-    keypair.value = await generateKeyPairFromSeed("Ed25519", privateKey);
+
+    const tagBytes = await generateDeterministicSeed();
+    console.log("Generated Tag Bytes:", tagBytes);
+    const modifiedSeed = modifySeedLast4Bytes(privateKey, tagBytes);
+    keypair.value = await generateKeyPairFromSeed("Ed25519", modifiedSeed);
 
     const datastore = new IDBDatastore(
       `/effect-ai/worker/${peerId.value?.toString()}`,

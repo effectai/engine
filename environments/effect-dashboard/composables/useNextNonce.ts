@@ -3,15 +3,21 @@ import { useQuery, useQueryClient } from "@tanstack/vue-query";
 
 export const useNonce = () => {
   const queryClient = useQueryClient();
-  const { account } = useAuth();
   const { getRecipientManagerDataAccount } = usePaymentProgram();
+  const { account } = useAuth();
 
   const useGetNoncesQueryParams = (
-    managerPublicKey: MaybeRef<string | undefined | null>,
-    managerPeerIdStr: MaybeRef<string | undefined | null>,
+    account: MaybeRef<string | null>,
+    managerPublicKey: MaybeRef<string | null>,
+    managerPeerIdStr: MaybeRef<string | null>,
   ) => ({
     queryKey: ["nonces", account, managerPublicKey, managerPeerIdStr],
-    queryFn: async () => getNoncesQueryFn,
+    queryFn: async () =>
+      getNoncesQueryFn(
+        account,
+        managerPublicKey as string,
+        managerPeerIdStr as string,
+      ),
     enabled: () => {
       return !!account && !!managerPublicKey && !!managerPeerIdStr;
     },
@@ -21,27 +27,25 @@ export const useNonce = () => {
     managerPublicKey: MaybeRef<string>,
     managerPeerIdStr: MaybeRef<string>,
   ) => {
-    const data = await queryClient.ensureQueryData(
-      useGetNoncesQueryParams(managerPublicKey, managerPeerIdStr),
-    );
+    return await queryClient.ensureQueryData({
+      ...useGetNoncesQueryParams(account, managerPublicKey, managerPeerIdStr),
+    });
   };
 
   const getNoncesQueryFn = async (
-    account: string,
-    managerPublicKey: MaybeRef<string>,
-    managerPeerIdStr: MaybeRef<string>,
+    account: MaybeRef<string | null>,
+    managerPublicKey: MaybeRef<string | null>,
+    managerPeerIdStr: MaybeRef<string | null>,
   ) => {
-    if (!managerPublicKey) {
-      throw new Error("Manager public key or peer ID is missing");
+    const acc = unref(account);
+    const pubKey = unref(managerPublicKey);
+    const peerId = unref(managerPeerIdStr);
+
+    if (!acc || !pubKey || !peerId) {
+      throw new Error("Missing required parameters for getNonces");
     }
 
-    console.log("query fn");
-    console.log(managerPublicKey);
-
-    const remoteAccount = await getRecipientManagerDataAccount(
-      account,
-      managerPublicKey,
-    );
+    const remoteAccount = await getRecipientManagerDataAccount(acc, pubKey);
 
     //remote nonce could be null if the account does not exist
     const remoteNonce = remoteAccount?.exists ? remoteAccount.data.nonce : null;
@@ -53,7 +57,7 @@ export const useNonce = () => {
 
     const localMax =
       (await instance.value.getMaxNonce({
-        managerPeerIdStr,
+        managerPeerIdStr: peerId,
       })) ?? 0;
 
     const remoteBigInt = remoteNonce !== null ? BigInt(remoteNonce) : 0n;
@@ -73,7 +77,7 @@ export const useNonce = () => {
     managerPeerIdStr: Ref<string | undefined | null>,
   ) =>
     useQuery({
-      ...useGetNoncesQueryParams(managerPublicKey, managerPeerIdStr),
+      ...useGetNoncesQueryParams(account, managerPublicKey, managerPeerIdStr),
     });
 
   return {

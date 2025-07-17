@@ -12,7 +12,6 @@ export const useIdentify = () => {
       throw new Error("Multiaddress or worker instance is not available");
     }
     const multiaddrInstance = multiaddr(multiaddress as string);
-    console.log("Identifying multiaddr:", multiaddress);
     return instance.value?.identify(multiaddrInstance);
   };
 
@@ -42,9 +41,9 @@ export const useIdentify = () => {
       throw new Error("Account is not available");
     }
 
-    const data = await queryClient.ensureQueryData(
-      identifyQuery(multiaddress, account),
-    );
+    const data = await queryClient.ensureQueryData({
+      ...identifyQuery(multiaddress, account),
+    });
 
     return data;
   };

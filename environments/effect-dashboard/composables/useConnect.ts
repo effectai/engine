@@ -1,23 +1,11 @@
-import { multiaddr, type Multiaddr } from "@effectai/protocol";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
+import { multiaddr } from "@effectai/protocol";
+import { useMutation } from "@tanstack/vue-query";
 
-export const useSession = () => {
+export const useConnect = () => {
   const sessionStore = useSessionStore();
-
   const { account } = useAuth();
-  const { manager, isActive, status, uptimeSeconds } =
-    storeToRefs(sessionStore);
-
   const { useGetNoncesAsyncQuery } = useNonce();
   const { useIdentifyAsyncQuery } = useIdentify();
-
-  const managerInfo = computed(() => ({
-    multiaddr: manager.value?.multiaddr,
-    peerId: manager.value?.peerId,
-    peerIdStr: manager.value?.peerId?.toString(),
-    publicKey: manager.value?.publicKey,
-    publicKeyStr: manager.value?.publicKey?.toString(),
-  }));
 
   const connectToManagerMutation = useMutation({
     mutationFn: async ({
@@ -50,13 +38,4 @@ export const useSession = () => {
       // });
     },
   });
-
-  return {
-    connectToManagerMutation,
-    manager,
-    managerInfo,
-    isActive,
-    status,
-    uptimeSeconds,
-  };
 };
