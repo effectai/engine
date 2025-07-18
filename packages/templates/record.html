@@ -91,7 +91,15 @@
       },
       computed: {},
       created() {},
-      mounted() {},
+      mounted() {
+        window.top.postMessage(
+        {
+          type: 'task-instructions',
+          instructions: this.instructions
+        },
+        "*"
+      );
+      },
       methods: {
         playAudio(){
           const audio = this.$refs.audioPlayer; 

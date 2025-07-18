@@ -64,21 +64,7 @@
       return {
         title: "Effect AI Sentence Redaction",
         btnLoading: false,
-<<<<<<< Updated upstream
-        // sentence: "${sentence}",
-<<<<<<< HEAD
-        sentence: "Hi, my name is Sarah Thompson and I was born on March 14, 1990. You can reach me at sarah.t90@gmail.com or call me at +1 416-555-2390. I live in Toronto, Canada, and work at MedTech Group as a clinical researcher.",
-=======
-<<<<<<< Updated upstream
-        ipfsClient: null,
-=======
-        // sentence: "${sentence}",
->>>>>>> Stashed changes
         sentence: "${sentence}",
->>>>>>> Stashed changes
-=======
-        sentence: "${sentence}",
->>>>>>> 736ee63a92c0f1cf1f09731cf0324c79f6630fb8
         loading: true,
         notComplete: false,
         selection: "",
@@ -86,15 +72,23 @@
         selectedTag: "",
         instructions: `
           <div class="">
-            <h3 class="title is-4">Misreadings</h3>
-            <p>Reading all the words on the page correctly does matter. When listening, check very carefully that what has been recorded is exactly what has been written; reject if they have added, contracted or missed words.</p>
+            <li>Highlight any sensitive or personal information in the sentence</li>
+            <li>Tag each highlighted section with the correct label</li>
+            <li>Only tag information that clearly identifies someone or something private</li>
+            <li>Double-check that each tag is accurate before submitting</li>
             <br>
-            <h4 class="title is-5">Very common mistakes include:</h4>
-            <li>Missing 'A' or 'The' at the beginning of the recording.</li>
-            <li>Missing an 's' at the end of a word.</li>
-            <li>Reading contractions that aren't actually there, such as "We're" instead of "We are", or vice versa.</li>
-            <li>Missing the end of the last word by cutting off the recording too quickly.</li>
-            <li>Taking several attempts to read a word.</li>
+            <h2 class="text-lg">Use these labels:</h2>
+              <ul>
+                <li><strong>[NAME]</strong> - e.g. John Smith, Sarah</li>
+                <li><strong>[DATE]</strong> - e.g. July 18, 2025, last Monday</li>
+                <li><strong>[TIME]</strong> - e.g. 3:45 PM, noon</li>
+                <li><strong>[LOCATION]</strong> - e.g. Toronto, 123 Main St</li>
+                <li><strong>[EMAIL]</strong> - e.g. john@example.com</li>
+                <li><strong>[PHONE]</strong> - e.g. (555) 123-4567</li>
+                <li><strong>[ID]</strong> - e.g. passport number, SSN</li>
+                <li><strong>[OTHER]</strong> - any other identifying or sensitive info</li>
+              </ul>
+            </li>
           </div>
         `
       };

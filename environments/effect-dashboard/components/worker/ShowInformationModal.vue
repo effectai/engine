@@ -1,6 +1,11 @@
 <template>
   <div>
-    <UModal v-model="data">
+    <UModal
+        v-model="data"
+        :ui="{
+          width: 'w-full sm:max-w-[42em]', // Set the full modal width here
+        }"
+      >
       <UCard
         :ui="{
           base: 'relative overflow-hidden',
