@@ -36,6 +36,12 @@ function compileCircuit() {
 function phase1() {
   ensureDir(SETUP_DIR);
 
+  // if the final ptau already exists, skip phase 1
+  if (existsSync(PTAU_FINAL)) {
+    console.log("✅ Phase 1 already completed. Skipping...");
+    return;
+  }
+
   const pot0000 = `${SETUP_DIR}/pot${TAU_SIZE}_0000.ptau`;
   const pot0001 = `${SETUP_DIR}/pot${TAU_SIZE}_0001.ptau`;
 

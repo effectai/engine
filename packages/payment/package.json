@@ -4,8 +4,11 @@
   "type": "module",
   "scripts": {
     "generate:rust-key": "node --experimental-strip-types scripts/verification-to-rust.cjs circuits/build/PaymentBatch_verification.json ./program/src",
+    "generate:constants": "node --experimental-strip-types scripts/generate-constants.ts",
+    "generate:circuit": "node --experimental-strip-types scripts/generate-circuit.ts",
     "build:circuits": "node --experimental-strip-types scripts/build-circuits.ts && pnpm run generate:rust-key",
-    "build": "tsup clients/js --config ../../tsup.config.package.ts"
+    "compile:ts": "tsup clients/js --config ../../tsup.config.package.ts",
+     "build": "pnpm run generate:circuit && pnpm run generate:constants && pnpm run compile:ts && pnpm run build:circuits"
   },
   "main": "dist/index.cjs",
   "exports": {
