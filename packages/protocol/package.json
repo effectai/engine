@@ -20,6 +20,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.9.0",
   "dependencies": {
+    "@effectai/protobufs": "workspace:*",
     "libp2p": "^2.8.8",
     "@libp2p/circuit-relay-v2": "^3.2.14",
     "@libp2p/crypto": "^5.0.5",

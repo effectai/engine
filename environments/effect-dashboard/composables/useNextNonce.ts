@@ -26,9 +26,10 @@ export const useNonce = () => {
   const useGetNoncesAsyncQuery = async (
     managerPublicKey: MaybeRef<string>,
     managerPeerIdStr: MaybeRef<string>,
+    recipient: MaybeRef<string | null> = account,
   ) => {
     return await queryClient.ensureQueryData({
-      ...useGetNoncesQueryParams(account, managerPublicKey, managerPeerIdStr),
+      ...useGetNoncesQueryParams(recipient, managerPublicKey, managerPeerIdStr),
     });
   };
 
@@ -58,6 +59,8 @@ export const useNonce = () => {
     const localMax =
       (await instance.value.getMaxNonce({
         managerPeerIdStr: peerId,
+        managerPublicKey: pubKey,
+        recipient: acc,
       })) ?? 0;
 
     const remoteBigInt = remoteNonce !== null ? BigInt(remoteNonce) : 0n;

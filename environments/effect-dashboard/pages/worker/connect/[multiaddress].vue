@@ -45,11 +45,8 @@
       <WorkerStatisticCard
         icon="i-lucide-dollar-sign"
         label="Total Earned"
-        :value="totalEffectEarnings"
+        :value="`${totalEffectEarnings} EFFECT`"
       >
-        <a href="#" @click="isOpenClaimModal = true" class="underline"
-          >claim payments</a
-        >
       </WorkerStatisticCard>
       <WorkerStatisticCard
         icon="i-lucide-activity"
@@ -59,7 +56,7 @@
       <WorkerStatisticCard
         icon="i-material-symbols-score-sharp"
         label="Performance"
-        :value="performanceScore"
+        :value="`${performanceScore}%`"
       >
       </WorkerStatisticCard>
     </div>
@@ -77,15 +74,13 @@ definePageMeta({
 });
 
 const { connectToManagerMutation, isActive, uptimeSeconds } = useSession();
-
 const { mutateAsync: connect } = connectToManagerMutation;
-const { useIdentifyQuery } = useIdentify();
 
 const connectHandler = async (accessCode?: string) => {
   try {
     await connect({
       multiAddress: decodedMultiAddr.value.toString(),
-      // accessCode: accessCode ? accessCode : undefined,
+      accessCode: accessCode ? accessCode : undefined,
     });
 
     toast.add({
@@ -93,14 +88,22 @@ const connectHandler = async (accessCode?: string) => {
       description: "Successfully connected to manager node",
       color: "success",
     });
+
+    promptAccessCode.value = false;
   } catch (error) {
-    console.error("Failed to connect to manager node:", error);
-    toast.add({
-      title: "Connection Error",
-      description: error.message,
-      color: "error",
-    });
-    return;
+    if (error instanceof Error) {
+      if (error.message.includes("Access code is required")) {
+        promptAccessCode.value = true;
+      }
+    } else {
+      console.error("Unexpected error:", error);
+      toast.add({
+        title: "Connection Error",
+        description: "An unexpected error occurred while connecting.",
+        color: "error",
+      });
+      return;
+    }
   }
 };
 

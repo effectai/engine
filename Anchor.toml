@@ -1,0 +1,28 @@
+[toolchain]
+package_manager = "pnpm"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+effect_payment = "effphQKcAYeN6CkbygjnJUsuYXGUtkikSPZ6B8hSggC"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "./tests/keys/authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV.json"
+
+[workspace]
+members = [
+  "packages/payment/program",
+  "packages/migration/program",
+  "packages/stake/program",
+  "packages/rewards/program",
+  "packages/vesting/program",
+]
+
+[scripts]
+test = "pnpm vitest"

@@ -16,10 +16,10 @@ import { computeTemplateId } from "../utils.js";
 import {
   type TypedEventEmitter,
   type TemplateStore,
-  type Task,
-  type Template,
   peerIdFromString,
 } from "@effectai/protocol-core";
+
+import type { Task, Template } from "@effectai/protobufs";
 
 export interface PaginatedResult<T> {
   items: T[];
@@ -234,6 +234,8 @@ export function createTaskManager({
       paymentAccount: new PublicKey(managerSettings.paymentAccount),
       label: `Payment for task: ${taskRecord.state.id}`,
     });
+
+    console.log("Payment generated:", payment);
 
     await taskStore.payout({
       entityId: taskRecord.state.id,

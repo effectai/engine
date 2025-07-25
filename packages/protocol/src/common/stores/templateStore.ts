@@ -1,6 +1,6 @@
 import type { Datastore } from "interface-datastore";
 import { createEntityStore } from "../../store.js";
-import { Template } from "../../../@generated/effect.protons.js";
+import type { Template } from "@effectai/protobufs";
 
 export interface TemplateEvent {
   type: string;

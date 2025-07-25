@@ -221,7 +221,6 @@ export const useAuth = () => {
             32,
           );
 
-          console.log("Initializing worker with private key:", privateKeyBytes);
           await initialize(privateKeyBytes);
         } catch (e) {
           error.value = "Failed to initialize worker with private key";

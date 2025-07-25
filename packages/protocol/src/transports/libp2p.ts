@@ -15,7 +15,7 @@ import { type ServiceFactoryMap, createLibp2p } from "libp2p";
 import { type Multiaddr, isMultiaddr } from "@multiformats/multiaddr";
 import type { Datastore } from "interface-datastore";
 import { type MessageStream, pbStream } from "it-protobuf-stream";
-import { EffectProtocolMessage } from "../../@generated/effect.protons.js";
+import { EffectProtocolMessage } from "@effectai/protobufs";
 import type { MessageResponse } from "../common/types.js";
 import type {
   Entity,

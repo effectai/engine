@@ -7,33 +7,26 @@ import {
   webSockets,
 } from "@effectai/protocol-core";
 
-import bs58 from "bs58";
-
 import { createPaymentManager } from "./modules/createPaymentManager.js";
 import { createTaskManager } from "./modules/createTaskManager.js";
 import { createManagerTaskStore } from "./stores/managerTaskStore.js";
 
-import { buildEddsa } from "@effectai/zkp";
+import { buildEddsa } from "@effectai/payment";
 import { createWorkerManager } from "./modules/createWorkerManager.js";
-import {
-  bigIntToBytes32,
-  compressBabyJubJubPubKey,
-  proofResponseToGroth16Proof,
-} from "./utils.js";
+import { proofResponseToGroth16Proof } from "./utils.js";
 
 import { PublicKey } from "@solana/web3.js";
 import { PAYMENT_BATCH_SIZE, TASK_ACCEPTANCE_TIME } from "./consts.js";
 
 import {
-  EffectProtocolMessage,
   HttpTransport,
   Libp2pTransport,
-  type Payment,
   type TaskRecord,
   createEffectEntity,
   createPaymentStore,
   createTemplateStore,
 } from "@effectai/protocol-core";
+import { EffectProtocolMessage, type Payment } from "@effectai/protobufs";
 
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createLogger } from "./logging.js";
@@ -144,13 +137,11 @@ export const createManager = async ({
 
   const eddsa = await buildEddsa();
   const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
+  const compressedPubKey = eddsa.babyJub.packPoint(pubKey);
 
-  const compressedPubKey = compressBabyJubJubPubKey(
-    bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
-    bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
-  );
-
+  //bs58 encode the compressed public key
   const solanaPublicKey = new PublicKey(compressedPubKey);
+  logger.log.info(`Using Solana public key: ${solanaPublicKey.toBase58()}`);
 
   // create the entity
   const entity = await createManagerEntity({
@@ -178,6 +169,7 @@ export const createManager = async ({
     logger,
     workerManager,
     privateKey,
+    publicKey: solanaPublicKey.toString(),
     paymentStore,
     managerSettings,
   });
@@ -268,26 +260,10 @@ export const createManager = async ({
         workerPeerIdStr: peerId.toString(),
       });
     })
-    .onMessage("proofRequest", async (proofRequest, { peerId }) => {
-      //FIX:: temp check
-      const recipient = proofRequest.payments[0].recipient;
-      if (!peerId.publicKey) {
-        throw new Error("Peer ID public key is not set");
-      }
-
-      if (!Buffer.from(peerId.publicKey.raw).equals(bs58.decode(recipient))) {
-        throw new Error("Forbidden");
-      }
-
-      logger.context.run(
-        { peerId: peerId.toString(), payments: proofRequest.payments.length },
-        async () => {
-          return await paymentManager.processProofRequest({
-            privateKey,
-            payments: proofRequest.payments,
-          });
-        },
-      );
+    .onMessage("proofRequest", async (proofRequest) => {
+      return await paymentManager.processProofRequest({
+        request: proofRequest,
+      });
     })
     .onMessage("bulkProofRequest", async (proofRequest, { peerId }) => {
       const worker = await workerManager.getWorker(peerId.toString());
@@ -303,19 +279,16 @@ export const createManager = async ({
 
       logger.context.run({ peerId: peerId.toString() }, async () => {
         return await paymentManager.bulkPaymentProofs({
-          recipient: new PublicKey(recipient),
-          privateKey,
-          r8_x: eddsa.F.toObject(pubKey[0]),
-          r8_y: eddsa.F.toObject(pubKey[1]),
-          proofs: proofRequest.proofs.map((p) => ({
-            proof: proofResponseToGroth16Proof(p),
-            publicSignals: [
-              p.signals!.minNonce.toString(),
-              p.signals!.maxNonce.toString(),
-              p.signals!.amount.toString(),
-              p.signals!.recipient,
-            ],
-          })),
+          proofs: proofRequest.proofs.map((p) => {
+            if (!p.signals) {
+              throw new Error("Missing publicSignals in proof response");
+            }
+
+            return {
+              proof: proofResponseToGroth16Proof(p),
+              publicSignals: p.signals,
+            };
+          }),
         });
       });
     })
@@ -370,7 +343,7 @@ export const createManager = async ({
       cycle,
       requireAccessCodes: managerSettings.requireAccessCodes,
       announcedAddresses,
-      publicKey: new PublicKey(compressedPubKey),
+      publicKey: solanaPublicKey.toBase58(),
       connectedPeers: workerManager.workerQueue.queue.length,
     });
   });

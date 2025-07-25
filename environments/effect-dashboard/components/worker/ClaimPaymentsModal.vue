@@ -48,7 +48,7 @@
                   >Claimable payments</span
                 >
                 <UBadge
-                  v-if="claimablePayments"
+                  v-if="managerPaymentBatches.length"
                   color="neutral"
                   variant="solid"
                 >
@@ -77,7 +77,6 @@
               <UButton
                 @click="mutateClaimPayments"
                 :loading="isClaimingPayments"
-                :disabled="!canClaim"
                 color="neutral"
                 variant="solid"
                 size="md"
@@ -98,17 +97,39 @@ import { useMutation, useQueryClient } from "@tanstack/vue-query";
 
 const { account } = useAuth();
 const { useGetBalanceQuery } = useSolanaWallet();
-const { useGetClaimablePayments, useClaimPayments } = usePayments();
+const { useClaimPayments } = usePayments();
 
 const props = defineProps<{
   modelValue: boolean;
+  managerPaymentBatches: any[];
 }>();
+
+const batchSize = computed(() => props.managerPaymentBatches.length || []);
+const totalClaimablePayments = computed(() => {
+  return props.managerPaymentBatches.reduce(
+    (total, batch) => total + batch.claimablePayments.length,
+    0,
+  );
+});
+const totalClaimableAmount = computed(() => {
+  return props.managerPaymentBatches.reduce(
+    (total, batch) =>
+      total +
+      batch.claimablePayments.reduce(
+        (sum, payment) => sum + payment.state.amount,
+        0,
+      ),
+    0,
+  );
+});
+const claimablePayments = computed(() => {
+  return props.managerPaymentBatches.flatMap(
+    (batch) => batch.claimablePayments,
+  );
+});
 
 const canClaim = computed(() => {
   if (!account.value) {
-    return false;
-  }
-  if (!claimablePayments.value || claimablePayments.value.length === 0) {
     return false;
   }
   if (!balance.value || balance.value.value <= 0.01) {
@@ -121,7 +142,6 @@ const emit = defineEmits(["update:modelValue"]);
 const data = useVModel(props, "modelValue", emit);
 
 const { data: balance } = useGetBalanceQuery(account);
-const { data: claimablePayments, refetch } = useGetClaimablePayments();
 const {
   mutateAsync: claimPayments,
   currentProof,
@@ -135,22 +155,21 @@ const claimingProgress = computed(
 );
 
 const toast = useToast();
-const queryClient = useQueryClient();
+const { data: managers, isFetching, isError, error } = useFetchManagerNodes();
+
 const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
   useMutation({
     mutationFn: async () => {
       try {
-        if (!claimablePayments.value) {
-          console.error("No claimable payments found");
-          return;
+        for (const batch of props.managerPaymentBatches) {
+          //TODO:: hacky we need to find an online manager to batch payments..
+          const manager = managers.value[0];
+          await claimPayments({
+            payments: batch.claimablePayments,
+            managerPeerId: manager.peerId,
+            managerPublicKey: batch.managerPublicKey,
+          });
         }
-
-        await claimPayments({ payments: claimablePayments.value });
-
-        //invalidate remote nonce query
-        await queryClient.invalidateQueries({
-          queryKey: ["remoteNonce"],
-        });
 
         toast.add({
           title: "Payments Claimed",

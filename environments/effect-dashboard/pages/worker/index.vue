@@ -1,38 +1,12 @@
 <template>
   <div>
     <WorkerNodeHeroCard />
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-      <WorkerCapabilitiesList v-coming-soon />
-      <UCard
-        v-coming-soon
-        variant="mono"
-        class="mb-4 p-0 max-h-[400px] overflow-y-scroll rounded-xlll text-black dark:text-white relative"
-      >
-        <template #header>
-          <div class="flex justify-between items-center">
-            <div class="flex items-center gap-2">
-              <UIcon name="mdi:payment" />
-              <h2 class="text-lg font-semibold">Payments</h2>
-            </div>
-            <div class="flex flex-end justify-end">
-              <UButton icon="mdi-export" class="" color="neutral"
-                >Export</UButton
-              >
-            </div>
-          </div>
-        </template>
-        <div class="">
-          <WorkerPaymentsListItem
-            v-for="payment in payments"
-            :key="payment.id"
-            :label="payment.label"
-            :id="payment.id"
-            :amount="payment.amount"
-            :status="payment.status"
-            :created-at="payment.created_at"
-          />
-        </div>
-      </UCard>
+
+    <div
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 items-stretch"
+    >
+      <WorkerCapabilitiesList v-coming-soon class="h-full" />
+      <WorkerPaymentCard class="h-full max-h-[420px]" />
     </div>
 
     <UCard
@@ -76,44 +50,7 @@ definePageMeta({
   middleware: ["auth"],
 });
 
-// Wait for the worker node to be initialized
-
-const totalEarned = ref("$1,234.56");
-const totalCompletedTasks = ref(42);
-const performanceScore = ref("95%");
-const { username } = useAuth();
-
-const payments = ref([
-  {
-    id: 1,
-    amount: 100,
-    status: "Completed",
-    created_at: "2023-10-01",
-    label: "payment for task 553",
-  },
-  {
-    id: 2,
-    amount: 200,
-    status: "Pending",
-    created_at: "2023-10-02",
-    label: "payment for task 779",
-  },
-  {
-    id: 3,
-    amount: 150,
-    status: "Failed",
-    created_at: "2023-10-03",
-    label: "payment for task 332",
-  },
-]);
-
-const capabilites = ref([
-  { name: "Battery Level", value: "85%" },
-  { name: "Charging", value: "Yes" },
-  { name: "Geolocation", value: "Enabled" },
-  { name: "FPS", value: "60" },
-  { name: "Languages", value: "English, Spanish" },
-]);
+const isOpenClaimModal = ref(false);
 
 const availableCapabilities = ref([
   {

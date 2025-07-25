@@ -1,31 +1,20 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import {
-  Payment,
-  type PaymentStore,
-  type ProofRequest,
-} from "@effectai/protocol-core";
+import { Payment, type ProofRequest } from "@effectai/protobufs";
+import type { PaymentStore } from "@effectai/protocol-core";
+
 import type { PeerId, PrivateKey } from "@libp2p/interface";
 import { PublicKey } from "@solana/web3.js";
-import {
-  ProofToProofResponseMessage,
-  computePaymentId,
-  int2hex,
-  signPayment,
-} from "../utils.js";
+import { ProofToProofResponseMessage, computePaymentId } from "../utils.js";
 
 import {
   type Groth16Proof,
   type PublicSignals,
-  buildEddsa,
-  buildPoseidon,
-  groth16,
-} from "@effectai/zkp";
+  type SignedPayment,
+  generatePaymentProof,
+  signPayment,
+  prove,
+} from "@effectai/payment";
 
-import { performance } from "node:perf_hooks";
-import { VerifierKeyJson } from "@effectai/zkp";
 import { ulid } from "ulid";
-import { PAYMENT_BATCH_SIZE } from "../consts.js";
 import type { createLogger } from "../logging.js";
 import type { ManagerSettings } from "../main.js";
 import type { createWorkerManager } from "./createWorkerManager";
@@ -33,19 +22,18 @@ import type { createWorkerManager } from "./createWorkerManager";
 export async function createPaymentManager({
   logger,
   paymentStore,
+  publicKey,
   privateKey,
   workerManager,
   managerSettings,
 }: {
   logger: ReturnType<typeof createLogger>;
   privateKey: PrivateKey;
+  publicKey: string;
   paymentStore: PaymentStore;
   workerManager: ReturnType<typeof createWorkerManager>;
   managerSettings: ManagerSettings;
 }) {
-  const eddsa = await buildEddsa();
-  const poseidon = await buildPoseidon();
-
   const processPayoutRequest = async ({ peerId }: { peerId: PeerId }) => {
     const worker = await workerManager.getWorker(peerId.toString());
 
@@ -90,24 +78,44 @@ export async function createPaymentManager({
     return payment;
   };
 
+  function validateProofs(
+    proofs: {
+      proof: Groth16Proof;
+      publicSignals: PublicSignals;
+    }[] = [],
+  ) {
+    if (proofs.length === 0) return true;
+
+    const [first, ...rest] = proofs;
+    const [recipient, paymentAccount] = [
+      first.publicSignals.recipient,
+      first.publicSignals.paymentAccount,
+    ];
+
+    return rest.every(
+      (p) =>
+        p.publicSignals.recipient === recipient &&
+        p.publicSignals.paymentAccount === paymentAccount,
+    );
+  }
+
   async function bulkPaymentProofs({
-    privateKey,
-    recipient,
-    r8_x,
-    r8_y,
     proofs,
   }: {
-    privateKey: PrivateKey;
-    recipient: PublicKey;
-    r8_x: bigint;
-    r8_y: bigint;
     proofs: {
       proof: Groth16Proof;
       publicSignals: PublicSignals;
     }[];
   }) {
     logger.log.info(
-      { recipient, proofs: proofs.length },
+      {
+        proofs: proofs.length,
+        recipient: proofs[0].publicSignals.recipient,
+        totalAmount: proofs.reduce(
+          (acc, p) => acc + BigInt(p.publicSignals.amount),
+          0n,
+        ),
+      },
       "Bulking payment proofs",
     );
 
@@ -115,28 +123,30 @@ export async function createPaymentManager({
     let maxNonce: bigint | null = null;
     let sumAmount = 0n;
 
-    const verificationTasks = proofs.map(async (proof) => {
-      const isValid = await groth16.verify(
-        VerifierKeyJson,
-        [
-          proof.publicSignals[0],
-          proof.publicSignals[1],
-          proof.publicSignals[2],
-          proof.publicSignals[3],
-          r8_x.toString(),
-          r8_y.toString(),
-        ],
-        proof.proof,
+    const isValidProofs = validateProofs(proofs);
+    const recipient = proofs[0].publicSignals.recipient;
+    const paymentAccount = proofs[0].publicSignals.paymentAccount;
+
+    if (!isValidProofs) {
+      throw new Error(
+        "Invalid proofs: mismatched recipients or payment accounts",
       );
+    }
+
+    const verificationTasks = proofs.map(async (proof) => {
+      const isValid = await prove({
+        proof: proof.proof,
+        publicSignals: proof.publicSignals,
+      });
 
       if (!isValid)
         throw new Error(
-          `Invalid proof for nonce ${proof.publicSignals[0]} - ${proof.publicSignals[1]}`,
+          `Invalid proof for nonce ${proof.publicSignals.minNonce} - ${proof.publicSignals.maxNonce}`,
         );
 
-      const currentNonce = BigInt(proof.publicSignals[0]);
-      const currentMaxNonce = BigInt(proof.publicSignals[1]);
-      const currentAmount = BigInt(proof.publicSignals[2]);
+      const currentNonce = BigInt(proof.publicSignals.minNonce);
+      const currentMaxNonce = BigInt(proof.publicSignals.maxNonce);
+      const currentAmount = BigInt(proof.publicSignals.amount);
 
       minNonce =
         minNonce === null
@@ -156,47 +166,6 @@ export async function createPaymentManager({
     try {
       await Promise.all(verificationTasks);
 
-      //TODO:: do some verification here on min_nonce and max nonce etc.
-      const genTempPay = async ({
-        amount,
-        recipient,
-        paymentAccount,
-        nonce,
-      }: {
-        amount: bigint;
-        recipient: string;
-        paymentAccount: PublicKey;
-        nonce: bigint;
-      }) => {
-        const payment = Payment.decode(
-          Payment.encode({
-            id: ulid(),
-            amount,
-            recipient,
-            paymentAccount: paymentAccount.toBase58(),
-            nonce,
-            label: "temp",
-          }),
-        );
-
-        const signature = await signPayment(
-          payment,
-          privateKey.raw.slice(0, 32),
-          eddsa,
-          poseidon,
-        );
-
-        payment.signature = {
-          S: signature.S.toString(),
-          R8: {
-            R8_1: new Uint8Array(signature.R8[0]),
-            R8_2: new Uint8Array(signature.R8[1]),
-          },
-        };
-
-        return payment;
-      };
-
       if (minNonce === null || maxNonce === null) {
         throw new Error(
           "No valid proofs found, cannot create temporary payments",
@@ -211,161 +180,50 @@ export async function createPaymentManager({
 
       //create 2 temporarly payments with the min and max nonce.
       const payments = [
-        genTempPay({
+        createPayment({
+          version: 1,
           amount: sumAmount / 2n,
-          //TODO::extract from public signals..
-          recipient: recipient.toBase58(),
-          //TODO :: extract from public signals..
-          paymentAccount: new PublicKey(managerSettings.paymentAccount),
+          recipient,
+          publicKey,
+          paymentAccount,
           nonce: minNonce,
         }),
-        genTempPay({
+        createPayment({
+          version: 1,
           amount: sumAmount / 2n,
-          recipient: recipient.toBase58(),
-          paymentAccount: new PublicKey(managerSettings.paymentAccount),
+          recipient,
+          publicKey,
+          paymentAccount,
           nonce: maxNonce,
         }),
       ];
 
       //create a new proof with these payments
-      const { proof, publicSignals, pubKey } = await generatePaymentProof(
-        privateKey,
-        await Promise.all(payments),
-      );
+      const { proof, publicSignals } = await generatePaymentProof({
+        paymentAccount: paymentAccount,
+        publicKey,
+        recipient,
+        payments: await Promise.all(payments),
+      });
 
-      return ProofToProofResponseMessage(
-        proof,
-        publicSignals,
-        pubKey[0],
-        pubKey[1],
-        managerSettings.paymentAccount,
-      );
+      return ProofToProofResponseMessage(proof, publicSignals, paymentAccount);
     } catch (error) {
       console.error("Batch verification failed:", error);
       throw error;
     }
   }
 
-  const generatePaymentProof = async (
-    privateKey: PrivateKey,
-    payments: ProofRequest.PaymentProof[],
-  ) => {
-    //TODO:: verify & validate payments
-    payments.sort((a, b) => Number(a.nonce) - Number(b.nonce));
-
-    logger.log.info({ payments: payments.length }, "Generating payment proof");
-
-    const eddsa = await buildEddsa();
-    const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
-    const batchSize = payments.length;
-
-    if (!managerSettings.paymentAccount) {
-      throw new Error("Payment account not set, cannot process payout");
-    }
-
-    //make sure the payments all have the same payment account, and it matches our payment account.
-    const enabled = Array(PAYMENT_BATCH_SIZE).fill(0).fill(1, 0, batchSize);
-
-    const padArray = <T>(arr: T[], defaultValue: T): T[] =>
-      arr
-        .concat(Array(PAYMENT_BATCH_SIZE - arr.length).fill(defaultValue))
-        .slice(0, PAYMENT_BATCH_SIZE);
-
-    const uniqueRecipients = new Set(payments.map((p) => p.recipient));
-    // const uniquePaymentAccounts = new Set(
-    //   payments.map((p) => p.paymentAccount),
-    // );
-    //
-    if (uniqueRecipients.size > 1) {
-      throw new Error("Only one type of recipient per batch is supported");
-    }
-
-    //
-    // if (uniquePaymentAccounts.size > 1) {
-    //   throw new Error(
-    //     "Only one type of payment account per batch is supported",
-    //   );
-    // }
-
-    //TODO:: check payment account..
-    // const paymentAccount = uniquePaymentAccounts.values().next().value;
-    const paymentAccount = managerSettings.paymentAccount;
-
-    // //get the payment account and check if it matches our payment account.
-    // if (paymentAccount !== managerSettings.paymentAccount) {
-    //   throw new Error(
-    //     "Payment account does not match the expected payment account",
-    //   );
-    // }
-
-    const lastNonce = payments[payments.length - 1].nonce;
-    const recipient = payments[0]?.recipient || "0";
-
-    const proofInputs = {
-      receiver: int2hex(new PublicKey(recipient).toBuffer().readBigUInt64BE()),
-      pubX: eddsa.F.toObject(pubKey[0]),
-      pubY: eddsa.F.toObject(pubKey[1]),
-      nonce: padArray(
-        payments.map((p) => int2hex(Number(p.nonce))),
-        int2hex(lastNonce),
-      ),
-      enabled,
-      payAmount: padArray(
-        payments.map((p) => int2hex(p.amount)),
-        "0",
-      ),
-      R8x: padArray(
-        payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_1)),
-        0n,
-      ),
-      R8y: padArray(
-        payments.map((s) => eddsa.F.toObject(s.signature?.R8?.R8_2)),
-        0n,
-      ),
-      S: padArray(
-        payments.map((s) => BigInt(s.signature?.S || 0)),
-        BigInt(0),
-      ),
-    };
-
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-
-    const wasmPath = path.resolve(
-      __dirname,
-      "../../zkp/circuits/PaymentBatch_js/PaymentBatch.wasm",
-    );
-
-    const zkeyPath = path.resolve(
-      __dirname,
-      "../../zkp/circuits/PaymentBatch_0001.zkey",
-    );
-
-    const startTime = performance.now();
-    const { publicSignals, proof } = await groth16.fullProve(
-      proofInputs,
-      wasmPath,
-      zkeyPath,
-    );
-    const endTime = performance.now();
-
-    logger.log.info(
-      { totalTime: endTime - startTime },
-      "Proof generation finished",
-    );
-
-    return { proof, publicSignals, pubKey, paymentAccount };
-  };
-
   const generatePayment = async ({
     peerId,
     amount,
     paymentAccount,
+    version = 1,
     label,
   }: {
     peerId: PeerId;
+    version?: number;
     amount: bigint;
-    paymentAccount: PublicKey;
+    paymentAccount: PublicKey | string;
     label?: string;
   }) => {
     const peer = await workerManager.getWorker(peerId.toString());
@@ -374,31 +232,23 @@ export async function createPaymentManager({
       throw new Error("Peer not found");
     }
 
-    const payment = Payment.decode(
-      Payment.encode({
-        id: ulid(),
-        amount,
-        recipient: peer.state.recipient,
-        paymentAccount: paymentAccount.toBase58(),
-        nonce: peer.state.nonce,
-        label: label || "",
-      }),
-    );
+    if (!paymentAccount) {
+      throw new Error("Payment account is required");
+    }
 
-    const signature = await signPayment(
-      payment,
-      privateKey.raw.slice(0, 32),
-      eddsa,
-      poseidon,
-    );
+    if (typeof paymentAccount === "string") {
+      paymentAccount = new PublicKey(paymentAccount);
+    }
 
-    payment.signature = {
-      S: signature.S.toString(),
-      R8: {
-        R8_1: new Uint8Array(signature.R8[0]),
-        R8_2: new Uint8Array(signature.R8[1]),
-      },
-    };
+    const payment = await createPayment({
+      recipient: peer.state.recipient,
+      nonce: peer.state.nonce,
+      amount,
+      paymentAccount: paymentAccount.toBase58(),
+      publicKey,
+      version,
+      label,
+    });
 
     //update nonce
     await workerManager.updateWorkerState(peerId.toString(), () => ({
@@ -422,23 +272,56 @@ export async function createPaymentManager({
     return payment;
   };
 
-  const processProofRequest = async ({
-    privateKey,
-    payments,
+  const createPayment = async ({
+    recipient,
+    nonce,
+    amount,
+    paymentAccount,
+    publicKey,
+    version,
+    label,
   }: {
-    privateKey: PrivateKey;
-    payments: ProofRequest.PaymentProof[];
+    version: number;
+    amount: bigint;
+    paymentAccount: string;
+    publicKey: string;
+    recipient: string;
+    nonce: bigint;
+    label?: string;
+  }) => {
+    const payment = Payment.decode(
+      Payment.encode({
+        id: ulid(),
+        version,
+        amount,
+        recipient,
+        paymentAccount,
+        publicKey,
+        nonce,
+        label: label || "",
+      }),
+    );
+
+    return await signPayment(payment, privateKey.raw.slice(0, 32));
+  };
+
+  const processProofRequest = async ({
+    request,
+  }: {
+    request: ProofRequest;
   }) => {
     try {
-      const { proof, pubKey, publicSignals, paymentAccount } =
-        await generatePaymentProof(privateKey, payments);
+      const { proof, publicSignals } = await generatePaymentProof({
+        recipient: request.recipient,
+        paymentAccount: request.paymentAccount,
+        publicKey,
+        payments: request.payments as Array<SignedPayment>,
+      });
 
       return ProofToProofResponseMessage(
         proof,
         publicSignals,
-        pubKey[0],
-        pubKey[1],
-        paymentAccount,
+        request.paymentAccount,
       );
     } catch (e) {
       logger.log.error(e, "Error generating proof");

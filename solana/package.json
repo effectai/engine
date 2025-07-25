@@ -31,6 +31,7 @@
   },
   "devDependencies": {
     "@effectai/protocol": "workspace:*",
+    "@effectai/payment": "workspace:*",
     "@noble/curves": "1.6.0",
     "@solana/spl-token": "0.4.9",
     "@solana/web3.js": "1.95.5",

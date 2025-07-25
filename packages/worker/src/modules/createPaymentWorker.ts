@@ -1,14 +1,17 @@
 import type { WorkerEntity, WorkerEvents } from "../main.js";
 import {
   type PaymentStore,
-  type Payment,
-  type ProofRequest,
   type PeerId,
   TypedEventEmitter,
   peerIdFromString,
-  ProofResponse,
-  BulkProofRequest,
 } from "@effectai/protocol-core";
+
+import type {
+  Payment,
+  ProofRequest,
+  BulkProofRequest,
+  ProofResponse,
+} from "@effectai/protobufs";
 
 export function createPaymentWorker({
   paymentStore,
@@ -36,13 +39,19 @@ export function createPaymentWorker({
   const getPaymentsFromNonce = async ({
     nonce,
     peerId,
+    publicKey,
+    recipient,
   }: {
     nonce: number;
     peerId: string;
+    publicKey: string;
+    recipient: string;
   }) => {
     const payments = await paymentStore.getFrom({
       peerId,
       nonce,
+      publicKey,
+      recipient,
     });
 
     return payments;
@@ -113,7 +122,9 @@ export function createPaymentWorker({
     }
 
     const proofRequestMessage: ProofRequest = {
-      batchSize: payments.length,
+      recipient: payments[0].recipient,
+      paymentAccount: payments[0].paymentAccount,
+      publicKey: payments[0].publicKey,
       payments,
     };
 
@@ -153,10 +164,16 @@ export function createPaymentWorker({
 
   const getMaxNonce = async ({
     managerPeerIdStr,
+    managerPublicKey,
+    recipient,
   }: {
     managerPeerIdStr: string;
+    managerPublicKey: string;
+    recipient: string;
   }) => {
     return await paymentStore.getHighestNonce({
+      recipient,
+      managerPublicKey,
       peerId: managerPeerIdStr,
     });
   };

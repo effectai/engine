@@ -7,11 +7,8 @@ import { createTemplateWorker } from "./modules/createTemplateWorker.js";
 
 import {
   Libp2pTransport,
-  EffectProtocolMessage,
   TypedEventEmitter,
   type PrivateKey,
-  type Task,
-  type Payment,
   type TaskRecord,
   type Datastore,
   type Multiaddr,
@@ -25,6 +22,8 @@ import {
   PROTOCOL_VERSION,
 } from "@effectai/protocol-core";
 import { PingService } from "@libp2p/ping";
+
+import { EffectProtocolMessage, Payment, Task } from "@effectai/protobufs";
 
 export interface WorkerEvents {
   "task:created": CustomEvent<Task>;

@@ -1,3 +1,4 @@
+import { decodeTime } from "ulid";
 export const useWorkerNode = () => {
   const workerStore = useWorkerStore();
   const { peerId } = storeToRefs(workerStore);
@@ -8,6 +9,9 @@ export const useWorkerNode = () => {
 
   const { data: rejectedTasks } = useGetTasks(ref("rejected"));
   const tasksRejected = computed(() => rejectedTasks.value?.length || 0);
+
+  // const { useGetPaymentsQuery } = usePayments();
+  // const { data: managerPaymentBatches } = useGetPaymentsQuery();
 
   const totalEffectEarnings = computed(() => {
     return (
@@ -55,9 +59,10 @@ export const useWorkerNode = () => {
       experiencePerLevel: experiencePerLevel.value,
     };
   };
+
   const daysInNetwork = computed(() => {
-    const firstTaskDate = completedTasks.value?.[0]?.createdAt;
-    if (!firstTaskDate) return 0;
+    const firstTaskDate = decodeTime(completedTasks.value?.[0]?.state.id);
+    if (!firstTaskDate) return 1;
 
     const firstTask = new Date(firstTaskDate);
     const now = new Date();

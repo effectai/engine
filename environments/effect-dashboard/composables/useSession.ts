@@ -22,8 +22,10 @@ export const useSession = () => {
   const connectToManagerMutation = useMutation({
     mutationFn: async ({
       multiAddress,
+      accessCode,
     }: {
       multiAddress: string;
+      accessCode?: string;
     }) => {
       const identify = await useIdentifyAsyncQuery(multiAddress);
       const peerId = multiaddr(multiAddress).getPeerId();
@@ -39,6 +41,7 @@ export const useSession = () => {
       return sessionStore.establish(multiAddress, {
         recipient: account.value,
         currentNonce: nonces.nextNonce,
+        accessCode,
       });
     },
     onError: (error) => {

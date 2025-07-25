@@ -28,7 +28,7 @@
         <p class="text-xs text-gray-600">mgr.alpha.effect.ai</p>
         <p class="text-xs text-gray-500">Jan 21, 10:30 AM</p>
         <UButton
-          color="primary"
+          color="neutral"
           size="xs"
           class="mt-1"
           @click="$emit('viewDetails', props.id)"

@@ -3,9 +3,28 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import yaml from "yaml";
+import {
+  createKeyPairSignerFromBytes,
+  createSignerFromKeyPair,
+  getAddressEncoder,
+  getProgramDerivedAddress,
+  createSolanaRpc,
+  sendAndConfirmTransactionFactory,
+  type Address,
+  createSolanaRpcSubscriptions,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstructions,
+  pipe,
+  createTransactionMessage,
+  KeyPairSigner,
+  IInstruction,
+  signTransactionMessageWithSigners,
+} from "@solana/kit";
 
 import * as anchor from "@coral-xyz/anchor";
 import { rpc } from "@coral-xyz/anchor/dist/cjs/utils";
+import { fileURLToPath } from "node:url";
 
 async function getConfig(): Promise<any> {
   // Path to Solana CLI config file
@@ -99,4 +118,85 @@ export const loadProvider = async () => {
     payer,
     provider,
   };
+};
+
+export const getAssociatedTokenAccount = async ({
+  owner,
+  mint,
+}: {
+  owner: Address;
+  mint: Address;
+}) => {
+  const addressEncoder = getAddressEncoder();
+
+  const [pda, _bumpSeed] = await getProgramDerivedAddress({
+    programAddress: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL" as Address,
+    seeds: [
+      addressEncoder.encode(owner),
+      addressEncoder.encode(
+        "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address,
+      ),
+      addressEncoder.encode(mint),
+    ],
+  });
+
+  return pda;
+};
+
+export const loadKeypairSigner = async (keypairPath: string) => {
+  const secretKeyString = await fs.readFile(keypairPath, { encoding: "utf8" });
+  const secretKey = Uint8Array.from(JSON.parse(secretKeyString));
+  return createKeyPairSignerFromBytes(secretKey);
+};
+
+export type SolanaProviderFactory = {
+  rpc: ReturnType<typeof createSolanaRpc>;
+  sendAndConfirmTransaction: ReturnType<
+    typeof sendAndConfirmTransactionFactory
+  >;
+};
+
+export const createLocalSolanaProvider =
+  async (): Promise<SolanaProviderFactory> => {
+    const rpc = createSolanaRpc("http://localhost:8899");
+    const rpcSubscriptions = createSolanaRpcSubscriptions(
+      "ws://localhost:8900",
+    );
+    const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
+      rpc,
+      rpcSubscriptions,
+    });
+
+    return {
+      rpc,
+      sendAndConfirmTransaction,
+    };
+  };
+
+export const executeWithSolanaProvider = async ({
+  provider,
+  signer,
+  instructions,
+  commitment = "finalized",
+}: {
+  provider: SolanaProviderFactory;
+  signer: KeyPairSigner;
+  instructions: IInstruction[];
+  commitment?: "processed" | "confirmed" | "finalized";
+}) => {
+  const recentBlockhash = await provider.rpc.getLatestBlockhash().send();
+
+  const transactionMessage = pipe(
+    createTransactionMessage({ version: 0 }),
+    (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+    (tx) =>
+      setTransactionMessageLifetimeUsingBlockhash(recentBlockhash.value, tx),
+    (tx) => appendTransactionMessageInstructions(instructions, tx),
+  );
+
+  const signedTx = await signTransactionMessageWithSigners(transactionMessage);
+
+  await provider.sendAndConfirmTransaction(signedTx, {
+    commitment,
+  });
 };

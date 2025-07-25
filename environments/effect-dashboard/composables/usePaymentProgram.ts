@@ -10,6 +10,7 @@ import {
   address,
   createKeyPairSignerFromPrivateKeyBytes,
   getProgramDerivedAddress,
+  getAddressDecoder,
   getAddressEncoder,
   pipe,
   createTransactionMessage,
@@ -42,15 +43,25 @@ import type { ProofResponse } from "@effectai/protocol";
 import {
   EFFECT_PAYMENT_PROGRAM_ADDRESS,
   fetchMaybeRecipientManagerDataAccount,
-  getClaimProofsInstructionAsync,
   getInitInstructionAsync,
-  getAssociatedTokenAccount,
-} from "@effectai/program-sdk";
+  getClaimProofsInstructionAsync,
+} from "@effectai/payment";
+
+//
+// import {
+//   EFFECT_PAYMENT_PROGRAM_ADDRESS,
+//   fetchMaybeRecipientManagerDataAccount,
+//   getClaimProofsInstructionAsync,
+//   getInitInstructionAsync,
+//   getAssociatedTokenAccount,
+// } from "@effectai/program-sdk";
+//
 
 import {
   getCreateAssociatedTokenInstructionAsync,
   fetchMaybeToken,
 } from "@solana-program/token";
+import { getAssociatedTokenAccount } from "@effectai/utils";
 
 export type EffectStakingProgramAccounts = IdlAccounts<EffectStaking>;
 export type StakingAccount = ProgramAccount<
@@ -60,24 +71,18 @@ export type StakingAccount = ProgramAccount<
 export function usePaymentProgram() {
   const { mint } = useEffectConfig();
   const { rpc, rpcSubscriptions } = useSolanaRpc();
-  const { privateKey } = useAuth();
 
   const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
     rpc,
     rpcSubscriptions,
   });
 
-  const useClaimWithProof = () =>
-    useMutation({
-      mutationKey: ["claimWithProof"],
-      mutationFn: async (proofs: ProofResponse[]) => {
-        return claimWithProofs(proofs);
-      },
-    });
-
-  const claimWithProofs = async (proofs: ProofResponse[]) => {
+  const claimWithProof = async (
+    proof: ProofResponse,
+    managerPublicKey: string,
+  ) => {
     const { account, privateKey } = useAuth();
-    const { manager } = useSession();
+    assertExists(account.value, "account is not set");
 
     if (!privateKey.value) {
       throw new Error("Private key is not set");
@@ -86,10 +91,6 @@ export function usePaymentProgram() {
     const signer = await createKeyPairSignerFromBytes(
       Buffer.from(privateKey.value, "hex"),
     );
-
-    if (!account.value || !manager.value) {
-      throw new Error("No account or manager public key found");
-    }
 
     const ata = await getAssociatedTokenAccount({
       mint: address(mint.toBase58()),
@@ -100,7 +101,7 @@ export function usePaymentProgram() {
       programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
       seeds: [
         getAddressEncoder().encode(address(account.value)),
-        getAddressEncoder().encode(address(manager.value.publicKey.toString())),
+        getAddressEncoder().encode(address(managerPublicKey)),
       ],
     });
 
@@ -109,15 +110,12 @@ export function usePaymentProgram() {
       recipientManagerDataAccount,
     );
 
-    const config = useRuntimeConfig();
-    const paymentAccount = config.public.PAYMENT_ACCOUNT;
-
     const eddsa = await buildEddsa();
 
     const initRecipientManagerDataAccountIx = await getInitInstructionAsync({
       authority: signer,
       mint: address(mint.toBase58()),
-      managerAuthority: address(managerPublicKey.value.toBase58()),
+      managerAuthority: address(managerPublicKey),
     });
 
     const tokenAccount = await fetchMaybeToken(rpc, ata);
@@ -137,25 +135,17 @@ export function usePaymentProgram() {
     });
 
     const claimProofIx = await getClaimProofsInstructionAsync({
-      paymentAccount: address(paymentAccount),
+      paymentAccount: address(proof.signals?.paymentAccount),
       mint: address(mint.toBase58()),
       recipientManagerDataAccount,
       recipientTokenAccount: ata,
-      pubX: bigIntToBytes32(eddsa.F.toObject(proofs[0].r8?.R8_1)),
-      pubY: bigIntToBytes32(eddsa.F.toObject(proofs[0].r8?.R8_2)),
+      pubX: bigIntToBytes32(proof.signals.pubX),
+      pubY: bigIntToBytes32(proof.signals.pubY),
       authority: signer,
-      proofData: proofs.map((proof) => {
-        if (!proof.signals) {
-          throw new Error("Proof signals are missing!");
-        }
-        return {
-          minNonce: Number(proof.signals.minNonce),
-          maxNonce: Number(proof.signals.maxNonce),
-          totalAmount: Number(proof.signals.amount),
-          recipient: bigIntToBytes32(proof.signals.recipient),
-          proof: convertProofToBytes(proof),
-        };
-      }),
+      minNonce: proof.signals.minNonce,
+      maxNonce: proof.signals.maxNonce,
+      totalAmount: proof.signals.amount,
+      proof: convertProofToBytes(proof),
     });
 
     try {
@@ -189,6 +179,7 @@ export function usePaymentProgram() {
 
       const signedTx =
         await signTransactionMessageWithSigners(transactionMessage);
+      console.log("signedTx", signedTx);
 
       await sendAndConfirmTransaction(signedTx, {
         commitment: "finalized",
@@ -245,8 +236,7 @@ export function usePaymentProgram() {
   };
 
   return {
-    useClaimWithProof,
-    claimWithProofs,
+    claimWithProof,
     getRecipientManagerDataAccount,
     useRecipientManagerDataAccountQuery,
   };

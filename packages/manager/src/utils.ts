@@ -1,64 +1,7 @@
+import type { Groth16Proof, PublicSignals } from "@effectai/payment";
+import type { EffectProtocolMessage, ProofResponse } from "@effectai/protobufs";
 import { PublicKey } from "@solana/web3.js";
-import {
-  buildEddsa,
-  Groth16Proof,
-  PublicSignals,
-  type Point,
-} from "@effectai/zkp";
-import type {
-  EffectProtocolMessage,
-  Payment,
-  ProofResponse,
-} from "@effectai/protocol-core";
 import { createHash } from "node:crypto";
-
-export const signPayment = async (
-  payment: Payment,
-  privateKey: Uint8Array,
-  eddsa: any,
-  poseidon: any,
-) => {
-  const signature = await eddsa.signPoseidon(
-    privateKey,
-    poseidon([
-      int2hex(payment.nonce.toString()),
-      int2hex(new PublicKey(payment.recipient).toBuffer().readBigUInt64BE()),
-      int2hex(payment.amount),
-    ]),
-  );
-
-  return signature;
-};
-
-export const int2hex = (i: string | number | bigint | boolean) =>
-  `0x${BigInt(i).toString(16)}`;
-
-export async function pointToCompressedPubKey(
-  point: Point,
-): Promise<Uint8Array> {
-  const eddsa = await buildEddsa();
-
-  const yBuf = eddsa.babyJub.F.toObject(point[1])
-    .toString(16)
-    .padStart(64, "0");
-  const yBytes = Buffer.from(yBuf, "hex");
-
-  const isXNegative = eddsa.babyJub.F.isNegative(point[0]);
-  yBytes[31] |= isXNegative ? 0x80 : 0x00;
-
-  return yBytes;
-}
-
-export function compressBabyJubJubPubKey(pubX: Uint8Array, pubY: Uint8Array) {
-  if (pubX.length !== 32 || pubY.length !== 32) {
-    throw new Error("Invalid input length — must be 32 bytes each");
-  }
-  const compressed = Uint8Array.from(pubY);
-  const xSign = pubX[0] & 1;
-  compressed[31] |= xSign << 7;
-
-  return compressed;
-}
 
 export function bigIntToBytes32(num: bigint): Uint8Array {
   let hex = BigInt(num).toString(16);
@@ -116,22 +59,18 @@ export function proofResponseToGroth16Proof(
 export function ProofToProofResponseMessage(
   proof: Groth16Proof,
   publicSignals: PublicSignals,
-  pub_x: Uint8Array,
-  pub_y: Uint8Array,
   paymentAccount: string,
 ): EffectProtocolMessage {
   return {
     proofResponse: {
-      r8: {
-        R8_1: pub_x,
-        R8_2: pub_y,
-      },
       signals: {
-        minNonce: publicSignals[0],
-        maxNonce: publicSignals[1],
-        amount: BigInt(publicSignals[2]),
-        recipient: publicSignals[3],
+        minNonce: publicSignals.minNonce,
+        maxNonce: publicSignals.maxNonce,
+        amount: publicSignals.amount,
+        recipient: publicSignals.recipient,
         paymentAccount: paymentAccount,
+        pubX: publicSignals.pubX,
+        pubY: publicSignals.pubY,
       },
       piA: proof.pi_a,
       piB: [

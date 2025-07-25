@@ -1,11 +1,7 @@
-import { Datastore, Key } from "interface-datastore";
+import type { Datastore, Key } from "interface-datastore";
 import { createEntityStore } from "../../store.js";
-import {
-  stringifyWithBigInt,
-  parseWithBigInt,
-  objectToBytes,
-} from "../../utils.js";
-import { Payment } from "../../../@generated/effect.protons.js";
+import { stringifyWithBigInt, parseWithBigInt } from "../../utils.js";
+import type { Payment } from "@effectai/protobufs";
 import { isValid } from "ulid";
 
 export interface PaymentEvent {
@@ -26,14 +22,6 @@ export interface PaymentRecord {
 
 const parsePaymentRecord = (data: string): PaymentRecord => {
   const parsed = parseWithBigInt(data);
-
-  // parse the r8 arrays inside the signatures.
-  if (parsed.state.signature) {
-    parsed.state.signature.R8 = {
-      R8_1: objectToBytes(parsed.state.signature.R8.R8_1),
-      R8_2: objectToBytes(parsed.state.signature.R8.R8_2),
-    };
-  }
 
   return {
     events: parsed.events,
@@ -71,16 +59,20 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
 
   const getFrom = async ({
     peerId,
+    publicKey,
+    recipient,
     nonce,
   }: {
     peerId: string;
+    publicKey: string;
+    recipient: string;
     nonce: number;
     limit?: number;
   }): Promise<PaymentRecord[]> => {
     const payments = [] as PaymentRecord[];
 
     for await (const item of datastore.query({
-      prefix: `/payments/${peerId}/`,
+      prefix: `/payments/${peerId}/${publicKey}/${recipient}/`,
       filters: [
         (item) => {
           const parts = item.key.toString().split("/");
@@ -98,10 +90,17 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
 
   const getHighestNonce = async ({
     peerId,
+    recipient,
+    managerPublicKey,
   }: {
     peerId: string;
+    recipient: string;
+    managerPublicKey: string;
   }): Promise<bigint> => {
-    const prefix = `/payments/${peerId}/`;
+    console.log(
+      `Getting highest nonce for peerId: ${peerId}, recipient: ${recipient}, managerPublicKey: ${managerPublicKey}`,
+    );
+    const prefix = `/payments/${peerId}/${managerPublicKey}/${recipient}/`;
 
     const getNonce = (key: Key): bigint => {
       const parts = key.toString().split("/");
@@ -130,6 +129,14 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
     return highestNonce;
   };
 
+  const computeEntityId = (peerId: string, payment: Payment) => {
+    if (!payment.signature || !payment.signature.R8) {
+      throw new Error("Payment signature is required");
+    }
+
+    return `${peerId}/${payment.publicKey}/${payment.recipient}/${payment.nonce}`;
+  };
+
   const create = async ({
     peerId,
     payment,
@@ -151,7 +158,7 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
       throw new Error("Payment id is not a valid ulid");
     }
 
-    const entityId = `${peerId}/${payment.nonce}`;
+    const entityId = computeEntityId(peerId, payment);
     await coreStore.put({ entityId, record });
 
     return record;

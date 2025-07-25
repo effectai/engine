@@ -1,67 +1,71 @@
 // import type { Payment } from "@effectai/protocol";
-import type { Payment, PaymentRecord } from "@effectai/protocol";
+import {
+  fetchMaybeRecipientManagerDataAccount,
+  type Payment,
+  type PaymentRecord,
+} from "@effectai/protocol";
+
 import { useMutation, useQuery } from "@tanstack/vue-query";
 import pLimit from "p-limit";
 
 export const usePayments = () => {
   const workerStore = useWorkerStore();
-  const { instance } = storeToRefs(workerStore);
+  const { instance, datastore } = storeToRefs(workerStore);
+  const { account } = useAuth();
+  const { useGetNoncesAsyncQuery } = useNonce();
 
-  const useGetTotalAmountFromPayments = () => {
-    const sessionStore = useSessionStore();
-    const { manager } = storeToRefs(sessionStore);
-
+  const useGetPaymentsQuery = async () => {
     return useQuery({
-      queryKey: ["payment-amount", manager.value?.peerId],
+      queryKey: ["payments", account.value],
       queryFn: async () => {
-        if (!manager.value?.peerId) {
-          throw new Error("Manager peerId not set.");
-        }
-
-        return await instance.value?.countPaymentAmount({
-          managerPeerIdStr: manager.value?.peerId,
-        });
+        assertExists(instance.value, "Worker instance is not initialized");
+        return await getAllManagersFromPayments();
       },
-      enabled: computed(() => !!instance.value && !!manager.value?.peerId),
     });
   };
 
-  const useGetClaimablePayments = () => {
-    const { worker } = storeToRefs(workerStore);
+  const getAllManagersFromPayments = async () => {
+    assertExists(datastore.value, "Datastore is not initialized");
 
-    const { managerPeerId, managerPublicKey } = useSession();
-    const { useGetNoncesQuery } = useNonce();
-    const { data: nonces } = useGetNoncesQuery(managerPublicKey, managerPeerId);
+    const seenManagers = new Set();
 
-    const { account } = useAuth();
+    for await (const key of datastore.value.queryKeys({
+      prefix: "/payments/",
+    })) {
+      const [_, index, peerId, managerPublicKey, recipient, nonce] = key
+        .toString()
+        .split("/");
 
-    return useQuery({
-      queryKey: [
-        "claimable-payments",
-        account,
-        nonces.value
-          ? {
-              localNonce: nonces.value.localNonce?.toString(),
-              remoteNonce: nonces.value.remoteNonce?.toString(),
-            }
-          : null,
-      ],
-      enabled: computed(() => !!nonces.value?.localNonce),
-      queryFn: async () => {
-        if (!worker.value || !managerPeerId.value) {
-          throw new Error("Worker is not initialized");
-        }
+      seenManagers.add(`${peerId}-${managerPublicKey}-${recipient}`);
+    }
 
-        const nonce = nonces.value?.remoteNonce || 0;
+    const managerPromises = Array.from(seenManagers).map(
+      async (managerKey: string) => {
+        const [peerId, managerPublicKey, recipient] = managerKey.split("-");
 
-        const data = await worker.value.getPaymentsFromNonce({
-          nonce: Number.parseInt(nonce.toString()) + 1,
-          peerId: managerPeerId.value,
+        const nonces = await useGetNoncesAsyncQuery(
+          managerPublicKey,
+          peerId,
+          recipient,
+        );
+
+        const claimablePayments = await instance.value?.getPaymentsFromNonce({
+          nonce: Number.parseInt(nonces.remoteNonce?.toString() ?? "0") + 1,
+          peerId,
+          recipient,
+          publicKey: managerPublicKey,
         });
 
-        return data;
+        return {
+          peerId,
+          managerPublicKey,
+          recipient,
+          claimablePayments,
+        };
       },
-    });
+    );
+
+    return await Promise.all(managerPromises);
   };
 
   const useClaimPayments = () => {
@@ -72,17 +76,24 @@ export const usePayments = () => {
     );
 
     const mutation = useMutation({
-      onSuccess: () => {
-        // Increment the payment counter after successful claim to refresh queries.
-        paymentCounter.value++;
-      },
-      mutationFn: async ({ payments }: { payments: PaymentRecord[] }) => {
+      mutationFn: async ({
+        payments,
+        managerPeerId,
+        managerPublicKey,
+      }: {
+        managerPeerId: string;
+        managerPublicKey: string;
+        payments: PaymentRecord[];
+      }) => {
+        console.log(
+          "Claiming payments",
+          payments,
+          managerPeerId,
+          managerPublicKey,
+        );
         const workerStore = useWorkerStore();
-        const { worker } = storeToRefs(workerStore);
-
-        const { claimWithProofs } = usePaymentProgram();
-        const sessionStore = useSessionStore();
-        const { managerPeerId } = sessionStore.useActiveSession();
+        const { instance } = storeToRefs(workerStore);
+        const { claimWithProof } = usePaymentProgram();
 
         const sortedPayments = payments
           .toSorted((a, b) => {
@@ -101,12 +112,11 @@ export const usePayments = () => {
           proofLimit(async () => {
             currentProof.value++;
 
-            if (!worker.value || !managerPeerId.value) {
-              throw new Error("worker is not initialized..");
-            }
+            assertExists(instance.value, "Worker instance is not initialized");
+            console.log("requesting payment proof for batch", batch);
 
-            const [proof, error] = await worker.value.requestPaymentProof(
-              managerPeerId.value,
+            const [proof, error] = await instance.value.requestPaymentProof(
+              managerPeerId,
               batch,
             );
 
@@ -118,15 +128,12 @@ export const usePayments = () => {
           }),
         );
 
-        if (!worker.value || !managerPeerId.value) {
-          throw new Error("worker is not initialized..");
-        }
-
         const proofs = (await Promise.all(proofPromises)).filter(Boolean);
 
+        assertExists(instance.value, "Worker instance is not initialized");
         if (proofs.length > 1) {
-          const [bulkedProof, error] = await worker.value.requestBulkProofs(
-            managerPeerId.value,
+          const [bulkedProof, error] = await instance.value.requestBulkProofs(
+            managerPeerId,
             proofs,
           );
 
@@ -136,9 +143,9 @@ export const usePayments = () => {
             );
           }
 
-          await claimWithProofs([bulkedProof]);
+          await claimWithProof(bulkedProof, managerPublicKey);
         } else if (proofs.length === 1) {
-          await claimWithProofs(proofs);
+          await claimWithProof(proofs[0], managerPublicKey);
         } else {
           throw new Error("No valid proofs to submit");
         }
@@ -155,7 +162,7 @@ export const usePayments = () => {
 
   return {
     useClaimPayments,
-    useGetClaimablePayments,
-    useGetTotalAmountFromPayments,
+    getAllManagersFromPayments,
+    useGetPaymentsQuery,
   };
 };
