@@ -1,3 +1,13 @@
+import fs from "node:fs";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+console.log("🔧 Generating PaymentBatch circuit...");
+
+const BATCH_SIZE = process.env.PAYMENT_BATCH_SIZE || 10;
+
+const template = `
 pragma circom 2.0.0;
 
 include "./Payment.circom";
@@ -65,4 +75,10 @@ template VerifyPaymentBatch(n) {
     totalAmount <== total[n];
 }
 
-component main {public [pubX, pubY, receiver, paymentAccount]} = VerifyPaymentBatch(1);
+component main {public [pubX, pubY, receiver, paymentAccount]} = VerifyPaymentBatch(10);
+`;
+
+// Ensure the circuits directory exists
+fs.writeFileSync("./circuits/PaymentBatch.circom", template);
+
+console.log("✅ Circuit generated with batch size:", BATCH_SIZE);

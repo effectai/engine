@@ -4,7 +4,7 @@ import { mkdirSync, rmSync, existsSync } from "node:fs";
 const SNARKJS = "node ./node_modules/snarkjs/cli.js";
 const CIRCOM = "circom";
 const CIRCUIT = "PaymentBatch";
-const TAU_SIZE = 14;
+const TAU_SIZE = 17;
 const BASE = ".";
 
 const CIRCUIT_DIR = `${BASE}/circuits`;
