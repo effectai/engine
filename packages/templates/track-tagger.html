@@ -1,0 +1,176 @@
+<div id="app" style="text-align: center">
+  <h1>Effect AI - Track Tagger</h1>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
+    <audio ref="songPlayer" controls>
+      <source :src="songSource" type="audio/mp3" />
+    </audio>
+
+    <hr />
+
+    <p style="color: red;" :class="{'is-hidden mb-3': !notComplete}">
+      Task incomplete - Please complete all sections of the task
+    </p>
+
+    <div>
+      <h2 class="is-size-4 has-text-weight-semibold mb-3">Genre:</h2>
+      <div class="checkboxes">
+        <label class="radio mx-2"><input type="radio" name="genre" value="Electronic" v-model="selectedGenre" /> Electronic</label>
+        <label class="radio mx-2"><input type="radio" name="genre" value="Rock" v-model="selectedGenre" /> Rock</label>
+        <label class="radio mx-2"><input type="radio" name="genre" value="Metal" v-model="selectedGenre" /> Metal</label>
+        <label class="radio mx-2"><input type="radio" name="genre" value="Alternative" v-model="selectedGenre" /> Alternative</label>
+        <label class="radio mx-2"><input type="radio" name="genre" value="Hip-Hop/Rap" v-model="selectedGenre" /> Hip-Hop/Rap</label>
+        <label class="radio mx-2"><input type="radio" name="genre" value="Punk" v-model="selectedGenre" /> Punk</label>
+        <label class="radio mx-2"><input type="radio" name="genre" value="Folk" v-model="selectedGenre" /> Folk</label>
+        <label class="radio mx-2"><input type="radio" name="genre" value="Classical" v-model="selectedGenre" /> Classical</label>
+        <label class="radio mx-2"><input type="radio" name="genre" value="Other" v-model="selectedGenre" /> Other</label>
+        <div v-if="selectedGenre === 'Other'" class="is-flex is-justify-content-center mt-2">
+          <input type="text" class="input column is-10-mobile is-6-tablet is-4-desktop" placeholder="Enter genre" v-model="selectedGenreOther" />
+        </div>
+      </div>
+    </div>
+
+    <hr />
+
+    <div>
+      <h2 class="is-size-4 has-text-weight-semibold mb-3">Mood:</h2>
+      <div class="checkboxes">
+        <label class="radio mx-2"><input type="radio" name="mood" value="Happy" v-model="selectedMood"/> Happy</label>
+        <label class="radio mx-2"><input type="radio" name="mood" value="Sad" v-model="selectedMood"/> Sad</label>
+        <label class="radio mx-2"><input type="radio" name="mood" value="Aggressive" v-model="selectedMood"/> Aggressive</label>
+        <label class="radio mx-2"><input type="radio" name="mood" value="Chill" v-model="selectedMood"/> Chill</label>
+        <label class="radio mx-2"><input type="radio" name="mood" value="Uplifting" v-model="selectedMood"/> Uplifting</label>
+        <label class="radio mx-2"><input type="radio" name="mood" value="Dark" v-model="selectedMood"/> Dark</label>
+      </div>
+    </div>
+
+    <hr />
+
+    <div>
+      <h2 class="is-size-4 has-text-weight-semibold mb-3">Energy Level:</h2>
+      <div>
+        <label class="radio mx-2"><input type="radio" name="energy" value="Low" v-model="selectedEnergy"/> Low</label>
+        <label class="radio mx-2"><input type="radio" name="energy" value="Medium" v-model="selectedEnergy"/> Medium</label>
+        <label class="radio mx-2"><input type="radio" name="energy" value="High" v-model="selectedEnergy"/> High</label>
+      </div>
+    </div>
+
+    <hr />
+
+    <div>
+      <h2 class="is-size-4 has-text-weight-semibold mb-3">Danceability:</h2>
+      <div>
+        <label class="radio mx-2"><input type="radio" name="dance" value="Not Danceable" v-model="selectedDance"/> Not Danceable</label>
+        <label class="radio mx-2"><input type="radio" name="dance" value="Somewhat Danceable" v-model="selectedDance"/> Somewhat Danceable</label>
+        <label class="radio mx-2"><input type="radio" name="dance" value="Very Danceable" v-model="selectedDance"/> Very Danceable</label>
+      </div>
+    </div>
+
+    <hr />
+
+    <div>
+      <h2 class="is-size-4 has-text-weight-semibold mb-3">Vocal Presence:</h2>
+      <div>
+        <label class="radio mx-2"><input type="radio" name="vocals" value="Instrumental" v-model="selectedVocals"/> Instrumental</label>
+        <label class="radio mx-2"><input type="radio" name="vocals" value="Vocal (Single)" v-model="selectedVocals"/> Vocal (Single)</label>
+        <label class="radio mx-2"><input type="radio" name="vocals" value="Vocal (Multiple)" v-model="selectedVocals"/> Vocal (Multiple)</label>
+      </div>
+    </div>
+
+    <hr />
+
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-success is-large"
+      :class="{'is-loading': btnLoading}"
+    >
+      Submit
+    </button>
+  </div>
+
+
+  <!-- 📚 Load in resources: [Bulma, Effect Network Styling]  -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css"
+  />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    createApp({
+      data() {
+        return {
+          title: "Effect AI - Track Tagger",
+          // songSource: "https://discoveryprovider2.audius.co/v1/tracks/lWGEm2l/stream",
+          songSource: "${song_url}",
+          btnLoading: false,
+          notComplete: false,
+          selectedGenre: "",
+          selectedMood: "",
+          selectedEnergy: "",
+          selectedDance: "",
+          selectedVocals: "",
+          selectedGenreOther: "",
+          instructions: `
+          <div class="">
+            <div>
+              <p>Select the button that corresponds to the animal in the picture.</p>
+              <br>
+              <p>Select "Other" if there is an animal <strong>not</strong> on the list.</p>
+            </div>
+          </div>`
+        };
+      },
+      computed: {},
+      created() {},
+      mounted() {
+        this.$refs.songPlayer.volume = 0.25;
+        window.top.postMessage(
+        {
+          type: 'task-instructions',
+          instructions: this.instructions
+        },
+        "*"
+      );
+      },
+      methods: {
+        async uploadAndSubmit() {
+          this.btnLoading = true;
+          const fields = [this.selectedGenre, this.selectedMood, this.selectedEnergy, this.selectedDance, this.selectedVocals, this.selectedGenreOther];
+          if (fields.some(field => field === "")) {
+            this.notComplete = true
+          }
+          else
+            try {
+              parent.postMessage(
+                {
+                  task: "submit",
+                  values: {
+                    taskTitle: this.title,
+                    answer:{
+                      song: this.songSource,
+                      genre: this.selectedGenre,
+                      mood: this.selectedMood,
+                      energy: this.selectedEnergy,
+                      dance: this.selectedDance,
+                      vocals: this.selectedVocals,
+                    }
+                    
+                  },
+                },
+                "*",
+              );
+            } catch (error) {
+              console.error("Failed to upload to IPFS", error);
+            }
+          this.btnLoading = false;
+        },
+      },
+    }).mount("#app");
+  </script>
+</div>
