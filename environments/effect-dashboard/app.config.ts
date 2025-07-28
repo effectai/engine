@@ -11,12 +11,15 @@ export default defineAppConfig({
       variants: {
         variant: {
           mono: {
-            header: "bg-stone-100 dark:bg-[#1c1917]",
-            root: "bg-stone-200 dark:bg-[#333]",
-            body: "p-0 sm:p-0",
+            root: "bg-stone-100 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 mb-4",
+            header:
+              "bg-stone-100 dark:bg-zinc-800 border-b border-stone-200 dark:border-zinc-700",
+            body: "p-0 sm:p-0 bg-stone-50 dark:bg-zinc-700",
+            footer:
+              "bg-stone-100 dark:bg-zinc-800 border-t border-stone-200 dark:border-zinc-700",
           },
         },
       },
     },
-  }, // Add other UI configurations as needed
+  },
 });

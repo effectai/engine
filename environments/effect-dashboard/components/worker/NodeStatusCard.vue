@@ -31,15 +31,15 @@
         </div>
         <div
           class="flex items-center justify-between p-2 border border-zinc-700 rounded clipable"
-          @click="copyToClipboard(managerPeerId)"
+          @click="copyToClipboard(managerInfo?.peerId?.toString() || '')"
         >
           <div class="flex items-center gap-2 text-zinc-400">
             <UIcon name="i-lucide-link" size="16" />
             MANAGER NODE
           </div>
 
-          <code class="text-emerald-400" v-if="managerPeerId">{{
-            sliceBoth(managerPeerId)
+          <code class="text-emerald-400" v-if="managerInfo">{{
+            sliceBoth(managerInfo.peerId?.toString())
           }}</code>
         </div>
       </div>
@@ -73,19 +73,21 @@
 import { useClipboard } from "@vueuse/core";
 import { ref } from "vue";
 
-const { managerPeerIdStr, managerPublicKeyStr } = useSession();
+const { managerInfo } = useSession();
 const { useGetNoncesQuery } = useNonce();
-const { data: nonces } = useGetNoncesQuery(
-  managerPublicKeyStr,
-  managerPeerIdStr,
-);
+const managerPeerId = computed(() => managerInfo.value?.peerIdStr);
+const managerPublicKey = computed(() => managerInfo.value.publicKeyStr);
+const { data: nonces } = useGetNoncesQuery(managerPublicKey, managerPeerId);
 
 const { data: latency } = usePing();
 const { peerId } = useWorkerNode();
 
 const isCopied = ref(false);
 
+const { disconnectFromManagerMutation } = useSession();
+const { mutateAsync: disconnectFromManager } = disconnectFromManagerMutation;
 const disconnect = async () => {
+  await disconnectFromManager();
   navigateTo("/worker");
 };
 
@@ -96,17 +98,6 @@ function copyToClipboard(text: string) {
     isCopied.value = false;
   }, 1500);
 }
-
-const { privateKey } = useAuth();
-const { copy } = useClipboard();
-const toast = useToast();
-const copyPrivateKey = () => {
-  copy(privateKey.value);
-  toast.add({
-    title: "Private Key Copied",
-    description: "Your private key has been copied to the clipboard.",
-  });
-};
 </script>
 
 <style scoped>

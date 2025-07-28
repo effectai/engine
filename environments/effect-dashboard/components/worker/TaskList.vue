@@ -37,7 +37,7 @@
         name="i-heroicons-list-bullet-20-solid"
         class="text-3xl mx-auto mb-2"
       />
-      <p>No active tasks currently</p>
+      <p>Waiting for tasks...</p>
     </div>
 
     <TransitionGroup name="list" tag="div" class="space-y-3">

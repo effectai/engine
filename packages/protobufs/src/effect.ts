@@ -1499,6 +1499,8 @@ export namespace ProofResponse {
 }
 
 export interface BulkProofRequest {
+  recipient: string
+  paymentAccount: string
   proofs: ProofResponse[]
 }
 
@@ -1512,9 +1514,19 @@ export namespace BulkProofRequest {
           w.fork()
         }
 
+        if ((obj.recipient != null && obj.recipient !== '')) {
+          w.uint32(10)
+          w.string(obj.recipient)
+        }
+
+        if ((obj.paymentAccount != null && obj.paymentAccount !== '')) {
+          w.uint32(18)
+          w.string(obj.paymentAccount)
+        }
+
         if (obj.proofs != null) {
           for (const value of obj.proofs) {
-            w.uint32(10)
+            w.uint32(26)
             ProofResponse.codec().encode(value, w)
           }
         }
@@ -1524,6 +1536,8 @@ export namespace BulkProofRequest {
         }
       }, (reader, length, opts = {}) => {
         const obj: any = {
+          recipient: '',
+          paymentAccount: '',
           proofs: []
         }
 
@@ -1534,6 +1548,14 @@ export namespace BulkProofRequest {
 
           switch (tag >>> 3) {
             case 1: {
+              obj.recipient = reader.string()
+              break
+            }
+            case 2: {
+              obj.paymentAccount = reader.string()
+              break
+            }
+            case 3: {
               if (opts.limits?.proofs != null && obj.proofs.length === opts.limits.proofs) {
                 throw new MaxLengthError('Decode error - map field "proofs" had too many elements')
               }

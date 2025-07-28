@@ -13,7 +13,6 @@ message Signals {
 }
 
 message ProofResponse {
-
   message Matrix {
     repeated string row = 1;
   }
@@ -24,15 +23,23 @@ message ProofResponse {
   string protocol = 4;
   string curve = 5;
   Signals signals = 6;
+
 }
 
 message BulkProofRequest {
-  repeated ProofResponse proofs = 1;
+  //non-truncated recipient
+  string recipient = 1;
+
+  //non-truncated payment account
+  string payment_account = 2;
+
+  repeated ProofResponse proofs = 3;
 }
 
 message ProofRequest {
+  //non-truncated recipient
   string recipient = 1;
-
+  //non-truncated payment account
   string payment_account = 2;
 
   string public_key = 3;

@@ -12,6 +12,7 @@ import {
   generatePaymentProof,
   signPayment,
   prove,
+  publicKeyToTruncatedHex,
 } from "@effectai/payment";
 
 import { ulid } from "ulid";
@@ -78,30 +79,13 @@ export async function createPaymentManager({
     return payment;
   };
 
-  function validateProofs(
-    proofs: {
-      proof: Groth16Proof;
-      publicSignals: PublicSignals;
-    }[] = [],
-  ) {
-    if (proofs.length === 0) return true;
-
-    const [first, ...rest] = proofs;
-    const [recipient, paymentAccount] = [
-      first.publicSignals.recipient,
-      first.publicSignals.paymentAccount,
-    ];
-
-    return rest.every(
-      (p) =>
-        p.publicSignals.recipient === recipient &&
-        p.publicSignals.paymentAccount === paymentAccount,
-    );
-  }
-
   async function bulkPaymentProofs({
+    recipient,
+    paymentAccount,
     proofs,
   }: {
+    recipient: string;
+    paymentAccount: string;
     proofs: {
       proof: Groth16Proof;
       publicSignals: PublicSignals;
@@ -110,7 +94,7 @@ export async function createPaymentManager({
     logger.log.info(
       {
         proofs: proofs.length,
-        recipient: proofs[0].publicSignals.recipient,
+        recipient,
         totalAmount: proofs.reduce(
           (acc, p) => acc + BigInt(p.publicSignals.amount),
           0n,
@@ -123,9 +107,21 @@ export async function createPaymentManager({
     let maxNonce: bigint | null = null;
     let sumAmount = 0n;
 
-    const isValidProofs = validateProofs(proofs);
-    const recipient = proofs[0].publicSignals.recipient;
-    const paymentAccount = proofs[0].publicSignals.paymentAccount;
+    const truncatedPaymentAccount = publicKeyToTruncatedHex(
+      new PublicKey(paymentAccount),
+    );
+
+    const truncatedRecipient = publicKeyToTruncatedHex(
+      new PublicKey(recipient),
+    );
+
+    const isValidProofs = proofs.every(
+      (proof) =>
+        proof.publicSignals.recipient ===
+          BigInt(`${truncatedRecipient}`).toString() &&
+        proof.publicSignals.paymentAccount ===
+          BigInt(`${truncatedPaymentAccount}`).toString(),
+    );
 
     if (!isValidProofs) {
       throw new Error(
@@ -172,12 +168,6 @@ export async function createPaymentManager({
         );
       }
 
-      if (!managerSettings.paymentAccount) {
-        throw new Error(
-          "Payment account not set, cannot create temporary payments",
-        );
-      }
-
       //create 2 temporarly payments with the min and max nonce.
       const payments = [
         createPayment({
@@ -206,7 +196,7 @@ export async function createPaymentManager({
         payments: await Promise.all(payments),
       });
 
-      return ProofToProofResponseMessage(proof, publicSignals, paymentAccount);
+      return ProofToProofResponseMessage(proof, publicSignals);
     } catch (error) {
       console.error("Batch verification failed:", error);
       throw error;
@@ -318,11 +308,7 @@ export async function createPaymentManager({
         payments: request.payments as Array<SignedPayment>,
       });
 
-      return ProofToProofResponseMessage(
-        proof,
-        publicSignals,
-        request.paymentAccount,
-      );
+      return ProofToProofResponseMessage(proof, publicSignals);
     } catch (e) {
       logger.log.error(e, "Error generating proof");
       throw new Error("Error generating proof");

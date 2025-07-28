@@ -97,9 +97,6 @@ export const createPaymentStore = ({ datastore }: { datastore: Datastore }) => {
     recipient: string;
     managerPublicKey: string;
   }): Promise<bigint> => {
-    console.log(
-      `Getting highest nonce for peerId: ${peerId}, recipient: ${recipient}, managerPublicKey: ${managerPublicKey}`,
-    );
     const prefix = `/payments/${peerId}/${managerPublicKey}/${recipient}/`;
 
     const getNonce = (key: Key): bigint => {

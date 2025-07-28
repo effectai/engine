@@ -54,8 +54,21 @@ export const useSession = () => {
     },
   });
 
+  const disconnectFromManagerMutation = useMutation({
+    mutationFn: async () => {
+      return sessionStore.terminate();
+    },
+    onError: (error) => {
+      console.error(error);
+    },
+    onSuccess: () => {
+      console.log("Disconnected from manager successfully");
+    },
+  });
+
   return {
     connectToManagerMutation,
+    disconnectFromManagerMutation,
     manager,
     managerInfo,
     isActive,

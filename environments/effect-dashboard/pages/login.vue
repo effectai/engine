@@ -12,7 +12,7 @@
     <div v-else class="w-full max-w-md space-y-8 p-8">
       <div class="text-center">
         <h1 class="text-3xl font-bold tracking-tight">
-          Effect Worker Dashboard
+          Effect AI: Node Dashboard
         </h1>
         <p class="mt-2 text-sm text-gray-400">
           Sign in to access the dashboard

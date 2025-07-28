@@ -26,7 +26,7 @@ export default function Component() {
   return (
     <div className="px-6">
       <div className="flex gap-3">
-        <Form method="post">
+        <Form method="post" className="flex gap-2">
           <Button type="submit" name="intent" value="kick">
             Kick
           </Button>
@@ -35,6 +35,9 @@ export default function Component() {
           </Button>
           <Button type="submit" name="intent" value="revoke">
             Revoke Access Code
+          </Button>
+          <Button type="submit" name="intent" value="promote">
+            Promote to Admin
           </Button>
         </Form>
       </div>
@@ -71,6 +74,10 @@ export const action = async ({
     }));
 
     context.workerManager.workerQueue.removePeer(id);
+  } else if (intent === "promote") {
+    await context.workerManager.updateWorkerState(id, (state) => ({
+      isAdmin: true,
+    }));
   }
 
   return null;

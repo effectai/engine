@@ -1,5 +1,5 @@
 <template>
-  <UCard class="max-h-[420px] overflow-y-scroll mb-4" variant="mono">
+  <UCard class="overflow-y-scroll mb-4" variant="mono">
     <template #header>
       <div class="flex items-center gap-2">
         <UIcon
@@ -48,15 +48,6 @@
 <script setup lang="ts">
 const capabilities = ref([
   {
-    id: 1,
-    name: "Dutch Language",
-    value: "Native",
-    category: "Language",
-    totalTasks: 84,
-    totalEarned: 500,
-    icon: "mdi-language",
-  },
-  {
     id: 2,
     name: "English Language",
     value: "Fluent",
@@ -84,16 +75,6 @@ const capabilities = ref([
     totalEarned: "500",
     popularity: 5,
     icon: "mdi-chip",
-  },
-  {
-    id: 5,
-    name: "Geolocation",
-    value: "Enabled",
-    category: "Device",
-    totalEarned: "500",
-    popularity: 5,
-    totalTasks: 20,
-    icon: "mdi-map-marker",
   },
 ]);
 </script>

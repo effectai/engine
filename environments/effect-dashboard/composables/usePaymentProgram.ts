@@ -80,16 +80,14 @@ export function usePaymentProgram() {
   const claimWithProof = async (
     proof: ProofResponse,
     managerPublicKey: string,
+    paymentAccount: string,
   ) => {
-    const { account, privateKey } = useAuth();
+    const { account, requestPrivateKey } = useAuth();
     assertExists(account.value, "account is not set");
 
-    if (!privateKey.value) {
-      throw new Error("Private key is not set");
-    }
-
+    const privateKey = await requestPrivateKey();
     const signer = await createKeyPairSignerFromBytes(
-      Buffer.from(privateKey.value, "hex"),
+      Buffer.from(privateKey, "hex"),
     );
 
     const ata = await getAssociatedTokenAccount({
@@ -109,8 +107,6 @@ export function usePaymentProgram() {
       rpc,
       recipientManagerDataAccount,
     );
-
-    const eddsa = await buildEddsa();
 
     const initRecipientManagerDataAccountIx = await getInitInstructionAsync({
       authority: signer,
@@ -135,7 +131,7 @@ export function usePaymentProgram() {
     });
 
     const claimProofIx = await getClaimProofsInstructionAsync({
-      paymentAccount: address(proof.signals?.paymentAccount),
+      paymentAccount: address(paymentAccount),
       mint: address(mint.toBase58()),
       recipientManagerDataAccount,
       recipientTokenAccount: ata,
@@ -179,7 +175,6 @@ export function usePaymentProgram() {
 
       const signedTx =
         await signTransactionMessageWithSigners(transactionMessage);
-      console.log("signedTx", signedTx);
 
       await sendAndConfirmTransaction(signedTx, {
         commitment: "finalized",

@@ -8,7 +8,7 @@
         class: 'rounded-full',
       }"
     >
-      <WorkerPulseBorderButton label="Connect" />
+      <WorkerPulseBorderButton class="w-full" label="Connect" />
       <template #body>
         <div v-if="isFetching" class="p-6 text-center">
           <div class="flex justify-center items-center space-x-2 text-gray-500">

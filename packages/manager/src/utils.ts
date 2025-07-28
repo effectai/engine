@@ -59,7 +59,6 @@ export function proofResponseToGroth16Proof(
 export function ProofToProofResponseMessage(
   proof: Groth16Proof,
   publicSignals: PublicSignals,
-  paymentAccount: string,
 ): EffectProtocolMessage {
   return {
     proofResponse: {
@@ -68,7 +67,7 @@ export function ProofToProofResponseMessage(
         maxNonce: publicSignals.maxNonce,
         amount: publicSignals.amount,
         recipient: publicSignals.recipient,
-        paymentAccount: paymentAccount,
+        paymentAccount: publicSignals.paymentAccount,
         pubX: publicSignals.pubX,
         pubY: publicSignals.pubY,
       },

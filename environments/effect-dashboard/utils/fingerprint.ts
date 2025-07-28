@@ -12,7 +12,6 @@ export async function getStableFingerprint(): Promise<string> {
   const platform = navigator.platform;
   const language = navigator.language;
   const cpuClass = navigator.hardwareConcurrency?.toString() ?? "unknown";
-
   const browserName = getBrowserName();
   const userAgent = navigator.userAgent;
 

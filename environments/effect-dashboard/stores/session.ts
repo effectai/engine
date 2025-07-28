@@ -95,7 +95,13 @@ export const useSessionStore = defineStore("session", () => {
     if (!current.value) return;
 
     try {
-      //TODO:: Implement the actual disconnection logic
+      const worker = useWorkerStore();
+      assertExists(worker.instance, "Worker instance is not available");
+      await worker.instance?.stop();
+      status.value = "connecting";
+      error.value = null;
+      current.value = null;
+      status.value = "idle";
     } finally {
       current.value = null;
       status.value = "idle";

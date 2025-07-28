@@ -1,21 +1,25 @@
 <template>
   <div>
     <div
-      class="rounded-xl p-8 mb-6 text-white relative overflow-hidden bg-gradient-to-br from-zinc-800 to-neutral-500 rounded-xlll text-black dark:text-white relative"
+      class="rounded-xl p-4 sm:p-6 md:p-8 mb-6 text-white relative overflow-hidden bg-gradient-to-br from-zinc-800 to-neutral-500 text-black dark:text-white"
     >
-      <div class="absolute inset-0 opacity-10">
+      <!-- Decorative circles -->
+      <div class="absolute inset-0 opacity-10 pointer-events-none">
         <div
-          class="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -translate-y-32 translate-x-32"
+          class="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-white rounded-full -translate-y-24 sm:-translate-y-32 translate-x-24 sm:translate-x-32"
         ></div>
         <div
-          class="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full translate-y-24 -translate-x-24"
+          class="absolute bottom-0 left-0 w-36 h-36 sm:w-48 sm:h-48 bg-white rounded-full translate-y-16 sm:translate-y-24 -translate-x-16 sm:-translate-x-24"
         ></div>
       </div>
-      <div class="relative z-10 grid grid-cols-12 gap-8">
-        <div class="col-span-5">
-          <div class="flex items-center space-x-3 mb-4">
+
+      <!-- Main Grid -->
+      <div class="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6">
+        <!-- Profile/Stats (Left column) -->
+        <div class="md:col-span-5 space-y-4">
+          <div class="flex items-center space-x-3 mb-2">
             <div
-              class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center backdrop-blur-sm"
+              class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm"
             >
               <img
                 :src="profileImage"
@@ -24,113 +28,101 @@
               />
             </div>
             <div>
-              <h2 class="text-2xl font-bold">{{ username }}</h2>
-              <p class="text-gray-300 text-sm">Worker Node • Europe-West</p>
+              <h2 class="text-xl sm:text-2xl font-bold">{{ username }}</h2>
+              <p class="text-gray-300 text-sm">Worker Node ({{ language }})</p>
             </div>
           </div>
-          <div class="space-y-3">
-            <div
-              class="flex items-center justify-between p-3 bg-white/10 rounded-lg backdrop-blur-sm"
-            >
-              <span class="text-gray-300 text-sm">Peer ID</span>
-              <div class="flex items-center space-x-2">
-                <span class="font-mono text-sm" v-if="peerId">{{
-                  sliceBoth(peerId.toString())
-                }}</span
-                ><button
-                  @click="copy(peerId.toString())"
-                  class="p-1 hover:bg-white/20 rounded transition-colors"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="lucide lucide-copy w-3 h-3"
-                  >
-                    <rect
-                      width="14"
-                      height="14"
-                      x="8"
-                      y="8"
-                      rx="2"
-                      ry="2"
-                    ></rect>
-                    <path
-                      d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
-                    ></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div
-                class="p-3 bg-white/10 bg-opacity-10 rounded-lg backdrop-blur-sm"
-              >
-                <p class="text-gray-300 text-xs">Total Tasks</p>
-                <p class="text-xl font-bold">{{ totalTasksCompleted }}</p>
-              </div>
-              <div
-                class="p-3 bg-white/10 bg-opacity-10 rounded-lg backdrop-blur-sm"
-              >
-                <p class="text-gray-300 text-xs">Tasks rejected</p>
-                <p class="text-xl font-bold">{{ tasksRejected }}</p>
-              </div>
-            </div>
 
-            <div class="grid grid-cols-2 gap-3">
-              <div
-                class="p-3 bg-white/10 bg-opacity-10 rounded-lg backdrop-blur-sm"
+          <!-- Peer ID -->
+          <div
+            class="flex items-center justify-between p-3 bg-white/10 rounded-lg backdrop-blur-sm"
+          >
+            <span class="text-gray-300 text-sm">Peer ID</span>
+            <div class="flex items-center space-x-2">
+              <span class="font-mono text-sm" v-if="peerId">
+                {{ sliceBoth(peerId.toString()) }}
+              </span>
+              <button
+                @click="copy(peerId.toString())"
+                class="p-1 hover:bg-white/20 rounded transition-colors"
               >
-                <p class="text-gray-300 text-xs">Reputation</p>
-                <div class="flex items-center space-x-1">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="lucide lucide-star w-4 h-4 text-yellow-400 fill-current"
-                  >
-                    <polygon
-                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                    ></polygon></svg
-                  ><span class="text-xl font-bold">5</span>
-                </div>
-              </div>
-              <div
-                class="p-3 bg-white/10 bg-opacity-10 rounded-lg backdrop-blur-sm"
-              >
-                <p class="text-gray-300 text-xs">Peformance Score</p>
-                <p class="text-xl font-bold">{{ performanceScore }}%</p>
-              </div>
+                <!-- Copy icon -->
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <rect x="8" y="8" width="14" height="14" rx="2" ry="2" />
+                  <path
+                    d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
+                  />
+                </svg>
+              </button>
             </div>
           </div>
-          <div class="mt-6 flex items-center gap-3">
+
+          <!-- Stats Grid -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3 bg-white/10 rounded-lg backdrop-blur-sm">
+              <p class="text-gray-300 text-xs">Total Tasks</p>
+              <p class="text-lg font-bold">{{ totalTasksCompleted }}</p>
+            </div>
+            <div class="p-3 bg-white/10 rounded-lg backdrop-blur-sm">
+              <p class="text-gray-300 text-xs">Tasks Rejected</p>
+              <p class="text-lg font-bold">{{ tasksRejected }}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3 bg-white/10 rounded-lg backdrop-blur-sm">
+              <p class="text-gray-300 text-xs">Reputation</p>
+              <div class="flex items-center space-x-1">
+                <svg
+                  class="w-4 h-4 text-yellow-400 fill-current"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  fill="none"
+                >
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                  />
+                </svg>
+                <span class="text-lg font-bold">5</span>
+              </div>
+            </div>
+            <div class="p-3 bg-white/10 rounded-lg backdrop-blur-sm">
+              <p class="text-gray-300 text-xs">Performance Score</p>
+              <p class="text-lg font-bold">{{ performanceScore }}%</p>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div
+            class="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
+          >
             <WorkerManagerConnectionModal v-model="isOpen" />
             <UButton
-              class=""
               icon="i-heroicons-document-text"
               size="lg"
               color="neutral"
               :disabled="true"
+              class="w-full sm:w-auto justify-center"
             >
               View Identity Document
             </UButton>
           </div>
         </div>
-        <div class="col-span-3 flex items-center justify-center">
+
+        <!-- Level circle -->
+        <div class="md:col-span-3 flex justify-center items-center">
           <div class="relative">
-            <svg class="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+            <svg
+              class="w-24 h-24 sm:w-32 sm:h-32 -rotate-90"
+              viewBox="0 0 100 100"
+            >
               <circle
                 cx="50"
                 cy="50"
@@ -138,7 +130,7 @@
                 stroke="rgba(255,255,255,0.2)"
                 stroke-width="6"
                 fill="none"
-              ></circle>
+              />
               <circle
                 cx="50"
                 cy="50"
@@ -150,88 +142,84 @@
                 :stroke-dasharray="circumference"
                 :stroke-dashoffset="dashoffset"
                 class="transition-all duration-1000 ease-out"
-              ></circle>
+              />
             </svg>
             <div class="absolute inset-0 flex items-center justify-center">
               <div class="text-center">
-                <div class="text-3xl font-bold">{{ level }}</div>
+                <div class="text-2xl sm:text-3xl font-bold">{{ level }}</div>
                 <div class="text-xs text-gray-300">LEVEL</div>
               </div>
             </div>
           </div>
         </div>
-        <div class="col-span-4">
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <span class="text-gray-300">Experience Progress</span
-              ><span class="text-sm font-mono"
+
+        <!-- Progress and summary (Right column) -->
+        <div class="md:col-span-4 space-y-4">
+          <!-- Progress bar -->
+          <div>
+            <div class="flex justify-between items-center text-sm">
+              <span class="text-gray-300">Experience Progress</span>
+              <span class="font-mono"
                 >{{ experience }} / {{ experiencePerLevel[level] }}</span
               >
             </div>
-            <div class="w-full bg-white/10 bg-opacity-20 rounded-full h-2">
+            <div class="w-full bg-white/10 rounded-full h-2 mt-1">
               <div
-                class="bg-white/10 h-2 rounded-full transition-all duration-1000 ease-out"
+                class="bg-white h-2 rounded-full transition-all duration-1000 ease-out"
                 :style="`width: ${progress}%`"
               ></div>
             </div>
-            <div class="grid grid-cols-2 gap-4 mt-6">
-              <div
-                class="text-center p-4 bg-white/10 bg-opacity-10 rounded-lg backdrop-blur-sm"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="lucide lucide-award w-6 h-6 mx-auto mb-2 text-yellow-400"
-                >
-                  <circle cx="12" cy="8" r="6"></circle>
-                  <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
-                </svg>
-                <p class="text-2xl font-bold">0</p>
-                <p class="text-xs text-gray-300">Active Capabilities</p>
-              </div>
-              <div
-                class="text-center p-4 bg-white/10 bg-opacity-10 rounded-lg backdrop-blur-sm"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="lucide lucide-trending-up w-6 h-6 mx-auto mb-2 text-green-400"
-                >
-                  <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
-                  <polyline points="16 7 22 7 22 13"></polyline>
-                </svg>
-                <p class="text-2xl font-bold">{{ daysInNetwork }} Days</p>
-                <p class="text-xs text-gray-300">Network Member</p>
-              </div>
-            </div>
+          </div>
+
+          <!-- Mini stats -->
+          <div class="grid grid-cols-2 gap-4 mt-4">
             <div
-              class="text-center p-4 bg-white/10 bg-opacity-10 rounded-lg backdrop-blur-sm"
+              class="text-center p-4 bg-white/10 rounded-lg backdrop-blur-sm"
             >
-              <div class="flex gap-4 items-center justify-center">
-                <img
-                  src="@/assets/img/effect-coin.jpg"
-                  class="w-10 rounded-full"
-                />
-                <div>
-                  <p class="text-2xl font-bold">
-                    {{ totalEffectEarnings }} EFFECT
-                  </p>
-                  <p class="text-xs text-gray-300">Total Earnings</p>
-                </div>
+              <svg
+                class="w-6 h-6 mx-auto mb-2 text-yellow-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <circle cx="12" cy="8" r="6"></circle>
+                <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
+              </svg>
+              <p class="text-xl font-bold">0</p>
+              <p class="text-xs text-gray-300">Active Capabilities</p>
+            </div>
+
+            <div
+              class="text-center p-4 bg-white/10 rounded-lg backdrop-blur-sm"
+            >
+              <svg
+                class="w-6 h-6 mx-auto mb-2 text-green-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+                <polyline points="16 7 22 7 22 13"></polyline>
+              </svg>
+              <p class="text-xl font-bold">{{ daysInNetwork }} Days</p>
+              <p class="text-xs text-gray-300">Network Member</p>
+            </div>
+          </div>
+
+          <!-- Total earnings -->
+          <div class="text-center p-4 bg-white/10 rounded-lg backdrop-blur-sm">
+            <div class="flex items-center justify-center gap-4">
+              <img
+                src="@/assets/img/effect-coin.jpg"
+                class="w-10 rounded-full"
+              />
+              <div>
+                <p class="text-xl font-bold">
+                  {{ totalEffectEarnings }} EFFECT
+                </p>
+                <p class="text-xs text-gray-300">Total Earnings</p>
               </div>
             </div>
           </div>
@@ -253,6 +241,7 @@ const {
 } = useWorkerNode();
 
 const { level, progress, experience, experiencePerLevel } = useWorkerLevel();
+const { language } = useNavigatorLanguage();
 
 const radius = computed(() => 45);
 const circumference = computed(() => 2 * Math.PI * radius.value);

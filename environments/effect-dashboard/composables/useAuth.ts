@@ -13,6 +13,7 @@ import {
 } from "@web3auth/base";
 import { SOLANA_CHAIN_IDS } from "@web3auth/ws-embed";
 import { AuthAdapter } from "@web3auth/auth-adapter";
+import { generateKeyPairFromSeed } from "@effectai/protocol";
 
 type UserInfo = {
   username: string;
@@ -46,16 +47,34 @@ export const useAuth = () => {
   const privateKey = useState<string | null>("privateKey", () => null);
 
   async function setProvider(privateKey: string) {
+    const privateKeyBytes = Buffer.from(privateKey, "hex").slice(0, 32);
+
+    const tagBytes = await generateDeterministicSeed();
+    const modifiedSeed = modifySeedLast4Bytes(privateKeyBytes, tagBytes);
+
+    const keypair = await generateKeyPairFromSeed("Ed25519", modifiedSeed);
+
     const providerInstance = await SolanaPrivateKeyProvider.getProviderInstance(
       {
         chainConfig,
-        privKey: privateKey,
+        privKey: Buffer.from(keypair.raw).toString("hex"),
       },
     );
 
     provider.value = new SolanaWallet(providerInstance);
     account.value = (await provider.value.requestAccounts())[0];
   }
+
+  const requestPrivateKey = async (): Promise<string> => {
+    const privateKey = await provider.value?.request({
+      method: "solanaPrivateKey",
+      params: [],
+    });
+    if (!privateKey) {
+      throw new Error("Failed to retrieve private key from provider");
+    }
+    return privateKey as string;
+  };
 
   // Initialize Web3Auth
   const init = async () => {
@@ -236,6 +255,7 @@ export const useAuth = () => {
     loginWithPrivateKey,
     logout,
     checkSession,
+    requestPrivateKey,
     provider,
     userInfo,
     isAuthenticated,

@@ -143,9 +143,13 @@ export function createPaymentWorker({
 
   const requestBulkProofs = async (
     managerPeerIdStr: string,
+    recipient: string,
+    paymentAccount: string,
     proofs: ProofResponse[],
   ) => {
     const proofRequestMessage: BulkProofRequest = {
+      paymentAccount,
+      recipient,
       proofs,
     };
 

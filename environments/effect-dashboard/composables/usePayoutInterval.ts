@@ -29,7 +29,7 @@ export const usePayout = () => {
       if (!instance.value || !manager.value?.peerId) return;
 
       return await instance.value.requestPayout({
-        managerPeerIdStr: manager.value.peerId,
+        managerPeerIdStr: manager.value.peerId.toString(),
       });
     },
     refetchOnReconnect: false,

@@ -1,6 +1,7 @@
 // import type { Payment } from "@effectai/protocol";
 import {
   fetchMaybeRecipientManagerDataAccount,
+  PAYMENT_BATCH_SIZE,
   type Payment,
   type PaymentRecord,
 } from "@effectai/protocol";
@@ -14,15 +15,42 @@ export const usePayments = () => {
   const { account } = useAuth();
   const { useGetNoncesAsyncQuery } = useNonce();
 
-  const useGetPaymentsQuery = async () => {
+  const useGetPaymentsQuery = () => {
     return useQuery({
       queryKey: ["payments", account.value],
       queryFn: async () => {
         assertExists(instance.value, "Worker instance is not initialized");
-        return await getAllManagersFromPayments();
+        const data = await getAllManagersFromPayments();
+
+        return data;
       },
     });
   };
+
+  const computedTotalPaymentAmount = (
+    queryResult: ReturnType<typeof useGetPaymentsQuery>["data"],
+  ) =>
+    computed(() =>
+      (queryResult.value ?? []).reduce(
+        (acc, manager) =>
+          acc +
+          manager.claimablePayments.reduce(
+            (sum, payment) => sum + payment.state.amount,
+            0n,
+          ),
+        0n,
+      ),
+    );
+
+  // const totalUnclaimedEffect = computed(() => {
+  //   return managerPaymentBatches.value?.reduce((total, record) => {
+  //     const claimableAmount = record.claimablePayments.reduce((sum, payment) => {
+  //       return sum + (payment.state.amount || 0n);
+  //     }, 0n);
+  //     return total + claimableAmount;
+  //   }, 0n);
+  // });
+  //
 
   const getAllManagersFromPayments = async () => {
     assertExists(datastore.value, "Datastore is not initialized");
@@ -65,7 +93,9 @@ export const usePayments = () => {
       },
     );
 
-    return await Promise.all(managerPromises);
+    const results = await Promise.all(managerPromises);
+
+    return results;
   };
 
   const useClaimPayments = () => {
@@ -85,15 +115,11 @@ export const usePayments = () => {
         managerPublicKey: string;
         payments: PaymentRecord[];
       }) => {
-        console.log(
-          "Claiming payments",
-          payments,
-          managerPeerId,
-          managerPublicKey,
-        );
         const workerStore = useWorkerStore();
         const { instance } = storeToRefs(workerStore);
         const { claimWithProof } = usePaymentProgram();
+
+        const { recipient, paymentAccount } = payments[0].state;
 
         const sortedPayments = payments
           .toSorted((a, b) => {
@@ -101,7 +127,7 @@ export const usePayments = () => {
           })
           .map((p) => p.state);
 
-        const paymentBatches = chunkArray(sortedPayments, 60);
+        const paymentBatches = chunkArray(sortedPayments, PAYMENT_BATCH_SIZE);
         const proofLimit = pLimit(1);
 
         currentPhase.value = "generating_proofs";
@@ -113,7 +139,6 @@ export const usePayments = () => {
             currentProof.value++;
 
             assertExists(instance.value, "Worker instance is not initialized");
-            console.log("requesting payment proof for batch", batch);
 
             const [proof, error] = await instance.value.requestPaymentProof(
               managerPeerId,
@@ -134,6 +159,8 @@ export const usePayments = () => {
         if (proofs.length > 1) {
           const [bulkedProof, error] = await instance.value.requestBulkProofs(
             managerPeerId,
+            recipient,
+            paymentAccount,
             proofs,
           );
 
@@ -143,9 +170,9 @@ export const usePayments = () => {
             );
           }
 
-          await claimWithProof(bulkedProof, managerPublicKey);
+          await claimWithProof(bulkedProof, managerPublicKey, paymentAccount);
         } else if (proofs.length === 1) {
-          await claimWithProof(proofs[0], managerPublicKey);
+          await claimWithProof(proofs[0], managerPublicKey, paymentAccount);
         } else {
           throw new Error("No valid proofs to submit");
         }
@@ -164,5 +191,6 @@ export const usePayments = () => {
     useClaimPayments,
     getAllManagersFromPayments,
     useGetPaymentsQuery,
+    computedTotalPaymentAmount,
   };
 };

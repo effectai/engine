@@ -35,6 +35,7 @@ export interface WorkerState {
   lastActivity: number;
   totalEarned: bigint;
   banned: boolean;
+  isAdmin: boolean;
   accessCodeRedeemed?: string;
 }
 
@@ -84,6 +85,7 @@ export const createWorkerStore = ({ datastore }: { datastore: Datastore }) => {
         tasksCompleted: 0,
         tasksRejected: 0,
         totalEarned: BigInt(0),
+        isAdmin: false,
         accessCodeRedeemed: state.accessCodeRedeemed,
         lastActivity: Math.floor(Date.now() / 1000),
       },

@@ -5,8 +5,8 @@
     <div
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 items-stretch"
     >
-      <WorkerCapabilitiesList v-coming-soon class="h-full" />
-      <WorkerPaymentCard class="h-full max-h-[420px]" />
+      <WorkerPaymentCard class="" />
+      <WorkerCapabilitiesList v-coming-soon class="" />
     </div>
 
     <UCard

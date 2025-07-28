@@ -68,6 +68,7 @@ export type ManagerSettings = {
   requireAccessCodes: boolean;
   paymentAccount: string | null;
   withAdmin: boolean;
+  maintenanceMode: boolean;
 };
 
 export const createManagerEntity = async ({
@@ -127,11 +128,18 @@ export const createManager = async ({
     requireAccessCodes: settings.requireAccessCodes ?? true,
     paymentAccount: settings.paymentAccount ?? null,
     withAdmin: settings.withAdmin ?? true,
+    maintenanceMode: settings.maintenanceMode ?? false,
   };
 
   if (!managerSettings.paymentAccount) {
     logger.log.warn(
       "No payment account provided. Payments will not be processed.",
+    );
+  }
+
+  if (managerSettings.maintenanceMode) {
+    logger.log.warn(
+      "Manager is running in maintenance mode. Only administrators will be able to connect.",
     );
   }
 
@@ -141,7 +149,6 @@ export const createManager = async ({
 
   //bs58 encode the compressed public key
   const solanaPublicKey = new PublicKey(compressedPubKey);
-  logger.log.info(`Using Solana public key: ${solanaPublicKey.toBase58()}`);
 
   // create the entity
   const entity = await createManagerEntity({
@@ -225,6 +232,11 @@ export const createManager = async ({
           accessCode,
         );
 
+        logger.log.info(
+          { peerId: peerId.toString(), recipient, nonce, accessCode },
+          "Worker connected",
+        );
+
         return {
           requestToWorkResponse: {
             timestamp: Math.floor(Date.now() / 1000),
@@ -266,36 +278,40 @@ export const createManager = async ({
       });
     })
     .onMessage("bulkProofRequest", async (proofRequest, { peerId }) => {
-      const worker = await workerManager.getWorker(peerId.toString());
-      const recipient = worker?.state.recipient;
-
-      if (!recipient) {
-        throw new Error("Worker not found or recipient not set");
-      }
-
       if (!proofRequest.proofs.every((p) => p.signals)) {
         throw new Error("All proofs must have signals for bulk payment");
       }
 
-      logger.context.run({ peerId: peerId.toString() }, async () => {
-        return await paymentManager.bulkPaymentProofs({
-          proofs: proofRequest.proofs.map((p) => {
-            if (!p.signals) {
-              throw new Error("Missing publicSignals in proof response");
-            }
+      logger.context.enterWith({ peerId: peerId.toString() });
 
-            return {
-              proof: proofResponseToGroth16Proof(p),
-              publicSignals: p.signals,
-            };
-          }),
-        });
+      return await paymentManager.bulkPaymentProofs({
+        paymentAccount: proofRequest.paymentAccount,
+        recipient: proofRequest.recipient,
+        proofs: proofRequest.proofs.map((p) => {
+          if (!p.signals) {
+            throw new Error("Missing publicSignals in proof response");
+          }
+
+          return {
+            proof: proofResponseToGroth16Proof(p),
+            publicSignals: p.signals,
+          };
+        }),
       });
     })
     .onMessage("payoutRequest", async (_payoutRequest, { peerId }) => {
       const payment = await paymentManager.processPayoutRequest({
         peerId,
       });
+
+      logger.log.info(
+        {
+          peerId: peerId.toString(),
+          paymentNonce: payment.nonce,
+          amount: payment.amount,
+        },
+        "Payout request processed",
+      );
 
       return {
         payment,
@@ -393,14 +409,16 @@ export const createManager = async ({
   });
 
   entity.node.addEventListener("peer:disconnect", (event) => {
+    logger.log.info({ peerId: event.detail.toString() }, "Worker disconnected");
     workerManager.disconnectWorker(event.detail.toString());
   });
 
   // start the manager
   await start();
+
   logger.log.info(
-    `Manager started on port ${managerSettings.port} with settings:`,
     managerSettings,
+    `Manager started on port ${managerSettings.port}`,
   );
 
   return {

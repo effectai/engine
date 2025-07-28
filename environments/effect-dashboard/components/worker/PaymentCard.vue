@@ -1,107 +1,93 @@
 <template>
-  <UCard
-    class="mb-4 p-0 overflow-y-scroll rounded-xlll text-black dark:text-white relative"
-  >
+  <UCard variant="mono" class="">
+    <!-- Header -->
     <template #header>
       <div class="flex justify-between items-center">
         <div class="flex items-center gap-2">
           <UIcon name="mdi:payment" />
           <h2 class="text-lg font-semibold">Settlements</h2>
         </div>
-        <div class="flex flex-end justify-end">
-          <UButton icon="mdi-key" class="" color="neutral"
-            >Export Private Key</UButton
-          >
-        </div>
+        <UButton @click="exportPrivateKey" icon="mdi-key" color="neutral">
+          Export Private Key
+        </UButton>
       </div>
     </template>
 
-    <WorkerClaimPaymentsModal
-      :managerPaymentBatches="managerPaymentBatches"
-      v-model="isOpenClaimModal"
-    />
-    <UCard variant="mono">
-      <div class="">
-        <UCard>
-          <template #header>
-            <div>
-              <UAlert
-                v-if="solanaBalanceLow"
-                icon="i-heroicons-information-circle"
-                color="neutral"
-                title="Low SOL Balance"
-                description="Your SOL balance is low. Please ensure you have enough SOL to cover transaction fees."
-                class="mb-4 rounded-lg"
-              >
-              </UAlert>
-            </div>
-            <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <span
-                  class="text-sm font-semibold text-gray-700 dark:text-gray-300"
-                  >Blockchain:</span
-                >
-                <span
-                  class="text-sm text-gray-600 dark:text-gray-400 capitalize"
-                >
-                  {{ walletMeta.chain }}</span
-                >
-              </div>
+    <!-- Modal & Main Content -->
+    <WorkerClaimPaymentsModal v-model="isOpenClaimModal" />
+    <div class="p-4 space-y-4">
+      <!-- Alerts & Wallet Info -->
+      <div class="rounded-xl bg-gray-100 dark:bg-white/5 p-4">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+              >Blockchain:</span
+            >
+            <span class="text-sm text-gray-600 dark:text-gray-400 capitalize">
+              {{ walletMeta.chain }}
+            </span>
+          </div>
 
-              <div class="flex items-center justify-between">
-                <span
-                  class="text-sm font-semibold text-gray-700 dark:text-gray-300"
-                  >Address:</span
-                >
-                <BlockchainAddress class="text-sm" :address="account" />
-              </div>
-              <div class="flex items-center justify-between">
-                <span
-                  class="text-sm font-semibold text-gray-700 dark:text-gray-300"
-                  >{{ balance?.symbol }} Balance:</span
-                >
-                <span class="text-sm text-gray-600 dark:text-gray-400">{{
-                  (balance && formatNumber(balance.value)) || "-"
-                }}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span
-                  class="text-sm font-semibold text-gray-700 dark:text-gray-300"
-                  >EFFECT Balance:</span
-                >
-                <span class="text-sm text-gray-600 dark:text-gray-400">{{
-                  (effectBalance && formatNumber(effectBalance.value)) || "-"
-                }}</span>
-              </div>
-            </div>
-          </template>
-        </UCard>
-        <div
-          v-if="paymentManagerRecords && paymentManagerRecords.length === 0"
-          class="p-4 text-center"
-        >
-          <p class="text-gray-500">No payments found.</p>
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+              >Address:</span
+            >
+            <BlockchainAddress class="text-sm" :address="account" />
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+              >{{ balance?.symbol }} Balance:</span
+            >
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ (balance && formatNumber(balance.value)) || "-" }}
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+              >EFFECT Balance:</span
+            >
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ (effectBalance && formatNumber(effectBalance.value)) || "-" }}
+            </span>
+          </div>
         </div>
-        <div v-else></div>
       </div>
-    </UCard>
-    <template #footer>
+
+      <!-- Payments List -->
       <div
-        class="text-center p-4 bg-white/10 bg-opacity-10 rounded-lg backdrop-blur-sm"
+        v-if="!managerPaymentBatches || managerPaymentBatches.length === 0"
+        class="text-center py-4"
       >
-        <div class="flex gap-4 items-center justify-center">
+        <p class="text-gray-500 dark:text-gray-400">No payments found.</p>
+      </div>
+      <div v-else>
+        <!-- your payment batch list content -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <template #footer>
+      <div class="">
+        <div
+          class="flex flex-col sm:flex-row items-center justify-center gap-4"
+        >
           <img src="@/assets/img/effect-coin.jpg" class="w-10 rounded-full" />
           <div>
             <p class="text-2xl font-bold">
-              {{ totalUnclaimedEffectFormatted }} EFFECT
+              {{ totalUnclaimedPayments }} EFFECT
             </p>
-            <p class="text-xs">Total Unclaimed EFFECT</p>
+            <p class="text-xs text-gray-600 dark:text-gray-400">
+              Total Unclaimed EFFECT
+            </p>
             <UButton
               class="mt-2"
               color="neutral"
               @click="isOpenClaimModal = true"
-              >Claim Payments</UButton
             >
+              Claim Payments
+            </UButton>
           </div>
         </div>
       </div>
@@ -110,8 +96,6 @@
 </template>
 
 <script setup lang="ts">
-const { getAllManagersFromPayments } = usePayments();
-const managerPaymentBatches = await getAllManagersFromPayments();
 const { account } = useAuth();
 const isOpenClaimModal = ref(false);
 
@@ -122,23 +106,40 @@ const walletMeta = {
   address: account.value,
 };
 
+const { useGetPaymentsQuery, computedTotalPaymentAmount } = usePayments();
+const { data: managerPaymentBatches } = useGetPaymentsQuery();
+const totalUnclaimedPayments = useNumberFormat(
+  computedTotalPaymentAmount(managerPaymentBatches),
+);
+
+const toast = useToast();
+const { keypair } = storeToRefs(useWorkerStore());
+const exportPrivateKey = () => {
+  const privateKey = keypair.value?.raw;
+  if (privateKey) {
+    const privateKeyHex = Buffer.from(privateKey).toString("hex");
+    navigator.clipboard
+      .writeText(privateKeyHex)
+      .then(() => {
+        toast.add({
+          title: "Private Key Copied",
+          description: "Your private key has been copied to the clipboard.",
+        });
+      })
+      .catch((err) => {
+        console.error("Failed to copy private key: ", err);
+      });
+  }
+};
+
 const { useGetBalanceQuery } = useSolanaWallet();
 const { useGetEffectBalanceQuery } = useSolanaRpc();
 const { data: balance } = useGetBalanceQuery(account);
 const { data: effectBalance } = useGetEffectBalanceQuery(account);
-
-const totalUnclaimedEffect = computed(() => {
-  return managerPaymentBatches.reduce((total, record) => {
-    const claimableAmount = record.claimablePayments.reduce((sum, payment) => {
-      return sum + (payment.state.amount || 0n);
-    }, 0n);
-    return total + claimableAmount;
-  }, 0n);
-});
-
-const totalUnclaimedEffectFormatted = computed(() => {
-  return formatNumber(Number(totalUnclaimedEffect.value / BigInt(1e6)));
-});
+//
+// const totalUnclaimedEffectFormatted = computed(() => {
+//   return formatNumber(Number((totalUnclaimedEffect.value || 0n) / BigInt(1e6)));
+// });
 
 const solanaBalanceLow = computed(() => {
   return balance.value && balance.value.value < 0.005;

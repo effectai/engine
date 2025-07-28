@@ -67,17 +67,36 @@ export const createWorkerManager = ({
     accessCode?: string,
   ) => {
     try {
-      // check if the peerId is already in the worker store
+      const currentTime = Math.floor(Date.now() / 1000);
+
+      // Retrieve existing worker or null if not found
       const workerRecord = await workerStore.getSafe({ entityId: peerId });
 
-      if (!workerRecord) {
-        if (managerSettings.requireAccessCodes) {
-          if (!accessCode) {
-            throw new EffectProtocolError(
-              "400",
-              "Access code is required to create a new worker",
-            );
-          }
+      const isNewWorker = !workerRecord;
+
+      // === VALIDATION: Access Code Required ===
+      const accessCodeRequired = managerSettings.requireAccessCodes;
+      const accessCodeMissing = accessCodeRequired && !accessCode;
+
+      if (accessCodeMissing && isNewWorker) {
+        throw new EffectProtocolError(
+          "400",
+          "Access code is required to create a new worker",
+        );
+      }
+
+      if (workerRecord?.state.banned) {
+        throw new ProtocolError("Worker is banned");
+      }
+
+      // === MAINTENANCE MODE CHECK ===
+      if (managerSettings.maintenanceMode && !workerRecord?.state.isAdmin) {
+        throw new EffectProtocolError("503", "Manager is in maintenance mode");
+      }
+
+      // === If NEW WORKER ===
+      if (isNewWorker) {
+        if (accessCodeRequired && accessCode) {
           await redeemAccessCode(peerId, accessCode);
         }
 
@@ -86,37 +105,48 @@ export const createWorkerManager = ({
           recipient,
           accessCodeRedeemed: accessCode,
         });
-      } else {
-        if (workerRecord.state.banned) {
-          throw new ProtocolError("Worker is banned");
-        }
+      }
 
-        if (!workerRecord.state.accessCodeRedeemed) {
-          if (managerSettings.requireAccessCodes) {
-            if (!accessCode) {
-              throw new Error(
-                "Access code is required to connect an existing worker",
-              );
-            }
-            await redeemAccessCode(peerId, accessCode);
+      // === If EXISTING WORKER ===
+      if (!isNewWorker) {
+        const needsRedemption =
+          accessCodeRequired && !workerRecord.state.accessCodeRedeemed;
+
+        if (needsRedemption) {
+          if (!accessCode) {
+            throw new EffectProtocolError(
+              "400",
+              "Access code is required to redeem access",
+            );
           }
+
+          await redeemAccessCode(peerId, accessCode);
+
+          await workerStore.updateWorker(peerId, () => ({
+            accessCodeRedeemed: accessCode,
+          }));
         }
       }
 
-      const currentTime = Math.floor(Date.now() / 1000);
+      // === Check if worker is already connected ===
+      if (workerQueue.queue.includes(peerId)) {
+        throw new EffectProtocolError("400", "Worker is already connected");
+      }
+
+      // === Final update before queueing ===
       await workerStore.updateWorker(peerId, () => ({
+        recipient,
         lastPayout: currentTime,
         lastActivity: currentTime,
       }));
 
-      // add worker to queue
+      // === Add to queue ===
       workerQueue.addPeer({ peerIdStr: peerId });
-    } catch (e) {
-      console.log(e);
-      throw e;
+    } catch (err) {
+      console.error("connectWorker error:", err);
+      throw err;
     }
   };
-
   const getWorker = async (peerId: string): Promise<WorkerRecord | null> => {
     const worker = await workerStore.getSafe({ entityId: peerId });
 

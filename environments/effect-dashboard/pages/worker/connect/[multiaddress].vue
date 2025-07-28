@@ -73,8 +73,14 @@ definePageMeta({
   middleware: ["auth"],
 });
 
-const { connectToManagerMutation, isActive, uptimeSeconds } = useSession();
+const {
+  connectToManagerMutation,
+  isActive,
+  uptimeSeconds,
+  disconnectFromManagerMutation,
+} = useSession();
 const { mutateAsync: connect } = connectToManagerMutation;
+const { mutateAsync: disconnect } = disconnectFromManagerMutation;
 
 const connectHandler = async (accessCode?: string) => {
   try {
@@ -154,7 +160,6 @@ const { data: _payout } = usePayout();
 // );
 //
 tryOnBeforeUnmount(async () => {
-  //TODO:: disconnect session before unmount..
-  // await disconnect();
+  await disconnect();
 });
 </script>

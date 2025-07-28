@@ -8,8 +8,8 @@ export const useNonce = () => {
 
   const useGetNoncesQueryParams = (
     account: MaybeRef<string | null>,
-    managerPublicKey: MaybeRef<string | null>,
-    managerPeerIdStr: MaybeRef<string | null>,
+    managerPublicKey: MaybeRef<string | undefined | null>,
+    managerPeerIdStr: MaybeRef<string | undefined | null>,
   ) => ({
     queryKey: ["nonces", account, managerPublicKey, managerPeerIdStr],
     queryFn: async () =>
@@ -28,9 +28,11 @@ export const useNonce = () => {
     managerPeerIdStr: MaybeRef<string>,
     recipient: MaybeRef<string | null> = account,
   ) => {
-    return await queryClient.ensureQueryData({
+    const data = await queryClient.ensureQueryData({
+      revalidateIfStale: true,
       ...useGetNoncesQueryParams(recipient, managerPublicKey, managerPeerIdStr),
     });
+    return data;
   };
 
   const getNoncesQueryFn = async (

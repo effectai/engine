@@ -29,11 +29,7 @@ export const useWorkerStore = defineStore("worker", () => {
 
   const initialize = async (privateKey: Uint8Array) => {
     status.value = "initializing";
-
-    const tagBytes = await generateDeterministicSeed();
-
-    const modifiedSeed = modifySeedLast4Bytes(privateKey, tagBytes);
-    keypair.value = await generateKeyPairFromSeed("Ed25519", modifiedSeed);
+    keypair.value = await generateKeyPairFromSeed("Ed25519", privateKey);
 
     datastore.value = new IDBDatastore(
       `/effect-ai/worker/${peerId.value?.toString()}`,
@@ -43,7 +39,7 @@ export const useWorkerStore = defineStore("worker", () => {
 
     instance.value = await createWorker({
       datastore: datastore.value,
-      privateKey,
+      privateKey: keypair.value,
       autoExpire: true,
     });
 
@@ -58,5 +54,6 @@ export const useWorkerStore = defineStore("worker", () => {
     initialize,
     isInitialized,
     datastore,
+    keypair,
   };
 });

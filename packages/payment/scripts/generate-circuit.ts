@@ -74,7 +74,7 @@ template VerifyPaymentBatch(n) {
     totalAmount <== total[n];
 }
 
-component main {public [pubX, pubY, receiver, paymentAccount]} = VerifyPaymentBatch(10);
+component main {public [pubX, pubY, receiver, paymentAccount]} = VerifyPaymentBatch(${BATCH_SIZE});
 `;
 
 fs.writeFileSync("./circuits/PaymentBatch.circom", template);
