@@ -3,9 +3,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-console.log("🔧 Generating PaymentBatch circuit...");
-
 const BATCH_SIZE = process.env.PAYMENT_BATCH_SIZE || 10;
+console.log("🔧 Generating PaymentBatch circuit with batch size:", BATCH_SIZE);
 
 const template = `
 pragma circom 2.0.0;
@@ -78,7 +77,6 @@ template VerifyPaymentBatch(n) {
 component main {public [pubX, pubY, receiver, paymentAccount]} = VerifyPaymentBatch(10);
 `;
 
-// Ensure the circuits directory exists
 fs.writeFileSync("./circuits/PaymentBatch.circom", template);
 
 console.log("✅ Circuit generated with batch size:", BATCH_SIZE);

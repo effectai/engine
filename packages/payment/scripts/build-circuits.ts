@@ -1,5 +1,8 @@
 import { execSync } from "node:child_process";
 import { mkdirSync, rmSync, existsSync } from "node:fs";
+import { argv } from "node:process";
+
+const args = argv.slice(2);
 
 const SNARKJS = "node ./node_modules/snarkjs/cli.js";
 const CIRCOM = "circom";
@@ -76,10 +79,27 @@ function exportVkey() {
 }
 
 async function main() {
+  if (!args.includes("--force") && existsSync(VKEY_FILE)) {
+    console.log(
+      "✅ Verification key already exists. Use --force to regenerate.",
+    );
+    return;
+  }
+
+  if (args.includes("--clean")) {
+    console.log("Cleaning up previous builds...");
+    rmSync(CIRCUIT_OUT_DIR, { recursive: true, force: true });
+    rmSync(SETUP_DIR, { recursive: true, force: true });
+    console.log("✅ Cleanup complete.");
+    return;
+  }
+
+  //start the setup process
   compileCircuit();
   phase1();
   phase2();
   exportVkey();
+
   console.log("\n✅ ZKP setup complete.");
 }
 
