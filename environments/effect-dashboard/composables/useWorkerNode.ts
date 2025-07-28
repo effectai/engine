@@ -61,8 +61,8 @@ export const useWorkerNode = () => {
   };
 
   const daysInNetwork = computed(() => {
-    const firstTaskDate = decodeTime(completedTasks.value?.[0]?.state.id);
-    if (!firstTaskDate) return 1;
+    if (!completedTasks.value || completedTasks.value.length === 0) return 1;
+    const firstTaskDate = decodeTime(completedTasks.value?.[0].state.id);
 
     const firstTask = new Date(firstTaskDate);
     const now = new Date();

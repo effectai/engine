@@ -636,6 +636,9 @@ importers:
       circomlibjs:
         specifier: ^0.1.6
         version: 0.1.7(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.5.0
       ffjavascript:
         specifier: ^0.3.1
         version: 0.3.1
