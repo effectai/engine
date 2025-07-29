@@ -49,6 +49,11 @@
           :class="{ 'is-primary': this.answer == '5+' }"
           @click="this.answer='5+'">5+</button>
       </div>
+      <div class="column is-narrow" style="text-align: center;">
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.answer == 'Not Sure' }"
+          @click="this.answer='Not Sure'">Not Sure</button>
+      </div>
     </div>
     </div>
 
@@ -83,15 +88,31 @@
           title: "Effect AI Image Labeler",
           imageSource: "${image_url}",
           btnLoading: false,
-          ipfsClient: null,
           answer: "",
           loading: true,
           notComplete: false,
+          instructions: `
+          <div class="">
+            <p><strong>Count how many animals are in the picture.</strong></p>
+            <img width="50%" src="https://ipfs.effect.ai/ipfs/QmRutrA5EG76gkiotJL2N7VF5nzYKMD2WWH23msxMsusTU">
+            <br>
+            <br>
+            <p><strong>If you are not 100% sure, select the "Not Sure" button</strong></p>
+            <img width="50%" src="https://ipfs.effect.ai/ipfs/QmX3aFUsnJyJNNSejhBUPFPo1AgUG2E2FQGctgp1eh3y2N">
+          </div>`
         };
       },
       computed: {},
       created() {},
-      mounted() {},
+      mounted() {
+        window.top.postMessage(
+        {
+          type: 'task-instructions',
+          instructions: this.instructions
+        },
+        "*"
+      );
+      },
       methods: {
         async uploadAndSubmit() {
           this.btnLoading = true;
@@ -104,8 +125,12 @@
                 {
                   task: "submit",
                   values: {
-                    animalCount: this.answer,
-                    image: this.imageSource,
+                    taskTitle: this.title,
+                    answer:{
+                      animalCount: this.answer,
+                      image: this.imageSource,
+                    }
+                    
                   },
                 },
                 "*",

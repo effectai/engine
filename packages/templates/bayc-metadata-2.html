@@ -131,18 +131,39 @@
           title: "Effect AI NFT Metadata Collector",
           imageSource: "${image_url}",
           btnLoading: false,
-          ipfsClient: null,
           bgColor: "",
           loading: true,
           isActive: false,
           notComplete: false,
           hasTeeth: "",
-          hasEaring: ""
+          hasEaring: "",
+          instructions: `
+          <div class="">
+            <div>
+              <div>
+                <h2 class="text-lg">This NFT has an <strong>earing</strong></h2>  
+                <img width="50%" src="https://ipfs.effect.ai/ipfs/QmUS8Kr935Z2jBtAz7WZQ2tym83GGFJXBdfEQ7Am7UqpxB">
+              </div>
+              <br><hr><br>
+              <div>
+                <h2 class="text-lg">This NFT has an <strong>earing</strong> and is showing <strong>teeth</strong></h2>
+                <img width="50%" src="https://ipfs.effect.ai/ipfs/QmfWJMiJMiRGwdhfTcf5wKLmFnXHQfv1bBg8nZE7EtDeao">
+              </div>
+            </div>
+          </div>`
         };
       },
       computed: {},
       created() {},
-      mounted() {},
+      mounted() {
+        window.top.postMessage(
+        {
+          type: 'task-instructions',
+          instructions: this.instructions
+        },
+        "*"
+      );
+      },
       methods: {
         async uploadAndSubmit() {
           this.btnLoading = true;
@@ -155,10 +176,14 @@
                 {
                   task: "submit",
                   values: {
-                    bgColor: this.bgColor,
-                    hasTeeth: this.hasTeeth,
-                    hasEaring: this.hasEaring,
-                    image: this.imageSource,
+                    taskTitle: this.title,
+                    answer:{
+                      bgColor: this.bgColor,
+                      hasTeeth: this.hasTeeth,
+                      hasEaring: this.hasEaring,
+                      image: this.imageSource,
+                    }
+                    
                   },
                 },
                 "*",
