@@ -52,6 +52,21 @@
             </div>
           </template>
 
+          <template #default>
+            <div
+              class="p-4 overflow-y-auto"
+              :class="{ 'opacity-30': taskState === 'create' }"
+              v-if="activeTask"
+            >
+              <WorkerTaskTemplate
+                ref="template"
+                @submit="handlerSubmitTask"
+                @ready="isTemplateReady = true"
+                @instructions="currentTaskInstructions = $event"
+              />
+            </div>
+          </template>
+
           <template #footer>
             <div class="flex space-x-2" v-if="showForceSubmitTaskButton">
               <UButton
@@ -62,21 +77,6 @@
                 <UIcon name="i-heroicons-exclamation-circle-20-solid" />
                 Report & Skip Task
               </UButton>
-            </div>
-          </template>
-
-          <template #default>
-            <div
-              class="p-4"
-              :class="{ 'opacity-30': taskState === 'create' }"
-              v-if="activeTask"
-            >
-              <WorkerTaskTemplate
-                ref="template"
-                @submit="handlerSubmitTask"
-                @ready="isTemplateReady = true"
-                @instructions="currentTaskInstructions = $event"
-              />
             </div>
           </template>
         </UCard>
