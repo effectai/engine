@@ -1,11 +1,11 @@
 <template>
-  <div>
-    <UModal
-        v-model="data"
-        :ui="{
-          width: 'w-full sm:max-w-[42em]', // Set the full modal width here
-        }"
-      >
+  <UModal
+    v-model:open="data"
+    :ui="{
+      width: 'w-full sm:max-w-[42em]', // Set the full modal width here
+    }"
+  >
+    <template #content>
       <UCard
         :ui="{
           base: 'relative overflow-hidden',
@@ -35,7 +35,7 @@
           <div class="flex justify-end">
             <UButton
               @click="closeModal"
-              color="red"
+              color="error"
               variant="solid"
               size="md"
               class="font-medium"
@@ -45,12 +45,11 @@
           </div>
         </template>
       </UCard>
-    </UModal>
-  </div>
+    </template>
+  </UModal>
 </template>
 
 <script setup lang="ts">
-
 const props = defineProps<{
   modelValue: boolean;
   instructions: string;
@@ -64,7 +63,6 @@ const emit = defineEmits(["update:modelValue"]);
 const data = useVModel(props, "modelValue", emit);
 
 const toast = useToast();
-
 </script>
 
 <style lang="scss" scoped></style>
