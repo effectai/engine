@@ -6,10 +6,6 @@ import path from "node:path";
 import { groth16, type Groth16Proof } from "snarkjs";
 import type { Payment } from "@effectai/protobufs";
 import { PAYMENT_BATCH_SIZE } from "./consts.js";
-import PaymentBatchVerifier from "../../circuits/build/PaymentBatch_verification.json" with {
-  type: "json",
-};
-
 export type { Groth16Proof } from "snarkjs";
 export { buildEddsa } from "circomlibjs";
 
@@ -173,6 +169,13 @@ export const prove = async ({
   proof: Groth16Proof;
   publicSignals: PublicSignals;
 }) => {
+  const PaymentBatchVerifier = await import(
+    "../../circuits/build/PaymentBatch_verification.json",
+    {
+      assert: { type: "json" },
+    }
+  );
+
   return await groth16.verify(
     PaymentBatchVerifier,
     [...Object.values(publicSignals)],
