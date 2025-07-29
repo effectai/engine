@@ -8,7 +8,8 @@
     "generate:circuit": "node --experimental-strip-types scripts/generate-circuit.ts",
     "build:circuits": "node --experimental-strip-types scripts/build-circuits.ts",
     "compile:ts": "tsup clients/js --config ../../tsup.config.package.ts",
-    "build": "pnpm run generate:circuit && pnpm run generate:constants && pnpm run compile:ts && pnpm run build:circuits"
+    "build": "pnpm run generate:constants --dotenv .env.production && pnpm run compile:ts",
+    "build:circuit": "pnpm run generate:circuit && pnpm run generate:constants && pnpm run compile:ts && pnpm run build:circuits"
   },
   "main": "dist/index.cjs",
   "exports": {
