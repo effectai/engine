@@ -169,15 +169,13 @@ export const prove = async ({
   proof: Groth16Proof;
   publicSignals: PublicSignals;
 }) => {
-  // @ts-ignore: Dynamic import; path is resolved at runtime
-  // const PaymentBatchVerifier = await import(
-  //   "../../circuits/build/PaymentBatch_verification.json",
-  //   {
-  //     assert: { type: "json" },
-  //   }
-  // );
-  //
-  const PaymentBatchVerifier = "";
+  const PaymentBatchVerifier = await import(
+    "../../circuits/PaymentBatch_verification.json",
+    {
+      assert: { type: "json" },
+    }
+  );
+
   return await groth16.verify(
     PaymentBatchVerifier,
     [...Object.values(publicSignals)],
