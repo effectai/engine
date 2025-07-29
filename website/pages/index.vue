@@ -8,18 +8,19 @@
         <h1
           class="title mb-6 is-size-2-tablet is-size-3 has-text-dark has-text-weight-light is-auto-phrase"
         >
-          <span> Supercharging </span>
-          <span> AI Agents </span>
-          <span> with Human Intelligence </span>
+          <span>A Decentralized </span>
+          <span>Capability-Driven Task Execution Engine</span>
         </h1>
       </template>
 
       <template #subtitle>
         <p class="subtitle mb-5 has-text-dark">
           <span class="pr-6">
-            Effect AI is a permissionless protocol designed to supply, assign,
-            and execute human-driven AI tasks, supercharging <b>AI agents</b> &
-            <b>LLM models</b> to achieve next-level performance and accuracy.
+            AI's next revolution isn't about better models — it's about
+            networked capabilities. The Effect AI Protocol introduces a
+            peer-to-peer decentralized ecosystem that transforms skills, data
+            streams, algorithms, inference, and computational resources into
+            liquid, interoperable assets.
           </span>
         </p>
       </template>
@@ -40,7 +41,7 @@
                     class="button is-black is-rounded is-outlined is-flex is-medium"
                     style="gap: 14px; font-weight: 400"
                   >
-                    Documentation
+                    Whitepaper
                     <span class="icon">
                       <i class="icon">
                         <svg
@@ -66,14 +67,14 @@
             <div class="column">
               <nuxt-link
                 class="is-flex"
-                to="https://dao.effect.network"
+                to="https://portal.effect.ai"
                 exact-active-class="is-active"
               >
                 <button
                   class="button is-black is-rounded is-flex is-medium"
                   style="gap: 10px"
                 >
-                  Governance
+                  Join our Alpha
                 </button>
               </nuxt-link>
             </div>
@@ -83,75 +84,50 @@
     </HeroSection>
   </div>
 
-  <SimpleSection
-    class="is-flex is-justify-content-center is-flex-direction-column"
-  >
+  <section class="fluid-container has-background-dark">
     <div class="container">
-      <div class="is-flex is-justify-content-center is-flex-direction-column">
-        <h2
-          class="is-flex is-justify-content-center is-size-3 has-text-weight-medium has-text-primary has-text-left"
-        >
-          The New $EFFECT Token
-        </h2>
-        <p class="is-justify-content-center my-5 has-text-centered">
-          Starting January 5th 2025, you can claim your EFFECT tokens via the
-          official Claim Portal at
-          <a href="https://portal.effect.ai">portal.effect.ai</a>.
-        </p>
-        <nuxt-link
-          class="is-flex is-justify-content-center"
-          to="https://portal.effect.ai"
-          exact-active-class="is-active"
-        >
-          <button
-            class="button is-black is-rounded is-flex is-medium"
-            style="gap: 10px"
+      <div class="columns">
+        <div class="column is-one-third">
+          <p
+            class="is-size-7 has-text-light has-text-weight-medium is-uppercase mb-5"
           >
-            Go to Portal
-          </button>
-        </nuxt-link>
-      </div>
-    </div>
-  </SimpleSection>
-
-  <SimpleSection class="has-text-light has-background-dark">
-    <div class="container">
-      <div class="columns is-mobile is-multiline">
-        <div
-          class="be-part-of column is-full-mobile mb-4-mobile is-one-third-tablet has-text-left"
-        >
-          <p class="is-size-3 has-text-medium">
-            Be part of the <br />
-            AI future:
+            Start Building with Effect AI
           </p>
+          <div class="is-size-3 has-text-light mb-6">
+            Building the Future of AI Together
+          </div>
+          <div>
+            <a href="https://github.com/effectai">
+              <button
+                class="button is-white is-rounded is-outlined is-flex is-medium mt-6"
+              >
+                Contribute
+                <span class="icon ml-1">
+                  <i class="fab fa-github"></i>
+                </span></button
+            ></a>
+          </div>
         </div>
-        <div
-          class="column is-full-mobile has-text-left has-text-centered-mobile"
-        >
-          <p class="is-size-2 has-text-weight-bold">23</p>
-          <p class="is-size-5 has-text-grey-light has-text-weight-medium">
-            Apps in Ecosystem
-          </p>
-        </div>
-        <div
-          class="column is-full-mobile has-text-left has-text-centered-mobile"
-        >
-          <p class="is-size-2 has-text-weight-bold">2.1M</p>
-          <p class="is-size-5 has-text-grey-light has-text-weight-medium">
-            Tasks Completed
-          </p>
-        </div>
-        <div
-          class="column is-full-mobile has-text-left has-text-centered-mobile"
-        >
-          <p class="is-size-2 has-text-weight-bold">205</p>
-          <p class="is-size-5 has-text-grey-light has-text-weight-medium">
-            Proposals created
-          </p>
+        <div class="column">
+          <Contributors
+            class="is-flex is-justify-content-center mt-5"
+            :repoOwner="'effectai'"
+            :repoName="'effect-js'"
+            :maxContributors="10"
+            :title="'Core Contributors'"
+            :featured="[
+              'jeisses',
+              'Jeffrieh',
+              'laurensV',
+              'MiggySmallz',
+              'rochelle8044',
+            ]"
+          >
+          </Contributors>
         </div>
       </div>
     </div>
-  </SimpleSection>
+  </section>
 
   <SimpleSection :centered="true">
     <template #subtitle>
@@ -160,20 +136,17 @@
           <div class="column is-two-fifth">
             <div class="columns h-full">
               <div class="column is-four-fifths">
-                <p class="is-size-5 has-text-weight-normal has-text-left">
-                  Effect Workforce
-                </p>
+                <p class="is-size-5 has-text-weight-normal has-text-left"></p>
               </div>
             </div>
           </div>
           <div class="column quote-text is-two-thirds">
             <p class="is-size-3 has-text-left has-text-weight-medium">
-              Empowering a global human workforce to shape the future of AI,
-              combining blockchain and P2P technology to deliver smarter,
-              inclusive, and impactful AI solutions.
+              Whether we are based on carbon or on silicon makes no fundamental
+              difference; we should each be treated with appropriate respect.
             </p>
-            <p class="is-size-3 has-text-left has-text-weight-medium">
-              — you're shaping the future of technology.
+            <p class="is-size-3 mt-5 has-text-left has-text-weight-medium">
+              — Arthur C. Clarke
             </p>
           </div>
         </div>
@@ -192,24 +165,19 @@
                 Complete Tasks
               </h2>
               <p class="is-size-5 has-text-weight-normal has-text-left">
-                Complete tasks and earn $EFFECT directly to your wallet.
+                Complete tasks and earn EFFECT directly to your wallet.
               </p>
               <div class="mt-5 has-text-left">
-                <nuxt-link
-                  class="is-flex"
-                  to="https://portal.effect.ai/worker"
-                  exact-active-class="is-active"
-                >
-                  <button
-                  class="button is-white is-rounded is-outlined is-flex is-medium"
-                  style="gap: 10px"
+                <a href="https://portal.effect.ai/worker"
+                  ><button
+                    class="button is-white is-rounded is-outlined is-flex is-medium"
+                    style="gap: 10px"
                   >
-                    Alpha Phase in progress..
+                    Start earning
                     <span class="icon">
                       <i class="fas fa-arrow-right"></i>
-                    </span>
-                  </button>
-                </nuxt-link>
+                    </span></button
+                ></a>
               </div>
             </div>
           </div>
@@ -337,7 +305,7 @@ useSeoMeta({
   }
 
   .grid-container {
-    margin-right: calc(60% - 50vw);
+    margin-right: calc(50% - 50vw);
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     grid-template-rows: auto;
