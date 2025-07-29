@@ -20,6 +20,7 @@
   "packageManager": "pnpm@10.9.0",
   "dependencies": {
     "@effectai/protocol-core": "workspace:*",
+		    "@effectai/protobufs": "workspace:*",
     "@libp2p/ping": "^2.0.29",
     "@libp2p/webrtc": "^5.0.14"
   },

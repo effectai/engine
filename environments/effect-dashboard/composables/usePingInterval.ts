@@ -2,19 +2,16 @@ import { multiaddr } from "@effectai/protocol";
 import { useQuery } from "@tanstack/vue-query";
 
 export const usePing = () => {
-  const sessionStore = useSessionStore();
-  const { managerMultiAddress } = storeToRefs(sessionStore);
+  const { manager } = useSession();
+  const { instance: worker } = storeToRefs(useWorkerStore());
 
-  const workerStore = useWorkerStore();
-  const { worker } = storeToRefs(workerStore);
-
-  const isReady = computed(() => !!worker.value && !!managerMultiAddress.value);
+  const isReady = computed(() => !!worker.value && !!manager.value?.multiaddr);
 
   return useQuery({
     queryKey: ["ping"],
     queryFn: async () => {
-      if (!worker.value || !managerMultiAddress.value) return;
-      return await worker.value.ping(multiaddr(managerMultiAddress.value));
+      if (!worker.value || !manager.value?.multiaddr) return;
+      return await worker.value.ping(multiaddr(manager.value.multiaddr));
     },
     enabled: isReady,
     refetchInterval: 90_000,

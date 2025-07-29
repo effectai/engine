@@ -34,9 +34,9 @@ const route = useRoute();
 
 const navigation = ref([
   {
-    name: "Worker",
+    name: "Node",
     href: "/worker",
-    icon: "lucide:cpu",
+    icon: "lucide:server",
     current: computed(() => route.path.includes("/worker")),
   },
   {

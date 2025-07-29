@@ -1,0 +1,4 @@
+circuits/build
+circuits/PaymentBatch.circom
+clients/js/consts.ts
+

@@ -5,5 +5,10 @@ export {
   getPayer,
   createKeypairFromFile,
   loadProvider,
+  SolanaProviderFactory,
+  createLocalSolanaProvider,
+  getAssociatedTokenAccount,
+  executeWithSolanaProvider,
 } from "./solana.js";
+
 export * from "./node.js";

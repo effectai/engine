@@ -2,15 +2,17 @@ import type {
   WorkerTaskRecord,
   WorkerTaskStore,
 } from "../stores/workerTaskStore.js";
+
 import type { WorkerEntity, WorkerEvents } from "../main.js";
 import type { createTemplateWorker } from "./createTemplateWorker.js";
 
 import {
   peerIdFromString,
-  type Task,
   type PeerId,
-  TypedEventEmitter,
+  type TypedEventEmitter,
 } from "@effectai/protocol-core";
+
+import type { Task } from "@effectai/protobufs";
 
 export function createTaskWorker({
   entity,

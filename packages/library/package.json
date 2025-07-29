@@ -29,9 +29,10 @@
   },
   "dependencies": {
     "@effectai/protocol-core": "workspace:*",
+    "@effectai/protobufs": "workspace:*",
     "@effectai/worker": "workspace:*",
     "@effectai/manager": "workspace:*",
-    "@effectai/zkp": "workspace:*"
+    "@effectai/payment": "workspace:*"
   },
   "devDependencies": {
     "@effectai/test-utils": "workspace:*",

@@ -928,6 +928,8 @@ dependencies = [
  "effect-common",
  "groth16-solana",
  "hex",
+ "num-bigint",
+ "num-traits",
 ]
 
 [[package]]

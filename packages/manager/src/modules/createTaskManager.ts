@@ -16,10 +16,10 @@ import { computeTemplateId } from "../utils.js";
 import {
   type TypedEventEmitter,
   type TemplateStore,
-  type Task,
-  type Template,
   peerIdFromString,
 } from "@effectai/protocol-core";
+
+import type { Task, Template } from "@effectai/protobufs";
 
 export interface PaginatedResult<T> {
   items: T[];

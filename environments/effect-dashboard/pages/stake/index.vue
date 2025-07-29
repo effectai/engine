@@ -13,7 +13,13 @@
         </div>
       </div>
     </div>
-    <UTabs v-if="publicKey" :items="items" class="" v-model="selected">
+    <UTabs
+      v-if="publicKey"
+      :default-value="overview"
+      color="neutral"
+      :items="items"
+      class=""
+    >
       <template #overview="{ item }">
         <div class="">
           <StakeOverviewCard />
@@ -35,25 +41,26 @@
 </template>
 
 <script setup lang="ts">
-  import { WalletMultiButton, useWallet } from "solana-wallets-vue";
+import { WalletMultiButton, useWallet } from "solana-wallets-vue";
 
-  const items = [
-    {
-      slot: "overview",
-      label: "Overview",
-    },
-    {
-      slot: "stake",
-      label: "Stake",
-    },
-    {
-      slot: "unstake",
-      label: "Unstake",
-    },
-  ];
+const active = ref(1);
+const items = ref([
+  {
+    slot: "overview" as const,
+    label: "Overview",
+  },
+  {
+    slot: "stake" as const,
+    label: "Stake",
+  },
+  {
+    slot: "unstake" as const,
+    label: "Unstake",
+  },
+]);
 
-  const selected = ref(0);
-  const { publicKey } = useWallet();
+const selected = ref(0);
+const { publicKey } = useWallet();
 </script>
 
 <style scoped>
