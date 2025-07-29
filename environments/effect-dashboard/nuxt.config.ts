@@ -15,7 +15,7 @@ export default defineNuxtConfig({
   app: {
     head: {
       bodyAttrs: {
-        class: "bg-white dark:bg-[Canvas]",
+        class: "bg-white dark:bg-[#333]",
       },
     },
   },

@@ -123,6 +123,7 @@ const handlerAcceptTask = async () => {
     title: "Success",
     color: "success",
     description: "Task accepted successfully",
+    duration: 1000,
   });
 
   await queryClient.invalidateQueries({

@@ -156,7 +156,7 @@ const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
   useMutation({
     mutationFn: async () => {
       try {
-        for (const batch of props.managerPaymentBatches) {
+        for (const batch of managerPaymentBatches.value || []) {
           //TODO:: hacky we need to find an online manager to batch payments..
           const manager = managers.value[0];
 

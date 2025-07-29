@@ -301,12 +301,22 @@ export async function createPaymentManager({
     request: ProofRequest;
   }) => {
     try {
+      const startTime = performance.now();
       const { proof, publicSignals } = await generatePaymentProof({
         recipient: request.recipient,
         paymentAccount: request.paymentAccount,
         publicKey,
         payments: request.payments as Array<SignedPayment>,
       });
+      const endTime = performance.now();
+
+      logger.log.info(
+        {
+          payments: request.payments.length,
+          recipient: request.recipient,
+        },
+        `Generated proof in ${endTime - startTime}ms`,
+      );
 
       return ProofToProofResponseMessage(proof, publicSignals);
     } catch (e) {

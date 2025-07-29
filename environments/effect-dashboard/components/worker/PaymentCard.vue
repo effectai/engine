@@ -78,7 +78,7 @@
             <p class="text-2xl font-bold">
               {{ totalUnclaimedPayments }} EFFECT
             </p>
-            <p class="text-xs text-gray-600 dark:text-gray-400">
+            <p class="text-xs text-gray-900 dark:text-gray-400">
               Total Unclaimed EFFECT
             </p>
             <UButton
@@ -113,13 +113,12 @@ const totalUnclaimedPayments = useNumberFormat(
 );
 
 const toast = useToast();
-const { keypair } = storeToRefs(useWorkerStore());
-const exportPrivateKey = () => {
-  const privateKey = keypair.value?.raw;
+const { requestPrivateKey } = useAuth();
+const exportPrivateKey = async () => {
+  const privateKey = await requestPrivateKey();
   if (privateKey) {
-    const privateKeyHex = Buffer.from(privateKey).toString("hex");
     navigator.clipboard
-      .writeText(privateKeyHex)
+      .writeText(privateKey)
       .then(() => {
         toast.add({
           title: "Private Key Copied",

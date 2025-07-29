@@ -1,7 +1,7 @@
 <template>
   <UCard class="flex flex-col">
     <form @submit.prevent="handleSubmit" class="space-y-6">
-      <div class="dark:!bg-[#1C1A1F] p-6 rounded-xl">
+      <div class="p-6 rounded-xl">
         <h3 class="text-lg font-semibold mb-6">Stake Tokens</h3>
         <div class="space-y-6">
           <div>

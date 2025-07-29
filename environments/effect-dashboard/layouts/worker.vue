@@ -83,7 +83,7 @@
     <div class="lg:pl-72">
       <div class="sticky top-0 z-40 lg:mx-auto lg:max-w-5xl lg:px-8">
         <div
-          class="flex h-16 items-center gap-x-4 border-b border-gray-200 bg-white dark:bg-[Canvas] dark:border-black px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-0 lg:shadow-none"
+          class="flex h-16 items-center gap-x-4 border-b border-gray-200 bg-white dark:bg-[#333] dark:border-black px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-0 lg:shadow-none"
         >
           <button
             type="button"

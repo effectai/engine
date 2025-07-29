@@ -130,7 +130,8 @@ export const createWorkerManager = ({
 
       // === Check if worker is already connected ===
       if (workerQueue.queue.includes(peerId)) {
-        throw new EffectProtocolError("400", "Worker is already connected");
+        //disconnect the worker if already connected
+        await disconnectWorker(peerId);
       }
 
       // === Final update before queueing ===

@@ -235,8 +235,6 @@ export function createTaskManager({
       label: `Payment for task: ${taskRecord.state.id}`,
     });
 
-    console.log("Payment generated:", payment);
-
     await taskStore.payout({
       entityId: taskRecord.state.id,
       payment,

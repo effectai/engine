@@ -34,8 +34,8 @@ export const usePayments = () => {
       (queryResult.value ?? []).reduce(
         (acc, manager) =>
           acc +
-          manager.claimablePayments.reduce(
-            (sum, payment) => sum + payment.state.amount,
+          manager.claimablePayments?.reduce(
+            (sum, payment) => sum + payment.state.amount / BigInt(1e6),
             0n,
           ),
         0n,
