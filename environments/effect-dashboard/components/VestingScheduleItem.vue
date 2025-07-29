@@ -6,8 +6,8 @@
           <span v-if="balance">{{
             formatAmountToBalance(
               vestingAccount.account.distributedTokens.add(
-                new BN(balance.value * 1e6)
-              )
+                new BN(balance.value * 1e6),
+              ),
             )
           }}</span>
           <span v-else>...</span>
@@ -18,7 +18,7 @@
             Starts on:
             {{
               new Date(
-                vestingAccount.account.startTime.toNumber() * 1000
+                vestingAccount.account.startTime.toNumber() * 1000,
               ).toLocaleString()
             }}</span
           >
@@ -27,14 +27,14 @@
       <div class="flex flex-col items-end gap-2">
         <UBadge
           v-if="!scheduleStarted(vestingAccount.account.startTime)"
-          color="gray"
+          color="neutral"
           variant="outline"
         >
           Locked
         </UBadge>
         <UButton
           v-else-if="amountDue"
-          color="gray"
+          color="neutral"
           variant="solid"
           size="sm"
           icon="i-heroicons-gift"
@@ -44,7 +44,7 @@
         </UButton>
         <UButton
           v-else-if="progress == 100"
-          color="gray"
+          color="neutral"
           variant="solid"
           size="sm"
           icon="i-heroicons-gift"
@@ -57,7 +57,7 @@
     </div>
     <div>
       <UProgress
-        :value="progress"
+        v-model="progress"
         :variant="progress < 1 ? 'solid' : 'gradient'"
         class="mt-2"
       />
@@ -66,87 +66,87 @@
 </template>
 
 <script setup lang="ts">
-  import { BN } from "@coral-xyz/anchor";
-  import { useDeriveVestingAccounts } from "@effectai/utils";
+import { BN } from "@coral-xyz/anchor";
+import { useDeriveVestingAccounts } from "@effectai/utils";
 
-  const { vestingProgram, useClaim } = useVestingProgram();
+const { vestingProgram, useClaim } = useVestingProgram();
 
-  const props = defineProps<{
-    vestingAccount: VestingAccount;
-  }>();
+const props = defineProps<{
+  vestingAccount: VestingAccount;
+}>();
 
-  const { useGetTokenAccountBalanceQuery } = useSolanaWallet();
+const { useGetTokenAccountBalanceQuery } = useSolanaWallet();
 
-  const { vestingVaultAccount } = useDeriveVestingAccounts({
-    vestingAccount: props.vestingAccount.publicKey,
-    programId: vestingProgram.value.programId,
+const { vestingVaultAccount } = useDeriveVestingAccounts({
+  vestingAccount: props.vestingAccount.publicKey,
+  programId: vestingProgram.value.programId,
+});
+
+const { data: balance } = useGetTokenAccountBalanceQuery(
+  ref(vestingVaultAccount),
+);
+
+const scheduleStarted = (timestamp: BN) => {
+  return Date.now() > timestamp.toNumber() * 1000;
+};
+
+const { mutateAsync: claim } = useClaim();
+const claimTokens = async () => {
+  await claim({
+    address: props.vestingAccount.publicKey,
+    vestingAccount: props.vestingAccount,
   });
+};
 
-  const { data: balance } = useGetTokenAccountBalanceQuery(
-    ref(vestingVaultAccount)
+const amountDue = computed(() => {
+  if (!balance.value) return 0;
+  return new BN(
+    calculateDue(
+      props.vestingAccount.account.startTime.toNumber(),
+      props.vestingAccount.account.releaseRate.toNumber(),
+      props.vestingAccount.account.distributedTokens.toNumber(),
+      balance.value.value,
+    ),
   );
+});
 
-  const scheduleStarted = (timestamp: BN) => {
-    return Date.now() > timestamp.toNumber() * 1000;
-  };
+const progress = computed(() => {
+  if (!balance.value || !amountDue.value) return 100;
+  return (
+    (formatAmountToBalance(
+      amountDue.value.add(props.vestingAccount.account.distributedTokens),
+    ) /
+      formatAmountToBalance(
+        props.vestingAccount.account.distributedTokens.add(
+          new BN(balance.value.value * 1e6),
+        ),
+      )) *
+    100
+  );
+});
 
-  const { mutateAsync: claim } = useClaim();
-  const claimTokens = async () => {
-    await claim({
-      address: props.vestingAccount.publicKey,
-      vestingAccount: props.vestingAccount,
-    });
-  };
+const calculateDue = (
+  startTime: number,
+  releaseRate: number,
+  distributedTokens: number,
+  amountAvailable: number,
+): number => {
+  // get now as a unix timestamp
+  const now = Math.floor(new Date().getTime() / 1000);
 
-  const amountDue = computed(() => {
-    if (!balance.value) return 0;
-    return new BN(
-      calculateDue(
-        props.vestingAccount.account.startTime.toNumber(),
-        props.vestingAccount.account.releaseRate.toNumber(),
-        props.vestingAccount.account.distributedTokens.toNumber(),
-        balance.value.value
-      )
-    );
-  });
+  if (now < startTime) {
+    return 0;
+  }
 
-  const progress = computed(() => {
-    if (!balance.value || !amountDue.value) return 100;
-    return (
-      (formatAmountToBalance(
-        amountDue.value.add(props.vestingAccount.account.distributedTokens)
-      ) /
-        formatAmountToBalance(
-          props.vestingAccount.account.distributedTokens.add(
-            new BN(balance.value.value * 1e6)
-          )
-        )) *
-      100
-    );
-  });
+  const poolAmount = (now - startTime) * releaseRate;
 
-  const calculateDue = (
-    startTime: number,
-    releaseRate: number,
-    distributedTokens: number,
-    amountAvailable: number
-  ): number => {
-    // get now as a unix timestamp
-    const now = Math.floor(new Date().getTime() / 1000);
+  const amountDue = poolAmount - distributedTokens;
+  return Math.min(amountDue, amountAvailable * 1_000_000);
+};
 
-    if (now < startTime) {
-      return 0;
-    }
-
-    const poolAmount = (now - startTime) * releaseRate;
-
-    const amountDue = poolAmount - distributedTokens;
-    return Math.min(amountDue, amountAvailable * 1_000_000);
-  };
-
-  const closeVestingHandler = async () => {
-    console.log("close vesting account");
-  };
+const closeVestingHandler = async () => {
+  console.log("close vesting account");
+};
 </script>
 
 <style lang="scss" scoped></style>

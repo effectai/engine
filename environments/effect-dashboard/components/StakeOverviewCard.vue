@@ -99,10 +99,10 @@ import ConfettiExplosion from "vue-confetti-explosion";
 const { useGetStakeAccount } = useStakingProgram();
 
 const {
-	useGetRewardAccount,
-	useClaimRewards,
-	useGetReflectionAccount,
-	intermediaryReflectionVaultAccount,
+  useGetRewardAccount,
+  useClaimRewards,
+  useGetReflectionAccount,
+  intermediaryReflectionVaultAccount,
 } = useRewardProgram();
 const { publicKey } = useWallet();
 
@@ -110,27 +110,27 @@ const { publicKey } = useWallet();
  * Stake age Logic
  */
 const {
-	data: stakeAccount,
-	isLoading,
-	unstakeDays,
-	amountFormatted: stakeAmount,
+  data: stakeAccount,
+  isLoading,
+  unstakeDays,
+  amountFormatted: stakeAmount,
 } = useGetStakeAccount();
 
 const stakeAge = computed(() => {
-	if (!stakeAccount.value?.account.stakeStartTime || !currentTime.value)
-		return 0;
-	return calculateStakeAge(
-		stakeAccount.value.account.stakeStartTime.toNumber(),
-	);
+  if (!stakeAccount.value?.account.stakeStartTime || !currentTime.value)
+    return 0;
+  return calculateStakeAge(
+    stakeAccount.value.account.stakeStartTime.toNumber(),
+  );
 });
 
 const currentTime = ref(new Date().getTime() / 1000);
 onMounted(() => {
-	const interval = setInterval(() => {
-		currentTime.value = new Date().getTime() / 1000;
-	}, 5000);
+  const interval = setInterval(() => {
+    currentTime.value = new Date().getTime() / 1000;
+  }, 5000);
 
-	onUnmounted(() => clearInterval(interval));
+  onUnmounted(() => clearInterval(interval));
 });
 
 /**
@@ -138,110 +138,110 @@ onMounted(() => {
  */
 const { data: reflectionData } = useGetReflectionAccount();
 const reflectionAccount = computed(() => {
-	if (!reflectionData.value) return null;
-	return reflectionData.value.reflectionAccont;
+  if (!reflectionData.value) return null;
+  return reflectionData.value.reflectionAccont;
 });
 const { data: rewardAccount } = useGetRewardAccount(stakeAccount);
 const { mutateAsync: claimRewards, isPending: isClaimingRewards } =
-	useClaimRewards();
+  useClaimRewards();
 
 const { useGetTokenAccountBalanceQuery } = useSolanaWallet();
 const { useGetActiveRewardVestingAccount } = useVestingProgram();
 const { data: vestingRewardAccount } = useGetActiveRewardVestingAccount();
 const vestingVaultAccount = computed(() => {
-	if (!vestingRewardAccount.value) return undefined;
-	return vestingRewardAccount.value.vestingVaultAccount;
+  if (!vestingRewardAccount.value) return undefined;
+  return vestingRewardAccount.value.vestingVaultAccount;
 });
 const { data: balance } = useGetTokenAccountBalanceQuery(vestingVaultAccount);
 const { data: intermediaryVaultBalance } = useGetTokenAccountBalanceQuery(
-	ref(intermediaryReflectionVaultAccount),
+  ref(intermediaryReflectionVaultAccount),
 );
 
 const expectedApy = computed(() => {
-	if (!rewardAccount.value || !reflectionAccount.value) return 0;
+  if (!rewardAccount.value || !reflectionAccount.value) return 0;
 
-	const extrapolatedRewards =
-		((vestingRewardAccount.value?.account.releaseRate.toNumber() || 0) *
-			365 *
-			24 *
-			60 *
-			60) /
-		1e6;
+  const extrapolatedRewards =
+    ((vestingRewardAccount.value?.account.releaseRate.toNumber() || 0) *
+      365 *
+      24 *
+      60 *
+      60) /
+    1e6;
 
-	return calculateApy({
-		yourStake: rewardAccount.value.weightedAmount,
-		totalStaked: reflectionAccount.value.totalWeightedAmount,
-		totalRewards: extrapolatedRewards,
-	});
+  return calculateApy({
+    yourStake: rewardAccount.value.weightedAmount,
+    totalStaked: reflectionAccount.value.totalWeightedAmount,
+    totalRewards: extrapolatedRewards,
+  });
 });
 
 const pendingRewards = computed(() => {
-	if (!rewardAccount.value || !reflectionAccount.value) return 0;
+  if (!rewardAccount.value || !reflectionAccount.value) return 0;
 
-	// calculate unclaimed rewards from the vesting account
-	const amountDue =
-		(vestingRewardAccount.value &&
-			calculateDue(
-				vestingRewardAccount.value.account.startTime.toNumber(),
-				vestingRewardAccount.value.account.releaseRate.toNumber(),
-				vestingRewardAccount.value.account.distributedTokens.toNumber(),
-				balance.value?.value || 0,
-			)) ||
-		0;
+  // calculate unclaimed rewards from the vesting account
+  const amountDue =
+    (vestingRewardAccount.value &&
+      calculateDue(
+        vestingRewardAccount.value.account.startTime.toNumber(),
+        vestingRewardAccount.value.account.releaseRate.toNumber(),
+        vestingRewardAccount.value.account.distributedTokens.toNumber(),
+        balance.value?.value || 0,
+      )) ||
+    0;
 
-	return (
-		calculatePendingRewards({
-			reflection: rewardAccount.value.reflection,
-			rate: reflectionAccount.value.rate,
-			weightedAmount: rewardAccount.value.weightedAmount,
-		}) +
-		((amountDue / 1e6) *
-			rewardAccount.value.weightedAmount.div(new BN(1e6)).toNumber()) /
-			reflectionAccount.value.totalWeightedAmount.div(new BN(1e6)).toNumber() +
-		(intermediaryVaultBalance.value?.value || 0)
-	);
+  return (
+    calculatePendingRewards({
+      reflection: rewardAccount.value.reflection,
+      rate: reflectionAccount.value.rate,
+      weightedAmount: rewardAccount.value.weightedAmount,
+    }) +
+    ((amountDue / 1e6) *
+      rewardAccount.value.weightedAmount.div(new BN(1e6)).toNumber()) /
+      reflectionAccount.value.totalWeightedAmount.div(new BN(1e6)).toNumber() +
+    (intermediaryVaultBalance.value?.value || 0)
+  );
 });
 
 const toast = useToast();
 const handleSubmit = async () => {
-	try {
-		if (!stakeAccount.value) {
-			throw new Error("No stake account found");
-		}
+  try {
+    if (!stakeAccount.value) {
+      throw new Error("No stake account found");
+    }
 
-		if (!vestingRewardAccount.value) {
-			throw new Error("No vesting reward account found");
-		}
+    if (!vestingRewardAccount.value) {
+      throw new Error("No vesting reward account found");
+    }
 
-		await claimRewards({
-			vestingRewardAccount: vestingRewardAccount.value,
-			stakeAccount: stakeAccount.value,
-		});
+    await claimRewards({
+      vestingRewardAccount: vestingRewardAccount.value,
+      stakeAccount: stakeAccount.value,
+    });
 
-		toast.add({
-			title: "Success",
-			description: "Claimed rewards",
-			color: "green",
-		});
-	} catch (e) {
-		console.error(e);
-		toast.add({
-			title: "Error",
-			description: "Something went wrong",
-			color: "red",
-		});
-	}
+    toast.add({
+      title: "Success",
+      description: "Claimed rewards",
+      color: "green",
+    });
+  } catch (e) {
+    console.error(e);
+    toast.add({
+      title: "Error",
+      description: "Something went wrong",
+      color: "red",
+    });
+  }
 };
 
 const triggerConfetti = ref(false);
 // check if ?confetti=true is in the URL
 onMounted(() => {
-	const urlParams = new URLSearchParams(window.location.search);
-	if (urlParams.has("confetti")) {
-		triggerConfetti.value = true;
-		// remove the query param from the URL
-		window.history.replaceState({}, document.title, window.location.pathname);
-	}
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has("confetti")) {
+    triggerConfetti.value = true;
+    // remove the query param from the URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
 });
 </script>
 

@@ -3,7 +3,7 @@ import { createPaymentStore } from "./paymentStore";
 import { Datastore, Key } from "interface-datastore";
 import { promises } from "node:fs";
 import { createDataStore } from "@effectai/test-utils";
-import { Payment } from "../../../@generated/effect.protons";
+import type { Payment } from "@effectai/protobufs";
 import { ulid } from "ulid";
 
 describe("createPaymentStore", () => {

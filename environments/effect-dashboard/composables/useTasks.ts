@@ -1,29 +1,73 @@
-import { useQuery, keepPreviousData } from "@tanstack/vue-query";
 import { useWorkerStore } from "@/stores/worker";
-// import type { WorkerTaskRecord } from "@effectai/protocol";
+import type { Task, WorkerTaskRecord } from "@effectai/protocol";
+import { useQuery, useQueryClient } from "@tanstack/vue-query";
 
 const activeTask = ref<WorkerTaskRecord | null>(null);
 
 export const useTasks = () => {
-  const workerStore = useWorkerStore();
-  const { taskCounter } = storeToRefs(workerStore);
+  const { instance } = storeToRefs(useWorkerStore());
 
   const setActiveTask = (task: WorkerTaskRecord | null) => {
     activeTask.value = task;
   };
 
   const useGetTasks = (index: Ref<number | string>) => {
+    const { account } = useAuth();
+
     return useQuery({
-      queryKey: ["tasks", index, taskCounter],
+      queryKey: ["tasks", index, account],
       queryFn: async () => {
-        const tasks = await workerStore.worker?.getTasks({
+        if (!instance.value) {
+          throw new Error("Worker is not initialized");
+        }
+
+        const tasks = await instance.value.getTasks({
           prefix: `tasks/${index.value}`,
         });
 
         return tasks;
       },
-      placeholderData: keepPreviousData,
     });
+  };
+
+  const useGetActiveTasks = (index: Ref<number | string>) => {
+    const queryClient = useQueryClient();
+
+    const handleTaskEvent = (event: CustomEvent<Task>) => {
+      queryClient.setQueryData<Task[]>(["tasks", index], (old) =>
+        old ? [...old, event.detail] : [event.detail],
+      );
+    };
+
+    const invalidateTasks = () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", index] });
+    };
+
+    onMounted(() => {
+      instance.value?.events.addEventListener("task:created", invalidateTasks);
+      instance.value?.events.addEventListener("task:rejected", invalidateTasks);
+      instance.value?.events.addEventListener(
+        "task:completed",
+        invalidateTasks,
+      );
+    });
+
+    onUnmounted(() => {
+      instance.value?.events.removeEventListener(
+        "task:created",
+        handleTaskEvent,
+      );
+      instance.value?.events.removeEventListener(
+        "task:rejected",
+        invalidateTasks,
+      );
+      instance.value?.events.removeEventListener(
+        "task:completed",
+        invalidateTasks,
+      );
+    });
+
+    return useGetTasks(index);
   };
 
   const useTaskState = (task: WorkerTaskRecord) => {
@@ -43,7 +87,7 @@ export const useTasks = () => {
   };
 
   const renderTask = async (task: WorkerTaskRecord) => {
-    return await workerStore.worker?.renderTask({ taskRecord: task });
+    return await instance.value?.renderTask({ taskRecord: task });
   };
 
   const getTaskDeadline = (task: WorkerTaskRecord) => {
@@ -62,18 +106,18 @@ export const useTasks = () => {
   };
 
   const completeTask = async (taskId: string, result: string) => {
-    await workerStore.worker?.completeTask({
+    await instance.value?.completeTask({
       taskId,
       result,
     });
   };
 
   const acceptTask = async (taskId: string) => {
-    return await workerStore.worker?.acceptTask({ taskId });
+    return await instance.value?.acceptTask({ taskId });
   };
 
   const rejectTask = async (taskId: string, reason: string) => {
-    return await workerStore.worker?.rejectTask({ taskId, reason });
+    return await instance.value?.rejectTask({ taskId, reason });
   };
 
   return {
@@ -89,5 +133,6 @@ export const useTasks = () => {
     getTaskDeadline,
     useTaskState,
     rejectTask,
+    useGetActiveTasks,
   };
 };

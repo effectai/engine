@@ -39,7 +39,7 @@
       <UButton
         @click="scrollTo('step-0')"
         class="mt-5 rounded-2xl"
-        color="black"
+        color="neutral"
       >
         Begin Migration
         <UIcon name="lucide:arrow-right" class="" />
@@ -218,7 +218,7 @@
             <UButton
               @click="authorize"
               class="mt-5"
-              color="black"
+              color="neutral"
               variant="outline"
               >Authorize</UButton
             >
@@ -234,7 +234,7 @@
               <UButton
                 class="mt-5 flex-0"
                 @click="disconnectSourceWallets"
-                color="black"
+                color="neutral"
                 variant="outline"
               >
                 Disconnect</UButton
@@ -270,7 +270,7 @@
                     v-if="isSupported"
                     @click="shareAuthorize"
                     class="mt-5"
-                    color="black"
+                    color="neutral"
                     variant="outline"
                     >Share Authorization Link
                     <UIcon name="lucide:share" class="" />
@@ -278,7 +278,7 @@
                   <UButton
                     @click="copyAuthorize"
                     class="mt-5"
-                    color="black"
+                    color="neutral"
                     variant="outline"
                     >Copy
                     <UIcon name="lucide:copy" class="" />
@@ -307,257 +307,256 @@
 </template>
 
 <script setup lang="ts">
-  import { useQueryClient } from "@tanstack/vue-query";
-  import { WalletMultiButton, useWallet } from "solana-wallets-vue";
+import { useQueryClient } from "@tanstack/vue-query";
+import { WalletMultiButton, useWallet } from "solana-wallets-vue";
 
-  const message: Ref<Uint8Array | null> = ref(null);
-  const signature: Ref<Uint8Array | null> = ref(null);
-  const manualForeignPublicKey: Ref<Uint8Array | null> = ref(null);
+const message: Ref<Uint8Array | null> = ref(null);
+const signature: Ref<Uint8Array | null> = ref(null);
+const manualForeignPublicKey: Ref<Uint8Array | null> = ref(null);
 
-  const computedForeignPublicKey: Ref<Uint8Array | null> = computed(
-    () => manualForeignPublicKey.value || foreignPublicKey.value || null
-  );
+const computedForeignPublicKey: Ref<Uint8Array | null> = computed(
+  () => manualForeignPublicKey.value || foreignPublicKey.value || null,
+);
 
-  const { wallets } = useWallet();
-  const hasSolanaWalletInstalled = computed(
-    () =>
-      !!wallets.value.find(
-        (w) => w.readyState == "Installed" || w.readyState == "Detected"
-      )
-  );
-  // try to load state from url
-  onMounted(() => {
-    const url = new URL(window.location.href);
-    const messageFromUrl = url.searchParams.get("message");
-    const signatureFromUrl = url.searchParams.get("signature");
-    const foreignPublicKeyFromUrl = url.searchParams.get("foreignPublicKey");
-    // extract destinationAdress from message
-    if (messageFromUrl && signatureFromUrl && foreignPublicKeyFromUrl) {
-      message.value = new Uint8Array(
-        atob(messageFromUrl)
-          .split("")
-          .map((c) => c.charCodeAt(0))
-      );
-      // extract the destination address from the message
-      manualAddress.value = extractAuthorizedSolanaAddress(
-        new TextDecoder().decode(message.value)
-      );
-      signature.value = new Uint8Array(
-        atob(signatureFromUrl)
-          .split("")
-          .map((c) => c.charCodeAt(0))
-      );
-      manualForeignPublicKey.value = new Uint8Array(
-        atob(foreignPublicKeyFromUrl)
-          .split("")
-          .map((c) => c.charCodeAt(0))
-      );
-    }
-  });
+const { wallets } = useWallet();
+const hasSolanaWalletInstalled = computed(
+  () =>
+    !!wallets.value.find(
+      (w) => w.readyState == "Installed" || w.readyState == "Detected",
+    ),
+);
+// try to load state from url
+onMounted(() => {
+  const url = new URL(window.location.href);
+  const messageFromUrl = url.searchParams.get("message");
+  const signatureFromUrl = url.searchParams.get("signature");
+  const foreignPublicKeyFromUrl = url.searchParams.get("foreignPublicKey");
+  // extract destinationAdress from message
+  if (messageFromUrl && signatureFromUrl && foreignPublicKeyFromUrl) {
+    message.value = new Uint8Array(
+      atob(messageFromUrl)
+        .split("")
+        .map((c) => c.charCodeAt(0)),
+    );
+    // extract the destination address from the message
+    manualAddress.value = extractAuthorizedSolanaAddress(
+      new TextDecoder().decode(message.value),
+    );
+    signature.value = new Uint8Array(
+      atob(signatureFromUrl)
+        .split("")
+        .map((c) => c.charCodeAt(0)),
+    );
+    manualForeignPublicKey.value = new Uint8Array(
+      atob(foreignPublicKeyFromUrl)
+        .split("")
+        .map((c) => c.charCodeAt(0)),
+    );
+  }
+});
 
-  const config = useRuntimeConfig();
-  const snapshotDate = new Date(config.public.EFFECT_SNAPSHOT_DATE as string);
+const config = useRuntimeConfig();
+const snapshotDate = new Date(config.public.EFFECT_SNAPSHOT_DATE as string);
 
-  const {
-    walletMeta,
-    useGetForeignPublicKeyQuery,
-    disconnect,
-    authorizeTokenClaim,
-    address,
-    useGetEfxBalanceQuery,
-    useGetNativeBalanceQuery,
-  } = useSourceWallet();
-  const { data: foreignPublicKey } = useGetForeignPublicKeyQuery();
+const {
+  walletMeta,
+  useGetForeignPublicKeyQuery,
+  disconnect,
+  authorizeTokenClaim,
+  address,
+  useGetEfxBalanceQuery,
+  useGetNativeBalanceQuery,
+} = useSourceWallet();
+const { data: foreignPublicKey } = useGetForeignPublicKeyQuery();
 
-  const client = useQueryClient();
-  const disconnectSourceWallets = async () => {
-    client.clear();
-    disconnect();
-    logout();
-  };
+const client = useQueryClient();
+const disconnectSourceWallets = async () => {
+  client.clear();
+  disconnect();
+  logout();
+};
 
-  const toggleAddress = ref(false);
-  const manualAddress: Ref<string | null> = ref(null);
-  const manualAddressInput: Ref<string> = ref("");
-  const { address: solanaWalletAddress, useGetBalanceQuery } =
-    useSolanaWallet();
-  const destinationAddress = computed(() => {
-    return solanaWalletAddress.value || manualAddress.value;
-  });
-  const { data: solanaDestinationBalance } =
-    useGetBalanceQuery(destinationAddress);
-  const balanceLow = computed(
-    () =>
-      solanaDestinationBalance.value &&
-      solanaDestinationBalance.value.value < 0.01
-  );
-  const { disconnect: disconnectSolana } = useWallet();
-  const logout = () => {
-    message.value = null;
-    signature.value = null;
-    manualForeignPublicKey.value = null;
-    manualAddress.value = null;
-    disconnectSolana();
-  };
-  const selectAddress = () => {
-    if (isValidSolanaAddress(manualAddressInput.value)) {
-      manualAddress.value = manualAddressInput.value;
-      toggleAddress.value = false;
-    }
-  };
+const toggleAddress = ref(false);
+const manualAddress: Ref<string | null> = ref(null);
+const manualAddressInput: Ref<string> = ref("");
+const { address: solanaWalletAddress, useGetBalanceQuery } = useSolanaWallet();
+const destinationAddress = computed(() => {
+  return solanaWalletAddress.value || manualAddress.value;
+});
+const { data: solanaDestinationBalance } =
+  useGetBalanceQuery(destinationAddress);
+const balanceLow = computed(
+  () =>
+    solanaDestinationBalance.value &&
+    solanaDestinationBalance.value.value < 0.01,
+);
+const { disconnect: disconnectSolana } = useWallet();
+const logout = () => {
+  message.value = null;
+  signature.value = null;
+  manualForeignPublicKey.value = null;
+  manualAddress.value = null;
+  disconnectSolana();
+};
+const selectAddress = () => {
+  if (isValidSolanaAddress(manualAddressInput.value)) {
+    manualAddress.value = manualAddressInput.value;
+    toggleAddress.value = false;
+  }
+};
 
-  const { useGetMigrationAccount } = useMigrationProgram();
-  const { data: migrationAccount } = useGetMigrationAccount(
-    computedForeignPublicKey
-  );
+const { useGetMigrationAccount } = useMigrationProgram();
+const { data: migrationAccount } = useGetMigrationAccount(
+  computedForeignPublicKey,
+);
 
-  const txHash: Ref<string | null> = ref(null);
+const txHash: Ref<string | null> = ref(null);
 
-  function uint8ArrayToBase64(uint8Array: Uint8Array) {
-    return btoa(String.fromCharCode(...uint8Array));
+function uint8ArrayToBase64(uint8Array: Uint8Array) {
+  return btoa(String.fromCharCode(...uint8Array));
+}
+
+const authorizeUrl = computed(() => {
+  if (!message.value || !signature.value || !computedForeignPublicKey.value) {
+    return "";
   }
 
-  const authorizeUrl = computed(() => {
-    if (!message.value || !signature.value || !computedForeignPublicKey.value) {
-      return "";
-    }
+  return getAuthorizeUrl({
+    message: message.value,
+    signature: signature.value,
+    foreignPublicKey: computedForeignPublicKey.value,
+  });
+});
 
-    return getAuthorizeUrl({
-      message: message.value,
-      signature: signature.value,
-      foreignPublicKey: computedForeignPublicKey.value,
-    });
+const toast = useToast();
+
+const { share, isSupported } = useShare({});
+const { copy } = useClipboard();
+const copyAuthorize = () => {
+  copy(authorizeUrl.value);
+  toast.add({
+    title: "Copied",
+    description: "Authorize link copied to clipboard",
+    color: "green",
+  });
+};
+
+const shareAuthorize = () => {
+  share({
+    title: "Authorize link",
+    text: "Authorize link",
+    url: authorizeUrl.value,
   });
 
-  const toast = useToast();
-
-  const { share, isSupported } = useShare({});
-  const { copy } = useCopyToClipboard();
-  const copyAuthorize = () => {
-    copy(authorizeUrl.value);
-    toast.add({
-      title: "Copied",
-      description: "Authorize link copied to clipboard",
-      color: "green",
-    });
-  };
-
-  const shareAuthorize = () => {
-    share({
-      title: "Authorize link",
-      text: "Authorize link",
-      url: authorizeUrl.value,
-    });
-
-    toast.add({
-      title: "Copied",
-      description: "Authorize link copied to clipboard",
-      color: "green",
-    });
-  };
-
-  const getAuthorizeUrl = ({
-    message,
-    signature,
-    foreignPublicKey,
-  }: {
-    message: Uint8Array;
-    signature: Uint8Array;
-    foreignPublicKey: Uint8Array;
-  }) => {
-    const url = new URL(window.location.href);
-
-    url.searchParams.set("message", uint8ArrayToBase64(message));
-    url.searchParams.set("signature", uint8ArrayToBase64(signature));
-    url.searchParams.set(
-      "foreignPublicKey",
-      uint8ArrayToBase64(foreignPublicKey)
-    );
-
-    return url.toString();
-  };
-
-  const authorize = async () => {
-    if (!destinationAddress.value) {
-      console.warn("No destination address");
-      return;
-    }
-
-    const result = await authorizeTokenClaim(destinationAddress.value);
-    if (result) {
-      message.value = result.message;
-      signature.value = result.signature;
-    }
-  };
-
-  const steps = ref([
-    {
-      label: "Authenticate",
-      slot: "authenticate",
-      isCompleted: computed(
-        () => !!computedForeignPublicKey.value && !!migrationAccount.value
-      ),
-    },
-    {
-      label: "Solana Address",
-      slot: "solana",
-      isCompleted: computed(() => !!destinationAddress.value),
-    },
-    {
-      label: "Authorize",
-      slot: "authorize",
-      isCompleted: computed(() => !!signature.value && !!message.value),
-    },
-    {
-      label: "Claim",
-      slot: "claim",
-      isCompleted: computed(() => !!txHash.value),
-    },
-  ]);
-
-  const isReadyToClaim = computed(
-    () => message.value && signature.value && computedForeignPublicKey.value
-  );
-  const currentStep = computed(() => {
-    if (isReadyToClaim.value) {
-      return 3;
-    }
-
-    if (!foreignPublicKey.value || !migrationAccount.value) {
-      return 0;
-    }
-    if (!destinationAddress.value) {
-      return 1;
-    }
-    if (!signature.value || !message.value) {
-      return 2;
-    }
+  toast.add({
+    title: "Copied",
+    description: "Authorize link copied to clipboard",
+    color: "green",
   });
+};
 
-  watch(
-    currentStep,
-    async (newVal) => {
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      let el = null;
-      if (newVal === 0) {
-        el = document.getElementById("step-intro");
-      } else {
-        el = document.getElementById(`step-${newVal}`);
-      }
-      if (el) {
-        await nextTick();
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    },
-    { immediate: true }
+const getAuthorizeUrl = ({
+  message,
+  signature,
+  foreignPublicKey,
+}: {
+  message: Uint8Array;
+  signature: Uint8Array;
+  foreignPublicKey: Uint8Array;
+}) => {
+  const url = new URL(window.location.href);
+
+  url.searchParams.set("message", uint8ArrayToBase64(message));
+  url.searchParams.set("signature", uint8ArrayToBase64(signature));
+  url.searchParams.set(
+    "foreignPublicKey",
+    uint8ArrayToBase64(foreignPublicKey),
   );
 
-  const scrollTo = (id: string) => {
-    const el = document.getElementById(id);
+  return url.toString();
+};
+
+const authorize = async () => {
+  if (!destinationAddress.value) {
+    console.warn("No destination address");
+    return;
+  }
+
+  const result = await authorizeTokenClaim(destinationAddress.value);
+  if (result) {
+    message.value = result.message;
+    signature.value = result.signature;
+  }
+};
+
+const steps = ref([
+  {
+    label: "Authenticate",
+    slot: "authenticate",
+    isCompleted: computed(
+      () => !!computedForeignPublicKey.value && !!migrationAccount.value,
+    ),
+  },
+  {
+    label: "Solana Address",
+    slot: "solana",
+    isCompleted: computed(() => !!destinationAddress.value),
+  },
+  {
+    label: "Authorize",
+    slot: "authorize",
+    isCompleted: computed(() => !!signature.value && !!message.value),
+  },
+  {
+    label: "Claim",
+    slot: "claim",
+    isCompleted: computed(() => !!txHash.value),
+  },
+]);
+
+const isReadyToClaim = computed(
+  () => message.value && signature.value && computedForeignPublicKey.value,
+);
+const currentStep = computed(() => {
+  if (isReadyToClaim.value) {
+    return 3;
+  }
+
+  if (!foreignPublicKey.value || !migrationAccount.value) {
+    return 0;
+  }
+  if (!destinationAddress.value) {
+    return 1;
+  }
+  if (!signature.value || !message.value) {
+    return 2;
+  }
+});
+
+watch(
+  currentStep,
+  async (newVal) => {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    let el = null;
+    if (newVal === 0) {
+      el = document.getElementById("step-intro");
+    } else {
+      el = document.getElementById(`step-${newVal}`);
+    }
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      await nextTick();
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-  };
+  },
+  { immediate: true },
+);
+
+const scrollTo = (id: string) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+};
 </script>
 
 <style lang="scss" scoped></style>

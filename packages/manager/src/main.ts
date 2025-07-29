@@ -1,43 +1,37 @@
 import {
   type Datastore,
-  webSockets,
-  TypedEventEmitter,
-  type PrivateKey,
-  createLogger,
-  PROTOCOL_VERSION,
   PROTOCOL_NAME,
+  PROTOCOL_VERSION,
+  type PrivateKey,
+  TypedEventEmitter,
+  webSockets,
 } from "@effectai/protocol-core";
-
-import bs58 from "bs58";
 
 import { createPaymentManager } from "./modules/createPaymentManager.js";
 import { createTaskManager } from "./modules/createTaskManager.js";
 import { createManagerTaskStore } from "./stores/managerTaskStore.js";
 
-import { buildEddsa } from "@effectai/zkp";
+import { buildEddsa } from "@effectai/payment";
 import { createWorkerManager } from "./modules/createWorkerManager.js";
-import {
-  bigIntToBytes32,
-  compressBabyJubJubPubKey,
-  proofResponseToGroth16Proof,
-} from "./utils.js";
+import { proofResponseToGroth16Proof } from "./utils.js";
 
 import { PublicKey } from "@solana/web3.js";
 import { PAYMENT_BATCH_SIZE, TASK_ACCEPTANCE_TIME } from "./consts.js";
 
 import {
-  type Payment,
-  type TaskRecord,
   HttpTransport,
-  EffectProtocolMessage,
   Libp2pTransport,
-  createTemplateStore,
-  createPaymentStore,
+  type TaskRecord,
   createEffectEntity,
+  createPaymentStore,
+  createTemplateStore,
 } from "@effectai/protocol-core";
+import { EffectProtocolMessage, type Payment } from "@effectai/protobufs";
 
-import { createManagerControls } from "./modules/createManagerControls.js";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { createLogger } from "./logging.js";
 import { setupManagerDashboard } from "./modules/createAdminDashboard.js";
+import { createManagerControls } from "./modules/createManagerControls.js";
 
 export type ManagerEvents = {
   "task:created": (task: TaskRecord) => void;
@@ -74,6 +68,7 @@ export type ManagerSettings = {
   requireAccessCodes: boolean;
   paymentAccount: string | null;
   withAdmin: boolean;
+  maintenanceMode: boolean;
 };
 
 export const createManagerEntity = async ({
@@ -117,7 +112,12 @@ export const createManager = async ({
   settings: Partial<ManagerSettings>;
 }) => {
   const startTime = Date.now();
-  const logger = createLogger();
+
+  const context = new AsyncLocalStorage<{
+    peerId: string;
+  }>();
+
+  const logger = createLogger("manager", context);
 
   const managerSettings: ManagerSettings = {
     port: settings.port ?? 19955,
@@ -128,20 +128,26 @@ export const createManager = async ({
     requireAccessCodes: settings.requireAccessCodes ?? true,
     paymentAccount: settings.paymentAccount ?? null,
     withAdmin: settings.withAdmin ?? true,
+    maintenanceMode: settings.maintenanceMode ?? false,
   };
 
   if (!managerSettings.paymentAccount) {
-    logger.warn("No payment account provided. Payments will not be processed.");
+    logger.log.warn(
+      "No payment account provided. Payments will not be processed.",
+    );
+  }
+
+  if (managerSettings.maintenanceMode) {
+    logger.log.warn(
+      "Manager is running in maintenance mode. Only administrators will be able to connect.",
+    );
   }
 
   const eddsa = await buildEddsa();
   const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
+  const compressedPubKey = eddsa.babyJub.packPoint(pubKey);
 
-  const compressedPubKey = compressBabyJubJubPubKey(
-    bigIntToBytes32(eddsa.F.toObject(pubKey[0])),
-    bigIntToBytes32(eddsa.F.toObject(pubKey[1])),
-  );
-
+  //bs58 encode the compressed public key
   const solanaPublicKey = new PublicKey(compressedPubKey);
 
   // create the entity
@@ -167,8 +173,10 @@ export const createManager = async ({
   });
 
   const paymentManager = await createPaymentManager({
+    logger,
     workerManager,
     privateKey,
+    publicKey: solanaPublicKey.toString(),
     paymentStore,
     managerSettings,
   });
@@ -207,7 +215,7 @@ export const createManager = async ({
           taskTimeout: TASK_ACCEPTANCE_TIME,
           version: PROTOCOL_VERSION,
           requiresRegistration: managerSettings.requireAccessCodes,
-          isRegistered: !!worker,
+          isRegistered: !!worker && !!worker.state.accessCodeRedeemed,
           isConnected,
         },
       };
@@ -222,6 +230,11 @@ export const createManager = async ({
           recipient,
           nonce,
           accessCode,
+        );
+
+        logger.log.info(
+          { peerId: peerId.toString(), recipient, nonce, accessCode },
+          "Worker connected",
         );
 
         return {
@@ -259,54 +272,46 @@ export const createManager = async ({
         workerPeerIdStr: peerId.toString(),
       });
     })
-    .onMessage("proofRequest", async (proofRequest, { peerId }) => {
-      //FIX:: temp check
-      const recipient = proofRequest.payments[0].recipient;
-      if (!peerId.publicKey) {
-        throw new Error("Peer ID public key is not set");
-      }
-
-      if (!Buffer.from(peerId.publicKey.raw).equals(bs58.decode(recipient))) {
-        throw new Error("Forbidden");
-      }
-
+    .onMessage("proofRequest", async (proofRequest) => {
       return await paymentManager.processProofRequest({
-        privateKey,
-        payments: proofRequest.payments,
+        request: proofRequest,
       });
     })
     .onMessage("bulkProofRequest", async (proofRequest, { peerId }) => {
-      const worker = await workerManager.getWorker(peerId.toString());
-      const recipient = worker?.state.recipient;
-
-      if (!recipient) {
-        throw new Error("Worker not found or recipient not set");
-      }
-
       if (!proofRequest.proofs.every((p) => p.signals)) {
         throw new Error("All proofs must have signals for bulk payment");
       }
 
+      logger.context.enterWith({ peerId: peerId.toString() });
+
       return await paymentManager.bulkPaymentProofs({
-        recipient: new PublicKey(recipient),
-        privateKey,
-        r8_x: eddsa.F.toObject(pubKey[0]),
-        r8_y: eddsa.F.toObject(pubKey[1]),
-        proofs: proofRequest.proofs.map((p) => ({
-          proof: proofResponseToGroth16Proof(p),
-          publicSignals: [
-            p.signals!.minNonce.toString(),
-            p.signals!.maxNonce.toString(),
-            p.signals!.amount.toString(),
-            p.signals!.recipient,
-          ],
-        })),
+        paymentAccount: proofRequest.paymentAccount,
+        recipient: proofRequest.recipient,
+        proofs: proofRequest.proofs.map((p) => {
+          if (!p.signals) {
+            throw new Error("Missing publicSignals in proof response");
+          }
+
+          return {
+            proof: proofResponseToGroth16Proof(p),
+            publicSignals: p.signals,
+          };
+        }),
       });
     })
     .onMessage("payoutRequest", async (_payoutRequest, { peerId }) => {
       const payment = await paymentManager.processPayoutRequest({
         peerId,
       });
+
+      logger.log.info(
+        {
+          peerId: peerId.toString(),
+          paymentNonce: payment.nonce,
+          amount: payment.amount,
+        },
+        "Payout request processed",
+      );
 
       return {
         payment,
@@ -354,7 +359,7 @@ export const createManager = async ({
       cycle,
       requireAccessCodes: managerSettings.requireAccessCodes,
       announcedAddresses,
-      publicKey: new PublicKey(compressedPubKey),
+      publicKey: solanaPublicKey.toBase58(),
       connectedPeers: workerManager.workerQueue.queue.length,
     });
   });
@@ -404,11 +409,17 @@ export const createManager = async ({
   });
 
   entity.node.addEventListener("peer:disconnect", (event) => {
+    logger.log.info({ peerId: event.detail.toString() }, "Worker disconnected");
     workerManager.disconnectWorker(event.detail.toString());
   });
 
   // start the manager
   await start();
+
+  logger.log.info(
+    managerSettings,
+    `Manager started on port ${managerSettings.port}`,
+  );
 
   return {
     entity,

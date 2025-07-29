@@ -69,7 +69,7 @@
       class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col"
     >
       <div
-        class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white dark:bg-brand-black dark:border-black px-6 pb-4"
+        class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 dark:bg-brand-black dark:border-black px-6 pb-4"
       >
         <div class="flex h-16 shrink-0 items-center">
           <nuxt-link to="/">
@@ -83,7 +83,7 @@
     <div class="lg:pl-72">
       <div class="sticky top-0 z-40 lg:mx-auto lg:max-w-5xl lg:px-8">
         <div
-          class="flex h-16 items-center gap-x-4 border-b border-gray-200 bg-white dark:bg-[Canvas] dark:border-black px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-0 lg:shadow-none"
+          class="flex h-16 items-center gap-x-4 border-b border-gray-200 bg-white dark:bg-[#333] dark:border-black px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-0 lg:shadow-none"
         >
           <button
             type="button"
@@ -132,8 +132,6 @@
 </template>
 
 <script setup lang="ts">
-import { WalletMultiButton } from "solana-wallets-vue";
-import { ref } from "vue";
 import {
   Dialog,
   DialogPanel,
@@ -142,6 +140,8 @@ import {
   TransitionChild,
   TransitionRoot,
 } from "@headlessui/vue";
+import { WalletMultiButton } from "solana-wallets-vue";
+import { ref } from "vue";
 
 import { Bars3Icon, XMarkIcon } from "@heroicons/vue/24/outline";
 

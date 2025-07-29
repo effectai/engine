@@ -6,7 +6,7 @@ import type {
   RequestToWorkResponse,
   Task,
   Template,
-} from "../../@generated/effect.protons.js";
+} from "@effectai/protobufs";
 
 export interface BaseTaskEvent {
   timestamp: number;

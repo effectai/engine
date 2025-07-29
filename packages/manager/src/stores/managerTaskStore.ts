@@ -1,8 +1,6 @@
 import { TASK_ACCEPTANCE_TIME } from "../consts.js";
 import {
   type Datastore,
-  type Payment,
-  type Task,
   type BaseTaskEvent,
   type TaskRecord,
   Key,
@@ -13,6 +11,7 @@ import {
   parseWithBigInt,
   isValid,
 } from "@effectai/protocol-core";
+import type { Task, Payment } from "@effectai/protobufs";
 
 export type ManagerTaskEvent =
   | TaskCreatedEvent

@@ -2,7 +2,7 @@ import type { Ed25519PublicKey } from "@libp2p/interface";
 import type { ConnectionManager } from "@libp2p/interface-internal";
 import { PublicKey } from "@solana/web3.js";
 import { peerIdFromString } from "@libp2p/peer-id";
-import type { EffectProtocolMessage } from "../@generated/effect.protons.js";
+import type { EffectProtocolMessage } from "@effectai/protobufs";
 
 export function stringifyWithBigInt(obj: any): string {
   return JSON.stringify(obj, (_, value) =>
