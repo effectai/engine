@@ -85,13 +85,37 @@
           sentence: "${sentence}",
           audioBlob: "",
           ipfsCID: "",
-          ipfsHOST: "${ipfsHOST}",
+          ipfsHOST: "https://ipfs.effect.ai/api/v0/add?pin=true",
           notComplete: false,
+          instructions: `
+          <div class="">
+            <h2 class="text-lg">Misreadings:</h2>
+            <p>
+              Reading all the words on the page correctly does matter. Please check
+              carefully that what has been recorded is exactly what is 
+              written. Re-record if the recording has mistakes.
+            </p>
+            <br>
+            <p>Very common mistakes include:</p>
+            <li>Missing 'A' or 'The' at the beginning of the recording.</li>
+            <li>Missing an 's' at the end of a word.</li>
+            <li>Reading contractions that aren't actually there, such as "We're" instead of "We are", or vice versa.</li>
+            <li>Missing the end of the last word by cutting off the recording too quickly.</li>
+            <li>Taking several attempts to read a word.</li>
+          </div>`
         };
       },
       computed: {},
       created() {},
-      mounted() {},
+      mounted() {
+        window.top.postMessage(
+        {
+          type: 'task-instructions',
+          instructions: this.instructions
+        },
+        "*"
+      );
+      },
       methods: {
         playAudio(){
           const audio = this.$refs.audioPlayer; 
@@ -155,7 +179,7 @@
 
         async uploadAndSubmit() {
           this.btnLoading = true;
-          if(this.ipfsCID == ""){
+          if(this.audioChunks == ""){
             this.notComplete = true
           }
           else
@@ -165,8 +189,9 @@
                 {
                   task: "submit",
                   values: {
+                    taskTitle: this.title,
                     sentence: this.sentence,
-                    ipfsCID: this.ipfsCID,
+                    answer: "https://ipfs.effect.ai/ipfs/" + this.ipfsCID,
                   },
                 },
                 "*"

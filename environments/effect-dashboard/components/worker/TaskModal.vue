@@ -4,8 +4,18 @@
     class="fixed inset-0 z-50 flex items-center justify-center"
   >
     <UModal v-model:open="isOpen" prevent-close fullscreen>
-      <template #content
-        ><UCard>
+      <template #content>
+        <WorkerShowInformationModal
+          v-model="isOpenTaskInfoModal"
+          :instructions="currentTaskInstructions"
+        />
+
+        <UCard
+          :ui="{
+            ring: '',
+            divide: 'divide-y divide-gray-100 dark:divide-gray-800',
+          }"
+        >
           <template #header>
             <div class="flex items-center justify-between">
               <h3
@@ -14,9 +24,13 @@
                 {{ activeTask?.state.title }}
               </h3>
               <div class="flex justify-end gap-2">
-                <!-- <UButton color="black" variant="outline"> -->
-                <!-- Show Instructions -->
-                <!-- </UButton> -->
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  @click="isOpenTaskInfoModal = true"
+                >
+                  Show Instructions
+                </UButton>
                 <div class="flex space-x-2" v-if="showAcceptTaskButton">
                   <UButton color="neutral" @click.stop="handlerAcceptTask">
                     <UIcon name="i-heroicons-check-circle-20-solid" />
@@ -28,7 +42,7 @@
                   </UButton>
                 </div>
                 <UButton
-                  color="gray"
+                  color="neutral"
                   variant="ghost"
                   icon="i-heroicons-x-mark-20-solid"
                   class="-my-1"
@@ -61,16 +75,19 @@
                 ref="template"
                 @submit="handlerSubmitTask"
                 @ready="isTemplateReady = true"
+                @instructions="currentTaskInstructions = $event"
               />
             </div>
-          </template> </UCard
-      ></template>
+          </template>
+        </UCard>
+      </template>
     </UModal>
   </div>
 </template>
 <script setup lang="ts">
 import { useQueryClient } from "@tanstack/vue-query";
 import type TaskTemplate from "./TaskTemplate.vue";
+import { useWorkerStore } from "@/stores/worker";
 
 const {
   activeTask,
@@ -87,6 +104,8 @@ const template = ref<TemplateComponent | null>(null);
 const isTemplateReady = ref(false);
 
 const isOpen = computed(() => !!activeTask.value);
+const isOpenTaskInfoModal = ref(false);
+const currentTaskInstructions = ref("");
 
 const taskState = computed(
   () => activeTask.value && useTaskState(activeTask.value),
@@ -123,7 +142,6 @@ const handlerAcceptTask = async () => {
     title: "Success",
     color: "success",
     description: "Task accepted successfully",
-    duration: 1000,
   });
 
   await queryClient.invalidateQueries({
@@ -152,9 +170,7 @@ const handlerRejectTask = async () => {
 
 const reportAndSkipTask = async () => {
   if (!activeTask.value) return;
-
   await completeTask(activeTask.value.state.id, "<TASK REPORTED AND SKIPPED>");
-
   toast.add({
     title: "Task Reported",
     color: "error",

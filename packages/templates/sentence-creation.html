@@ -60,15 +60,31 @@
         return {
           title: "Effect AI Sentence Creator",
           tmpSentence: "",
-          labels: [],
           btnLoading: false,
-          ipfsClient: null,
           notComplete: false,
+          instructions: `
+          <div class="">
+            <li>Has fewer than 15 words per sentence</li>
+            <li>Uses correct grammar</li>
+            <li>Uses correct spelling and punctuation</li>
+            <li>No numbers and special characters</li>
+            <li>No foreign letters</li>
+            <li>Ideally natural and conversational (it should be easy to read the sentence)</li>
+          </div>
+        `
         };
       },
       computed: {},
       created() {},
-      mounted() {},
+      mounted() {
+        window.top.postMessage(
+        {
+          type: 'task-instructions',
+          instructions: this.instructions
+        },
+        "*"
+      );
+      },
       methods: {
         async uploadAndSubmit() {
           this.btnLoading = true;
@@ -81,7 +97,8 @@
                 {
                   task: "submit",
                   values: {
-                    sentence: this.tmpSentence,
+                    taskTitle: this.title,
+                    answer: this.tmpSentence,
                   },
                 },
                 "*"

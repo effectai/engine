@@ -1,0 +1,142 @@
+<div id="app" style="text-align: center">
+  <h1>Effect AI - Sensitive Data Tagger</h1>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
+
+  <p class="mb-5">Highlight and tag the important/secret data</p>
+  <div @mouseup="handleTextSelection" class="box">
+    <p class="is-size-4 has-text-weight-semibold">{{sentence}}</p>
+  </div>
+
+  <div class="mb-5">
+    <label class="label">Tags</label>
+    <div class="buttons is-centered">
+      <button class="button is-normal" @click="this.selectedTag='[NAME]'">[NAME]</button>
+      <button class="button is-normal" @click="this.selectedTag='[DATE_1]'">[DATE_1]</button>
+      <button class="button is-normal" @click="this.selectedTag='[TIME_1]'">[TIME_1]</button>
+    </div>
+  </div>
+
+  <div class="">
+    <p>Selection: <b>{{ selection }}</b></p>
+    <p>Tag: <b>{{ selectedTag }}</b></p>
+    <button class="button is-success mt-3" @click="addSelection">Add</button>
+  </div>
+
+  <div class="container is-max-desktop box mt-5 ">
+    <label class="label">Current Tag Pairs:</label>
+
+    <div class="mb-2" v-for="([selection, tagSelected], index) in selectionList" :key="index">
+      {{ selection }} -> {{ tagSelected }} 
+
+      <button class="button is-small is-danger"
+      @click="removeSelection(index)">Remove</button>
+    </div>      
+
+  </div>
+
+  <p style="color: red;"
+  :class="{'is-hidden mb-3': !notComplete}">
+    Task incomplete - Please complete all sections of the task
+  </p>
+
+  <button
+    @click.prevent="uploadAndSubmit"
+    class="button is-success is-large"
+    :class="{'is-loading': btnLoading}"
+  >
+    Submit
+  </button>
+</div>
+
+<!-- 📚 Load in resources: [Bulma, Effect Network Styling]  -->
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+<link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+<script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
+<script type="module">
+  import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+  createApp({
+    data() {
+      return {
+        title: "Effect AI Sentence Redaction",
+        btnLoading: false,
+        sentence: "${sentence}",
+        loading: true,
+        notComplete: false,
+        selection: "",
+        selectionList: [],
+        selectedTag: "",
+        instructions: `
+          <div class="">
+            <li>Highlight any sensitive or personal information in the sentence</li>
+            <li>Tag each highlighted section with the correct label</li>
+            <li>Only tag information that clearly identifies someone or something private</li>
+            <li>Double-check that each tag is accurate before submitting</li>
+            <br>
+            <h2 class="text-lg">Use these labels:</h2>
+              <ul>
+                <li><strong>[NAME]</strong> - e.g. John Smith, Sarah</li>
+                <li><strong>[DATE]</strong> - e.g. July 18, 2025, last Monday</li>
+                <li><strong>[TIME]</strong> - e.g. 3:45 PM, noon</li>
+                <li><strong>[LOCATION]</strong> - e.g. Toronto, 123 Main St</li>
+                <li><strong>[EMAIL]</strong> - e.g. john@example.com</li>
+                <li><strong>[PHONE]</strong> - e.g. (555) 123-4567</li>
+                <li><strong>[ID]</strong> - e.g. passport number, SSN</li>
+                <li><strong>[OTHER]</strong> - any other identifying or sensitive info</li>
+              </ul>
+            </li>
+          </div>
+        `
+      };
+    },
+    computed: {},
+    created() {},
+    mounted() {
+      window.top.postMessage(
+        {
+          type: 'task-instructions',
+          instructions: this.instructions
+        },
+        "*"
+      );
+    },
+    methods: {
+      handleTextSelection() {
+        const selection = window.getSelection()
+        const text = selection?.toString().trim()
+
+        this.selection = text
+      },
+      addSelection(){
+        this.selectionList.push([this.selection,this.selectedTag])
+      },
+      removeSelection(index){
+        this.selectionList.splice(index, 1)
+      },
+      async uploadAndSubmit() {
+        this.btnLoading = true;
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  taskTitle: this.title,
+                  sentence: this.sentence,
+                  answer: JSON.parse(JSON.stringify(this.selectionList))
+                },
+              },
+              "*"
+            );
+            
+          } catch (error) {
+            console.error("Failed to upload to IPFS", error);
+          }
+        this.btnLoading = false;
+      },
+    },
+  }).mount("#app");
+</script>

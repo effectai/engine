@@ -31,6 +31,7 @@
   const emit = defineEmits<{
     (e: "submit", data: unknown): void;
     (e: "ready"): void;
+    (e: "instructions", instructions: string): void;
   }>();
 
   const setHtml = async (newHtml: string) => {
@@ -61,6 +62,10 @@
 
   const onMessage = (event: any) => {
     const data = event.data;
+
+    if (event.data.type === "task-instructions") {
+      emit("instructions", data.instructions); 
+    }
 
     switch (event.data.task) {
       case "submit":

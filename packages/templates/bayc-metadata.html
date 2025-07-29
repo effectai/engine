@@ -81,17 +81,53 @@
           title: "Effect AI NFT Metadata Collector",
           imageSource: "${image_url}",
           btnLoading: false,
-          ipfsClient: null,
           isMutant: "",
           hasHat: "",
           loading: true,
           isActive: false,
           notComplete: false,
+          instructions: `
+          <div class="">
+            <div>
+              <h2 class="text-lg">Mutant VS Non-Mutant</h2>
+              <div>
+                <h2 class="text-lg">This is a <strong>Mutant</strong></h2>  
+                <img width="50%" src="https://ipfs.io/ipfs/QmefKN6eK9aj7aPB52oLxzx4Lfv1GWnL5LWBzYAR3RKN83">
+              </div>
+              <br>
+              <div>
+                <h2 class="text-lg">This is a <strong>Non-Mutant</strong></h2>  
+                <img width="50%" src="https://ipfs.io/ipfs/QmZj2wuzJWrRjRSqaAvHbeXW4TcRTV6z28McB1yQXACk2w">
+              </div>
+            </div>
+            <br><hr><br>
+            <h2 class="text-lg">Hat VS No Hat</h2>
+            <p>A hat is an object on top of the monkey's head (hair styles <strong>DO NOT</strong> count</p>
+            <br>
+            <div>
+                <h2 class="text-lg">There <strong>IS</strong> a hat</h2>  
+                <img width="50%" src="https://ipfs.io/ipfs/QmYDY5YKo4sMZbBq9LEJrS5RoLtSn2fvfp1MD1xWd3R3K7">
+              </div>
+              <br>
+              <div>
+                <h2 class="text-lg">There <strong>IS NO</strong> hat</h2>   
+                <img width="50%" src="https://ipfs.io/ipfs/QmecRJrjdu14YHS2YgjaNbYZNncsDZGRfrhk3S4jG51SJW">
+              </div>
+            </div>
+          </div>`
         };
       },
       computed: {},
       created() {},
-      mounted() {},
+      mounted() {
+        window.top.postMessage(
+        {
+          type: 'task-instructions',
+          instructions: this.instructions
+        },
+        "*"
+      );
+      },
       methods: {
         async uploadAndSubmit() {
           this.btnLoading = true;
@@ -104,9 +140,13 @@
                 {
                   task: "submit",
                   values: {
-                    isMutant: this.isMutant,
-                    hasHat: this.hasHat,
-                    image: this.imageSource,
+                    taskTitle: this.title,
+                    answer: {
+                      isMutant: this.isMutant,
+                      hasHat: this.hasHat,
+                      image: this.imageSource,
+                    }
+                    
                   },
                 },
                 "*",
