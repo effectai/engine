@@ -25,41 +25,54 @@
     <label class="label">Which animal is this?</label>
     <div class="columns is-mobile is-multiline is-centered">
       <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.answer == 'Dog' }"
           @click="this.answer='Dog'">Dog</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.answer == 'Cow' }"
           @click="this.answer='Cow'">Cow</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.answer == 'Dolphin' }"
           @click="this.answer='Dolphin'">Dolphin</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.answer == 'Walrus' }"
           @click="this.answer='Walrus'">Walrus</button>
       </div>
     </div>
 
     <div class="columns is-mobile is-multiline is-centered">
       <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.answer == 'Lion' }"
           @click="this.answer='Lion'">Lion</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.answer == 'Pig' }"
           @click="this.answer='Pig'">Pig</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.answer == 'Raccoon' }"
           @click="this.answer='Raccoon'">Raccoon</button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
-        <button class="button is-dark is-outlined is-medium"
+        <button class="button is-medium"
+          :class="{ 'is-primary': this.answer == 'Other' }"
           @click="this.answer='Other'">Other</button>
       </div>
     </div>
+
+    <p style="color: red;"
+    :class="{'is-hidden mb-3': !notComplete}">
+      Task incomplete - Please complete all sections of the task
+    </p>
 
     <button
       @click.prevent="uploadAndSubmit"
@@ -90,6 +103,7 @@
           ipfsClient: null,
           answer: "",
           loading: true,
+          notComplete: false,
         };
       },
       computed: {},
@@ -98,20 +112,24 @@
       methods: {
         async uploadAndSubmit() {
           this.btnLoading = true;
-          try {
-            parent.postMessage(
-              {
-                task: "submit",
-                values: {
-                  animal: this.answer,
-                  image: this.imageSource,
-                },
-              },
-              "*",
-            );
-          } catch (error) {
-            console.error("Failed to upload to IPFS", error);
+          if(this.answer == ""){
+            this.notComplete = true
           }
+          else
+            try {
+              parent.postMessage(
+                {
+                  task: "submit",
+                  values: {
+                    animal: this.answer,
+                    image: this.imageSource,
+                  },
+                },
+                "*",
+              );
+            } catch (error) {
+              console.error("Failed to upload to IPFS", error);
+            }
           this.btnLoading = false;
         },
       },
