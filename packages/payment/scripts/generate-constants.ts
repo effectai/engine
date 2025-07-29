@@ -1,7 +1,10 @@
 import fs from "node:fs";
 import dotenv from "dotenv";
+import path from "node:path";
 
-dotenv.config();
+const envFile =
+  process.env.NODE_ENV === "production" ? ".env.production" : ".env";
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 const BATCH_SIZE = process.env.PAYMENT_BATCH_SIZE || 10;
 
