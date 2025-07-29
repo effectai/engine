@@ -72,13 +72,13 @@ const addMainRoutes = (app: Express) => {
 <small>Manager: ${state.managerId}</small>
 
 <h3>Known Templates (${tmpList.length})</h3>
-<div class="boxbox">${tmpList.join("")}</div>
+${tmpList.length ? `<div class="boxbox">${tmpList.join("")}</div>` : ""}
 <a href="/t/create"><button>+ Create Template</button></a>
 
 <section>
   <h3>Active Datasets (${dsList.length})</h3>
   ${
-    dsList.length
+    dsList.length	
       ? `
   <ul><li>${dsList.join("</li><li>")}</li></ul>`
       : ""
