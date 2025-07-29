@@ -90,7 +90,6 @@
   </div>
 </template>
 <script setup lang="ts">
-import { WALLET_ADAPTERS } from "@web3auth/base";
 const { web3Auth, loginWithWeb3Auth } = useAuth();
 
 definePageMeta({
@@ -105,15 +104,11 @@ const loginWithGoogle = async () => {
 };
 
 const loginWithGithub = async () => {
-  await web3Auth.value?.connectTo(WALLET_ADAPTERS.AUTH, {
-    loginProvider: "github",
-  });
+  loginWithWeb3Auth("github");
 };
 
 const loginWithDiscord = async () => {
-  await web3Auth.value?.connectTo(WALLET_ADAPTERS.AUTH, {
-    loginProvider: "discord",
-  });
+  loginWithWeb3Auth("discord");
 };
 </script>
 
