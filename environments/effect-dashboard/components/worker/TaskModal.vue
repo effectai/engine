@@ -3,68 +3,84 @@
     v-if="activeTask"
     class="fixed inset-0 z-50 flex items-center justify-center"
   >
-    <UModal v-model="isOpen" prevent-close fullscreen>
-      <UCard
-        :ui="{
-          ring: '',
-          divide: 'divide-y divide-gray-100 dark:divide-gray-800',
-        }"
-      >
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3
-              class="text-base font-semibold leading-6 text-gray-900 dark:text-white"
-            >
-              {{ activeTask?.state.title }}
-            </h3>
-            <div class="flex justify-end gap-2">
-              <!-- <UButton color="black" variant="outline"> -->
-                <!-- Show Instructions -->
-              <!-- </UButton> -->
-              <div class="flex space-x-2" v-if="showAcceptTaskButton">
-                <UButton color="black" @click.stop="handlerAcceptTask">
-                  <UIcon name="i-heroicons-check-circle-20-solid" />
-                  Accept Task
+    <UModal v-model:open="isOpen" prevent-close fullscreen>
+      <template #content>
+        <WorkerShowInformationModal
+          v-model="isOpenTaskInfoModal"
+          :instructions="currentTaskInstructions"
+        />
+
+        <UCard
+          :ui="{
+            ring: '',
+            divide: 'divide-y divide-gray-100 dark:divide-gray-800',
+          }"
+        >
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3
+                class="text-base font-semibold leading-6 text-gray-900 dark:text-white"
+              >
+                {{ activeTask?.state.title }}
+              </h3>
+              <div class="flex justify-end gap-2">
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  @click="isOpenTaskInfoModal = true"
+                >
+                  Show Instructions
                 </UButton>
-                <UButton color="black" @click.stop="handlerRejectTask">
-                  <UIcon name="i-heroicons-x-mark-20-solid" />
-                  Reject Task
-                </UButton>
+                <div class="flex space-x-2" v-if="showAcceptTaskButton">
+                  <UButton color="neutral" @click.stop="handlerAcceptTask">
+                    <UIcon name="i-heroicons-check-circle-20-solid" />
+                    Accept Task
+                  </UButton>
+                  <UButton color="neutral" @click.stop="handlerRejectTask">
+                    <UIcon name="i-heroicons-x-mark-20-solid" />
+                    Reject Task
+                  </UButton>
+                </div>
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-heroicons-x-mark-20-solid"
+                  class="-my-1"
+                  @click="setActiveTask(null)"
+                />
               </div>
-              <UButton
-                color="gray"
-                variant="ghost"
-                icon="i-heroicons-x-mark-20-solid"
-                class="-my-1"
-                @click="setActiveTask(null)"
+            </div>
+          </template>
+
+          <template #default>
+            <div
+              class="p-4 overflow-y-auto"
+              :class="{ 'opacity-30': taskState === 'create' }"
+              v-if="activeTask"
+            >
+              <WorkerTaskTemplate
+                ref="template"
+                @submit="handlerSubmitTask"
+                @ready="isTemplateReady = true"
+                @instructions="currentTaskInstructions = $event"
               />
             </div>
-          </div>
-        </template>
+          </template>
 
-        <template #footer>
-              <div class="flex space-x-2" v-if="showForceSubmitTaskButton">
-                <UButton  variant="outline" color="black" @click.stop="reportAndSkipTask">
-                  <UIcon name="i-heroicons-exclamation-circle-20-solid" />
-                  Report & Skip Task
-                </UButton>
-              </div>
-        </template>
-
-        <template #default>
-          <div
-            class="p-4"
-            :class="{ 'opacity-30': taskState === 'create' }"
-            v-if="activeTask"
-          >
-            <WorkerTaskTemplate
-              ref="template"
-              @submit="handlerSubmitTask"
-              @ready="isTemplateReady = true"
-            />
-          </div>
-        </template>
-      </UCard>
+          <template #footer>
+            <div class="flex space-x-2" v-if="showForceSubmitTaskButton">
+              <UButton
+                variant="outline"
+                color="neutral"
+                @click.stop="reportAndSkipTask"
+              >
+                <UIcon name="i-heroicons-exclamation-circle-20-solid" />
+                Report & Skip Task
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </template>
     </UModal>
   </div>
 </template>
@@ -88,6 +104,8 @@ const template = ref<TemplateComponent | null>(null);
 const isTemplateReady = ref(false);
 
 const isOpen = computed(() => !!activeTask.value);
+const isOpenTaskInfoModal = ref(false);
+const currentTaskInstructions = ref("");
 
 const taskState = computed(
   () => activeTask.value && useTaskState(activeTask.value),
@@ -114,7 +132,7 @@ const handlerAcceptTask = async () => {
   if (!taskRecord) {
     toast.add({
       title: "Error",
-      color: "red",
+      color: "error",
       description: "Failed to accept task",
     });
     return;
@@ -122,7 +140,7 @@ const handlerAcceptTask = async () => {
 
   toast.add({
     title: "Success",
-    color: "green",
+    color: "success",
     description: "Task accepted successfully",
   });
 
@@ -139,7 +157,7 @@ const handlerRejectTask = async () => {
   await rejectTask(activeTask.value.state.id, "Task rejected by worker");
   toast.add({
     title: "Success",
-    color: "green",
+    color: "success",
     description: "Task rejected successfully",
   });
 
@@ -155,7 +173,7 @@ const reportAndSkipTask = async () => {
   await completeTask(activeTask.value.state.id, "<TASK REPORTED AND SKIPPED>");
   toast.add({
     title: "Task Reported",
-    color: "red",
+    color: "error",
     description: "Report was submitted and task is skipped.",
   });
   await queryClient.invalidateQueries({
@@ -169,7 +187,7 @@ const handlerSubmitTask = async (data: Record<unknown, string | number>) => {
   await completeTask(activeTask.value.state.id, JSON.stringify(data));
   toast.add({
     title: "Success",
-    color: "green",
+    color: "success",
     description: "Task completed successfully",
   });
   await queryClient.invalidateQueries({
@@ -186,7 +204,7 @@ watchEffect(async () => {
   if (!html) {
     toast.add({
       title: "Error",
-      color: "red",
+      color: "error",
       description: "Failed to render task template",
     });
     return;

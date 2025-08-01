@@ -20,7 +20,7 @@ export default {
         },
         brand: {
           highlight: "#E2FF03",
-          black: "#1C1A1F",
+          black: "#333",
         },
       },
       fontFamily: {

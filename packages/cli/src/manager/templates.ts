@@ -3,11 +3,11 @@ import axios from "axios";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
-  type Template,
   generateKeyPairFromSeed,
   peerIdFromPrivateKey,
   computeTemplateId,
 } from "@effectai/protocol";
+import type { Template } from "@effectai/protobufs";
 
 export const templateCommand = new Command();
 

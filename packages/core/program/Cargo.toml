@@ -1,0 +1,25 @@
+[package]
+name = "effect-common"
+version = "0.1.0"
+description = "Effect Common."
+edition = "2021"
+homepage = "https://effect.ai/"
+authors = ["effect"]
+license = "MIT"
+keywords = ["solana", "effect", "common", "anchor"]
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "effect_common"
+
+[features]
+default = ["mainnet"]
+no-entrypoint = []
+cpi = ["no-entrypoint"]
+mainnet = []
+testing = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = "0.31.1"
+anchor-spl = "0.31.1"

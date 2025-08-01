@@ -12,3 +12,5 @@ out
 test-ledger/
 
 /data
+.anchor
+target

@@ -5,22 +5,12 @@
       <div v-if="isCopied">Copied!</div>
       <div class="flex gap-2">
         <UButton
-          color="black"
-          class=""
+          color="neutral"
           variant="outline"
           icon="i-lucide-link"
           @click="disconnect"
         >
           Disconnect
-        </UButton>
-        <UButton
-          color="black"
-          class=""
-          variant="outline"
-          icon="i-lucide-key"
-          @click="copyPrivateKey"
-        >
-          Copy Private Key
         </UButton>
       </div>
     </div>
@@ -29,27 +19,27 @@
       <div class="space-y-2">
         <div
           class="flex items-center justify-between p-2 border border-zinc-700 rounded clipable"
-          @click="copyToClipboard(workerPeerId!)"
+          @click="copyToClipboard(peerId?.toString() || '')"
         >
           <div class="flex items-center gap-2 text-zinc-400">
             <UIcon name="i-lucide-cpu" size="16" />
             NODE ADDRESS
           </div>
-          <code class="text-emerald-400" v-if="workerPeerId">{{
-            sliceBoth(workerPeerId)
+          <code class="text-emerald-400" v-if="peerId">{{
+            sliceBoth(peerId.toString())
           }}</code>
         </div>
         <div
           class="flex items-center justify-between p-2 border border-zinc-700 rounded clipable"
-          @click="copyToClipboard(managerPeerId!)"
+          @click="copyToClipboard(managerInfo?.peerId?.toString() || '')"
         >
           <div class="flex items-center gap-2 text-zinc-400">
             <UIcon name="i-lucide-link" size="16" />
             MANAGER NODE
           </div>
 
-          <code class="text-emerald-400" v-if="managerPeerId">{{
-            sliceBoth(managerPeerId)
+          <code class="text-emerald-400" v-if="managerInfo">{{
+            sliceBoth(managerInfo.peerId?.toString())
           }}</code>
         </div>
       </div>
@@ -80,24 +70,25 @@
 </template>
 
 <script setup lang="ts">
+import { useClipboard } from "@vueuse/core";
 import { ref } from "vue";
-const sessionStore = useSessionStore();
-const { managerPeerId } = storeToRefs(sessionStore);
-const { useGetNonce } = sessionStore.useActiveSession();
 
-const workerStore = useWorkerStore();
-const { workerPeerId } = storeToRefs(workerStore);
+const { managerInfo } = useSession();
+const { useGetNoncesQuery } = useNonce();
+const managerPeerId = computed(() => managerInfo.value?.peerIdStr);
+const managerPublicKey = computed(() => managerInfo.value.publicKeyStr);
+const { data: nonces } = useGetNoncesQuery(managerPublicKey, managerPeerId);
 
-const { data: nonces } = useGetNonce();
 const { data: latency } = usePing();
+const { peerId } = useWorkerNode();
 
-const { useDisconnect } = useSession();
-const { mutateAsync: disconnectSession } = useDisconnect();
 const isCopied = ref(false);
 
+const { disconnectFromManagerMutation } = useSession();
+const { mutateAsync: disconnectFromManager } = disconnectFromManagerMutation;
 const disconnect = async () => {
-  await disconnectSession();
-  navigateTo("/worker/connect");
+  await disconnectFromManager();
+  navigateTo("/worker");
 };
 
 function copyToClipboard(text: string) {
@@ -107,18 +98,6 @@ function copyToClipboard(text: string) {
     isCopied.value = false;
   }, 1500);
 }
-
-const authStore = useAuthStore();
-const { privateKey } = storeToRefs(authStore);
-const { copy } = useCopyToClipboard();
-const toast = useToast();
-const copyPrivateKey = () => {
-  copy(privateKey.value);
-  toast.add({
-    title: "Private Key Copied",
-    description: "Your private key has been copied to the clipboard.",
-  });
-};
 </script>
 
 <style scoped>

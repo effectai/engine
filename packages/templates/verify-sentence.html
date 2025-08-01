@@ -10,7 +10,7 @@
     <p class="is-size-4 has-text-weight-semibold">{{sentence}}</p>
   </div>
 
-  <div>
+  <div class="mb-5">
     <button class="button is-medium"
     :class="{ 'is-danger': this.answer == 'No' }"
     @click="this.answer='No'">No</button>
@@ -22,18 +22,6 @@
     <button class="button is-medium"
     :class="{ 'is-success': this.answer == 'Yes' }"
     @click="this.answer='Yes'">Yes</button>
-  </div>
-
-  <div class="container is-max-desktop box mt-5 ">
-    <label class="label">Instructions:</label>
-    <div class="has-text-left">
-      <li>Has fewer than 15 words per sentence</li>
-      <li>Uses correct grammar</li>
-      <li>Uses correct spelling and punctuation</li>
-      <li>No numbers and special characters</li>
-      <li>No foreign letters</li>
-      <li>Ideally natural and conversational (it should be easy to read the sentence)</li>
-    </div>      
   </div>
 
   <p style="color: red;"
@@ -63,16 +51,33 @@
       return {
         title: "Effect AI Sentence Verifier",
         btnLoading: false,
-        ipfsClient: null,
         sentence: "${sentence}",
         answer: "",
         loading: true,
         notComplete: false,
+        instructions: `
+          <div class="">
+            <li>Has fewer than 15 words per sentence</li>
+            <li>Uses correct grammar</li>
+            <li>Uses correct spelling and punctuation</li>
+            <li>No numbers and special characters</li>
+            <li>No foreign letters</li>
+            <li>Ideally natural and conversational (it should be easy to read the sentence)</li>
+          </div>
+        `
       };
     },
     computed: {},
     created() {},
-    mounted() {},
+    mounted() {
+      window.top.postMessage(
+        {
+          type: 'task-instructions',
+          instructions: this.instructions
+        },
+        "*"
+      );
+    },
     methods: {
       async uploadAndSubmit() {
         this.btnLoading = true;
@@ -85,6 +90,7 @@
               {
                 task: "submit",
                 values: {
+                  taskTitle: this.title,
                   sentence: this.sentence,
                   answer: this.answer
                 },

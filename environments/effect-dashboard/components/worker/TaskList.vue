@@ -37,7 +37,7 @@
         name="i-heroicons-list-bullet-20-solid"
         class="text-3xl mx-auto mb-2"
       />
-      <p>No active tasks currently</p>
+      <p>Waiting for tasks...</p>
     </div>
 
     <TransitionGroup name="list" tag="div" class="space-y-3">
@@ -56,9 +56,8 @@
 </template>
 
 <script setup lang="ts">
-const { useGetTasks } = useTasks();
-const index = ref("active");
-const { data: tasks = [] } = useGetTasks(index);
+const { useGetActiveTasks } = useTasks();
+const { data: tasks = [] } = useGetActiveTasks(ref("active"));
 </script>
 
 <style scoped>

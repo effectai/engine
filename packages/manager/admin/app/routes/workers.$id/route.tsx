@@ -5,12 +5,16 @@ import { Form, useLoaderData } from "@remix-run/react";
 
 export async function loader({ request, context, params }: LoaderFunctionArgs) {
   const id = params.id;
+
+  if (!id) {
+    throw new Response("Worker ID is required", { status: 400 });
+  }
+
   const worker = await context.workerManager.getWorker(id);
 
   if (!worker) {
     throw new Response("Worker not found", { status: 404 });
   }
-
   return {
     worker,
   };
@@ -22,12 +26,18 @@ export default function Component() {
   return (
     <div className="px-6">
       <div className="flex gap-3">
-        <Form method="post">
+        <Form method="post" className="flex gap-2">
           <Button type="submit" name="intent" value="kick">
             Kick
           </Button>
           <Button type="submit" name="intent" value="ban">
             Ban
+          </Button>
+          <Button type="submit" name="intent" value="revoke">
+            Revoke Access Code
+          </Button>
+          <Button type="submit" name="intent" value="promote">
+            Promote to Admin
           </Button>
         </Form>
       </div>
@@ -58,6 +68,16 @@ export const action = async ({
       banned: true,
     }));
     context.workerManager.workerQueue.removePeer(id);
+  } else if (intent === "revoke") {
+    await context.workerManager.updateWorkerState(id, (state) => ({
+      accessCodeRedeemed: undefined,
+    }));
+
+    context.workerManager.workerQueue.removePeer(id);
+  } else if (intent === "promote") {
+    await context.workerManager.updateWorkerState(id, (state) => ({
+      isAdmin: true,
+    }));
   }
 
   return null;

@@ -1,11 +1,7 @@
 import type { WorkerTaskRecord } from "../stores/workerTaskStore.js";
 import type { WorkerEntity } from "../main.js";
-import {
-  type TemplateStore,
-  Template,
-  TemplateRequest,
-  peerIdFromString,
-} from "@effectai/protocol-core";
+import { type TemplateStore, peerIdFromString } from "@effectai/protocol-core";
+import type { Template, TemplateRequest } from "@effectai/protobufs";
 
 export function createTemplateWorker({
   entity,
