@@ -1,5 +1,6 @@
-import { isHtmx, page, make404, make500 } from "./html.js";
+import { isHtmx, page, make404, make500, themes } from "./html.js";
 import type { Express } from "express";
+import { Request } from "express";
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,7 +23,11 @@ const loginPage = async (msg = "") => `
 </form>
 `;
 
+// little shorthand that selects a value if it matches a string
+const addVal = (v: string, s?: string) => `value=${v}${v == s ? " selected" : ""}`;
+
 const loggedInPage = (msg = "") => `
+<div id="mainpart">
   ${msg ? `<p class="notif" id="messages">${msg}</p>` : ""}
 
 
@@ -34,10 +39,13 @@ const loggedInPage = (msg = "") => `
 
 
     <h3>Change theme</h3>
+    <form hx-post="/auth/theme" hx-target="#mainpart">
     <select name="theme" id="theme">
-      <option name="matrix">Matrix</option>
+      <option ${addVal("matrix", state.theme)}>Matrix</option>
+      <option ${addVal("studio", state.theme)}>Studio</option>
     </select>
     <button type="submit">Save</button>
+    </form>
   </fieldset>
 
   
@@ -47,12 +55,13 @@ const loggedInPage = (msg = "") => `
   <a href="/"><button type="button">Show Datasets</button></a>
   </form>
   </section>
+</div>
 `;
 
 const validKeys = ["0", "0500486958191779"];
-const isValidKey = (k: string) => validKeys.includes(k);
+const isValidKey = (k: string) => k && validKeys.includes(k);
 
-const getAuthToken = (req) => {
+const getAuthToken = (req: Request) => {
     if (!req.headers.cookie) return null;
     
     const match = req.headers.cookie.match(/(?:^|; )auth_token=([^;]*)/);
@@ -62,7 +71,7 @@ const getAuthToken = (req) => {
 export const addAuthRoutes = (app: Express): void => {
   app.get("/auth", async (req, res) => {
     const token = getAuthToken(req);
-    if (isValidKey(token))
+    if (isValidKey(token!))
       res.send(page(loggedInPage()))
     else
       res.send(page(await loginPage()));
@@ -86,7 +95,7 @@ export const addAuthRoutes = (app: Express): void => {
   app.post("/auth/logout", async(req, res) => {
     console.log(process.env.NODE_ENV === 'production');
     const token = getAuthToken(req);      
-    if (isValidKey(token)) {
+    if (isValidKey(token!)) {
       // expire in the past removes the cookie
       res
 	.cookie("auth_token", "", { expires: new Date(0) })
@@ -95,5 +104,17 @@ export const addAuthRoutes = (app: Express): void => {
     } else {
       res.send("Not Logged in!")
     }
+  });
+
+  app.post("/auth/theme", async (req, res) => {
+    const { theme } = req.body;
+    var msg = `Theme switched to ${theme}`;
+    if (themes.has(theme)) {
+      state.setTheme(theme);
+      res.header("HX-Refresh", "true");
+    } else {
+      msg = `Invalid theme`;
+    }
+    res.send(loggedInPage(msg));
   });
 };

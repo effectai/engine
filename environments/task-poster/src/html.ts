@@ -1,9 +1,14 @@
 import type { Request, Response } from "express";
-
+import { theme as curTheme } from "./state.js";
 
 export const isHtmx = (req: Request): boolean => !!req.headers["hx-request"];
 
-export const page = (body: string): string => `
+export const themes: Map<string, string> = new Map([
+  ["matrix", ""],
+  ["studio", ":root {--background: #f7f4ff;  --foreground: #403352;  --accent: #6f49ab;  --light-bg: color-mix(in srgb, var(--background) 95%, white); }",]
+]);
+
+export const page = (body: string, theme?: string): string => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,6 +17,7 @@ export const page = (body: string): string => `
   <title>Task Terminal - Effect</title>
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <link rel="stylesheet" href="/css/style.css">
+  ${curTheme ? `<style>${themes.get(curTheme || "default")}</style>` : ``}
   <style>
 
   </style>

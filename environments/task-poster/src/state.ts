@@ -8,3 +8,7 @@ export const publishProgress: Record<number, any> = {};
 
 export const managerUrl = "http://mgr1.alpha.effect.net:8889";
 //`http://localhost:8889`;  // "http://mgr1.stage.effect.net:8889",
+
+export var theme: string = "matrix";
+export const setTheme = (t: string) => theme = t;
+
