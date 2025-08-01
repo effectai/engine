@@ -43,6 +43,8 @@ const loggedInPage = (msg = "") => `
     <select name="theme" id="theme">
       <option ${addVal("matrix", state.theme)}>Matrix</option>
       <option ${addVal("studio", state.theme)}>Studio</option>
+      <option ${addVal("tahiti-gold", state.theme)}>Tahiti Gold</option>
+      <option ${addVal("pistachio", state.theme)}>Pistachio</option>
     </select>
     <button type="submit">Save</button>
     </form>
