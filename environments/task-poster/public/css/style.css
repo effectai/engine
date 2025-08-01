@@ -8,6 +8,13 @@
     --radius: 0;
     --font-size: 1rem;
     --line-height: 1.54em;
+    --light-bg: var(--background);
+}
+
+
+
+:root {
+
 }
 
 html {
@@ -121,6 +128,7 @@ fieldset textarea,
 fieldset label,
 fieldset button {
     margin-top: calc(var(--line-height) * 0.5);
+    display: block;
     width: 100%;
 }
 fieldset legend {
@@ -426,3 +434,10 @@ section>h3:first-child { margin-top: 0; }
 
 header { margin-bottom: 25px; border-bottom: 0px solid var(--accent); }
 .btns > button { margin: 0 5px; }
+
+.box { padding: 1rem; width: 100%; background-color: var(--light-bg); }
+.narrow { max-width: 30rem; }
+.spread { min-width: 30rem; }
+.fill { width: 100%; }
+
+.notif { background-color: var(--accent); color: var(--background); padding: 1rem; }

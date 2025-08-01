@@ -17,6 +17,9 @@ import {
   datasetIndex,
   startAutoImport,
 } from "./dataset.js";
+import {
+  addAuthRoutes,
+} from "./auth.js";
 import * as dataset from "./dataset.js";
 import * as fetcher from "./fetcher.js";
 
@@ -69,16 +72,14 @@ const addMainRoutes = (app: Express) => {
 
     res.send(
       page(`
-<small>Manager: ${state.managerId}</small>
-
 <h3>Known Templates (${tmpList.length})</h3>
 ${tmpList.length ? `<div class="boxbox">${tmpList.join("")}</div>` : ""}
-<a href="/t/create"><button>+ Create Template</button></a>
+<a href="/t/create"><button>+ Create Templates</button></a>
 
 <section>
   <h3>Active Datasets (${dsList.length})</h3>
   ${
-    dsList.length	
+    dsList.length
       ? `
   <ul><li>${dsList.join("</li><li>")}</li></ul>`
       : ""
@@ -135,6 +136,7 @@ const main = async () => {
   addMainRoutes(app);
   addTemplateRoutes(app);
   addDatasetRoutes(app);
+  addAuthRoutes(app);
 
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);
