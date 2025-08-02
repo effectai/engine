@@ -32,10 +32,12 @@ const loggedInPage = (msg = "") => `
 
 
   <fieldset class="box fill">
+    <h3>Status</h3>
+
     <p>Authorized as administrator</p>
 
     <h3>Connected to manager</h3>
-    <small>Manager: ${state.managerId}</small>
+    Manager: ${state.managerId}
 
 
     <h3>Change theme</h3>
@@ -50,8 +52,8 @@ const loggedInPage = (msg = "") => `
     </form>
   </fieldset>
 
-  
-  <section>	
+
+  <section>
   <form hx-target="body" hx-post="/auth/logout">
   <button type="submit">Logout</button>
   <a href="/"><button type="button">Show Datasets</button></a>
@@ -65,7 +67,7 @@ const isValidKey = (k: string) => k && validKeys.includes(k);
 
 const getAuthToken = (req: Request) => {
     if (!req.headers.cookie) return null;
-    
+
     const match = req.headers.cookie.match(/(?:^|; )auth_token=([^;]*)/);
     return match ? match[1] : null;
 };
@@ -81,7 +83,7 @@ export const addAuthRoutes = (app: Express): void => {
 
   app.post("/auth", async (req, res) => {
     const { key } = req.body;
-  
+
     if (isValidKey(key)) {
       res.cookie('auth_token', key, {
 	secure: true,        // only send cookie over HTTPS on production
@@ -96,7 +98,7 @@ export const addAuthRoutes = (app: Express): void => {
 
   app.post("/auth/logout", async(req, res) => {
     console.log(process.env.NODE_ENV === 'production');
-    const token = getAuthToken(req);      
+    const token = getAuthToken(req);
     if (isValidKey(token!)) {
       // expire in the past removes the cookie
       res
@@ -118,5 +120,33 @@ export const addAuthRoutes = (app: Express): void => {
       msg = `Invalid theme`;
     }
     res.send(loggedInPage(msg));
+  });
+
+  // TODO: manager selection on longer needed? remove
+//   app.get("/select-manager", async (req, res) => {
+//     res.send(
+//       page(`
+// <p>Select a manager:</p>
+// <form action="/m" method="post" hx-post="/m">
+//   <select name="manager" style="width: 100%;">
+//     <option value="${state.managerId}">
+//       /ip4/127.0.0.1/tcp/11995/ws/p2p/12D3K..f9cPb
+//     </option>
+//   </select>
+
+//   <button style="display: block; margin-left: auto; margin-top: 25px">Continue</button>
+// </form>
+// `),
+//     );
+//   });
+
+  app.post("/m", (req, res) => {
+    const dst = `/m/${req.body.manager}`;
+    if (isHtmx(req)) {
+      res.setHeader("HX-Redirect", dst);
+      res.end();
+    } else {
+      res.redirect(dst);
+    }
   });
 };

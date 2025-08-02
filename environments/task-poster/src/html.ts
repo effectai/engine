@@ -5,7 +5,7 @@ export const isHtmx = (req: Request): boolean => !!req.headers["hx-request"];
 
 export const themes: Map<string, string> = new Map([
   ["matrix", ""],
-  ["studio", ":root {--background: #f7f4ff;  --foreground: #403352;  --accent: #6f49ab;  --light-bg: color-mix(in srgb, var(--background) 95%, white); }"],
+  ["studio", ":root {--background: #f7f4ff;  --foreground: #403352;  --accent: #6f49ab;  --light-bg: color-mix(in srgb, var(--background) 80%, white); }"],
   ["tahiti-gold", ":root {--background: #fffbf7; --foreground: #45372b; --accent: #df7020; }"],
   ["pistachio", ":root {--background: #1d2021; --foreground: #ebdbb2; --accent: #8ec07c;}"]
 ]);

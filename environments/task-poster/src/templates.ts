@@ -140,8 +140,26 @@ ${templateDataForm(html, fields)}` :
 `
   };
 
+// block that lists active templates
+const tplListFrame = async () => {
+  const tpls = await getTemplates();
+  const tmpList = tpls.map(t => `
+<a class="box" href="/t/test/${t.data.templateId}">
+  ${t.data.name || "[no name]"} (${t.data.createdAt})
+</a>`
+  );
+  return `
+<h3>Known Templates (${tpls.length})</h3>
+${tpls.length ? `<div class="boxbox">${tmpList.join("")}</div>` : ""}
+<a href="/t/create"><button>+ Create Templates</button></a>`;
+}
+
 
 export const addTemplateRoutes = (app: Express): void => {
+  app.get("/templates", async (_req, res) => {
+    res.send(page(`${await tplListFrame()}`));
+  });
+
   app.get("/t/create", (_req, res) => {
     res.send(page(form()));
   });

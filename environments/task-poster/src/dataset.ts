@@ -76,7 +76,6 @@ const form = async (msg = "", values: FormValues = {}) : Promise<string> => `
     ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
   </div>
   <fieldset>
-    <legend>New Dataset</legend>
     <label for="name"><strong>Name</strong></label>
     <input
       placeholder="Dataset name"
@@ -126,7 +125,7 @@ const form = async (msg = "", values: FormValues = {}) : Promise<string> => `
     <section class="columns gap">
       <div class="column">
 	<label for="frequency"><strong>Batch frequency</strong><br/>
-<small>How frequent new data is fetched and posted.</small></labbel>
+<small>How frequent new data is fetched and posted.</small></label>
 	<input
 	  placeholder="Seconds"
 	  type="number"
@@ -306,9 +305,12 @@ ${ds.status === "draft"
     ? `<button hx-post="/d/${id}?action=publish">Publish</button>`
     :  ds.status === "active"
       ? `<button hx-post="/d/${id}?action=archive">Archive</button>`
-      : ``}
+      : `Status: ${ds.status}`}
 </div>
 </form>
+</section>
+<section>
+  <h3>Add more data<h3>
 </section>
 `;
 

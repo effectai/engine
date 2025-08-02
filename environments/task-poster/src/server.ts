@@ -24,74 +24,34 @@ import * as dataset from "./dataset.js";
 import * as fetcher from "./fetcher.js";
 
 const addMainRoutes = (app: Express) => {
-  // TODO: this screen on longer works, move it to settings
-  app.get("/select-manager", async (req, res) => {
-    res.send(
-      page(`
-<p>Select a manager:</p>
-<form action="/m" method="post" hx-post="/m">
-  <select name="manager" style="width: 100%;">
-    <option value="${state.managerId}">
-      /ip4/127.0.0.1/tcp/11995/ws/p2p/12D3K..f9cPb
-    </option>
-  </select>
-
-  <button style="display: block; margin-left: auto; margin-top: 25px">Continue</button>
-</form>
-`),
-    );
-  });
-
-  app.post("/m", (req, res) => {
-    const dst = `/m/${req.body.manager}`;
-    if (isHtmx(req)) {
-      res.setHeader("HX-Redirect", dst);
-      res.end();
-    } else {
-      res.redirect(dst);
-    }
-  });
-
   app.get("/", async (req, res) => {
-    const templates = await getTemplates();
-    const tmpList = templates.map(
-      (t) => `
-<a class="box" href="/t/test/${t.data.templateId}">
-  ${t.data.name || "[no name]"} (${t.data.createdAt})
-</a>`,
-    );
-
     const datasets = await getActiveDatasets("active");
+    const formatDate = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     const dsList = datasets.map(
-      (d) => `<a href="/d/${d!.data.id}">${d!.data.name} (${d!.data.id})</a>`,
+      (d) => `<strong><a href="/d/${d!.data.id}">${d!.data.name}</a></strong> <small>Created ${formatDate(d!.data.id)}</small>`,
     );
 
-    const oldDs = (await getActiveDatasets("finished")).map(
-      (d) => `<a href="/d/${d!.data.id}">${d!.data.name} (${d!.data.id})</a>`,
+    const oldDs = (await getActiveDatasets("finished"))
+      .concat(await getActiveDatasets("archived"))
+      .map((d) => `
+<a href="/d/${d!.data.id}">${d!.data.name}</a> <small>${d!.data.id}</small>`,
     );
 
     res.send(
       page(`
-<h3>Known Templates (${tmpList.length})</h3>
-${tmpList.length ? `<div class="boxbox">${tmpList.join("")}</div>` : ""}
-<a href="/t/create"><button>+ Create Templates</button></a>
-
 <section>
-  <h3>Active Datasets (${dsList.length})</h3>
-  ${
-    dsList.length
-      ? `
-  <ul><li>${dsList.join("</li><li>")}</li></ul>`
-      : ""
-  }
-  <a href="/d/create"><button>+ Create Dataset</button></a>
-</section>
+  <h2>Active Campaigns (${dsList.length})</h2>
+  <p>The following datasets are currently being crafted by people and AI around the globe. Powered by Effect AI.</p>
 
-<section>
-  <h3>Finished Datasets</h3>
-  <ul><li>${oldDs.reverse().join("</li><li>")}</li></ul>
-</section>
+  ${dsList.length ? `<div><div class="box">${dsList.join("</div><div class=\"box\">")}</div></div>` : ""}
 
+<section><a href="/d/create"><button>+ Create Dataset</button></a></section>
+
+  <section>
+    <h2>Recent Datasets (${oldDs.length})</h2>
+    <ul><li>${oldDs.reverse().join("</li><li>")}</li></ul>
+  </section>
+</section>
 `),
     );
   });
