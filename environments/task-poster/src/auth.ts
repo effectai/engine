@@ -39,7 +39,6 @@ const loggedInPage = (msg = "") => `
     <h3>Connected to manager</h3>
     Manager: ${state.managerId}
 
-
     <h3>Change theme</h3>
     <form hx-post="/auth/theme" hx-target="#mainpart">
     <select name="theme" id="theme">
@@ -56,7 +55,8 @@ const loggedInPage = (msg = "") => `
   <section>
   <form hx-target="body" hx-post="/auth/logout">
   <button type="submit">Logout</button>
-  <a href="/"><button type="button">Show Datasets</button></a>
+  <a href="/"><button type="button">Datasets</button></a>
+  <a href="/templates"><button type="button">Templates</button></a>
   </form>
   </section>
 </div>

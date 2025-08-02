@@ -45,7 +45,7 @@ const addMainRoutes = (app: Express) => {
 
   ${dsList.length ? `<div><div class="box">${dsList.join("</div><div class=\"box\">")}</div></div>` : ""}
 
-<section><a href="/d/create"><button>+ Create Dataset</button></a></section>
+<section><a href="/d/create"><button>+ New Dataset</button></a></section>
 
   <section>
     <h2>Recent Datasets (${oldDs.length})</h2>

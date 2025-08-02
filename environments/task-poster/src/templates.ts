@@ -1,4 +1,4 @@
-import { isHtmx, page } from "./html.js";
+import { make404, make500, isHtmx, page } from "./html.js";
 import type { Express } from "express";
 import { managerId, db } from "./state.js";
 import * as state from "./state.js";
@@ -34,8 +34,13 @@ const escapeHTML = (html: string): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-export const getTemplates = async () =>
-  await db.listAll<TemplateRecord>(["templates", {}]);
+export const getTemplates = async (status?: string) => {
+  const l = await db.listAll<TemplateRecord>(["templates", {}]);
+  if (status)
+    return l.filter(t => t!.data.status === status);
+  else
+    return l
+};
 export const getTemplate = async (id: string) =>
   await db.get<TemplateRecord>(["templates", id]);
 
@@ -142,18 +147,61 @@ ${templateDataForm(html, fields)}` :
 
 // block that lists active templates
 const tplListFrame = async () => {
-  const tpls = await getTemplates();
-  const tmpList = tpls.map(t => `
-<a class="box" href="/t/test/${t.data.templateId}">
+  const allTpls = await getTemplates();
+
+  const renderList = (status) => {
+    const tpls = allTpls.filter(t => t!.data.status === status);
+    const tplList = tpls.map(t => `
+<a class="box" href="/t/${t.data.templateId}">
   ${t.data.name || "[no name]"} (${t.data.createdAt})
 </a>`
-  );
+    );
+    return [
+      tpls.length,
+      `${tpls.length ? `<div class="boxbox">${tplList.join("")}</div>` : ""}`
+    ]
+  };
+
+  const [nActive, activeList] = renderList("active");
+  const [nDraft, draftList] = renderList("draft");
+
   return `
-<h3>Known Templates (${tpls.length})</h3>
-${tpls.length ? `<div class="boxbox">${tmpList.join("")}</div>` : ""}
-<a href="/t/create"><button>+ Create Templates</button></a>`;
+<h3>Active Templates (${nActive})</h3>
+${activeList}
+
+<section>
+  <a href="/t/create"><button>+ New Template</button></a>
+</section>
+
+<section>
+  <h3>Drafts (${nDraft})</h3>
+  ${draftList}
+</section>
+`;
 }
 
+const tplViewPage = async (tpl: TemplateRecord) => {
+  return `
+<div id="page">
+<h2>Template: ${tpl.name}</h2>
+<strong>Status ${tpl.status}</strong>
+
+${await templatePreviewFrame(tpl.data)}
+
+<section>
+  ${tpl.status == "active" ?
+   `<button hx-post="/t/${tpl.templateId}?action=archive">Archive</button>` : ''}
+
+  ${tpl.status == "draft" ?
+   `<button hx-post="/t/${tpl.templateId}?action=publish">Publish</button>` : ''}
+
+  ${tpl.status == "active" ? `<p><small>* Archiving a template will hide it from `
++ `the UI and dataset selection field</small></p>` : ''}
+
+</section>
+</div>
+`;
+};
 
 export const addTemplateRoutes = (app: Express): void => {
   app.get("/templates", async (_req, res) => {
@@ -200,8 +248,8 @@ export const addTemplateRoutes = (app: Express): void => {
 	valid = false;
       }
 
-      const templateEntry = {
-	...template, name: req.body.name, status: "draft"
+      const templateEntry: TemplateRecord = {
+	...template, name: req.body.name, status: "active"
       };
       await db.set<TemplateRecord>(["templates", templateId], templateEntry);
     }
@@ -237,19 +285,44 @@ export const addTemplateRoutes = (app: Express): void => {
   });
 
 
-  app.get("/t/test/:id", async (req, res) => {
+  app.get("/t/:id", async (req, res) => {
     const tid = req.params.id;
     const tpl = await getTemplate(tid);
     if (!tpl) {
-      res.status(404);
-      res.send('not found');
-      res.end();
+      res.status(404).send('not found').end();
       return;
     }
-    res.send(
-      page(`<strong>Template ${tpl?.data.name}</strong>
-${await templatePreviewFrame(tpl!.data.data)}
-`));
+    res.send(page(await tplViewPage(tpl!.data)));
+  });
+
+  app.post("/t/:id", async (req, res) => {
+    const tid = req.params.id;
+    const tpl = await getTemplate(tid);
+    if (!tpl) return make404(res);
+
+    console.log(`Trace: post ${req.query.action} template ${tid}`);
+
+    var msg = "";
+    if (req.query.action === "archive") {
+      if (tpl!.data.status !== "active") return make500(res);
+      tpl!.data.status = "draft";
+      await db.set<TemplateRecord>(tpl!.key, tpl!.data);
+      msg = "Successfully archived template";
+    } else if (req.query.action === "publish") {
+      if (tpl!.data.status !== "draft") return make500(res);
+      tpl!.data.status = "active";
+      await db.set<TemplateRecord>(tpl!.key, tpl!.data);
+      msg = "Successfully published template";
+    } else {
+      return make500(res);
+    }
+
+    res.send(`
+      <div id="page" hx-swap-oob="true">
+	<blockquote>${msg}</blockquote>
+	<p><a href="/"><button>Home</button></a></p>
+      </div>
+      `);
   });
 
   app.post("/t/test", async (req, res) => {

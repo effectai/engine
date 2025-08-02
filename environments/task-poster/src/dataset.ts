@@ -87,12 +87,12 @@ const form = async (msg = "", values: FormValues = {}) : Promise<string> => `
       <label for="template"><strong>Template</strong><br/><small>This template will be used ` +
   `for each task that gets posted in this dataset.</small></label>
       <select name="template" id="template">
-	${(await getTemplates()).map(
-    (t) =>
-      `<option value="${t.data.templateId}"` +
-      `${values.template == t.data.templateId ? " selected" : ""}>` +
-      `${t.data.name} - ${t.data.createdAt} - ${t.data.templateId}</option>`,
-  )}
+	${(await getTemplates("active")).map(
+	  (t) =>
+	    `<option value="${t.data.templateId}"` +
+	      `${values.template == t.data.templateId ? " selected" : ""}>` +
+	      `${t.data.name} (${t.data.templateId})</option>`,
+	)}
       </select>
 
       <label for="endpoint"><strong>Endpoint</strong><br/><small>The HTTP endpoint where ` +
