@@ -1,10 +1,10 @@
-import axios from "axios";
+import type { Task } from "@effectai/protocol";
 import { parseString } from "@fast-csv/parse";
-import { managerId, db, publishProgress } from "./state.js";
-import * as state from "./state.js";
-import type { DatasetRecord } from "./dataset.js";
+import axios from "axios";
 import { ulid } from "ulid";
-import { Task } from "@effectai/protocol";
+import type { DatasetRecord } from "./dataset.js";
+import { db, managerId, publishProgress } from "./state.js";
+import * as state from "./state.js";
 
 // TODO: can this come out of the protocol package?
 
@@ -31,7 +31,7 @@ const api = axios.create({
   baseURL: state.managerUrl,
 });
 
-const parseCsv = (csv: string, delimiter: string = ","): Promise<any[]> => {
+const parseCsv = (csv: string, delimiter = ","): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     const data: any[] = [];
 
@@ -120,6 +120,7 @@ export const importTasks = async (ds: DatasetRecord) => {
   // short wire if finished
   if (fetcher!.data.taskIdx >= fetcher!.data.totalTasks) {
     console.log(`Skip import of ${ds.id}: no pending tasks`);
+    // TODO: rotate to the next fetcher if available
     return 0;
   }
 
@@ -147,7 +148,7 @@ export const importTasks = async (ds: DatasetRecord) => {
 
       const serializedTask = {
         ...task,
-        //convert bigint to string for serialization
+        // convert bigint to string for serialization
         reward: task.reward.toString(),
       };
 
@@ -160,6 +161,7 @@ export const importTasks = async (ds: DatasetRecord) => {
     }
   }
 
+  // release the lock and update stats
   publishProgress[ds.id] = undefined;
   fetcher!.data.taskIdx += tasks.length;
   fetcher!.data.lastImport = Date.now();
