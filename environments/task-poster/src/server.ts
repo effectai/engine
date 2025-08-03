@@ -1,49 +1,70 @@
-import type { Express } from "express";
-import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { addLiveReload } from "./livereload.js";
-import { isHtmx, page } from "./html.js";
-import * as state from "./state.js";
-import {
-  addTemplateRoutes,
-  type TemplateRecord,
-  getTemplates,
-} from "./templates.js";
+import type { Express } from "express";
+import express from "express";
+import { addAuthRoutes } from "./auth.js";
 import {
   addDatasetRoutes,
-  getDatasets,
-  getActiveDatasets,
   datasetIndex,
+  getActiveDatasets,
+  getDatasets,
   startAutoImport,
 } from "./dataset.js";
-import {
-  addAuthRoutes,
-} from "./auth.js";
 import * as dataset from "./dataset.js";
 import * as fetcher from "./fetcher.js";
+import { isHtmx, page } from "./html.js";
+import { addLiveReload } from "./livereload.js";
+import * as state from "./state.js";
+import {
+  type TemplateRecord,
+  addTemplateRoutes,
+  getTemplates,
+} from "./templates.js";
+
+const formatDate = (ts) =>
+  new Date(ts).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+const campaignCard = (d) => {
+  // const dots = Array(25).fill(".").map((_) => '<div class="block"></div>').join("");
+  //`<div class="blocks blockz mt">${dots}</div>
+
+  return (
+    `
+<strong><a href="/d/${d!.data.id}">${d!.data.name}</a></strong>` +
+    ` <small>Started ${formatDate(d!.data.id)}</small>
+<div><small>Tasks: 2.3M - Workers: 17,000 - Completed: 97%</small></div>
+`
+  );
+};
 
 const addMainRoutes = (app: Express) => {
   app.get("/", async (req, res) => {
     const datasets = await getActiveDatasets("active");
-    const formatDate = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    const dsList = datasets.map(
-      (d) => `<strong><a href="/d/${d!.data.id}">${d!.data.name}</a></strong> <small>Created ${formatDate(d!.data.id)}</small>`,
-    );
+
+    const dsList = datasets.map((d) => campaignCard(d));
 
     const oldDs = (await getActiveDatasets("finished"))
       .concat(await getActiveDatasets("archived"))
-      .map((d) => `
+      .map(
+        (d) => `
 <a href="/d/${d!.data.id}">${d!.data.name}</a> <small>${d!.data.id}</small>`,
-    );
+      );
 
     res.send(
-      page(`
+      page(
+        `
 <section>
   <h2>Active Campaigns (${dsList.length})</h2>
-  <p>The following datasets are currently being crafted by people and AI around the globe. Powered by Effect AI.</p>
+  <p>The following datasets are currently being crafted by people and AI around the globe, ` +
+          `brought to you by Effect AI.</p>
 
-  ${dsList.length ? `<div><div class="box">${dsList.join("</div><div class=\"box\">")}</div></div>` : ""}
+  <div class="boxbox">
+  ${
+    dsList.length
+      ? `<div class="box">${dsList.join('</div><div class="box">')}</div>`
+      : ""
+  }
+  </div>
 
 <section><a href="/d/create"><button>+ New Dataset</button></a></section>
 
@@ -52,14 +73,15 @@ const addMainRoutes = (app: Express) => {
     <ul><li>${oldDs.reverse().join("</li><li>")}</li></ul>
   </section>
 </section>
-`),
+`,
+      ),
     );
   });
 };
 
 const main = async () => {
   const dbFile = process.env.DB_FILE || "mydatabase.db";
-  const port = parseInt(process.env.PORT || "3001");
+  const port = Number.parseInt(process.env.PORT || "3001");
 
   console.log(`Opening database at ${dbFile}`);
   await state.db.open(dbFile);
@@ -69,10 +91,10 @@ const main = async () => {
 
   console.log("Initializing HTTP server");
   const app = express();
-  app.disable('x-powered-by');
+  app.disable("x-powered-by");
   app.use(express.static("public"));
-  app.use(express.urlencoded({ limit: '2mb', extended: true }));
-  app.use(express.json({ limit: '2mb' }));
+  app.use(express.urlencoded({ limit: "2mb", extended: true }));
+  app.use(express.json({ limit: "2mb" }));
 
   // gracefull error when files are too lar1ge
   app.use((err, req, res, next) => {

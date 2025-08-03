@@ -41,6 +41,7 @@ export const make404 = (res: Response) => {
 };
 
 export const make500 = (res: Response) => {
+  console.log(`Trace: returning 500 error.`);
   res.status(500);
   res.send(page(`<h1>500</h1><h2>Server Error</h2>`));
   res.end();
