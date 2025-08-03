@@ -63,7 +63,9 @@ const loggedInPage = (msg = "") => `
 </div>
 `;
 
-const validKeys = ["0", "0500486958191779"];
+// configure valid auth keys here
+// TODO: move to config
+const validKeys = ["0500486958191779"];
 const isValidKey = (k: string | null) => k && validKeys.includes(k);
 
 const getAuthToken = (req: Request) => {
@@ -97,10 +99,12 @@ export const addAuthRoutes = (app: Express): void => {
   app.post("/auth", async (req, res) => {
     const { key } = req.body;
 
+    const isProd = (process.env.NODE_ENV === "production");
+
     if (isValidKey(key)) {
       res
         .cookie("auth_token", key, {
-          secure: true, // only send cookie over HTTPS on production
+          secure: isProd, // only send cookie over HTTPS on production
           httpOnly: true, // javascript can not read this cookie
           sameSite: "strict", // strict CSRF protection
           maxAge: 3600000, // expire in an hour
