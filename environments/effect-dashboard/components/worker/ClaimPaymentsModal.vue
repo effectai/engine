@@ -57,14 +57,6 @@
               Ensure your wallet has enough SOL for transaction fees.
             </p>
           </div>
-
-          <!-- Progress bar if claiming -->
-          <UProgress
-            v-if="isPending"
-            :value="claimingProgress"
-            indicator
-            class="mt-4"
-          />
         </template>
 
         <!-- Footer -->
@@ -79,6 +71,26 @@
             description="You may not have enough SOL to cover transaction fees."
             class="mt-4"
           />
+          <div class="mb-7">
+            <label
+              class="block mt-2 mb-4 text-sm text-gray-700 dark:text-gray-300"
+            >
+              Batch Length: {{ batchLength * 60 }}
+              <span class="text-xs text-gray-500 dark:text-gray-400">
+                (Max number of payments to claim at once)
+              </span>
+            </label>
+
+            <USlider
+              :disabled="!canClaim || isClaimingPayments"
+              :min="1"
+              color="neutral"
+              v-model="batchLength"
+              :max="maxBatchLength"
+              tooltip
+            />
+          </div>
+
           <div class="flex justify-center mt-4">
             <UButton
               @click="mutateClaimPayments"
@@ -99,13 +111,20 @@
 </template>
 
 <script setup lang="ts">
+import { multiaddr } from "@effectai/protocol";
 import { useMutation, useQueryClient } from "@tanstack/vue-query";
 
 const { account } = useAuth();
+const { instance } = storeToRefs(useWorkerStore());
 const { useGetBalanceQuery } = useSolanaWallet();
 const { useClaimPayments, computedTotalPaymentAmount, useGetPaymentsQuery } =
   usePayments();
 const { data: managerPaymentBatches } = useGetPaymentsQuery();
+
+const batchLength = ref(7);
+const maxBatchLength = computed(() => {
+  return Math.max(managerPaymentBatches.value?.length || 0, 10);
+});
 
 const emit = defineEmits(["update:modelValue"]);
 const props = defineProps<{
@@ -152,21 +171,44 @@ const toast = useToast();
 const { data: managers, isFetching, isError, error } = useFetchManagerNodes();
 const queryClient = useQueryClient();
 
+const batchingManager = computed(() => {
+  if (!managers.value || managers.value.length === 0) {
+    return null; // No managers available
+  }
+
+  // Find the first online manager
+
+  return managers.value.find((manager) => manager.announcedAddresses) || null;
+});
 const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
   useMutation({
     mutationFn: async () => {
       try {
-        for (const batch of managerPaymentBatches.value || []) {
-          //TODO:: hacky we need to find an online manager to batch payments..
-          const manager = managers.value[0];
+        //establish a connection to the batching manager..
+        if (!instance.value) {
+          throw new Error("Worker instance is not available.");
+        }
 
-          if (!manager) {
+        await instance.value.entity.node.dial(
+          multiaddr(batchingManager.value.announcedAddresses[0]),
+        );
+
+        for (const batch of managerPaymentBatches.value || []) {
+          if (!batchingManager.value) {
             throw new Error("No online manager found to claim payments.");
           }
 
+          if (
+            !batch.claimablePayments ||
+            batch.claimablePayments.length === 0
+          ) {
+            continue; // Skip empty batches
+          }
+
           await claimPayments({
+            batchLength: batchLength.value,
             payments: batch.claimablePayments,
-            managerPeerId: manager.peerId,
+            managerPeerId: batchingManager.value.peerId,
             managerPublicKey: batch.managerPublicKey,
           });
 

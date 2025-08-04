@@ -107,10 +107,12 @@ export const usePayments = () => {
 
     const mutation = useMutation({
       mutationFn: async ({
+        batchLength,
         payments,
         managerPeerId,
         managerPublicKey,
       }: {
+        batchLength: number;
         managerPeerId: string;
         managerPublicKey: string;
         payments: PaymentRecord[];
@@ -128,13 +130,14 @@ export const usePayments = () => {
           .map((p) => p.state);
 
         const paymentBatches = chunkArray(sortedPayments, PAYMENT_BATCH_SIZE);
+        const limitedBatches = paymentBatches.slice(0, batchLength);
         const proofLimit = pLimit(1);
 
         currentPhase.value = "generating_proofs";
         totalProofs.value = paymentBatches.length + 2;
 
         //request batches in parallel
-        const proofPromises = paymentBatches.map(async (batch) =>
+        const proofPromises = limitedBatches.map(async (batch) =>
           proofLimit(async () => {
             currentProof.value++;
 
