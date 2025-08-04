@@ -1,104 +1,87 @@
-import type { Express } from "express";
-import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { addLiveReload } from "./livereload.js";
-import { isHtmx, page } from "./html.js";
-import * as state from "./state.js";
-import {
-  addTemplateRoutes,
-  type TemplateRecord,
-  getTemplates,
-} from "./templates.js";
+import type { Express } from "express";
+import express from "express";
+import { addAuthRoutes } from "./auth.js";
 import {
   addDatasetRoutes,
-  getDatasets,
-  getActiveDatasets,
   datasetIndex,
+  getActiveDatasets,
+  getDatasets,
   startAutoImport,
 } from "./dataset.js";
 import * as dataset from "./dataset.js";
 import * as fetcher from "./fetcher.js";
+import { isHtmx, page } from "./html.js";
+import { addLiveReload } from "./livereload.js";
+import * as state from "./state.js";
+import {
+  type TemplateRecord,
+  addTemplateRoutes,
+  getTemplates,
+} from "./templates.js";
+
+const formatDate = (ts) =>
+  new Date(ts).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+const campaignCard = (d) => {
+  // const dots = Array(25).fill(".").map((_) => '<div class="block"></div>').join("");
+  //`<div class="blocks blockz mt">${dots}</div>
+
+  return (
+    `
+<strong><a href="/d/${d!.data.id}">${d!.data.name}</a></strong>` +
+    ` <small>Started ${formatDate(d!.data.id)}</small>
+<div><small>Tasks: 2.3M - Workers: 17,000 - Completed: 97%</small></div>
+`
+  );
+};
 
 const addMainRoutes = (app: Express) => {
-  // TODO: this screen on longer works, move it to settings
-  app.get("/select-manager", async (req, res) => {
-    res.send(
-      page(`
-<p>Select a manager:</p>
-<form action="/m" method="post" hx-post="/m">
-  <select name="manager" style="width: 100%;">
-    <option value="${state.managerId}">
-      /ip4/127.0.0.1/tcp/11995/ws/p2p/12D3K..f9cPb
-    </option>
-  </select>
-
-  <button style="display: block; margin-left: auto; margin-top: 25px">Continue</button>
-</form>
-`),
-    );
-  });
-
-  app.post("/m", (req, res) => {
-    const dst = `/m/${req.body.manager}`;
-    if (isHtmx(req)) {
-      res.setHeader("HX-Redirect", dst);
-      res.end();
-    } else {
-      res.redirect(dst);
-    }
-  });
-
   app.get("/", async (req, res) => {
-    const templates = await getTemplates();
-    const tmpList = templates.map(
-      (t) => `
-<a class="box" href="/t/test/${t.data.templateId}">
-  ${t.data.name || "[no name]"} (${t.data.createdAt})
-</a>`,
-    );
-
     const datasets = await getActiveDatasets("active");
-    const dsList = datasets.map(
-      (d) => `<a href="/d/${d!.data.id}">${d!.data.name} (${d!.data.id})</a>`,
-    );
 
-    const oldDs = (await getActiveDatasets("finished")).map(
-      (d) => `<a href="/d/${d!.data.id}">${d!.data.name} (${d!.data.id})</a>`,
-    );
+    const dsList = datasets.map((d) => campaignCard(d));
+
+    const oldDs = (await getActiveDatasets("finished"))
+      .concat(await getActiveDatasets("archived"))
+      .map(
+        (d) => `
+<a href="/d/${d!.data.id}">${d!.data.name}</a> <small>${d!.data.id}</small>`,
+      );
 
     res.send(
-      page(`
-<small>Manager: ${state.managerId}</small>
-
-<h3>Known Templates (${tmpList.length})</h3>
-<div class="boxbox">${tmpList.join("")}</div>
-<a href="/t/create"><button>+ Create Template</button></a>
-
+      page(
+        `
 <section>
-  <h3>Active Datasets (${dsList.length})</h3>
+  <h2>Active Campaigns (${dsList.length})</h2>
+  <p>The following datasets are currently being crafted by people and AI around the globe, ` +
+          `brought to you by Effect AI.</p>
+
+  <div class="boxbox">
   ${
     dsList.length
-      ? `
-  <ul><li>${dsList.join("</li><li>")}</li></ul>`
+      ? `<div class="box">${dsList.join('</div><div class="box">')}</div>`
       : ""
   }
-  <a href="/d/create"><button>+ Create Dataset</button></a>
-</section>
+  </div>
 
-<section>
-  <h3>Finished Datasets</h3>
-  <ul><li>${oldDs.reverse().join("</li><li>")}</li></ul>
-</section>
+<section><a href="/d/create"><button>+ New Dataset</button></a></section>
 
-`),
+  <section>
+    <h2>Recent Datasets (${oldDs.length})</h2>
+    <ul><li>${oldDs.reverse().join("</li><li>")}</li></ul>
+  </section>
+</section>
+`,
+      ),
     );
   });
 };
 
 const main = async () => {
   const dbFile = process.env.DB_FILE || "mydatabase.db";
-  const port = parseInt(process.env.PORT || "3001");
+  const port = Number.parseInt(process.env.PORT || "3001");
 
   console.log(`Opening database at ${dbFile}`);
   await state.db.open(dbFile);
@@ -108,9 +91,10 @@ const main = async () => {
 
   console.log("Initializing HTTP server");
   const app = express();
+  app.disable("x-powered-by");
   app.use(express.static("public"));
-  app.use(express.urlencoded({ limit: '2mb', extended: true }));
-  app.use(express.json({ limit: '2mb' }));
+  app.use(express.urlencoded({ limit: "2mb", extended: true }));
+  app.use(express.json({ limit: "2mb" }));
 
   // gracefull error when files are too lar1ge
   app.use((err, req, res, next) => {
@@ -135,6 +119,7 @@ const main = async () => {
   addMainRoutes(app);
   addTemplateRoutes(app);
   addDatasetRoutes(app);
+  addAuthRoutes(app);
 
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);

@@ -1,7 +1,14 @@
 import type { Request, Response } from "express";
-
+import { theme as curTheme } from "./state.js";
 
 export const isHtmx = (req: Request): boolean => !!req.headers["hx-request"];
+
+export const themes: Map<string, string> = new Map([
+  ["matrix", ""],
+  ["studio", ":root {--background: #f7f4ff;  --foreground: #403352;  --accent: #6f49ab;  --light-bg: color-mix(in srgb, var(--background) 80%, white); }"],
+  ["tahiti-gold", ":root {--background: #fffbf7; --foreground: #45372b; --accent: #df7020; }"],
+  ["pistachio", ":root {--background: #1d2021; --foreground: #ebdbb2; --accent: #8ec07c;}"]
+]);
 
 export const page = (body: string): string => `
 <!DOCTYPE html>
@@ -12,6 +19,7 @@ export const page = (body: string): string => `
   <title>Task Terminal - Effect</title>
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <link rel="stylesheet" href="/css/style.css">
+  ${curTheme ? `<style>${themes.get(curTheme || "default")}</style>` : ``}
   <style>
 
   </style>
@@ -33,6 +41,7 @@ export const make404 = (res: Response) => {
 };
 
 export const make500 = (res: Response) => {
+  console.log(`Trace: returning 500 error.`);
   res.status(500);
   res.send(page(`<h1>500</h1><h2>Server Error</h2>`));
   res.end();
