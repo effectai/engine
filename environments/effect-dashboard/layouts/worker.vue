@@ -69,7 +69,7 @@
       class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col"
     >
       <div
-        class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white dark:bg-brand-black dark:border-black px-6 pb-4"
+        class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 dark:bg-brand-black dark:border-black px-6 pb-4"
       >
         <div class="flex h-16 shrink-0 items-center">
           <nuxt-link to="/">
@@ -83,7 +83,7 @@
     <div class="lg:pl-72">
       <div class="sticky top-0 z-40 lg:mx-auto lg:max-w-5xl lg:px-8">
         <div
-          class="flex h-16 items-center gap-x-4 border-b border-gray-200 bg-white dark:bg-[Canvas] dark:border-black px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-0 lg:shadow-none"
+          class="flex h-16 items-center gap-x-4 border-b border-gray-200 bg-white dark:bg-[#333] dark:border-black px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-0 lg:shadow-none"
         >
           <button
             type="button"
@@ -108,7 +108,7 @@
 
               <!-- Wallet dropdown -->
               <Menu
-                v-if="isAuthenticated"
+                v-if="username"
                 as="div"
                 class="relative inline-block text-left"
               >
@@ -117,11 +117,11 @@
                 >
                   <UAvatar
                     alt="Anonymous"
-                    :src="image"
+                    :src="profilePicture"
                     size="sm"
-                    class="hidden mr-3 p-2 lg:flex justify-center items-center h-full lg:w-12"
+                    class="mx-2"
                   />
-                  {{ name }}
+                  {{ username }}
                 </MenuButton>
 
                 <MenuItems
@@ -155,35 +155,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
 import {
   Dialog,
   DialogPanel,
   Menu,
-  MenuItems,
-  MenuItem,
   MenuButton,
+  MenuItem,
+  MenuItems,
   TransitionChild,
   TransitionRoot,
 } from "@headlessui/vue";
+import { ref } from "vue";
 
 import { Bars3Icon, XMarkIcon } from "@heroicons/vue/24/outline";
 
-const authStore = useAuthStore();
-const { isAuthenticated } = storeToRefs(authStore);
-const { useGetUserInfo } = useWeb3Auth();
-const { data: user } = useGetUserInfo();
+const { userInfo, logout } = useAuth();
 
-const { useLogout } = useAuth();
-const { mutateAsync: logout } = useLogout();
-
-//if no user is found, default to def
-const name = computed(() => user.value?.email || "anonymous worker");
-const image = computed(
-  () =>
-    user.value?.profileImage ||
-    "https://icons.iconarchive.com/icons/pictogrammers/material/256/incognito-icon.png",
-);
+const username = computed(() => userInfo.value?.username || "");
+const profilePicture = computed(() => userInfo.value?.profileImage || "");
 
 const logoutHandler = async () => {
   await logout();

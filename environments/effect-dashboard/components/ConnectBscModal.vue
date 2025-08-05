@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useConnect, useChainId, useAccount } from "@wagmi/vue";
+import { useAccount, useChainId, useConnect } from "@wagmi/vue";
 
+import { type AppKitNetwork, bsc } from "@reown/appkit/networks";
 import { createAppKit } from "@reown/appkit/vue";
-import { bsc, type AppKitNetwork } from "@reown/appkit/networks";
 import { wagmiAdapter } from "./../plugins/wagmi";
 
 const projectId = "79d9a7fe570c471146ae1cbc2f6b05cf";
@@ -29,7 +29,7 @@ const modal = createAppKit({
 </script>
 
 <template>
-  <UButton @click="modal.open()" color="black">
+  <UButton @click="modal.open()" color="neutral">
     <span class="w-4">
       <img src="@/assets/img/bsc.svg" alt="bsc" />
     </span>

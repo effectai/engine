@@ -13,6 +13,7 @@ startCommand
     "Path to manager private key file",
   )
   .option("--announce <multiaddr>", "Libp2p announce address")
+  .option("--maintenance", "Run in maintenance mode", false)
   .option("--port <port>", "Libp2p port", "11995")
   .option("--data <path>", "Path to datastore", "./data/manager")
   .action(async (options) => {
@@ -37,6 +38,7 @@ startCommand
           paymentBatchSize: 60,
           requireAccessCodes: true,
           paymentAccount: options.paymentAccount,
+          maintenanceMode: options.maintenance,
         },
       });
     } catch (e) {

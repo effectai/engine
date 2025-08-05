@@ -1,4 +1,4 @@
-import { EffectProtocolMessage } from "../../@generated/effect.protons.js";
+import type { EffectProtocolMessage } from "@effectai/protobufs";
 
 export type Protocol = {
   name: string;

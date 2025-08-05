@@ -11,6 +11,7 @@
   "main": "./dist/index.js",
   "dependencies": {
     "@effectai/protocol": "workspace:*",
+    "@effectai/protobufs": "workspace:*",
     "@effectai/idl": "workspace:*",
     "@effectai/utils": "workspace:*",
     "@effectai/program-sdk": "workspace:*",

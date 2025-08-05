@@ -3,7 +3,7 @@
     <div class="">
       <div class="">
         <UButton
-          class="p-0 py-2"
+          class="p-0 py-2 cursor-pointer"
           variant="link"
           color="black"
           @click="emit('back')"
@@ -25,20 +25,20 @@
         type="text"
         label="Seed Phrase"
         placeholder="Enter a 12 word seed phrase"
-        class="mb-4"
+        class="mb-4 w-full"
       ></UInput>
       <p class="text-sm font-bold my-2">
         Note: before you press connect, make sure you've securely stored your
         seed phrase.
       </p>
       <div class="flex gap-2">
-        <UButton color="black" variant="outline" @click="generateSeedPhrase"
+        <UButton color="neutral" variant="outline" @click="generateSeedPhrase"
           >Generate Random</UButton
         >
         <UButton
           @click="connect"
           variant="solid"
-          color="black"
+          color="neutral"
           :disabled="!isValid"
           >Connect</UButton
         >
@@ -53,10 +53,9 @@ import { sha512 } from "@noble/hashes/sha512";
 import { Keypair } from "@solana/web3.js";
 
 const mnemonic = ref("");
-
-const { login } = useAuthStore();
-
 const emit = defineEmits(["back"]);
+const { loginWithPrivateKey } = useAuth();
+
 const generateSeedPhrase = () => {
   mnemonic.value = generateMnemonic(128);
 };
@@ -69,7 +68,8 @@ const connect = async () => {
   const seed = await mnemonicToSeed(mnemonic.value);
   const ed25519privateKey = sha512(seed.slice(0, 32));
   const pk = Keypair.fromSeed(ed25519privateKey.slice(0, 32));
-  await login(Buffer.from(pk.secretKey).toString("hex"));
+  await loginWithPrivateKey(Buffer.from(pk.secretKey).toString("hex"));
+  navigateTo("/worker");
 };
 </script>
 

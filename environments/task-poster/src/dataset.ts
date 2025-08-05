@@ -1,26 +1,32 @@
-import { isHtmx, page, make404, make500 } from "./html.js";
-import type { Express } from "express";
-import { managerId, db, publishProgress } from "./state.js";
-import { parseString } from "@fast-csv/parse";
-import { getTemplates, getTemplate, renderTemplate } from "./templates.js";
+import type { KVTransactionResult } from "@cross/kv";
 import { type Template, computeTemplateId } from "@effectai/protocol";
-import { KVTransactionResult } from "@cross/kv";
+import { parseString } from "@fast-csv/parse";
+import type { Express } from "express";
+import { requireAuth } from "./auth.js";
 import * as fetcher from "./fetcher.js";
 import type { Fetcher } from "./fetcher.js";
 import {
-  getFetcher,
-  importTasks,
   createCsvFetcher,
+  getFetcher,
   getTasks,
+  importTasks,
 } from "./fetcher.js";
+import { isHtmx, make404, make500, page } from "./html.js";
+import { db, managerId, publishProgress } from "./state.js";
+import { getTemplate, getTemplates, renderTemplate } from "./templates.js";
 
 type DatasetStatus = "active" | "draft" | "finished" | "archived";
-const statusValues: DatasetStatus[] = ["active", "draft", "finished", "archived"];
+const statusValues: DatasetStatus[] = [
+  "active",
+  "draft",
+  "finished",
+  "archived",
+];
 
 export const datasetIndex = {
   byStatus: {} as Record<DatasetStatus, Set<number>>,
 };
-statusValues.forEach(s => datasetIndex.byStatus[s] = new Set<number>());
+statusValues.forEach((s) => (datasetIndex.byStatus[s] = new Set<number>()));
 
 type FormValues = Record<string, any>;
 
@@ -70,13 +76,13 @@ export const initialize = async () => {
 const addVal = (values: FormValues, key: string): string =>
   `${values[key] ? `value="${values[key]}"` : ""}`;
 
-const form = async (msg = "", values: FormValues = {}) : Promise<string> => `
+const form = async (msg = "", values: FormValues = {}): Promise<string> =>
+  `
 <form id="main-form" hx-post="/d/create" hx-swap="outerHTML show:window:top">
   <div id="messages">
     ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
   </div>
   <fieldset>
-    <legend>New Dataset</legend>
     <label for="name"><strong>Name</strong></label>
     <input
       placeholder="Dataset name"
@@ -88,16 +94,17 @@ const form = async (msg = "", values: FormValues = {}) : Promise<string> => `
       <label for="template"><strong>Template</strong><br/><small>This template will be used ` +
   `for each task that gets posted in this dataset.</small></label>
       <select name="template" id="template">
-	${(await getTemplates()).map(
+	${(await getTemplates("active")).map(
     (t) =>
       `<option value="${t.data.templateId}"` +
       `${values.template == t.data.templateId ? " selected" : ""}>` +
-      `${t.data.name} - ${t.data.createdAt} - ${t.data.templateId}</option>`,
+      `${t.data.name} (${t.data.templateId})</option>`,
   )}
       </select>
 
       <label for="endpoint"><strong>Endpoint</strong><br/><small>The HTTP endpoint where ` +
-  `new data will bet fetched from priodically. Data should be returned as CSV text.</small></label>
+  `new data will bet fetched from priodically. Data should be returned as CSV text.` +
+  `</small></label>
       <input
 	placeholder="<disabled, coming soon>"
 	type="text"
@@ -126,7 +133,7 @@ const form = async (msg = "", values: FormValues = {}) : Promise<string> => `
     <section class="columns gap">
       <div class="column">
 	<label for="frequency"><strong>Batch frequency</strong><br/>
-<small>How frequent new data is fetched and posted.</small></labbel>
+<small>How frequent new data is fetched and posted.</small></label>
 	<input
 	  placeholder="Seconds"
 	  type="number"
@@ -302,14 +309,17 @@ ${await importProgress(ds)}
 </div>
 <form hx-post="/d/${id}" hx-swap="outerHTML">
 <section>
-${ds.status === "draft"
+${
+  ds.status === "draft"
     ? `<button hx-post="/d/${id}?action=publish">Publish</button>`
-    :  ds.status === "active"
+    : ds.status === "active"
       ? `<button hx-post="/d/${id}?action=archive">Archive</button>`
-      : ``}
+      : `Status: ${ds.status}`
+}
 </div>
 </form>
 </section>
+${ds.status == "active" ? `<section><h3>Add more data<h3></section>` : ``}
 `;
 
 // starts auto-importing of active datasets
@@ -340,11 +350,11 @@ export const startAutoImport = async () => {
 };
 
 export const addDatasetRoutes = (app: Express): void => {
-  app.get("/d/create", async (_req, res) => {
+  app.get("/d/create", requireAuth, async (_req, res) => {
     res.send(page(await form()));
   });
 
-  app.post("/d/create", async (req, res) => {
+  app.post("/d/create", requireAuth, async (req, res) => {
     let { valid, errors } = await validateForm(req.body);
     let msg = Object.values(errors).join("<br/>- ");
     msg = msg ? "- " + msg : "";
@@ -405,7 +415,10 @@ export const addDatasetRoutes = (app: Express): void => {
       fetcher = await getFetcher(dataset!.data);
 
       const tpl = await getTemplate(dataset!.data.template);
-      renderedTemplate = await renderTemplate(tpl!.data.data, fetcher.dataSample);
+      renderedTemplate = await renderTemplate(
+        tpl!.data.data,
+        fetcher.dataSample,
+      );
     } catch (e) {
       res.status(500);
       console.log(`Error parsing task template ${e}`);
@@ -420,12 +433,11 @@ export const addDatasetRoutes = (app: Express): void => {
           ...dataset!.data,
           renderedTemplate,
         })}
-`,
-      ),
+`),
     );
   });
 
-  app.post("/d/:id", async (req, res) => {
+  app.post("/d/:id", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
     const dataset = await db.get<DatasetRecord>(["dataset", id]);
 

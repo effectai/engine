@@ -1,5 +1,6 @@
+import { TypedEventEmitter } from "@effectai/protocol-core";
+import { createLogger } from "../logging";
 import { ManagerEntity, ManagerEvents, ManagerSettings } from "../main";
-import { createLogger, TypedEventEmitter } from "@effectai/protocol-core";
 import { TaskManager } from "./createTaskManager";
 
 export const createManagerControls = ({
@@ -20,12 +21,12 @@ export const createManagerControls = ({
   let cycle = 0;
 
   const pause = () => {
-    logger.info("Pausing manager...");
+    logger.log.info("Pausing manager...");
     isPaused = true;
   };
 
   const resume = () => {
-    logger.info("Resuming manager...");
+    logger.log.info("Resuming manager...");
     isPaused = false;
   };
 
