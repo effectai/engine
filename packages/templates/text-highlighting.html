@@ -16,11 +16,21 @@
       <button class="button is-normal" @click="this.selectedTag='[NAME]'">[NAME]</button>
       <button class="button is-normal" @click="this.selectedTag='[DATE_1]'">[DATE_1]</button>
       <button class="button is-normal" @click="this.selectedTag='[TIME_1]'">[TIME_1]</button>
+      <button class="button is-normal" @click="this.selectedTag='[LOCATION]'">[LOCATION]</button>
+      <button class="button is-normal" @click="this.selectedTag='[EMAIL]'">[EMAIL]</button>
+      <button class="button is-normal" @click="this.selectedTag='[PHONE]'">[PHONE]</button>
+      <button class="button is-normal" @click="this.selectedTag='[ID]'">[ID]</button>
+      <button class="button is-normal" @click="this.selectedTag='[OTHER]'">[OTHER]</button>
     </div>
   </div>
 
-  <div class="">
-    <p>Selection: <b>{{ selection }}</b></p>
+  <div class="has-text-centered">
+    <div class="is-flex is-justify-content-center is-align-items-center mb-2" style="gap: 0.5rem;">
+      <p>Selection:</p>
+      <input class="input" type="text" placeholder="Type selection here" v-model="selection" style="max-width: 300px;" />
+    </div>
+  </div>
+    
     <p>Tag: <b>{{ selectedTag }}</b></p>
     <button class="button is-success mt-3" @click="addSelection">Add</button>
   </div>
@@ -74,6 +84,7 @@
           <div class="">
             <li>Highlight any sensitive or personal information in the sentence</li>
             <li>Tag each highlighted section with the correct label</li>
+            <li>Once a selection and tag are selected, click "Add" to add the pair to the list</li>
             <li>Only tag information that clearly identifies someone or something private</li>
             <li>Double-check that each tag is accurate before submitting</li>
             <br>
