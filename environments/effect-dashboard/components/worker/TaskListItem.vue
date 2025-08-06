@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col items-center text-center sm:flex-row sm:items-center sm:justify-between sm:text-left w-full px-4 py-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100 transition"
+    class="flex flex-col items-center text-center sm:flex-row sm:items-center sm:justify-between sm:text-left w-full px-4 py-3 border-gray-300 rounded-lg cursor-pointer hover:opacity-75 transition"
     role="button"
     @click="setActiveTask(props.taskRecord)"
   >
