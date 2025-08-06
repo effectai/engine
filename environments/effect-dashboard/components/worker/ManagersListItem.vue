@@ -1,6 +1,6 @@
 <template>
   <div
-    class="b-border-b border-1 border-gray-200 p-4 hover:bg-gray-600 transition-colors cursor-pointer"
+    class="b-border-b border-1 border-gray-200 p-4 hover:opacity-65 transition-colors cursor-pointer"
     :ui="{ color: 'primary' }"
   >
     <nuxt-link
