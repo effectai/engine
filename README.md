@@ -6,16 +6,16 @@
 **Permissionless AI Task Execution Engine. Verifiable. Decentralized. Scalable.**
 
 <div align="center">
-![image](./assets/powered-by.png)
+![image](assets/powered-by.png")
 </div>
 
   <br/>
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Node.js](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)
+![Node.js](https://img.shields.io/badge/node-%3E%3D23.0.0-brightgreen.svg)
 ![pnpm](https://img.shields.io/badge/pnpm-%3E%3D10.0.0-blue.svg)
 ![Solana](https://img.shields.io/badge/solana-%3E%3D1.10.0-purple.svg)
-![TypeScript](https://img.shields.io/badge/typescript-%3E%3D4.0.0-blue.svg)
+![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-%3E%3D20.10.0-blue.svg)
 
 ![GitHub Stars](https://img.shields.io/github/stars/effectai?style=social)
@@ -24,7 +24,7 @@
 
 ---
 
-Welcome to the Effect AI Task Execution Engine Protocol Monorepo. This repository contains all the core packages and components required to run our decentralized, peer-to-peer tasking infrastructure.
+Welcome to the Effect AI Protocol Monorepo. This repository contains all the core packages and components required to run our decentralized, peer-to-peer tasking infrastructure.
 
 ## Packages
 
@@ -77,7 +77,7 @@ pnpm manager:start
 ```
 
 This will start a manager node that listens for incoming tasks and assigns them to worker nodes.
-Manager node express server will be available at `http://localhost:8889`.
+The Manager Node interface for posting tasks and retrieving results will be available at `http://localhost:8889`.
 
 ### Deployment
 

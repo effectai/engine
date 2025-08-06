@@ -1,5 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { nodePolyfills } from "vite-plugin-node-polyfills";
+import fs from "node:fs";
+
 export default defineNuxtConfig({
   compatibilityDate: "2024-04-03",
   ssr: false,
