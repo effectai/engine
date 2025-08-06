@@ -1,16 +1,14 @@
-// nuxt.config.ts
+import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2024-04-03",
+  ssr: false,
   devtools: { enabled: true },
-  css: [
-    "~/assets/scss/global.scss",
-    "@/assets/scss/variables.scss",
-    "@fortawesome/fontawesome-free/css/all.css",
-  ],
+  css: ["~/assets/css/main.css"],
   build: {
     transpile: ['"@fortawesome/fontawesome-free"'],
   },
   vite: {
+    plugins: [tailwindcss()],
     css: {
       preprocessorOptions: {
         scss: {
@@ -20,5 +18,11 @@ export default defineNuxtConfig({
       },
     },
   },
-  modules: ["@nuxt/content", "@nuxt/image", "@vueuse/motion/nuxt"],
+  modules: [
+    "@nuxt/content",
+    "@nuxt/image",
+    "@vueuse/motion/nuxt",
+    "@nuxt/icon",
+  ],
 });
+

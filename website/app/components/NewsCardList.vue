@@ -1,12 +1,20 @@
 <template>
-  <div class="" id="latest">
-    <div class="columns is-multiline is-flex is-flex-direction-column">
-      <NewsCard class="new-card" v-for="news in paginatedNews" :news="news" />
+  <div id="latest" class="">
+    <!-- Flex column layout with wrapping -->
+    <div class="flex flex-col flex-wrap gap-4">
+      <NewsCard
+        class="new-card"
+        v-for="news in paginatedNews"
+        :key="news.id || news._path"
+        :news="news"
+      />
     </div>
+
     <Pagination
       :current-page="currentPage"
       :total-pages="totalPages"
       @pageChanged="handlePageChange"
+      class="mt-12"
     />
   </div>
 </template>
