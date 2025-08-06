@@ -29,11 +29,10 @@
               Total Claimable
             </p>
             <div class="text-4xl font-bold text-black dark:text-white">
-              {{ formatNumber(totalPaymentAmount) }} EFFECT
+              {{ claimablePayments.length }} Payments
             </div>
             <p class="text-xs text-gray-400 dark:text-gray-500 italic mt-1">
-              {{ claimablePayments.length }} payments across
-              {{ managerPaymentBatches.length }} manager(s)
+              Across {{ managerPaymentBatches.length }} manager(s)
             </p>
           </div>
 
@@ -121,7 +120,6 @@ const { useGetBalanceQuery } = useSolanaWallet();
 const { useClaimPayments, computedTotalPaymentAmount, useGetPaymentsQuery } =
   usePayments();
 const { data: managerPaymentBatches } = useGetPaymentsQuery();
-const totalPaymentAmount = computedTotalPaymentAmount(managerPaymentBatches);
 
 const batchLength = ref(7);
 const maxBatchLength = computed(() => {
