@@ -140,7 +140,8 @@ const totalAmount = computed(() => {
   ) {
     return 0;
   }
-  return computedTotalPaymentAmount(managerPaymentBatches.value);
+
+  return computedTotalPaymentAmount(managerPaymentBatches);
 });
 const batchLength = ref(7);
 const maxBatchLength = computed(() => {
