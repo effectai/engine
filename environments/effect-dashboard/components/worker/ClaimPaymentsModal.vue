@@ -70,7 +70,7 @@
             color="warning"
             variant="subtle"
             title="Stale Payments Detected"
-            :description="`You have ${stalePaymentsCount} stale payments totaling ${stalePaymentsAmount} EFFECT that cannot be claimed. Please contact us in discord for assistance .`"
+            :description="`You have ${stalePaymentsCount} stale payments totaling ${stalePaymentsFormatted} that cannot be claimed. Please contact us in discord for assistance .`"
             class="mb-4"
           />
 
@@ -168,6 +168,11 @@ const stalePaymentsAmount = computed(() => {
       return acc + payment.state.amount;
     }, 0n) || 0n
   );
+});
+const stalePaymentsFormatted = computed(() => {
+  return stalePaymentsAmount.value
+    ? `${Number(stalePaymentsAmount.value) / 1e6} EFFECT`
+    : "0 EFFECT";
 });
 
 const claimablePayments = computed(() => {
