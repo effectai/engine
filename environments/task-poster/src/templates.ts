@@ -1,9 +1,10 @@
-import { isHtmx, page } from "./html.js";
-import type { Express } from "express";
-import { managerId, db } from "./state.js";
-import * as state from "./state.js";
-import axios from "axios";
 import { type Template, computeTemplateId } from "@effectai/protocol";
+import axios from "axios";
+import type { Express } from "express";
+import { requireAuth } from "./auth.js";
+import { isHtmx, make404, make500, page } from "./html.js";
+import { db, managerId } from "./state.js";
+import * as state from "./state.js";
 
 type APIResponse = {
   status: string;
@@ -34,8 +35,12 @@ const escapeHTML = (html: string): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-export const getTemplates = async () =>
-  await db.listAll<TemplateRecord>(["templates", {}]);
+export const getTemplates = async (status?: string) => {
+  // TODO: support order by created at
+  const l = await db.listAll<TemplateRecord>(["templates", {}]);
+  if (status) return l.filter((t) => t!.data.status === status);
+  else return l;
+};
 export const getTemplate = async (id: string) =>
   await db.get<TemplateRecord>(["templates", id]);
 
@@ -43,22 +48,18 @@ export const renderTemplate = async (
   html: string,
   data: any,
 ): Promise<string> => {
-  const templateHtml = html.replace(
-    /\$\{([^}]+)\}/g,
-    (_: any, key: any) => {
-      const keyName = key.trim();
-      const rawValue = data[keyName];
-      if (rawValue === undefined) return "";
-      const escapedValue =
-	typeof rawValue === "string"
-	  ? rawValue.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-	  : rawValue;
-      return escapedValue;
-    },
-  );
+  const templateHtml = html.replace(/\$\{([^}]+)\}/g, (_: any, key: any) => {
+    const keyName = key.trim();
+    const rawValue = data[keyName];
+    if (rawValue === undefined) return "";
+    const escapedValue =
+      typeof rawValue === "string"
+        ? rawValue.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+        : rawValue;
+    return escapedValue;
+  });
 
   return templateHtml;
-
 };
 
 const findTemplateFields = (html: string) => {
@@ -98,7 +99,6 @@ const form = (msg = "", values: Record<string, string> = {}): string => `
 </form>
 `;
 
-
 const templateDataForm = (
   html: string,
   fields: string[][],
@@ -118,11 +118,13 @@ ${fields.map(
 )}
 `;
 
-const templatePreviewFrame =
-  async (html: string, data: Record<string, string> = {}) => {
-    const renderedTemplate = await renderTemplate(html, data);
-    const fields = findTemplateFields(html);
-    return `
+const templatePreviewFrame = async (
+  html: string,
+  data: Record<string, string> = {},
+) => {
+  const renderedTemplate = await renderTemplate(html, data);
+  const fields = findTemplateFields(html);
+  return `
 <h2>Preview</h2>
 <div>
   <iframe
@@ -140,13 +142,74 @@ ${templateDataForm(html, fields)}` :
 `
   };
 
+// block that lists active templates
+const tplListFrame = async () => {
+  const allTpls = await getTemplates();
+
+  const renderList = (status) => {
+    const tpls = allTpls.filter(t => t!.data.status === status);
+    const tplList = tpls.map(t => `
+<a class="box" href="/t/${t.data.templateId}">
+  ${t.data.name || "[no name]"} (${t.data.createdAt})
+</a>`
+    );
+    return [
+      tpls.length,
+      `${tpls.length ? `<div class="boxbox">${tplList.join("")}</div>` : ""}`
+    ]
+  };
+
+  const [nActive, activeList] = renderList("active");
+  const [nDraft, draftList] = renderList("draft");
+
+  return `
+<h3>Active Templates (${nActive})</h3>
+${activeList}
+
+<section>
+  <a href="/t/create"><button>+ New Template</button></a>
+</section>
+
+<section>
+  <h3>Drafts (${nDraft})</h3>
+  ${draftList}
+</section>
+`;
+};
+
+const tplViewPage = async (tpl: TemplateRecord) => {
+  return `
+<div id="page">
+<h2>Template: ${tpl.name}</h2>
+<strong>Status ${tpl.status}</strong>
+
+${await templatePreviewFrame(tpl.data)}
+
+<section>
+  ${tpl.status == "active" ?
+   `<button hx-post="/t/${tpl.templateId}?action=archive">Archive</button>` : ''}
+
+  ${tpl.status == "draft" ?
+   `<button hx-post="/t/${tpl.templateId}?action=publish">Publish</button>` : ''}
+
+  ${tpl.status == "active" ? `<p><small>* Archiving a template will hide it from `
++ `the UI and dataset selection field</small></p>` : ''}
+
+</section>
+</div>
+`;
+};
 
 export const addTemplateRoutes = (app: Express): void => {
-  app.get("/t/create", (_req, res) => {
+  app.get("/templates", requireAuth, async (_req, res) => {
+    res.send(page(`${await tplListFrame()}`));
+  });
+
+  app.get("/t/create", requireAuth, (_req, res) => {
     res.send(page(form()));
   });
 
-  app.post("/t/create", async (req, res) => {
+  app.post("/t/create", requireAuth, async (req, res) => {
     let valid = true;
     let msg = "";
 
@@ -162,28 +225,30 @@ export const addTemplateRoutes = (app: Express): void => {
 
     if (valid && req.query.action === "publish") {
       const templateId = computeTemplateId(managerId, req.body.html);
-      console.log(`Publishing new template ${templateId}...`)
+      console.log(`Publishing new template ${templateId}...`);
 
       const template: Template = {
-	templateId,
-	data: req.body.html,
-	createdAt: Date.now(),
+        templateId,
+        data: req.body.html,
+        createdAt: Date.now(),
       };
 
       try {
-	const { data } = await api.post<APIResponse>("/template/register", {
-	  template,
-	  providerPeerIdStr: managerId,
-	});
-	msg = `<p>Success! ${data.status}:</p><p>${data.id}</p>`;
+        const { data } = await api.post<APIResponse>("/template/register", {
+          template,
+          providerPeerIdStr: managerId,
+        });
+        msg = `<p>Success! ${data.status}:</p><p>${data.id}</p>`;
       } catch (e) {
-	console.log(`Errors during registration`, e);
-	msg = "Error during template registration.";
-	valid = false;
+        console.log(`Errors during registration`, e);
+        msg = "Error during template registration.";
+        valid = false;
       }
 
-      const templateEntry = {
-	...template, name: req.body.name, status: "draft"
+      const templateEntry: TemplateRecord = {
+        ...template,
+        name: req.body.name,
+        status: "active",
       };
       await db.set<TemplateRecord>(["templates", templateId], templateEntry);
     }
@@ -213,35 +278,24 @@ export const addTemplateRoutes = (app: Express): void => {
 </form>
 </div>`);
     } else {
-    // invalid parameters
-    res.send(form(msg, req.body));
+      // invalid parameters
+      res.send(form(msg, req.body));
     }
   });
 
-
-  app.get("/t/test/:id", async (req, res) => {
+  app.get("/t/:id", requireAuth, async (req, res) => {
     const tid = req.params.id;
     const tpl = await getTemplate(tid);
-    if (!tpl) {
-      res.status(404);
-      res.send('not found');
-      res.end();
-      return;
-    }
-    res.send(
-      page(`<strong>Template ${tpl?.data.name}</strong>
-${await templatePreviewFrame(tpl!.data.data)}
-`));
+    if (!tpl) return make404(res);
+    res.send(page(await tplViewPage(tpl!.data)));
   });
 
-  app.post("/t/test", async (req, res) => {
-    // const tid = req.params.tid;
-    // const tpl = await getTemplate(tid);
+  app.post("/t/test", requireAuth, async (req, res) => {
     const html = req.body.html;
 
     if (!html) {
       res.status(404);
-      res.send('not found');
+      res.send("not found");
       res.end();
       return;
     }
@@ -257,5 +311,35 @@ ${await templatePreviewFrame(tpl!.data.data)}
   width="100%"
   srcdoc="${escapeHTML(renderedTemplate)}"></iframe>
 ${templateDataForm(html, fields, req.body)}`);
+  });
+
+  app.post("/t/:id", requireAuth, async (req, res) => {
+    const tid = req.params.id;
+    const tpl = await getTemplate(tid);
+    if (!tpl) return make404(res);
+
+    console.log(`Trace: post ${req.query.action} template ${tid}`);
+
+    var msg = "";
+    if (req.query.action === "archive") {
+      if (tpl!.data.status !== "active") return make500(res);
+      tpl!.data.status = "draft";
+      await db.set<TemplateRecord>(tpl!.key, tpl!.data);
+      msg = "Successfully archived template";
+    } else if (req.query.action === "publish") {
+      if (tpl!.data.status !== "draft") return make500(res);
+      tpl!.data.status = "active";
+      await db.set<TemplateRecord>(tpl!.key, tpl!.data);
+      msg = "Successfully published template";
+    } else {
+      return make500(res);
+    }
+
+    res.send(`
+      <div id="page" hx-swap-oob="true">
+	<blockquote>${msg}</blockquote>
+	<p><a href="/"><button>Home</button></a></p>
+      </div>
+      `);
   });
 };

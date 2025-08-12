@@ -21,72 +21,77 @@
 </template>
 
 <script setup lang="ts">
-  const html: Ref<string | null> = ref(null);
-  const mediaFrame: Ref<HTMLIFrameElement | null> = ref(null);
-  const config = useRuntimeConfig();
-  const alternativeFrontendUrl = config.public.ALTERNATIVE_FRONTEND_URL;
-  const isIframeLoaded = ref(false);
-  const isTaskBarOpen = ref(false);
+const html: Ref<string | null> = ref(null);
+const mediaFrame: Ref<HTMLIFrameElement | null> = ref(null);
+const config = useRuntimeConfig();
+const alternativeFrontendUrl = config.public.ALTERNATIVE_FRONTEND_URL;
+const isIframeLoaded = ref(false);
+const isTaskBarOpen = ref(false);
 
-  const emit = defineEmits<{
-    (e: "submit", data: unknown): void;
-    (e: "ready"): void;
-  }>();
+const emit = defineEmits<{
+  (e: "submit", data: unknown): void;
+  (e: "ready"): void;
+  (e: "instructions", instructions: string): void;
+}>();
 
-  const setHtml = async (newHtml: string) => {
-    // reset the iframe html to null to force a reload
-    html.value = null;
-    await nextTick();
-    html.value = newHtml;
-    await nextTick();
-    emit("ready");
-  };
+const setHtml = async (newHtml: string) => {
+  // reset the iframe html to null to force a reload
+  html.value = null;
+  await nextTick();
+  html.value = newHtml;
+  await nextTick();
+  emit("ready");
+};
 
-  //expose the setting of html to the parent component
-  defineExpose({ setHtml });
+//expose the setting of html to the parent component
+defineExpose({ setHtml });
 
-  const postHtml = async () => {
-    await nextTick();
-    // wait for the iframe to load before sending the template
-    if (!mediaFrame.value) return;
+const postHtml = async () => {
+  await nextTick();
+  // wait for the iframe to load before sending the template
+  if (!mediaFrame.value) return;
 
-    mediaFrame.value.contentWindow?.postMessage(
-      {
-        event: "proxy-load",
-        data: html.value,
-      },
-      "*"
-    );
-  };
+  mediaFrame.value.contentWindow?.postMessage(
+    {
+      event: "proxy-load",
+      data: html.value,
+    },
+    "*",
+  );
+};
 
-  const onMessage = (event: any) => {
-    const data = event.data;
+const onMessage = (event: any) => {
+  const data = event.data;
 
-    switch (event.data.task) {
-      case "submit":
-        emit("submit", data);
-        break;
-    }
+  if (event.data.type === "task-instructions") {
+    emit("instructions", data.instructions);
+  }
 
-    switch (event.data.event) {
-      case "proxy-loaded":
-        isIframeLoaded.value = true;
-        emit("ready");
-        break;
-      case "proxy-ready":
-        postHtml();
-        break;
-    }
-  };
+  switch (event.data.task) {
+    case "submit":
+      emit("submit", data);
+      break;
+  }
 
-  onMounted(() => {
-    window.addEventListener("message", onMessage);
-  });
+  switch (event.data.event) {
+    case "proxy-loaded":
+      isIframeLoaded.value = true;
+      emit("ready");
+      break;
+    case "proxy-ready":
+      postHtml();
+      break;
+  }
+};
 
-  /* Feat: Flagging Task */
-  const handleFlagTask = (reason: string) => {
-    emit("submit", reason);
-  };
+onMounted(() => {
+  window.addEventListener("message", onMessage);
+});
+
+/* Feat: Flagging Task */
+const handleFlagTask = (reason: string) => {
+  emit("submit", reason);
+};
 </script>
 
 <style lang="css">
@@ -94,7 +99,7 @@
     position: relative;
     box-sizing: border-box;
     width: calc(100%);
-    height: calc(100dvh - 67.45px);
+    height: calc(100dvh - 212px);
     padding: 0px;
     overflow: hidden;
     border: 3px solid #616060;

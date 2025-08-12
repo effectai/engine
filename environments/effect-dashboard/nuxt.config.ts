@@ -1,5 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { nodePolyfills } from "vite-plugin-node-polyfills";
+import fs from "node:fs";
+
 export default defineNuxtConfig({
   compatibilityDate: "2024-04-03",
   ssr: false,
@@ -15,7 +17,7 @@ export default defineNuxtConfig({
   app: {
     head: {
       bodyAttrs: {
-        class: "bg-white dark:bg-[Canvas]",
+        class: "bg-white dark:bg-[#333]",
       },
     },
   },
@@ -31,6 +33,7 @@ export default defineNuxtConfig({
       PAYMENT_ACCOUNT: process.env.PAYMENT_ACCOUNT,
       EFFECT_ACTIVE_REWARD_VESTING_ACCOUNT:
         process.env.EFFECT_ACTIVE_REWARD_VESTING_ACCOUNT,
+      WEB3_AUTH_CLIENT_ID: process.env.WEB3AUTH_CLIENT_ID,
     },
   },
   devtools: { enabled: false },

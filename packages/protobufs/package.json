@@ -1,0 +1,28 @@
+{
+  "name": "@effectai/protobufs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/effect.js",
+  "exports": {
+    ".": {
+      "import": "./dist/effect.js",
+      "require": "./dist/effect.js"
+    }
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "protons src/effect.proto && tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.9.0",
+  "dependencies": {},
+  "devDependencies": {
+    "uint8arrays": "^5.1.0",
+    "uint8arraylist": "^2.4.8",
+    "protons-runtime": "^5.5.0",
+    "protons": "^7.6.0",
+    "typescript": "^5.8.3"
+  }
+}

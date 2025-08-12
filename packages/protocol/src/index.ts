@@ -4,7 +4,6 @@ export * from "./errors.js";
 export * from "./common/types.js";
 export * from "./common/stores/paymentStore.js";
 export * from "./common/stores/templateStore.js";
-export * from "../@generated/effect.protons.js";
 export * from "./transports/index.js";
 export {
   createEffectEntity,

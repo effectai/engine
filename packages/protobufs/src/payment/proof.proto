@@ -1,0 +1,57 @@
+
+syntax = "proto3";
+
+
+message Signals {
+  string min_nonce = 1;
+  string max_nonce = 2;
+  string amount = 3;
+  string recipient = 4;
+  string payment_account = 5;
+  string pub_x = 6;
+  string pub_y = 7;
+}
+
+message ProofResponse {
+  message Matrix {
+    repeated string row = 1;
+  }
+
+  repeated string pi_a = 1;
+  repeated Matrix pi_b = 2;
+  repeated string pi_c = 3;
+  string protocol = 4;
+  string curve = 5;
+  Signals signals = 6;
+
+}
+
+message BulkProofRequest {
+  //non-truncated recipient
+  string recipient = 1;
+
+  //non-truncated payment account
+  string payment_account = 2;
+
+  repeated ProofResponse proofs = 3;
+}
+
+message ProofRequest {
+  //non-truncated recipient
+  string recipient = 1;
+  //non-truncated payment account
+  string payment_account = 2;
+
+  string public_key = 3;
+
+  message PaymentProof {
+    PaymentSignature signature = 1;
+    uint64 amount = 2;
+    uint64 nonce = 3;
+  }
+
+  repeated PaymentProof payments = 4;
+}
+
+
+

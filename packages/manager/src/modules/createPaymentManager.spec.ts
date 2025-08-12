@@ -4,7 +4,6 @@ import { createPaymentManager } from "./createPaymentManager.js";
 
 import { signPayment } from "../utils.js";
 import { ulid } from "ulid";
-import { buildEddsa } from "@effectai/zkp";
 
 describe("createPaymentManager", () => {
   let mockPeerStore: any;
@@ -143,14 +142,12 @@ describe("createPaymentManager", () => {
         });
       }
 
-      const eddsa = await buildEddsa();
-
       //batch the proofs
       const batchedProof = await paymentManager.bulkPaymentProofs({
         privateKey: mockPrivateKey,
         recipient: mockRecipient,
-        r8_x: eddsa.F.toObject(proofs[0].pubKey[0]),
-        r8_y: eddsa.F.toObject(proofs[0].pubKey[1]),
+        r8_x: proofs[0].pubKey[0],
+        r8_y: proofs[0].pubKey[1],
         proofs,
       });
 

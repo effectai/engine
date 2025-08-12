@@ -1,7 +1,7 @@
 <template>
   <UCard class="flex flex-col">
     <form @submit.prevent="handleSubmit" class="space-y-6">
-      <div class="dark:!bg-[#1C1A1F] p-6 rounded-xl">
+      <div class="p-6 rounded-xl">
         <h3 class="text-lg font-semibold mb-6">Unstake Tokens</h3>
         <div class="space-y-6">
           <div>
@@ -15,8 +15,8 @@
               />
               <UButton
                 @click="setMaxAmount"
-                color="black"
-                class="absolute bg-brand-highlight right-2 top-1/2 -translate-y-1/2 px-4 py-1 bg-gray-800 rounded-md text-sm"
+                color="neutral"
+                class="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1 rounded-md text-sm"
               >
                 MAX</UButton
               >
@@ -71,7 +71,7 @@
             :loading="isPending"
             :disabled="!isValid"
             @click="handleSubmit"
-            color="white"
+            color="neutral"
             class="flex justify-center w-full"
           >
             <span v-if="unstakeAmount > 0">

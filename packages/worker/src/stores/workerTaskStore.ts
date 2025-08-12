@@ -3,7 +3,6 @@ import {
   type BaseTaskEvent,
   type PeerId,
   type Datastore,
-  type Task,
   Key,
   TaskValidationError,
   TaskExpiredError,
@@ -12,6 +11,8 @@ import {
   parseWithBigInt,
   TASK_ACCEPTANCE_TIME,
 } from "@effectai/protocol-core";
+
+import type { Task } from "@effectai/protobufs";
 
 export type WorkerTaskEvents =
   | TaskCreatedEvent
