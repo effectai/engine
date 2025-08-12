@@ -5,7 +5,7 @@
     class="grid grid-cols-1 md:grid-cols-12 max-w-7xl mx-auto lg:gap-y-0 lg:space-y-0"
   >
     <div class="col-span-4 flex">
-      <div class="flex-shrink-0 w-48 md:w-64 lg:w-80 flex-1 md:flex-none">
+      <div class="justify-center md:flex items-center md:w-[80%]">
         <div class="news-image relative w-full aspect-[5/3]">
           <img
             class="w-full h-full object-cover filter grayscale"

@@ -1,67 +1,67 @@
 <script setup lang="ts">
-import { contributors } from "./../../constants/contributions";
-import { ref, onMounted, onBeforeUnmount } from "vue";
+  import { contributors } from "./../../constants/contributions";
+  import { ref, onMounted, onBeforeUnmount } from "vue";
 
-const stats = [
-  { value: 23, label: "Apps in Ecosystem" },
-  { value: "2.1M", label: "Tasks Completed" },
-  { value: "205", label: "Proposals Passed" },
-  { value: "932", label: "Total Commits" },
-  { value: "516", label: "Total Worker Nodes" },
-];
+  const stats = [
+    { value: 23, label: "Apps in Ecosystem" },
+    { value: "2.1M", label: "Tasks Completed" },
+    { value: "205", label: "Proposals Passed" },
+    { value: "932", label: "Total Commits" },
+    { value: "197", label: "Total stars" },
+  ];
 
-const mixedData = computed(() => {
-  const result = [];
-  const maxLength = Math.min(stats.length, contributors.length);
+  const mixedData = computed(() => {
+    const result = [];
+    const maxLength = Math.min(stats.length, contributors.length);
 
-  for (let i = 0; i < maxLength; i++) {
-    if (i < stats.length) {
-      result.push({ type: "stat", data: stats[i] });
-    }
-    if (i < contributors.length) {
-      result.push({ type: "contributor", data: contributors[i] });
-    }
-  }
-
-  return result;
-});
-
-const paired = computed(() => {
-  const pairs = [];
-  for (let i = 0; i < mixedData.value.length; i += 2) {
-    let pair = mixedData.value.slice(i, i + 2);
-    if ((i / 2) % 2 === 0) {
-      pair = pair.reverse();
-    }
-    pairs.push(pair);
-  }
-  return pairs;
-});
-
-const staggerRoot = ref<HTMLElement | null>(null);
-const inView = ref(false);
-
-function globalIndex(pairIndex: number, itemIndex: number) {
-  return pairIndex * 2 + itemIndex;
-}
-
-onMounted(() => {
-  const el = staggerRoot.value;
-  if (!el || typeof IntersectionObserver === "undefined") {
-    inView.value = true;
-    return;
-  }
-  const io = new IntersectionObserver(
-    ([entry]) => {
-      if (entry.isIntersecting) {
-        inView.value = true;
-        io.disconnect(); // fire once
+    for (let i = 0; i < maxLength; i++) {
+      if (i < stats.length) {
+        result.push({ type: "stat", data: stats[i] });
       }
-    },
-    { threshold: 0.15, rootMargin: "0px 0px -10% 0px" },
-  );
-  io.observe(el);
-});
+      if (i < contributors.length) {
+        result.push({ type: "contributor", data: contributors[i] });
+      }
+    }
+
+    return result;
+  });
+
+  const paired = computed(() => {
+    const pairs = [];
+    for (let i = 0; i < mixedData.value.length; i += 2) {
+      let pair = mixedData.value.slice(i, i + 2);
+      if ((i / 2) % 2 === 0) {
+        pair = pair.reverse();
+      }
+      pairs.push(pair);
+    }
+    return pairs;
+  });
+
+  const staggerRoot = ref<HTMLElement | null>(null);
+  const inView = ref(false);
+
+  function globalIndex(pairIndex: number, itemIndex: number) {
+    return pairIndex * 2 + itemIndex;
+  }
+
+  onMounted(() => {
+    const el = staggerRoot.value;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      inView.value = true;
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          inView.value = true;
+          io.disconnect(); // fire once
+        }
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -10% 0px" },
+    );
+    io.observe(el);
+  });
 </script>
 
 <template>

@@ -11,7 +11,7 @@
       <div class="relative max-w-7xl mx-auto">
         <div class="flex flex-col items-start text-left max-w-4xl">
           <h1
-            class="mb-6 text-4xl sm:text-5xl md:text-6xl font-light text-gray-900 leading-tight tracking-tight"
+            class="mb-6 mt-10 text-4xl sm:text-5xl md:text-6xl font-light text-gray-900 leading-tight tracking-tight"
           >
             <span>Unlocking The Next Era <br /></span>
             <span
@@ -39,7 +39,7 @@
 
           <div class="flex flex-wrap gap-4">
             <a
-              href="https://docs.effect.ai/"
+              href="https://effect.ai/whitepaper.pdf"
               target="_blank"
               class="inline-flex items-center gap-3 rounded-full px-6 py-3 border border-black text-black hover:bg-black hover:text-white transition duration-300 shadow-sm hover:shadow-md"
             >
@@ -62,7 +62,9 @@
       </div>
     </section>
 
-    <section class="py-section-y pb-0 px-section-x bg-effect-black">
+    <section
+      class="py-section-y pb-0 px-section-x bg-effect-black overflow-hidden"
+    >
       <div
         class="grid grid-cols-1 lg:grid-cols-12 max-w-7xl mx-auto gap-y-12 lg:gap-y-0 space-y-8 lg:space-y-0"
       >
@@ -89,20 +91,7 @@
           </div>
         </div>
         <div class="col-span-8">
-          <Contributors
-            class="flex justify-center lg:justify-start mt-5"
-            :repoOwner="'effectai'"
-            :repoName="'effect-js'"
-            :maxContributors="10"
-            :title="'Core Contributors'"
-            :featured="[
-              'jeisses',
-              'Jeffrieh',
-              'laurensV',
-              'MiggySmallz',
-              'rochelle8044',
-            ]"
-          />
+          <Contributors class="flex justify-center lg:justify-start mt-5" />
         </div>
       </div>
     </section>
@@ -174,15 +163,15 @@
                 tap into a decentralized global worker mesh.
               </p>
               <div class="mt-8 text-left">
-                <button
-                  class="button flex items-center gap-2 rounded-full border border-white bg-white bg-opacity-0 cursor-not-allowed px-5 py-2 text-md font-medium text-black hover:bg-black hover:text-white"
-                  disabled
-                >
-                  Request Demo
-                  <span class="icon text-white">
-                    <i class="fas fa-arrow-right"></i>
-                  </span>
-                </button>
+                <a href="https://effectai.formaloo.co/xj6xry" target="_blank"
+                  ><button
+                    class="button flex items-center gap-2 rounded-full border border-white bg-white bg-opacity-0 cursor-pointer px-5 py-2 text-md font-medium text-black hover:bg-black hover:text-white"
+                  >
+                    Request Demo
+                    <span class="icon text-white">
+                      <i class="fas fa-arrow-right"></i>
+                    </span></button
+                ></a>
               </div>
             </div>
           </div>
@@ -201,13 +190,13 @@
             <span class="text-gray-500">Creating What Comes Next</span>
           </h2>
         </div>
-        <div class="col-span-12 md:mt-24">
+        <div class="col-span-12 lg:mt-24">
           <NewsCardList :perPage="3" :items="news" class="my-7" />
         </div>
       </div>
     </section>
 
-    <section class="py-section-y px-section-x bg-effect-black">
+    <section class="py-section-y px-section-x bg-effect-black overflow-hidden">
       <div
         class="grid grid-cols-1 lg:grid-cols-12 max-w-7xl mx-auto gap-y-12 lg:gap-y-0 space-y-8 lg:space-y-0"
       >
