@@ -1,11 +1,11 @@
 <template>
   <div class="flex">
-    <div class="text-black" style="">
+    <div class="text-black text-2xl w-full flex" style="">
       <a
         v-for="social in socials"
         target="_blank"
         :href="social.link"
-        class="mr-2"
+        class="mr-2 flex items-center hover:text-zinc-500 transition-colors duration-300"
       >
         <Icon :name="social.className" />
       </a>

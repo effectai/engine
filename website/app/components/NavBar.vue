@@ -20,8 +20,17 @@
           />
         </nuxt-link>
 
-        <!-- Social Bar -->
-        <SocialBar :socials="socials" class="" />
+        <div class="flex items-center space-x-4 justify-center">
+          <a href="https://portal.effect.ai/worker" target="_blank"
+            ><button
+              class="hidden md:block bg-gradient-to-r from-[#000] to-[#333] text-white font-semibold px-6 py-2 rounded-full shadow-md hover:shadow-lg transition duration-300 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-opacity-50 hover:ring-zinc-500 hover:ring-2 cursor-pointer"
+            >
+              Launch App
+            </button></a
+          >
+          <!-- Social Bar -->
+          <SocialBar :socials="socials" class="" />
+        </div>
       </div>
     </div>
   </nav>

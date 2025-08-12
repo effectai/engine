@@ -4,15 +4,25 @@
       id="main-hero"
       class="relative -mt-[75px] bg-[url('/img/hero-background.png')] bg-no-repeat bg-cover px-section-x py-section-y"
     >
+      <div
+        class="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_60%_at_20%_30%,rgba(255,255,255,0.55),transparent_60%)] mix-blend-screen"
+      ></div>
+
       <div class="relative max-w-7xl mx-auto">
         <div class="flex flex-col items-start text-left max-w-4xl">
           <h1
             class="mb-6 text-4xl sm:text-5xl md:text-6xl font-light text-gray-900 leading-tight tracking-tight"
           >
             <span>Unlocking The Next Era <br /></span>
-            <span>of Composable AI Infrastructure</span>
+            <span
+              >Of {{ typed }}
+              <span
+                class="inline-block align-top select-none"
+                :style="{ opacity: caretVisible ? 1 : 0 }"
+                >|</span
+              >
+            </span>
           </h1>
-
           <p
             class="text-base sm:text-lg md:text-xl text-gray-700 mb-10 leading-relaxed"
           >
@@ -21,9 +31,9 @@
             <br class="hidden sm:block" />
             <span class="inline-block mt-3">
               Effect AI introduces a permissionless protocol that orchestrates
-              human and machine capabilities into verifiable, reusable workflows
-              — empowering developers and contributors worldwide to scale open
-              AI infrastructure without intermediaries.
+              human and machine capabilities into verifiable, reusable
+              workflows. Empowering developers and contributors worldwide to
+              scale open AI infrastructure without centralized intermediaries.
             </span>
           </p>
 
@@ -31,7 +41,7 @@
             <a
               href="https://docs.effect.ai/"
               target="_blank"
-              class="inline-flex items-center gap-3 rounded-full px-6 py-3 border border-black text-black hover:bg-black hover:text-white transition duration-300 shadow-sm"
+              class="inline-flex items-center gap-3 rounded-full px-6 py-3 border border-black text-black hover:bg-black hover:text-white transition duration-300 shadow-sm hover:shadow-md"
             >
               Whitepaper
               <Icon
@@ -43,7 +53,7 @@
             <a
               href="https://portal.effect.ai"
               target="_blank"
-              class="inline-flex items-center gap-3 rounded-full px-6 py-3 bg-black text-white hover:bg-gray-900 transition duration-300 shadow-md"
+              class="inline-flex items-center gap-3 rounded-full px-6 py-3 bg-black text-white hover:bg-gray-900 transition duration-300 shadow-md hover:shadow-lg"
             >
               Join our Alpha
             </a>
@@ -101,9 +111,9 @@
       <div
         class="grid grid-cols-1 lg:grid-cols-12 max-w-7xl mx-auto gap-y-12 lg:gap-y-0 space-y-8 lg:space-y-0"
       >
-        <div class="col-span-4">
+        <div class="col-span-4 relative">
           <div
-            class="absolute left-0 top-0 text-7xl text-gray-200 leading-none select-none hidden md:block"
+            class="absolute left-0 top-0 text-7xl text-gray-200 leading-none select-none"
           >
             &ldquo;
           </div>
@@ -112,14 +122,14 @@
           <p
             class="text-4xl md:text-5xl leading-tight text-gray-800 font-light italic text-left"
           >
-            Whether we are based on carbon or on silicon makes no fundamental
-            difference. We should each be treated with appropriate respect.
+            One machine can do the work of fifty ordinary men. No machine can do
+            the work of one extraordinary man.
           </p>
 
           <p
             class="text-xl md:text-2xl font-medium text-gray-600 text-left mt-6"
           >
-            — Arthur C. Clarke
+            — Elbert Hubbard
           </p>
         </div>
       </div>
@@ -130,13 +140,13 @@
           <div
             class="text-gray-100 flex-1 min-w-[280px] p-6 border border-[#515053]"
           >
-            <div class="space-y-4">
+            <div class="space-y-4 flex flex-col h-full">
               <div class="text-sm font-semibold">01</div>
-              <h2 class="text-4xl mb-24 font-medium text-left">
-                Complete Tasks
-              </h2>
-              <p class="text-lg font-normal text-left">
-                Complete tasks and earn EFFECT directly to your wallet.
+              <h2 class="text-4xl font-medium text-left">Complete Tasks</h2>
+              <p class="text-lg font-normal text-left flex-1 mt-12">
+                Put your skills or resources to work and get paid instantly in
+                EFFECT, directly to your wallet. Choose from a variety of
+                available tasks and start earning today.
               </p>
               <div class="mt-8 text-left">
                 <a href="https://portal.effect.ai/worker">
@@ -152,22 +162,23 @@
               </div>
             </div>
           </div>
-
           <div
             class="text-gray-100 flex-1 min-w-[280px] p-6 border border-[#515053]"
           >
-            <div class="space-y-4">
+            <div class="space-y-4 flex flex-col h-full">
               <div class="text-sm font-semibold">02</div>
-              <h2 class="text-4xl font-medium text-left mb-24">Create Tasks</h2>
-              <p class="text-lg font-normal text-left">
-                Access a global, on-demand, 24x7 scalable work force.
+              <h2 class="text-4xl font-medium text-left">Build AI Workflows</h2>
+              <p class="text-lg font-normal text-left space-y-4 flex-1 mt-12">
+                Deploy your own decentralized applications with your specific
+                use case on Effect AI. Design custom workflows, post tasks, and
+                tap into a decentralized global worker mesh.
               </p>
               <div class="mt-8 text-left">
                 <button
                   class="button flex items-center gap-2 rounded-full border border-white bg-white bg-opacity-0 cursor-not-allowed px-5 py-2 text-md font-medium text-black hover:bg-black hover:text-white"
                   disabled
                 >
-                  Coming soon
+                  Request Demo
                   <span class="icon text-white">
                     <i class="fas fa-arrow-right"></i>
                   </span>
@@ -187,17 +198,19 @@
         <div class="col-span-8">
           <h2 class="text-5xl font-medium text-primary text-left leading-tight">
             Syncing AI and Humanity: <br />
-            <span class="text-gray-500">Building the Future Together</span>
+            <span class="text-gray-500">Creating What Comes Next</span>
           </h2>
         </div>
-        <div class="col-span-12 mt-24">
+        <div class="col-span-12 md:mt-24">
           <NewsCardList :perPage="3" :items="news" class="my-7" />
         </div>
       </div>
     </section>
 
     <section class="py-section-y px-section-x bg-effect-black">
-      <div class="grid grid-cols-12 max-w-7xl mx-auto">
+      <div
+        class="grid grid-cols-1 lg:grid-cols-12 max-w-7xl mx-auto gap-y-12 lg:gap-y-0 space-y-8 lg:space-y-0"
+      >
         <div class="col-span-4 flex flex-col">
           <p class="text-xs text-gray-200 font-medium uppercase mb-5">
             Some of our partners &amp; dapps
@@ -236,6 +249,34 @@ useSeoMeta({
   description:
     "Effect AI is a decentralized P2P Network used to turbocharge human-driven AI tasks.",
 });
+
+const phrases = [
+  "Composable AI Infrastructure.",
+  "Decentralized Intelligence.",
+  "Permissionless AI Workflows.",
+];
+
+const { text: typed, caretVisible } = useTypewriter(phrases, {
+  speed: 45,
+  backSpeed: 30,
+  hold: 5000,
+  between: 800,
+});
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+  @media (min-width: 1024px) {
+    #main-hero {
+      background-attachment: fixed;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center center;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #main-hero {
+      background-attachment: scroll;
+    }
+  }
+</style>

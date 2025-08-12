@@ -1,51 +1,6 @@
 <script setup lang="ts">
-interface GitHubContributor {
-  login: string;
-  id: number;
-  avatar_url: string;
-  html_url: string;
-  contributions: number;
-}
-
-const props = defineProps({
-  repoOwner: {
-    type: String,
-    required: true,
-  },
-  repoName: {
-    type: String,
-    required: true,
-  },
-  maxContributors: {
-    type: Number,
-    default: 20,
-  },
-  featured: {
-    type: Array as () => string[],
-    default: () => [],
-  },
-  title: {
-    type: String,
-    default: "Contributors",
-  },
-});
-
-const {
-  data: contributors,
-  pending,
-  error,
-} = useFetch<GitHubContributor[]>(
-  () =>
-    `https://api.github.com/repos/${props.repoOwner}/${props.repoName}/contributors?per_page=${props.maxContributors}`,
-  {
-    server: false,
-    lazy: true,
-    default: () => [],
-    headers: {
-      Accept: "application/vnd.github+json",
-    },
-  },
-);
+import { contributors } from "./../../constants/contributions";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 
 const stats = [
   { value: 23, label: "Apps in Ecosystem" },
@@ -57,14 +12,14 @@ const stats = [
 
 const mixedData = computed(() => {
   const result = [];
-  const maxLength = Math.min(stats.length, contributors.value.length);
+  const maxLength = Math.min(stats.length, contributors.length);
 
   for (let i = 0; i < maxLength; i++) {
     if (i < stats.length) {
       result.push({ type: "stat", data: stats[i] });
     }
-    if (i < contributors.value.length) {
-      result.push({ type: "contributor", data: contributors.value[i] });
+    if (i < contributors.length) {
+      result.push({ type: "contributor", data: contributors[i] });
     }
   }
 
@@ -82,23 +37,44 @@ const paired = computed(() => {
   }
   return pairs;
 });
+
+const staggerRoot = ref<HTMLElement | null>(null);
+const inView = ref(false);
+
+function globalIndex(pairIndex: number, itemIndex: number) {
+  return pairIndex * 2 + itemIndex;
+}
+
+onMounted(() => {
+  const el = staggerRoot.value;
+  if (!el || typeof IntersectionObserver === "undefined") {
+    inView.value = true;
+    return;
+  }
+  const io = new IntersectionObserver(
+    ([entry]) => {
+      if (entry.isIntersecting) {
+        inView.value = true;
+        io.disconnect(); // fire once
+      }
+    },
+    { threshold: 0.15, rootMargin: "0px 0px -10% 0px" },
+  );
+  io.observe(el);
+});
 </script>
 
 <template>
   <section class="pb-12">
     <div class="">
-      <div v-if="pending" class="text-center">
-        <div
-          class="inline-block h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-gray-600"
-        ></div>
-        <p class="mt-2 text-gray-600">Loading contributors...</p>
-      </div>
-
-      <div v-else class="flex items-center">
+      <div
+        ref="staggerRoot"
+        class="flex items-center"
+        :class="{ 'stagger-on': inView }"
+      >
         <div
           v-for="(pair, i) in paired"
           :key="i"
-          class=""
           :class="{
             'mt-[-250px]': i === 1,
             'mt-[150px]': i === 2,
@@ -107,9 +83,11 @@ const paired = computed(() => {
         >
           <div
             v-for="(item, index) in pair"
-            :key="item.type === 'contributor' ? item.data.id : item.data.label"
-            class="relative border-[#515053] border w-[250px] h-[250px] flex items-center"
-            :class="{}"
+            :key="
+              item.type === 'contributor' ? item.data.name : item.data.label
+            "
+            class="m-1 relative border-[#515053] border w-[250px] h-[250px] flex items-center stagger-item will-change-transform transform-gpu opacity-0"
+            :style="{ '--stagger': globalIndex(i, index) }"
           >
             <a
               v-if="item.type === 'contributor'"
@@ -120,14 +98,14 @@ const paired = computed(() => {
             >
               <div class="w-full h-full flex items-center justify-center">
                 <img
-                  :src="item.data.avatar_url"
-                  :alt="item.data.login"
+                  :src="item.data.avatar"
+                  :alt="item.data.name"
                   loading="lazy"
-                  class="p-1.5 grayscale brightness-50"
+                  class="p-1.5 grayscale brightness-50 hover:grayscale-0 hover:brightness-100 transition duration-300"
                 />
               </div>
               <div class="absolute left-6 bottom-2.5 text-white">
-                <h3 class="text-xl mt-3">{{ item.data.login }}</h3>
+                <h3 class="text-xl mt-3">{{ item.data.name }}</h3>
                 <p class="text-sm text-center">
                   {{ item.data.contributions }} contributions
                 </p>
@@ -147,3 +125,32 @@ const paired = computed(() => {
     </div>
   </section>
 </template>
+
+<style scoped>
+  @keyframes fadeUpSoft {
+    0% {
+      opacity: 0;
+      transform: translateY(14px) scale(0.98);
+      filter: blur(4px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  .stagger-on .stagger-item {
+    animation-name: fadeUpSoft;
+    animation-duration: 1000ms;
+    animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+    animation-fill-mode: both;
+    animation-delay: calc(var(--stagger) * 360ms);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stagger-on .stagger-item {
+      animation: none !important;
+    }
+  }
+</style>
