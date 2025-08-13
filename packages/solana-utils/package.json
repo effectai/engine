@@ -1,0 +1,33 @@
+{
+  "name": "@effectai/solana-utils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@solana/kit": "^2.1.1",
+    "@solana/buffer-layout": "^4.0.1",
+    "@solana/web3.js": "^1.95.4",
+    "mz": "2.7.0",
+    "@coral-xyz/anchor": "^0.31.1",
+    "@wharfkit/antelope": "^1.0.13",
+    "yaml": "2.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.13",
+    "typescript": "5.7.2",
+    "rollup": "^4.27.3"
+  }
+}

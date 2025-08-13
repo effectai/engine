@@ -1,0 +1,27 @@
+{
+  "name": "@effectai/migration",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compile:ts": "tsup clients/js --config ../../tsup.config.package.ts",
+    "generate:clients": "node --experimental-strip-types scripts/generate-clients.ts",
+    "build": "pnpm run compile:ts"
+  },
+  "main": "dist/index.cjs",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "dependencies": {
+    "@solana/kit": "^2.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.7",
+    "codama": "^1.3.0",
+    "@codama/nodes-from-anchor": "^1.1.14",
+    "@codama/renderers-js": "^1.2.13",
+    "@effectai/test-utils": "workspace:*"
+  }
+}
