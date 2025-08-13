@@ -5,7 +5,7 @@
       <NewsCard
         class="new-card"
         v-for="news in paginatedNews"
-        :key="news.id || news._path"
+        :key="news.id"
         :news="news"
       />
     </div>
@@ -20,10 +20,11 @@
 </template>
 
 <script setup lang="ts">
+import type { NewsCollectionItem } from "@nuxt/content";
 import { ref, computed } from "vue";
 
 const props = defineProps<{
-  items: News[];
+  items: NewsCollectionItem[];
   perPage: number;
 }>();
 

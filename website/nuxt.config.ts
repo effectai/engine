@@ -1,28 +1,14 @@
+import { defineNuxtConfig } from "nuxt/config";
 import tailwindcss from "@tailwindcss/vite";
+
 export default defineNuxtConfig({
-  compatibilityDate: "2024-04-03",
-  ssr: false,
+  ssr: true,
+  compatibilityDate: "2025-08-13",
   devtools: { enabled: true },
   css: ["~/assets/css/main.css"],
-  build: {
-    transpile: ['"@fortawesome/fontawesome-free"'],
-  },
   vite: {
     plugins: [tailwindcss()],
-    css: {
-      preprocessorOptions: {
-        scss: {
-          quietDeps: true, // Silences warnings from dependencies like Bulma
-          // additionalData: '@use "@/assets/scss/variables.scss";',
-        },
-      },
-    },
+    css: {},
   },
-  modules: [
-    "@nuxt/content",
-    "@nuxt/image",
-    "@vueuse/motion/nuxt",
-    "@nuxt/icon",
-  ],
+  modules: ["@nuxt/icon", "@nuxt/content", "@nuxt/image"],
 });
-

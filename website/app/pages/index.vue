@@ -191,7 +191,11 @@
           </h2>
         </div>
         <div class="col-span-12 lg:mt-24">
-          <NewsCardList :perPage="3" :items="news" class="my-7" />
+          <NewsCardList
+            v-if="news && news.length"
+            :items="news"
+            :per-page="3"
+          />
         </div>
       </div>
     </section>
@@ -220,12 +224,19 @@
 
 <script setup lang="ts">
 //fetch news content and sort by created\
-const { data: news } = await useAsyncData("news", async () => {
-  const data = await queryContent("/news").where({ published: true }).find();
+
+const route = useRoute();
+
+const { data: news } = await useAsyncData(route.path, async () => {
+  const data = await queryCollection("news")
+    .where("published", "=", true)
+    .all();
 
   //sort on created date
   return data.sort((a, b) => {
-    return new Date(b.created).getTime() - new Date(a.created).getTime();
+    return (
+      new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+    );
   });
 });
 

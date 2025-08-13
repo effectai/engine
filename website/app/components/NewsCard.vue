@@ -1,7 +1,7 @@
 <template>
   <nuxt-link
     :class="{ featured: news.featured }"
-    :to="`${news._path}`"
+    :to="`${news.path}`"
     class="grid grid-cols-1 md:grid-cols-12 max-w-7xl mx-auto lg:gap-y-0 lg:space-y-0"
   >
     <div class="col-span-4 flex">
