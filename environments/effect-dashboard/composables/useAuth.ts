@@ -35,6 +35,53 @@ const chainConfig = {
   logo: "https://images.toruswallet.io/solana.svg",
 };
 
+export async function getOrCreatePublicKey(): Promise<ArrayBuffer | null> {
+  // Define a unique ID for this relying party (your app/domain).
+  const rpID = window.location.hostname;
+
+  // Generate a stable user ID (ideally a hash of user/device ID)
+  const userId = new TextEncoder().encode("unique-device-id"); // Replace with real device/user ID
+
+  try {
+    // Create a new public/private keypair via WebAuthn
+    const credential = await navigator.credentials.create({
+      publicKey: {
+        rp: {
+          name: "Effect AI",
+          id: rpID,
+        },
+        user: {
+          id: userId,
+          name: "device_user@example.com",
+          displayName: "Device User",
+        },
+        challenge: crypto.getRandomValues(new Uint8Array(32)), // Required dummy challenge
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 }, // ES256 (ECDSA with SHA-256)
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform", // "platform" = device-bound; "cross-platform" = USB/NFC keys
+          userVerification: "preferred",
+        },
+        timeout: 60000,
+        attestation: "none", // "direct" or "indirect" if you need attestation
+      },
+    });
+
+    if (credential && credential.response) {
+      const publicKey = (credential as PublicKeyCredential)
+        .response as AuthenticatorAttestationResponse;
+
+      // Public key lives inside `credential.rawId` and in `attestationObject`, but rawId is more stable
+      return credential.rawId;
+    }
+  } catch (err) {
+    console.error("WebAuthn failed:", err);
+  }
+
+  return null;
+}
+
 export const useAuth = () => {
   const web3Auth = useState<Web3AuthNoModal | null>("web3auth", () => null);
   const provider = useState<SolanaWallet | null>("provider", () => null);

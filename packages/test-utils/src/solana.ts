@@ -109,7 +109,9 @@ export const setup = async (): Promise<SetupReturn> => {
       ),
   );
 
-  await signTransactionMessageWithSigners(transactionMessage);
+  const result = await signTransactionMessageWithSigners(transactionMessage);
+
+  await sendAndConfirmTransaction(result, { commitment: "confirmed" });
 
   return {
     mint: mint.address,

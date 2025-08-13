@@ -23,15 +23,16 @@
   </SimpleSection>
 </template>
 
+//
 <script setup>
-const { data: news } = await useAsyncData("news", async () => {
-	const data = await queryContent("/news").where({ published: true }).find();
-
-	//sort on created date
-	return data.sort((a, b) => {
-		return new Date(b.created).getTime() - new Date(a.created).getTime();
-	});
-});
+// const { data: news } = await useAsyncData("news", async () => {
+// 	const data = await queryContent("/news").where({ published: true }).find();
+//
+// 	//sort on created date
+// 	return data.sort((a, b) => {
+// 		return new Date(b.created).getTime() - new Date(a.created).getTime();
+// 	});
+// });
 </script>
 
 <style lang="scss" scoped></style>

@@ -7,6 +7,4 @@
   </div>
 </template>
 
-<script setup lang="ts">
-  // import { NuxtPage } from '#build/components';
-</script>
+<script setup lang="ts"></script>
