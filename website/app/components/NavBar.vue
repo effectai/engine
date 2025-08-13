@@ -37,20 +37,41 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { discord, telegram, twitter } from "./../constants/socials.ts";
+
 const socials = [twitter, telegram, discord];
 
-const hasScrolled = ref(false);
-const handleScroll = () => {
-  hasScrolled.value = window.scrollY > 0;
-};
+// True only when at the very top (y <= 0)
+const isAtTop = ref(true);
+const hasScrolled = computed(() => !isAtTop.value);
+
+let ticking = false;
+
+function readScrollY() {
+  // Use documentElement as a fallback; SSR-safe because called only in onMounted
+  const y = window.scrollY ?? document.documentElement.scrollTop ?? 0;
+  isAtTop.value = y <= 0;
+}
+
+function onScroll() {
+  // Throttle with rAF for smoothness
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => {
+    readScrollY();
+    ticking = false;
+  });
+}
 
 onMounted(() => {
-  window.addEventListener("scroll", handleScroll);
+  // Initialize based on current scroll (handles restored positions)
+  readScrollY();
+  window.addEventListener("scroll", onScroll, { passive: true });
 });
 
 onUnmounted(() => {
-  window.removeEventListener("scroll", handleScroll);
+  window.removeEventListener("scroll", onScroll);
 });
 </script>
 
