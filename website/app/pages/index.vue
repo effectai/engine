@@ -39,7 +39,7 @@
 
           <div class="flex flex-wrap gap-4">
             <a
-              href="https://effect.ai/whitepaper.pdf"
+              href="/whitepaper.pdf"
               target="_blank"
               class="inline-flex items-center gap-3 rounded-full px-6 py-3 border border-black text-black hover:bg-black hover:text-white transition duration-300 shadow-sm hover:shadow-md"
             >
