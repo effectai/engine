@@ -13,9 +13,9 @@
           <h1
             class="mb-6 mt-10 text-4xl sm:text-5xl md:text-6xl font-light text-gray-900 leading-tight tracking-tight"
           >
-            <span>Unlocking The Next Era <br /></span>
+            <span>Unlocking the Next Era <br /></span>
             <span
-              >Of {{ typed }}
+              >of {{ typed }}
               <span
                 class="inline-block align-top select-none"
                 :style="{ opacity: caretVisible ? 1 : 0 }"
