@@ -30,12 +30,18 @@ const props = defineProps<{
 
 const currentPage = ref(1);
 
-const totalPages = computed(() =>
-  Math.ceil(props.items.length / props.perPage),
-);
+const totalPages = computed(() => {
+  if (!props.items || props.items.length === 0) {
+    return 0;
+  }
+  return Math.ceil(props.items.length / props.perPage);
+});
 
 const paginatedNews = computed(() => {
   const start = (currentPage.value - 1) * props.perPage;
+  if (!props.items || props.items.length === 0) {
+    return [];
+  }
   return props.items.slice(start, start + props.perPage);
 });
 
