@@ -2,7 +2,7 @@
   <main class="font-inter">
     <section
       id="main-hero"
-      class="relative -mt-[75px] bg-[url('/img/hero-background.png')] bg-no-repeat bg-cover px-section-x py-section-y"
+      class="relative -mt-[75px] bg-[url('/img/hero-background.png')] bg-no-repeat bg-cover px-section-x py-section-y min-h-[80vh] md:min-h-[calc(100vh-75px)]"
     >
       <div
         class="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_60%_at_20%_30%,rgba(255,255,255,0.55),transparent_60%)] mix-blend-screen"
@@ -11,7 +11,7 @@
       <div class="relative max-w-7xl mx-auto">
         <div class="flex flex-col items-start text-left max-w-4xl">
           <h1
-            class="mb-6 mt-10 text-4xl sm:text-5xl md:text-6xl font-light text-gray-900 leading-tight tracking-tight"
+            class="mb-6 mt-10 text-4xl sm:text-5xl md:text-6xl font-light text-gray-900 leading-tight tracking-tight min-h-[120px]"
           >
             <span>Unlocking the Next Era <br /></span>
             <span
