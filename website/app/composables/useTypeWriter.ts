@@ -12,6 +12,7 @@ export function useTypewriter(phrases: string[], opts: Options = {}) {
 
   const text = ref("");
   const isClient = typeof window !== "undefined";
+
   const reduceMotion =
     isClient && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
@@ -31,6 +32,7 @@ export function useTypewriter(phrases: string[], opts: Options = {}) {
     if (!phrases.length) return;
 
     if (reduceMotion) {
+      console.warn("Reduce motion is enabled, skipping typewriter effect.");
       text.value = phrases[0];
       return;
     }

@@ -23,9 +23,7 @@
               >
             </span>
           </h1>
-          <p
-            class="text-base sm:text-lg md:text-xl text-gray-700 mb-10 leading-relaxed"
-          >
+          <p class="text-base text-xl text-gray-700 mb-10 leading-relaxed">
             AI's next revolution isn't about better models — it's about
             networked capabilities.
             <br class="hidden sm:block" />
@@ -223,8 +221,6 @@
 </template>
 
 <script setup lang="ts">
-//fetch news content and sort by created\
-
 const route = useRoute();
 
 const { data: news } = await useAsyncData(route.path, async () => {

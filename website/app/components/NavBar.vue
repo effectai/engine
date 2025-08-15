@@ -42,20 +42,17 @@ import { discord, telegram, twitter } from "./../constants/socials.ts";
 
 const socials = [twitter, telegram, discord];
 
-// True only when at the very top (y <= 0)
 const isAtTop = ref(true);
 const hasScrolled = computed(() => !isAtTop.value);
 
 let ticking = false;
 
 function readScrollY() {
-  // Use documentElement as a fallback; SSR-safe because called only in onMounted
   const y = window.scrollY ?? document.documentElement.scrollTop ?? 0;
   isAtTop.value = y <= 0;
 }
 
 function onScroll() {
-  // Throttle with rAF for smoothness
   if (ticking) return;
   ticking = true;
   requestAnimationFrame(() => {
@@ -65,7 +62,6 @@ function onScroll() {
 }
 
 onMounted(() => {
-  // Initialize based on current scroll (handles restored positions)
   readScrollY();
   window.addEventListener("scroll", onScroll, { passive: true });
 });
