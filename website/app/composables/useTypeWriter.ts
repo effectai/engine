@@ -7,7 +7,11 @@ type Options = {
   between?: number;
 };
 
-export function useTypewriter(phrases: string[], opts: Options = {}) {
+export function useTypewriter(
+  phrases: string[],
+  isActive: Ref<boolean>,
+  opts: Options = {},
+) {
   const { speed = 45, backSpeed = 28, hold = 1400, between = 400 } = opts;
 
   const text = ref("");
@@ -38,6 +42,11 @@ export function useTypewriter(phrases: string[], opts: Options = {}) {
     }
 
     const tick = () => {
+      if (!isActive.value) {
+        t = window.setTimeout(tick, 200);
+        return;
+      }
+
       const word = phrases[i % phrases.length];
       if (!deleting) {
         text.value = word.slice(0, j++);

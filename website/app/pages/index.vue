@@ -2,7 +2,7 @@
   <main class="font-inter">
     <section
       id="main-hero"
-      class="relative -mt-[75px] bg-[url('/img/hero-background.png')] bg-no-repeat bg-cover px-section-x py-section-y min-h-[80vh] md:min-h-[calc(100vh-75px)]"
+      class="relative -mt-[75px] bg-[url('/img/hero-background.png')] bg-no-repeat bg-cover px-section-x py-section-y min-h-[calc(70vh-75px)] xl:min-h-screen"
     >
       <div
         class="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_60%_at_20%_30%,rgba(255,255,255,0.55),transparent_60%)] mix-blend-screen"
@@ -11,7 +11,7 @@
       <div class="relative max-w-7xl mx-auto">
         <div class="flex flex-col items-start text-left max-w-4xl">
           <h1
-            class="mb-6 mt-10 text-4xl sm:text-5xl md:text-6xl font-light text-gray-900 leading-tight tracking-tight min-h-[120px]"
+            class="mb-6 mt-10 text-4xl sm:text-5xl md:text-6xl font-light text-gray-900 leading-tight tracking-tight"
           >
             <span>Unlocking the Next Era <br /></span>
             <span
@@ -24,14 +24,16 @@
             </span>
           </h1>
           <p class="text-base text-xl text-gray-700 mb-10 leading-relaxed">
-            AI's next revolution isn't about better models — it's about
-            networked capabilities.
             <br class="hidden sm:block" />
-            <span class="inline-block mt-3">
-              Effect AI introduces a permissionless protocol that orchestrates
-              human and machine capabilities into verifiable, reusable
-              workflows. Empowering developers and contributors worldwide to
-              scale open AI infrastructure without centralized intermediaries.
+            <span class="inline-block mt-3 md:hidden">
+              A decentralized protocol for building, sharing, and earning from
+              AI infrastructure powered by humans and machines.
+            </span>
+            <span class="hidden md:inline-block">
+              Effect AI is a decentralized protocol for building, sharing, and
+              earning from AI infrastructure powered by humans and machines. It
+              connects people, models, and compute into a unified capability
+              network for scalable, real-time AI execution.
             </span>
           </p>
 
@@ -249,10 +251,26 @@ useSeoMeta({
 const phrases = [
   "Composable AI Infrastructure.",
   "Decentralized Intelligence.",
-  "Permissionless AI Workflows.",
+  "AI Workflows.",
 ];
 
-const { text: typed, caretVisible } = useTypewriter(phrases, {
+const isActive = ref(true);
+onMounted(() => {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        isActive.value = entry.isIntersecting;
+      });
+    },
+    { threshold: 0.1 },
+  );
+  const hero = document.getElementById("main-hero");
+
+  if (hero) {
+    observer.observe(hero);
+  }
+});
+const { text: typed, caretVisible } = useTypewriter(phrases, isActive, {
   speed: 45,
   backSpeed: 30,
   hold: 5000,
