@@ -12,15 +12,26 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "0.30.1",
+    "solana-kite": "^1.5.4",
+    "@effectai/wallets-vue": "workspace:*",
+    "@wallet-standard/base": "^1.1.0",
+    "@solana/wallet-standard-features": "^1.3.0",
+    "@solana/wallet-standard": "^1.1.4",
+    "@solana/wallet-adapter-base": "^0.9.27",
+    "@wallet-standard/app": "^1.1.0",
+    "@wallet-standard/ui": "^1.0.1",
+    "@wallet-standard/ui-registry": "^1.0.1",
     "@effectai/payment": "workspace:*",
+    "@effectai/stake": "workspace:*",
+    "@effectai/migration": "workspace:*",
+    "@effectai/reward": "workspace:*",
+    "@effectai/vesting": "workspace:*",
     "@effectai/protocol": "workspace:*",
     "@effectai/utils": "workspace:*",
     "@headlessui/vue": "^1.7.23",
     "@heroicons/vue": "^2.2.0",
     "@noble/ed25519": "^2.2.3",
     "@noble/hashes": "^1.8.0",
-    "@nuxtjs/device": "3.2.4",
     "@pinia/nuxt": "0.11.0",
     "@reown/appkit": "^1.5.2",
     "@reown/appkit-adapter-wagmi": "^1.5.2",
@@ -64,7 +75,8 @@
     "@solana/webcrypto-ed25519-polyfill": "^2.1.1",
     "p-limit": "^6.2.0",
     "@nuxt/ui": "^3.1.3",
-    "uint8arrays": "^5.1.0"
+    "uint8arrays": "^5.1.0",
+		"@effectai/solana-utils": "workspace:*"
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",

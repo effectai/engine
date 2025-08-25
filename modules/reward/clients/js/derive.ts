@@ -3,17 +3,46 @@ import {
   getAddressEncoder,
   getProgramDerivedAddress,
 } from "@solana/kit";
-import { EFFECT_MIGRATION_PROGRAM_ADDRESS } from "./@generated/migration";
+import { EFFECT_REWARDS_PROGRAM_ADDRESS } from "./@generated/rewards";
 
-export const deriveMigrationAccountPDA = ({
+export const deriveRewardAccountsPda = async ({
   mint,
-  foreignAddress,
 }: {
   mint: Address;
-  foreignAddress: Uint8Array;
 }) => {
-  return getProgramDerivedAddress({
-    seeds: [getAddressEncoder().encode(mint), foreignAddress],
-    programAddress: EFFECT_MIGRATION_PROGRAM_ADDRESS,
+  const [reflectionAccount] = await getProgramDerivedAddress({
+    seeds: [Buffer.from("reflection"), getAddressEncoder().encode(mint)],
+    programAddress: EFFECT_REWARDS_PROGRAM_ADDRESS,
   });
+
+  const [reflectionVaultAccount] = await getProgramDerivedAddress({
+    seeds: [getAddressEncoder().encode(reflectionAccount)],
+    programAddress: EFFECT_REWARDS_PROGRAM_ADDRESS,
+  });
+
+  const [intermediaryReflectionVaultAccount] = await getProgramDerivedAddress({
+    seeds: [getAddressEncoder().encode(reflectionVaultAccount)],
+    programAddress: EFFECT_REWARDS_PROGRAM_ADDRESS,
+  });
+
+  return {
+    reflectionAccount,
+    reflectionVaultAccount,
+    intermediaryReflectionVaultAccount,
+  };
+};
+
+export const deriveStakingRewardAccountPda = async ({
+  stakingAccount,
+}: {
+  stakingAccount: Address;
+}) => {
+  const [stakingRewardAccount] = await getProgramDerivedAddress({
+    seeds: [getAddressEncoder().encode(stakingAccount)],
+    programAddress: EFFECT_REWARDS_PROGRAM_ADDRESS,
+  });
+
+  return {
+    stakingRewardAccount,
+  };
 };

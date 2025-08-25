@@ -19,7 +19,7 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 [dependencies]
 anchor-lang = { version = "0.31.1" }
 anchor-spl = "0.31.1"
-effect-common = { path = "../../core/program/" }
+effect-common = { path = "../../../core/program" }
 groth16-solana = "0.1.0"
 ark-bn254 = "0.5.0"
 ark-serialize = "0.5.0"

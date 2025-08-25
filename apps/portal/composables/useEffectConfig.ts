@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { address } from "@solana/kit";
 
 export const publicKeyString = ref<string | null>(null);
 
@@ -11,7 +11,7 @@ export const useEffectConfig = () => {
     );
   }
 
-  const mint = new PublicKey(config.public.EFFECT_SPL_TOKEN_MINT);
+  const mint = address(config.public.EFFECT_SPL_TOKEN_MINT);
 
   return {
     mint,

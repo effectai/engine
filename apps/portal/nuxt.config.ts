@@ -12,7 +12,7 @@ export default defineNuxtConfig({
     "@nuxt/ui",
     "@vueuse/nuxt",
     "@vueuse/motion/nuxt",
-    "@nuxtjs/device",
+    "@effectai/wallets-vue",
   ],
   app: {
     head: {

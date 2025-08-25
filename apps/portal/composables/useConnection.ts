@@ -1,13 +1,14 @@
-import { Connection } from "@solana/web3.js";
+import { connect } from "solana-kite";
 
-let connectionInstance: Connection | null = null;
+let connectionInstance: ReturnType<typeof connect> | null = null;
 
 export const useConnection = () => {
   const config = useRuntimeConfig();
 
   if (!connectionInstance) {
     const rpcUrl = config.public.EFFECT_SOLANA_RPC_NODE_URL;
-    connectionInstance = new Connection(rpcUrl, "confirmed");
+    const wsRpcUrl = config.public.EFFECT_SOLANA_RPC_WS_URL;
+    connectionInstance = connect(rpcUrl, wsRpcUrl);
   }
 
   return {

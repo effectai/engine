@@ -21,4 +21,4 @@ testing = []
 [dependencies]
 anchor-lang = "0.31.1"
 anchor-spl = "0.31.1"
-effect-common = { path = "../../core/program/" }
+effect-common = { path = "../../../core/program/" }

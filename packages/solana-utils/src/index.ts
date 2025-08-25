@@ -24,6 +24,14 @@ import {
   createKeyPairSignerFromPrivateKeyBytes,
 } from "@solana/kit";
 
+import {
+  getInitializeMintInstruction,
+  getCreateAssociatedTokenInstructionAsync,
+  getMintToCheckedInstruction,
+  TOKEN_PROGRAM_ADDRESS,
+  getMintSize,
+} from "@solana-program/token";
+
 async function getConfig(): Promise<any> {
   // Path to Solana CLI config file
   const CONFIG_FILE_PATH = path.resolve(
@@ -324,3 +332,5 @@ export const useDeriveStakeAccounts = ({
     rewardAccount,
   };
 };
+
+export * from "./instructions";
