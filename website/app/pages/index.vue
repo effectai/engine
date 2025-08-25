@@ -2,7 +2,7 @@
   <main class="font-inter">
     <section
       id="main-hero"
-      class="relative -mt-[75px] bg-[url('/img/hero-background.png')] bg-no-repeat bg-cover px-section-x py-section-y min-h-[calc(70vh-75px)] xl:min-h-screen"
+      class="relative -mt-[75px] bg-[url('/img/hero-background.png')] bg-no-repeat bg-cover px-section-x py-section-y"
     >
       <div
         class="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_60%_at_20%_30%,rgba(255,255,255,0.55),transparent_60%)] mix-blend-screen"
