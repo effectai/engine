@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import WalletProvider from "./providers/WalletProvider";
+import WalletProvider from "./providers/SolanaProvider";
+import { MigrationProvider } from "./providers/MigrationProvider";
+import WagmiProvider from "./providers/WagmiProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +30,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <WalletProvider>{children}</WalletProvider>
+        <WalletProvider>
+          <WagmiProvider>
+            <MigrationProvider>{children}</MigrationProvider>
+          </WagmiProvider>
+        </WalletProvider>
       </body>
     </html>
   );

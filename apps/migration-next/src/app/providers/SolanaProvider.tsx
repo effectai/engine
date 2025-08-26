@@ -5,6 +5,7 @@ import {
   UnifiedWalletProvider,
 } from "@jup-ag/wallet-adapter"; // or the exact provider/hook you use
 import { ReactNode } from "react";
+import { TestButton } from "../components/TestButton";
 
 export default function WalletProvider({ children }: { children: ReactNode }) {
   return (
@@ -25,6 +26,7 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
       }}
     >
       <UnifiedWalletButton />
+      {children}
     </UnifiedWalletProvider>
   );
 }
