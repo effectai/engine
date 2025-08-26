@@ -10,7 +10,6 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@effectai/wallets-vue": "workspace:*",
     "@effectai/stake": "workspace:*",
     "@solana/kit": "^2.1.1",
     "solana-kite": "^1.5.4",
