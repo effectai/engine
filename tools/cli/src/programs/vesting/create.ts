@@ -1,10 +1,9 @@
 import { Command } from "commander";
-import { askForConfirmation, loadProvider } from "@effectai/utils";
+import { askForConfirmation } from "@effectai/utils";
 import {
   getOpenInstructionAsync,
-  getAssociatedTokenAccount,
   EFFECT_VESTING_PROGRAM_ADDRESS,
-} from "@effectai/program-sdk";
+} from "@effectai/vesting";
 import {
   address,
   createKeyPairSignerFromPrivateKeyBytes,
@@ -24,6 +23,8 @@ import { createSolanaRpc } from "@solana/kit";
 
 import { getTransferCheckedInstruction } from "@solana-program/token";
 import { pipe } from "@solana/functional";
+import { loadSolanaContext } from "../../helpers";
+import { getAssociatedTokenAccount } from "@effectai/solana-utils";
 
 export const vestingCreateCommand = new Command("create")
   .description("creates a vesting account")
@@ -49,24 +50,15 @@ export const vestingCreateCommand = new Command("create")
   )
   .action(async (options) => {
     const { mint, amount, startTime, duration, recipient } = options;
-    const { payer, provider, rpcUrl, websocketUrl } = await loadProvider();
-
-    console.log(`Using ${rpcUrl} with websocket ${websocketUrl}`);
+    const { signer, rpcSubscriptions, rpc } = await loadSolanaContext();
 
     const vestingUntil = startTime + duration; // in seconds
     const startTimeReadable = new Date(startTime * 1000).toUTCString();
     const durationReadable = new Date(vestingUntil * 1000).toUTCString();
-
-    const signer = await createKeyPairSignerFromPrivateKeyBytes(
-      payer.secretKey.slice(0, 32),
-    );
-
     const vestingAccount = await generateKeyPairSigner();
 
     const confirmed = await askForConfirmation(
-      `Create vesting for (${recipient}) on ${
-        provider.connection.rpcEndpoint
-      } with the following: \n            
+      `Create vesting for (${recipient}) with the following: \n            
 - amount: ${amount}
 - starts on: ${startTimeReadable}
 - until:  ${durationReadable}
@@ -92,9 +84,6 @@ Please confirm`,
       authority: signer,
       vestingAccount: vestingAccount,
     });
-
-    const rpc = createSolanaRpc(rpcUrl);
-    const rpcSubscriptions = createSolanaRpcSubscriptions(websocketUrl);
 
     const [destination, _bump] = await getProgramDerivedAddress({
       programAddress: EFFECT_VESTING_PROGRAM_ADDRESS,

@@ -1,5 +1,4 @@
 import { Command } from "commander";
-import { loadProvider } from "@effectai/utils";
 import {
   address,
   appendTransactionMessageInstructions,
@@ -12,7 +11,7 @@ import {
   signTransactionMessageWithSigners,
 } from "@solana/kit";
 import { loadSolanaContext } from "../../helpers.js";
-import { getInitRewardsInstructionAsync } from "@effectai/program-sdk";
+import { getInitInstructionAsync } from "@effectai/reward";
 
 interface RewardInitOptions {
   mint: string;
@@ -28,19 +27,14 @@ export const registerInitRewardCommand = (program: Command) =>
     )
     .action(async (options: RewardInitOptions) => {
       const mint = address(options.mint);
-      const { payer, provider, websocketUrl } = await loadProvider();
-      const { rpc, rpcSubscriptions } = await loadSolanaContext();
+      const { rpc, rpcSubscriptions, signer } = await loadSolanaContext();
 
       const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
         rpc,
         rpcSubscriptions,
       });
 
-      const signer = await createKeyPairSignerFromPrivateKeyBytes(
-        payer.secretKey.slice(0, 32),
-      );
-
-      const initIx = await getInitRewardsInstructionAsync({
+      const initIx = await getInitInstructionAsync({
         authority: signer,
         mint,
       });

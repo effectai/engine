@@ -23,6 +23,7 @@ import { getCreateAssociatedTokenInstructionAsync } from "@solana-program/token"
 import {
   getAssociatedTokenAccount,
   loadSolanaProviderFromConfig,
+  useDeriveMigrationAccounts,
 } from "@effectai/solana-utils";
 import {
   EFFECT_MIGRATION_PROGRAM_ADDRESS,

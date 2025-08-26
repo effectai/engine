@@ -1319,12 +1319,18 @@ importers:
       '@effectai/protocol':
         specifier: workspace:*
         version: link:../../packages/library
+      '@effectai/reward':
+        specifier: workspace:*
+        version: link:../../modules/reward
       '@effectai/solana-utils':
         specifier: workspace:*
         version: link:../../packages/solana-utils
       '@effectai/utils':
         specifier: workspace:*
         version: link:../../packages/utils
+      '@effectai/vesting':
+        specifier: workspace:*
+        version: link:../../modules/vesting
       '@solana-program/system':
         specifier: ^0.7.0
         version: 0.7.0(@solana/kit@2.3.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.2)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)))
