@@ -1,4 +1,3 @@
-// plugins/wagmi.js
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { WagmiPlugin } from "@wagmi/vue";
 

@@ -3,6 +3,8 @@ import {
   SolanaSignAndSendTransaction,
   type SolanaSignAndSendTransactionFeature,
   type SolanaSignAndSendTransactionOutput,
+  SolanaSignMessage,
+  SolanaSignMessageFeature,
   SolanaSignTransaction,
   type SolanaSignTransactionFeature,
   type SolanaSignTransactionOutput,
@@ -26,6 +28,33 @@ export type SignAndSendInputOptions = {
   preflightCommitment?: "processed" | "confirmed" | "finalized";
   maxRetries?: number;
   minContextSlot?: number;
+};
+
+export const makeSignMessages = (
+  wallet: Wallet,
+  account: WalletAccount,
+  chain: `solana:${string}`,
+): ((messages: Uint8Array[]) => Promise<Uint8Array[]>) => {
+  if (!account.chains?.includes(chain)) {
+    throw new Error(`Account does not support chain ${chain}`);
+  }
+
+  const feature = wallet.features[SolanaSignTransaction] as
+    | SolanaSignMessageFeature[typeof SolanaSignMessage]
+    | undefined;
+
+  return async (messages: Uint8Array[]) => {
+    if (!feature) {
+      throw new Error("Wallet lacks SolanaSignMessage feature");
+    }
+
+    const [signature] = await feature.signMessage({
+      message: Buffer.concat(messages),
+      account,
+    });
+
+    return signature;
+  };
 };
 
 export type ModifyAndSignFn = (input: {
@@ -56,7 +85,6 @@ export function makeModifyAndSign(
       account,
       chain,
       options: {
-        // skipPreflight: true,
         ...options,
       },
     });
@@ -107,16 +135,18 @@ export function makeSignAndSend(
   };
 }
 
-export function createTransactionSendingSigner({
+export function createUIWalletSigner({
   address,
   signAndSend,
   modifyAndSign,
+  signMessages,
   defaultOptions,
   onEachSignature,
 }: {
   address: Address;
   signAndSend: SignAndSendFn;
   modifyAndSign: ModifyAndSignFn;
+  signMessages: (messages: Uint8Array[]) => Promise<Uint8Array[]>;
   defaultOptions?: SignAndSendInputOptions;
   onEachSignature?: (sig: SignatureBytes) => void | Promise<void>;
 }) {

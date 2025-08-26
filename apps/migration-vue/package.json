@@ -1,0 +1,33 @@
+{
+  "name": "migration-app",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@effectai/migration": "workspace:*",
+    "@effectai/solana-utils": "workspace:*",
+    "@effectai/wallets-vue": "workspace:*",
+    "@reown/appkit": "^1.5.2",
+    "@reown/appkit-adapter-wagmi": "^1.5.2",
+    "@solana/kit": "^2.1.1",
+    "@tailwindcss/vite": "^4.1.12",
+    "@tanstack/vue-query": "^5.85.5",
+    "@wharfkit/session": "^1.4.0",
+    "@wharfkit/wallet-plugin-anchor": "^1.4.0",
+    "@wharfkit/wallet-plugin-tokenpocket": "^1.5.1",
+    "@wharfkit/wallet-plugin-wombat": "1.5.1-beta1",
+    "@wharfkit/web-renderer": "^1.0.3",
+    "nuxt": "^4.0.3",
+    "solana-kite": "^1.5.4",
+    "tailwindcss": "^4.1.12",
+    "vue": "^3.5.19",
+    "vue-router": "^4.5.1",
+    "@wagmi/vue": "^0.0.62"
+  }
+}

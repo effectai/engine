@@ -42,7 +42,6 @@
     "codama": "^1.3.0",
     "@codama/nodes-from-anchor": "^1.1.14",
     "@codama/renderers-js": "^1.2.13",
-    "@effectai/test-utils": "workspace:*",
     "litesvm": "^0.2.0"
   }
 }

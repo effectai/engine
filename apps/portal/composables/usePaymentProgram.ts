@@ -31,12 +31,12 @@ import {
 } from "@solana-program/compute-budget";
 
 import { useMutation, useQuery } from "@tanstack/vue-query";
-import {
-  EffectPaymentIdl,
-  type EffectPayment,
-  type EffectStaking,
-} from "@effectai/idl";
-
+// import {
+//   EffectPaymentIdl,
+//   type EffectPayment,
+//   type EffectStaking,
+// } from "@effectai/idl";
+//
 import { buildEddsa } from "@effectai/protocol";
 import type { ProofResponse } from "@effectai/protocol";
 

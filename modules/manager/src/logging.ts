@@ -8,6 +8,7 @@ export type Logging = {
   log: Logger;
 };
 
+//@ts-ignore
 const transport = pino.transport({
   targets: [
     {

@@ -1,9 +1,10 @@
-import type { Address } from "@solana/kit";
-import { address } from "@solana/kit";
+import type { Address, KeyPairSigner } from "@solana/kit";
+import { address, generateKeyPairSigner } from "@solana/kit";
 import type { Wallet, WalletAccount } from "@wallet-standard/base";
 import {
-  createTransactionSendingSigner,
+  createUIWalletSigner,
   makeModifyAndSign,
+  makeSignMessages,
   makeSignAndSend,
 } from "../kit/wallet-standard-bridge";
 
@@ -20,7 +21,7 @@ export function useKitTransactionSendingSigner(opts: {
     opts.chain,
   );
 
-  return createTransactionSendingSigner({
+  return createUIWalletSigner({
     address: address(opts.account.address) as Address,
     signAndSend,
     modifyAndSign,

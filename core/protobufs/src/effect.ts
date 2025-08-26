@@ -3,9 +3,12 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/no-unnecessary-boolean-literal-compare */
 /* eslint-disable @typescript-eslint/no-empty-interface */
+/* eslint-disable import/consistent-type-specifier-style */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { type Codec, decodeMessage, type DecodeOptions, encodeMessage, enumeration, MaxLengthError, message } from 'protons-runtime'
+import { decodeMessage, encodeMessage, enumeration, MaxLengthError, message } from 'protons-runtime'
 import { alloc as uint8ArrayAlloc } from 'uint8arrays/alloc'
+import type { Codec, DecodeOptions } from 'protons-runtime'
 import type { Uint8ArrayList } from 'uint8arraylist'
 
 export interface EffectError {
@@ -561,6 +564,331 @@ export namespace EffectProtocolMessage {
           w.fork()
         }
 
+        obj = { ...obj }
+
+        if (obj.bulkProofRequest != null) {
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.identifyResponse != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.identifyRequest != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.requestToWorkResponse != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.requestToWork != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.ack != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.error != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.templateResponse != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.templateRequest != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.proofResponse != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.proofRequest != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.payoutRequest != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.payment != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.taskCompleted != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.taskRejected != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.taskAccepted != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.task = undefined
+        }
+
+        if (obj.task != null) {
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+        }
+
         if (obj.task != null) {
           w.uint32(10)
           Task.codec().encode(obj.task, w)
@@ -767,6 +1095,329 @@ export namespace EffectProtocolMessage {
           }
         }
 
+        if (obj.bulkProofRequest != null) {
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.identifyResponse != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.identifyRequest != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.requestToWorkResponse != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.requestToWork != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.ack != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.error != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.templateResponse != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.templateRequest != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.proofResponse != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.proofRequest != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.payoutRequest != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.payment != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.taskCompleted != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.taskRejected != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.taskAccepted != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.task
+        }
+
+        if (obj.task != null) {
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+        }
+
         return obj
       })
     }
@@ -798,6 +1449,32 @@ export namespace PaymentMessage {
       _codec = message<PaymentMessage>((obj, w, opts = {}) => {
         if (opts.lengthDelimited !== false) {
           w.fork()
+        }
+
+        obj = { ...obj }
+
+        if (obj.payoutRequest != null) {
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payment = undefined
+        }
+
+        if (obj.proofResponse != null) {
+          obj.payoutRequest = undefined
+          obj.proofRequest = undefined
+          obj.payment = undefined
+        }
+
+        if (obj.proofRequest != null) {
+          obj.payoutRequest = undefined
+          obj.proofResponse = undefined
+          obj.payment = undefined
+        }
+
+        if (obj.payment != null) {
+          obj.payoutRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
         }
 
         if (obj.payment != null) {
@@ -861,6 +1538,30 @@ export namespace PaymentMessage {
               break
             }
           }
+        }
+
+        if (obj.payoutRequest != null) {
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payment
+        }
+
+        if (obj.proofResponse != null) {
+          delete obj.payoutRequest
+          delete obj.proofRequest
+          delete obj.payment
+        }
+
+        if (obj.proofRequest != null) {
+          delete obj.payoutRequest
+          delete obj.proofResponse
+          delete obj.payment
+        }
+
+        if (obj.payment != null) {
+          delete obj.payoutRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
         }
 
         return obj
@@ -1851,6 +2552,43 @@ export namespace TaskMessage {
           w.fork()
         }
 
+        obj = { ...obj }
+
+        if (obj.template != null) {
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.taskCompleted != null) {
+          obj.template = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.taskRejected != null) {
+          obj.template = undefined
+          obj.taskCompleted = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.taskAccepted != null) {
+          obj.template = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.task = undefined
+        }
+
+        if (obj.task != null) {
+          obj.template = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+        }
+
         if ((obj.taskId != null && obj.taskId !== '')) {
           w.uint32(10)
           w.string(obj.taskId)
@@ -1936,6 +2674,41 @@ export namespace TaskMessage {
           }
         }
 
+        if (obj.template != null) {
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.taskCompleted != null) {
+          delete obj.template
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.taskRejected != null) {
+          delete obj.template
+          delete obj.taskCompleted
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.taskAccepted != null) {
+          delete obj.template
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.task
+        }
+
+        if (obj.task != null) {
+          delete obj.template
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+        }
+
         return obj
       })
     }
@@ -1973,6 +2746,7 @@ export namespace TaskStatus {
     return enumeration<TaskStatus>(__TaskStatusValues)
   }
 }
+
 export interface Task {
   id: string
   title: string

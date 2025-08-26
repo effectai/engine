@@ -1,9 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 
 import {
+  decodeStakeAccount,
+  EFFECT_STAKING_PROGRAM_ADDRESS,
+  fetchAllMaybeStakeAccount,
+  fetchAllStakeAccount,
+  fetchMaybeStakeAccount,
+  getStakeAccountCodec,
+  getStakeAccountDecoder,
+  getStakeAccountEncoder,
   getStakeInstructionAsync,
   getTopupInstructionAsync,
   getUnstakeInstructionAsync,
+  STAKE_ACCOUNT_DISCRIMINATOR,
   type StakeAccount,
 } from "@effectai/stake";
 
@@ -20,12 +29,21 @@ import {
 
 import {
   assertAccountsExist,
+  decodeAccount,
+  fetchEncodedAccount,
   generateKeyPairSigner,
+  getBase58Codec,
+  getBase58Encoder,
+  getBase64Codec,
   type Address,
+  type Base58EncodedBytes,
   type KeyPairSigner,
 } from "@solana/kit";
 import { getCreateAssociatedTokenInstructionAsync } from "@solana-program/token";
-import { buildTopupInstruction } from "@effectai/solana-utils";
+import {
+  buildTopupInstruction,
+  buildUnstakeInstruction,
+} from "@effectai/solana-utils";
 
 const SECONDS_PER_DAY = 86400;
 
@@ -61,19 +79,19 @@ export function useStakingProgram() {
           mint,
         );
 
-        const unstakeInstructions = await getUnstakeInstructionAsync({
+        const unstakeIx = await buildUnstakeInstruction({
           mint,
           stakeAccount,
+          signer: signer.value,
           amount: amount * 1_000_000,
           userTokenAccount,
           rpc: connection.rpc,
-          signer: signer.value,
         });
 
         return await connection.sendTransactionFromInstructions({
           feePayer: signer.value as unknown as KeyPairSigner,
           maximumClientSideRetries: 3,
-          instructions: unstakeInstructions,
+          instructions: unstakeIx,
         });
       },
     });
@@ -158,14 +176,67 @@ export function useStakingProgram() {
 
         return await connection.sendTransactionFromInstructions({
           feePayer: signer.value as unknown as KeyPairSigner,
-          instructions: [enterRewardPoolIx, stakeInstruction],
+          instructions: [stakeInstruction, enterRewardPoolIx],
           maximumClientSideRetries: 3,
         });
       },
     });
 
+  const useGetStakeAccountQuery = () => {
+    console.log("useGetStakeAccountQuery");
+    return useQuery({
+      queryKey: ["stake", walletAddress],
+      retry: 0,
+      queryFn: async () => {
+        if (!walletAddress.value) {
+          console.error("No wallet address found");
+          throw new Error("Could not get wallet address");
+        }
+
+        const [stakingAccount] = await connection.rpc
+          .getProgramAccounts(EFFECT_STAKING_PROGRAM_ADDRESS, {
+            encoding: "base64",
+            filters: [
+              {
+                memcmp: {
+                  offset: 0n,
+                  bytes: getBase58Codec().decode(STAKE_ACCOUNT_DISCRIMINATOR),
+                },
+              },
+              {
+                memcmp: {
+                  offset: 8n + 8n,
+                  encoding: "base58",
+                  bytes: walletAddress.value,
+                },
+              },
+            ],
+          })
+          .send();
+
+        if (!stakingAccount) {
+          throw new Error("No staking account found");
+        }
+
+        const stakeAccount = getStakeAccountCodec().decode(
+          getBase64Codec().encode(
+            (stakingAccount.account.data as unknown as [string, string])[0],
+          ),
+        );
+
+        return {
+          address: stakingAccount.pubkey,
+          account: stakeAccount as StakeAccount,
+        };
+      },
+    });
+  };
+
   return {
     useStake,
+    useUnstake,
+    useTopup,
+    useGetStakeAccountQuery,
   };
 }
 
