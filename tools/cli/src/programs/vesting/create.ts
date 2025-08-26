@@ -23,7 +23,7 @@ import { createSolanaRpc } from "@solana/kit";
 
 import { getTransferCheckedInstruction } from "@solana-program/token";
 import { pipe } from "@solana/functional";
-import { loadSolanaContext } from "../../helpers";
+import { loadSolanaContext } from "../../helpers.js";
 import { getAssociatedTokenAccount } from "@effectai/solana-utils";
 
 export const vestingCreateCommand = new Command("create")

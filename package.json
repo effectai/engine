@@ -13,7 +13,7 @@
     "purge": "rm -rf node_modules pnpm-lock.yaml && pnpm recursive exec -- rm -rf node_modules dist",
     "dev": "pnpm turbo dev",
     "build": "turbo run build",
-    "cli": "node packages/cli/dist/index.js",
+    "cli": "node tools/cli/dist/index.js",
     "dashboard:generate-staging": "pnpm --filter effect-dashboard run generate-staging",
     "dashboard:generate-prod": "pnpm --filter effect-dashboard run generate-prod",
     "website:generate": "pnpm --filter effect-website run generate",

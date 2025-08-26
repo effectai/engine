@@ -10,7 +10,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsup --config ../../tsup.config.package.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
