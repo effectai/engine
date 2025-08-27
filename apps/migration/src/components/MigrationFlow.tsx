@@ -2,41 +2,23 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 
+import { Button } from "@/components/ui/button";
+
 import { useMigration } from "@/providers/MigrationProvider";
 import type { SourceChain } from "@/lib/wallet-types";
 import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
-import { address } from "@solana/kit";
+import { address, type Address, type EncodedAccount } from "@solana/kit";
 
 import {
   deriveMigrationAccountPDA,
   fetchMaybeMigrationAccount,
-  type MigrationAccount,
 } from "@effectai/migration";
-
-function Button(
-  props: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-    variant?: "solid" | "outline";
-    color?: "neutral" | "black" | "danger";
-  },
-) {
-  const { className, variant = "solid", color = "neutral", ...rest } = props;
-  const base =
-    "px-4 py-2 rounded-2xl text-sm transition border disabled:opacity-50 disabled:cursor-not-allowed";
-  const palette =
-    color === "black"
-      ? variant === "outline"
-        ? "border-black text-black bg-transparent hover:bg-black/5"
-        : "bg-black text-white border-black hover:bg-black/90"
-      : color === "danger"
-        ? variant === "outline"
-          ? "border-red-500 text-red-500 hover:bg-red-50"
-          : "bg-red-500 text-white border-red-500 hover:bg-red-600"
-        : // neutral
-          variant === "outline"
-          ? "border-zinc-300 text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800/50"
-          : "bg-zinc-900 text-white border-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900";
-  return <button className={clsx(base, palette, className)} {...rest} />;
-}
+import { WalletCard } from "./WalletCard";
+import { ConnectSourceWalletForm } from "./ConnectSourceWalletForm";
+import { Stepper, type StepDef } from "./Stepper";
+import ClaimCard from "./ClaimCard";
+import { AuthenticateStep } from "./steps/AuthenticateStep";
+import { SolanaDestinationStep } from "./steps/DestinationStep";
 
 function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
@@ -45,19 +27,6 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
       className={clsx(
         "px-3 h-10 rounded-md border flex-1 min-w-0",
         "border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100",
-        props.className,
-      )}
-    />
-  );
-}
-
-function Card(props: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      {...props}
-      className={clsx(
-        "rounded-2xl border p-4 shadow-sm bg-white/70 dark:bg-zinc-900/60",
-        "border-zinc-200 dark:border-zinc-800",
         props.className,
       )}
     />
@@ -79,175 +48,21 @@ function BlockchainAddress({ address }: { address: string }) {
   );
 }
 
-const steps = ["authenticate", "destination", "authorize", "claim"] as const;
-type Step = (typeof steps)[number];
-
-function Stepper({
-  current,
-  children,
-}: {
-  current: Step;
-  children: React.ReactNode;
-}) {
-  const idx = steps.indexOf(current);
-  return (
-    <div>
-      <ol className="flex gap-2 text-xs text-zinc-500">
-        {steps.map((s, i) => (
-          <li
-            key={s}
-            className={clsx(
-              "flex items-center gap-2",
-              i <= idx ? "text-zinc-900 dark:text-zinc-100" : "",
-            )}
-          >
-            <span
-              className={clsx(
-                "w-5 h-5 rounded-full border flex items-center justify-center",
-                i < idx
-                  ? "bg-green-500 border-green-500 text-white"
-                  : i === idx
-                    ? "border-zinc-400"
-                    : "border-zinc-300",
-              )}
-            >
-              {i + 1}
-            </span>
-            <span className="capitalize hidden sm:inline">{s}</span>
-          </li>
-        ))}
-      </ol>
-      <div className="mt-6">{children}</div>
-    </div>
-  );
-}
-
-function ConnectSourceWalletForm() {
-  const { sourceChain, setSourceChain, source } = useMigration();
-  const [pendingConnect, setPendingConnect] = useState<SourceChain | null>(
-    null,
-  );
-
-  useEffect(() => {
-    if (
-      pendingConnect &&
-      sourceChain === pendingConnect &&
-      !source.isConnected
-    ) {
-      source.connect();
-      setPendingConnect(null);
-    }
-  }, [sourceChain, pendingConnect, source]);
-
-  const onClick = (chain: SourceChain) => {
-    setPendingConnect(chain);
-    setSourceChain(chain);
-  };
-
-  return (
-    <div className="flex flex-col gap-3">
-      {source.isConnected ? (
-        <div className="text-sm">
-          Connected to <b>{source.walletMeta?.chain}</b> wallet.
-        </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="solid"
-            onClick={() => onClick("BSC")}
-            className="flex items-center gap-1"
-          >
-            <img src="/bsc.svg" alt="BSC" className="h-4 w-4" />
-            BSC
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => onClick("EOS")}
-            className="flex items-center gap-1"
-          >
-            <img src="/eos.svg" alt="EOS" className="h-4 w-4" />
-            EOS
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-function WalletCard(props: {
-  address: string;
-  chainLabel: string;
-  onDisconnect: () => void | Promise<void>;
-  nativeBalance?: { value: number; symbol: string } | null;
-  efxBalance?: { value: number; symbol: string } | null;
-}) {
-  const { address, chainLabel, onDisconnect, nativeBalance, efxBalance } =
-    props;
-  return (
-    <Card className="w-full max-w-lg mx-auto">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm">{chainLabel}</span>
-          <BlockchainAddress address={address} />
-        </div>
-        <Button variant="outline" onClick={onDisconnect}>
-          Disconnect
-        </Button>
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-        <div className="rounded bg-zinc-50 dark:bg-zinc-800 p-2">
-          <div className="opacity-70">Native</div>
-          <div className="font-mono">
-            {nativeBalance
-              ? `${nativeBalance.value} ${nativeBalance.symbol}`
-              : "—"}
-          </div>
-        </div>
-        <div className="rounded bg-zinc-50 dark:bg-zinc-800 p-2">
-          <div className="opacity-70">EFX</div>
-          <div className="font-mono">
-            {efxBalance ? `${efxBalance.value} ${efxBalance.symbol}` : "—"}
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function ClaimCard(props: {
-  foreignPublicKey: Uint8Array;
-  message: Uint8Array;
-  signature: Uint8Array;
-  migrationAccount: MigrationAccount;
-}) {
-  return (
-    <Card>
-      <div className="text-sm">
-        <p className="mb-3">
-          Ready to claim your new <b>EFFECT</b> tokens on Solana.
-        </p>
-        <pre className="text-xs overflow-auto p-2 rounded bg-zinc-100 dark:bg-zinc-800">
-          {JSON.stringify(
-            {
-              foreignPublicKey: Buffer.from(props.foreignPublicKey).toString(
-                "hex",
-              ),
-              message: Buffer.from(props.message).toString("hex"),
-              signature: Buffer.from(props.signature).toString("hex"),
-            },
-            null,
-            2,
-          )}
-        </pre>
-        <Button className="mt-4">Claim</Button>
-      </div>
-    </Card>
-  );
-}
+const steps: StepDef[] = [
+  {
+    key: "authenticate",
+    label: "Source",
+    description: "Attach your source wallet",
+  },
+  { key: "solana", label: "Destination" },
+  { key: "authorize", label: "Authorize" },
+  { key: "claim", label: "Claim" },
+];
 
 // ---- Main Migration Flow ----
 export default function MigrationFlow() {
-  const { source, dest, sourceChain, config, connection } = useMigration();
+  const { source, dest, sourceChain, config, connection, claim, sol } =
+    useMigration();
 
   // UI state
   const [current, setCurrent] = useState<Step>("intro");
@@ -272,8 +87,17 @@ export default function MigrationFlow() {
     symbol: string;
   } | null>(null);
 
-  const [migrationAccount, setMigrationAccount] =
-    useState<MigrationAccount | null>(null);
+  const [migrationVaultAddress, setMigrationVaultAddress] = useState<
+    string | null
+  >(null);
+
+  const [migrationVaultBalance, setMigrationVaultBalance] = useState<
+    number | null
+  >(null);
+
+  const [migrationAccount, setMigrationAccount] = useState<Awaited<
+    ReturnType<typeof fetchMaybeMigrationAccount>
+  > | null>(null);
 
   const snapshotDate = useMemo(() => new Date("2025-01-01T12:00:00Z"), []);
   const hasSolanaWalletInstalled = useMemo(
@@ -311,6 +135,29 @@ export default function MigrationFlow() {
     };
   }, [source.isConnected, sourceChain]);
 
+  //Fetch migration vault account balance when migration account is set
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (migrationVaultAddress) {
+        try {
+          const balance = await connection.getTokenAccountBalance({
+            tokenAccount: address(migrationVaultAddress) as Address,
+          });
+
+          if (mounted) {
+            setMigrationVaultBalance(balance.uiAmount || 0);
+          }
+        } catch (e) {
+          // noop
+        }
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [migrationVaultAddress, connection]);
+
   // Step helpers
   const goNext = () =>
     setCurrent(
@@ -322,7 +169,7 @@ export default function MigrationFlow() {
     if (!manualAddressInput) return;
     setDestinationAddress(manualAddressInput.trim());
     setToggleManualAddress(false);
-    goNext();
+    goTo("authorize");
   }, [manualAddressInput]);
 
   useEffect(() => {
@@ -335,6 +182,9 @@ export default function MigrationFlow() {
     await source.disconnect();
     setNativeBalance(null);
     setEfxBalance(null);
+    setSignature(null);
+    setMessage(null);
+    setForeignPublicKey(null);
     goTo("authenticate");
   }, [source]);
 
@@ -346,24 +196,24 @@ export default function MigrationFlow() {
     setSignature(signature);
     setMessage(message);
 
-    const { migrationAccount: derivedMigrationAccountAddress } =
+    const { migrationAccount: derivedMigrationAccountAddress, vaultAccount } =
       await deriveMigrationAccountPDA({
         foreignAddress: foreignPublicKey,
         mint: address(config.EFFECT_SPL_MINT),
       });
 
-    console.log("Derived migration account:", derivedMigrationAccountAddress);
     const migrationAccountData = await fetchMaybeMigrationAccount(
       connection.rpc,
       derivedMigrationAccountAddress,
     );
 
     if (migrationAccountData.exists) {
+      setMigrationVaultAddress(vaultAccount);
       setMigrationAccount(migrationAccountData);
     }
 
-    goNext();
-  }, [source, destinationAddress, sourceChain]);
+    goTo("claim");
+  }, [source, destinationAddress, sourceChain, connection, config]);
 
   // Mobile/share helpers used in claim step (optional)
   const isMobile = useMemo(() => {
@@ -459,155 +309,36 @@ export default function MigrationFlow() {
       )}
 
       {current !== "intro" && (
-        <Stepper current={current}>
+        <Stepper steps={steps} current={current} onStepChange={(s) => goTo(s)}>
           {/* AUTHENTICATE */}
           {current === "authenticate" && (
-            <div>
-              {!foreignPublicKey ? (
-                <div>
-                  <div className="my-5 text-sm">
-                    <p>
-                      To claim your new EFFECT tokens on Solana, you’ll need to{" "}
-                      <u>verify ownership</u> of a <b>BSC</b> or
-                      <b> EOS</b> account that held or staked EFX tokens on{" "}
-                      <b>{snapshotDate.toLocaleString()}</b>. You can repeat
-                      this process for every account you own that held or staked
-                      EFX tokens.
-                    </p>
-                  </div>
-                  {source.isConnected ? null : <ConnectSourceWalletForm />}
-
-                  {source.isConnected && source.address && (
-                    <div className="flex flex-col items-center gap-3 mt-5">
-                      <WalletCard
-                        address={String(source.address)}
-                        chainLabel={source.walletMeta?.chain ?? "Source"}
-                        onDisconnect={disconnectSourceWallets}
-                        nativeBalance={nativeBalance}
-                        efxBalance={efxBalance}
-                      />
-                      <Button onClick={() => goTo("solana")} className="mt-2">
-                        Continue
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  {source.isConnected && source.address && (
-                    <div className="flex flex-col items-center gap-3 mt-5">
-                      <WalletCard
-                        address={String(source.address)}
-                        chainLabel={source.walletMeta?.chain ?? "Source"}
-                        onDisconnect={disconnectSourceWallets}
-                        nativeBalance={nativeBalance}
-                        efxBalance={efxBalance}
-                      />
-                    </div>
-                  )}
-
-                  <div className="text-center">
-                    {!migrationAccount && (
-                      <div className="text-red-500 text-lg text-center mt-5">
-                        No active claims found for this account.
-                      </div>
-                    )}
-                    {source.walletMeta?.chain === "EOS" && (
-                      <div className="mt-5 text-sm">
-                        <p className="font-medium">
-                          Make sure you are using the correct permission.
-                        </p>
-                        <p className="text-xs opacity-80">
-                          For most accounts the <b>active</b> permission should
-                          be used. If your active key is of type R1 or it's a
-                          multisig, use your <b>owner</b> permission instead.
-                        </p>
-                      </div>
-                    )}
-
-                    <Button
-                      onClick={disconnectSourceWallets}
-                      className="mt-5"
-                      variant="outline"
-                      color="black"
-                    >
-                      Disconnect
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <AuthenticateStep
+              current="authenticate"
+              source={source}
+              goTo={goTo}
+              nativeBalance={nativeBalance}
+              efxBalance={efxBalance}
+              snapshotDate={snapshotDate}
+              foreignPublicKey={foreignPublicKey}
+              disconnectSourceWallets={disconnectSourceWallets}
+            />
           )}
 
           {/* SOLANA DESTINATION */}
           {current === "solana" && (
-            <div className="w-full">
-              <p>
-                Next, we'll need your Solana address. This is where you'll
-                receive your new EFFECT tokens.
-              </p>
-
-              {!destinationAddress ? (
-                <div>
-                  <div className="flex flex-wrap items-center gap-2 my-6">
-                    {hasSolanaWalletInstalled && (
-                      <>
-                        <UnifiedWalletButton />
-                        <span className="text-sm opacity-70">or</span>
-                      </>
-                    )}
-                    <a
-                      className="text-sm text-red-500 cursor-pointer"
-                      onClick={() => setToggleManualAddress((v) => !v)}
-                    >
-                      Manually enter your address
-                    </a>
-                  </div>
-
-                  {!hasSolanaWalletInstalled || toggleManualAddress ? (
-                    <div className="flex gap-2 w-full mt-3">
-                      <Input
-                        placeholder="Your Solana address"
-                        value={manualAddressInput}
-                        onChange={(e) => setManualAddressInput(e.target.value)}
-                      />
-                      <Button color="black" onClick={selectAddress}>
-                        Confirm
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center gap-2 mt-5">
-                  <b>Chosen address:</b>
-                  <div className="flex items-center gap-2">
-                    <BlockchainAddress address={destinationAddress} />
-                    <span>|</span>
-                    <a
-                      className="cursor-pointer text-red-500"
-                      onClick={() => setDestinationAddress(null)}
-                    >
-                      Switch
-                    </a>
-                  </div>
-                  {balanceLow && (
-                    <p className="text-red-500 mt-3">
-                      Your SOL balance is low. Your transaction might fail.
-                      Please top up.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="mt-6">
-                <Button
-                  onClick={() => goTo("authorize")}
-                  disabled={!destinationAddress}
-                >
-                  Continue
-                </Button>
-              </div>
-            </div>
+            <SolanaDestinationStep
+              current="solana"
+              hasSolanaWalletInstalled={hasSolanaWalletInstalled}
+              UnifiedWalletButton={UnifiedWalletButton}
+              BlockchainAddress={BlockchainAddress}
+              destinationAddress={destinationAddress}
+              setDestinationAddress={setDestinationAddress}
+              manualAddressInput={manualAddressInput}
+              setManualAddressInput={setManualAddressInput}
+              selectAddress={selectAddress}
+              balanceLow={balanceLow}
+              goTo={goTo}
+            />
           )}
 
           {/* AUTHORIZE */}
@@ -623,7 +354,7 @@ export default function MigrationFlow() {
                   </p>
                   <Button
                     className="mt-5"
-                    variant="outline"
+                    variant="default"
                     onClick={authorize}
                   >
                     Authorize
@@ -701,22 +432,24 @@ export default function MigrationFlow() {
                     <>
                       <p>Please connect your Solana wallet.</p>
                       <div className="mt-3">
-                        <WalletMultiButton />
+                        <UnifiedWalletButton />
                       </div>
                     </>
                   ) : (
                     <>
-                      <p className="my-5">
-                        Claim your new EFFECT tokens on Solana.
-                      </p>
-                      {foreignPublicKey && signature && message && (
-                        <ClaimCard
-                          foreignPublicKey={foreignPublicKey}
-                          message={message}
-                          signature={signature}
-                          migrationAccount={migrationAccount}
-                        />
-                      )}
+                      {foreignPublicKey &&
+                        migrationAccount &&
+                        signature &&
+                        message && (
+                          <ClaimCard
+                            migrationAccount={migrationAccount}
+                            message={message}
+                            foreignPublicKey={foreignPublicKey}
+                            signature={signature}
+                            migrationVaultBalance={migrationVaultBalance}
+                            claim={claim}
+                          />
+                        )}
                     </>
                   )}
                 </div>

@@ -21,15 +21,15 @@ import {
   getU32Decoder,
   getU32Encoder,
   transformEncoder,
+  type AccountMeta,
+  type AccountSignerMeta,
   type Address,
   type Codec,
   type Decoder,
   type Encoder,
-  type IAccountMeta,
-  type IAccountSignerMeta,
-  type IInstruction,
-  type IInstructionWithAccounts,
-  type IInstructionWithData,
+  type Instruction,
+  type InstructionWithAccounts,
+  type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlySignerAccount,
   type ReadonlyUint8Array,
@@ -53,41 +53,41 @@ export function getClaimStakeDiscriminatorBytes() {
 
 export type ClaimStakeInstruction<
   TProgram extends string = typeof EFFECT_MIGRATION_PROGRAM_ADDRESS,
-  TAccountAuthority extends string | IAccountMeta<string> = string,
-  TAccountRecipientTokenAccount extends string | IAccountMeta<string> = string,
-  TAccountMint extends string | IAccountMeta<string> = string,
-  TAccountMigrationAccount extends string | IAccountMeta<string> = string,
+  TAccountAuthority extends string | AccountMeta<string> = string,
+  TAccountRecipientTokenAccount extends string | AccountMeta<string> = string,
+  TAccountMint extends string | AccountMeta<string> = string,
+  TAccountMigrationAccount extends string | AccountMeta<string> = string,
   TAccountMigrationVaultTokenAccount extends
     | string
-    | IAccountMeta<string> = string,
-  TAccountStakeAccount extends string | IAccountMeta<string> = string,
-  TAccountStakeVaultTokenAccount extends string | IAccountMeta<string> = string,
+    | AccountMeta<string> = string,
+  TAccountStakeAccount extends string | AccountMeta<string> = string,
+  TAccountStakeVaultTokenAccount extends string | AccountMeta<string> = string,
   TAccountRentReceiver extends
     | string
-    | IAccountMeta<string> = 'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx',
+    | AccountMeta<string> = 'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV',
   TAccountRent extends
     | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
+    | AccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountMigrationProgram extends
     | string
-    | IAccountMeta<string> = 'effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR',
+    | AccountMeta<string> = 'effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR',
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TAccountStakingProgram extends
     | string
-    | IAccountMeta<string> = 'effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e',
-  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
+    | AccountMeta<string> = 'effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e',
+  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+> = Instruction<TProgram> &
+  InstructionWithData<ReadonlyUint8Array> &
+  InstructionWithAccounts<
     [
       TAccountAuthority extends string
         ? ReadonlySignerAccount<TAccountAuthority> &
-            IAccountSignerMeta<TAccountAuthority>
+            AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
       TAccountRecipientTokenAccount extends string
         ? WritableAccount<TAccountRecipientTokenAccount>
@@ -315,7 +315,7 @@ export async function getClaimStakeInstructionAsync<
   }
   if (!accounts.rentReceiver.value) {
     accounts.rentReceiver.value =
-      'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx' as Address<'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx'>;
+      'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV' as Address<'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
@@ -505,7 +505,7 @@ export function getClaimStakeInstruction<
   // Resolve default values.
   if (!accounts.rentReceiver.value) {
     accounts.rentReceiver.value =
-      'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx' as Address<'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx'>;
+      'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV' as Address<'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
@@ -571,7 +571,7 @@ export function getClaimStakeInstruction<
 
 export type ParsedClaimStakeInstruction<
   TProgram extends string = typeof EFFECT_MIGRATION_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -594,11 +594,11 @@ export type ParsedClaimStakeInstruction<
 
 export function parseClaimStakeInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[],
 >(
-  instruction: IInstruction<TProgram> &
-    IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+  instruction: Instruction<TProgram> &
+    InstructionWithAccounts<TAccountMetas> &
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedClaimStakeInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 13) {
     // TODO: Coded error.
@@ -606,7 +606,7 @@ export function parseClaimStakeInstruction<
   }
   let accountIndex = 0;
   const getNextAccount = () => {
-    const accountMeta = instruction.accounts![accountIndex]!;
+    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
     accountIndex += 1;
     return accountMeta;
   };

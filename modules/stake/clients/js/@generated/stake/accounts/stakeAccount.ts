@@ -30,12 +30,12 @@ import {
   transformEncoder,
   type Account,
   type Address,
-  type Codec,
-  type Decoder,
   type EncodedAccount,
-  type Encoder,
   type FetchAccountConfig,
   type FetchAccountsConfig,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
@@ -70,7 +70,7 @@ export type StakeAccountArgs = {
   mint: Address;
 };
 
-export function getStakeAccountEncoder(): Encoder<StakeAccountArgs> {
+export function getStakeAccountEncoder(): FixedSizeEncoder<StakeAccountArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
@@ -85,7 +85,7 @@ export function getStakeAccountEncoder(): Encoder<StakeAccountArgs> {
   );
 }
 
-export function getStakeAccountDecoder(): Decoder<StakeAccount> {
+export function getStakeAccountDecoder(): FixedSizeDecoder<StakeAccount> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amount', getU64Decoder()],
@@ -97,7 +97,10 @@ export function getStakeAccountDecoder(): Decoder<StakeAccount> {
   ]);
 }
 
-export function getStakeAccountCodec(): Codec<StakeAccountArgs, StakeAccount> {
+export function getStakeAccountCodec(): FixedSizeCodec<
+  StakeAccountArgs,
+  StakeAccount
+> {
   return combineCodec(getStakeAccountEncoder(), getStakeAccountDecoder());
 }
 

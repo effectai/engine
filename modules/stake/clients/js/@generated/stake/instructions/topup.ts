@@ -19,15 +19,15 @@ import {
   getU64Decoder,
   getU64Encoder,
   transformEncoder,
+  type AccountMeta,
+  type AccountSignerMeta,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
-  type IAccountMeta,
-  type IAccountSignerMeta,
-  type IInstruction,
-  type IInstructionWithAccounts,
-  type IInstructionWithData,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
+  type Instruction,
+  type InstructionWithAccounts,
+  type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlySignerAccount,
   type ReadonlyUint8Array,
@@ -51,17 +51,17 @@ export function getTopupDiscriminatorBytes() {
 
 export type TopupInstruction<
   TProgram extends string = typeof EFFECT_STAKING_PROGRAM_ADDRESS,
-  TAccountUserTokenAccount extends string | IAccountMeta<string> = string,
-  TAccountStakeAccount extends string | IAccountMeta<string> = string,
-  TAccountStakeVaultTokenAccount extends string | IAccountMeta<string> = string,
-  TAccountAuthority extends string | IAccountMeta<string> = string,
+  TAccountUserTokenAccount extends string | AccountMeta<string> = string,
+  TAccountStakeAccount extends string | AccountMeta<string> = string,
+  TAccountStakeVaultTokenAccount extends string | AccountMeta<string> = string,
+  TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+> = Instruction<TProgram> &
+  InstructionWithData<ReadonlyUint8Array> &
+  InstructionWithAccounts<
     [
       TAccountUserTokenAccount extends string
         ? WritableAccount<TAccountUserTokenAccount>
@@ -74,7 +74,7 @@ export type TopupInstruction<
         : TAccountStakeVaultTokenAccount,
       TAccountAuthority extends string
         ? ReadonlySignerAccount<TAccountAuthority> &
-            IAccountSignerMeta<TAccountAuthority>
+            AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
       TAccountTokenProgram extends string
         ? ReadonlyAccount<TAccountTokenProgram>
@@ -90,7 +90,7 @@ export type TopupInstructionData = {
 
 export type TopupInstructionDataArgs = { amount: number | bigint };
 
-export function getTopupInstructionDataEncoder(): Encoder<TopupInstructionDataArgs> {
+export function getTopupInstructionDataEncoder(): FixedSizeEncoder<TopupInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
@@ -100,14 +100,14 @@ export function getTopupInstructionDataEncoder(): Encoder<TopupInstructionDataAr
   );
 }
 
-export function getTopupInstructionDataDecoder(): Decoder<TopupInstructionData> {
+export function getTopupInstructionDataDecoder(): FixedSizeDecoder<TopupInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amount', getU64Decoder()],
   ]);
 }
 
-export function getTopupInstructionDataCodec(): Codec<
+export function getTopupInstructionDataCodec(): FixedSizeCodec<
   TopupInstructionDataArgs,
   TopupInstructionData
 > {
@@ -321,7 +321,7 @@ export function getTopupInstruction<
 
 export type ParsedTopupInstruction<
   TProgram extends string = typeof EFFECT_STAKING_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -336,11 +336,11 @@ export type ParsedTopupInstruction<
 
 export function parseTopupInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[],
 >(
-  instruction: IInstruction<TProgram> &
-    IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+  instruction: Instruction<TProgram> &
+    InstructionWithAccounts<TAccountMetas> &
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedTopupInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 5) {
     // TODO: Coded error.
@@ -348,7 +348,7 @@ export function parseTopupInstruction<
   }
   let accountIndex = 0;
   const getNextAccount = () => {
-    const accountMeta = instruction.accounts![accountIndex]!;
+    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
     accountIndex += 1;
     return accountMeta;
   };

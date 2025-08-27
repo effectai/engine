@@ -19,15 +19,15 @@ import {
   getU64Decoder,
   getU64Encoder,
   transformEncoder,
+  type AccountMeta,
+  type AccountSignerMeta,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
-  type IAccountMeta,
-  type IAccountSignerMeta,
-  type IInstruction,
-  type IInstructionWithAccounts,
-  type IInstructionWithData,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
+  type Instruction,
+  type InstructionWithAccounts,
+  type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
@@ -51,39 +51,39 @@ export function getUnstakeDiscriminatorBytes() {
 
 export type UnstakeInstruction<
   TProgram extends string = typeof EFFECT_STAKING_PROGRAM_ADDRESS,
-  TAccountAuthority extends string | IAccountMeta<string> = string,
-  TAccountStakeAccount extends string | IAccountMeta<string> = string,
-  TAccountStakeVaultTokenAccount extends string | IAccountMeta<string> = string,
-  TAccountRewardAccount extends string | IAccountMeta<string> = string,
-  TAccountVestingAccount extends string | IAccountMeta<string> = string,
+  TAccountAuthority extends string | AccountMeta<string> = string,
+  TAccountStakeAccount extends string | AccountMeta<string> = string,
+  TAccountStakeVaultTokenAccount extends string | AccountMeta<string> = string,
+  TAccountRewardAccount extends string | AccountMeta<string> = string,
+  TAccountVestingAccount extends string | AccountMeta<string> = string,
   TAccountVestingVaultTokenAccount extends
     | string
-    | IAccountMeta<string> = string,
-  TAccountRecipientTokenAccount extends string | IAccountMeta<string> = string,
+    | AccountMeta<string> = string,
+  TAccountRecipientTokenAccount extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountRewardProgram extends
     | string
-    | IAccountMeta<string> = 'effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi',
+    | AccountMeta<string> = 'effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi',
   TAccountVestingProgram extends
     | string
-    | IAccountMeta<string> = 'effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S',
+    | AccountMeta<string> = 'effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S',
   TAccountRent extends
     | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
-  TAccountMint extends string | IAccountMeta<string> = string,
-  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
+    | AccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
+  TAccountMint extends string | AccountMeta<string> = string,
+  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+> = Instruction<TProgram> &
+  InstructionWithData<ReadonlyUint8Array> &
+  InstructionWithAccounts<
     [
       TAccountAuthority extends string
         ? WritableSignerAccount<TAccountAuthority> &
-            IAccountSignerMeta<TAccountAuthority>
+            AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
       TAccountStakeAccount extends string
         ? WritableAccount<TAccountStakeAccount>
@@ -96,7 +96,7 @@ export type UnstakeInstruction<
         : TAccountRewardAccount,
       TAccountVestingAccount extends string
         ? WritableSignerAccount<TAccountVestingAccount> &
-            IAccountSignerMeta<TAccountVestingAccount>
+            AccountSignerMeta<TAccountVestingAccount>
         : TAccountVestingAccount,
       TAccountVestingVaultTokenAccount extends string
         ? WritableAccount<TAccountVestingVaultTokenAccount>
@@ -133,7 +133,7 @@ export type UnstakeInstructionData = {
 
 export type UnstakeInstructionDataArgs = { amount: number | bigint };
 
-export function getUnstakeInstructionDataEncoder(): Encoder<UnstakeInstructionDataArgs> {
+export function getUnstakeInstructionDataEncoder(): FixedSizeEncoder<UnstakeInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
@@ -143,14 +143,14 @@ export function getUnstakeInstructionDataEncoder(): Encoder<UnstakeInstructionDa
   );
 }
 
-export function getUnstakeInstructionDataDecoder(): Decoder<UnstakeInstructionData> {
+export function getUnstakeInstructionDataDecoder(): FixedSizeDecoder<UnstakeInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amount', getU64Decoder()],
   ]);
 }
 
-export function getUnstakeInstructionDataCodec(): Codec<
+export function getUnstakeInstructionDataCodec(): FixedSizeCodec<
   UnstakeInstructionDataArgs,
   UnstakeInstructionData
 > {
@@ -548,7 +548,7 @@ export function getUnstakeInstruction<
 
 export type ParsedUnstakeInstruction<
   TProgram extends string = typeof EFFECT_STAKING_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -571,11 +571,11 @@ export type ParsedUnstakeInstruction<
 
 export function parseUnstakeInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[],
 >(
-  instruction: IInstruction<TProgram> &
-    IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+  instruction: Instruction<TProgram> &
+    InstructionWithAccounts<TAccountMetas> &
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedUnstakeInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 13) {
     // TODO: Coded error.
@@ -583,7 +583,7 @@ export function parseUnstakeInstruction<
   }
   let accountIndex = 0;
   const getNextAccount = () => {
-    const accountMeta = instruction.accounts![accountIndex]!;
+    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
     accountIndex += 1;
     return accountMeta;
   };

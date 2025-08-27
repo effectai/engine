@@ -25,15 +25,15 @@ import {
   getU64Decoder,
   getU64Encoder,
   transformEncoder,
+  type AccountMeta,
+  type AccountSignerMeta,
   type Address,
   type Codec,
   type Decoder,
   type Encoder,
-  type IAccountMeta,
-  type IAccountSignerMeta,
-  type IInstruction,
-  type IInstructionWithAccounts,
-  type IInstructionWithData,
+  type Instruction,
+  type InstructionWithAccounts,
+  type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
@@ -60,26 +60,26 @@ export function getCreateStakeClaimDiscriminatorBytes() {
 
 export type CreateStakeClaimInstruction<
   TProgram extends string = typeof EFFECT_MIGRATION_PROGRAM_ADDRESS,
-  TAccountMigrationAccount extends string | IAccountMeta<string> = string,
-  TAccountClaimVaultTokenAccount extends string | IAccountMeta<string> = string,
-  TAccountMint extends string | IAccountMeta<string> = string,
+  TAccountMigrationAccount extends string | AccountMeta<string> = string,
+  TAccountClaimVaultTokenAccount extends string | AccountMeta<string> = string,
+  TAccountMint extends string | AccountMeta<string> = string,
   TAccountAuthority extends
     | string
-    | IAccountMeta<string> = 'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx',
-  TAccountUserTokenAccount extends string | IAccountMeta<string> = string,
+    | AccountMeta<string> = 'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV',
+  TAccountUserTokenAccount extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountRent extends
     | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
-  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
+    | AccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
+  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+> = Instruction<TProgram> &
+  InstructionWithData<ReadonlyUint8Array> &
+  InstructionWithAccounts<
     [
       TAccountMigrationAccount extends string
         ? WritableAccount<TAccountMigrationAccount>
@@ -92,7 +92,7 @@ export type CreateStakeClaimInstruction<
         : TAccountMint,
       TAccountAuthority extends string
         ? WritableSignerAccount<TAccountAuthority> &
-            IAccountSignerMeta<TAccountAuthority>
+            AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
       TAccountUserTokenAccount extends string
         ? WritableAccount<TAccountUserTokenAccount>
@@ -274,7 +274,7 @@ export async function getCreateStakeClaimInstructionAsync<
   }
   if (!accounts.authority.value) {
     accounts.authority.value =
-      'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx' as Address<'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx'>;
+      'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV' as Address<'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -411,7 +411,7 @@ export function getCreateStakeClaimInstruction<
   // Resolve default values.
   if (!accounts.authority.value) {
     accounts.authority.value =
-      'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx' as Address<'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx'>;
+      'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV' as Address<'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -459,7 +459,7 @@ export function getCreateStakeClaimInstruction<
 
 export type ParsedCreateStakeClaimInstruction<
   TProgram extends string = typeof EFFECT_MIGRATION_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -477,11 +477,11 @@ export type ParsedCreateStakeClaimInstruction<
 
 export function parseCreateStakeClaimInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[],
 >(
-  instruction: IInstruction<TProgram> &
-    IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+  instruction: Instruction<TProgram> &
+    InstructionWithAccounts<TAccountMetas> &
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedCreateStakeClaimInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 8) {
     // TODO: Coded error.
@@ -489,7 +489,7 @@ export function parseCreateStakeClaimInstruction<
   }
   let accountIndex = 0;
   const getNextAccount = () => {
-    const accountMeta = instruction.accounts![accountIndex]!;
+    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
     accountIndex += 1;
     return accountMeta;
   };
