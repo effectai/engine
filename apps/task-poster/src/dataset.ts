@@ -1,5 +1,5 @@
 import type { KVTransactionResult } from "@cross/kv";
-import { type Template, computeTemplateId } from "@effectai/protocol";
+import { type Template, computeTemplateId } from "@effectai/protocol-core";
 import { parseString } from "@fast-csv/parse";
 import type { Express } from "express";
 import { requireAuth } from "./auth.js";

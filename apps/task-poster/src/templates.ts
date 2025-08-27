@@ -1,10 +1,16 @@
-import { type Template, computeTemplateId } from "@effectai/protocol";
+import { createHash } from "node:crypto";
 import axios from "axios";
 import type { Express } from "express";
 import { requireAuth } from "./auth.js";
 import { isHtmx, make404, make500, page } from "./html.js";
 import { db, managerId } from "./state.js";
 import * as state from "./state.js";
+
+export const computeTemplateId = (provider: string, template_html: string) => {
+  const input = `${provider}:${template_html}`;
+  const sha256 = createHash("sha256").update(input).digest("hex");
+  return sha256;
+};
 
 type APIResponse = {
   status: string;
