@@ -1,5 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
-
+import {
+  deriveRewardAccountsPda,
+  deriveStakingRewardAccountPda,
+  EFFECT_REWARDS_PROGRAM_ADDRESS,
+  fetchMaybeRewardAccount,
+  getEnterInstructionAsync,
+  getRewardAccountDecoder,
+  getSyncInstructionAsync,
+  REWARD_ACCOUNT_DISCRIMINATOR,
+} from "@effectai/reward";
+import {
+  buildTopupInstruction,
+  buildUnstakeInstruction,
+} from "@effectai/solana-utils";
 import {
   decodeStakeAccount,
   EFFECT_STAKING_PROGRAM_ADDRESS,
@@ -17,33 +29,19 @@ import {
 } from "@effectai/stake";
 
 import {
-  deriveRewardAccountsPda,
-  deriveStakingRewardAccountPda,
-  EFFECT_REWARDS_PROGRAM_ADDRESS,
-  fetchMaybeRewardAccount,
-  getEnterInstructionAsync,
-  getRewardAccountDecoder,
-  getSyncInstructionAsync,
-  REWARD_ACCOUNT_DISCRIMINATOR,
-} from "@effectai/reward";
-
-import {
+  type Address,
   assertAccountsExist,
+  type Base58EncodedBytes,
   decodeAccount,
   fetchEncodedAccount,
   generateKeyPairSigner,
   getBase58Codec,
   getBase58Encoder,
   getBase64Codec,
-  type Address,
-  type Base58EncodedBytes,
   type KeyPairSigner,
 } from "@solana/kit";
 import { getCreateAssociatedTokenInstructionAsync } from "@solana-program/token";
-import {
-  buildTopupInstruction,
-  buildUnstakeInstruction,
-} from "@effectai/solana-utils";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 
 const SECONDS_PER_DAY = 86400;
 

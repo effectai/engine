@@ -13,7 +13,7 @@ crate-type = ["cdylib", "lib"]
 name = "effect_common"
 
 [features]
-default = ["mainnet"]
+default = []
 no-entrypoint = []
 cpi = ["no-entrypoint"]
 mainnet = []

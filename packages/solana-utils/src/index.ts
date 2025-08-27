@@ -117,7 +117,7 @@ export const loadSolanaProviderFromConfig =
 
     const payer = await getPayer();
     const signer = await createKeyPairSignerFromPrivateKeyBytes(
-      payer.secretKey,
+      payer.secretKey.slice(0, 32),
     );
 
     const rpc = createSolanaRpc(rpcUrl);

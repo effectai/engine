@@ -18,7 +18,7 @@ import {
   setTransactionMessageLifetimeUsingBlockhash,
   signTransactionMessageWithSigners,
 } from "@solana/kit";
-import { loadSolanaContext } from "../../helpers.js";
+import { loadSolanaContext, useConnection } from "../../helpers.js";
 import { getCreateAssociatedTokenInstructionAsync } from "@solana-program/token";
 import {
   getAssociatedTokenAccount,
@@ -75,26 +75,16 @@ export const registerCreateMigrationClaim = (program: Command) => {
       }
 
       const { signer, provider } = await loadSolanaProviderFromConfig();
-      const { rpc, rpcSubscriptions } = await loadSolanaContext();
-
-      const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
-        rpc,
-        rpcSubscriptions,
-      });
+      const { connection } = await useConnection();
 
       const mint = address(options.mint);
 
-      const ata = await getAssociatedTokenAccount({
-        mint,
-        owner: signer.address,
-      });
+      const ata = await connection.getTokenAccountAddress(signer.address, mint);
 
       // check if ata exists
-      const ataInfo = await rpc
-        .getAccountInfo(address(ata), {
-          encoding: "jsonParsed",
-        })
-        .send();
+      const ataExists = await connection.checkTokenAccountIsClosed({
+        tokenAccount: ata,
+      });
 
       let publicKeyBytes = null;
 
@@ -148,39 +138,12 @@ export const registerCreateMigrationClaim = (program: Command) => {
         authority: signer,
       });
 
-      const recentBlockhash = await rpc.getLatestBlockhash().send();
-      const transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(
-            recentBlockhash.value,
-            tx,
-          ),
-        (tx) =>
-          appendTransactionMessageInstructions(
-            ataInfo.value ? [instruction] : [createAtaIx, instruction],
-            tx,
-          ),
-      );
-
-      const signedTx =
-        await signTransactionMessageWithSigners(transactionMessage);
-
-      await sendAndConfirmTransaction(signedTx, {
-        commitment: "confirmed",
+      const tx = await connection.sendTransactionFromInstructions({
+        feePayer: signer,
+        instructions: ataExists ? [createAtaIx, instruction] : [instruction],
       });
 
-      //
-      // const { migrationAccount } = await createMigrationClaim({
-      //   program: EFFECT_VESTING_PROGRAM_ADDRESS,
-      //   publicKey: publicKeyBytes,
-      //   mint: new anchor.web3.PublicKey(mint),
-      //   userTokenAccount: ata,
-      //   amount: amount * 10 ** 6,
-      //   stakeStartTime,
-      // });
-
+      console.log("Transaction sent:", tx);
       console.log(chalk.green.bold("Migration claim created!"));
     });
 };
