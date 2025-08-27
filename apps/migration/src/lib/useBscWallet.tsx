@@ -11,7 +11,7 @@ const EFX_TOKEN = "0xC51Ef828319b131B595b7ec4B28210eCf4d05aD0" as const;
 
 export function useBscWallet(): SourceWallet {
   const { address, isConnected, connector } = useAccount();
-  const { signMessage } = useSignMessage();
+  const { signMessageAsync } = useSignMessage();
   const { connect, connectors, status: connectStatus } = useConnect();
   const { disconnect } = useDisconnect();
   const config = useConfig();
@@ -49,20 +49,17 @@ export function useBscWallet(): SourceWallet {
         `Effect.AI: I authorize my tokens to be claimed at the following Solana address:` +
         destinationAddress;
 
-      // wagmi's signMessage applies the EIP-191 prefix internally.
-      const signature = signMessage({
+      const signature = await signMessageAsync({
         message: originalMessage,
       });
 
-      // If you need the exact bytes that were signed (prefix + message),
-      // reconstruct them without Node's Buffer:
       const prefix = `\x19Ethereum Signed Message:\n${originalMessage.length}`;
       const messageBytes = new TextEncoder().encode(prefix + originalMessage);
 
       return {
-        foreignPublicKey: toBytes(address), // 20-byte address
-        signature: toBytes(signature), // 65-byte sig
-        message: messageBytes, // bytes that verifier expects
+        foreignPublicKey: toBytes(address),
+        signature: toBytes(signature),
+        message: messageBytes,
       };
     },
     [address, config],
@@ -88,7 +85,7 @@ export function useBscWallet(): SourceWallet {
       open(); // open appkit modal for wallet selection
     },
     disconnect: async () => {
-      await disconnect();
+      disconnect();
     },
   };
 }

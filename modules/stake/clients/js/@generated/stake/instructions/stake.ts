@@ -21,15 +21,15 @@ import {
   getU64Decoder,
   getU64Encoder,
   transformEncoder,
+  type AccountMeta,
+  type AccountSignerMeta,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
-  type IAccountMeta,
-  type IAccountSignerMeta,
-  type IInstruction,
-  type IInstructionWithAccounts,
-  type IInstructionWithData,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
+  type Instruction,
+  type InstructionWithAccounts,
+  type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
@@ -53,24 +53,24 @@ export function getStakeDiscriminatorBytes() {
 
 export type StakeInstruction<
   TProgram extends string = typeof EFFECT_STAKING_PROGRAM_ADDRESS,
-  TAccountMint extends string | IAccountMeta<string> = string,
-  TAccountUserTokenAccount extends string | IAccountMeta<string> = string,
-  TAccountStakeAccount extends string | IAccountMeta<string> = string,
-  TAccountStakeVaultTokenAccount extends string | IAccountMeta<string> = string,
-  TAccountAuthority extends string | IAccountMeta<string> = string,
+  TAccountMint extends string | AccountMeta<string> = string,
+  TAccountUserTokenAccount extends string | AccountMeta<string> = string,
+  TAccountStakeAccount extends string | AccountMeta<string> = string,
+  TAccountStakeVaultTokenAccount extends string | AccountMeta<string> = string,
+  TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountRent extends
     | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
-  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
+    | AccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
+  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+> = Instruction<TProgram> &
+  InstructionWithData<ReadonlyUint8Array> &
+  InstructionWithAccounts<
     [
       TAccountMint extends string
         ? WritableAccount<TAccountMint>
@@ -80,14 +80,14 @@ export type StakeInstruction<
         : TAccountUserTokenAccount,
       TAccountStakeAccount extends string
         ? WritableSignerAccount<TAccountStakeAccount> &
-            IAccountSignerMeta<TAccountStakeAccount>
+            AccountSignerMeta<TAccountStakeAccount>
         : TAccountStakeAccount,
       TAccountStakeVaultTokenAccount extends string
         ? WritableAccount<TAccountStakeVaultTokenAccount>
         : TAccountStakeVaultTokenAccount,
       TAccountAuthority extends string
         ? WritableSignerAccount<TAccountAuthority> &
-            IAccountSignerMeta<TAccountAuthority>
+            AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
@@ -113,7 +113,7 @@ export type StakeInstructionDataArgs = {
   duration: number | bigint;
 };
 
-export function getStakeInstructionDataEncoder(): Encoder<StakeInstructionDataArgs> {
+export function getStakeInstructionDataEncoder(): FixedSizeEncoder<StakeInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
@@ -124,7 +124,7 @@ export function getStakeInstructionDataEncoder(): Encoder<StakeInstructionDataAr
   );
 }
 
-export function getStakeInstructionDataDecoder(): Decoder<StakeInstructionData> {
+export function getStakeInstructionDataDecoder(): FixedSizeDecoder<StakeInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amount', getU64Decoder()],
@@ -132,7 +132,7 @@ export function getStakeInstructionDataDecoder(): Decoder<StakeInstructionData> 
   ]);
 }
 
-export function getStakeInstructionDataCodec(): Codec<
+export function getStakeInstructionDataCodec(): FixedSizeCodec<
   StakeInstructionDataArgs,
   StakeInstructionData
 > {
@@ -412,7 +412,7 @@ export function getStakeInstruction<
 
 export type ParsedStakeInstruction<
   TProgram extends string = typeof EFFECT_STAKING_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -430,11 +430,11 @@ export type ParsedStakeInstruction<
 
 export function parseStakeInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[],
 >(
-  instruction: IInstruction<TProgram> &
-    IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+  instruction: Instruction<TProgram> &
+    InstructionWithAccounts<TAccountMetas> &
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedStakeInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 8) {
     // TODO: Coded error.
@@ -442,7 +442,7 @@ export function parseStakeInstruction<
   }
   let accountIndex = 0;
   const getNextAccount = () => {
-    const accountMeta = instruction.accounts![accountIndex]!;
+    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
     accountIndex += 1;
     return accountMeta;
   };

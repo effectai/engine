@@ -25,7 +25,6 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
         },
       }}
     >
-      <UnifiedWalletButton />
       {children}
     </UnifiedWalletProvider>
   );

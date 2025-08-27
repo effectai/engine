@@ -17,15 +17,15 @@ import {
   getStructDecoder,
   getStructEncoder,
   transformEncoder,
+  type AccountMeta,
+  type AccountSignerMeta,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
-  type IAccountMeta,
-  type IAccountSignerMeta,
-  type IInstruction,
-  type IInstructionWithAccounts,
-  type IInstructionWithData,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
+  type Instruction,
+  type InstructionWithAccounts,
+  type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
@@ -51,26 +51,26 @@ export function getDestroyClaimDiscriminatorBytes() {
 
 export type DestroyClaimInstruction<
   TProgram extends string = typeof EFFECT_MIGRATION_PROGRAM_ADDRESS,
-  TAccountMigrationAccount extends string | IAccountMeta<string> = string,
-  TAccountClaimVaultTokenAccount extends string | IAccountMeta<string> = string,
-  TAccountMint extends string | IAccountMeta<string> = string,
+  TAccountMigrationAccount extends string | AccountMeta<string> = string,
+  TAccountClaimVaultTokenAccount extends string | AccountMeta<string> = string,
+  TAccountMint extends string | AccountMeta<string> = string,
   TAccountAuthority extends
     | string
-    | IAccountMeta<string> = 'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx',
-  TAccountUserTokenAccount extends string | IAccountMeta<string> = string,
+    | AccountMeta<string> = 'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV',
+  TAccountUserTokenAccount extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountRent extends
     | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
-  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
+    | AccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
+  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+> = Instruction<TProgram> &
+  InstructionWithData<ReadonlyUint8Array> &
+  InstructionWithAccounts<
     [
       TAccountMigrationAccount extends string
         ? WritableAccount<TAccountMigrationAccount>
@@ -83,7 +83,7 @@ export type DestroyClaimInstruction<
         : TAccountMint,
       TAccountAuthority extends string
         ? WritableSignerAccount<TAccountAuthority> &
-            IAccountSignerMeta<TAccountAuthority>
+            AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
       TAccountUserTokenAccount extends string
         ? WritableAccount<TAccountUserTokenAccount>
@@ -105,20 +105,20 @@ export type DestroyClaimInstructionData = { discriminator: ReadonlyUint8Array };
 
 export type DestroyClaimInstructionDataArgs = {};
 
-export function getDestroyClaimInstructionDataEncoder(): Encoder<DestroyClaimInstructionDataArgs> {
+export function getDestroyClaimInstructionDataEncoder(): FixedSizeEncoder<DestroyClaimInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({ ...value, discriminator: DESTROY_CLAIM_DISCRIMINATOR })
   );
 }
 
-export function getDestroyClaimInstructionDataDecoder(): Decoder<DestroyClaimInstructionData> {
+export function getDestroyClaimInstructionDataDecoder(): FixedSizeDecoder<DestroyClaimInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getDestroyClaimInstructionDataCodec(): Codec<
+export function getDestroyClaimInstructionDataCodec(): FixedSizeCodec<
   DestroyClaimInstructionDataArgs,
   DestroyClaimInstructionData
 > {
@@ -225,7 +225,7 @@ export async function getDestroyClaimInstructionAsync<
   }
   if (!accounts.authority.value) {
     accounts.authority.value =
-      'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx' as Address<'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx'>;
+      'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV' as Address<'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -354,7 +354,7 @@ export function getDestroyClaimInstruction<
   // Resolve default values.
   if (!accounts.authority.value) {
     accounts.authority.value =
-      'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx' as Address<'nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx'>;
+      'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV' as Address<'authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -400,7 +400,7 @@ export function getDestroyClaimInstruction<
 
 export type ParsedDestroyClaimInstruction<
   TProgram extends string = typeof EFFECT_MIGRATION_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -418,11 +418,11 @@ export type ParsedDestroyClaimInstruction<
 
 export function parseDestroyClaimInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[],
 >(
-  instruction: IInstruction<TProgram> &
-    IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+  instruction: Instruction<TProgram> &
+    InstructionWithAccounts<TAccountMetas> &
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedDestroyClaimInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 8) {
     // TODO: Coded error.
@@ -430,7 +430,7 @@ export function parseDestroyClaimInstruction<
   }
   let accountIndex = 0;
   const getNextAccount = () => {
-    const accountMeta = instruction.accounts![accountIndex]!;
+    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
     accountIndex += 1;
     return accountMeta;
   };
