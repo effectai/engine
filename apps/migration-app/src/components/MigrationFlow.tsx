@@ -5,7 +5,6 @@ import clsx from "clsx";
 import { Button } from "@/components/ui/button";
 
 import { useMigration } from "@/providers/MigrationProvider";
-import type { SourceChain } from "@/lib/wallet-types";
 import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
 import { address, type Address, type EncodedAccount } from "@solana/kit";
 
@@ -13,42 +12,15 @@ import {
   deriveMigrationAccountPDA,
   fetchMaybeMigrationAccount,
 } from "@effectai/migration";
-import { WalletCard } from "./WalletCard";
-import { ConnectSourceWalletForm } from "./ConnectSourceWalletForm";
 import { Stepper, type StepDef } from "./Stepper";
 import ClaimCard from "./ClaimCard";
 import { AuthenticateStep } from "./steps/AuthenticateStep";
 import { SolanaDestinationStep } from "./steps/DestinationStep";
-
-function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className={clsx(
-        "px-3 h-10 rounded-md border flex-1 min-w-0",
-        "border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100",
-        props.className,
-      )}
-    />
-  );
-}
-
-function BlockchainAddress({ address }: { address: string }) {
-  const short = useMemo(
-    () =>
-      address.length > 12
-        ? `${address.slice(0, 6)}…${address.slice(-6)}`
-        : address,
-    [address],
-  );
-  return (
-    <code className="px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-xs">
-      {short}
-    </code>
-  );
-}
+import { AuthorizeStep } from "./steps/AuthorizeStep";
+import { ClaimStep } from "./steps/ClaimStep";
 
 const steps: StepDef[] = [
+  { key: "intro", label: "Intro", hidden: true },
   {
     key: "authenticate",
     label: "Source",
@@ -106,7 +78,8 @@ export default function MigrationFlow() {
   );
   const solanaWalletAddress = dest.address ?? null;
 
-  const balanceLow = false; // TODO: fetch SOL balance if desired
+  //TODO:: FETCH SOL BALANCE
+  const balanceLow = false;
 
   // Load balances for source when connected
   useEffect(() => {
@@ -159,10 +132,6 @@ export default function MigrationFlow() {
   }, [migrationVaultAddress, connection]);
 
   // Step helpers
-  const goNext = () =>
-    setCurrent(
-      (prev) => steps[Math.min(steps.indexOf(prev) + 1, steps.length - 1)],
-    );
   const goTo = (s: Step) => setCurrent(s);
 
   const selectAddress = useCallback(() => {
@@ -240,9 +209,8 @@ export default function MigrationFlow() {
     await navigator.clipboard.writeText(authorizeUrl);
   }, [authorizeUrl]);
 
-  // ---- RENDER ----
   return (
-    <div className="max-w-sm md:max-w-md lg:max-w-xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       {current === "intro" && (
         <section id="step-intro" className="prose dark:prose-invert mt-12">
           <h2>Migrate Your $EFX Tokens to Solana</h2>
@@ -330,7 +298,6 @@ export default function MigrationFlow() {
               current="solana"
               hasSolanaWalletInstalled={hasSolanaWalletInstalled}
               UnifiedWalletButton={UnifiedWalletButton}
-              BlockchainAddress={BlockchainAddress}
               destinationAddress={destinationAddress}
               setDestinationAddress={setDestinationAddress}
               manualAddressInput={manualAddressInput}
@@ -342,119 +309,34 @@ export default function MigrationFlow() {
           )}
 
           {/* AUTHORIZE */}
-          {current === "authorize" && (
-            <div>
-              {signature && message && foreignPublicKey ? (
-                <p>Successfully authenticated and authorized.</p>
-              ) : (
-                <div>
-                  <p>
-                    Authorize the migration of your EFX tokens to the Solana
-                    network.
-                  </p>
-                  <Button
-                    className="mt-5"
-                    variant="default"
-                    onClick={authorize}
-                  >
-                    Authorize
-                  </Button>
-                </div>
-              )}
-
-              {signature && message && foreignPublicKey && (
-                <div className="mt-6">
-                  <Button onClick={() => goTo("claim")}>
-                    Continue to Claim
-                  </Button>
-                </div>
-              )}
-            </div>
+          {current === "authorize" && source.address && (
+            <AuthorizeStep
+              sourceAddress={source.address}
+              signature={signature}
+              authorize={authorize}
+              current="authorize"
+              goTo={goTo}
+              foreignPublicKey={foreignPublicKey}
+            />
           )}
 
           {/* CLAIM */}
           {current === "claim" && (
-            <div>
-              {!migrationAccount ? (
-                <div>
-                  {source.address && (
-                    <BlockchainAddress address={String(source.address)} />
-                  )}
-                  <p className="mt-2">
-                    No active claims found for this account.
-                  </p>
-                  <Button
-                    className="mt-5"
-                    variant="outline"
-                    onClick={disconnectSourceWallets}
-                  >
-                    Disconnect
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex flex-col my-5">
-                  {isMobile && !hasSolanaWalletInstalled ? (
-                    <>
-                      <h2 className="text-xl my-3 font-bold">
-                        Auth & authorization via your mobile wallet were
-                        successful! 🎉
-                      </h2>
-                      <p>
-                        To claim your tokens, we need to establish a connection
-                        to the Solana blockchain. Your current browser/app
-                        doesn’t support this. Open the link below on a desktop
-                        browser or within an in-app browser of a Solana mobile
-                        wallet to continue where you left off.
-                      </p>
-                      <div>
-                        <Input readOnly value={authorizeUrl} className="mt-5" />
-                        <div className="flex gap-3 justify-center">
-                          {navigator && (navigator as any).share && (
-                            <Button
-                              onClick={shareAuthorize}
-                              className="mt-5"
-                              variant="outline"
-                            >
-                              Share Authorization Link
-                            </Button>
-                          )}
-                          <Button
-                            onClick={copyAuthorize}
-                            className="mt-5"
-                            variant="outline"
-                          >
-                            Copy
-                          </Button>
-                        </div>
-                      </div>
-                    </>
-                  ) : !solanaWalletAddress ? (
-                    <>
-                      <p>Please connect your Solana wallet.</p>
-                      <div className="mt-3">
-                        <UnifiedWalletButton />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {foreignPublicKey &&
-                        migrationAccount &&
-                        signature &&
-                        message && (
-                          <ClaimCard
-                            migrationAccount={migrationAccount}
-                            message={message}
-                            foreignPublicKey={foreignPublicKey}
-                            signature={signature}
-                            migrationVaultBalance={migrationVaultBalance}
-                            claim={claim}
-                          />
-                        )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+            <ClaimStep
+              solanaWalletAddress={solanaWalletAddress}
+              claim={claim}
+              copyAuthorize={copyAuthorize}
+              shareAuthorize={shareAuthorize}
+              authorizeUrl={authorizeUrl}
+              current="claim"
+              isMobile={isMobile}
+              hasSolanaWalletInstalled={hasSolanaWalletInstalled}
+              disconnectSourceWallets={disconnectSourceWallets}
+              source={source}
+              message={message}
+              migrationVaultBalance={migrationVaultBalance}
+              migrationAccount={migrationAccount}
+            />
           )}
         </Stepper>
       )}

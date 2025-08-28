@@ -1,6 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import { nodePolyfills } from "vite-plugin-node-polyfills";
+
 import fs from "node:fs";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 export default defineNuxtConfig({
   compatibilityDate: "2024-04-03",
@@ -12,7 +13,7 @@ export default defineNuxtConfig({
     "@nuxt/ui",
     "@vueuse/nuxt",
     "@vueuse/motion/nuxt",
-    "@effectai/wallets-vue",
+    // "@effectai/wallets-vue",
   ],
   app: {
     head: {
