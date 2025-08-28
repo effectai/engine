@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from 'express';
 import express from "express";
 import { addAuthRoutes } from "./auth.js";
 import {
@@ -10,6 +10,7 @@ import {
   getDatasets,
   startAutoImport,
 } from "./dataset.js";
+import type { DatasetRecord } from "./dataset.js";
 import * as dataset from "./dataset.js";
 import * as fetcher from "./fetcher.js";
 import { isHtmx, page } from "./html.js";
@@ -21,17 +22,17 @@ import {
   getTemplates,
 } from "./templates.js";
 
-const formatDate = (ts) =>
+const formatDate = (ts: number) =>
   new Date(ts).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-const campaignCard = (d) => {
+const campaignCard = (d: DatasetRecord) => {
   // const dots = Array(25).fill(".").map((_) => '<div class="block"></div>').join("");
   //`<div class="blocks blockz mt">${dots}</div>
 
   return (
     `
-<strong><a href="/d/${d!.data.id}">${d!.data.name}</a></strong>` +
-    ` <small>Started ${formatDate(d!.data.id)}</small>
+<strong><a href="/d/${d.id}">${d.name}</a></strong>` +
+    ` <small>Started ${formatDate(d.id)}</small>
 <div><small>Tasks: 2.3M - Workers: 17,000 - Completed: 97%</small></div>
 `
   );
@@ -47,7 +48,7 @@ const addMainRoutes = (app: Express) => {
       .concat(await getActiveDatasets("archived"))
       .map(
         (d) => `
-<a href="/d/${d!.data.id}">${d!.data.name}</a> <small>${d!.data.id}</small>`,
+<a href="/d/${d.id}">${d.name}</a> <small>${d.id}</small>`,
       );
 
     res.send(
@@ -97,8 +98,8 @@ const main = async () => {
   app.use(express.json({ limit: "2mb" }));
 
   // gracefull error when files are too lar1ge
-  app.use((err, req, res, next) => {
-    if (err.status === 413) {
+  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+    if ((err as any).status === 413) {
       // TODO: use htmx-ext-response-targets for a 413
       res.setHeader("HX-Retarget", "#messages");
       res.status(200).send(`

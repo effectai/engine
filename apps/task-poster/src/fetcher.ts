@@ -14,7 +14,7 @@ type APIResponse = {
   error?: string;
 };
 
-type Fetcher = {
+export type Fetcher = {
   lastImport: number | undefined;
   datasetId: number;
   type: "csv";
@@ -107,7 +107,7 @@ export const importTasks = async (ds: DatasetRecord) => {
     : 0;
 
   if (remaining > 0) {
-    console.log(`Fetcher ${fetcher.key} import ${remaining / 1000}s remaining`);
+    console.log(`Fetcher ${fetcher!.key} import ${remaining / 1000}s remaining`);
     return -1;
   }
 
