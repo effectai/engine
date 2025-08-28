@@ -26,6 +26,8 @@ import {
   AlertTriangle,
   RefreshCcw,
 } from "lucide-react";
+import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
+import { BlockchainAddress } from "../BlockchainAddress";
 
 type Props = {
   current: "solana" | string;
@@ -36,12 +38,7 @@ type Props = {
   setManualAddressInput: (v: string) => void;
   balanceLow?: boolean;
   goTo: (k: string) => void;
-  // your existing helpers:
   selectAddress: () => void;
-  UnifiedWalletButton: React.ComponentType<{
-    overrideContent?: React.ReactNode;
-  }>;
-  BlockchainAddress: React.ComponentType<{ address: string }>;
 };
 
 export function SolanaDestinationStep({
@@ -54,8 +51,6 @@ export function SolanaDestinationStep({
   balanceLow,
   goTo,
   selectAddress,
-  UnifiedWalletButton,
-  BlockchainAddress,
 }: Props) {
   const [manualMode, setManualMode] = React.useState(false);
 
@@ -65,7 +60,7 @@ export function SolanaDestinationStep({
 
   return (
     <Card className="w-full">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 ">
         <div className="flex items-center justify-between gap-2">
           <div>
             <CardTitle className="flex items-center gap-2">
@@ -84,9 +79,7 @@ export function SolanaDestinationStep({
         </div>
       </CardHeader>
 
-      <Separator />
-
-      <CardContent className="pt-6">
+      <CardContent className="">
         {!destinationAddress ? (
           <>
             <div className="flex flex-wrap items-center gap-2">

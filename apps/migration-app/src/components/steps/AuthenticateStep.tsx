@@ -67,13 +67,11 @@ export function AuthenticateStep({
         </div>
       </CardHeader>
 
-      <Separator />
-
       <CardContent className="pt-6">
         {!foreignPublicKey ? (
           <>
             {!source.isConnected ? (
-              <div className="rounded-xl border bg-muted/30 p-5">
+              <div className="rounded-xl bg-muted/30 p-5">
                 <ConnectSourceWalletForm />
               </div>
             ) : (
