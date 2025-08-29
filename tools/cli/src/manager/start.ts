@@ -7,7 +7,7 @@ export const startCommand = new Command();
 
 startCommand
   .name("start")
-  .requiredOption("--payment-account <address>", "Payment account address")
+  .option("--payment-account <address>", "Payment account address")
   .requiredOption(
     "-k, --private-key <path>",
     "Path to manager private key file",
