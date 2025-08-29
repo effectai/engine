@@ -1,0 +1,31 @@
+{
+  "name": "@effectai/effect-ai-worker",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Automatic CLI-based worker powered by LLMs.",
+  "bin": {
+    "ai-worker": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "yargs": "^17.0.0",
+    "libp2p": "^2.8.2",
+
+    "@effectai/protocol": "workspace:*",
+
+    "datastore-core": "^10.0.2",
+    "datastore-level": "^11.0.1",
+
+    "@libp2p/crypto": "^5.0.5",
+    "@libp2p/interface": "^2.7.0",
+    "@multiformats/multiaddr": "^12.3.5",
+    "@multiformats/multiaddr-matcher": "^1.3.0",
+    "@solana/web3.js": "^1.98.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "tsx": "^4.1.2"
+  }
+}
