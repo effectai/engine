@@ -1,10 +1,11 @@
-import { createHash } from "node:crypto";
 import axios from "axios";
 import type { Express } from "express";
 import { requireAuth } from "./auth.js";
 import { isHtmx, make404, make500, page } from "./html.js";
 import { db, managerId } from "./state.js";
 import * as state from "./state.js";
+import { createHash } from "node:crypto";
+import type { Template } from "@effectai/protobufs";
 
 export const computeTemplateId = (provider: string, template_html: string) => {
   const input = `${provider}:${template_html}`;
@@ -152,7 +153,7 @@ ${templateDataForm(html, fields)}` :
 const tplListFrame = async () => {
   const allTpls = await getTemplates();
 
-  const renderList = (status) => {
+  const renderList = (status: string) => {
     const tpls = allTpls.filter(t => t!.data.status === status);
     const tplList = tpls.map(t => `
 <a class="box" href="/t/${t.data.templateId}">
@@ -258,7 +259,6 @@ export const addTemplateRoutes = (app: Express): void => {
       };
       await db.set<TemplateRecord>(["templates", templateId], templateEntry);
     }
-
     if (req.query.action === "edit") {
       res.send(form(undefined, req.body));
     } else if (valid && req.query.action === "publish") {

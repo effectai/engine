@@ -1,5 +1,5 @@
 import type { KVTransactionResult } from "@cross/kv";
-import { type Template, computeTemplateId } from "@effectai/protocol-core";
+import type { Template } from "@effectai/protobufs";
 import { parseString } from "@fast-csv/parse";
 import type { Express } from "express";
 import { requireAuth } from "./auth.js";
@@ -47,7 +47,7 @@ export const getDatasets = async () =>
 
 export const getActiveDatasets = async (s: DatasetStatus) => {
   const p = Array.from(datasetIndex.byStatus[s]).map((id) =>
-    db.get<DatasetRecord>(["dataset", id]),
+    db.get<DatasetRecord>(["dataset", id]).then(a => a!.data),
   );
   return Promise.all(p);
 };
@@ -335,12 +335,12 @@ export const startAutoImport = async () => {
     // to make it async, use:
     // await Promise.all(activeDatasets.map(async (ds) => {
     for (const ds of activeDatasets) {
-      const imported = await fetcher.importTasks(ds!.data);
-
+      const imported = await fetcher.importTasks(ds);
+      const dsId = ["dataset", ds.id];
       if (!imported || imported === 0) {
-        console.log(`Dataset ${ds!.data.id} finished`);
-        ds!.data.status = "finished";
-        await db.set<DatasetRecord>(ds!.key, ds!.data);
+        console.log(`Dataset ${dsId} finished`);
+        ds.status = "finished";
+        await db.set<DatasetRecord>(dsId, ds);
       }
     }
 

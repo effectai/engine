@@ -4,7 +4,6 @@ import type { Express } from "express";
 import type { NextFunction, Request, Response } from "express";
 import express from "express";
 import { isHtmx, make404, make500, page, themes } from "./html.js";
-import { isHtmx, page } from "./html.js";
 import { addLiveReload } from "./livereload.js";
 import * as state from "./state.js";
 
