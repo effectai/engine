@@ -6,15 +6,10 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@effectai/ui";
+import { Button } from "@effectai/ui";
+import { Badge } from "@effectai/ui";
+
 import { ExternalLink, Copy, Loader2, PlugZap } from "lucide-react";
 
 type Balance = { value: number; symbol: string } | null | undefined;

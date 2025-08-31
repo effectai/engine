@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@effectai/ui";
 import {
   Card,
   CardContent,
@@ -7,11 +7,10 @@ import {
   CardTitle,
   CardDescription,
   CardFooter,
-} from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+} from "@effectai/ui";
+import { Alert, AlertDescription, AlertTitle } from "@effectai/ui";
+import { Input } from "@effectai/ui";
+import { Badge } from "@effectai/ui";
 import {
   Wallet,
   Link as LinkIcon,

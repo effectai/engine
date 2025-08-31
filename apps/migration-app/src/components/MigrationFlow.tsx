@@ -1,8 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import clsx from "clsx";
-
-import { Button } from "@/components/ui/button";
+import { Button } from "@effectai/ui";
 
 import { useMigration } from "@/providers/MigrationProvider";
 import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
@@ -13,7 +11,6 @@ import {
   fetchMaybeMigrationAccount,
 } from "@effectai/migration";
 import { Stepper, type StepDef } from "./Stepper";
-import ClaimCard from "./ClaimCard";
 import { AuthenticateStep } from "./steps/AuthenticateStep";
 import { SolanaDestinationStep } from "./steps/DestinationStep";
 import { AuthorizeStep } from "./steps/AuthorizeStep";
@@ -213,7 +210,7 @@ export default function MigrationFlow() {
     <div className="max-w-5xl mx-auto">
       {current === "intro" && (
         <section id="step-intro" className="prose dark:prose-invert mt-12">
-          <h2>Migrate Your $EFX Tokens to Solana</h2>
+          <h1 className="text-primary">Migrate Your $EFX Tokens to Solana</h1>
           <p>Welcome to the official $EFX → $EFFECT token migration portal!</p>
           <p>
             As you may know by now, Effect AI is migrating its native token to

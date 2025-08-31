@@ -6,9 +6,9 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+} from "@effectai/ui";
+import { Button } from "@effectai/ui";
+import { Badge } from "@effectai/ui";
 import { Info, CheckCircle2, Clock, Check } from "lucide-react";
 import type {
   fetchMaybeMigrationAccount,

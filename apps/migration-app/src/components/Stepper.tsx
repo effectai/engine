@@ -1,13 +1,13 @@
 import * as React from "react";
 import { Check, Circle, DiscIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@effectai/ui";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
+} from "@effectai/ui";
+import { Badge } from "@effectai/ui";
 import { cn } from "@/lib/utils"; // shadcn helper (clsx+twMerge)
 import { Logo } from "./Logo";
 
@@ -57,7 +57,7 @@ export function Stepper({
               <Logo />
             </div>
             <Button
-              variant="default"
+              variant="outline"
               size="sm"
               className="ml-auto"
               href="https://efx.io/support"
@@ -99,7 +99,7 @@ export function Stepper({
                                 }
                                 aria-disabled={s.disabled || undefined}
                                 className={cn(
-                                  "h-8 px-2 sm:px-3 gap-2 rounded-full",
+                                  "text-black h-8 px-2 sm:px-3 gap-2 rounded-full hover:no-underline",
                                   "transition-colors",
                                   state === "current" && "",
                                   state === "complete" && "",

@@ -1,7 +1,7 @@
 import type { SourceChain } from "@/lib/wallet-types";
 import { useMigration } from "@/providers/MigrationProvider";
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "./ui/button";
+import { Button } from "@effectai/ui";
 import { CheckCircle2, Loader2 } from "lucide-react";
 
 import bscIcon from "@/assets/bsc.svg";
