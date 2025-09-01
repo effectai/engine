@@ -13,17 +13,16 @@ import {
   FormMessage,
   FormLabel,
 } from "@/components/ui/form";
-import { cn } from "@/lib/utils"; // or your clsx helper
-import { useSolanaWallet } from "@/hooks/useSolanaWallet";
+import { cn } from "@/lib/utils";
+import type { Balance } from "@/providers/SolanaProvider";
 
-type Balance = { value: number; symbol: string };
 type Props = {
-  availableBalance?: Balance | null; // e.g. { value: 123.456, symbol: "EFFECT" }
+  availableBalance?: Balance | null;
   onStake: (amount: number) => Promise<void> | void;
   isPending?: boolean;
-  lockPeriodDays?: number; // default 30
-  tokenSymbol?: string; // default "EFFECT"
-  initialAmount?: number; // optional prefill
+  lockPeriodDays?: number;
+  tokenSymbol?: string;
+  initialAmount?: number;
   className?: string;
 };
 

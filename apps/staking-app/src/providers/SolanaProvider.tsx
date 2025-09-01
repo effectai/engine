@@ -1,42 +1,99 @@
 "use client";
 
-import React, { createContext, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from "react";
 import { EFFECT } from "@/lib/useEffectConfig";
+import { address as toAddress } from "@solana/kit";
 
 import { connect, type Connection } from "solana-kite";
 import { useSolanaWallet } from "@/hooks/useSolanaWallet";
 
 type SolanaConnectionContextValue = {
-  connection: Connection;
+  connection: Connection | null;
   address: string | null;
   uiAccount: ReturnType<typeof useSolanaWallet>["uiAccount"];
   uiWallet: ReturnType<typeof useSolanaWallet>["uiWallet"];
+  getEffectBalance: (address: string) => Promise<number>;
+  getSolBalance: (address: string) => Promise<number>;
 };
+
+export type Balance = { value: number; symbol: string };
+
+const g = globalThis as any;
+if (!g.__kiteConn) g.__kiteConn = { conn: null as Connection | null };
+
+function getOrCreateConnection(): Connection | null {
+  if (typeof window === "undefined") return null;
+  if (!g.__kiteConn.conn) {
+    g.__kiteConn.conn = connect(
+      EFFECT.EFFECT_SOLANA_RPC_NODE_URL,
+      EFFECT.EFFECT_SOLANA_RPC_WS_URL,
+    );
+  }
+  return g.__kiteConn.conn;
+}
 
 const SolanaContext = createContext<SolanaConnectionContextValue | undefined>(
   undefined,
 );
 
-let _conn: ReturnType<typeof connect> | null = null;
+export function SolanaProvider({ children }: { children: ReactNode }) {
+  const { address: walletAddress, uiAccount, uiWallet } = useSolanaWallet();
 
-export function SolanaProvider({ children }: { children: React.ReactNode }) {
-  const { address, uiAccount, uiWallet } = useSolanaWallet();
+  const connRef = useRef<Connection | null>(getOrCreateConnection());
+  const connection = connRef.current;
 
-  if (!_conn) {
-    _conn = connect(
-      EFFECT.EFFECT_SOLANA_RPC_NODE_URL,
-      EFFECT.EFFECT_SOLANA_RPC_WS_URL,
-    );
-  }
+  const getEffectBalance = useCallback(
+    async (address: string) => {
+      if (!connection) return 0;
+      const balance = await connection.getTokenAccountBalance({
+        wallet: toAddress(address),
+        mint: toAddress(EFFECT.EFFECT_SPL_MINT),
+      });
+
+      return {
+        value: balance.uiAmount ?? 0,
+        symbol: "EFFECT",
+      };
+    },
+    [connection],
+  );
+
+  const getSolBalance = useCallback(
+    async (walletAddr: string) => {
+      if (!connection) return 0;
+      const result = await connection.getLamportBalance(toAddress(walletAddr));
+      return {
+        value: Number(result) / 1e9,
+        symbol: "SOL",
+      };
+    },
+    [connection],
+  );
 
   const value = useMemo(
     () => ({
-      connection: _conn as Connection,
-      address,
+      connection,
+      address: walletAddress,
       uiAccount,
       uiWallet,
+      getEffectBalance,
+      getSolBalance,
     }),
-    [address, uiAccount, uiWallet],
+    [
+      connection,
+      walletAddress,
+      uiAccount,
+      uiWallet,
+      getEffectBalance,
+      getSolBalance,
+    ],
   );
 
   return (

@@ -5,10 +5,6 @@
 
 **Permissionless AI Task Execution Engine. Verifiable. Decentralized. Scalable.**
 
-<div align="center">
-![image](./assets/powered-by.png)
-</div>
-
   <br/>
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
