@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useWallet } from "@jup-ag/wallet-adapter";
+
 import {
   type UiWallet,
   type UiWalletAccount,
@@ -9,11 +10,11 @@ import {
   uiWalletAccountsAreSame,
 } from "@wallet-standard/react";
 
-export function useConnectedUiWallet(): {
+function useConnectedUiWallet(): {
   uiWallet: UiWallet;
   uiAccount: UiWalletAccount;
 } | null {
-  const { publicKey } = useWallet(); // Jupiter-selected wallet
+  const { publicKey } = useWallet();
   const wallets = useWallets();
 
   return useMemo(() => {
@@ -32,4 +33,17 @@ export function useConnectedUiWallet(): {
     }
     return null;
   }, [wallets, publicKey]);
+}
+
+export function useSolanaWallet() {
+  const { publicKey, connected } = useWallet();
+
+  const address = useMemo(() => publicKey?.toBase58() ?? null, [publicKey]);
+  const uiWalletEntry = useConnectedUiWallet();
+
+  return {
+    ...uiWalletEntry,
+    connected,
+    address,
+  };
 }

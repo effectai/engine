@@ -5,18 +5,14 @@ import { connect } from "solana-kite";
 import type { SourceChain, SourceWallet, DestWallet } from "@/lib/wallet-types";
 import { useEosWallet } from "@/lib/useEosWallet";
 import { useBscWallet } from "@/lib/useBscWallet";
-import { useSolanaWallet } from "@/lib/useSolanaWallet"; // your Solana hook
+import { useSolanaWallet } from "@/lib/useSolanaWallet";
 import { EFFECT } from "@/lib/useEffectConfig";
-import {
-  getClaimStakeInstructionAsync,
-  getCreateStakeClaimInstructionAsync,
-} from "@effectai/migration";
+import { getClaimStakeInstructionAsync } from "@effectai/migration";
 import {
   address,
   generateKeyPairSigner,
   getAddressEncoder,
   getProgramDerivedAddress,
-  SolanaError,
   type Address,
   type TransactionSigner,
 } from "@solana/kit";
@@ -25,7 +21,6 @@ import {
   getStakeInstructionAsync,
   EFFECT_STAKING_PROGRAM_ADDRESS,
 } from "@effectai/stake";
-import { useWalletAccountTransactionSigner } from "@solana/react";
 
 type MigrationContextValue = {
   sourceChain: SourceChain;

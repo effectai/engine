@@ -1,38 +1,48 @@
 "use client";
 
 import type { DestWallet } from "@/lib/wallet-types";
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { useWallet } from "@jup-ag/wallet-adapter";
-import { useConnectedUiWallet } from "./useConnectedUiWallet";
+
+import {
+  type UiWallet,
+  type UiWalletAccount,
+  useWallets,
+  uiWalletAccountsAreSame,
+} from "@wallet-standard/react";
+
+function useConnectedUiWallet(): {
+  uiWallet: UiWallet;
+  uiAccount: UiWalletAccount;
+} | null {
+  const { publicKey } = useWallet();
+  const wallets = useWallets();
+
+  return useMemo(() => {
+    if (!publicKey) return null;
+    const selectedAddr = publicKey.toBase58();
+
+    for (const w of wallets) {
+      for (const a of w.accounts) {
+        if (
+          a.address === selectedAddr ||
+          uiWalletAccountsAreSame(a, { address: selectedAddr } as any)
+        ) {
+          return { uiWallet: w, uiAccount: a };
+        }
+      }
+    }
+    return null;
+  }, [wallets, publicKey]);
+}
 
 export function useSolanaWallet(): DestWallet & {
   uiWalletEntry: ReturnType<typeof useConnectedUiWallet>;
 } {
-  const {
-    publicKey,
-    connected,
-    connect,
-    disconnect,
-    sendTransaction,
-    signTransaction,
-    signAllTransactions,
-    signMessage,
-    wallet, // underlying adapter if you need it
-  } = useWallet();
+  const { publicKey, connected, connect, disconnect } = useWallet();
 
   const address = useMemo(() => publicKey?.toBase58() ?? null, [publicKey]);
   const uiWalletEntry = useConnectedUiWallet();
-
-  // optional helpers you might want downstream:
-  const signMsg = useCallback(
-    async (msg: Uint8Array | string) => {
-      if (!signMessage) throw new Error("Wallet does not support signMessage");
-      const bytes =
-        typeof msg === "string" ? new TextEncoder().encode(msg) : msg;
-      return await signMessage(bytes);
-    },
-    [signMessage],
-  );
 
   return {
     address,
@@ -44,12 +54,6 @@ export function useSolanaWallet(): DestWallet & {
       await disconnect();
     },
 
-    // expose any Solana helpers you’ll need later
-    // (add them to DestWallet if you want them typed there)
-    // e.g., you could export sendTransaction/signTransaction via a wrapper
-    // sendTransaction, signTransaction, signAllTransactions, signMessage: signMsg,
-
-    // extra for convenience
     uiWalletEntry,
   } as DestWallet & { uiWalletEntry: NonNullable<typeof uiWalletEntry> | null };
 }
