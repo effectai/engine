@@ -97,6 +97,8 @@ export const buildUnstakeInstruction = async ({
     stakingRewardAccount,
   );
 
+  console.log("maybeStakingRewardAccount", maybeStakingRewardAccount);
+
   const { reflectionAccount } = await deriveRewardAccountsPda({ mint });
 
   const claimIx = await getClaimInstructionAsync({
@@ -112,6 +114,12 @@ export const buildUnstakeInstruction = async ({
     reflectionAccount,
   });
 
+  const enterRewardPoolIx = await getEnterInstructionAsync({
+    mint,
+    stakeAccount,
+    authority: signer,
+  });
+
   const vestingAccount = await generateKeyPairSigner();
 
   const unstakeIx = await getUnstakeInstructionAsync({
@@ -124,8 +132,8 @@ export const buildUnstakeInstruction = async ({
   });
 
   return maybeStakingRewardAccount.exists
-    ? [claimIx, closeIx, unstakeIx]
-    : [unstakeIx];
+    ? [claimIx, closeIx, unstakeIx, enterRewardPoolIx]
+    : [unstakeIx, enterRewardPoolIx];
 };
 
 export const buildTopupInstruction = async ({

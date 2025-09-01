@@ -13,17 +13,17 @@ import { address as toAddress } from "@solana/kit";
 
 import { connect, type Connection } from "solana-kite";
 import { useSolanaWallet } from "@/hooks/useSolanaWallet";
+import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
 
+export type Balance = { value: number; symbol: string };
 type SolanaConnectionContextValue = {
   connection: Connection | null;
   address: string | null;
   uiAccount: ReturnType<typeof useSolanaWallet>["uiAccount"];
   uiWallet: ReturnType<typeof useSolanaWallet>["uiWallet"];
-  getEffectBalance: (address: string) => Promise<number>;
-  getSolBalance: (address: string) => Promise<number>;
+  getEffectBalance: (address: string) => Promise<Balance>;
+  getSolBalance: (address: string) => Promise<Balance>;
 };
-
-export type Balance = { value: number; symbol: string };
 
 const g = globalThis as any;
 if (!g.__kiteConn) g.__kiteConn = { conn: null as Connection | null };
@@ -70,7 +70,7 @@ export function SolanaProvider({ children }: { children: ReactNode }) {
       if (!connection) return 0;
       const result = await connection.getLamportBalance(toAddress(walletAddr));
       return {
-        value: Number(result) / 1e9,
+        value: Number(result) / 1e9 || 0,
         symbol: "SOL",
       };
     },
@@ -97,7 +97,10 @@ export function SolanaProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <SolanaContext.Provider value={value}>{children}</SolanaContext.Provider>
+    <SolanaContext.Provider value={value}>
+      <UnifiedWalletButton />
+      {walletAddress && children}
+    </SolanaContext.Provider>
   );
 }
 

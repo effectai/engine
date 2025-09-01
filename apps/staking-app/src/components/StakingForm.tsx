@@ -14,11 +14,28 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
-import type { Balance } from "@/providers/SolanaProvider";
+import { useSolanaContext, type Balance } from "@/providers/SolanaProvider";
+import type {
+  Account,
+  AccountInfoWithBase64EncodedData,
+  TransactionSigner,
+} from "@solana/kit";
+import {
+  generateKeyPairSigner,
+  getProgramDerivedAddress,
+  SolanaError,
+  address as toAddress,
+} from "@solana/kit";
+import { EFFECT } from "@/lib/useEffectConfig";
+import { getStakeInstructionAsync, type StakeAccount } from "@effectai/stake";
+import { getEnterInstructionAsync } from "@effectai/reward";
+import { buildTopupInstruction } from "@effectai/solana-utils";
+import { Row, formatNumber, trimTrailingZeros } from "@/lib/helpers.tsx";
 
 type Props = {
-  availableBalance?: Balance | null;
-  onStake: (amount: number) => Promise<void> | void;
+  stakeAccount: Account<StakeAccount> | null;
+  availableBalance: Balance | null;
+  signer: TransactionSigner;
   isPending?: boolean;
   lockPeriodDays?: number;
   tokenSymbol?: string;
@@ -38,14 +55,17 @@ const amountSchema = (max: number) =>
     .refine((n) => n <= max, "Amount exceeds available balance");
 
 export function StakeForm({
+  stakeAccount,
+  signer,
   availableBalance,
-  onStake,
   isPending = false,
   lockPeriodDays = 30,
   tokenSymbol = "EFFECT",
   initialAmount = 0,
   className,
 }: Props) {
+  const { connection, address } = useSolanaContext();
+
   const max = availableBalance?.value ?? 0;
 
   const form = useForm<{ amount: string }>({
@@ -69,9 +89,98 @@ export function StakeForm({
     form.setValue("amount", trimTrailingZeros(v), { shouldValidate: true });
   };
 
+  const onTopupHandler = React.useCallback(
+    async (amount: number) => {
+      try {
+        if (!connection || !address || !signer || !stakeAccount) {
+          throw new Error("No connection available");
+        }
+
+        console.log("Topping up", amount, "tokens");
+
+        const userTokenAccount = await connection.getTokenAccountAddress(
+          toAddress(address),
+          toAddress(EFFECT.EFFECT_SPL_MINT),
+        );
+
+        const topupInstructions = await buildTopupInstruction({
+          mint: toAddress(EFFECT.EFFECT_SPL_MINT),
+          stakeAccount: stakeAccount.address,
+          amount: amount * 1_000_000,
+          userTokenAccount,
+          rpc: connection.rpc,
+          signer,
+        });
+
+        console.log("Topup instructions:", topupInstructions);
+
+        return await connection.sendTransactionFromInstructions({
+          feePayer: signer,
+          instructions: topupInstructions,
+          maximumClientSideRetries: 3,
+        });
+      } catch (e) {
+        if (e instanceof SolanaError) {
+          console.error("SolanaError: ", e.context);
+        } else {
+          console.error("Error: ", e);
+        }
+      }
+    },
+    [connection, address, signer, stakeAccount, amount],
+  );
+
+  const onStakeHandler = React.useCallback(
+    async (amount: number) => {
+      try {
+        if (!connection || !address || !signer) {
+          throw new Error("No connection available");
+        }
+
+        console.log("Staking", amount, "tokens");
+
+        const userTokenAccount = await connection.getTokenAccountAddress(
+          toAddress(address),
+          toAddress(EFFECT.EFFECT_SPL_MINT),
+        );
+
+        const stakeAccount = await generateKeyPairSigner();
+
+        const stakeInstruction = await getStakeInstructionAsync({
+          mint: toAddress(EFFECT.EFFECT_SPL_MINT),
+          stakeAccount,
+          amount: amount * 1_000_000,
+          duration: 30 * 24 * 60 * 60,
+          authority: signer,
+          userTokenAccount,
+        });
+
+        const enterRewardPoolIx = await getEnterInstructionAsync({
+          mint: toAddress(EFFECT.EFFECT_SPL_MINT),
+          stakeAccount: stakeAccount.address,
+          authority: signer,
+        });
+
+        return await connection.sendTransactionFromInstructions({
+          feePayer: signer,
+          instructions: [stakeInstruction, enterRewardPoolIx],
+          maximumClientSideRetries: 3,
+        });
+      } catch (e) {
+        if (e instanceof SolanaError) {
+          console.error("SolanaError: ", e.context);
+        }
+      }
+    },
+    [connection, address, signer],
+  );
+
   const handleSubmit = form.handleSubmit(async (values) => {
-    const amt = Number(values.amount.replace(",", "."));
-    await onStake(amt);
+    if (stakeAccount) {
+      await onTopupHandler(values.amount);
+    } else {
+      await onStakeHandler(values.amount);
+    }
   });
 
   return (
@@ -147,6 +256,10 @@ export function StakeForm({
                 value={`${formatNumber(amount)} ${tokenSymbol}`}
               />
               <Row
+                label="Current stake"
+                value={`${formatNumber(Number(stakeAccount?.data.amount ?? 0) / 1e6)} ${tokenSymbol}`}
+              />
+              <Row
                 label="Available Balance"
                 value={`${formatNumber(max)} ${availableBalance?.symbol ?? tokenSymbol}`}
               />
@@ -165,28 +278,4 @@ export function StakeForm({
       </CardContent>
     </Card>
   );
-}
-
-/* ---------- helpers ---------- */
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
-    </div>
-  );
-}
-
-function formatNumber(n: number, maxFrac = 6) {
-  if (!isFinite(n)) return "0";
-  return n.toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: maxFrac,
-  });
-}
-
-function trimTrailingZeros(n: number) {
-  const s = n.toFixed(9); // enough precision for UX
-  return s.replace(/\.?0+$/, "");
 }

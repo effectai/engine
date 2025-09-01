@@ -17,15 +17,15 @@ import {
   getStructDecoder,
   getStructEncoder,
   transformEncoder,
+  type AccountMeta,
+  type AccountSignerMeta,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
-  type IAccountMeta,
-  type IAccountSignerMeta,
-  type IInstruction,
-  type IInstructionWithAccounts,
-  type IInstructionWithData,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
+  type Instruction,
+  type InstructionWithAccounts,
+  type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
@@ -51,28 +51,26 @@ export function getInitIntermediaryVaultDiscriminatorBytes() {
 
 export type InitIntermediaryVaultInstruction<
   TProgram extends string = typeof EFFECT_REWARDS_PROGRAM_ADDRESS,
-  TAccountReflectionAccount extends string | IAccountMeta<string> = string,
-  TAccountRewardVaultTokenAccount extends
-    | string
-    | IAccountMeta<string> = string,
+  TAccountReflectionAccount extends string | AccountMeta<string> = string,
+  TAccountRewardVaultTokenAccount extends string | AccountMeta<string> = string,
   TAccountIntermediateRewardVaultTokenAccount extends
     | string
-    | IAccountMeta<string> = string,
-  TAccountAuthority extends string | IAccountMeta<string> = string,
-  TAccountMint extends string | IAccountMeta<string> = string,
+    | AccountMeta<string> = string,
+  TAccountAuthority extends string | AccountMeta<string> = string,
+  TAccountMint extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountRent extends
     | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
-  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
+    | AccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
+  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+> = Instruction<TProgram> &
+  InstructionWithData<ReadonlyUint8Array> &
+  InstructionWithAccounts<
     [
       TAccountReflectionAccount extends string
         ? ReadonlyAccount<TAccountReflectionAccount>
@@ -85,7 +83,7 @@ export type InitIntermediaryVaultInstruction<
         : TAccountIntermediateRewardVaultTokenAccount,
       TAccountAuthority extends string
         ? WritableSignerAccount<TAccountAuthority> &
-            IAccountSignerMeta<TAccountAuthority>
+            AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
       TAccountMint extends string
         ? ReadonlyAccount<TAccountMint>
@@ -109,7 +107,7 @@ export type InitIntermediaryVaultInstructionData = {
 
 export type InitIntermediaryVaultInstructionDataArgs = {};
 
-export function getInitIntermediaryVaultInstructionDataEncoder(): Encoder<InitIntermediaryVaultInstructionDataArgs> {
+export function getInitIntermediaryVaultInstructionDataEncoder(): FixedSizeEncoder<InitIntermediaryVaultInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
@@ -119,13 +117,13 @@ export function getInitIntermediaryVaultInstructionDataEncoder(): Encoder<InitIn
   );
 }
 
-export function getInitIntermediaryVaultInstructionDataDecoder(): Decoder<InitIntermediaryVaultInstructionData> {
+export function getInitIntermediaryVaultInstructionDataDecoder(): FixedSizeDecoder<InitIntermediaryVaultInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getInitIntermediaryVaultInstructionDataCodec(): Codec<
+export function getInitIntermediaryVaultInstructionDataCodec(): FixedSizeCodec<
   InitIntermediaryVaultInstructionDataArgs,
   InitIntermediaryVaultInstructionData
 > {
@@ -421,7 +419,7 @@ export function getInitIntermediaryVaultInstruction<
 
 export type ParsedInitIntermediaryVaultInstruction<
   TProgram extends string = typeof EFFECT_REWARDS_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -439,11 +437,11 @@ export type ParsedInitIntermediaryVaultInstruction<
 
 export function parseInitIntermediaryVaultInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[],
 >(
-  instruction: IInstruction<TProgram> &
-    IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+  instruction: Instruction<TProgram> &
+    InstructionWithAccounts<TAccountMetas> &
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedInitIntermediaryVaultInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 8) {
     // TODO: Coded error.
@@ -451,7 +449,7 @@ export function parseInitIntermediaryVaultInstruction<
   }
   let accountIndex = 0;
   const getNextAccount = () => {
-    const accountMeta = instruction.accounts![accountIndex]!;
+    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
     accountIndex += 1;
     return accountMeta;
   };

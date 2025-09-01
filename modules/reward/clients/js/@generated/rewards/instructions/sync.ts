@@ -17,14 +17,14 @@ import {
   getStructDecoder,
   getStructEncoder,
   transformEncoder,
+  type AccountMeta,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
-  type IAccountMeta,
-  type IInstruction,
-  type IInstructionWithAccounts,
-  type IInstructionWithData,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
+  type Instruction,
+  type InstructionWithAccounts,
+  type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
   type WritableAccount,
@@ -46,17 +46,17 @@ export function getSyncDiscriminatorBytes() {
 
 export type SyncInstruction<
   TProgram extends string = typeof EFFECT_REWARDS_PROGRAM_ADDRESS,
-  TAccountStakeAccount extends string | IAccountMeta<string> = string,
-  TAccountRewardAccount extends string | IAccountMeta<string> = string,
-  TAccountStakeVaultTokenAccount extends string | IAccountMeta<string> = string,
-  TAccountReflectionAccount extends string | IAccountMeta<string> = string,
+  TAccountStakeAccount extends string | AccountMeta<string> = string,
+  TAccountRewardAccount extends string | AccountMeta<string> = string,
+  TAccountStakeVaultTokenAccount extends string | AccountMeta<string> = string,
+  TAccountReflectionAccount extends string | AccountMeta<string> = string,
   TAccountStakeProgram extends
     | string
-    | IAccountMeta<string> = 'effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e',
-  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
+    | AccountMeta<string> = 'effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e',
+  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+> = Instruction<TProgram> &
+  InstructionWithData<ReadonlyUint8Array> &
+  InstructionWithAccounts<
     [
       TAccountStakeAccount extends string
         ? ReadonlyAccount<TAccountStakeAccount>
@@ -81,20 +81,20 @@ export type SyncInstructionData = { discriminator: ReadonlyUint8Array };
 
 export type SyncInstructionDataArgs = {};
 
-export function getSyncInstructionDataEncoder(): Encoder<SyncInstructionDataArgs> {
+export function getSyncInstructionDataEncoder(): FixedSizeEncoder<SyncInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({ ...value, discriminator: SYNC_DISCRIMINATOR })
   );
 }
 
-export function getSyncInstructionDataDecoder(): Decoder<SyncInstructionData> {
+export function getSyncInstructionDataDecoder(): FixedSizeDecoder<SyncInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getSyncInstructionDataCodec(): Codec<
+export function getSyncInstructionDataCodec(): FixedSizeCodec<
   SyncInstructionDataArgs,
   SyncInstructionData
 > {
@@ -178,7 +178,8 @@ export async function getSyncInstructionAsync<
   }
   if (!accounts.stakeVaultTokenAccount.value) {
     accounts.stakeVaultTokenAccount.value = await getProgramDerivedAddress({
-      programAddress,
+      programAddress:
+        'effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e' as Address<'effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e'>,
       seeds: [
         getAddressEncoder().encode(expectAddress(accounts.stakeAccount.value)),
       ],
@@ -304,7 +305,7 @@ export function getSyncInstruction<
 
 export type ParsedSyncInstruction<
   TProgram extends string = typeof EFFECT_REWARDS_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -319,11 +320,11 @@ export type ParsedSyncInstruction<
 
 export function parseSyncInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[],
 >(
-  instruction: IInstruction<TProgram> &
-    IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+  instruction: Instruction<TProgram> &
+    InstructionWithAccounts<TAccountMetas> &
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedSyncInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 5) {
     // TODO: Coded error.
@@ -331,7 +332,7 @@ export function parseSyncInstruction<
   }
   let accountIndex = 0;
   const getNextAccount = () => {
-    const accountMeta = instruction.accounts![accountIndex]!;
+    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
     accountIndex += 1;
     return accountMeta;
   };

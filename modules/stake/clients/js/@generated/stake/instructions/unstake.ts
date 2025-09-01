@@ -289,7 +289,8 @@ export async function getUnstakeInstructionAsync<
   }
   if (!accounts.rewardAccount.value) {
     accounts.rewardAccount.value = await getProgramDerivedAddress({
-      programAddress,
+      programAddress:
+        'effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi' as Address<'effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi'>,
       seeds: [
         getAddressEncoder().encode(expectAddress(accounts.stakeAccount.value)),
       ],
@@ -297,7 +298,8 @@ export async function getUnstakeInstructionAsync<
   }
   if (!accounts.vestingVaultTokenAccount.value) {
     accounts.vestingVaultTokenAccount.value = await getProgramDerivedAddress({
-      programAddress,
+      programAddress:
+        'effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S' as Address<'effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S'>,
       seeds: [
         getAddressEncoder().encode(
           expectAddress(accounts.vestingAccount.value)

@@ -98,7 +98,7 @@ importers:
         version: 1.7.20(240a5136d30554774b95452bb6580a47)
       '@solana/kit':
         specifier: ^2.1.1
-        version: 2.3.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+        version: 2.3.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       '@solana/react':
         specifier: ^2.3.0
         version: 2.3.0(fastestsmallesttextencoderdecoder@1.0.22)(react@19.1.1)(typescript@5.8.3)
@@ -164,7 +164,7 @@ importers:
         version: 19.1.1(react@19.1.1)
       solana-kite:
         specifier: ^1.5.4
-        version: 1.5.4(@solana/sysvars@2.3.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3))(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+        version: 1.5.4(@solana/sysvars@2.3.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3))(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1
@@ -458,6 +458,9 @@ importers:
       '@effectai/reward':
         specifier: workspace:*
         version: link:../../modules/reward
+      '@effectai/solana-utils':
+        specifier: workspace:*
+        version: link:../../packages/solana-utils
       '@effectai/stake':
         specifier: workspace:*
         version: link:../../modules/stake
@@ -524,6 +527,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.14
         version: 10.4.21(postcss@8.5.6)
+      buffer:
+        specifier: ^6.0.3
+        version: 6.0.3
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1021,7 +1027,7 @@ importers:
         version: 2.3.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.2)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))
     devDependencies:
       '@codama/nodes-from-anchor':
-        specifier: ^1.1.14
+        specifier: ^1.2.5
         version: 1.2.5(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.2)
       '@codama/renderers-js':
         specifier: ^1.2.13
@@ -1033,7 +1039,7 @@ importers:
         specifier: ^20.11.7
         version: 20.19.11
       codama:
-        specifier: ^1.3.0
+        specifier: ^1.3.3
         version: 1.3.3
 
   modules/payment:
@@ -1110,7 +1116,7 @@ importers:
         version: 2.3.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.2)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))
     devDependencies:
       '@codama/nodes-from-anchor':
-        specifier: ^1.1.14
+        specifier: ^1.2.5
         version: 1.2.5(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.2)
       '@codama/renderers-js':
         specifier: ^1.2.13
@@ -1119,7 +1125,7 @@ importers:
         specifier: ^20.11.7
         version: 20.19.11
       codama:
-        specifier: ^1.3.0
+        specifier: ^1.3.3
         version: 1.3.3
 
   modules/stake:
@@ -1129,7 +1135,7 @@ importers:
         version: 2.3.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.2)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))
     devDependencies:
       '@codama/nodes-from-anchor':
-        specifier: ^1.1.14
+        specifier: ^1.2.5
         version: 1.2.5(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.2)
       '@codama/renderers-js':
         specifier: ^1.2.13
@@ -1138,7 +1144,7 @@ importers:
         specifier: ^20.11.7
         version: 20.19.11
       codama:
-        specifier: ^1.3.0
+        specifier: ^1.3.3
         version: 1.3.3
 
   modules/vesting:
@@ -1148,7 +1154,7 @@ importers:
         version: 2.3.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.2)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))
     devDependencies:
       '@codama/nodes-from-anchor':
-        specifier: ^1.1.14
+        specifier: ^1.2.5
         version: 1.2.5(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.2)
       '@codama/renderers-js':
         specifier: ^1.2.13
@@ -1157,7 +1163,7 @@ importers:
         specifier: ^20.11.7
         version: 20.19.11
       codama:
-        specifier: ^1.3.0
+        specifier: ^1.3.3
         version: 1.3.3
 
   modules/worker:
