@@ -22,6 +22,7 @@ import { useSolanaWallet } from "@/hooks/useSolanaWallet";
 import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
 import { useWalletAccountTransactionSigner } from "@solana/react";
 import type { UiWalletAccount } from "@wallet-standard/react";
+import { Button } from "@effectai/ui";
 
 export type Balance = { value: number; symbol: string };
 
@@ -57,12 +58,7 @@ function isSameSigner(
 ) {
   if (a === b) return true;
   if (!a || !b) return false;
-  // Compare stable fields; prefer account address or publicKey bytes
-  // @ts-expect-error shape depends on your lib
-  const aKey = a.address ?? a.publicKey?.toString?.() ?? a.account?.address;
-  // @ts-expect-error
-  const bKey = b.address ?? b.publicKey?.toString?.() ?? b.account?.address;
-  return aKey === bKey;
+  return a.address === b.address;
 }
 
 export function SolanaProvider({ children }: { children: ReactNode }) {
@@ -121,7 +117,7 @@ export function SolanaProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  const chain = "solana:mainnet"; // or import.meta.env.VITE_SOLANA_CHAIN_ID
+  const chain = "solana:mainnet";
 
   return (
     <SolanaContext.Provider value={value}>
@@ -134,7 +130,10 @@ export function SolanaProvider({ children }: { children: ReactNode }) {
       ) : (
         signer !== null && <ResetSigner onChange={setSignerIfChanged} />
       )}
-      <UnifiedWalletButton />
+      <UnifiedWalletButton
+        overrideContent={<Button variant="default">Connect wallet</Button>}
+      />
+
       {walletAddress && children}
     </SolanaContext.Provider>
   );

@@ -40,13 +40,11 @@ export const useEffectBalance = (
   return useQuery({
     queryKey: ["balance", tokenAccount ?? "unknown"],
     queryFn: async ({ signal }) => {
-      if (!tokenAccount || !connection) return 0;
+      if (!tokenAccount || !connection) return null;
 
-      const balance = await connection.getTokenAccountBalance({
+      return await connection.getTokenAccountBalance({
         tokenAccount: toAddress(tokenAccount),
       });
-
-      return balance.uiAmount ?? 0;
     },
     enabled,
     staleTime: 15_000,
@@ -96,17 +94,13 @@ export function useStakeAccount(
 }
 
 export const useStakingRewardAccount = (
-  connection: Connection,
+  connection: Connection | null,
   stakeAccount: StakeAccountDecoded | null | undefined,
 ) => {
   const enabled = Boolean(stakeAccount && connection?.rpc);
 
   return useQuery({
-    queryKey: [
-      "staking",
-      "rewardAccount",
-      stakeAccount ? stakeAccount.address : "unknown",
-    ],
+    queryKey: ["staking", "rewardAccount", stakeAccount?.address],
     queryFn: async ({ signal }) => {
       if (!stakeAccount || !connection) return null;
 
@@ -129,10 +123,14 @@ export const useStakingRewardAccount = (
   });
 };
 
-export const useReflectionAccount = (connection: Connection) => {
+export const useReflectionAccount = (connection: Connection | null) => {
+  const enabled = Boolean(connection?.rpc);
+
   return useQuery({
     queryKey: ["staking", "reflection"],
     queryFn: async ({ signal }) => {
+      if (!connection) return null;
+
       const { reflectionAccount } = await deriveRewardAccountsPda({
         mint: toAddress(EFFECT.EFFECT_SPL_MINT),
       });
@@ -144,6 +142,7 @@ export const useReflectionAccount = (connection: Connection) => {
 
       return account;
     },
+    enabled,
     staleTime: 15_000,
     gcTime: 5 * 60_000,
     refetchOnWindowFocus: false,
@@ -151,30 +150,30 @@ export const useReflectionAccount = (connection: Connection) => {
   });
 };
 
-export const useRewardVestingAccount = (connection: Connection) => {
+export const useRewardVestingAccount = (connection: Connection | null) => {
+  const enabled = Boolean(connection?.rpc);
+
   return useQuery({
     queryKey: ["staking", "rewardVesting"],
     queryFn: async ({ signal }) => {
+      if (!connection) return null;
       const activeVestingAccount = import.meta.env
         .VITE_EFFECT_ACTIVE_REWARD_VESTING_ACCOUNT;
 
       const account = await fetchVestingAccount(
-        connection.rpc,
+        connection?.rpc,
         toAddress(activeVestingAccount),
       );
 
-      console.log(
-        "fetched distributed vesting account",
-        account.data.distributedTokens,
-      );
       return account;
     },
+    enabled,
     retry: 2,
   });
 };
 
 export const useActiveVestingAccounts = (
-  connection: Connection,
+  connection: Connection | null,
   walletAddress: string | null | undefined,
 ) => {
   const enabled = Boolean(walletAddress && connection?.rpc);
@@ -216,7 +215,7 @@ export const useActiveVestingAccounts = (
 };
 
 export const useGetEffectTokenAccount = (
-  connection: Connection,
+  connection: Connection | null,
   walletAddress: string | null | undefined,
 ) => {
   const enabled = Boolean(walletAddress && connection?.rpc);
@@ -239,8 +238,37 @@ export const useGetEffectTokenAccount = (
   });
 };
 
+export const useGetInterMediaryRewardVaultBalance = (
+  connection: Connection | null,
+) => {
+  const enabled = Boolean(connection?.rpc);
+
+  return useQuery({
+    queryKey: ["staking", "intermediaryRewardVaultBalance"],
+    queryFn: async ({ signal }) => {
+      if (!connection) return null;
+
+      const { intermediaryReflectionVaultAccount } =
+        await deriveRewardAccountsPda({
+          mint: toAddress(EFFECT.EFFECT_SPL_MINT),
+        });
+
+      const balance = await connection.getTokenAccountBalance({
+        tokenAccount: intermediaryReflectionVaultAccount,
+      });
+
+      return balance;
+    },
+    enabled,
+    staleTime: 15_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    retry: 2,
+  });
+};
+
 export const useGetVestingVaultBalance = (
-  connection: Connection,
+  connection: Connection | null,
   vestingAccount: Account<VestingAccount> | null | undefined,
 ) => {
   const enabled = Boolean(vestingAccount && connection?.rpc);
@@ -252,7 +280,7 @@ export const useGetVestingVaultBalance = (
       vestingAccount?.address ?? "unknown",
     ],
     queryFn: async ({ signal }) => {
-      if (!vestingAccount || !connection) return 0;
+      if (!vestingAccount || !connection) return null;
 
       const [vaultAddress] = await deriveVestingAccountsPDA({
         vestingAccount: vestingAccount.address,
@@ -262,7 +290,7 @@ export const useGetVestingVaultBalance = (
         tokenAccount: vaultAddress,
       });
 
-      return balance.amount ?? 0;
+      return balance;
     },
     enabled,
     staleTime: 15_000,

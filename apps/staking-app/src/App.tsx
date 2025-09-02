@@ -51,7 +51,7 @@ function App() {
   return (
     <AppShell>
       {uiAccount && address && (
-        <Tabs defaultValue="account" className="w-[600px]">
+        <Tabs defaultValue="overview" className="w-[600px]">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="stake">Stake</TabsTrigger>

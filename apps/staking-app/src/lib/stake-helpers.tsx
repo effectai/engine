@@ -6,7 +6,7 @@ export function calculateStakeAge(timestampSec: number) {
 }
 
 import type { VestingAccount } from "@effectai/vesting";
-import type { Account } from "@solana/kit";
+import type { Account, TokenBalance } from "@solana/kit";
 import { useEffect, useRef, useState } from "react";
 
 export function useAnimatedStakeAge(stakeStartAtSec: number) {
@@ -39,32 +39,31 @@ export function calculateApy({
   totalStaked: bigint;
   totalRewards: number;
 }) {
-  const parsedStake = Number(yourStake) / 1e6;
   const parsedTotalStaked = Number(totalStaked) / 1e6;
+  const parsedTotalRewards = totalRewards / 1e6;
 
-  const yourStakePercentage = parsedStake / parsedTotalStaked;
-  const yourTotalRewards = yourStakePercentage * totalRewards;
-  const totalApy = (yourTotalRewards / parsedStake) * 100;
+  const totalApy =
+    parsedTotalStaked > 0 ? (parsedTotalRewards / parsedTotalStaked) * 100 : 0;
 
-  return totalApy.toFixed(2);
+  return totalApy;
 }
 
 // Calculate due vested amount
 export const calculateDue = (
   vestingAccount: Account<VestingAccount>,
   amountAvailable: number,
-): number => {
+): bigint => {
   const { startTime, releaseRate, distributedTokens } = vestingAccount.data;
   const now = Math.floor(new Date().getTime() / 1000);
 
   if (now < startTime) {
-    return 0;
+    return 0n;
   }
 
   const poolAmount = (BigInt(now) - startTime) * releaseRate;
   const amountDue = Number(poolAmount - distributedTokens);
 
-  return Math.min(amountDue, amountAvailable * 1_000_000);
+  return BigInt(Math.min(amountDue, amountAvailable));
 };
 
 export function calculatePendingRewards({
@@ -76,6 +75,5 @@ export function calculatePendingRewards({
   rate: bigint;
   weightedAmount: bigint;
 }) {
-  const reward = reflection / rate - weightedAmount;
-  return Number(reward) / 1e6;
+  return reflection / rate - weightedAmount;
 }

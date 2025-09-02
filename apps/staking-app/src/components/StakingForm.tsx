@@ -51,7 +51,9 @@ const amountSchema = (max: number) =>
     .transform((s) => (s === "" ? 0 : Number(s)))
     .refine((n) => isFinite(n) && n >= 0, "Amount must be a positive number")
     .refine((n) => n > 0, "Amount must be greater than 0")
-    .refine((n) => n <= max, "Amount exceeds available balance");
+    .refine((n) => n <= max, "Amount exceeds available balance")
+    //have max 6 decimal places
+    .transform((n) => Math.floor(n * 1e6) / 1e6);
 
 export function StakeForm({
   stakeAccount,
@@ -74,7 +76,7 @@ export function StakeForm({
     userTokenAccount,
   );
 
-  const max = Number(availableBalance) ?? 0;
+  const max = Number(availableBalance?.uiAmount);
 
   const form = useForm<{ amount: string }>({
     resolver: zodResolver(z.object({ amount: amountSchema(max) })),

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -29,6 +29,7 @@ import { useClaimRewardMutation } from "@/lib/useMutations";
 import { useSolanaContext } from "@/providers/SolanaProvider";
 import {
   useGetEffectTokenAccount,
+  useGetInterMediaryRewardVaultBalance,
   useGetVestingVaultBalance,
 } from "@/lib/useQueries";
 import { useCallback } from "react";
@@ -54,6 +55,9 @@ export function StakeOverview({
 }: Props) {
   const { connection, signer, address } = useSolanaContext();
 
+  const { data: intermediaryVaultBalance } =
+    useGetInterMediaryRewardVaultBalance(connection);
+
   const { data: vestingVaultBalance } = useGetVestingVaultBalance(
     connection,
     vestingAccount,
@@ -63,35 +67,84 @@ export function StakeOverview({
     ? calculateApy({
         totalStaked: reflectionAccount?.data.totalWeightedAmount ?? BigInt(0),
         yourStake: rewardAccount?.data.weightedAmount ?? BigInt(0),
-        totalRewards:
-          Number(vestingAccount?.data.releaseRate ?? 0n * 86400n * 30n * 12n) /
-          1e6,
+        totalRewards: Number(
+          (vestingAccount?.data.releaseRate ?? 0n) * 86400n * 30n * 12n,
+        ),
       })
     : 0;
 
+  const toNumberTokens = (micro: bigint) => Number(micro) / 1e6;
+
   const pendingRewards = useMemo(() => {
-    if (rewardAccount?.exists && vestingAccount && vestingVaultBalance) {
-      const due = calculateDue(vestingAccount, Number(vestingVaultBalance));
-      const pending = calculatePendingRewards({
-        reflection: reflectionAccount?.data.totalReflection ?? BigInt(0),
-        rate: reflectionAccount?.data.rate ?? BigInt(1),
-        weightedAmount: rewardAccount?.data?.weightedAmount ?? BigInt(0),
-      });
-      return (due + pending) / 1e6;
-    }
-  }, [rewardAccount, vestingAccount, vestingVaultBalance, reflectionAccount]);
+    if (!rewardAccount?.exists) return 0;
 
-  const isClaiming = false; // Claiming state
+    const weighted: bigint = rewardAccount.data.weightedAmount ?? 0n;
+    const reflection: bigint = rewardAccount?.data.reflection ?? 0n;
 
+    const totalWeighted: bigint =
+      reflectionAccount?.data.totalWeightedAmount ?? 0n;
+    const rate: bigint = reflectionAccount?.data.rate ?? 1n;
+
+    // 1) pending from reflections
+    const pendingMicro: bigint = weighted
+      ? calculatePendingRewards({
+          reflection,
+          rate,
+          weightedAmount: weighted,
+        })
+      : 0n;
+
+    // 2) globally due from vesting
+    const dueGlobalMicro: bigint =
+      vestingAccount && vestingVaultBalance != null
+        ? calculateDue(vestingAccount, Number(vestingVaultBalance?.amount)) // <- returns micro
+        : 0n;
+
+    // 3) users pro-rata share of that global due
+    const userShareDueMicro: bigint =
+      dueGlobalMicro > 0n && totalWeighted > 0n && weighted > 0n
+        ? (dueGlobalMicro * weighted) / totalWeighted
+        : 0n;
+
+    // 4) plus any per-user intermediary vault balance accrued
+    const intermediaryMicro: bigint =
+      BigInt(Number(intermediaryVaultBalance?.amount)) ?? 0n;
+
+    const totalMicro = pendingMicro + userShareDueMicro + intermediaryMicro;
+    return toNumberTokens(totalMicro);
+  }, [
+    rewardAccount?.exists,
+    rewardAccount?.data?.weightedAmount,
+    reflectionAccount?.data?.totalWeightedAmount,
+    reflectionAccount?.data?.rate,
+    vestingAccount,
+    vestingVaultBalance,
+    intermediaryVaultBalance,
+  ]);
   const canClaim = Boolean(
-    rewardAccount?.exists && pendingRewards > 0 && vestingAccount,
+    rewardAccount?.exists &&
+      pendingRewards &&
+      pendingRewards > 0 &&
+      vestingAccount,
   );
 
-  const stakeAge = useAnimatedStakeAge(
-    Number(stakeAccount?.data.stakeStartTime) ?? 0,
-  );
+  const StakeScoreStat = React.memo(function StakeScoreStat({
+    stakeStart,
+  }: { stakeStart: number }) {
+    const stakeAge = useAnimatedStakeAge(stakeStart);
+    return (
+      <Stat
+        icon={<Gift className="" />}
+        label="Stake Score"
+        value={`${formatNumber(stakeAge)}`}
+        emphasis
+      />
+    );
+  });
 
-  const { mutateAsync: claimRewards } = useClaimRewardMutation();
+  const { mutateAsync: claimRewards, isPending: isClaiming } =
+    useClaimRewardMutation();
+
   const { data: recipientTokenAccount } = useGetEffectTokenAccount(
     connection,
     address,
@@ -136,7 +189,7 @@ export function StakeOverview({
             </CardDescription>
           </div>
           <Badge variant="secondary" className="whitespace-nowrap">
-            {apy != null ? `APY ~ ${formatPercent(apy * 100)}` : "Active"}
+            {apy != null ? `APY ~ ${formatPercent(apy)}` : "Active"}
           </Badge>
         </div>
       </CardHeader>
@@ -160,11 +213,8 @@ export function StakeOverview({
                     )} EFFECT`
             }
           />
-          <Stat
-            icon={<Gift className="" />}
-            label="Stake Score"
-            value={`${formatNumber(stakeAge)}`}
-            emphasis
+          <StakeScoreStat
+            stakeStart={Number(stakeAccount?.data.stakeStartTime)}
           />
         </div>
 
@@ -182,13 +232,19 @@ export function StakeOverview({
           <p className="font-bold">Details</p>
           <Row
             label="Your Stake"
-            value={`${formatNumber(
-              Number(stakeAccount.data.amount / BigInt(1e6)),
-            )} EFFECT`}
+            value={
+              stakeAccount
+                ? `${formatNumber(Number(stakeAccount.data.amount / BigInt(1e6)))} EFFECT`
+                : "-"
+            }
           />
           <Row
             label="Total EFFECT Staked"
-            value={`${formatNumber(Number(reflectionAccount?.data.totalWeightedAmount / BigInt(1e6)))} EFFECT`}
+            value={
+              reflectionAccount?.exists
+                ? `${formatNumber(Number(reflectionAccount?.data.totalWeightedAmount / BigInt(1e6)))} EFFECT`
+                : "-"
+            }
           />
           <p className="font-bold">Rewards</p>
           <Row
@@ -197,7 +253,7 @@ export function StakeOverview({
           />
           <Row
             label="Estimated APY"
-            value={apy != null ? `${formatPercent(apy * 100)}` : "-"}
+            value={apy != null ? `${formatPercent(apy)}` : "-"}
           />
         </div>
       </CardContent>
