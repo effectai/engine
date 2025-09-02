@@ -23,6 +23,7 @@
               >
                 {{ activeTask?.state.title }}
               </h3>
+
               <div class="flex justify-end gap-2">
                 <UButton
                   color="neutral"
@@ -130,6 +131,7 @@ const handlerAcceptTask = async () => {
 
   const taskRecord = await acceptTask(activeTask.value.state.id);
   if (!taskRecord) {
+    toast.clear()
     toast.add({
       title: "Error",
       color: "error",
@@ -138,6 +140,7 @@ const handlerAcceptTask = async () => {
     return;
   }
 
+  toast.clear()
   toast.add({
     title: "Success",
     color: "success",
@@ -155,6 +158,7 @@ const handlerRejectTask = async () => {
   if (!activeTask.value) return;
 
   await rejectTask(activeTask.value.state.id, "Task rejected by worker");
+  toast.clear()
   toast.add({
     title: "Success",
     color: "success",
@@ -171,6 +175,7 @@ const handlerRejectTask = async () => {
 const reportAndSkipTask = async () => {
   if (!activeTask.value) return;
   await completeTask(activeTask.value.state.id, "<TASK REPORTED AND SKIPPED>");
+  toast.clear()
   toast.add({
     title: "Task Reported",
     color: "error",
@@ -185,6 +190,7 @@ const reportAndSkipTask = async () => {
 const handlerSubmitTask = async (data: Record<unknown, string | number>) => {
   if (!activeTask.value) return;
   await completeTask(activeTask.value.state.id, JSON.stringify(data));
+  toast.clear()
   toast.add({
     title: "Success",
     color: "success",
@@ -202,6 +208,7 @@ watchEffect(async () => {
   const html = await renderTask(activeTask.value);
 
   if (!html) {
+    toast.clear()
     toast.add({
       title: "Error",
       color: "error",

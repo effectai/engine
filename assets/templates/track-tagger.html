@@ -106,7 +106,6 @@
       data() {
         return {
           title: "Effect AI - Track Tagger",
-          // songSource: "https://discoveryprovider2.audius.co/v1/tracks/lWGEm2l/stream",
           songSource: "${song_url}",
           btnLoading: false,
           notComplete: false,
@@ -118,11 +117,15 @@
           selectedGenreOther: "",
           instructions: `
           <div class="">
-            <div>
-              <p>Select the button that corresponds to the animal in the picture.</p>
-              <br>
-              <p>Select "Other" if there is an animal <strong>not</strong> on the list.</p>
-            </div>
+            <h2 class="text-lg">*NOTE*</h2>
+            <p>
+              Songs may take a few seconds to load. If the song does not load in a reasonable amount of time, please report the task using the report button.
+            </p>
+            <br><hr><br>
+            <li>Listen to at least a few seconds of the song before answering the questions.</li>
+            <li>Try to be accurate — guess only if you genuinely can’t tell.</li>
+            <li>Use headphones or a quiet environment for the best experience.</li>
+            <li>If the song abruptly cuts off, is silent, or sounds corrupted, report it.</li>
           </div>`
         };
       },
@@ -141,7 +144,7 @@
       methods: {
         async uploadAndSubmit() {
           this.btnLoading = true;
-          const fields = [this.selectedGenre, this.selectedMood, this.selectedEnergy, this.selectedDance, this.selectedVocals, this.selectedGenreOther];
+          const fields = [this.selectedGenre, this.selectedMood, this.selectedEnergy, this.selectedDance, this.selectedVocals];
           if (fields.some(field => field === "")) {
             this.notComplete = true
           }

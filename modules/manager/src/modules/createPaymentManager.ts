@@ -51,7 +51,7 @@ export async function createPaymentManager({
 
     const payment = await generatePayment({
       peerId,
-      amount: BigInt(secondsSinceLastPayout * 1_000_0),
+      amount: BigInt(secondsSinceLastPayout * 5_000),
       paymentAccount: new PublicKey(managerSettings.paymentAccount),
       label: `Payout for ${secondsSinceLastPayout} seconds of online time`,
     });

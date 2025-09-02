@@ -1,0 +1,19 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@theme {  
+	--font-inter: "Inter", "sans-serif";
+	--color-effect-black: rgb(28,26,31);
+
+	--spacing-section-x: 1.5rem;
+	--spacing-section-y: 4rem;
+}
+
+@media (width > 720px) {
+  :root {
+	--spacing-section-x: 3rem;
+	--spacing-section-y: 12rem;
+  }
+}
