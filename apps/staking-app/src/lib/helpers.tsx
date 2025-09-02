@@ -1,4 +1,12 @@
 import { cn } from "@/lib/utils";
+import {
+  generateKeyPairSigner,
+  lamports,
+  type Instruction,
+  type KeyPairSigner,
+  type TransactionSigner,
+} from "@solana/kit";
+import type { Connection } from "solana-kite";
 export function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
@@ -63,3 +71,29 @@ export function Stat({
     </div>
   );
 }
+
+export const executeTransaction = async (
+  connection: Connection,
+  signer: TransactionSigner,
+  instructions: Instruction[],
+) => {
+  try {
+    const tx = await connection.sendTransactionFromInstructions({
+      feePayer: signer,
+      instructions: instructions,
+      commitment: "finalized",
+    });
+
+    //wait 2 seconds
+    return tx;
+  } catch (e) {
+    //swallow this error for now
+    if (e.message.includes('access property "lastValidBlockHeight"')) {
+      console.warn("Swallowing lastValidBlockHeight error");
+      return;
+    }
+
+    console.error("Transaction error: ", e);
+    throw e;
+  }
+};

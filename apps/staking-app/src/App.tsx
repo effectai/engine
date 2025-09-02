@@ -4,21 +4,14 @@ import { StakeForm } from "./components/StakingForm";
 import { StakeOverview } from "./components/StakingOverview";
 import { useCallback, useEffect, useState } from "react";
 import { useSolanaContext, type Balance } from "./providers/SolanaProvider";
-import {
-  getBase64Encoder,
-  address as toAddress,
-  type Account,
-} from "@solana/kit";
-import {
-  fetchStakingAccountsByWalletAddress,
-  decodeStakeAccount,
-  EFFECT_STAKING_PROGRAM_ADDRESS,
-  type StakeAccount,
-} from "@effectai/stake";
 import { useWalletAccountTransactionSigner } from "@solana/react";
 import { UnstakeForm } from "./components/UnstakeForm";
-import { deriveRewardAccountsPda } from "@effectai/reward";
-import { EFFECT } from "./lib/useEffectConfig";
+import {
+  useReflectionAccount,
+  useRewardVestingAccount,
+  useStakeAccount,
+  useStakingRewardAccount,
+} from "./lib/useQueries";
 
 function App() {
   const { getEffectBalance, address, connection, uiAccount } =
@@ -29,7 +22,6 @@ function App() {
   const [availableBalance, setAvailableBalance] = useState<Balance | null>(
     null,
   );
-
   useEffect(() => {
     if (address) {
       getEffectBalance(address).then((balance) => {
@@ -40,29 +32,21 @@ function App() {
     }
   }, [address, getEffectBalance]);
 
-  const [stakeAccount, setStakeAccount] =
-    useState<Account<StakeAccount> | null>(null);
+  const {
+    data: stakeAccount,
+    isLoading,
+    isFetching,
+    isError,
+  } = useStakeAccount(connection, address);
 
-  useEffect(() => {
-    if (address && connection) {
-      fetchStakingAccountsByWalletAddress({
-        walletAddress: address,
-        rpc: connection.rpc,
-      }).then(([account]) => {
-        const acc = decodeStakeAccount({
-          executable: account.account.executable,
-          space: account.account.space,
-          lamports: account.account.lamports,
-          programAddress: EFFECT_STAKING_PROGRAM_ADDRESS,
-          data: getBase64Encoder().encode(
-            (account.account.data as unknown as [string, string])[0],
-          ),
-          address: toAddress(account.pubkey),
-        });
-        setStakeAccount(acc);
-      });
-    }
-  }, [address, connection]);
+  const { data: rewardAccount } = useStakingRewardAccount(
+    connection,
+    stakeAccount,
+  );
+
+  const { data: vestingAccount } = useRewardVestingAccount(connection);
+
+  const { data: reflectionAccount } = useReflectionAccount(connection);
 
   return (
     <AppShell>
@@ -75,15 +59,17 @@ function App() {
           </TabsList>
           <TabsContent value="overview">
             <div>
-              <StakeOverview stakeAccount={stakeAccount} />
+              <StakeOverview
+                vestingAccount={vestingAccount}
+                reflectionAccount={reflectionAccount}
+                stakeAccount={stakeAccount}
+                rewardAccount={rewardAccount}
+                isLoading={isLoading || isFetching}
+              />
             </div>
           </TabsContent>
           <TabsContent value="stake">
-            <StakeForm
-              stakeAccount={stakeAccount}
-              signer={signer}
-              availableBalance={availableBalance}
-            />
+            <StakeForm stakeAccount={stakeAccount} signer={signer} />
           </TabsContent>
           {stakeAccount && (
             <TabsContent value="unstake">

@@ -28,13 +28,12 @@ import {
 } from "@solana/kit";
 import { EFFECT } from "@/lib/useEffectConfig";
 import { getStakeInstructionAsync, type StakeAccount } from "@effectai/stake";
-import { getEnterInstructionAsync } from "@effectai/reward";
-import { buildTopupInstruction } from "@effectai/solana-utils";
 import { Row, formatNumber, trimTrailingZeros } from "@/lib/helpers.tsx";
+import { useStakeMutation, useTopupMutation } from "@/lib/useMutations";
+import { useEffectBalance, useGetEffectTokenAccount } from "@/lib/useQueries";
 
 type Props = {
-  stakeAccount: Account<StakeAccount> | null;
-  availableBalance: Balance | null;
+  stakeAccount: Account<StakeAccount> | null | undefined;
   signer: TransactionSigner;
   isPending?: boolean;
   lockPeriodDays?: number;
@@ -57,7 +56,6 @@ const amountSchema = (max: number) =>
 export function StakeForm({
   stakeAccount,
   signer,
-  availableBalance,
   isPending = false,
   lockPeriodDays = 30,
   tokenSymbol = "EFFECT",
@@ -66,7 +64,17 @@ export function StakeForm({
 }: Props) {
   const { connection, address } = useSolanaContext();
 
-  const max = availableBalance?.value ?? 0;
+  const { data: userTokenAccount } = useGetEffectTokenAccount(
+    connection,
+    address,
+  );
+
+  const { data: availableBalance } = useEffectBalance(
+    connection,
+    userTokenAccount,
+  );
+
+  const max = Number(availableBalance) ?? 0;
 
   const form = useForm<{ amount: string }>({
     resolver: zodResolver(z.object({ amount: amountSchema(max) })),
@@ -89,90 +97,31 @@ export function StakeForm({
     form.setValue("amount", trimTrailingZeros(v), { shouldValidate: true });
   };
 
+  const { mutateAsync: topup } = useTopupMutation();
   const onTopupHandler = React.useCallback(
     async (amount: number) => {
-      try {
-        if (!connection || !address || !signer || !stakeAccount) {
-          throw new Error("No connection available");
-        }
-
-        console.log("Topping up", amount, "tokens");
-
-        const userTokenAccount = await connection.getTokenAccountAddress(
-          toAddress(address),
-          toAddress(EFFECT.EFFECT_SPL_MINT),
-        );
-
-        const topupInstructions = await buildTopupInstruction({
-          mint: toAddress(EFFECT.EFFECT_SPL_MINT),
-          stakeAccount: stakeAccount.address,
-          amount: amount * 1_000_000,
-          userTokenAccount,
-          rpc: connection.rpc,
-          signer,
-        });
-
-        console.log("Topup instructions:", topupInstructions);
-
-        return await connection.sendTransactionFromInstructions({
-          feePayer: signer,
-          instructions: topupInstructions,
-          maximumClientSideRetries: 3,
-        });
-      } catch (e) {
-        if (e instanceof SolanaError) {
-          console.error("SolanaError: ", e.context);
-        } else {
-          console.error("Error: ", e);
-        }
-      }
+      topup({
+        amount,
+        connection,
+        signer,
+        stakeAccount,
+        userTokenAccount,
+      });
     },
-    [connection, address, signer, stakeAccount, amount],
+    [connection, address, signer, stakeAccount, amount, userTokenAccount],
   );
 
+  const { mutateAsync: stake } = useStakeMutation();
   const onStakeHandler = React.useCallback(
     async (amount: number) => {
-      try {
-        if (!connection || !address || !signer) {
-          throw new Error("No connection available");
-        }
-
-        console.log("Staking", amount, "tokens");
-
-        const userTokenAccount = await connection.getTokenAccountAddress(
-          toAddress(address),
-          toAddress(EFFECT.EFFECT_SPL_MINT),
-        );
-
-        const stakeAccount = await generateKeyPairSigner();
-
-        const stakeInstruction = await getStakeInstructionAsync({
-          mint: toAddress(EFFECT.EFFECT_SPL_MINT),
-          stakeAccount,
-          amount: amount * 1_000_000,
-          duration: 30 * 24 * 60 * 60,
-          authority: signer,
-          userTokenAccount,
-        });
-
-        const enterRewardPoolIx = await getEnterInstructionAsync({
-          mint: toAddress(EFFECT.EFFECT_SPL_MINT),
-          stakeAccount: stakeAccount.address,
-          authority: signer,
-        });
-
-        return await connection.sendTransactionFromInstructions({
-          feePayer: signer,
-          instructions: [stakeInstruction, enterRewardPoolIx],
-          maximumClientSideRetries: 3,
-        });
-      } catch (e) {
-        if (e instanceof SolanaError) {
-          console.error("SolanaError: ", e.context);
-        }
-      }
+      stake({
+        amount,
+        connection,
+        signer,
+        userTokenAccount,
+      });
     },
-    [connection, address, signer],
+    [connection, address, signer, userTokenAccount, amount],
   );
 
   const handleSubmit = form.handleSubmit(async (values) => {
@@ -261,7 +210,7 @@ export function StakeForm({
               />
               <Row
                 label="Available Balance"
-                value={`${formatNumber(max)} ${availableBalance?.symbol ?? tokenSymbol}`}
+                value={`${formatNumber(max)} EFFECT`}
               />
               <Row label="Lock Period" value={`${lockPeriodDays} days`} />
             </div>

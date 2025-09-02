@@ -21,6 +21,8 @@ import type { StakeAccount } from "@effectai/stake";
 import { buildUnstakeInstruction } from "@effectai/solana-utils";
 import { useSolanaContext } from "@/providers/SolanaProvider";
 import { EFFECT } from "@/lib/useEffectConfig";
+import { useActiveVestingAccounts } from "@/lib/useQueries";
+import { VestingScheduleItem } from "./VestingScheduleItem";
 
 type Props = {
   stakeAccount: Account<StakeAccount>;
@@ -39,6 +41,11 @@ export function UnstakeForm({
 }: Props) {
   const { connection, address } = useSolanaContext();
   const max = Number(stakeAccount.data.amount / BigInt(1e6));
+
+  const { data: vestingAccounts } = useActiveVestingAccounts(
+    connection,
+    address,
+  );
 
   const schema = React.useMemo(
     () =>
@@ -123,110 +130,134 @@ export function UnstakeForm({
   });
 
   return (
-    <Card className={cn("flex flex-col", className)}>
-      <CardHeader>
-        <CardTitle>Unstake Tokens</CardTitle>
-      </CardHeader>
+    <div className="space-y-6 gap-3 flex">
+      <Card className={cn("flex flex-col flex-none", className)}>
+        <CardHeader>
+          <CardTitle>Unstake Tokens</CardTitle>
+        </CardHeader>
 
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={onSubmit} className="space-y-6">
-            {/* Context */}
-            <div className="rounded-xl border bg-muted/30 px-3 py-4 space-y-2 text-sm">
-              <Row
-                label="Stake account"
-                value={shorten(stakeAccount.address)}
-              />
-              <Row
-                label="Currently staked"
-                value={`${formatNumber(Number(stakeAccount.data.amount / BigInt(1e6)))} ${tokenSymbol}`}
-              />
-              <Row
-                label="Available to unstake"
-                value={`${formatNumber(max)} ${tokenSymbol}`}
-              />
-            </div>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={onSubmit} className="space-y-6">
+              {/* Context */}
+              <div className="rounded-xl border bg-muted/30 px-3 py-4 space-y-2 text-sm">
+                <Row
+                  label="Stake account"
+                  value={shorten(stakeAccount.address)}
+                />
+                <Row
+                  label="Currently staked"
+                  value={`${formatNumber(Number(stakeAccount.data.amount / BigInt(1e6)))} ${tokenSymbol}`}
+                />
+                <Row
+                  label="Available to unstake"
+                  value={`${formatNumber(max)} ${tokenSymbol}`}
+                />
+              </div>
 
-            {/* Amount */}
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-muted-foreground">
-                    Amount to Unstake
-                  </FormLabel>
-                  <div className="relative">
-                    <FormControl>
-                      <Input
-                        inputMode="decimal"
-                        placeholder="0.00"
-                        value={String(field.value ?? "")}
-                        onChange={(e) => {
-                          const next = e.target.value
-                            .replace(/[^\d.,]/g, "")
-                            .replace(/,/g, ".")
-                            .replace(/^(\d*\.\d*).*$/, "$1");
-                          field.onChange(next);
-                        }}
-                        onBlur={field.onBlur}
-                        className="pr-28"
-                      />
-                    </FormControl>
+              {/* Amount */}
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-muted-foreground">
+                      Amount to Unstake
+                    </FormLabel>
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          inputMode="decimal"
+                          placeholder="0.00"
+                          value={String(field.value ?? "")}
+                          onChange={(e) => {
+                            const next = e.target.value
+                              .replace(/[^\d.,]/g, "")
+                              .replace(/,/g, ".")
+                              .replace(/^(\d*\.\d*).*$/, "$1");
+                            field.onChange(next);
+                          }}
+                          onBlur={field.onBlur}
+                          className="pr-28"
+                        />
+                      </FormControl>
 
-                    <div className="absolute inset-y-0 right-1 flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="h-8 px-2"
-                        onClick={setMax}
-                        disabled={max <= 0}
-                      >
-                        MAX
-                      </Button>
+                      <div className="absolute inset-y-0 right-1 flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="h-8 px-2"
+                          onClick={setMax}
+                          disabled={max <= 0}
+                        >
+                          MAX
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Quick % chips */}
-            <div className="flex flex-wrap gap-2">
-              {[25, 50, 75, 100].map((p) => (
-                <Button
-                  key={p}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPercent(p)}
-                  disabled={max <= 0}
-                >
-                  {p}%
-                </Button>
-              ))}
-            </div>
-
-            {/* Preview */}
-            <div className="rounded-xl border bg-muted/20 px-3 py-3 text-sm">
-              <Row
-                label="Unstaking"
-                value={`${formatNumber(
-                  typeof amount === "number" && isFinite(amount) ? amount : 0,
-                )} ${tokenSymbol}`}
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={!isValid || isPending}
-            >
-              {isPending ? "Unstaking…" : "Unstake"}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+              {/* Quick % chips */}
+              <div className="flex flex-wrap gap-2">
+                {[25, 50, 75, 100].map((p) => (
+                  <Button
+                    key={p}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPercent(p)}
+                    disabled={max <= 0}
+                  >
+                    {p}%
+                  </Button>
+                ))}
+              </div>
+
+              {/* Preview */}
+              <div className="rounded-xl border bg-muted/20 px-3 py-3 text-sm">
+                <Row
+                  label="Unstaking"
+                  value={`${formatNumber(
+                    typeof amount === "number" && isFinite(amount) ? amount : 0,
+                  )} ${tokenSymbol}`}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={!isValid || isPending}
+              >
+                {isPending ? "Unstaking…" : "Unstake"}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+      {vestingAccounts && vestingAccounts.length > 0 && (
+        <Card className="flex flex-col flex-none w-96">
+          <CardHeader>
+            <CardTitle className="text-sm">Active Unstakes</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Unstaking will initiate a 7-day cooldown period, after which you can
+            withdraw your tokens. During this time, your tokens will not earn
+            rewards.
+            {vestingAccounts && vestingAccounts.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {vestingAccounts.map((v, idx) => (
+                  <VestingScheduleItem
+                    key={v.id ?? idx} // ensure stable key (fallback to index if no id)
+                    vestingAccount={v} // pass the actual data down as a prop
+                  />
+                ))}
+              </div>
+            )}{" "}
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

@@ -18,6 +18,7 @@ import { getTopupInstructionAsync as getRewardTopupInstructionAsync } from "@eff
 
 import {
   generateKeyPairSigner,
+  getAddressEncoder,
   getProgramDerivedAddress,
   type Address,
   type Instruction,
@@ -47,7 +48,11 @@ export const buildClaimRewardsInstruction = async ({
   signer: TransactionSigner;
 }): Promise<Instruction[]> => {
   const [reflectionAccount] = await getProgramDerivedAddress({
-    seeds: [Buffer.from("reflection", "utf-8"), mint],
+    seeds: [
+      Buffer.from("reflection", "utf-8"),
+      getAddressEncoder().encode(mint),
+    ],
+
     programAddress: EFFECT_REWARDS_PROGRAM_ADDRESS,
   });
 

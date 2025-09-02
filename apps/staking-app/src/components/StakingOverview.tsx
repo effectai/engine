@@ -1,5 +1,5 @@
-import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -14,79 +14,114 @@ import { Separator } from "@effectai/ui";
 import { CheckCircle2, Gift, Coins, Loader2, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPercent, formatNumber, Stat, Row } from "@/lib/helpers.tsx";
-import type { Account } from "@solana/kit";
+import type { Account, MaybeAccount } from "@solana/kit";
 import type { StakeAccount } from "@effectai/stake";
+import { type ReflectionAccount, type RewardAccount } from "@effectai/reward";
+
 import {
-  deriveRewardAccountsPda,
-  fetchMaybeReflectionAccount,
-  fetchReflectionAccount,
-  type ReflectionAccount,
-} from "@effectai/reward";
-import { EFFECT } from "@/lib/useEffectConfig";
-import { address as toAddress } from "@solana/kit";
+  calculateApy,
+  calculateDue,
+  calculatePendingRewards,
+  useAnimatedStakeAge,
+} from "@/lib/stake-helpers";
+import type { VestingAccount } from "@effectai/vesting";
+import { useClaimRewardMutation } from "@/lib/useMutations";
 import { useSolanaContext } from "@/providers/SolanaProvider";
-import { useAnimatedStakeAge } from "@/lib/stake-age";
+import {
+  useGetEffectTokenAccount,
+  useGetVestingVaultBalance,
+} from "@/lib/useQueries";
+import { useCallback } from "react";
 
 type Props = {
-  stakeAccount: Account<StakeAccount> | null;
-  pendingRewards: number;
-  tokenSymbol?: string;
-  rewardTokenSymbol?: string;
-  apy?: number | null;
-  canClaim?: boolean;
-  isClaiming?: boolean; // loading state for claim
+  stakeAccount: Account<StakeAccount> | null | undefined;
+  reflectionAccount: Account<ReflectionAccount> | null | undefined;
+  vestingAccount: Account<VestingAccount> | null | undefined;
+  rewardAccount: MaybeAccount<RewardAccount> | null | undefined;
+  isLoading?: boolean; // loading state for stake account
   lowSolBalance?: boolean; // warn about fees
-  onClaim: () => Promise<void> | void; // claim handler
   className?: string;
 };
 
 export function StakeOverview({
   stakeAccount,
-  pendingRewards,
-  tokenSymbol = "EFFECT",
-  rewardTokenSymbol = tokenSymbol,
-  apy = null,
-  canClaim = pendingRewards > 0,
-  isClaiming = false,
+  reflectionAccount,
+  rewardAccount,
+  vestingAccount,
+  isLoading = false,
   lowSolBalance = false,
-  onClaim,
   className,
 }: Props) {
-  const { connection } = useSolanaContext();
+  const { connection, signer, address } = useSolanaContext();
 
-  const [reflectionAccount, setReflectionAccount] =
-    React.useState<Account<ReflectionAccount> | null>(null);
+  const { data: vestingVaultBalance } = useGetVestingVaultBalance(
+    connection,
+    vestingAccount,
+  );
 
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        if (stakeAccount && connection) {
-          const { reflectionAccount } = await deriveRewardAccountsPda({
-            mint: toAddress(EFFECT.EFFECT_SPL_MINT),
-          });
+  const apy = rewardAccount?.exists
+    ? calculateApy({
+        totalStaked: reflectionAccount?.data.totalWeightedAmount ?? BigInt(0),
+        yourStake: rewardAccount?.data.weightedAmount ?? BigInt(0),
+        totalRewards:
+          Number(vestingAccount?.data.releaseRate ?? 0n * 86400n * 30n * 12n) /
+          1e6,
+      })
+    : 0;
 
-          const account = await fetchReflectionAccount(
-            connection.rpc,
-            reflectionAccount,
-          );
+  const pendingRewards = useMemo(() => {
+    if (rewardAccount?.exists && vestingAccount && vestingVaultBalance) {
+      const due = calculateDue(vestingAccount, Number(vestingVaultBalance));
+      const pending = calculatePendingRewards({
+        reflection: reflectionAccount?.data.totalReflection ?? BigInt(0),
+        rate: reflectionAccount?.data.rate ?? BigInt(1),
+        weightedAmount: rewardAccount?.data?.weightedAmount ?? BigInt(0),
+      });
+      return (due + pending) / 1e6;
+    }
+  }, [rewardAccount, vestingAccount, vestingVaultBalance, reflectionAccount]);
 
-          if (mounted) setReflectionAccount(account);
-        } else {
-          if (mounted) setReflectionAccount(null);
-        }
-      } catch (e) {
-        console.error("Failed to calculate reflection", e);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [stakeAccount, connection]);
+  const isClaiming = false; // Claiming state
+
+  const canClaim = Boolean(
+    rewardAccount?.exists && pendingRewards > 0 && vestingAccount,
+  );
 
   const stakeAge = useAnimatedStakeAge(
     Number(stakeAccount?.data.stakeStartTime) ?? 0,
   );
+
+  const { mutateAsync: claimRewards } = useClaimRewardMutation();
+  const { data: recipientTokenAccount } = useGetEffectTokenAccount(
+    connection,
+    address,
+  );
+
+  const onClaim = useCallback(() => {
+    if (!canClaim) return;
+    if (!stakeAccount) throw new Error("No stake account");
+    if (!vestingAccount) throw new Error("No vesting account");
+    if (!rewardAccount) throw new Error("No reward account");
+    if (!signer) throw new Error("No signer");
+    if (!connection) throw new Error("No connection");
+    if (!recipientTokenAccount) throw new Error("No recipient token account");
+
+    claimRewards({
+      recipientTokenAccount,
+      stakeAccountAddress: stakeAccount.address,
+      connection,
+      signer,
+    });
+  }, [
+    recipientTokenAccount,
+    canClaim,
+    claimRewards,
+    connection,
+    rewardAccount,
+    signer,
+    stakeAccount,
+    vestingAccount,
+  ]);
 
   return (
     <Card className={cn("w-full", className)}>
@@ -101,7 +136,7 @@ export function StakeOverview({
             </CardDescription>
           </div>
           <Badge variant="secondary" className="whitespace-nowrap">
-            {apy != null ? `APY ~ ${formatPercent(apy)}` : "Active"}
+            {apy != null ? `APY ~ ${formatPercent(apy * 100)}` : "Active"}
           </Badge>
         </div>
       </CardHeader>
@@ -115,7 +150,15 @@ export function StakeOverview({
           <Stat
             icon={<Coins className="h-4 w-4" />}
             label="Currently staked"
-            value={`${formatNumber(Number(stakeAccount.data.amount / BigInt(1e6)))} ${tokenSymbol}`}
+            value={
+              isLoading
+                ? "-" // loading state
+                : !stakeAccount
+                  ? "0" // no stake account
+                  : `${formatNumber(
+                      Number(stakeAccount.data.amount / BigInt(1e6)),
+                    )} EFFECT`
+            }
           />
           <Stat
             icon={<Gift className="" />}
@@ -137,13 +180,25 @@ export function StakeOverview({
         )}
         <div className="mt-6 rounded-xl border bg-muted/30 px-3 py-4 space-y-2 text-sm">
           <p className="font-bold">Details</p>
-          <Row label="Total Staked" value="100" />
+          <Row
+            label="Your Stake"
+            value={`${formatNumber(
+              Number(stakeAccount.data.amount / BigInt(1e6)),
+            )} EFFECT`}
+          />
+          <Row
+            label="Total EFFECT Staked"
+            value={`${formatNumber(Number(reflectionAccount?.data.totalWeightedAmount / BigInt(1e6)))} EFFECT`}
+          />
           <p className="font-bold">Rewards</p>
           <Row
             label="Pending Rewards"
-            value={`${formatNumber(pendingRewards)} ${rewardTokenSymbol}`}
+            value={`${formatNumber(pendingRewards)} EFFECT`}
           />
-          <Row label="Estimated APY" value="15%" />
+          <Row
+            label="Estimated APY"
+            value={apy != null ? `${formatPercent(apy * 100)}` : "-"}
+          />
         </div>
       </CardContent>
 
