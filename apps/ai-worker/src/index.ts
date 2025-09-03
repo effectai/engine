@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync } from "fs";
 import { createWorker, Task, type WorkerEntity } from "@effectai/protocol";
 import {
   generateKeyPairFromSeed,
@@ -14,7 +14,8 @@ import { state, type State } from "./state.js";
 
 const storePath = "/tmp/ai-worker";
 const p2pBoot =
-  "/dns4/mgr1.alpha.effect.net/tcp/443/wss/p2p/12D3KooWAawwqMDxDSkZhNTDes5VH6yPQJ6G5ToePhxezJyr5SpC";
+      "/ip4/127.0.0.1/tcp/11995/ws/p2p/12D3KooWAQH4SQHt12N2eGnAUR4iixS8TAfKxRqfd17sDurZ1v5R"
+  // "/dns4/mgr1.alpha.effect.net/tcp/443/wss/p2p/12D3KooWAawwqMDxDSkZhNTDes5VH6yPQJ6G5ToePhxezJyr5SpC";
 
 const seed = Uint8Array.from(
   JSON.parse(
@@ -59,9 +60,9 @@ const mainLoop = async () => {
 	});
 	await state.worker!.connect(
 	  multiaddr(p2pBoot),
-	  workerRecipient.publicKey.toBase58(),
-	  1n,
-	  "vx1n4m9f"
+	  {recipient: workerRecipient.publicKey.toBase58(),
+	    nonce: 1n,
+	    accessCode: "7q4zp7yf"}
 	);
 	console.log("Connected to network");
 
@@ -84,11 +85,8 @@ const mainLoop = async () => {
     }
 
     if (state.current === "running") {
-      await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setTimeout(resolve, 0));
     }
-
-    if (!state.done)
-      setImmediate(() => mainLoop());
   }
 };
 

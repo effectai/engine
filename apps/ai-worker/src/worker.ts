@@ -1,7 +1,7 @@
 import { createWorker, Task, type WorkerEntity } from "@effectai/protocol";
 import { Keypair } from "@solana/web3.js";
 import type { PrivateKey, Libp2p, Connection } from "@libp2p/interface";
-import { BaseDataStore } from "datastore-core";
+import { BaseDatastore } from "datastore-core";
 
 import { state, type State } from "./state.js";
 
@@ -23,7 +23,7 @@ const processTask = async (t: Task): Promise<boolean> => {
 };
 
 const completePendingTasks = async () => {
-  let tasks = await state.worker.getTasks("");
+  let tasks = await state.worker.getTasks({});
 
   let pendingTasks = tasks.filter(
     (t) =>
@@ -71,7 +71,7 @@ export const create = async (): ReturnType<typeof createWorker> => {
       console.log("Accepted Task", detail.id);
 
       await delay(Math.floor(Math.random() * 1000 * 5));
-      await processTask(state, state.activeTask);
+      await processTask(state.activeTask);
 
       console.log(`Completed task ${detail.id}`);
 
