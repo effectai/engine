@@ -1,0 +1,27 @@
+nav.is-sticky {
+  position: sticky;
+  top: 0;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.my-7 {
+  margin-top: 9rem;
+  margin-bottom: 9rem;
+}
+
+.is-flex-1 {
+  flex: 1;
+}
+
+.is-flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

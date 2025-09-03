@@ -23,8 +23,10 @@ import {
 
 import { getCreateAccountInstruction } from "@solana-program/system";
 
-import { getAssociatedTokenAccount } from "@effectai/utils";
-import { loadKeypairSigner } from "../../utils/dist/solana";
+import {
+  loadKeypairSigner,
+  getAssociatedTokenAccount,
+} from "@effectai/solana-utils";
 
 import { fileURLToPath } from "node:url";
 import path from "node:path";

@@ -13,15 +13,15 @@ url = "https://api.apr.dev"
 
 [provider]
 cluster = "localnet"
-wallet = "./tests/keys/authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV.json"
+wallet = "./tools/keys/authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV.json"
 
 [workspace]
 members = [
-  "packages/payment/program",
-  "packages/migration/program",
-  "packages/stake/program",
-  "packages/rewards/program",
-  "packages/vesting/program",
+  "modules/payment/program",
+  "modules/migration/program",
+  "modules/stake/program",
+  "modules/reward/program",
+  "modules/vesting/program",
 ]
 
 [scripts]

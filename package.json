@@ -1,9 +1,8 @@
 {
-  "name": "effect-tasks",
+  "name": "effect-protocol-mono",
   "private": true,
   "sideEffects": false,
-  "packageManager": "pnpm@10.9.0+sha512.0486e394640d3c1fb3c9d43d49cf92879ff74f8516959c235308f5a8f62e2e19528a65cdc2a3058f587cde71eba3d5b56327c8c33a97e4c4051ca48a10ca2d5f",
-  "type": "module",
+  "packageManager": "pnpm@10.9.0+sha512.0486e394640d3c1fb3c9d43d49cf92879ff74f8516959c235308f5a8f62e2e19528a65cdc2a3058f587cde71eba3d5b56327c8c33a97e4c4051ca48a10ca2d5f", "type": "module",
   "version": "1.0.0",
   "exports": {
     ".": {
@@ -14,11 +13,11 @@
     "purge": "rm -rf node_modules pnpm-lock.yaml && pnpm recursive exec -- rm -rf node_modules dist",
     "dev": "pnpm turbo dev",
     "build": "turbo run build",
-    "cli": "node packages/cli/dist/index.js",
+    "cli": "node tools/cli/dist/index.js",
     "dashboard:generate-staging": "pnpm --filter effect-dashboard run generate-staging",
     "dashboard:generate-prod": "pnpm --filter effect-dashboard run generate-prod",
     "website:generate": "pnpm --filter effect-website run generate",
-    "task-terminal:start": "cd environments/task-poster && node --import=tsx src/server.ts",
+    "task-terminal:start": "cd apps/task-poster && node --import=tsx src/server.ts",
     "manager:start": "node packages/cli/dist/index.js manager run -k ./packages/library/tests/keys/manager.json --no-payments",
     "packages:build": "pnpm turbo build --filter @effectai/*",
     "packages:build:prod": "pnpm turbo build --filter @effectai/* --concurrency=2",

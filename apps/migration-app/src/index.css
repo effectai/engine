@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+@import "tw-animate-css";
+@import "@effectai/ui/theme.css";
+
+@custom-variant dark (&:is(.dark *));
+@plugin "@tailwindcss/typography";
+@source "../node_modules/@effectai/ui";
+
+
