@@ -32,7 +32,7 @@ This monorepo is organized into the following main directories:
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | **[`core/protocol/`](./core/protocol)**   | Core protocol implementation (`@effectai/protocol-core`) - tasking infrastructure and shared utilities |
 | **[`core/protobufs/`](./core/protobufs)** | Protocol buffer definitions (`@effectai/protobufs`) for cross-platform communication                   |
-| **[`core/program/`](./core/program)**     | Solana smart contracts and on-chain program logic                                                      |
+| **[`core/program/`](./core/program)**     | Core Lib for Solana smart contracts and on-chain program logic                                         |
 
 ### 🔧 Modules
 
