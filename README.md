@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://effect.ai/img/effect-logo.svg" alt="Effect AI Logo" height="120" />
 
-# **Task Execution Protocol**
+# **Task Engine Monorepo**
 
 **Permissionless AI Task Execution Engine. Verifiable. Decentralized. Scalable.**
 
@@ -20,7 +20,7 @@
 
 ---
 
-Welcome to the Effect AI Task Execution Engine Protocol Monorepo. This repository contains all the core packages and components required to run our decentralized, peer-to-peer tasking infrastructure.
+Welcome to the Effect AI Task Execution Engine Monorepo. This repository contains all the core packages and components required to run our decentralized, peer-to-peer tasking infrastructure.
 
 ## 📁 Repository Structure
 
@@ -28,60 +28,60 @@ This monorepo is organized into the following main directories:
 
 ### 🏗️ Core Infrastructure
 
-| Directory | Description |
-| --------- | ----------- |
-| **[`core/protocol/`](./core/protocol)** | Core protocol implementation (`@effectai/protocol-core`) - tasking infrastructure and shared utilities |
-| **[`core/protobufs/`](./core/protobufs)** | Protocol buffer definitions (`@effectai/protobufs`) for cross-platform communication |
-| **[`core/program/`](./core/program)** | Solana smart contracts and on-chain program logic |
+| Directory                                 | Description                                                                                            |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **[`core/protocol/`](./core/protocol)**   | Core protocol implementation (`@effectai/protocol-core`) - tasking infrastructure and shared utilities |
+| **[`core/protobufs/`](./core/protobufs)** | Protocol buffer definitions (`@effectai/protobufs`) for cross-platform communication                   |
+| **[`core/program/`](./core/program)**     | Solana smart contracts and on-chain program logic                                                      |
 
 ### 🔧 Modules
 
-| Directory | Description |
-| --------- | ----------- |
-| **[`modules/manager/`](./modules/manager)** | Manager node implementation (`@effectai/manager`) - orchestrates task distribution |
-| **[`modules/worker/`](./modules/worker)** | Worker node implementation (`@effectai/worker`) - executes assigned tasks |
-| **[`modules/payment/`](./modules/payment)** | Payment processing module (`@effectai/payment`) |
-| **[`modules/reward/`](./modules/reward)** | Reward distribution system (`@effectai/reward`) |
-| **[`modules/stake/`](./modules/stake)** | Staking mechanism implementation (`@effectai/stake`) |
-| **[`modules/vesting/`](./modules/vesting)** | Token vesting functionality (`@effectai/vesting`) |
-| **[`modules/migration/`](./modules/migration)** | Data migration utilities (`@effectai/migration`) |
+| Directory                                       | Description                                                                        |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **[`modules/manager/`](./modules/manager)**     | Manager node implementation (`@effectai/manager`) - orchestrates task distribution |
+| **[`modules/worker/`](./modules/worker)**       | Worker node implementation (`@effectai/worker`) - executes assigned tasks          |
+| **[`modules/payment/`](./modules/payment)**     | Payment processing module (`@effectai/payment`)                                    |
+| **[`modules/reward/`](./modules/reward)**       | Reward distribution system (`@effectai/reward`)                                    |
+| **[`modules/stake/`](./modules/stake)**         | Staking mechanism implementation (`@effectai/stake`)                               |
+| **[`modules/vesting/`](./modules/vesting)**     | Token vesting functionality (`@effectai/vesting`)                                  |
+| **[`modules/migration/`](./modules/migration)** | Data migration utilities (`@effectai/migration`)                                   |
 
 ### 📦 Packages
 
-| Directory | Description |
-| --------- | ----------- |
-| **[`packages/library/`](./packages/library)** | Core protocol library (`@effectai/protocol`) - main API package |
-| **[`packages/utils/`](./packages/utils)** | Shared utilities (`@effectai/utils`) |
-| **[`packages/solana-utils/`](./packages/solana-utils)** | Solana-specific utilities (`@effectai/solana-utils`) |
-| **[`packages/test-utils/`](./packages/test-utils)** | Testing utilities (`@effectai/test-utils`) |
-| **[`packages/ui/`](./packages/ui)** | Shared UI components (`@effectai/ui`) |
-| **[`packages/config/`](./packages/config)** | Configuration management (`@effectai/config`) |
-| **[`packages/wallets-vue/`](./packages/wallets-vue)** | Vue.js wallet integration (`@effectai/wallets-vue`) |
+| Directory                                               | Description                                                     |
+| ------------------------------------------------------- | --------------------------------------------------------------- |
+| **[`packages/library/`](./packages/library)**           | Core protocol library (`@effectai/protocol`) - main API package |
+| **[`packages/utils/`](./packages/utils)**               | Shared utilities (`@effectai/utils`)                            |
+| **[`packages/solana-utils/`](./packages/solana-utils)** | Solana-specific utilities (`@effectai/solana-utils`)            |
+| **[`packages/test-utils/`](./packages/test-utils)**     | Testing utilities (`@effectai/test-utils`)                      |
+| **[`packages/ui/`](./packages/ui)**                     | Shared UI components (`@effectai/ui`)                           |
+| **[`packages/config/`](./packages/config)**             | Configuration management (`@effectai/config`)                   |
+| **[`packages/wallets-vue/`](./packages/wallets-vue)**   | Vue.js wallet integration (`@effectai/wallets-vue`)             |
 
 ### 🌐 Applications
 
-| Directory | Description |
-| --------- | ----------- |
-| **[`apps/portal/`](./apps/portal)** | Main Effect portal web application |
-| **[`apps/website/`](./apps/website)** | Marketing and information website |
-| **[`apps/docs/`](./apps/docs)** | Documentation site |
-| **[`apps/staking-app/`](./apps/staking-app)** | Staking interface application |
-| **[`apps/migration-app/`](./apps/migration-app)** | Token migration interface |
-| **[`apps/task-poster/`](./apps/task-poster)** | Task creation and posting interface |
-| **[`apps/playground/`](./apps/playground)** | Development playground and testing environment |
+| Directory                                         | Description                                    |
+| ------------------------------------------------- | ---------------------------------------------- |
+| **[`apps/portal/`](./apps/portal)**               | Main Effect portal web application             |
+| **[`apps/website/`](./apps/website)**             | Marketing and information website              |
+| **[`apps/docs/`](./apps/docs)**                   | Documentation site                             |
+| **[`apps/staking-app/`](./apps/staking-app)**     | Staking interface application                  |
+| **[`apps/migration-app/`](./apps/migration-app)** | Token migration interface                      |
+| **[`apps/task-poster/`](./apps/task-poster)**     | Task creation and posting interface            |
+| **[`apps/playground/`](./apps/playground)**       | Development playground and testing environment |
 
 ### 🛠️ Tools & Services
 
-| Directory | Description |
-| --------- | ----------- |
-| **[`tools/cli/`](./tools/cli)** | Command-line interface (`@effectai/cli`) for network interaction |
-| **[`tools/docker/`](./tools/docker)** | Docker configurations and deployment scripts |
-| **[`tools/scripts/`](./tools/scripts)** | Development and deployment scripts |
-| **[`tools/keys/`](./tools/keys)** | Key management utilities |
-| **[`tools/guix/`](./tools/guix)** | Guix package definitions |
-| **[`services/cmc-endpoint/`](./services/cmc-endpoint)** | CoinMarketCap API endpoint service |
-| **[`idls/`](./idls)** | Interface Definition Language files for Solana contracts |
-| **[`assets/templates/`](./assets/templates)** | Task templates and predefined schemas |
+| Directory                                               | Description                                                      |
+| ------------------------------------------------------- | ---------------------------------------------------------------- |
+| **[`tools/cli/`](./tools/cli)**                         | Command-line interface (`@effectai/cli`) for network interaction |
+| **[`tools/docker/`](./tools/docker)**                   | Docker configurations and deployment scripts                     |
+| **[`tools/scripts/`](./tools/scripts)**                 | Development and deployment scripts                               |
+| **[`tools/keys/`](./tools/keys)**                       | Key management utilities                                         |
+| **[`tools/guix/`](./tools/guix)**                       | Guix package definitions                                         |
+| **[`services/cmc-endpoint/`](./services/cmc-endpoint)** | CoinMarketCap API endpoint service                               |
+| **[`idls/`](./idls)**                                   | Interface Definition Language files for Solana contracts         |
+| **[`assets/templates/`](./assets/templates)**           | Task templates and predefined schemas                            |
 
 # 🚀 Getting Started
 
