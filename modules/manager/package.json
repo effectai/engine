@@ -7,7 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsup --config ../../tsup.config.package.ts",
-    "dev": "tsup --config ../../tsup.config.package.ts --watch"
+    "dev": "tsup --config ../../tsup.config.package.ts --watch src"
   },
   "exports": {
     ".": {

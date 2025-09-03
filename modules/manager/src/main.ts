@@ -7,6 +7,8 @@ import {
   webSockets,
 } from "@effectai/protocol-core";
 
+import { Request, Response } from 'express';
+
 import { createPaymentManager } from "./modules/createPaymentManager.js";
 import { createTaskManager } from "./modules/createTaskManager.js";
 import { createManagerTaskStore } from "./stores/managerTaskStore.js";
@@ -20,6 +22,7 @@ import { PAYMENT_BATCH_SIZE, TASK_ACCEPTANCE_TIME } from "./consts.js";
 
 import {
   HttpTransport,
+  HttpHandler,
   Libp2pTransport,
   type TaskRecord,
   createEffectEntity,
@@ -345,11 +348,41 @@ export const createManager = async ({
     }
   });
 
+  /**
+   * Returns an ordered list of task results. Filters out only the
+   * first submission event, and adds a `taskId` property to it. Task
+   * IDs to fetch are supplied as a semicolon separated path
+   * parameter, like `?ids=1;2;3`
+   *
+   * If the task could not be found, the result array contains an
+   * object with an `error` key at the corresponding list index.
+   */
+  entity.get("/task-results", (async (req: Request, res: Response) => {
+    const { ids } = req.query;
+
+    if (!ids) return res.status(404).json('not found')
+
+    const taskIds = (ids as string).split(';');
+
+    const tasks = taskIds.map(async (taskId: string) => {
+      return await taskManager.getTask({
+	taskId,
+	index: "completed"
+      }).then(a => a.events
+	.filter((e: any) => e.type === 'submission')
+	.map((e: any) => ({ ...e, taskId}))[0])
+	.catch(_e => ({ taskId, error: "NOT FOUND"}));
+    });
+
+    const all = await Promise.all(tasks);
+    res.json(all);
+  }) as HttpHandler);
+
   entity.get("/", async (_req, res) => {
     const announcedAddresses =
       managerSettings.announce.length === 0
-        ? [entity.getMultiAddress()?.[0]]
-        : managerSettings.announce;
+	? [entity.getMultiAddress()?.[0]]
+	: managerSettings.announce;
 
     res.json({
       peerId: entity.getPeerId().toString(),
@@ -368,8 +401,8 @@ export const createManager = async ({
     const { template, providerPeerIdStr } = req.body;
     try {
       await taskManager.registerTemplate({
-        template,
-        providerPeerIdStr,
+	template,
+	providerPeerIdStr,
       });
 
       res.json({ status: "Template registered", id: template.templateId });
