@@ -26,13 +26,14 @@ import {
 } from "@/lib/stake-helpers";
 import type { VestingAccount } from "@effectai/vesting";
 import { useClaimRewardMutation } from "@/lib/useMutations";
-import { useSolanaContext } from "@/providers/SolanaProvider";
 import {
   useGetEffectTokenAccount,
   useGetInterMediaryRewardVaultBalance,
   useGetVestingVaultBalance,
 } from "@/lib/useQueries";
 import { useCallback } from "react";
+import { useWalletContext } from "@/providers/WalletContextProvider";
+import { useConnectionContext } from "@/providers/ConnectionContextProvider";
 
 type Props = {
   stakeAccount: Account<StakeAccount> | null | undefined;
@@ -53,7 +54,8 @@ export function StakeOverview({
   lowSolBalance = false,
   className,
 }: Props) {
-  const { connection, signer, address } = useSolanaContext();
+  const { connection } = useConnectionContext();
+  const { signer, address } = useWalletContext();
 
   const { data: intermediaryVaultBalance } =
     useGetInterMediaryRewardVaultBalance(connection);

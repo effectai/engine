@@ -31,11 +31,9 @@ export function useAnimatedStakeAge(stakeStartAtSec: number) {
 }
 
 export function calculateApy({
-  yourStake,
   totalStaked,
   totalRewards,
 }: {
-  yourStake: bigint;
   totalStaked: bigint;
   totalRewards: number;
 }) {

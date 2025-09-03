@@ -2,8 +2,14 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
-import { AppProviders } from "./providers/AppProviders.tsx";
 import { Buffer } from "buffer";
+import { ProfileContextProvider } from "./providers/ProfileContextProvider.tsx";
+import { ConnectionContextProvider } from "./providers/ConnectionContextProvider.tsx";
+import { QueryClientContextProvider } from "./providers/QueryClientProvider.tsx";
+import {
+  UnifiedWalletContextProvider,
+  WalletContextProvider,
+} from "./providers/WalletContextProvider.tsx";
 
 if (typeof window !== "undefined") {
   (window as any).Buffer = Buffer;
@@ -11,8 +17,16 @@ if (typeof window !== "undefined") {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AppProviders>
-      <App />
-    </AppProviders>
+    <QueryClientContextProvider>
+      <ProfileContextProvider>
+        <ConnectionContextProvider>
+          <UnifiedWalletContextProvider>
+            <WalletContextProvider>
+              <App />
+            </WalletContextProvider>
+          </UnifiedWalletContextProvider>
+        </ConnectionContextProvider>
+      </ProfileContextProvider>
+    </QueryClientContextProvider>
   </StrictMode>,
 );

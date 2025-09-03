@@ -1,11 +1,27 @@
 import { cn } from "@/lib/utils";
 import {
+  appendTransactionMessageInstructions,
+  createTransactionMessage,
   generateKeyPairSigner,
   lamports,
+  sendAndConfirmTransactionFactory,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  SolanaError,
   type Instruction,
   type KeyPairSigner,
   type TransactionSigner,
+  pipe,
+  signTransactionMessageWithSigners,
+  getSignatureFromTransaction,
+  createSolanaRpc,
+  createSubscriptionRpc,
+  createSolanaRpcSubscriptions,
+  assertIsSendableTransaction,
+  sendTransactionWithoutConfirmingFactory,
 } from "@solana/kit";
+
+import { createRecentSignatureConfirmationPromiseFactory } from "@solana/transaction-confirmation";
 import type { Connection } from "solana-kite";
 export function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -76,24 +92,58 @@ export const executeTransaction = async (
   connection: Connection,
   signer: TransactionSigner,
   instructions: Instruction[],
+  commitment: "processed" | "confirmed" | "finalized" = "finalized",
 ) => {
   try {
-    const tx = await connection.sendTransactionFromInstructions({
-      feePayer: signer,
-      instructions: instructions,
-      commitment: "finalized",
+    const rpc = createSolanaRpc("http://localhost:8899");
+    const rpcSubscriptions = createSolanaRpcSubscriptions(
+      "ws://localhost:8900",
+    );
+
+    const sendTransaction = sendTransactionWithoutConfirmingFactory({ rpc });
+
+    const getRecentSignatureConfirmationPromise =
+      createRecentSignatureConfirmationPromiseFactory({
+        rpc,
+        rpcSubscriptions,
+      });
+
+    const { value: latestBlockhash } = await connection.rpc
+      .getLatestBlockhash()
+      .send();
+
+    let transactionMessage = pipe(
+      createTransactionMessage({ version: 0 }),
+      (message) =>
+        setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, message),
+      (message) => setTransactionMessageFeePayerSigner(signer, message),
+      (message) => appendTransactionMessageInstructions(instructions, message),
+    );
+
+    const signedTransaction =
+      await signTransactionMessageWithSigners(transactionMessage);
+    const signature = getSignatureFromTransaction(signedTransaction);
+    await sendTransaction(signedTransaction, {
+      commitment,
     });
 
-    //wait 2 seconds
-    return tx;
+    const abortSignal = new AbortController().signal;
+    await getRecentSignatureConfirmationPromise({
+      abortSignal,
+      commitment,
+      signature,
+    });
+
+    console.log("Transaction successful with signature:", signature);
+
+    return signature;
   } catch (e) {
-    //swallow this error for now
-    if (e.message.includes('access property "lastValidBlockHeight"')) {
-      console.warn("Swallowing lastValidBlockHeight error");
-      return;
+    if (e instanceof SolanaError) {
+      console.error("SolanaError: ", e.context);
+    } else {
+      console.error("Transaction error: ", e);
     }
 
-    console.error("Transaction error: ", e);
     throw e;
   }
 };

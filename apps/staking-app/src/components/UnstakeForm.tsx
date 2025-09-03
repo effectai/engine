@@ -19,10 +19,11 @@ import { SolanaError, address as toAddress } from "@solana/kit";
 import { formatNumber, Row, shorten, trimTrailingZeros } from "@/lib/helpers";
 import type { StakeAccount } from "@effectai/stake";
 import { buildUnstakeInstruction } from "@effectai/solana-utils";
-import { useSolanaContext } from "@/providers/SolanaProvider";
-import { EFFECT } from "@/lib/useEffectConfig";
 import { useActiveVestingAccounts } from "@/lib/useQueries";
+import { useUnstakeMutation } from "@/lib/useMutations";
 import { VestingScheduleItem } from "./VestingScheduleItem";
+import { useConnectionContext } from "@/providers/ConnectionContextProvider";
+import { useWalletContext } from "@/providers/WalletContextProvider";
 
 type Props = {
   stakeAccount: Account<StakeAccount>;
@@ -33,13 +34,13 @@ type Props = {
 };
 
 export function UnstakeForm({
-  signer,
   stakeAccount,
   isPending = false,
   tokenSymbol = "EFFECT",
   className,
 }: Props) {
-  const { connection, address } = useSolanaContext();
+  const { address, signer, userTokenAccount } = useWalletContext();
+  const { connection } = useConnectionContext();
   const max = Number(stakeAccount.data.amount / BigInt(1e6));
 
   const { data: vestingAccounts } = useActiveVestingAccounts(
@@ -88,31 +89,20 @@ export function UnstakeForm({
     form.setValue("amount", trimTrailingZeros(v), { shouldValidate: true });
   };
 
+  const { mutateAsync: unstake } = useUnstakeMutation();
   const onUnstakeHandler = React.useCallback(
     async (amount: number) => {
       try {
-        if (!connection || !address || !signer) {
-          throw new Error("No connection available");
+        if (!connection || !address || !signer || !userTokenAccount) {
+          throw new Error("Wallet not connected");
         }
 
-        const userTokenAccount = await connection.getTokenAccountAddress(
-          toAddress(address),
-          toAddress(EFFECT.EFFECT_SPL_MINT),
-        );
-
-        const unstakeInstructions = await buildUnstakeInstruction({
-          amount: amount * 1e6,
-          mint: toAddress(EFFECT.EFFECT_SPL_MINT),
-          userTokenAccount,
-          stakeAccount: stakeAccount.address,
-          rpc: connection.rpc,
+        await unstake({
+          connection,
           signer,
-        });
-
-        return await connection.sendTransactionFromInstructions({
-          feePayer: signer,
-          instructions: unstakeInstructions,
-          maximumClientSideRetries: 3,
+          stakeAccount,
+          recipientTokenAccount: userTokenAccount,
+          amount,
         });
       } catch (e) {
         if (e instanceof SolanaError) {
@@ -237,14 +227,11 @@ export function UnstakeForm({
         </CardContent>
       </Card>
       {vestingAccounts && vestingAccounts.length > 0 && (
-        <Card className="flex flex-col flex-none w-96">
+        <Card className="flex flex-col flex-grow">
           <CardHeader>
             <CardTitle className="text-sm">Active Unstakes</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Unstaking will initiate a 7-day cooldown period, after which you can
-            withdraw your tokens. During this time, your tokens will not earn
-            rewards.
             {vestingAccounts && vestingAccounts.length > 0 && (
               <div className="mt-3 space-y-2">
                 {vestingAccounts.map((v, idx) => (

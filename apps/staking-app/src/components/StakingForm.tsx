@@ -14,7 +14,6 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
-import { useSolanaContext, type Balance } from "@/providers/SolanaProvider";
 import type {
   Account,
   AccountInfoWithBase64EncodedData,
@@ -26,11 +25,12 @@ import {
   SolanaError,
   address as toAddress,
 } from "@solana/kit";
-import { EFFECT } from "@/lib/useEffectConfig";
 import { getStakeInstructionAsync, type StakeAccount } from "@effectai/stake";
 import { Row, formatNumber, trimTrailingZeros } from "@/lib/helpers.tsx";
 import { useStakeMutation, useTopupMutation } from "@/lib/useMutations";
 import { useEffectBalance, useGetEffectTokenAccount } from "@/lib/useQueries";
+import { useWalletContext } from "@/providers/WalletContextProvider";
+import { useConnectionContext } from "@/providers/ConnectionContextProvider";
 
 type Props = {
   stakeAccount: Account<StakeAccount> | null | undefined;
@@ -64,19 +64,12 @@ export function StakeForm({
   initialAmount = 0,
   className,
 }: Props) {
-  const { connection, address } = useSolanaContext();
+  const { address, lamports, effectBalance, userTokenAccount } =
+    useWalletContext();
 
-  const { data: userTokenAccount } = useGetEffectTokenAccount(
-    connection,
-    address,
-  );
+  const { connection } = useConnectionContext();
 
-  const { data: availableBalance } = useEffectBalance(
-    connection,
-    userTokenAccount,
-  );
-
-  const max = Number(availableBalance?.uiAmount);
+  const max = Number(effectBalance?.uiAmount ?? 0);
 
   const form = useForm<{ amount: string }>({
     resolver: zodResolver(z.object({ amount: amountSchema(max) })),

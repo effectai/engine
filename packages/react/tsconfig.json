@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "jsx": "react-jsx",
+    "declaration": false,            // d.ts handled by vite-plugin-dts
+    "emitDeclarationOnly": false,
+    "moduleResolution": "Bundler",
+    "skipLibCheck": true,
+    "strict": true,
+    "baseUrl": ".",
+    "types": ["react", "react-dom"],
+    "paths": { "@/*": ["src/*"] }
+  },
+  "include": ["src"]
+}
