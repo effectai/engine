@@ -4,7 +4,7 @@
     v-if="config"
   >
     <div class="prose dark:text-white mt-12" id="step-intro">
-      <h2 class="dark:text-white">Migrate Your $EFX Tokens to Solana</h2>
+      <h2 class="text-primary">Migrate Your $EFX Tokens to Solana</h2>
       <p>Welcome to the official $EFX to $EFFECT token migration portal!</p>
       <p>
         As you may know by now, Effect AI is migrating its native token to the
@@ -308,7 +308,7 @@
 
 <script setup lang="ts">
 import { useQueryClient } from "@tanstack/vue-query";
-import { WalletMultiButton, useWallet } from "solana-wallets-vue";
+import { useWallet, WalletMultiButton } from "solana-wallets-vue";
 
 const message: Ref<Uint8Array | null> = ref(null);
 const signature: Ref<Uint8Array | null> = ref(null);

@@ -32,7 +32,8 @@
               {{ claimablePayments.length }} Payments
             </div>
             <p class="text-xs text-gray-400 dark:text-gray-500 italic mt-1">
-              Across {{ managerPaymentBatches.length }} manager(s)
+              {{ totalAmount }} EFFECT Across
+              {{ managerPaymentBatches.length }} Batches(s)
             </p>
           </div>
 
@@ -62,6 +63,17 @@
         <!-- Footer -->
         <template #footer>
           <!-- Warning for low SOL -->
+
+          <UAlert
+            v-if="stalePaymentsCount > 50"
+            icon="i-heroicons-exclamation-triangle"
+            color="warning"
+            variant="subtle"
+            title="Stale Payments Detected"
+            :description="`You have ${stalePaymentsCount} stale payments totaling ${stalePaymentsFormatted} that cannot be claimed. Please contact us in discord for assistance .`"
+            class="mb-4"
+          />
+
           <UAlert
             v-if="balance && balance.value <= 0.01"
             icon="i-heroicons-exclamation-triangle"
@@ -121,6 +133,16 @@ const { useClaimPayments, computedTotalPaymentAmount, useGetPaymentsQuery } =
   usePayments();
 const { data: managerPaymentBatches } = useGetPaymentsQuery();
 
+const totalAmount = computed(() => {
+  if (
+    !managerPaymentBatches.value ||
+    managerPaymentBatches.value.length === 0
+  ) {
+    return 0;
+  }
+
+  return computedTotalPaymentAmount(managerPaymentBatches);
+});
 const batchLength = ref(7);
 const maxBatchLength = computed(() => {
   return Math.max(managerPaymentBatches.value?.length || 0, 10);
@@ -132,10 +154,31 @@ const props = defineProps<{
 }>();
 const data = useVModel(props, "modelValue", emit);
 
-const claimablePayments = computed(() => {
-  return managerPaymentBatches.value?.flatMap(
-    (batch) => batch.claimablePayments,
+const stalePayments = computed(() => {
+  return managerPaymentBatches.value
+    ?.filter((b) => b.recipient !== account.value)
+    .flatMap((batch) => batch.claimablePayments);
+});
+const stalePaymentsCount = computed(() => {
+  return stalePayments.value?.length || 0;
+});
+const stalePaymentsAmount = computed(() => {
+  return (
+    stalePayments.value?.reduce((acc, payment) => {
+      return acc + payment.state.amount;
+    }, 0n) || 0n
   );
+});
+const stalePaymentsFormatted = computed(() => {
+  return stalePaymentsAmount.value
+    ? `${Number(stalePaymentsAmount.value) / 1e6} EFFECT`
+    : "0 EFFECT";
+});
+
+const claimablePayments = computed(() => {
+  return managerPaymentBatches.value
+    ?.filter((b) => b.recipient === account.value)
+    .flatMap((batch) => batch.claimablePayments);
 });
 
 const canClaim = computed(() => {
@@ -151,6 +194,7 @@ const canClaim = computed(() => {
   if (!balance.value || balance.value.value <= 0.01) {
     return false;
   }
+
   return true;
 });
 
@@ -162,10 +206,6 @@ const {
   totalProofs,
   isPending,
 } = useClaimPayments();
-
-const claimingProgress = computed(
-  () => (currentProof.value / totalProofs.value) * 100 || 0,
-);
 
 const toast = useToast();
 const { data: managers, isFetching, isError, error } = useFetchManagerNodes();
@@ -189,15 +229,24 @@ const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
           throw new Error("Worker instance is not available.");
         }
 
+        if (!batchingManager.value) {
+          throw new Error("No online manager found to claim payments.");
+        }
+
+        if (
+          !managerPaymentBatches.value ||
+          managerPaymentBatches.value.length === 0
+        ) {
+          throw new Error("No claimable payments found.");
+        }
+
         await instance.value.entity.node.dial(
           multiaddr(batchingManager.value.announcedAddresses[0]),
         );
 
-        for (const batch of managerPaymentBatches.value || []) {
-          if (!batchingManager.value) {
-            throw new Error("No online manager found to claim payments.");
-          }
-
+        for (const batch of managerPaymentBatches.value.filter(
+          (x) => x.recipient === account.value,
+        ) || []) {
           if (
             !batch.claimablePayments ||
             batch.claimablePayments.length === 0

@@ -44,7 +44,7 @@
       <div
         v-for="(task, index) in tasks"
         :key="task.state.id"
-        class="flex justify-between p-3 border border-zinc-700 rounded-lg overflow-hidden duration-300 hover:border-emerald-400/50 hover:shadow-md hover:shadow-emerald-400/10 transition-transform"
+        class="flex justify-between border border-zinc-700 rounded-lg overflow-hidden duration-300 hover:border-emerald-400/50 hover:shadow-md hover:shadow-emerald-400/10 transition-transform"
       >
         <WorkerTaskListItem
           :task-record="task"

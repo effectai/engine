@@ -30,12 +30,12 @@ import {
   transformEncoder,
   type Account,
   type Address,
-  type Codec,
-  type Decoder,
   type EncodedAccount,
-  type Encoder,
   type FetchAccountConfig,
   type FetchAccountsConfig,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
@@ -74,7 +74,7 @@ export type VestingAccountArgs = {
   tag: ReadonlyUint8Array;
 };
 
-export function getVestingAccountEncoder(): Encoder<VestingAccountArgs> {
+export function getVestingAccountEncoder(): FixedSizeEncoder<VestingAccountArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
@@ -91,7 +91,7 @@ export function getVestingAccountEncoder(): Encoder<VestingAccountArgs> {
   );
 }
 
-export function getVestingAccountDecoder(): Decoder<VestingAccount> {
+export function getVestingAccountDecoder(): FixedSizeDecoder<VestingAccount> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['authority', getAddressDecoder()],
@@ -105,7 +105,7 @@ export function getVestingAccountDecoder(): Decoder<VestingAccount> {
   ]);
 }
 
-export function getVestingAccountCodec(): Codec<
+export function getVestingAccountCodec(): FixedSizeCodec<
   VestingAccountArgs,
   VestingAccount
 > {

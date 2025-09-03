@@ -285,7 +285,8 @@ export async function getStakeGenesisInstructionAsync<
   }
   if (!accounts.migrationVaultTokenAccount.value) {
     accounts.migrationVaultTokenAccount.value = await getProgramDerivedAddress({
-      programAddress,
+      programAddress:
+        'effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR' as Address<'effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR'>,
       seeds: [
         getAddressEncoder().encode(
           expectAddress(accounts.migrationAccount.value)

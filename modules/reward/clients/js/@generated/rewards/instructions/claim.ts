@@ -17,15 +17,15 @@ import {
   getStructDecoder,
   getStructEncoder,
   transformEncoder,
+  type AccountMeta,
+  type AccountSignerMeta,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
-  type IAccountMeta,
-  type IAccountSignerMeta,
-  type IInstruction,
-  type IInstructionWithAccounts,
-  type IInstructionWithData,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
+  type Instruction,
+  type InstructionWithAccounts,
+  type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
@@ -49,21 +49,19 @@ export function getClaimDiscriminatorBytes() {
 
 export type ClaimInstruction<
   TProgram extends string = typeof EFFECT_REWARDS_PROGRAM_ADDRESS,
-  TAccountReflectionAccount extends string | IAccountMeta<string> = string,
-  TAccountRewardVaultTokenAccount extends
-    | string
-    | IAccountMeta<string> = string,
-  TAccountStakeAccount extends string | IAccountMeta<string> = string,
-  TAccountRewardAccount extends string | IAccountMeta<string> = string,
-  TAccountRecipientTokenAccount extends string | IAccountMeta<string> = string,
-  TAccountAuthority extends string | IAccountMeta<string> = string,
+  TAccountReflectionAccount extends string | AccountMeta<string> = string,
+  TAccountRewardVaultTokenAccount extends string | AccountMeta<string> = string,
+  TAccountStakeAccount extends string | AccountMeta<string> = string,
+  TAccountRewardAccount extends string | AccountMeta<string> = string,
+  TAccountRecipientTokenAccount extends string | AccountMeta<string> = string,
+  TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
+    | AccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+> = Instruction<TProgram> &
+  InstructionWithData<ReadonlyUint8Array> &
+  InstructionWithAccounts<
     [
       TAccountReflectionAccount extends string
         ? WritableAccount<TAccountReflectionAccount>
@@ -82,7 +80,7 @@ export type ClaimInstruction<
         : TAccountRecipientTokenAccount,
       TAccountAuthority extends string
         ? WritableSignerAccount<TAccountAuthority> &
-            IAccountSignerMeta<TAccountAuthority>
+            AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
       TAccountTokenProgram extends string
         ? ReadonlyAccount<TAccountTokenProgram>
@@ -95,20 +93,20 @@ export type ClaimInstructionData = { discriminator: ReadonlyUint8Array };
 
 export type ClaimInstructionDataArgs = {};
 
-export function getClaimInstructionDataEncoder(): Encoder<ClaimInstructionDataArgs> {
+export function getClaimInstructionDataEncoder(): FixedSizeEncoder<ClaimInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({ ...value, discriminator: CLAIM_DISCRIMINATOR })
   );
 }
 
-export function getClaimInstructionDataDecoder(): Decoder<ClaimInstructionData> {
+export function getClaimInstructionDataDecoder(): FixedSizeDecoder<ClaimInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getClaimInstructionDataCodec(): Codec<
+export function getClaimInstructionDataCodec(): FixedSizeCodec<
   ClaimInstructionDataArgs,
   ClaimInstructionData
 > {
@@ -358,7 +356,7 @@ export function getClaimInstruction<
 
 export type ParsedClaimInstruction<
   TProgram extends string = typeof EFFECT_REWARDS_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -375,11 +373,11 @@ export type ParsedClaimInstruction<
 
 export function parseClaimInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[],
 >(
-  instruction: IInstruction<TProgram> &
-    IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+  instruction: Instruction<TProgram> &
+    InstructionWithAccounts<TAccountMetas> &
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedClaimInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 7) {
     // TODO: Coded error.
@@ -387,7 +385,7 @@ export function parseClaimInstruction<
   }
   let accountIndex = 0;
   const getNextAccount = () => {
-    const accountMeta = instruction.accounts![accountIndex]!;
+    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
     accountIndex += 1;
     return accountMeta;
   };

@@ -1,11 +1,7 @@
 "use client";
 
-import {
-  UnifiedWalletButton,
-  UnifiedWalletProvider,
-} from "@jup-ag/wallet-adapter"; // or the exact provider/hook you use
+import { UnifiedWalletProvider } from "@jup-ag/wallet-adapter";
 import { ReactNode } from "react";
-import { TestButton } from "../components/TestButton";
 
 export default function WalletProvider({ children }: { children: ReactNode }) {
   return (

@@ -17,27 +17,27 @@ import {
   getStructDecoder,
   getStructEncoder,
   transformEncoder,
+  type AccountMeta,
+  type AccountSignerMeta,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
-  type IAccountMeta,
-  type IAccountSignerMeta,
-  type IInstruction,
-  type IInstructionWithAccounts,
-  type IInstructionWithData,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
+  type Instruction,
+  type InstructionWithAccounts,
+  type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from '@solana/kit';
-import { EFFECT_REWARDS_PROGRAM_ADDRESS } from '../programs';
+} from "@solana/kit";
+import { EFFECT_REWARDS_PROGRAM_ADDRESS } from "../programs";
 import {
   expectAddress,
   getAccountMetaFactory,
   type ResolvedAccount,
-} from '../shared';
+} from "../shared";
 
 export const ENTER_DISCRIMINATOR = new Uint8Array([
   139, 49, 209, 114, 88, 91, 77, 134,
@@ -49,22 +49,22 @@ export function getEnterDiscriminatorBytes() {
 
 export type EnterInstruction<
   TProgram extends string = typeof EFFECT_REWARDS_PROGRAM_ADDRESS,
-  TAccountReflectionAccount extends string | IAccountMeta<string> = string,
-  TAccountStakeAccount extends string | IAccountMeta<string> = string,
-  TAccountStakeVaultTokenAccount extends string | IAccountMeta<string> = string,
-  TAccountRewardAccount extends string | IAccountMeta<string> = string,
-  TAccountAuthority extends string | IAccountMeta<string> = string,
-  TAccountMint extends string | IAccountMeta<string> = string,
+  TAccountReflectionAccount extends string | AccountMeta<string> = string,
+  TAccountStakeAccount extends string | AccountMeta<string> = string,
+  TAccountStakeVaultTokenAccount extends string | AccountMeta<string> = string,
+  TAccountRewardAccount extends string | AccountMeta<string> = string,
+  TAccountAuthority extends string | AccountMeta<string> = string,
+  TAccountMint extends string | AccountMeta<string> = string,
   TAccountStakeProgram extends
     | string
-    | IAccountMeta<string> = 'effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e',
+    | AccountMeta<string> = "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e",
   TAccountSystemProgram extends
     | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
-  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
+    | AccountMeta<string> = "11111111111111111111111111111111",
+  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+> = Instruction<TProgram> &
+  InstructionWithData<ReadonlyUint8Array> &
+  InstructionWithAccounts<
     [
       TAccountReflectionAccount extends string
         ? WritableAccount<TAccountReflectionAccount>
@@ -80,7 +80,7 @@ export type EnterInstruction<
         : TAccountRewardAccount,
       TAccountAuthority extends string
         ? WritableSignerAccount<TAccountAuthority> &
-            IAccountSignerMeta<TAccountAuthority>
+            AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
       TAccountMint extends string
         ? ReadonlyAccount<TAccountMint>
@@ -99,26 +99,26 @@ export type EnterInstructionData = { discriminator: ReadonlyUint8Array };
 
 export type EnterInstructionDataArgs = {};
 
-export function getEnterInstructionDataEncoder(): Encoder<EnterInstructionDataArgs> {
+export function getEnterInstructionDataEncoder(): FixedSizeEncoder<EnterInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: ENTER_DISCRIMINATOR })
+    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({ ...value, discriminator: ENTER_DISCRIMINATOR }),
   );
 }
 
-export function getEnterInstructionDataDecoder(): Decoder<EnterInstructionData> {
+export function getEnterInstructionDataDecoder(): FixedSizeDecoder<EnterInstructionData> {
   return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getEnterInstructionDataCodec(): Codec<
+export function getEnterInstructionDataCodec(): FixedSizeCodec<
   EnterInstructionDataArgs,
   EnterInstructionData
 > {
   return combineCodec(
     getEnterInstructionDataEncoder(),
-    getEnterInstructionDataDecoder()
+    getEnterInstructionDataDecoder(),
   );
 }
 
@@ -163,7 +163,7 @@ export async function getEnterInstructionAsync<
     TAccountStakeProgram,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   EnterInstruction<
     TProgramAddress,
@@ -209,7 +209,7 @@ export async function getEnterInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([114, 101, 102, 108, 101, 99, 116, 105, 111, 110])
+          new Uint8Array([114, 101, 102, 108, 101, 99, 116, 105, 111, 110]),
         ),
         getAddressEncoder().encode(expectAddress(accounts.mint.value)),
       ],
@@ -217,7 +217,8 @@ export async function getEnterInstructionAsync<
   }
   if (!accounts.stakeVaultTokenAccount.value) {
     accounts.stakeVaultTokenAccount.value = await getProgramDerivedAddress({
-      programAddress,
+      programAddress:
+        "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e" as Address<"effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e">,
       seeds: [
         getAddressEncoder().encode(expectAddress(accounts.stakeAccount.value)),
       ],
@@ -233,14 +234,14 @@ export async function getEnterInstructionAsync<
   }
   if (!accounts.stakeProgram.value) {
     accounts.stakeProgram.value =
-      'effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e' as Address<'effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e'>;
+      "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e" as Address<"effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e">;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   const instruction = {
     accounts: [
       getAccountMeta(accounts.reflectionAccount),
@@ -310,7 +311,7 @@ export function getEnterInstruction<
     TAccountStakeProgram,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): EnterInstruction<
   TProgramAddress,
   TAccountReflectionAccount,
@@ -351,14 +352,14 @@ export function getEnterInstruction<
   // Resolve default values.
   if (!accounts.stakeProgram.value) {
     accounts.stakeProgram.value =
-      'effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e' as Address<'effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e'>;
+      "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e" as Address<"effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e">;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   const instruction = {
     accounts: [
       getAccountMeta(accounts.reflectionAccount),
@@ -389,7 +390,7 @@ export function getEnterInstruction<
 
 export type ParsedEnterInstruction<
   TProgram extends string = typeof EFFECT_REWARDS_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -407,19 +408,19 @@ export type ParsedEnterInstruction<
 
 export function parseEnterInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[],
+  TAccountMetas extends readonly AccountMeta[],
 >(
-  instruction: IInstruction<TProgram> &
-    IInstructionWithAccounts<TAccountMetas> &
-    IInstructionWithData<Uint8Array>
+  instruction: Instruction<TProgram> &
+    InstructionWithAccounts<TAccountMetas> &
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedEnterInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 8) {
     // TODO: Coded error.
-    throw new Error('Not enough accounts');
+    throw new Error("Not enough accounts");
   }
   let accountIndex = 0;
   const getNextAccount = () => {
-    const accountMeta = instruction.accounts![accountIndex]!;
+    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
     accountIndex += 1;
     return accountMeta;
   };

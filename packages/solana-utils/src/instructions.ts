@@ -18,6 +18,7 @@ import { getTopupInstructionAsync as getRewardTopupInstructionAsync } from "@eff
 
 import {
   generateKeyPairSigner,
+  getAddressEncoder,
   getProgramDerivedAddress,
   type Address,
   type Instruction,
@@ -47,7 +48,11 @@ export const buildClaimRewardsInstruction = async ({
   signer: TransactionSigner;
 }): Promise<Instruction[]> => {
   const [reflectionAccount] = await getProgramDerivedAddress({
-    seeds: [Buffer.from("reflection", "utf-8"), mint],
+    seeds: [
+      Buffer.from("reflection", "utf-8"),
+      getAddressEncoder().encode(mint),
+    ],
+
     programAddress: EFFECT_REWARDS_PROGRAM_ADDRESS,
   });
 
@@ -97,6 +102,8 @@ export const buildUnstakeInstruction = async ({
     stakingRewardAccount,
   );
 
+  console.log("maybeStakingRewardAccount", maybeStakingRewardAccount);
+
   const { reflectionAccount } = await deriveRewardAccountsPda({ mint });
 
   const claimIx = await getClaimInstructionAsync({
@@ -112,6 +119,12 @@ export const buildUnstakeInstruction = async ({
     reflectionAccount,
   });
 
+  const enterRewardPoolIx = await getEnterInstructionAsync({
+    mint,
+    stakeAccount,
+    authority: signer,
+  });
+
   const vestingAccount = await generateKeyPairSigner();
 
   const unstakeIx = await getUnstakeInstructionAsync({
@@ -124,8 +137,8 @@ export const buildUnstakeInstruction = async ({
   });
 
   return maybeStakingRewardAccount.exists
-    ? [claimIx, closeIx, unstakeIx]
-    : [unstakeIx];
+    ? [claimIx, closeIx, unstakeIx, enterRewardPoolIx]
+    : [unstakeIx, enterRewardPoolIx];
 };
 
 export const buildTopupInstruction = async ({

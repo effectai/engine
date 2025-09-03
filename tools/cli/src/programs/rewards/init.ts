@@ -11,7 +11,10 @@ import {
   signTransactionMessageWithSigners,
 } from "@solana/kit";
 import { loadSolanaContext } from "../../helpers.js";
-import { getInitInstructionAsync } from "@effectai/reward";
+import {
+  getInitInstructionAsync,
+  getInitIntermediaryVaultInstructionAsync,
+} from "@effectai/reward";
 
 interface RewardInitOptions {
   mint: string;
@@ -39,6 +42,13 @@ export const registerInitRewardCommand = (program: Command) =>
         mint,
       });
 
+      const initIntermediaryIx = await getInitIntermediaryVaultInstructionAsync(
+        {
+          authority: signer,
+          mint,
+        },
+      );
+
       const recentBlockhash = await rpc.getLatestBlockhash().send();
 
       const transactionMessage = pipe(
@@ -49,7 +59,11 @@ export const registerInitRewardCommand = (program: Command) =>
             recentBlockhash.value,
             tx,
           ),
-        (tx) => appendTransactionMessageInstructions([initIx], tx),
+        (tx) =>
+          appendTransactionMessageInstructions(
+            [initIx, initIntermediaryIx],
+            tx,
+          ),
       );
 
       const signedTx =

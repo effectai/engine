@@ -1,47 +1,49 @@
 <template>
-  <div class="flex items-center gap-3">
-    <div class="space-y-3">
-      <span>{{ taskRecord.state.title }}</span>
-      <div
-        class="capitalize text-sm text-zinc-400 flex items-center gap-1 mt-1"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="lucide lucide-timer"
+  <div
+    class="flex flex-col items-center text-center sm:flex-row sm:items-center sm:justify-between sm:text-left w-full px-4 py-3 border-gray-300 rounded-lg cursor-pointer hover:opacity-75 transition"
+    role="button"
+    @click="setActiveTask(props.taskRecord)"
+  >
+    <!-- Left Side (Stacked on mobile) -->
+    <div class="flex items-start sm:items-center gap-3 mb-3 sm:mb-0">
+      <div class="space-y-2 text-center sm:text-left">
+        <span class="text-base sm:text-lg font-semibold">{{ taskRecord.state.title }}</span>
+        <div
+          class="capitalize text-sm text-zinc-500 flex items-center gap-1"
         >
-          <line x1="10" x2="14" y1="2" y2="2"></line>
-          <line x1="12" x2="15" y1="14" y2="11"></line>
-          <circle cx="12" cy="14" r="8"></circle></svg
-        >Time remaining to {{ type }} task:
-        {{ formattedTime }}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-timer"
+          >
+            <line x1="10" x2="14" y1="2" y2="2"></line>
+            <line x1="12" x2="15" y1="14" y2="11"></line>
+            <circle cx="12" cy="14" r="8"></circle>
+          </svg>
+          Time remaining to {{ type }} task: {{ formattedTime }}
+        </div>
       </div>
     </div>
-  </div>
-  <div class="flex items-center gap-4">
-    <div class="text-emerald-400 font-medium">
-      {{ formatBigIntToAmount(taskRecord.state?.reward) }} EFFECT
-    </div>
 
-    <UButton
-      @click="setActiveTask(props.taskRecord)"
-      color="white"
-      class="btn btn-primary"
-      variant="outline"
-    >
+    <!-- Right Side (Moves below on mobile) -->
+    <div class="flex items-center gap-3 text-sm sm:text-base">
+      <div class="text-emerald-500 font-medium">
+        {{ formatBigIntToAmount(taskRecord.state?.reward) }} EFFECT
+      </div>
       <span v-if="taskState === 'create'">PREVIEW</span>
       <span v-else-if="taskState === 'accept'">CONTINUE</span>
       <UIcon name="i-heroicons-arrow-right" />
-    </UButton>
+    </div>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import type { WorkerTaskRecord } from "@effectai/worker";

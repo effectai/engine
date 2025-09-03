@@ -1,4 +1,3 @@
-import LogoLight from "./../assets/logo-light.svg";
 import LogoDark from "./../assets/logo-dark.svg";
 
 export function Logo() {

@@ -24,12 +24,12 @@ import {
   transformEncoder,
   type Account,
   type Address,
-  type Codec,
-  type Decoder,
   type EncodedAccount,
-  type Encoder,
   type FetchAccountConfig,
   type FetchAccountsConfig,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
@@ -58,7 +58,7 @@ export type ReflectionAccountArgs = {
   totalWeightedAmount: number | bigint;
 };
 
-export function getReflectionAccountEncoder(): Encoder<ReflectionAccountArgs> {
+export function getReflectionAccountEncoder(): FixedSizeEncoder<ReflectionAccountArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
@@ -70,7 +70,7 @@ export function getReflectionAccountEncoder(): Encoder<ReflectionAccountArgs> {
   );
 }
 
-export function getReflectionAccountDecoder(): Decoder<ReflectionAccount> {
+export function getReflectionAccountDecoder(): FixedSizeDecoder<ReflectionAccount> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['rate', getU128Decoder()],
@@ -79,7 +79,7 @@ export function getReflectionAccountDecoder(): Decoder<ReflectionAccount> {
   ]);
 }
 
-export function getReflectionAccountCodec(): Codec<
+export function getReflectionAccountCodec(): FixedSizeCodec<
   ReflectionAccountArgs,
   ReflectionAccount
 > {

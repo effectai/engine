@@ -47,7 +47,7 @@
       </div>      
     </div>
 
-    <!-- <audio v-if="audioUrl" :src="audioUrl"></audio> -->
+
     <audio ref="audioPlayer" :src="audioUrl" style="display: none;"></audio>
 
     <p class="is-size-7 mb-2">By clicking this button, you accept that the sentence contributed here will be added to a publicly available cc-0 licensed dataset.</p>
@@ -78,14 +78,14 @@
       data() {
         return {
           title: "Effect AI Sentence Reader",
-          recorder: null,      // MediaRecorder instance
-          audioChunks: [],     // Array to hold the audio chunks
+          recorder: null,      
+          audioChunks: [],     
           audioUrl: "",        
           isRecording: false,  
           sentence: "${sentence}",
           audioBlob: "",
           ipfsCID: "",
-          ipfsHOST: "https://ipfs.effect.ai/api/v0/add?pin=true",
+          // ipfsHOST: "https://ipfs.effect.ai/api/v0/add?pin=true",
           notComplete: false,
           instructions: `
           <div class="">

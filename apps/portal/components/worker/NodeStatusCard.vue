@@ -2,7 +2,6 @@
   <UCard class="">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-bold">NODE STATUS</h2>
-      <div v-if="isCopied">Copied!</div>
       <div class="flex gap-2">
         <UButton
           color="neutral"
@@ -19,7 +18,7 @@
       <div class="space-y-2">
         <div
           class="flex items-center justify-between p-2 border border-zinc-700 rounded clipable"
-          @click="copyToClipboard(peerId?.toString() || '')"
+          @click="copyNodeAddress(peerId?.toString() || '')"
         >
           <div class="flex items-center gap-2 text-zinc-400">
             <UIcon name="i-lucide-cpu" size="16" />
@@ -31,7 +30,7 @@
         </div>
         <div
           class="flex items-center justify-between p-2 border border-zinc-700 rounded clipable"
-          @click="copyToClipboard(managerInfo?.peerId?.toString() || '')"
+          @click="copyManagerAddress(managerInfo?.peerId?.toString() || '')"
         >
           <div class="flex items-center gap-2 text-zinc-400">
             <UIcon name="i-lucide-link" size="16" />
@@ -83,6 +82,7 @@ const { data: latency } = usePing();
 const { peerId } = useWorkerNode();
 
 const isCopied = ref(false);
+const toast = useToast();
 
 const { disconnectFromManagerMutation } = useSession();
 const { mutateAsync: disconnectFromManager } = disconnectFromManagerMutation;
@@ -91,12 +91,24 @@ const disconnect = async () => {
   navigateTo("/worker");
 };
 
-function copyToClipboard(text: string) {
+function copyNodeAddress(text: string) {
   navigator.clipboard.writeText(text);
-  isCopied.value = true;
-  setTimeout(() => {
-    isCopied.value = false;
-  }, 1500);
+  toast.clear()
+  toast.add({
+    title: "Copied!",
+    color: "success",
+    description: "Node address copied to clipboard",
+  });
+}
+
+function copyManagerAddress(text: string) {
+  navigator.clipboard.writeText(text);
+  toast.clear()
+  toast.add({
+    title: "Copied!",
+    color: "success",
+    description: "Manager address copied to clipboard",
+  });
 }
 </script>
 
