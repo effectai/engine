@@ -1,11 +1,11 @@
 [workspace]
 members = [
-  "packages/core/program",
-  "packages/payment/program",
-  "packages/migration/program",
-  "packages/stake/program",
-  "packages/rewards/program",
-  "packages/vesting/program",
+  "core/program",
+  "modules/payment/program",
+  "modules/migration/program",
+  "modules/stake/program",
+  "modules/reward/program",
+  "modules/vesting/program",
 ]
 resolver = "2"
 

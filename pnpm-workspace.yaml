@@ -1,11 +1,11 @@
 packages:
   # all packages in direct subdirs of packages/
   - "packages/**"
-  - "packages/*/packages/*"
-  - "patches/*"
-  - "environments/*"
-  - "docs"
-  - "website"
-  - "solana"
+  # all apps in direct subdirs of apps/
+  - "apps/**"
+  - "modules/**"
+  - "services/**"
+  - "core/**"
+  - "tools/**"
   # exclude packages that are inside test directories
   - "!**/test/**"

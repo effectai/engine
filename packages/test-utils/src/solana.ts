@@ -23,8 +23,10 @@ import {
 
 import { getCreateAccountInstruction } from "@solana-program/system";
 
-import { getAssociatedTokenAccount } from "@effectai/utils";
-import { loadKeypairSigner } from "../../utils/dist/solana";
+import {
+  loadKeypairSigner,
+  getAssociatedTokenAccount,
+} from "@effectai/solana-utils";
 
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -109,7 +111,9 @@ export const setup = async (): Promise<SetupReturn> => {
       ),
   );
 
-  await signTransactionMessageWithSigners(transactionMessage);
+  const result = await signTransactionMessageWithSigners(transactionMessage);
+
+  await sendAndConfirmTransaction(result, { commitment: "confirmed" });
 
   return {
     mint: mint.address,

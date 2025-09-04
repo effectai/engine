@@ -19,12 +19,14 @@
   "license": "ISC",
   "packageManager": "pnpm@10.9.0",
   "dependencies": {
+    "@effectai/solana-utils": "workspace:*",
     "@solana/kit": "^2.1.1",
     "datastore-level": "^11.0.1",
     "interface-datastore": "^8.3.1"
   },
   "devDependencies": {
     "typescript": "^5.8.3",
+    "mucho": "^0.10.0",
     "@solana-program/token": "^0.5.1", 
     "@solana-program/system": "^0.7.0", 
     "@effectai/utils": "workspace:*"
