@@ -9,7 +9,6 @@ export default defineConfig({
     dts({
       entryRoot: "src",
       insertTypesEntry: true,
-      // If you have .css/.scss modules, add `copyDtsFiles: true`
     }),
   ],
   resolve: {
@@ -25,7 +24,6 @@ export default defineConfig({
       fileName: (format) => (format === "es" ? "index.mjs" : "index.cjs"),
     },
     rollupOptions: {
-      // Don’t bundle react/react-dom
       external: ["react", "react-dom"],
       output: {
         globals: {

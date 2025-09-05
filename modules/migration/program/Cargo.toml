@@ -9,7 +9,10 @@ crate-type = ["cdylib", "lib"]
 name = "effect_migration"
 
 [features]
+default=["localnet"]
 cpi = ["no-entrypoint"]
+localnet = []
+mainnet = []
 testing = []
 no-entrypoint = []
 no-idl = []

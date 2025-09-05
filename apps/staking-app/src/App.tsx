@@ -68,11 +68,9 @@ function App() {
               <TabsContent value="stake">
                 <StakeForm stakeAccount={stakeAccount} signer={signer} />
               </TabsContent>
-              {stakeAccount && (
-                <TabsContent value="unstake">
-                  <UnstakeForm stakeAccount={stakeAccount} signer={signer} />
-                </TabsContent>
-              )}
+              <TabsContent value="unstake">
+                <UnstakeForm stakeAccount={stakeAccount} signer={signer} />
+              </TabsContent>
             </Tabs>
           )}
         </div>

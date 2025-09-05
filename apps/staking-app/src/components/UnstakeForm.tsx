@@ -26,7 +26,7 @@ import { useConnectionContext } from "@/providers/ConnectionContextProvider";
 import { useWalletContext } from "@/providers/WalletContextProvider";
 
 type Props = {
-  stakeAccount: Account<StakeAccount>;
+  stakeAccount?: Account<StakeAccount>;
   signer: TransactionSigner;
   isPending?: boolean;
   tokenSymbol?: string;
@@ -41,7 +41,10 @@ export function UnstakeForm({
 }: Props) {
   const { address, signer, userTokenAccount } = useWalletContext();
   const { connection } = useConnectionContext();
-  const max = Number(stakeAccount.data.amount / BigInt(1e6));
+
+  const max = stakeAccount?.data
+    ? Number(stakeAccount.data.amount / BigInt(1e6))
+    : 0n;
 
   const { data: vestingAccounts } = useActiveVestingAccounts(
     connection,
@@ -121,7 +124,7 @@ export function UnstakeForm({
 
   return (
     <div className="space-y-6 gap-3 flex">
-      <Card className={cn("flex flex-col flex-none", className)}>
+      <Card className={cn("flex flex-col flex-grow", className)}>
         <CardHeader>
           <CardTitle>Unstake Tokens</CardTitle>
         </CardHeader>
@@ -133,15 +136,17 @@ export function UnstakeForm({
               <div className="rounded-xl border bg-muted/30 px-3 py-4 space-y-2 text-sm">
                 <Row
                   label="Stake account"
-                  value={shorten(stakeAccount.address)}
+                  value={
+                    stakeAccount?.address ? shorten(stakeAccount.address) : "-"
+                  }
                 />
                 <Row
                   label="Currently staked"
-                  value={`${formatNumber(Number(stakeAccount.data.amount / BigInt(1e6)))} ${tokenSymbol}`}
+                  value={`${stakeAccount?.data ? formatNumber(Number(stakeAccount?.data.amount / BigInt(1e6))) : 0n} ${tokenSymbol}`}
                 />
                 <Row
                   label="Available to unstake"
-                  value={`${formatNumber(max)} ${tokenSymbol}`}
+                  value={`${formatNumber(Number(max))} ${tokenSymbol}`}
                 />
               </div>
 
