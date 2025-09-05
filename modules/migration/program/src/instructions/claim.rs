@@ -1,7 +1,6 @@
-use anchor_lang::accounts::program;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use effect_common::{close_migration_vault, declare_effect_program};
+use effect_common::{close_migration_vault};
 use effect_common::constants::CLAIM_START_TIME;
 use effect_common::cpi;
 use effect_common::id::ADMIN_AUTHORITY;
@@ -10,8 +9,6 @@ use crate::state::MigrationAccount;
 use crate::utils::{eos_format, ethereum_format, get_expected_message_bytes, hash_message, parse_recovery_id, recover_public_key, split_signature, validate_message};
 use crate::{errors::MigrationError, vault_seed, genesis_stake};
 use anchor_lang::prelude::Pubkey;
-
-declare_effect_program!(effect_staking, effect_staking_localnet);
 use crate::effect_staking::accounts::StakeAccount;
 use crate::effect_staking::program::EffectStaking;
 
