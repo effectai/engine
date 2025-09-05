@@ -11,7 +11,10 @@ use instructions::*;
 
 pub use state::*;
 
+#[cfg(feature = "localnet")]
 declare_id!("93Wj1k8a7x7FC4abXoEZVrq2ujaeFwB2Q31JvKosBz8F");
+#[cfg(feature = "mainnet")]
+declare_id!("effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S");
 
 #[program]
 pub mod effect_vesting {

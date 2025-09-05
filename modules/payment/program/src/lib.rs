@@ -11,7 +11,10 @@ mod verifying_key;
 pub use instructions::*;
 pub use state::*;
 
+#[cfg(feature = "localnet")]
 declare_id!("8buW9v9XTa2EmuPqHgAYHYgqxfaG3grGQqhLk4aMm5Fu");
+#[cfg(feature = "mainnet")]
+declare_id!("effphQKcAYeN6CkbygjnJUsuYXGUtkikSPZ6B8hSggC");
 
 #[program]
 pub mod effect_payment {

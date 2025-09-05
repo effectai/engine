@@ -3,7 +3,7 @@ import {
   getAddressEncoder,
   getProgramDerivedAddress,
 } from "@solana/kit";
-import { EFFECT_MIGRATION_PROGRAM_ADDRESS } from "./@generated/migration";
+import { EFFECT_MIGRATION_PROGRAM_ADDRESS } from "./@generated";
 
 export const deriveMigrationAccountPDA = async ({
   mint,

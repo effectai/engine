@@ -7,7 +7,7 @@ import {
 import {
   EFFECT_STAKING_PROGRAM_ADDRESS,
   STAKE_ACCOUNT_DISCRIMINATOR,
-} from "./@generated/stake";
+} from "./@generated";
 
 export const fetchStakingAccountsByWalletAddress = async ({
   walletAddress,
