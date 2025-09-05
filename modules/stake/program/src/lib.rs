@@ -12,7 +12,7 @@ pub use errors::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e");
+declare_id!("G6LoTk4GvX15kkqQxmutqyRdS7WjE5GsgnUrhP4WADWn");
 
 #[program]
 pub mod effect_staking {

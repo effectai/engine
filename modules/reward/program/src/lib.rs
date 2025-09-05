@@ -12,7 +12,7 @@ use instructions::*;
 pub use errors::*;
 pub use state::*;
 
-declare_id!("effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi");
+declare_id!("4HxNuPxwpqMdE9SBbEYaYWuSe23zAtoZTG8HMNcEMQzd");
 
 declare_program!(effect_staking);
 

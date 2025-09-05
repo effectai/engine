@@ -3,18 +3,20 @@ import { createFromRoot } from "codama";
 import { readFileSync } from "node:fs";
 import { renderVisitor } from "@codama/renderers-js";
 
-import { fileURLToPath } from "url";
-import path from "path";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
+const isMainnet = process.argv.includes("--mainnet");
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const targets = [
   {
     name: "migration",
-    idl: "effect_migration.json",
+    idl: isMainnet ? "effect_migration.json" : "effect_migration_localnet.json",
   },
 ];
 
-const idl_folder = path.join(__dirname, "../../../target/idl/");
+const idl_folder = path.join(__dirname, "../../../idls/");
 const loadIdl = (relativePath: string) => {
   return JSON.parse(readFileSync(path.join(idl_folder, relativePath), "utf-8"));
 };
