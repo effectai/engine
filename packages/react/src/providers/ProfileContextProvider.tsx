@@ -17,7 +17,6 @@ const ProfileContext = createContext<ProfileContextProviderValue | undefined>(
 export function ProfileContextProvider({
   children,
 }: { children: React.ReactNode }) {
-  console.log("using profile context provider");
   const PROFILE_NAME = (process.env.VITE_EFFECT_PROFILE ||
     "localnet") as ProfileName;
 

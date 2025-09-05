@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import dts from "vite-plugin-dts";
 import path from "node:path";
+import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig({
   plugins: [
@@ -10,6 +11,13 @@ export default defineConfig({
       entryRoot: "src",
       insertTypesEntry: true,
     }),
+    // visualizer({
+    //   open: true, // auto-open the report
+    //   filename: "stats.html", // saved in project root
+    //   gzipSize: true,
+    //   brotliSize: true,
+    //   template: "treemap", // or 'sunburst','network'
+    // }),
   ],
   resolve: {
     alias: {

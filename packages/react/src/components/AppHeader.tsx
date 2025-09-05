@@ -1,17 +1,15 @@
 import { cn } from "@/lib/utils";
 import { LogIn } from "lucide-react";
-import {
-  Logo,
-  TokenBalanceBadge,
-  SolanaMark,
-  EffectCoin,
-} from "@effectai/react";
+import { Logo } from "./Logo";
+import { TokenBalanceBadge } from "./TokenBadge";
+import { SolanaMark, EffectCoin } from "./Icons";
 import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
-import { useWalletContext } from "@/providers/WalletContextProvider";
 import { Button } from "./ui/button";
 
+import { useWalletContext } from "@/providers/WalletContextProvider";
+
 export function AppHeader() {
-  const { effectBalance, lamports } = useWalletContext();
+  const { lamports, effectBalance } = useWalletContext();
 
   return (
     <header
@@ -48,10 +46,6 @@ export function AppHeader() {
         </div>
 
         <nav className="flex items-center gap-2">
-          {/* <Button variant="ghost" size="sm" className="flex items-center gap-1"> */}
-          {/*    <ExternalLink className="h-4 w-4" /> */}
-          {/*     Portal */}
-          {/*   </Button> */}
           <UnifiedWalletButton
             overrideContent={
               <Button

@@ -243,10 +243,7 @@ export function UnstakeForm({
             {vestingAccounts && vestingAccounts.length > 0 && (
               <div className="mt-3 space-y-2">
                 {vestingAccounts.map((v, idx) => (
-                  <VestingScheduleItem
-                    key={v.data.releaseRate ?? idx}
-                    vestingAccount={v}
-                  />
+                  <VestingScheduleItem key={idx} vestingAccount={v} />
                 ))}
               </div>
             )}{" "}
