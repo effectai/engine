@@ -3,21 +3,24 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 import { Buffer } from "buffer";
-import { ProfileContextProvider } from "./providers/ProfileContextProvider.tsx";
-import { ConnectionContextProvider } from "./providers/ConnectionContextProvider.tsx";
-import { QueryClientContextProvider } from "./providers/QueryClientProvider.tsx";
+
 import {
+  ProfileContextProvider,
+  ConnectionContextProvider,
   UnifiedWalletContextProvider,
   WalletContextProvider,
-} from "./providers/WalletContextProvider.tsx";
+} from "@effectai/react";
 
 if (typeof window !== "undefined") {
   (window as any).Buffer = Buffer;
 }
 
+import { queryClient } from "@effectai/react";
+import { QueryClientProvider } from "@tanstack/react-query";
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientContextProvider>
+    <QueryClientProvider client={queryClient}>
       <ProfileContextProvider>
         <ConnectionContextProvider>
           <UnifiedWalletContextProvider>
@@ -27,6 +30,6 @@ createRoot(document.getElementById("root")!).render(
           </UnifiedWalletContextProvider>
         </ConnectionContextProvider>
       </ProfileContextProvider>
-    </QueryClientContextProvider>
+    </QueryClientProvider>
   </StrictMode>,
 );

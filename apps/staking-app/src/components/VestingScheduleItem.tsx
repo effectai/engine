@@ -1,7 +1,4 @@
 import * as React from "react";
-import { Card, CardContent } from "@effectai/ui";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Clock, Download, Lock } from "lucide-react";
 import type { VestingAccount } from "@effectai/vesting";
@@ -9,10 +6,17 @@ import type { Account } from "@solana/kit";
 import { useClaimVestingMutation } from "@/lib/useMutations";
 import {
   useGetEffectTokenAccount,
-  useGetVestingVaultBalance,
-} from "@/lib/useQueries";
-import { useConnectionContext } from "@/providers/ConnectionContextProvider";
-import { useWalletContext } from "@/providers/WalletContextProvider";
+  useConnectionContext,
+  useWalletContext,
+  Button,
+  Progress,
+  Card,
+  CardContent,
+} from "@effectai/react";
+
+import { useGetVestingVaultBalance } from "@/lib/useQueries";
+
+import { formatNumber } from "@/lib/utils.tsx";
 
 /** Compact vesting item (single-row, dense, with countdown + progress) */
 export function VestingScheduleItem({
@@ -45,14 +49,12 @@ export function VestingScheduleItem({
     vestingAccount,
   );
 
-  // live ticking (1s is enough and cheaper than rAF)
   const nowSec = useNowSeconds();
   const locked = nowSec < startSec;
   const secondsToUnlock = Math.max(0, startSec - nowSec);
 
-  // math (clamped to total = claimed + vault balance)
   const claimed = vestingAccount.data.distributedTokens ?? 0n;
-  const total = claimed + (balance ?? 0n);
+  const total = claimed + (balance?.amount ?? 0n);
   const elapsed = locked ? 0 : Math.max(0, nowSec - startSec);
   const theoreticalReleased = mulBigInt(ratePerSec, BigInt(elapsed));
   const released = theoreticalReleased > total ? total : theoreticalReleased;
@@ -130,7 +132,6 @@ export function VestingScheduleItem({
               </Button>
             </div>
           </div>
-
           {/* Bottom row: thin progress */}
           <div>
             <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
@@ -142,17 +143,6 @@ export function VestingScheduleItem({
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-/* ---------- compact helpers ---------- */
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border bg-muted/30 px-2.5 py-2">
-      <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className="mt-0.5 text-sm font-medium">{value}</div>
-    </div>
   );
 }
 
@@ -175,11 +165,6 @@ function formatDuration(totalSeconds: number) {
   if (h > 0) return `${h}h ${m}m ${sec}s`;
   if (m > 0) return `${m}m ${sec}s`;
   return `${sec}s`;
-}
-
-function formatNumber(n: number, maxFrac = 6) {
-  if (!isFinite(n)) return "0";
-  return n.toLocaleString(undefined, { maximumFractionDigits: maxFrac });
 }
 
 function fromBaseUnits(amount: bigint, decimals: number): number {

@@ -2,7 +2,6 @@ use crate::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use effect_common::cpi::transfer_tokens;
 
-declare_program!(effect_migration);
 use effect_migration::{accounts::MigrationAccount, program::EffectMigration};
 
 #[derive(Accounts)]

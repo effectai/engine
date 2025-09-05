@@ -1,12 +1,5 @@
-import { Button } from "@effectai/ui";
 import { cn } from "@/lib/utils";
-import {
-  LogIn,
-  User,
-  Settings,
-  ExternalLink,
-  BadgeJapaneseYen,
-} from "lucide-react";
+import { LogIn } from "lucide-react";
 import {
   Logo,
   TokenBalanceBadge,
@@ -14,13 +7,8 @@ import {
   EffectCoin,
 } from "@effectai/react";
 import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@effectai/ui";
 import { useWalletContext } from "@/providers/WalletContextProvider";
+import { Button } from "./ui/button";
 
 export function AppHeader() {
   const { effectBalance, lamports } = useWalletContext();

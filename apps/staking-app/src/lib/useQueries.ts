@@ -24,44 +24,11 @@ import {
 export type StakeAccountDecoded = Account<StakeAccount>; // your types
 import { useQuery } from "@tanstack/react-query";
 import type { Connection } from "solana-kite";
-import { useProfileContext } from "@/providers/ProfileContextProvider";
+import { useProfileContext } from "@effectai/react";
 
 export const stakingKeys = {
   stakeAccount: (owner: string | null | undefined) =>
     ["staking", "stakeAccount", owner ?? "unknown"] as const,
-};
-
-export const useGetLamports = (
-  connection: Connection,
-  address: string | null | undefined,
-) => {
-  const enabled = Boolean(address && connection?.rpc);
-  return useQuery({
-    queryKey: ["balances", address, "lamports", { scope: "balance" }],
-    queryFn: async ({ signal }) => {
-      if (!address || !connection) return null;
-      return await connection.getLamportBalance(address);
-    },
-    enabled,
-  });
-};
-
-export const useEffectBalance = (
-  connection: Connection,
-  tokenAccount: string | null | undefined,
-) => {
-  const enabled = Boolean(tokenAccount && connection?.rpc);
-  return useQuery({
-    queryKey: ["balances", tokenAccount ?? "unknown", { scope: "balance" }],
-    queryFn: async ({ signal }) => {
-      if (!tokenAccount || !connection) return null;
-
-      return await connection.getTokenAccountBalance({
-        tokenAccount: toAddress(tokenAccount),
-      });
-    },
-    enabled,
-  });
 };
 
 export function useStakeAccount(
@@ -203,27 +170,6 @@ export const useActiveVestingAccounts = (
           ),
           address: toAddress(acc.pubkey),
         }),
-      );
-    },
-    enabled,
-  });
-};
-
-export const useGetEffectTokenAccount = (
-  connection: Connection | null,
-  walletAddress: string | null | undefined,
-) => {
-  const enabled = Boolean(walletAddress && connection?.rpc);
-  const { mint } = useProfileContext();
-
-  return useQuery({
-    queryKey: ["effectTokenAccount", walletAddress],
-    queryFn: async ({ signal }) => {
-      if (!walletAddress || !connection) return null;
-
-      return await connection.getTokenAccountAddress(
-        toAddress(walletAddress),
-        mint,
       );
     },
     enabled,

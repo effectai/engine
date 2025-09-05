@@ -17,6 +17,10 @@ declare_id!("G6LoTk4GvX15kkqQxmutqyRdS7WjE5GsgnUrhP4WADWn");
 #[cfg(feature = "mainnet")]
 declare_id!("effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e");
 
+declare_effect_program!(effect_migration, effect_migration_localnet);
+declare_effect_program!(effect_vesting, effect_vesting_localnet);
+declare_effect_program!(effect_rewards, effect_rewards_localnet);
+
 #[program]
 pub mod effect_staking {
     use super::*;

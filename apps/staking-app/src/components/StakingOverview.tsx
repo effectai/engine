@@ -1,39 +1,43 @@
-import { Button } from "@/components/ui/button";
 import React, { useMemo } from "react";
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@effectai/ui";
-import { Badge } from "@effectai/ui";
-import { Alert, AlertDescription, AlertTitle } from "@effectai/ui";
-import { Separator } from "@effectai/ui";
+  Badge,
+  Alert,
+  AlertTitle,
+  AlertDescription,
+  Separator,
+  useGetEffectTokenAccount,
+  useConnectionContext,
+  useWalletContext,
+} from "@effectai/react";
+
 import { CheckCircle2, Gift, Coins, Loader2, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatPercent, formatNumber, Stat, Row } from "@/lib/helpers.tsx";
+import { formatPercent, formatNumber, Stat, Row } from "@/lib/utils.tsx";
 import type { Account, MaybeAccount } from "@solana/kit";
 import type { StakeAccount } from "@effectai/stake";
-import { type ReflectionAccount, type RewardAccount } from "@effectai/reward";
+import type { ReflectionAccount, RewardAccount } from "@effectai/reward";
 
 import {
   calculateApy,
   calculateDue,
   calculatePendingRewards,
   useAnimatedStakeAge,
-} from "@/lib/stake-helpers";
+} from "@/lib/utils";
+
 import type { VestingAccount } from "@effectai/vesting";
 import { useClaimRewardMutation } from "@/lib/useMutations";
 import {
-  useGetEffectTokenAccount,
   useGetInterMediaryRewardVaultBalance,
   useGetVestingVaultBalance,
 } from "@/lib/useQueries";
 import { useCallback } from "react";
-import { useWalletContext } from "@/providers/WalletContextProvider";
-import { useConnectionContext } from "@/providers/ConnectionContextProvider";
 
 type Props = {
   stakeAccount: Account<StakeAccount> | null | undefined;
@@ -65,15 +69,12 @@ export function StakeOverview({
     vestingAccount,
   );
 
-  const apy = rewardAccount?.exists
-    ? calculateApy({
-        totalStaked: reflectionAccount?.data.totalWeightedAmount ?? BigInt(0),
-        yourStake: rewardAccount?.data.weightedAmount ?? BigInt(0),
-        totalRewards: Number(
-          (vestingAccount?.data.releaseRate ?? 0n) * 86400n * 30n * 12n,
-        ),
-      })
-    : 0;
+  const apy = calculateApy({
+    totalStaked: reflectionAccount?.data.totalWeightedAmount ?? BigInt(0),
+    totalRewards: Number(
+      (vestingAccount?.data.releaseRate ?? 0n) * 86400n * 30n * 12n,
+    ),
+  });
 
   const toNumberTokens = (micro: bigint) => Number(micro) / 1e6;
 
@@ -102,7 +103,7 @@ export function StakeOverview({
         ? calculateDue(vestingAccount, Number(vestingVaultBalance?.amount)) // <- returns micro
         : 0n;
 
-    // 3) users pro-rata share of that global due
+    // 3) the users pro-rata share of that global due
     const userShareDueMicro: bigint =
       dueGlobalMicro > 0n && totalWeighted > 0n && weighted > 0n
         ? (dueGlobalMicro * weighted) / totalWeighted
@@ -123,6 +124,7 @@ export function StakeOverview({
     vestingVaultBalance,
     intermediaryVaultBalance,
   ]);
+
   const canClaim = Boolean(
     rewardAccount?.exists &&
       pendingRewards &&

@@ -16,11 +16,6 @@ import React, {
   useState,
 } from "react";
 import { useConnectionContext } from "./ConnectionContextProvider";
-import {
-  useEffectBalance,
-  useGetEffectTokenAccount,
-  useGetLamports,
-} from "@/lib/useQueries";
 
 type WalletContextProviderValue = {
   address: Address | null;
@@ -29,8 +24,12 @@ type WalletContextProviderValue = {
   uiWallet: UiWallet | null;
   signer: TransactionSigner | null;
   userTokenAccount?: Address | null;
-  effectBalance?: ReturnType<typeof useEffectBalance>["data"];
+  effectBalance?: ReturnType<typeof useGetEffectBalance>["data"];
 };
+
+import { useGetEffectTokenAccount } from "@/hooks/useGetEffectTokenAccount";
+import { useGetLamports } from "@/hooks/useGetLamports";
+import { useGetEffectBalance } from "@/hooks/useGetEffectBalance";
 
 const WalletContext = createContext<WalletContextProviderValue | undefined>(
   undefined,
@@ -116,7 +115,7 @@ export function WalletContextProvider({
 
   const { data: lamports } = useGetLamports(connection, address);
 
-  const { data: availableBalance } = useEffectBalance(
+  const { data: availableBalance } = useGetEffectBalance(
     connection,
     userTokenAccount,
   );

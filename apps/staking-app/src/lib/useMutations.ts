@@ -1,27 +1,19 @@
 import type { VestingAccount } from "@effectai/vesting";
-import type {
-  Account,
-  Address,
-  KeyPairSigner,
-  TransactionSigner,
-} from "@solana/kit";
+import type { Account, Address, TransactionSigner } from "@solana/kit";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getClaimInstructionAsync as getClaimVestingInstructionAsync } from "@effectai/vesting";
 import { getEnterInstructionAsync } from "@effectai/reward";
 import type { Connection } from "solana-kite";
-import {
-  generateKeyPairSigner,
-  SolanaError,
-  address as toAddress,
-} from "@solana/kit";
+import { generateKeyPairSigner, address as toAddress } from "@solana/kit";
 import {
   buildClaimRewardsInstruction,
   buildTopupInstruction,
   buildUnstakeInstruction,
+  executeTransaction,
 } from "@effectai/solana-utils";
-import { executeTransaction } from "./helpers";
 import { getStakeInstructionAsync, type StakeAccount } from "@effectai/stake";
-import { useProfileContext } from "@/providers/ProfileContextProvider";
+import { useProfileContext, toast } from "@effectai/react";
+import { notifyTransactionSuccess } from "./utils";
 
 export const useClaimVestingMutation = () => {
   const queryClient = useQueryClient();
@@ -44,12 +36,13 @@ export const useClaimVestingMutation = () => {
         authority: signer,
       });
 
-      return await executeTransaction(
-        connection,
+      return await executeTransaction({
+        rpc: connection.rpc,
+        rpcSubscriptions: connection.rpcSubscriptions,
         signer,
-        [claimIx],
-        "confirmed",
-      );
+        instructions: [claimIx],
+        commitment: "confirmed",
+      });
     },
     onSuccess: (_data, variables) => {
       console.log("invalidating claim-vesting queries");
@@ -63,7 +56,7 @@ export const useClaimVestingMutation = () => {
 
 export const useTopupMutation = () => {
   const queryClient = useQueryClient();
-  const { mint } = useProfileContext();
+  const { mint, explorerCluster } = useProfileContext();
 
   return useMutation({
     mutationKey: ["topup-stake"],
@@ -89,14 +82,21 @@ export const useTopupMutation = () => {
         signer,
       });
 
-      return executeTransaction(
-        connection,
+      return await executeTransaction({
+        rpc: connection.rpc,
+        rpcSubscriptions: connection.rpcSubscriptions,
         signer,
-        topupInstructions,
-        "confirmed",
-      );
+        instructions: topupInstructions,
+        commitment: "confirmed",
+      });
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (signature, variables) => {
+      notifyTransactionSuccess(
+        signature,
+        "Top-up successful",
+        "Successfully topped up your stake.",
+        explorerCluster,
+      );
       queryClient.invalidateQueries({
         queryKey: ["staking"],
       });
@@ -104,12 +104,17 @@ export const useTopupMutation = () => {
         queryKey: ["balances"],
       });
     },
+    onError: (error) => {
+      toast("Top-up failed", {
+        description: error?.message || "An error occurred during top-up.",
+      });
+    },
   });
 };
 
 export const useStakeMutation = () => {
   const queryClient = useQueryClient();
-  const { mint } = useProfileContext();
+  const { mint, explorerCluster } = useProfileContext();
   return useMutation({
     mutationKey: ["stake"],
     mutationFn: async ({
@@ -140,15 +145,22 @@ export const useStakeMutation = () => {
         authority: signer,
       });
 
-      return await executeTransaction(
-        connection,
+      return await executeTransaction({
+        rpc: connection.rpc,
+        rpcSubscriptions: connection.rpcSubscriptions,
         signer,
-        [stakeInstruction, enterRewardPoolIx],
-        "confirmed",
-      );
+        instructions: [stakeInstruction, enterRewardPoolIx],
+        commitment: "confirmed",
+      });
     },
-    onSuccess: (_data, variables) => {
-      console.log("invalidating stake queries");
+    onSuccess: (signature, variables) => {
+      notifyTransactionSuccess(
+        signature,
+        "Stake successful",
+        "Successfully staked your tokens.",
+        explorerCluster,
+      );
+
       // Invalidate relevant queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["staking"] });
       queryClient.invalidateQueries({ queryKey: ["balances"] });
@@ -158,7 +170,7 @@ export const useStakeMutation = () => {
 
 export const useUnstakeMutation = () => {
   const queryClient = useQueryClient();
-  const { mint } = useProfileContext();
+  const { mint, explorerCluster } = useProfileContext();
   return useMutation({
     mutationKey: ["unstake"],
     mutationFn: async (args: {
@@ -185,15 +197,22 @@ export const useUnstakeMutation = () => {
         signer,
       });
 
-      return await executeTransaction(
-        connection,
+      return await executeTransaction({
+        rpc: connection.rpc,
+        rpcSubscriptions: connection.rpcSubscriptions,
         signer,
-        unstakeIx,
-        "confirmed",
-      );
+        instructions: unstakeIx,
+        commitment: "confirmed",
+      });
     },
-    onSuccess: (_data, variables) => {
-      console.log("invalidating unstake queries");
+    onSuccess: (signature, variables) => {
+      notifyTransactionSuccess(
+        signature,
+        "Unstake successful",
+        "Successfully unstaked your tokens.",
+        explorerCluster,
+      );
+
       queryClient.invalidateQueries({ queryKey: ["staking"] });
       queryClient.invalidateQueries({ queryKey: ["vesting"] });
       queryClient.invalidateQueries({
@@ -205,7 +224,7 @@ export const useUnstakeMutation = () => {
 
 export const useClaimRewardMutation = () => {
   const queryClient = useQueryClient();
-  const { mint } = useProfileContext();
+  const { mint, explorerCluster } = useProfileContext();
 
   return useMutation({
     mutationKey: ["claim-reward"],
@@ -230,15 +249,22 @@ export const useClaimRewardMutation = () => {
         rpc: connection.rpc,
       });
 
-      return await executeTransaction(
-        connection,
+      return await executeTransaction({
+        rpc: connection.rpc,
+        rpcSubscriptions: connection.rpcSubscriptions,
         signer,
-        claimRewardIx,
-        "confirmed",
-      );
+        instructions: claimRewardIx,
+        commitment: "confirmed",
+      });
     },
-    onSuccess: (_data, variables) => {
-      console.log("invalidating claim-reward queries");
+    onSuccess: (signature, variables) => {
+      notifyTransactionSuccess(
+        signature,
+        "Claim successful",
+        "Successfully claimed your rewards.",
+        explorerCluster,
+      );
+
       queryClient.invalidateQueries({ queryKey: ["staking"] });
       queryClient.invalidateQueries({
         queryKey: ["balances"],

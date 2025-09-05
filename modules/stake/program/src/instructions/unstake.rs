@@ -7,9 +7,6 @@ use effect_common::constants::SECONDS_PER_DAY;
 use effect_rewards::program::EffectRewards;
 use effect_vesting::program::EffectVesting;
 
-declare_program!(effect_rewards);
-declare_program!(effect_vesting);
-
 #[derive(Accounts)]
 pub struct Unstake<'info> {
     #[account(mut)]

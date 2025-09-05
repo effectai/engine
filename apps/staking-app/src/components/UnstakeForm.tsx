@@ -2,31 +2,32 @@ import * as React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@effectai/ui";
-import { Input } from "@effectai/ui";
 import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
   Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "@effectai/react";
 import { cn } from "@/lib/utils";
 import type { Account, TransactionSigner } from "@solana/kit";
 import { SolanaError, address as toAddress } from "@solana/kit";
-import { formatNumber, Row, shorten, trimTrailingZeros } from "@/lib/helpers";
+import { formatNumber, Row, shorten, trimTrailingZeros } from "@/lib/utils";
 import type { StakeAccount } from "@effectai/stake";
-import { buildUnstakeInstruction } from "@effectai/solana-utils";
 import { useActiveVestingAccounts } from "@/lib/useQueries";
 import { useUnstakeMutation } from "@/lib/useMutations";
 import { VestingScheduleItem } from "./VestingScheduleItem";
-import { useConnectionContext } from "@/providers/ConnectionContextProvider";
-import { useWalletContext } from "@/providers/WalletContextProvider";
+import { useWalletContext, useConnectionContext } from "@effectai/react";
 
 type Props = {
-  stakeAccount?: Account<StakeAccount>;
+  stakeAccount?: Account<StakeAccount> | null;
   signer: TransactionSigner;
   isPending?: boolean;
   tokenSymbol?: string;
@@ -123,8 +124,13 @@ export function UnstakeForm({
   });
 
   return (
-    <div className="space-y-6 gap-3 flex">
-      <Card className={cn("flex flex-col flex-grow", className)}>
+    <div className="space-y-6 gap-0 flex flex-col lg:flex-row">
+      <Card
+        className={cn(
+          "flex flex-col flex-grow rounded-none m-0 flex-shrink-0",
+          className,
+        )}
+      >
         <CardHeader>
           <CardTitle>Unstake Tokens</CardTitle>
         </CardHeader>
@@ -132,7 +138,6 @@ export function UnstakeForm({
         <CardContent>
           <Form {...form}>
             <form onSubmit={onSubmit} className="space-y-6">
-              {/* Context */}
               <div className="rounded-xl border bg-muted/30 px-3 py-4 space-y-2 text-sm">
                 <Row
                   label="Stake account"
@@ -194,7 +199,6 @@ export function UnstakeForm({
                 )}
               />
 
-              {/* Quick % chips */}
               <div className="flex flex-wrap gap-2">
                 {[25, 50, 75, 100].map((p) => (
                   <Button
@@ -210,7 +214,6 @@ export function UnstakeForm({
                 ))}
               </div>
 
-              {/* Preview */}
               <div className="rounded-xl border bg-muted/20 px-3 py-3 text-sm">
                 <Row
                   label="Unstaking"
@@ -232,7 +235,7 @@ export function UnstakeForm({
         </CardContent>
       </Card>
       {vestingAccounts && vestingAccounts.length > 0 && (
-        <Card className="flex flex-col flex-grow">
+        <Card className="flex flex-col flex-grow rounded-none shadow-none">
           <CardHeader>
             <CardTitle className="text-sm">Active Unstakes</CardTitle>
           </CardHeader>
@@ -241,8 +244,8 @@ export function UnstakeForm({
               <div className="mt-3 space-y-2">
                 {vestingAccounts.map((v, idx) => (
                   <VestingScheduleItem
-                    key={v.id ?? idx} // ensure stable key (fallback to index if no id)
-                    vestingAccount={v} // pass the actual data down as a prop
+                    key={v.data.releaseRate ?? idx}
+                    vestingAccount={v}
                   />
                 ))}
               </div>

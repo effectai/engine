@@ -102,8 +102,6 @@ export const buildUnstakeInstruction = async ({
     stakingRewardAccount,
   );
 
-  console.log("maybeStakingRewardAccount", maybeStakingRewardAccount);
-
   const { reflectionAccount } = await deriveRewardAccountsPda({ mint });
 
   const claimIx = await getClaimInstructionAsync({
