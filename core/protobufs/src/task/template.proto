@@ -10,4 +10,5 @@ message Template {
   optional string description = 3;
   uint32 created_at = 4;
   string data = 5;
+  string capability = 6;
 }
