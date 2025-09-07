@@ -15,7 +15,7 @@ message Task {
   uint32 time_limit_seconds = 4;
   string template_id = 5;
   string template_data = 6;
-  string capability = 7;
+  optional string capability = 7;
 }
 
 message TaskAssignment {

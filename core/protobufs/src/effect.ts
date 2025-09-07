@@ -2765,7 +2765,7 @@ export interface Task {
   timeLimitSeconds: number
   templateId: string
   templateData: string
-  capability: string
+  capability?: string
 }
 
 export namespace Task {
@@ -2808,7 +2808,7 @@ export namespace Task {
           w.string(obj.templateData)
         }
 
-        if ((obj.capability != null && obj.capability !== '')) {
+        if (obj.capability != null) {
           w.uint32(58)
           w.string(obj.capability)
         }
@@ -2823,8 +2823,7 @@ export namespace Task {
           reward: 0n,
           timeLimitSeconds: 0,
           templateId: '',
-          templateData: '',
-          capability: ''
+          templateData: ''
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -3307,7 +3306,6 @@ export interface Template {
   description?: string
   createdAt: number
   data: string
-  capability: string
 }
 
 export namespace Template {
@@ -3345,11 +3343,6 @@ export namespace Template {
           w.string(obj.data)
         }
 
-        if ((obj.capability != null && obj.capability !== '')) {
-          w.uint32(50)
-          w.string(obj.capability)
-        }
-
         if (opts.lengthDelimited !== false) {
           w.ldelim()
         }
@@ -3357,8 +3350,7 @@ export namespace Template {
         const obj: any = {
           templateId: '',
           createdAt: 0,
-          data: '',
-          capability: ''
+          data: ''
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -3385,10 +3377,6 @@ export namespace Template {
             }
             case 5: {
               obj.data = reader.string()
-              break
-            }
-            case 6: {
-              obj.capability = reader.string()
               break
             }
             default: {
