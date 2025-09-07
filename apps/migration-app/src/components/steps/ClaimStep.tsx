@@ -1,16 +1,18 @@
 import * as React from "react";
-import { Button } from "@effectai/ui";
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
   CardFooter,
-} from "@effectai/ui";
-import { Alert, AlertDescription, AlertTitle } from "@effectai/ui";
-import { Input } from "@effectai/ui";
-import { Badge } from "@effectai/ui";
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Input,
+  Badge,
+} from "@effectai/react";
 import {
   Wallet,
   Link as LinkIcon,

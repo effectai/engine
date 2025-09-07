@@ -1,15 +1,15 @@
 import * as React from "react";
 import { Check, Circle, DiscIcon } from "lucide-react";
-import { Button } from "@effectai/ui";
 import {
+  Button,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@effectai/ui";
-import { Badge } from "@effectai/ui";
+  Badge,
+} from "@effectai/react";
 import { cn } from "@/lib/utils"; // shadcn helper (clsx+twMerge)
-import { Logo } from "./Logo";
+import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
 
 export type StepKey = string; // or your union type
 
@@ -50,12 +50,6 @@ export function Stepper({
       <div className="relative w-full">
         <div className="flex-col flex">
           <div className="mr-6 flex">
-            <div
-              onClick={() => onStepChange("intro")}
-              className="cursor-pointer"
-            >
-              <Logo />
-            </div>
             <Button
               variant="outline"
               size="sm"

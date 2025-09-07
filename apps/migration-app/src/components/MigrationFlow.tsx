@@ -1,10 +1,14 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Button } from "@effectai/ui";
+import { Button, useWalletContext } from "@effectai/react";
 
 import { useMigration } from "@/providers/MigrationProvider";
 import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
-import { address, type Address, type EncodedAccount } from "@solana/kit";
+import {
+  address as toAddress,
+  type Address,
+  type EncodedAccount,
+} from "@solana/kit";
 
 import {
   deriveMigrationAccountPDA,
@@ -30,7 +34,8 @@ const steps: StepDef[] = [
 
 // ---- Main Migration Flow ----
 export default function MigrationFlow() {
-  const { source, dest, sourceChain, config, connection, claim, sol } =
+  const { address } = useWalletContext();
+  const { source, sourceChain, config, connection, claim, sol } =
     useMigration();
 
   // UI state
@@ -73,7 +78,6 @@ export default function MigrationFlow() {
     () => typeof window !== "undefined" && !!(window as any).solana,
     [],
   );
-  const solanaWalletAddress = dest.address ?? null;
 
   //TODO:: FETCH SOL BALANCE
   const balanceLow = false;
@@ -106,29 +110,6 @@ export default function MigrationFlow() {
   }, [source.isConnected, sourceChain]);
 
   //Fetch migration vault account balance when migration account is set
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (migrationVaultAddress) {
-        try {
-          const balance = await connection.getTokenAccountBalance({
-            tokenAccount: address(migrationVaultAddress) as Address,
-          });
-
-          if (mounted) {
-            setMigrationVaultBalance(balance.uiAmount || 0);
-          }
-        } catch (e) {
-          // noop
-        }
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [migrationVaultAddress, connection]);
-
-  // Step helpers
   const goTo = (s: Step) => setCurrent(s);
 
   const selectAddress = useCallback(() => {
@@ -139,10 +120,10 @@ export default function MigrationFlow() {
   }, [manualAddressInput]);
 
   useEffect(() => {
-    if (dest.isConnected && dest.address) {
-      setDestinationAddress(dest.address);
+    if (address) {
+      setDestinationAddress(address);
     }
-  }, [dest.isConnected, dest.address]);
+  }, [address]);
 
   const disconnectSourceWallets = useCallback(async () => {
     await source.disconnect();
@@ -165,7 +146,7 @@ export default function MigrationFlow() {
     const { migrationAccount: derivedMigrationAccountAddress, vaultAccount } =
       await deriveMigrationAccountPDA({
         foreignAddress: foreignPublicKey,
-        mint: address(config.EFFECT_SPL_MINT),
+        mint: toAddress(config.EFFECT_SPL_MINT),
       });
 
     const migrationAccountData = await fetchMaybeMigrationAccount(
@@ -294,7 +275,6 @@ export default function MigrationFlow() {
             <SolanaDestinationStep
               current="solana"
               hasSolanaWalletInstalled={hasSolanaWalletInstalled}
-              UnifiedWalletButton={UnifiedWalletButton}
               destinationAddress={destinationAddress}
               setDestinationAddress={setDestinationAddress}
               manualAddressInput={manualAddressInput}

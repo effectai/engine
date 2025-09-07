@@ -6,11 +6,6 @@ import {
   estimateComputeUnitLimitFactory,
   identifyComputeBudgetInstruction,
 } from "@solana-program/compute-budget";
-import type {
-  RpcSubscriptions,
-  RpcSubscriptionsMainnet,
-  RpcSubscriptionsTransportWithCluster,
-} from "@solana/rpc-subscriptions";
 import {
   appendTransactionMessageInstruction,
   appendTransactionMessageInstructions,

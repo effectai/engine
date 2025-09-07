@@ -1,14 +1,17 @@
-import { Button } from "@effectai/ui";
 import {
+  Button,
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@effectai/ui";
-import { Alert, AlertDescription, AlertTitle } from "@effectai/ui";
-import { Badge } from "@effectai/ui";
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Badge,
+} from "@effectai/react";
+
 import {
   Info,
   ShieldAlert,
