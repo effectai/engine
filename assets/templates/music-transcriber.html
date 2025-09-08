@@ -1,0 +1,156 @@
+<div id="app" style="text-align: center">
+    <h1 class="title is-3">Effect AI - Music Transcriber</h1>
+    <p class="subtitle is-6">Listen carefully and correct the lyrics below</p>
+    <hr />
+
+    <div class="mx-auto" style="max-width: 80%">
+    <div class="box">
+        <!-- Loading indicator -->
+        <div v-if="loading" class="has-text-centered mb-2">
+        Loading audio...
+        <progress class="progress is-primary" max="100" :value="loadProgress"></progress>
+        </div>
+        <div id="waveform" v-show="!loading"></div>
+    </div>
+
+    <div class="flex items-center justify-center gap-2 buttons" v-show="!loading">
+        <button @click="playRegion" class="button is-link">▶ Play Region</button>
+        <button @click="playFull" class="button is-primary">▶ Play/Pause Full</button>
+    </div>
+
+    <hr v-show="!loading" />
+
+    <!-- Lyrics -->
+    <div class="field">
+        <label class="label">Transcribed Lyrics</label>
+        <div class="control">
+            <textarea
+            v-model="lyrics"
+            class="textarea is-medium"
+            placeholder="Edit the AI transcription here..."
+            rows="12"
+            ></textarea>
+        </div>
+    </div>
+
+    <button
+        @click.prevent="uploadAndSubmit"
+        class="button is-success is-large mt-4"
+        :class="{'is-loading': btnLoading}"
+    >
+        Submit
+    </button>
+  </div>
+
+
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+<link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+<script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+    import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js"
+    import RegionsPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.esm.js"
+
+    createApp({
+        data() {
+            return {
+                title: "Effect AI - Music Transcriber",
+                songSource: "https://discoveryprovider.audius.co/v1/tracks/amWVg/stream",
+                btnLoading: false,
+                lyrics: "Wake up, this space in my bed you used to take up",
+                allowedStart: 13.2,
+                allowedEnd: 17.6,
+                wavesurfer: null,
+                allowedRegion: null,
+                activeRegion: null,
+                loading: true,
+                loadProgress: 0
+            }
+        },
+        mounted() {
+            const regions = RegionsPlugin.create()
+            this.wavesurfer = WaveSurfer.create({
+                container: "#waveform",
+                waveColor: "#ddd",
+                progressColor: "#4f46e5",
+                height: 80,
+                url: this.songSource,
+                plugins: [regions],
+            })
+
+            this.wavesurfer.on("loading", (percent) => {
+                this.loadProgress = percent
+            })
+
+            this.wavesurfer.on("ready", () => {
+                this.loading = false
+
+                this.allowedRegion = regions.addRegion({
+                    start: this.allowedStart,
+                    end: this.allowedEnd,
+                    color: "rgba(255, 0, 0, 0.3)",
+                    drag: false,
+                    resize: false,
+                })
+            })
+
+            this.wavesurfer.on("audioprocess", () => {
+                if (this.activeRegion) {
+                    const currentTime = this.wavesurfer.getCurrentTime()
+                    if (currentTime >= this.activeRegion.end) {
+                        this.wavesurfer.pause()
+                        const position = this.activeRegion.start / this.wavesurfer.getDuration()
+                        this.wavesurfer.seekTo(position)
+                        this.activeRegion = null
+                    }
+                }
+            })
+
+            regions.on("region-clicked", (region, e) => {
+                e.stopPropagation()
+                this.playRegion()
+            })
+        },
+        methods: {
+            playRegion() {
+                if (this.allowedRegion && this.wavesurfer) {
+                    this.activeRegion = this.allowedRegion
+                    const position = this.allowedRegion.start / this.wavesurfer.getDuration()
+                    this.wavesurfer.seekTo(position)
+                    this.wavesurfer.play()
+                }
+            },
+            playFull() {
+                if (this.wavesurfer) {
+                    this.wavesurfer.playPause()
+                }
+            },
+            async uploadAndSubmit() {
+                this.btnLoading = true
+                if (!this.lyrics.trim()) {
+                    this.btnLoading = false
+                    return
+                }
+                try {
+                    parent.postMessage(
+                    {
+                        task: "submit",
+                        values: {
+                        taskTitle: this.title,
+                        answer: {
+                            song: this.songSource,
+                            lyrics: this.lyrics,
+                        },
+                        },
+                    },
+                    "*"
+                    )
+                } catch (error) {
+                    console.error("Failed to upload", error)
+                }
+                this.btnLoading = false
+            },
+        },
+    }).mount("#app")
+  </script>
+</div>
