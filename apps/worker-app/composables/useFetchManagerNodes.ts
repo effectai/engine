@@ -1,7 +1,7 @@
-import { PublicKey } from "@solana/web3.js";
-import { multiaddr, type Multiaddr } from "@effectai/protocol-core";
-import { useQuery } from "@tanstack/vue-query";
 import type { ManagerInfoResponse } from "@effectai/protocol";
+import { type Multiaddr, multiaddr } from "@effectai/protocol-core";
+import { PublicKey } from "@solana/web3.js";
+import { useQuery } from "@tanstack/vue-query";
 
 export const useFetchManagerNodes = () => {
   const config = useRuntimeConfig();

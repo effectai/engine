@@ -15,7 +15,6 @@
 
 <script setup lang="ts">
 import { useClipboard } from "@vueuse/core";
-
 const props = defineProps({
   address: {
     required: true,

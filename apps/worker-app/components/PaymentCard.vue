@@ -14,7 +14,6 @@
     </template>
 
     <!-- Modal & Main Content -->
-    <WorkerClaimPaymentsModal v-model="isOpenClaimModal" />
     <div class="p-4 space-y-4">
       <!-- Alerts & Wallet Info -->
       <div class="rounded-xl bg-gray-100 dark:bg-white/5 p-4">
@@ -105,13 +104,13 @@ const walletMeta = {
   chain: "solana",
   address: account.value,
 };
-
-const { useGetPaymentsQuery, computedTotalPaymentAmount } = usePayments();
-const { data: managerPaymentBatches } = useGetPaymentsQuery();
-const totalUnclaimedPayments = useNumberFormat(
-  computedTotalPaymentAmount(managerPaymentBatches),
-);
-
+//
+// const { useGetPaymentsQuery, computedTotalPaymentAmount } = usePayments();
+// const { data: managerPaymentBatches } = useGetPaymentsQuery();
+// const totalUnclaimedPayments = useNumberFormat(
+//   computedTotalPaymentAmount(managerPaymentBatches),
+// );
+//
 const toast = useToast();
 const { requestPrivateKey } = useAuth();
 const exportPrivateKey = async () => {

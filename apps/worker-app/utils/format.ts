@@ -1,6 +1,3 @@
-import { BN } from "@coral-xyz/anchor";
-import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
-import { PublicKey } from "@solana/web3.js";
 import { format, formatDistanceToNow } from "date-fns";
 
 export const sliceBoth = (str: string) => {
@@ -8,13 +5,12 @@ export const sliceBoth = (str: string) => {
   return `${str.slice(0, 6)}...${str.slice(-6)}`;
 };
 
-export const formatAmountToBalance = (amount: BN) => {
-  const result = amount.toNumber() / 10 ** 6;
-  return result;
+export const formatAmountToBalance = (amount: bigint) => {
+  return Number(amount) / 10 ** 6;
 };
 
-export const formatBalanceToAmount = (balance: number): BN => {
-  return new BN(balance * 10 ** 6);
+export const formatBalanceToAmount = (balance: number): bigint => {
+  return BigInt(Math.floor(balance * 10 ** 6));
 };
 
 export const formatDate = (date: Date): string => {

@@ -48,9 +48,9 @@
 </template>
 
 <script setup lang="ts">
-import { generateMnemonic, mnemonicToSeed } from "bip39";
 import { sha512 } from "@noble/hashes/sha512";
 import { Keypair } from "@solana/web3.js";
+import { generateMnemonic, mnemonicToSeed } from "bip39";
 
 const mnemonic = ref("");
 const emit = defineEmits(["back"]);

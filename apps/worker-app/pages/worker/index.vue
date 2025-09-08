@@ -1,12 +1,12 @@
 <template>
   <div>
-    <WorkerNodeHeroCard />
+    <NodeHeroCard />
 
     <div
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 items-stretch"
     >
-      <WorkerPaymentCard class="" />
-      <WorkerCapabilitiesList v-coming-soon class="" />
+      <PaymentCard class="" />
+      <CapabilitiesList v-coming-soon class="" />
     </div>
 
     <UCard
@@ -22,7 +22,7 @@
         </div>
       </template>
       <div class="flex items-stretch">
-        <WorkerCapabilitiesListItem
+        <CapabilitiesListItem
           v-for="item in availableCapabilities"
           :key="item.id"
           :name="item.name"
@@ -46,7 +46,6 @@
 
 <script setup lang="ts">
 definePageMeta({
-  layout: "worker",
   middleware: ["auth"],
 });
 

@@ -1,11 +1,11 @@
 // Modify the last 4 bits of the last byte
 import {
   createWorker,
-  multiaddr,
-  peerIdFromPrivateKey,
+  type Ed25519PrivateKey,
   generateKeyPairFromSeed,
   type Multiaddr,
-  type Ed25519PrivateKey,
+  multiaddr,
+  peerIdFromPrivateKey,
 } from "@effectai/protocol";
 import { IDBDatastore } from "datastore-idb";
 import { defineStore } from "pinia";

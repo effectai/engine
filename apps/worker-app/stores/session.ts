@@ -1,8 +1,8 @@
 import {
-  multiaddr,
-  peerIdFromString,
   type Multiaddr,
+  multiaddr,
   type PeerId,
+  peerIdFromString,
 } from "@effectai/protocol";
 import { PublicKey } from "@solana/web3.js";
 

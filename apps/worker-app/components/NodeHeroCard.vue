@@ -103,7 +103,7 @@
           <div
             class="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
           >
-            <WorkerManagerConnectionModal v-model="isOpen" />
+            <ManagerConnectionModal v-model:open="isOpen" />
             <UButton
               icon="i-heroicons-document-text"
               size="lg"
@@ -239,6 +239,8 @@ const {
   daysInNetwork,
   performanceScore,
 } = useWorkerNode();
+
+import { useClipboard, useNavigatorLanguage } from "@vueuse/core";
 
 const { level, progress, experience, experiencePerLevel } = useWorkerLevel();
 const { language } = useNavigatorLanguage();

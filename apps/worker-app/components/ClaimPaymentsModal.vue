@@ -129,8 +129,10 @@ import { useMutation, useQueryClient } from "@tanstack/vue-query";
 const { account } = useAuth();
 const { instance } = storeToRefs(useWorkerStore());
 const { useGetBalanceQuery } = useSolanaWallet();
+
 const { useClaimPayments, computedTotalPaymentAmount, useGetPaymentsQuery } =
   usePayments();
+
 const { data: managerPaymentBatches } = useGetPaymentsQuery();
 
 const totalAmount = computed(() => {

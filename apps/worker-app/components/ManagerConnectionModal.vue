@@ -8,8 +8,8 @@
         class: 'rounded-full',
       }"
     >
-      <WorkerPulseBorderButton class="w-full" label="Connect" />
-      <template #body>
+      <PulseBorderButton class="w-full" label="Connect" />
+      <template #content>
         <div v-if="isFetching" class="p-6 text-center">
           <div class="flex justify-center items-center space-x-2 text-gray-500">
             <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin" />
@@ -59,6 +59,8 @@
 const props = defineProps<{
   modelValue: string;
 }>();
+
+import { useVModel } from "@vueuse/core";
 
 const emit = defineEmits(["update:modelValue"]);
 

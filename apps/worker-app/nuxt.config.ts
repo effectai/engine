@@ -32,31 +32,16 @@ export default defineNuxtConfig({
   vite: {
     plugins: [
       nodePolyfills({
-        exclude: ["fs"],
+        exclude: ["fs", "process"],
       }),
     ],
-    resolve: {
-      alias: {
-        crypto: "crypto-browserify",
-      },
-    },
-    esbuild: {
-      tsconfigRaw: {
-        compilerOptions: {
-          experimentalDecorators: true,
-        },
-      },
-      target: "esnext",
-    },
-    build: {
-      target: "esnext",
-    },
     optimizeDeps: {
-      include: ["buffer"],
+      exclude: ["@effectai/solana-utils"],
+      include: ["@solana/web3.js", "eventemitter3"],
     },
     define: {
+      "process.env": {},
       global: "globalThis",
-      "process.env.BROWSER": true,
     },
   },
 });
