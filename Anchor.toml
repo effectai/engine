@@ -14,6 +14,11 @@ effect_vesting = "93Wj1k8a7x7FC4abXoEZVrq2ujaeFwB2Q31JvKosBz8F"
 
 [programs.mainnet]
 effect_migration = "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
+effect_payment = "effphQKcAYeN6CkbygjnJUsuYXGUtkikSPZ6B8hSggC"
+effect_rewards = "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi"
+effect_staking = "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
+effect_vesting = "effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S"
+
 
 [registry]
 url = "https://api.apr.dev"
@@ -21,7 +26,6 @@ url = "https://api.apr.dev"
 [provider]
 cluster = "localnet"
 wallet = "./tools/keys/authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV.json"
-idl = "./target/idl/effect_payment.json"
 
 [workspace]
 members = ["modules/payment/program", "modules/migration/program", "modules/stake/program", "modules/reward/program", "modules/vesting/program"]
