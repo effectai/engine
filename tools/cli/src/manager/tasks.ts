@@ -1,15 +1,7 @@
 import { Command } from "commander";
 import axios from "axios";
 import { ulid } from "ulid";
-
-type Task = {
-  id?: string;
-  title: string;
-  reward: bigint;
-  timeLimitSeconds: number;
-  templateId: string;
-  templateData: string;
-};
+import type { Task } from "@effectai/protobufs";
 
 type APIResponse = {
   status: string;
@@ -36,6 +28,7 @@ taskCommand
   .option("--time-limit <seconds>", "Time limit in seconds", "600")
   .option("--data <json>", "Template data as JSON string", "{}")
   .option("--id <taskId>", "Custom task ID")
+  .option("--capability <string>", "capability string to match workers")
   .action(async (options) => {
     try {
       const task: Task = {
@@ -45,6 +38,7 @@ taskCommand
         timeLimitSeconds: Number.parseInt(options.timeLimit),
         templateId: options.templateId,
         templateData: options.data || {},
+        capability: options.capability || "",
       };
 
       const { data } = await api.post<APIResponse>(`${options.url}/task`, task);
