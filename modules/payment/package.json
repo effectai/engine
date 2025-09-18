@@ -4,12 +4,13 @@
   "type": "module",
   "scripts": {
     "export:vkey": "node --experimental-strip-types scripts/verification-to-rust.cjs circuits/build/PaymentBatch_verification.json ./program/src",
-    "generate:constants": "NODE_ENV=production node --experimental-strip-types scripts/generate-constants.ts",
+    "generate:constants": "node --experimental-strip-types scripts/generate-constants.ts",
     "generate:circuit": "node --experimental-strip-types scripts/generate-circuit.ts",
     "build:circuits": "node --experimental-strip-types scripts/build-circuits.ts",
-    "compile:ts": "tsup clients/js --config ../../tsup.config.package.ts",
-    "build": "pnpm run generate:constants && pnpm run compile:ts",
-    "build:circuit": "pnpm run generate:circuit && pnpm run generate:constants && pnpm run compile:ts && pnpm run build:circuits"
+    "generate:clients": "node --experimental-strip-types scripts/generate-clients.ts",
+    "build": "pnpm run generate:constants && pnpm run generate:clients && pnpm run compile:ts",
+    "build:circuit": "pnpm run generate:circuit && pnpm run generate:constants && pnpm run compile:ts && pnpm run build:circuits",
+    "compile:ts": "tsup clients/js --config ../../tsup.config.package.ts"
   },
   "main": "dist/index.cjs",
   "exports": {

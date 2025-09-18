@@ -22,7 +22,7 @@ if (envFile) {
   dotenv.config({ path: envFile });
 }
 
-const BATCH_SIZE = process.env.PAYMENT_BATCH_SIZE || 10;
+const BATCH_SIZE = process.env.PAYMENT_BATCH_SIZE || 60;
 
 const template = `
 export const PAYMENT_BATCH_SIZE = ${BATCH_SIZE};
