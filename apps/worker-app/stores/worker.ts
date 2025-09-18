@@ -1,12 +1,9 @@
-// Modify the last 4 bits of the last byte
 import {
-  createWorker,
   type Ed25519PrivateKey,
   generateKeyPairFromSeed,
-  type Multiaddr,
-  multiaddr,
   peerIdFromPrivateKey,
-} from "@effectai/protocol";
+} from "@effectai/protocol-core";
+import { createWorker } from "@effectai/worker";
 import { IDBDatastore } from "datastore-idb";
 import { defineStore } from "pinia";
 
@@ -34,7 +31,7 @@ export const useWorkerStore = defineStore("worker", () => {
     keypair.value = await generateKeyPairFromSeed("Ed25519", privateKey);
 
     datastore.value = new IDBDatastore(
-      `/effect-ai/p4/worker/${peerId.value?.toString()}`,
+      `/effect-ai/v4/worker/${peerId.value?.toString()}`,
     );
 
     await datastore.value.open();

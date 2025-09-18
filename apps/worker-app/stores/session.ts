@@ -3,17 +3,17 @@ import {
   multiaddr,
   type PeerId,
   peerIdFromString,
-} from "@effectai/protocol";
-import { PublicKey } from "@solana/web3.js";
+} from "@effectai/protocol-core";
+import { type Address, address } from "@solana/kit";
 
 export interface Manager {
   peerId: PeerId;
-  publicKey: PublicKey;
+  publicKey: Address;
   multiaddr: Multiaddr;
 }
 
 interface Session {
-  account: PublicKey;
+  account: Address;
   connectedAt: Date;
   manager: Manager;
   metadata?: {
@@ -76,11 +76,11 @@ export const useSessionStore = defineStore("session", () => {
       if (!result) throw new Error("Connection handshake failed");
 
       current.value = {
-        account: new PublicKey(recipient),
+        account: address(recipient),
         connectedAt: new Date(),
         manager: {
           peerId: peerIdFromString(result.peer),
-          publicKey: new PublicKey(result.pubkey),
+          publicKey: address(result.pubkey),
           multiaddr: multiaddr(multiAddress),
         },
         metadata: {

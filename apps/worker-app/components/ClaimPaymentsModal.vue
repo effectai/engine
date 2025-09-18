@@ -112,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { multiaddr } from "@effectai/protocol";
+import { multiaddr } from "@effectai/protocol-core";
 import { useMutation, useQueryClient } from "@tanstack/vue-query";
 import { useVModel } from "@vueuse/core";
 

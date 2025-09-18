@@ -1,4 +1,4 @@
-// import type { ProofResponse } from "@effectai/protocol";
+import type { ProofResponse } from "@effectai/protobufs";
 
 export function bigIntToBytes32(num) {
   let hex = BigInt(num).toString(16);
@@ -7,7 +7,7 @@ export function bigIntToBytes32(num) {
 
   const bytes = new Uint8Array(32);
   for (let i = 0; i < 32; i++) {
-    bytes[i] = parseInt(hex.slice(i * 2, (i + 1) * 2), 16);
+    bytes[i] = Number.parseInt(hex.slice(i * 2, (i + 1) * 2), 16);
   }
   return bytes;
 }

@@ -3,7 +3,6 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 export default defineNuxtConfig({
   ssr: false,
-
   compatibilityDate: "2024-04-03",
   devtools: { enabled: true },
   css: ["@/assets/css/main.css"],
@@ -30,13 +29,9 @@ export default defineNuxtConfig({
   vite: {
     plugins: [
       nodePolyfills({
-        exclude: ["fs", "process"],
+        exclude: ["fs"],
       }),
     ],
-    optimizeDeps: {
-      exclude: ["@effectai/solana-utils"],
-      include: ["@solana/web3.js", "eventemitter3"],
-    },
     define: {
       "process.env": {},
       global: "globalThis",

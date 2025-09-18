@@ -6,8 +6,10 @@
     <nuxt-link
       :to="`worker/connect/${encodeMultiAddress(announcedAddresses[0])}`"
       class="mt-2"
+    >
+      <div
+        class="flex flex-col sm:items-center gap-2 sm:gap-4 font-mono text-sm"
       >
-      <div class="flex flex-col sm:items-center gap-2 sm:gap-4 font-mono text-sm">
         <div
           class="flex items-center gap-1 text-gray-500 dark:text-gray-400"
         ></div>
@@ -28,7 +30,10 @@
         </div>
 
         <div class="flex items-center gap-1">
-          <UIcon name="i-heroicons-finger-print" class="w-4 h-4 text-gray-400" />
+          <UIcon
+            name="i-heroicons-finger-print"
+            class="w-4 h-4 text-gray-400"
+          />
           <span class="text-gray-700 dark:text-gray-300" v-if="peerId">
             {{ sliceBoth(peerId) }}
           </span>
@@ -42,14 +47,13 @@
         </div>
 
         <UButton color="neutral" class="cursor-pointer">Connect</UButton>
-        
       </div>
     </nuxt-link>
   </div>
 </template>
 
 <script setup lang="ts">
-import { multiaddr, type Multiaddr } from "@effectai/protocol";
+import { multiaddr } from "@effectai/protocol-core";
 import { toString } from "uint8arrays";
 
 const props = defineProps<{
