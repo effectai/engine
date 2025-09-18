@@ -1,5 +1,6 @@
 <template>
   <div class="flex items-center justify-center">
+    <OnboardModal />
     <div v-if="isLoading" class="w-full max-w-md mt-10 space-y-8 p-8">
       <p class="text-center text-gray-400 text-2xl flex items-center gap-2">
         <UIcon

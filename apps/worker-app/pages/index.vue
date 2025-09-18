@@ -1,5 +1,6 @@
 <template>
   <div>
+    <OnboardModal />
     <NodeHeroCard />
 
     <div
@@ -16,7 +17,7 @@
           <h2 class="text-lg font-semibold">Available Capabilities</h2>
         </div>
       </template>
-      <div class="flex items-stretch">
+      <div class="flex items-stretch flex-wrap p-4">
         <CapabilitiesListItem
           v-for="item in availableCapabilities"
           :key="item.id"
@@ -43,8 +44,6 @@
 definePageMeta({
   middleware: ["auth"],
 });
-
-const isOpenClaimModal = ref(false);
 
 const availableCapabilities = ref([
   {

@@ -1,4 +1,4 @@
-import { multiaddr, type Multiaddr } from "@effectai/protocol";
+import { type Multiaddr, multiaddr } from "@effectai/protocol";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 
 export const useSession = () => {
@@ -56,6 +56,7 @@ export const useSession = () => {
 
   const disconnectFromManagerMutation = useMutation({
     mutationFn: async () => {
+      console.log("Disconnecting from manager...");
       return sessionStore.terminate();
     },
     onError: (error) => {

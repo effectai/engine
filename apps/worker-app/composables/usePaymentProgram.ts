@@ -7,6 +7,7 @@ import {
 import type { ProofResponse } from "@effectai/protocol";
 import {
   executeTransaction,
+  getAssociatedTokenAccount,
   maybeCreateAssociatedTokenAccountInstructions,
 } from "@effectai/solana-utils";
 import {
@@ -23,6 +24,7 @@ import {
 } from "@solana-program/compute-budget";
 import {
   fetchMaybeToken,
+  getCreateAssociatedTokenIdempotentInstructionAsync,
   getCreateAssociatedTokenInstructionAsync,
 } from "@solana-program/token";
 import { useMutation, useQuery } from "@tanstack/vue-query";
@@ -46,28 +48,33 @@ export function usePaymentProgram() {
 
     const claimWithProofIx = [];
 
-    const ata = await connection.getTokenAccountAddress(
-      mint,
-      address(account.value),
-    );
+    const ata = await getAssociatedTokenAccount({
+      mint: address(mint),
+      owner: address(account.value),
+    });
 
     const [recipientManagerDataAccount] = await getProgramDerivedAddress({
-      programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
+      programAddress: address(EFFECT_PAYMENT_PROGRAM_ADDRESS),
       seeds: [
         getAddressEncoder().encode(address(account.value)),
         getAddressEncoder().encode(address(managerPublicKey)),
       ],
     });
 
-    const ataIx = await maybeCreateAssociatedTokenAccountInstructions({
-      rpc: connection.rpc,
-      signer,
-      mint,
-      owner: address(account.value),
-      tokenAddress: ata,
+    //check if ata exists
+    const closed = await connection.checkTokenAccountIsClosed({
+      tokenAccount: ata,
     });
-    if (ataIx) {
-      claimWithProofIx.push(...ataIx);
+
+    if (closed) {
+      const createAtaIx =
+        await getCreateAssociatedTokenIdempotentInstructionAsync({
+          mint,
+          payer: signer,
+          owner: signer.address,
+        });
+
+      claimWithProofIx.push(createAtaIx);
     }
 
     const dataAccount = await fetchMaybeRecipientManagerDataAccount(
@@ -81,6 +88,7 @@ export function usePaymentProgram() {
         mint: address(mint),
         managerAuthority: address(managerPublicKey),
       });
+
       claimWithProofIx.push(initRecipientManagerDataAccountIx);
     }
 
@@ -98,7 +106,10 @@ export function usePaymentProgram() {
       proof: convertProofToBytes(proof),
     });
 
+    claimWithProofIx.push(claimProofIx);
+
     try {
+      console.log("executing tx", claimWithProofIx);
       await executeTransaction({
         rpc: connection.rpc,
         rpcSubscriptions: connection.rpcSubscriptions,

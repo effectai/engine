@@ -46,7 +46,7 @@
         :key="task.state.id"
         class="flex justify-between border border-zinc-700 rounded-lg overflow-hidden duration-300 hover:border-emerald-400/50 hover:shadow-md hover:shadow-emerald-400/10 transition-transform"
       >
-        <WorkerTaskListItem
+        <TaskListItem
           :task-record="task"
           class="transition-transform duration-300 hover:scale-[1.005]"
         />

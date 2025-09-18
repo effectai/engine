@@ -27,11 +27,11 @@
   </div>
 
   <div v-else-if="isActive">
-    <WorkerNodeStatusCard class="my-5" />
-    <WorkerClaimPaymentsModal v-model="isOpenClaimModal" />
-    <WorkerTaskModal />
+    <NodeStatusCard class="my-5" />
+    <ClaimPaymentsModal v-model="isOpenClaimModal" />
+    <TaskModal />
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 my-5">
-      <WorkerStatisticCard
+      <StatisticCard
         icon="i-lucide-cpu"
         label="Time Online"
         :value="formattedUptime"
@@ -41,35 +41,35 @@
           {{ Number.parseInt(config.public.PAYOUT_INTERVAL) / 1000 / 60 }}
           minutes</small
         >
-      </WorkerStatisticCard>
-      <WorkerStatisticCard
+      </StatisticCard>
+      <StatisticCard
         icon="i-lucide-dollar-sign"
         label="Total Earned"
         :value="`${totalEffectEarnings} EFFECT`"
       >
-      </WorkerStatisticCard>
-      <WorkerStatisticCard
+      </StatisticCard>
+      <StatisticCard
         icon="i-lucide-activity"
         label="Tasks Completed"
         :value="totalTasksCompleted"
       />
-      <WorkerStatisticCard
+      <StatisticCard
         icon="i-material-symbols-score-sharp"
         label="Performance"
         :value="`${performanceScore}%`"
       >
-      </WorkerStatisticCard>
+      </StatisticCard>
     </div>
-    <WorkerTaskList class="my-5" />
+    <TaskList class="my-5" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { multiaddr } from "@effectai/protocol";
+import { tryOnBeforeUnmount } from "@vueuse/core";
 import { fromString, toString } from "uint8arrays";
 
 definePageMeta({
-  layout: "worker",
   middleware: ["auth"],
 });
 

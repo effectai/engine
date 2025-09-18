@@ -69,7 +69,7 @@ const connect = async () => {
   const ed25519privateKey = sha512(seed.slice(0, 32));
   const pk = Keypair.fromSeed(ed25519privateKey.slice(0, 32));
   await loginWithPrivateKey(Buffer.from(pk.secretKey).toString("hex"));
-  navigateTo("/worker");
+  navigateTo("/");
 };
 </script>
 

@@ -28,11 +28,13 @@ export const useWorkerStore = defineStore("worker", () => {
   });
 
   const initialize = async (privateKey: Uint8Array) => {
+    if (isInitialized.value) return;
+
     status.value = "initializing";
     keypair.value = await generateKeyPairFromSeed("Ed25519", privateKey);
 
     datastore.value = new IDBDatastore(
-      `/effect-ai/worker/${peerId.value?.toString()}`,
+      `/effect-ai/p4/worker/${peerId.value?.toString()}`,
     );
 
     await datastore.value.open();
@@ -47,12 +49,24 @@ export const useWorkerStore = defineStore("worker", () => {
     status.value = "active";
   };
 
+  const destroy = async () => {
+    if (instance.value) {
+      await instance.value.stop();
+      instance.value = null;
+    }
+
+    if (datastore.value) {
+      datastore.value = null;
+    }
+  };
+
   return {
     instance,
     peerId,
     status,
     initialize,
     isInitialized,
+    destroy,
     datastore,
     keypair,
   };

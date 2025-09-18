@@ -50,6 +50,8 @@
 </template>
 
 <script setup lang="ts">
+import { useVModel } from "@vueuse/core";
+
 const props = defineProps<{
   modelValue: boolean;
   instructions: string;
@@ -61,8 +63,6 @@ const closeModal = () => {
 
 const emit = defineEmits(["update:modelValue"]);
 const data = useVModel(props, "modelValue", emit);
-
-const toast = useToast();
 </script>
 
 <style lang="scss" scoped></style>

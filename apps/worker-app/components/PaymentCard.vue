@@ -14,6 +14,7 @@
     </template>
 
     <!-- Modal & Main Content -->
+    <ClaimPaymentsModal v-model="isOpenClaimModal" />
     <div class="p-4 space-y-4">
       <!-- Alerts & Wallet Info -->
       <div class="rounded-xl bg-gray-100 dark:bg-white/5 p-4">
@@ -124,18 +125,16 @@ const exportPrivateKey = async () => {
   }
 };
 
+const { useGetPaymentsQuery, computedTotalPaymentAmount } = usePayments();
 const { useGetBalanceQuery } = useSolanaWallet();
 const { useGetEffectBalanceQuery } = useSolanaWallet();
 const { data: balance } = useGetBalanceQuery(account);
 const { data: effectBalance } = useGetEffectBalanceQuery(account);
-//
-// const totalUnclaimedEffectFormatted = computed(() => {
-//   return formatNumber(Number((totalUnclaimedEffect.value || 0n) / BigInt(1e6)));
-// });
+const { data: managerPaymentBatches } = useGetPaymentsQuery();
 
-const solanaBalanceLow = computed(() => {
-  return balance.value && balance.value.value < 0.005;
-});
+const totalUnclaimedPayments = useNumberFormat(
+  computedTotalPaymentAmount(managerPaymentBatches),
+);
 </script>
 
 <style scoped></style>

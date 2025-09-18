@@ -42,16 +42,6 @@ export const usePayments = () => {
       ),
     );
 
-  // const totalUnclaimedEffect = computed(() => {
-  //   return managerPaymentBatches.value?.reduce((total, record) => {
-  //     const claimableAmount = record.claimablePayments.reduce((sum, payment) => {
-  //       return sum + (payment.state.amount || 0n);
-  //     }, 0n);
-  //     return total + claimableAmount;
-  //   }, 0n);
-  // });
-  //
-
   const getAllManagersFromPayments = async () => {
     assertExists(datastore.value, "Datastore is not initialized");
 

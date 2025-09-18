@@ -50,11 +50,7 @@ export const useAuth = () => {
   async function setProvider(privateKey: string) {
     const privateKeyBytes = Buffer.from(privateKey, "hex").slice(0, 32);
 
-    //save a random seed in localStorage to modify the private key
     const seedModifier = useLocalStorage("modifier", crypto.randomUUID());
-    console.log("seedModifier", seedModifier.value);
-
-    //replace the last 4 bytes of the private key with the first 4 bytes of the modifier
     const modifierBytes = Buffer.from(seedModifier.value).slice(0, 4);
     const modifiedSeed = Buffer.concat([
       privateKeyBytes.slice(0, 28),

@@ -1,6 +1,8 @@
 <template>
   <div class="flex-1">
-    <div class="border border-gray-300 p-4 transition-colors">
+    <div
+      class="border border-gray-300 p-4 transition-colors h-full flex flex-col"
+    >
       <div class="flex items-start justify-between mb-3">
         <div class="flex items-center space-x-2">
           <div
@@ -36,7 +38,7 @@
         <span class="text-sm font-medium text-gray-900">{{ cost }} EFFECT</span
         ><span class="text-xs text-gray-500">~800.00/mo</span>
       </div>
-      <div class="space-y-2">
+      <div class="space-y-2 mt-auto">
         <div class="flex flex-wrap gap-1">
           <span
             v-for="tag in props.tags"

@@ -5,10 +5,12 @@ const props = defineProps({
     default: "Click me",
   },
 });
+
+const emits = defineEmits(["click"]);
 </script>
 
 <template>
-  <button class="animated-button">{{ label }}</button>
+  <button @click="emits('click')" class="animated-button">{{ label }}</button>
 </template>
 
 <style scoped lang="scss">

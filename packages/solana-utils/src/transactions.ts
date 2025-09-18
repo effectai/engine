@@ -150,18 +150,18 @@ export const executeTransaction = async ({
       (message) => setTransactionMessageFeePayerSigner(signer, message),
       (message) => appendTransactionMessageInstructions(instructions, message),
     );
-
-    const [priorityFeeEstimate, computeUnitEstimate] = await Promise.all([
-      getPriorityFeeEstimate(rpc, false, transactionMessage, abortSignal),
-      getComputeUnitEstimate(rpc, transactionMessage, abortSignal),
-    ]);
+    //
+    // const [priorityFeeEstimate, computeUnitEstimate] = await Promise.all([
+    //   getPriorityFeeEstimate(rpc, false, transactionMessage, abortSignal),
+    //   getComputeUnitEstimate(rpc, transactionMessage, abortSignal),
+    // ]);
 
     const setComputeUnitPriceInstruction = getSetComputeUnitPriceInstruction({
-      microLamports: BigInt(priorityFeeEstimate),
+      microLamports: BigInt(5000),
     });
 
     const setComputeUnitLimitInstruction = getSetComputeUnitLimitInstruction({
-      units: Math.ceil(computeUnitEstimate * 1.1),
+      units: Math.ceil(2000000),
     });
 
     transactionMessage = appendTransactionMessageInstructions(

@@ -7,7 +7,7 @@ import type { Command } from "commander";
 
 import { generateKeyPairSigner, address } from "@solana/kit";
 import { getCreatePaymentPoolInstructionAsync } from "@effectai/payment";
-import { useConnection } from "../../helpers";
+import { useConnection } from "../../helpers.js";
 
 export function registerCreatePaymentPoolCommand(program: Command) {
   program
@@ -49,6 +49,8 @@ export function registerCreatePaymentPoolCommand(program: Command) {
         instructions: [createPaymentPoolIx],
         commitment: "confirmed",
       });
+
+      console.log("Payment Pool Created: ", paymentAccount.address);
 
       return;
     });

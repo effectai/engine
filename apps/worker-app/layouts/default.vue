@@ -7,55 +7,71 @@
         className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 my-3"
       >
         <div className="flex items-center gap-2">
-          <TheLogo className="w-32" />
+          <NuxtLink to="/"><TheLogo className="w-32" /></NuxtLink>
         </div>
         <div class="flex items-center space-x-4">
           <div class="flex items-center space-x-3 mr-6">
-            <img
-              v-if="profilePicture"
-              :src="profilePicture"
-              alt="Profile Picture"
-              class="w-8 h-8 rounded-full object-cover"
-            />
-            <div
-              v-else
-              class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center"
+            <UDropdownMenu
+              v-if="username"
+              :items="items"
+              :ui="{ content: 'w-(--reka-dropdown-menu-trigger-width)' }"
             >
-              <UIcon name="i-heroicons-user" class="w-5 h-5 text-white" />
-            </div>
-            <span class="font-medium text-gray-700 dark:text-gray-300">{{
-              username
-            }}</span>
+              <UButton label="Open" color="neutral" variant="outline">
+                <span
+                  class="font-medium text-gray-700 dark:text-gray-300 flex items-center space-x-2 gap-3"
+                >
+                  <img
+                    v-if="profilePicture"
+                    :src="profilePicture"
+                    alt="Profile Picture"
+                    class="w-8 h-8 rounded-full object-cover"
+                  />
+
+                  {{ username }}
+                </span>
+              </UButton>
+            </UDropdownMenu>
           </div>
         </div>
       </div>
     </header>
-    <main class="pt-20 px-4 max-w-6xl mx-auto min-h-screen">
+    <main class="pt-22 px-4 max-w-6xl mx-auto min-h-screen">
       <slot />
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import type { DropdownMenuItem } from "@nuxt/ui";
 
 const { userInfo, logout } = useAuth();
+const { destroy } = useWorkerStore();
 
 const username = computed(() => userInfo.value?.username || "");
 const profilePicture = computed(() => userInfo.value?.profileImage || "");
 
 const logoutHandler = async () => {
   await logout();
+  await destroy();
   navigateTo("/login");
 };
 
-const sidebarOpen = ref(false);
+const items: DropdownMenuItem[][] = [
+  [
+    {
+      onSelect: () => logoutHandler(),
+      label: "Logout",
+      color: "error",
+      icon: "i-lucide-log-out",
+    },
+  ],
+];
 
 useSeoMeta({
-  title: "Effect AI | Portal",
-  ogTitle: "Effect AI | Portal",
-  description: "The Effect AI Portal",
-  ogDescription: "The Effect AI Portal",
+  title: "Effect AI | Worker App",
+  ogTitle: "Effect AI | Worker App",
+  description: "The Effect AI Worker App",
+  ogDescription: "The Effect AI Worker App",
   ogImage: "/img/effect-logo-black.png",
 });
 </script>

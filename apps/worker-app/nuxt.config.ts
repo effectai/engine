@@ -1,6 +1,4 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-
-import fs from "node:fs";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 export default defineNuxtConfig({

@@ -22,6 +22,7 @@ interface Session {
   };
 }
 
+import { useNow } from "@vueuse/core";
 export const useSessionStore = defineStore("session", () => {
   // State
   const current = shallowRef<Session | null>(null);
@@ -59,6 +60,12 @@ export const useSessionStore = defineStore("session", () => {
     try {
       status.value = "connecting";
       error.value = null;
+      assertExists(worker.instance, "Worker instance is not available");
+
+      //start the node if not already started
+      if (worker.instance.entity.node.status !== "started") {
+        await worker.instance.start();
+      }
 
       const result = await worker.instance?.connect(multiaddr(multiAddress), {
         recipient,
@@ -92,13 +99,14 @@ export const useSessionStore = defineStore("session", () => {
   };
 
   const terminate = async () => {
+    console.log("Terminating session...", current.value);
     if (!current.value) return;
 
     try {
       const worker = useWorkerStore();
       assertExists(worker.instance, "Worker instance is not available");
-      await worker.instance?.stop();
-      status.value = "connecting";
+      await worker.instance.stop();
+      status.value = "idle";
       error.value = null;
       current.value = null;
       status.value = "idle";

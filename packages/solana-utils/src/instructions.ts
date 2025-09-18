@@ -203,8 +203,7 @@ export const maybeCreateAssociatedTokenAccountInstructions = async ({
 }) => {
   const account = await rpc.getAccountInfo(tokenAddress).send();
   if (!account || account.value === null) {
-    console.log("Creating associated token account for", owner, mint);
-    return getCreateAssociatedTokenInstructionAsync({
+    return await getCreateAssociatedTokenInstructionAsync({
       payer: signer,
       mint,
       owner,

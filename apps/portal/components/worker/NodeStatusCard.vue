@@ -93,7 +93,7 @@ const disconnect = async () => {
 
 function copyNodeAddress(text: string) {
   navigator.clipboard.writeText(text);
-  toast.clear()
+  toast.clear();
   toast.add({
     title: "Copied!",
     color: "success",
@@ -103,7 +103,7 @@ function copyNodeAddress(text: string) {
 
 function copyManagerAddress(text: string) {
   navigator.clipboard.writeText(text);
-  toast.clear()
+  toast.clear();
   toast.add({
     title: "Copied!",
     color: "success",

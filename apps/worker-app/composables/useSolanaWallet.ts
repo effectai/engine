@@ -1,3 +1,4 @@
+import { getAssociatedTokenAccount } from "@effectai/solana-utils";
 import { type Address, address } from "@solana/kit";
 import { useQuery } from "@tanstack/vue-query";
 
@@ -24,28 +25,6 @@ export const useSolanaWallet = () => {
     });
   };
 
-  const useGetEffectTokenAccountQuery = async (
-    account: Ref<string | null | undefined>,
-  ) => {
-    const { mint } = useEffectConfig();
-
-    assertExists(mint, "Mint is not defined");
-    assertExists(account.value, "Account is not defined");
-
-    return useQuery({
-      queryKey: ["effect-token-account", account],
-      enabled: computed(() => !!account.value !== null),
-      queryFn: async () => {
-        const ata = await connection.getTokenAccountAddress(
-          address(account.value),
-          mint,
-        );
-
-        return ata;
-      },
-    });
-  };
-
   const useGetEffectBalanceQuery = (
     account: Ref<string | null | undefined>,
   ) => {
@@ -58,16 +37,18 @@ export const useSolanaWallet = () => {
         assertExists(mint, "Mint is not defined");
         assertExists(account.value, "Account is not defined");
 
-        const ata = await connection.getTokenAccountAddress(
-          address(account.value),
-          mint,
-        );
+        const ata = await getAssociatedTokenAccount({
+          mint: address(mint),
+          owner: address(account.value),
+        });
 
         try {
-          const balance = await connection.getTokenAccountBalance(ata);
+          const balance = await connection.getTokenAccountBalance({
+            tokenAccount: ata,
+          });
 
           return {
-            value: balance.value.uiAmount || 0,
+            value: balance.uiAmount || 0,
             symbol: "EFFECT",
           };
         } catch (e) {

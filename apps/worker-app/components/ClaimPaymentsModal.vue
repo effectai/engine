@@ -63,17 +63,6 @@
         <!-- Footer -->
         <template #footer>
           <!-- Warning for low SOL -->
-
-          <UAlert
-            v-if="stalePaymentsCount > 50"
-            icon="i-heroicons-exclamation-triangle"
-            color="warning"
-            variant="subtle"
-            title="Stale Payments Detected"
-            :description="`You have ${stalePaymentsCount} stale payments totaling ${stalePaymentsFormatted} that cannot be claimed. Please contact us in discord for assistance .`"
-            class="mb-4"
-          />
-
           <UAlert
             v-if="balance && balance.value <= 0.01"
             icon="i-heroicons-exclamation-triangle"
@@ -125,6 +114,7 @@
 <script setup lang="ts">
 import { multiaddr } from "@effectai/protocol";
 import { useMutation, useQueryClient } from "@tanstack/vue-query";
+import { useVModel } from "@vueuse/core";
 
 const { account } = useAuth();
 const { instance } = storeToRefs(useWorkerStore());
@@ -145,6 +135,7 @@ const totalAmount = computed(() => {
 
   return computedTotalPaymentAmount(managerPaymentBatches);
 });
+
 const batchLength = ref(7);
 const maxBatchLength = computed(() => {
   return Math.max(managerPaymentBatches.value?.length || 0, 10);
@@ -155,27 +146,6 @@ const props = defineProps<{
   modelValue: boolean;
 }>();
 const data = useVModel(props, "modelValue", emit);
-
-const stalePayments = computed(() => {
-  return managerPaymentBatches.value
-    ?.filter((b) => b.recipient !== account.value)
-    .flatMap((batch) => batch.claimablePayments);
-});
-const stalePaymentsCount = computed(() => {
-  return stalePayments.value?.length || 0;
-});
-const stalePaymentsAmount = computed(() => {
-  return (
-    stalePayments.value?.reduce((acc, payment) => {
-      return acc + payment.state.amount;
-    }, 0n) || 0n
-  );
-});
-const stalePaymentsFormatted = computed(() => {
-  return stalePaymentsAmount.value
-    ? `${Number(stalePaymentsAmount.value) / 1e6} EFFECT`
-    : "0 EFFECT";
-});
 
 const claimablePayments = computed(() => {
   return managerPaymentBatches.value
@@ -219,7 +189,6 @@ const batchingManager = computed(() => {
   }
 
   // Find the first online manager
-
   return managers.value.find((manager) => manager.announcedAddresses) || null;
 });
 const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
@@ -240,6 +209,11 @@ const { mutateAsync: mutateClaimPayments, isPending: isClaimingPayments } =
           managerPaymentBatches.value.length === 0
         ) {
           throw new Error("No claimable payments found.");
+        }
+
+        //start the entity if not started
+        if (instance.value.entity.node.status !== "started") {
+          await instance.value.start();
         }
 
         await instance.value.entity.node.dial(

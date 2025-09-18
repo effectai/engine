@@ -69,9 +69,6 @@
 </template>
 
 <script setup lang="ts">
-import { useClipboard } from "@vueuse/core";
-import { ref } from "vue";
-
 const { managerInfo } = useSession();
 const { useGetNoncesQuery } = useNonce();
 const managerPeerId = computed(() => managerInfo.value?.peerIdStr);
@@ -81,19 +78,18 @@ const { data: nonces } = useGetNoncesQuery(managerPublicKey, managerPeerId);
 const { data: latency } = usePing();
 const { peerId } = useWorkerNode();
 
-const isCopied = ref(false);
 const toast = useToast();
 
 const { disconnectFromManagerMutation } = useSession();
 const { mutateAsync: disconnectFromManager } = disconnectFromManagerMutation;
 const disconnect = async () => {
   await disconnectFromManager();
-  navigateTo("/worker");
+  navigateTo("/");
 };
 
 function copyNodeAddress(text: string) {
   navigator.clipboard.writeText(text);
-  toast.clear()
+  toast.clear();
   toast.add({
     title: "Copied!",
     color: "success",
@@ -103,7 +99,7 @@ function copyNodeAddress(text: string) {
 
 function copyManagerAddress(text: string) {
   navigator.clipboard.writeText(text);
-  toast.clear()
+  toast.clear();
   toast.add({
     title: "Copied!",
     color: "success",

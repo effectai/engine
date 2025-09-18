@@ -33,8 +33,9 @@ onMounted(async () => {
 
     localStorage.setItem("authMethod", "web3auth");
     localStorage.setItem("userInfo", JSON.stringify(userInfo.value));
+
     //redirect to /worker
-    navigateTo("/worker");
+    navigateTo("/");
   } else {
     console.error("Web3Auth is not connected");
   }
