@@ -1,5 +1,5 @@
 <template>
-  <UCard class="overflow-y-scroll mb-4" variant="mono">
+  <UCard class="overflow-y-scroll mb-4" variant="outline">
     <template #header>
       <div class="flex items-center gap-2">
         <UIcon

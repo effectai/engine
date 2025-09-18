@@ -5,13 +5,13 @@
     <div
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 items-stretch"
     >
-      <PaymentCard class="" />
-      <CapabilitiesList v-coming-soon class="" />
+      <PaymentCard />
+      <CapabilitiesList v-coming-soon />
     </div>
 
     <UCard
       v-coming-soon
-      variant="mono"
+      variant="outline"
       class="mb-4 p-0"
       :ui="{ body: 'p-1 sm:p-0' }"
     >

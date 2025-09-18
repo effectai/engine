@@ -1,81 +1,35 @@
-import * as anchor from "@coral-xyz/anchor";
-import type {
-  Program,
-  Idl,
-  ProgramAccount,
-  IdlAccounts,
-} from "@coral-xyz/anchor";
-
+import {
+  EFFECT_PAYMENT_PROGRAM_ADDRESS,
+  fetchMaybeRecipientManagerDataAccount,
+  getClaimProofsInstructionAsync,
+  getInitInstructionAsync,
+} from "@effectai/payment";
+import type { ProofResponse } from "@effectai/protocol";
+import {
+  executeTransaction,
+  maybeCreateAssociatedTokenAccountInstructions,
+} from "@effectai/solana-utils";
 import {
   address,
-  createKeyPairSignerFromPrivateKeyBytes,
-  getProgramDerivedAddress,
-  getAddressDecoder,
-  getAddressEncoder,
-  pipe,
-  createTransactionMessage,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  appendTransactionMessageInstructions,
-  signTransactionMessageWithSigners,
-  sendAndConfirmTransactionFactory,
   createKeyPairSignerFromBytes,
-  SolanaError,
-  type SolanaErrorCodeWithCause,
+  getAddressEncoder,
+  getProgramDerivedAddress,
   type MaybeAccount,
+  SolanaError,
 } from "@solana/kit";
-
 import {
   getSetComputeUnitLimitInstruction,
   getSetComputeUnitPriceInstruction,
 } from "@solana-program/compute-budget";
-
-import { useMutation, useQuery } from "@tanstack/vue-query";
-// import {
-//   EffectPaymentIdl,
-//   type EffectPayment,
-//   type EffectStaking,
-// } from "@effectai/idl";
-//
-import { buildEddsa } from "@effectai/protocol";
-import type { ProofResponse } from "@effectai/protocol";
-
 import {
-  EFFECT_PAYMENT_PROGRAM_ADDRESS,
-  fetchMaybeRecipientManagerDataAccount,
-  getInitInstructionAsync,
-  getClaimProofsInstructionAsync,
-} from "@effectai/payment";
-
-//
-// import {
-//   EFFECT_PAYMENT_PROGRAM_ADDRESS,
-//   fetchMaybeRecipientManagerDataAccount,
-//   getClaimProofsInstructionAsync,
-//   getInitInstructionAsync,
-//   getAssociatedTokenAccount,
-// } from "@effectai/program-sdk";
-//
-
-import {
-  getCreateAssociatedTokenInstructionAsync,
   fetchMaybeToken,
+  getCreateAssociatedTokenInstructionAsync,
 } from "@solana-program/token";
-import { getAssociatedTokenAccount } from "@effectai/utils";
-
-export type EffectStakingProgramAccounts = IdlAccounts<EffectStaking>;
-export type StakingAccount = ProgramAccount<
-  EffectStakingProgramAccounts["stakeAccount"]
->;
+import { useMutation, useQuery } from "@tanstack/vue-query";
 
 export function usePaymentProgram() {
   const { mint } = useEffectConfig();
-  const { rpc, rpcSubscriptions } = useSolanaRpc();
-
-  const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
-    rpc,
-    rpcSubscriptions,
-  });
+  const { connection } = useConnection();
 
   const claimWithProof = async (
     proof: ProofResponse,
@@ -90,10 +44,12 @@ export function usePaymentProgram() {
       Buffer.from(privateKey, "hex"),
     );
 
-    const ata = await getAssociatedTokenAccount({
-      mint: address(mint.toBase58()),
-      owner: address(account.value),
-    });
+    const claimWithProofIx = [];
+
+    const ata = await connection.getTokenAccountAddress(
+      mint,
+      address(account.value),
+    );
 
     const [recipientManagerDataAccount] = await getProgramDerivedAddress({
       programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
@@ -103,36 +59,34 @@ export function usePaymentProgram() {
       ],
     });
 
+    const ataIx = await maybeCreateAssociatedTokenAccountInstructions({
+      rpc: connection.rpc,
+      signer,
+      mint,
+      owner: address(account.value),
+      tokenAddress: ata,
+    });
+    if (ataIx) {
+      claimWithProofIx.push(...ataIx);
+    }
+
     const dataAccount = await fetchMaybeRecipientManagerDataAccount(
-      rpc,
+      connection.rpc,
       recipientManagerDataAccount,
     );
 
-    const initRecipientManagerDataAccountIx = await getInitInstructionAsync({
-      authority: signer,
-      mint: address(mint.toBase58()),
-      managerAuthority: address(managerPublicKey),
-    });
-
-    const tokenAccount = await fetchMaybeToken(rpc, ata);
-
-    const setComputeIx = getSetComputeUnitLimitInstruction({
-      units: 400_000,
-    });
-
-    const setPriorityFeeIx = getSetComputeUnitPriceInstruction({
-      microLamports: 100_000,
-    });
-
-    const createAtaIx = await getCreateAssociatedTokenInstructionAsync({
-      mint: address(mint.toBase58()),
-      payer: signer,
-      owner: signer.address,
-    });
+    if (!dataAccount.exists) {
+      const initRecipientManagerDataAccountIx = await getInitInstructionAsync({
+        authority: signer,
+        mint: address(mint),
+        managerAuthority: address(managerPublicKey),
+      });
+      claimWithProofIx.push(initRecipientManagerDataAccountIx);
+    }
 
     const claimProofIx = await getClaimProofsInstructionAsync({
       paymentAccount: address(paymentAccount),
-      mint: address(mint.toBase58()),
+      mint: address(mint),
       recipientManagerDataAccount,
       recipientTokenAccount: ata,
       pubX: bigIntToBytes32(proof.signals.pubX),
@@ -145,39 +99,11 @@ export function usePaymentProgram() {
     });
 
     try {
-      const recentBlockhash = await rpc.getLatestBlockhash().send();
-      const transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(
-            recentBlockhash.value,
-            tx,
-          ),
-        // (tx) =>
-        //   compressTransactionMessageUsingAddressLookupTables(tx, lookupAccount),
-        (tx) =>
-          appendTransactionMessageInstructions(
-            dataAccount.exists ? [] : [initRecipientManagerDataAccountIx],
-            tx,
-          ),
-        (tx) =>
-          appendTransactionMessageInstructions(
-            tokenAccount.exists ? [] : [createAtaIx],
-            tx,
-          ),
-        (tx) =>
-          appendTransactionMessageInstructions(
-            [setComputeIx, setPriorityFeeIx, claimProofIx],
-            tx,
-          ),
-      );
-
-      const signedTx =
-        await signTransactionMessageWithSigners(transactionMessage);
-
-      await sendAndConfirmTransaction(signedTx, {
-        commitment: "finalized",
+      await executeTransaction({
+        rpc: connection.rpc,
+        rpcSubscriptions: connection.rpcSubscriptions,
+        signer,
+        instructions: claimWithProofIx,
       });
     } catch (e: any) {
       if (e instanceof SolanaError) {
@@ -205,7 +131,7 @@ export function usePaymentProgram() {
     );
 
     return fetchMaybeRecipientManagerDataAccount(
-      rpc,
+      connection.rpc,
       recipientManagerDataAccountAddress,
     );
   };

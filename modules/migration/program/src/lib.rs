@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 
+// mod effect_staking_env;
 mod errors;
 mod instructions;
 mod macros;
@@ -7,9 +8,15 @@ mod security;
 mod state;
 mod utils;
 
+use effect_common::declare_effect_program;
 pub use instructions::*;
 
+#[cfg(feature = "localnet")]
+declare_id!("8hh1mwDGo66tHjmrF34rFo7m1msyoHR3QfNUd1bXzGQo");
+#[cfg(feature = "mainnet")]
 declare_id!("effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR");
+
+declare_effect_program!(effect_staking, effect_staking_localnet);
 
 #[program]
 pub mod effect_migration {

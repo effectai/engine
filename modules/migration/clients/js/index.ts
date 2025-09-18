@@ -1,2 +1,2 @@
-export * from "./@generated/migration/index.js";
+export * from "./@generated/index.js";
 export * from "./derive";

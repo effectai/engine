@@ -3,7 +3,7 @@ import {
   getAddressEncoder,
   getProgramDerivedAddress,
 } from "@solana/kit";
-import { EFFECT_REWARDS_PROGRAM_ADDRESS } from "./@generated/rewards";
+import { EFFECT_REWARDS_PROGRAM_ADDRESS } from "./@generated";
 
 export const deriveRewardAccountsPda = async ({
   mint,

@@ -9,10 +9,10 @@ macro_rules! vault_seed {
 #[macro_export]
 macro_rules! genesis_stake {
     ($accounts: expr, $seeds:expr) => {
-        effect_staking::cpi::stake_genesis(
+        crate::effect_staking::cpi::stake_genesis(
             CpiContext::new_with_signer(
                 $accounts.staking_program.to_account_info(),
-                effect_staking::cpi::accounts::StakeGenesis {
+                crate::effect_staking::cpi::accounts::StakeGenesis {
                     mint: $accounts.mint.to_account_info(),
                     user_token_account: $accounts.recipient_token_account.to_account_info(),
                     stake_account: $accounts.stake_account.to_account_info(),

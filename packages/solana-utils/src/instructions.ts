@@ -31,6 +31,7 @@ import {
   fetchVestingAccount,
   getClaimInstructionAsync as getVestingClaimInstructionAsync,
 } from "@effectai/vesting";
+import { getCreateAssociatedTokenInstructionAsync } from "@solana-program/token";
 
 export const buildClaimRewardsInstruction = async ({
   mint,
@@ -101,8 +102,6 @@ export const buildUnstakeInstruction = async ({
     rpc,
     stakingRewardAccount,
   );
-
-  console.log("maybeStakingRewardAccount", maybeStakingRewardAccount);
 
   const { reflectionAccount } = await deriveRewardAccountsPda({ mint });
 
@@ -187,4 +186,29 @@ export const buildTopupInstruction = async ({
   return maybeStakingRewardAccount.exists
     ? [topupIx, syncRewardsIx]
     : [enterRewardPoolIx, topupIx, syncRewardsIx];
+};
+
+export const maybeCreateAssociatedTokenAccountInstructions = async ({
+  rpc,
+  tokenAddress,
+  signer,
+  mint,
+  owner,
+}: {
+  signer: TransactionSigner;
+  rpc: Rpc<SolanaRpcApiMainnet>;
+  tokenAddress: Address;
+  mint: Address;
+  owner: Address;
+}) => {
+  const account = await rpc.getAccountInfo(tokenAddress).send();
+  if (!account || account.value === null) {
+    console.log("Creating associated token account for", owner, mint);
+    return getCreateAssociatedTokenInstructionAsync({
+      payer: signer,
+      mint,
+      owner,
+    });
+  }
+  return [];
 };

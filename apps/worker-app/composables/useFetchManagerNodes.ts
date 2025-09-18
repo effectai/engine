@@ -1,6 +1,5 @@
 import type { ManagerInfoResponse } from "@effectai/protocol";
 import { type Multiaddr, multiaddr } from "@effectai/protocol-core";
-import { PublicKey } from "@solana/web3.js";
 import { useQuery } from "@tanstack/vue-query";
 
 export const useFetchManagerNodes = () => {

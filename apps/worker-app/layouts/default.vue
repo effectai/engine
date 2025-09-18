@@ -9,6 +9,25 @@
         <div className="flex items-center gap-2">
           <TheLogo className="w-32" />
         </div>
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-3 mr-6">
+            <img
+              v-if="profilePicture"
+              :src="profilePicture"
+              alt="Profile Picture"
+              class="w-8 h-8 rounded-full object-cover"
+            />
+            <div
+              v-else
+              class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center"
+            >
+              <UIcon name="i-heroicons-user" class="w-5 h-5 text-white" />
+            </div>
+            <span class="font-medium text-gray-700 dark:text-gray-300">{{
+              username
+            }}</span>
+          </div>
+        </div>
       </div>
     </header>
     <main class="pt-20 px-4 max-w-6xl mx-auto min-h-screen">

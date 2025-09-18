@@ -1,5 +1,5 @@
 <template>
-  <UCard variant="mono" class="">
+  <UCard variant="outline" class="mb-4">
     <!-- Header -->
     <template #header>
       <div class="flex justify-between items-center">
@@ -104,13 +104,7 @@ const walletMeta = {
   chain: "solana",
   address: account.value,
 };
-//
-// const { useGetPaymentsQuery, computedTotalPaymentAmount } = usePayments();
-// const { data: managerPaymentBatches } = useGetPaymentsQuery();
-// const totalUnclaimedPayments = useNumberFormat(
-//   computedTotalPaymentAmount(managerPaymentBatches),
-// );
-//
+
 const toast = useToast();
 const { requestPrivateKey } = useAuth();
 const exportPrivateKey = async () => {
@@ -131,7 +125,7 @@ const exportPrivateKey = async () => {
 };
 
 const { useGetBalanceQuery } = useSolanaWallet();
-const { useGetEffectBalanceQuery } = useSolanaRpc();
+const { useGetEffectBalanceQuery } = useSolanaWallet();
 const { data: balance } = useGetBalanceQuery(account);
 const { data: effectBalance } = useGetEffectBalanceQuery(account);
 //

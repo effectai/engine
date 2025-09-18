@@ -12,9 +12,12 @@ use instructions::*;
 pub use errors::*;
 pub use state::*;
 
+#[cfg(feature = "localnet")]
+declare_id!("4HxNuPxwpqMdE9SBbEYaYWuSe23zAtoZTG8HMNcEMQzd");
+#[cfg(feature = "mainnet")]
 declare_id!("effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi");
 
-declare_program!(effect_staking);
+declare_effect_program!(effect_staking, effect_staking_localnet);
 
 #[program]
 pub mod effect_rewards {

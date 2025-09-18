@@ -71,7 +71,7 @@
     "@solana/kit": "^2.1.1",
     "@solana-program/token": "^0.5.1",
     "@solana-program/address-lookup-table": "^0.7.0",
-    "@solana-program/compute-budget": "^0.7.0",
+    "@solana-program/compute-budget": "^0.9.0",
     "@solana/webcrypto-ed25519-polyfill": "^2.1.1",
     "p-limit": "^6.2.0",
     "@nuxt/ui": "^3.1.3",

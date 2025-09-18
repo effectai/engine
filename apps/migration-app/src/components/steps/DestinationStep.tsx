@@ -1,22 +1,23 @@
 import * as React from "react";
-import { Button } from "@effectai/ui";
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
   CardFooter,
-} from "@effectai/ui";
-import { Input } from "@effectai/ui";
-import { Alert, AlertDescription, AlertTitle } from "@effectai/ui";
-import { Badge } from "@effectai/ui";
-import {
+  Input,
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Badge,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@effectai/ui";
+} from "@effectai/react";
+
 import {
   Wallet,
   Keyboard,
@@ -85,9 +86,7 @@ export function SolanaDestinationStep({
               {hasSolanaWalletInstalled && (
                 <>
                   <UnifiedWalletButton
-                    overrideContent={
-                      <Button variant="default">Connect wallet</Button>
-                    }
+                    overrideContent={<button>use wallet</button>}
                   />
                   <span className="text-sm text-muted-foreground">or</span>
                 </>

@@ -1,4 +1,3 @@
-import type { PublicKey } from "@solana/web3.js";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 
 export const useNonce = () => {

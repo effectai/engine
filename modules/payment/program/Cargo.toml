@@ -9,8 +9,10 @@ crate-type = ["cdylib", "lib"]
 name = "effect_payment"
 
 [features]
+default = ["mainnet"]
 cpi = ["no-entrypoint"]
-testing = []
+localnet = []
+mainnet = []
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []

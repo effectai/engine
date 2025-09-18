@@ -2,35 +2,27 @@ import * as React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@effectai/ui";
-import { Input } from "@effectai/ui";
 import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
   FormLabel,
-} from "@/components/ui/form";
+  useWalletContext,
+  useConnectionContext,
+} from "@effectai/react";
 import { cn } from "@/lib/utils";
-import { useSolanaContext, type Balance } from "@/providers/SolanaProvider";
-import type {
-  Account,
-  AccountInfoWithBase64EncodedData,
-  TransactionSigner,
-} from "@solana/kit";
-import {
-  generateKeyPairSigner,
-  getProgramDerivedAddress,
-  SolanaError,
-  address as toAddress,
-} from "@solana/kit";
-import { EFFECT } from "@/lib/useEffectConfig";
-import { getStakeInstructionAsync, type StakeAccount } from "@effectai/stake";
-import { Row, formatNumber, trimTrailingZeros } from "@/lib/helpers.tsx";
+import type { Account, TransactionSigner } from "@solana/kit";
+import type { StakeAccount } from "@effectai/stake";
+import { Row, formatNumber, trimTrailingZeros } from "@/lib/utils.tsx";
 import { useStakeMutation, useTopupMutation } from "@/lib/useMutations";
-import { useEffectBalance, useGetEffectTokenAccount } from "@/lib/useQueries";
 
 type Props = {
   stakeAccount: Account<StakeAccount> | null | undefined;
@@ -64,19 +56,12 @@ export function StakeForm({
   initialAmount = 0,
   className,
 }: Props) {
-  const { connection, address } = useSolanaContext();
+  const { address, lamports, effectBalance, userTokenAccount } =
+    useWalletContext();
 
-  const { data: userTokenAccount } = useGetEffectTokenAccount(
-    connection,
-    address,
-  );
+  const { connection } = useConnectionContext();
 
-  const { data: availableBalance } = useEffectBalance(
-    connection,
-    userTokenAccount,
-  );
-
-  const max = Number(availableBalance?.uiAmount);
+  const max = Number(effectBalance?.uiAmount ?? 0);
 
   const form = useForm<{ amount: string }>({
     resolver: zodResolver(z.object({ amount: amountSchema(max) })),
