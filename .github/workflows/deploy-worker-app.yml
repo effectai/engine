@@ -3,7 +3,7 @@ name: Deploy worker app to GitHub Pages (on Tag)
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'worker-v*.*.*'
   workflow_dispatch:
 
 permissions:

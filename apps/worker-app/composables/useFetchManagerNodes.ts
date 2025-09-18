@@ -1,6 +1,15 @@
-import type { ManagerInfoResponse } from "@effectai/protocol";
 import { type Multiaddr, multiaddr } from "@effectai/protocol-core";
 import { useQuery } from "@tanstack/vue-query";
+
+type ManagerInfoResponse = {
+  id: string;
+  addresses: Multiaddr[];
+  announcedAddresses: string[];
+  protocols: string[];
+  agentVersion: string;
+  publicKey: string;
+  latency?: number;
+};
 
 export const useFetchManagerNodes = () => {
   const config = useRuntimeConfig();
@@ -18,11 +27,11 @@ export const useFetchManagerNodes = () => {
             return null;
           }
 
-          const identify = await workerStore.worker?.identify(
+          const identify = await workerStore.instance?.identify(
             multiaddr(data.value.announcedAddresses[0]),
           );
 
-          const latency = await workerStore.worker?.ping(
+          const latency = await workerStore.instance?.ping(
             multiaddr(data.value.announcedAddresses[0]),
           );
 

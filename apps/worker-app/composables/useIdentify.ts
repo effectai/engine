@@ -1,4 +1,4 @@
-import { multiaddr, type Multiaddr } from "@effectai/protocol";
+import { multiaddr, type Multiaddr } from "@effectai/protocol-core";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 
 export const useIdentify = () => {
