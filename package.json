@@ -24,7 +24,8 @@
     "packages:build:prod": "pnpm turbo build --filter @effectai/* --concurrency=2",
     "packages:dev": "pnpm turbo dev --filter @effectai/*",
     "docs:dev": "pnpm --filter docs run dev",
-    "test": "vitest"
+    "test": "vitest",
+    "build:anchor": "node --experimental-strip-types tools/scripts/solana/generate-idls.ts && anchor build && node --experimental-strip-types tools/scripts/solana/sync-idls.ts"
   },
   "devDependencies": {
     "@types/node": "^20.11.7",

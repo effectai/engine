@@ -84,32 +84,3 @@ macro_rules! claim_vesting {
         ))
     };
 }
-
-#[macro_export]
-macro_rules! declare_effect_program {
-    ($base:ident, $local:ident) => {
-        #[allow(non_snake_case, unused_imports)]
-        pub mod $base {
-            #[cfg(all(feature = "localnet", feature = "mainnet"))]
-            compile_error!("Enable only one of: 'localnet' or 'mainnet'.");
-            #[cfg(not(any(feature = "localnet", feature = "mainnet")))]
-            compile_error!("Enable one of: 'localnet' or 'mainnet'.");
-
-            #[cfg(feature = "localnet")]
-            mod imp {
-                use ::anchor_lang::declare_program;
-                declare_program!($local);
-                pub use $local::*;
-            }
-
-            #[cfg(feature = "mainnet")]
-            mod imp {
-                use ::anchor_lang::declare_program;
-                declare_program!($base);
-                pub use $base::*;
-            }
-
-            pub use imp::*;
-        }
-    };
-}

@@ -49,12 +49,18 @@ export const buildProgramsLocal = async () => {
     execSync("anchor keys list", { stdio: ["ignore", "pipe", "ignore"] });
   } catch {}
 
+  //only continue if /idls does not exist or is empty
+  if (existsSync("./idls") && readdirSync("./idls").length > 0) {
+    console.log("Local IDLs already exist; skipping IDL copy.");
+    return;
+  }
+
   const keyMap = getAnchorKeys();
 
   const idlsDir = path.resolve("./idls");
-  const mainnetDir = path.join(idlsDir, "mainnet");
 
   ensureDir(idlsDir);
+  const mainnetDir = path.resolve("./tools/idls");
 
   // Gather existing local IDLs
   const existingIdls = existsSync(idlsDir)
