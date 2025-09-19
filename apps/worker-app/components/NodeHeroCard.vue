@@ -103,15 +103,15 @@
           <div
             class="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
           >
-            <ManagerConnectionModal />
+            <ManagerConnectionModal class="flex-0 min-w-[180px]" />
             <UButton
               icon="i-heroicons-document-text"
               size="lg"
               color="neutral"
               :disabled="true"
-              class="w-full sm:w-auto justify-center"
+              class="w-full flex-grow sm:w-auto justify-center"
             >
-              View Identity Document
+              Identity Document
             </UButton>
           </div>
         </div>
@@ -230,41 +230,41 @@
 </template>
 
 <script setup lang="ts">
-const {
-  peerId,
-  useWorkerLevel,
-  totalTasksCompleted,
-  totalEffectEarnings,
-  tasksRejected,
-  daysInNetwork,
-  performanceScore,
-} = useWorkerNode();
+  const {
+    peerId,
+    useWorkerLevel,
+    totalTasksCompleted,
+    totalEffectEarnings,
+    tasksRejected,
+    daysInNetwork,
+    performanceScore,
+  } = useWorkerNode();
 
-import { useClipboard, useNavigatorLanguage } from "@vueuse/core";
+  import { useClipboard, useNavigatorLanguage } from "@vueuse/core";
 
-const { level, progress, experience, experiencePerLevel } = useWorkerLevel();
-const { language } = useNavigatorLanguage();
+  const { level, progress, experience, experiencePerLevel } = useWorkerLevel();
+  const { language } = useNavigatorLanguage();
 
-const radius = computed(() => 45);
-const circumference = computed(() => 2 * Math.PI * radius.value);
-const normalizedPercentage = computed(() =>
-  Math.min(Math.max(progress.value, 0), 100),
-);
-const dashoffset = computed(
-  () => circumference.value * (1 - normalizedPercentage.value / 100),
-);
-
-const { userInfo } = useAuth();
-const username = computed(() => userInfo.value?.username || "Unknown User");
-const profileImage = computed(() => {
-  return (
-    userInfo.value?.profileImage ||
-    "https://avatars.dicebear.com/api/identicon/default.svg"
+  const radius = computed(() => 45);
+  const circumference = computed(() => 2 * Math.PI * radius.value);
+  const normalizedPercentage = computed(() =>
+    Math.min(Math.max(progress.value, 0), 100),
   );
-});
+  const dashoffset = computed(
+    () => circumference.value * (1 - normalizedPercentage.value / 100),
+  );
 
-const { copy } = useClipboard();
-const isOpen = ref(false);
+  const { userInfo } = useAuth();
+  const username = computed(() => userInfo.value?.username || "Unknown User");
+  const profileImage = computed(() => {
+    return (
+      userInfo.value?.profileImage ||
+      "https://avatars.dicebear.com/api/identicon/default.svg"
+    );
+  });
+
+  const { copy } = useClipboard();
+  const isOpen = ref(false);
 </script>
 
 <style scoped></style>

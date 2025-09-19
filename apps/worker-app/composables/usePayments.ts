@@ -1,10 +1,6 @@
-// import type { Payment } from "@effectai/protocol";
-import {
-  fetchMaybeRecipientManagerDataAccount,
-  PAYMENT_BATCH_SIZE,
-  type Payment,
-  type PaymentRecord,
-} from "@effectai/protocol";
+import { PAYMENT_BATCH_SIZE } from "@effectai/payment";
+
+import type { PaymentRecord } from "@effectai/protocol-core";
 
 import { useMutation, useQuery } from "@tanstack/vue-query";
 import pLimit from "p-limit";

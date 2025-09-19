@@ -1,4 +1,4 @@
-import { multiaddr } from "@effectai/protocol";
+import { multiaddr } from "@effectai/protocol-core";
 import { useQuery } from "@tanstack/vue-query";
 
 export const usePing = () => {

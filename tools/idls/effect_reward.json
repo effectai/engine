@@ -1,7 +1,7 @@
 {
   "address": "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi",
   "metadata": {
-    "name": "effect_rewards",
+    "name": "effect_reward",
     "version": "0.1.0",
     "spec": "0.1.0",
     "description": "Reflection rewards for Effect AI"

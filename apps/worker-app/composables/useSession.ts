@@ -1,4 +1,4 @@
-import { type Multiaddr, multiaddr } from "@effectai/protocol";
+import { type Multiaddr, multiaddr } from "@effectai/protocol-core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 
 export const useSession = () => {
