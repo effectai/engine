@@ -1,7 +1,7 @@
 import {
   deriveRewardAccountsPda,
   deriveStakingRewardAccountPda,
-  EFFECT_REWARDS_PROGRAM_ADDRESS,
+  EFFECT_REWARD_PROGRAM_ADDRESS,
   fetchMaybeRewardAccount,
   getClaimInstructionAsync,
   getCloseInstructionAsync,
@@ -12,7 +12,7 @@ import {
 import {
   getTopupInstructionAsync,
   getUnstakeInstructionAsync,
-} from "@effectai/stake";
+} from "@effectai/staking";
 
 import { getTopupInstructionAsync as getRewardTopupInstructionAsync } from "@effectai/reward";
 
@@ -54,7 +54,7 @@ export const buildClaimRewardsInstruction = async ({
       getAddressEncoder().encode(mint),
     ],
 
-    programAddress: EFFECT_REWARDS_PROGRAM_ADDRESS,
+    programAddress: EFFECT_REWARD_PROGRAM_ADDRESS,
   });
 
   const vestingAccountData = await fetchVestingAccount(rpc, vestingAccount);

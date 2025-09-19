@@ -11,7 +11,7 @@ import {
   buildUnstakeInstruction,
   executeTransaction,
 } from "@effectai/solana-utils";
-import { getStakeInstructionAsync, type StakeAccount } from "@effectai/stake";
+import { getStakeInstructionAsync, type StakeAccount } from "@effectai/staking";
 import { useProfileContext, toast } from "@effectai/react";
 import { notifyTransactionSuccess } from "./utils";
 

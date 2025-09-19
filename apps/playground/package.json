@@ -10,7 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@effectai/stake": "workspace:*",
+    "@effectai/staking": "workspace:*",
     "@solana/kit": "^2.1.1",
     "solana-kite": "^1.5.4",
     "nuxt": "^4.0.3",

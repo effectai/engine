@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import { getStakeInstructionAsync } from "@effectai/stake";
+import { getStakeInstructionAsync } from "@effectai/staking";
 import {
   address,
   generateKeyPairSigner,

@@ -21,7 +21,7 @@ import { CheckCircle2, Gift, Coins, Loader2, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPercent, formatNumber, Stat, Row } from "@/lib/utils.tsx";
 import type { Account, MaybeAccount } from "@solana/kit";
-import type { StakeAccount } from "@effectai/stake";
+import type { StakeAccount } from "@effectai/staking";
 import type { ReflectionAccount, RewardAccount } from "@effectai/reward";
 
 import {

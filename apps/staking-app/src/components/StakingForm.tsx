@@ -20,7 +20,7 @@ import {
 } from "@effectai/react";
 import { cn } from "@/lib/utils";
 import type { Account, TransactionSigner } from "@solana/kit";
-import type { StakeAccount } from "@effectai/stake";
+import type { StakeAccount } from "@effectai/staking";
 import { Row, formatNumber, trimTrailingZeros } from "@/lib/utils.tsx";
 import { useStakeMutation, useTopupMutation } from "@/lib/useMutations";
 

@@ -12,7 +12,7 @@
   "dependencies": {
     "@effectai/config": "workspace:*",
     "@effectai/migration": "workspace:*",
-    "@effectai/stake": "workspace:*",
+    "@effectai/staking": "workspace:*",
     "@effectai/utils": "workspace:*",
     "@effectai/react": "workspace:*",
     "@effectai/solana-utils": "workspace:*",

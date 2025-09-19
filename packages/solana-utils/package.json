@@ -24,7 +24,7 @@
     "@solana-program/compute-budget": "^0.9.0",
     "@solana/buffer-layout": "^4.0.1",
     "@solana/web3.js": "^1.95.4",
-    "@effectai/stake": "workspace:*",
+    "@effectai/staking": "workspace:*",
     "@effectai/reward": "workspace:*",
     "@effectai/vesting": "workspace:*",
     "mz": "2.7.0",

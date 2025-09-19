@@ -16,7 +16,7 @@
     "@hookform/resolvers": "^5.2.1",
     "@effectai/reward": "workspace:*",
     "@effectai/solana-utils": "workspace:*",
-    "@effectai/stake": "workspace:*",
+    "@effectai/staking": "workspace:*",
     "@effectai/react": "workspace:*",
     "@effectai/utils": "workspace:*",
     "@effectai/vesting": "workspace:*",

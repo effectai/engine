@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import type { Account, TransactionSigner } from "@solana/kit";
 import { SolanaError, address as toAddress } from "@solana/kit";
 import { formatNumber, Row, shorten, trimTrailingZeros } from "@/lib/utils";
-import type { StakeAccount } from "@effectai/stake";
+import type { StakeAccount } from "@effectai/staking";
 import { useActiveVestingAccounts } from "@/lib/useQueries";
 import { useUnstakeMutation } from "@/lib/useMutations";
 import { VestingScheduleItem } from "./VestingScheduleItem";

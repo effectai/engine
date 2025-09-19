@@ -19,7 +19,7 @@ import {
   fetchStakingAccountsByWalletAddress,
   EFFECT_STAKING_PROGRAM_ADDRESS,
   type StakeAccount,
-} from "@effectai/stake";
+} from "@effectai/staking";
 
 export type StakeAccountDecoded = Account<StakeAccount>; // your types
 import { useQuery } from "@tanstack/react-query";

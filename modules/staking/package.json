@@ -1,10 +1,10 @@
 {
-  "name": "@effectai/stake",
+  "name": "@effectai/staking",
   "private": true,
   "type": "module",
   "scripts": {
     "compile:ts": "tsup clients/js --config ../../tsup.config.package.ts",
-    "generate:clients": "node --experimental-strip-types scripts/generate-clients.ts",
+    "generate:clients": "node --experimental-strip-types ../../tools/scripts/solana/generate-clients.ts staking",
     "build": "pnpm run compile:ts"
   },
   "main": "dist/index.cjs",
