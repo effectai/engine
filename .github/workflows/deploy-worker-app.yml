@@ -19,7 +19,7 @@ env:
   APP_DIR: apps/worker-app        
   BUILD_DIR: dist                 
   PNPM_VERSION: 10                  
-  NODE_VERSION: 22                 
+  NODE_VERSION: 24                 
   PKG_FILTER: "worker-app"
 
 jobs:
@@ -47,10 +47,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Workspace
-        run: pnpm build --filter "@effectai/*"
-
-      - name: Build worker app (filter)
-        run: pnpm --filter "${PKG_FILTER}" build
+        run: pnpm turbo build --filter "@effectai/worker-app"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
