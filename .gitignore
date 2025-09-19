@@ -15,5 +15,5 @@ test-ledger/
 .anchor
 target
 
-/idls/*_localnet.json
+/idls
 /modules/*/**/@generated

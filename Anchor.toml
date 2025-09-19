@@ -5,21 +5,6 @@ package_manager = "pnpm"
 resolution = true
 skip-lint = false
 
-[programs.localnet]
-effect_payment = "8buW9v9XTa2EmuPqHgAYHYgqxfaG3grGQqhLk4aMm5Fu"
-effect_migration = "8hh1mwDGo66tHjmrF34rFo7m1msyoHR3QfNUd1bXzGQo"
-effect_staking = "G6LoTk4GvX15kkqQxmutqyRdS7WjE5GsgnUrhP4WADWn"
-effect_rewards = "4HxNuPxwpqMdE9SBbEYaYWuSe23zAtoZTG8HMNcEMQzd"
-effect_vesting = "93Wj1k8a7x7FC4abXoEZVrq2ujaeFwB2Q31JvKosBz8F"
-
-[programs.mainnet]
-effect_migration = "effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR"
-effect_payment = "effphQKcAYeN6CkbygjnJUsuYXGUtkikSPZ6B8hSggC"
-effect_rewards = "effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi"
-effect_staking = "effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e"
-effect_vesting = "effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S"
-
-
 [registry]
 url = "https://api.apr.dev"
 

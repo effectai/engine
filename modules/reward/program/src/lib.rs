@@ -4,7 +4,7 @@ mod macros;
 mod security;
 mod state;
 
-use anchor_lang::declare_id;
+use anchor_id_injector::inject_declare_id_output;
 use anchor_lang::prelude::*;
 use effect_common::*;
 use instructions::*;
@@ -12,15 +12,12 @@ use instructions::*;
 pub use errors::*;
 pub use state::*;
 
-#[cfg(feature = "localnet")]
-declare_id!("4HxNuPxwpqMdE9SBbEYaYWuSe23zAtoZTG8HMNcEMQzd");
-#[cfg(feature = "mainnet")]
-declare_id!("effRBsQPi2Exq4NWN6SPiCQk4E6BvXkqiBeu6saMxoi");
+inject_declare_id_output!("../../../target/deploy/effect_reward-keypair.json");
 
-declare_effect_program!(effect_staking, effect_staking_localnet);
+declare_program!(effect_staking);
 
 #[program]
-pub mod effect_rewards {
+pub mod effect_reward {
     use super::*;
 
     /// Initialize the [ReflectionAccount](#reflection-account) and [VaultAccount](#vault_token_account-account).

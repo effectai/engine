@@ -1,7 +1,7 @@
 [package]
-name = "effect-common"
+name = "anchor-id-injector"
 version = "0.1.0"
-description = "Effect Common."
+description = "Injects the program id into the program at build time"
 edition = "2021"
 homepage = "https://effect.ai/"
 authors = ["effect"]
@@ -9,8 +9,7 @@ license = "MIT"
 keywords = ["solana", "effect", "common", "anchor"]
 
 [lib]
-crate-type = ["cdylib", "lib"]
-name = "effect_common"
+proc-macro = true
 
 [features]
 default = []
@@ -18,12 +17,11 @@ no-entrypoint = []
 cpi = ["no-entrypoint"]
 mainnet = []
 testing = []
-idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]
-anchor-lang = "0.31.1"
-anchor-spl = "0.31.1"
-paste = "1.0.9"
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full"] }
 serde_json = "1"
 bs58 = "0.5"
 

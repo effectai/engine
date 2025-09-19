@@ -25,3 +25,4 @@ testing = []
 anchor-lang = "0.31.1"
 anchor-spl = "0.31.1"
 effect-common = { path = "../../../core/program/" }
+anchor-id-injector = { path = "../../../tools/crates/anchor-id-injector" } 

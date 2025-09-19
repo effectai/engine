@@ -4,6 +4,7 @@ mod macros;
 mod security;
 mod state;
 
+use anchor_id_injector::inject_declare_id_output;
 use anchor_lang::prelude::*;
 use effect_common::*;
 use errors::*;
@@ -11,10 +12,7 @@ use instructions::*;
 
 pub use state::*;
 
-#[cfg(feature = "localnet")]
-declare_id!("93Wj1k8a7x7FC4abXoEZVrq2ujaeFwB2Q31JvKosBz8F");
-#[cfg(feature = "mainnet")]
-declare_id!("effV6X5UGwHDjVxAMW1KjC4SsuEQT3dTkm8PQTMGV7S");
+inject_declare_id_output!("../../../target/deploy/effect_vesting-keypair.json");
 
 #[program]
 pub mod effect_vesting {

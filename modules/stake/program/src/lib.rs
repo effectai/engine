@@ -4,6 +4,7 @@ mod instructions;
 mod macros;
 mod state;
 
+use anchor_id_injector::inject_declare_id_output;
 use anchor_lang::prelude::*;
 
 use effect_common::*;
@@ -12,14 +13,11 @@ pub use errors::*;
 pub use instructions::*;
 pub use state::*;
 
-#[cfg(feature = "localnet")]
-declare_id!("G6LoTk4GvX15kkqQxmutqyRdS7WjE5GsgnUrhP4WADWn");
-#[cfg(feature = "mainnet")]
-declare_id!("effSujUiy4eT2vrMqSsUkb6oT3C7pC42UnWSukRpu5e");
+inject_declare_id_output!("../../../target/deploy/effect_staking-keypair.json");
 
-declare_effect_program!(effect_migration, effect_migration_localnet);
-declare_effect_program!(effect_vesting, effect_vesting_localnet);
-declare_effect_program!(effect_rewards, effect_rewards_localnet);
+declare_program!(effect_migration);
+declare_program!(effect_vesting);
+declare_program!(effect_reward);
 
 #[program]
 pub mod effect_staking {
