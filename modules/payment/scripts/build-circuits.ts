@@ -7,7 +7,7 @@ const args = argv.slice(2);
 const SNARKJS = "node ./node_modules/snarkjs/cli.js";
 const CIRCOM = "circom";
 const CIRCUIT = "PaymentBatch";
-const TAU_SIZE = 19;
+const TAU_SIZE = 17;
 const BASE = ".";
 
 const CIRCUIT_DIR = `${BASE}/circuits`;

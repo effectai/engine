@@ -1,24 +1,24 @@
 import * as React from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@effectai/ui";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { Clock, Download } from "lucide-react";
+import { Clock, Download, Lock } from "lucide-react";
 import type { VestingAccount } from "@effectai/vesting";
-import { Account } from "@solana/kit";
+import type { Account } from "@solana/kit";
 import { useClaimVestingMutation } from "@/lib/useMutations";
-import { useSolanaContext } from "@/providers/SolanaProvider";
 import {
   useGetEffectTokenAccount,
-  useGetVestingVaultBalance,
-} from "@/lib/useQueries";
+  useConnectionContext,
+  useWalletContext,
+  Button,
+  Progress,
+  Card,
+  CardContent,
+} from "@effectai/react";
 
+import { useGetVestingVaultBalance } from "@/lib/useQueries";
+
+import { formatNumber } from "@/lib/utils.tsx";
+
+/** Compact vesting item (single-row, dense, with countdown + progress) */
 export function VestingScheduleItem({
   vestingAccount,
   isClaiming = false,
@@ -32,12 +32,11 @@ export function VestingScheduleItem({
   decimals?: number;
   className?: string;
 }) {
-  const { connection, address, signer } = useSolanaContext();
+  const { signer, address } = useWalletContext();
+  const { connection } = useConnectionContext();
 
-  const { data } = vestingAccount;
-
-  const startSec = Number(data.startTime ?? 0);
-  const ratePerSec = data.releaseRate;
+  const startSec = Number(vestingAccount.data.startTime ?? 0);
+  const ratePerSec = vestingAccount.data.releaseRate;
   const ratePerDay = mulBigInt(ratePerSec, 86400n);
 
   const { data: recipientTokenAccount } = useGetEffectTokenAccount(
@@ -45,145 +44,127 @@ export function VestingScheduleItem({
     address,
   );
   const { mutateAsync: claim } = useClaimVestingMutation();
-
-  const onClaim = React.useCallback(() => {
-    if (claimable > 0n) {
-      if (!signer) throw new Error("No signer");
-      if (!vestingAccount) throw new Error("No vesting account");
-      if (!recipientTokenAccount) throw new Error("No recipient token account");
-      claim({ vestingAccount, signer, recipientTokenAccount, connection });
-    }
-  }, [claim, connection, recipientTokenAccount, signer, vestingAccount]);
-
-  // Live-updating released + claimable
-  const [nowSec, setNowSec] = React.useState(() =>
-    Math.floor(Date.now() / 1000),
-  );
-  React.useEffect(() => {
-    let raf: number;
-    let mounted = true;
-    const tick = () => {
-      if (!mounted) return;
-      setNowSec(Math.floor(Date.now() / 1000));
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => {
-      mounted = false;
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-
   const { data: balance } = useGetVestingVaultBalance(
     connection,
     vestingAccount,
   );
 
-  const total = (vestingAccount.data.distributedTokens ?? 0n) + (balance ?? 0n);
+  const nowSec = useNowSeconds();
+  const locked = nowSec < startSec;
+  const secondsToUnlock = Math.max(0, startSec - nowSec);
 
-  const elapsed = Math.max(0, nowSec - startSec);
+  const claimed = vestingAccount.data.distributedTokens ?? 0n;
+  const total = claimed + (balance?.amount ?? 0n);
+  const elapsed = locked ? 0 : Math.max(0, nowSec - startSec);
   const theoreticalReleased = mulBigInt(ratePerSec, BigInt(elapsed));
   const released = theoreticalReleased > total ? total : theoreticalReleased;
 
-  const claimed = vestingAccount.data.distributedTokens ?? 0n;
-  const claimable = released > claimed ? released - claimed : 0n;
+  let claimable = released > claimed ? released - claimed : 0n;
+  if (balance != null && claimable > balance) claimable = balance;
 
-  const rate = ratePerDay;
   const progress = total > 0n ? (Number(released) / Number(total)) * 100 : 0;
 
+  const onClaim = React.useCallback(async () => {
+    if (claimable <= 0n || locked) return;
+    if (!signer) throw new Error("No signer");
+    if (!recipientTokenAccount) throw new Error("No recipient token account");
+    await claim({ vestingAccount, signer, recipientTokenAccount, connection });
+  }, [
+    claim,
+    claimable,
+    locked,
+    signer,
+    recipientTokenAccount,
+    vestingAccount,
+    connection,
+  ]);
+
   return (
-    <Card className={cn("w-full", className)}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base sm:text-lg">Vesting Schedule</CardTitle>
-        <CardDescription className="text-sm">
-          Linear release since{" "}
-          <span className="inline-flex items-center gap-1">
-            <Clock className="h-4 w-4" />
-            {startSec > 0 ? new Date(startSec * 1000).toLocaleString() : "—"}
-          </span>
-        </CardDescription>
-      </CardHeader>
+    <Card className={cn("w-full shadow-none py-0", className)}>
+      <CardContent className="p-1 sm:p-4">
+        <div className="flex flex-col gap-3 sm:gap-2">
+          {/* Top row: title + time + claimable & button */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {locked ? (
+                <>
+                  <Lock className="h-4 w-4" />
+                  <span>Unlocks in</span>
+                  <span className="font-mono text-foreground">
+                    {formatDuration(secondsToUnlock)}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Clock className="h-4 w-4" />
+                  <span>Started</span>
+                  <span className="font-mono text-foreground">
+                    {startSec > 0
+                      ? new Date(startSec * 1000).toLocaleString()
+                      : "—"}
+                  </span>
+                </>
+              )}
+            </div>
 
-      <CardContent className="grid gap-4">
-        {/* Numbers */}
-        <div className="grid gap-3 sm:grid-cols-3 text-sm">
-          <KV
-            label="Released so far"
-            value={`${formatNumber(fromBaseUnits(released, decimals))} ${tokenSymbol}`}
-          />
-          <KV
-            label="Claimed"
-            value={`${formatNumber(fromBaseUnits(claimed, decimals))} ${tokenSymbol}`}
-          />
-          <KV
-            label="Claimable now"
-            valueClassName={
-              claimable > 0n
-                ? "text-foreground font-medium"
-                : "text-muted-foreground"
-            }
-            value={`${formatNumber(fromBaseUnits(claimable, decimals))} ${tokenSymbol}`}
-          />
-        </div>
+            <div className="flex items-center justify-between gap-2 w-full">
+              {/* Claimable pill */}
+              <div
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-xs",
+                  claimable > 0n
+                    ? "bg-primary/15 text-foreground"
+                    : "bg-muted text-muted-foreground",
+                )}
+                title="Claimable now"
+              >
+                {formatNumber(fromBaseUnits(claimable, decimals))} {tokenSymbol}
+              </div>
 
-        {/* Progress: claimed of released */}
-        <div>
-          <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-            <span>Progress</span>
-            <span>
-              {released > 0n ? `${progress.toFixed(1)}% claimed` : "—"}
-            </span>
+              <Button
+                size="sm"
+                onClick={onClaim}
+                disabled={locked || claimable <= 0n || isClaiming}
+                className="h-8"
+              >
+                {isClaiming ? "Claiming…" : "Claim"}
+                <Download className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
           </div>
-          <Progress value={progress} />
-        </div>
-
-        {/* Rate */}
-        <div className="text-xs text-muted-foreground">
-          Release rate ≈{" "}
-          <span className="font-medium text-foreground">
-            {formatNumber(fromBaseUnits(rate, decimals))} {tokenSymbol}
-            /day
-          </span>
-        </div>
-
-        {/* Actions */}
-        <div className="mt-2 flex items-center justify-end">
-          <Button
-            onClick={() => onClaim(vestingAccount)}
-            disabled={claimable <= 0n || isClaiming}
-            className="group"
-          >
-            {isClaiming ? "Claiming…" : "Claim available"}
-            <Download className="ml-2 h-4 w-4 transition-transform group-hover:translate-y-0.5" />
-          </Button>
+          {/* Bottom row: thin progress */}
+          <div>
+            <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>Progress</span>
+              <span>{total > 0n ? `${progress.toFixed(1)}%` : "—"}</span>
+            </div>
+            <Progress value={progress} className="h-1.5" />
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-/* ---------- small subcomponents & helpers ---------- */
-
-function KV({
-  label,
-  value,
-  valueClassName,
-}: {
-  label: string;
-  value: string;
-  valueClassName?: string;
-}) {
-  return (
-    <div className="rounded-xl border bg-muted/30 p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={cn("mt-1", valueClassName)}>{value}</div>
-    </div>
-  );
+function useNowSeconds() {
+  const [now, setNow] = React.useState(() => Math.floor(Date.now() / 1000));
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
 }
 
-function formatNumber(n: number, maxFrac = 6) {
-  if (!isFinite(n)) return "0";
-  return n.toLocaleString(undefined, { maximumFractionDigits: maxFrac });
+function formatDuration(totalSeconds: number) {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (d > 0) return `${d}d ${h}h ${m}m ${sec}s`;
+  if (h > 0) return `${h}h ${m}m ${sec}s`;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
 }
 
 function fromBaseUnits(amount: bigint, decimals: number): number {
@@ -191,27 +172,12 @@ function fromBaseUnits(amount: bigint, decimals: number): number {
   const base = 10n ** BigInt(decimals);
   const whole = amount / base;
   const frac = amount % base;
-  // keep up to 9 extra fractional digits for precision when converting to number
-  const fracDigitsToKeep = BigInt(Math.min(decimals, 9));
-  const scale = 10n ** fracDigitsToKeep;
+  const keep = BigInt(Math.min(decimals, 9));
+  const scale = 10n ** keep;
   const scaled = (frac * scale) / base;
-  const asNumber = Number(whole) + Number(scaled) / Number(scale);
-  return asNumber;
+  return Number(whole) + Number(scaled) / Number(scale);
 }
 
 function mulBigInt(a: bigint, b: bigint) {
   return a * b;
-}
-
-// Divide two bigints to a floating number in [0, +inf)
-function divideBigintsToNumber(a: bigint, b: bigint): number {
-  if (b === 0n) return 0;
-  // scale to keep precision
-  const scale = 10_000_000n; // 1e7
-  const scaled = (a * scale) / b;
-  return Number(scaled) / Number(scale);
-}
-
-function clamp01(n: number) {
-  return Math.max(0, Math.min(1, n));
 }

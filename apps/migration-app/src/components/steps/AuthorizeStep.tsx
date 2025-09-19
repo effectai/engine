@@ -1,24 +1,23 @@
 import * as React from "react";
-import { Button } from "@effectai/ui";
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
   CardFooter,
-} from "@effectai/ui";
-import { Alert, AlertDescription, AlertTitle } from "@effectai/ui";
-import { Separator } from "@effectai/ui";
-import { Badge } from "@effectai/ui";
-import { BlockchainAddress } from "../BlockchainAddress";
-
-import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Separator,
+  Badge,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@effectai/ui";
+} from "@effectai/react";
+import { BlockchainAddress } from "../BlockchainAddress";
 
 import {
   ShieldCheck,

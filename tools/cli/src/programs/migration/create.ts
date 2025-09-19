@@ -127,7 +127,6 @@ export const registerCreateMigrationClaim = (program: Command) => {
         programId: new PublicKey(EFFECT_MIGRATION_PROGRAM_ADDRESS),
       });
 
-      console.log("migrationaccount", migrationAccount.toBase58());
       const instruction = await getCreateStakeClaimInstructionAsync({
         migrationAccount: address(migrationAccount.toBase58()),
         userTokenAccount: ata,

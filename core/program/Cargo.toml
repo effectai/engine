@@ -23,3 +23,7 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 [dependencies]
 anchor-lang = "0.31.1"
 anchor-spl = "0.31.1"
+paste = "1.0.9"
+serde_json = "1"
+bs58 = "0.5"
+

@@ -3,18 +3,30 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 
 import WagmiProvider from "./providers/WagmiProvider";
-import WalletProvider from "./providers/SolanaProvider";
 import { MigrationProvider } from "./providers/MigrationProvider";
 import App from "./App";
 
+import {
+  ProfileContextProvider,
+  ConnectionContextProvider,
+  UnifiedWalletContextProvider,
+  WalletContextProvider,
+} from "@effectai/react";
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <WalletProvider>
-      <WagmiProvider>
-        <MigrationProvider>
-          <App />
-        </MigrationProvider>
-      </WagmiProvider>
-    </WalletProvider>
+    <ProfileContextProvider>
+      <ConnectionContextProvider>
+        <UnifiedWalletContextProvider>
+          <WalletContextProvider>
+            <WagmiProvider>
+              <MigrationProvider>
+                <App />
+              </MigrationProvider>
+            </WagmiProvider>
+          </WalletContextProvider>
+        </UnifiedWalletContextProvider>
+      </ConnectionContextProvider>
+    </ProfileContextProvider>
   </StrictMode>,
 );

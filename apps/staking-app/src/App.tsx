@@ -1,10 +1,15 @@
-import AppShell from "./components/layout/AppShell";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  AppHeader,
+  Toaster,
+  useWalletContext,
+  useConnectionContext,
+} from "@effectai/react";
 import { StakeForm } from "./components/StakingForm";
 import { StakeOverview } from "./components/StakingOverview";
-import { useCallback, useEffect, useState } from "react";
-import { useSolanaContext, type Balance } from "./providers/SolanaProvider";
-import { useWalletAccountTransactionSigner } from "@solana/react";
 import { UnstakeForm } from "./components/UnstakeForm";
 import {
   useReflectionAccount,
@@ -14,29 +19,13 @@ import {
 } from "./lib/useQueries";
 
 function App() {
-  const { getEffectBalance, address, connection, uiAccount } =
-    useSolanaContext();
-
-  const signer = useWalletAccountTransactionSigner(uiAccount, "solana:mainnet");
-
-  const [availableBalance, setAvailableBalance] = useState<Balance | null>(
-    null,
-  );
-  useEffect(() => {
-    if (address) {
-      getEffectBalance(address).then((balance) => {
-        setAvailableBalance(balance);
-      });
-    } else {
-      setAvailableBalance(null);
-    }
-  }, [address, getEffectBalance]);
+  const { address, signer } = useWalletContext();
+  const { connection } = useConnectionContext();
 
   const {
     data: stakeAccount,
     isLoading,
     isFetching,
-    isError,
   } = useStakeAccount(connection, address);
 
   const { data: rewardAccount } = useStakingRewardAccount(
@@ -45,40 +34,52 @@ function App() {
   );
 
   const { data: vestingAccount } = useRewardVestingAccount(connection);
-
   const { data: reflectionAccount } = useReflectionAccount(connection);
 
   return (
-    <AppShell>
-      {uiAccount && address && (
-        <Tabs defaultValue="overview" className="w-[600px]">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="stake">Stake</TabsTrigger>
-            <TabsTrigger value="unstake">Unstake</TabsTrigger>
-          </TabsList>
-          <TabsContent value="overview">
-            <div>
-              <StakeOverview
-                vestingAccount={vestingAccount}
-                reflectionAccount={reflectionAccount}
-                stakeAccount={stakeAccount}
-                rewardAccount={rewardAccount}
-                isLoading={isLoading || isFetching}
-              />
-            </div>
-          </TabsContent>
-          <TabsContent value="stake">
-            <StakeForm stakeAccount={stakeAccount} signer={signer} />
-          </TabsContent>
-          {stakeAccount && (
-            <TabsContent value="unstake">
-              <UnstakeForm stakeAccount={stakeAccount} signer={signer} />
-            </TabsContent>
-          )}
-        </Tabs>
-      )}
-    </AppShell>
+    <div className="grid">
+      <main className="flex flex-col">
+        <div className="container mx-auto w-full max-w-6xl p-4">
+          <AppHeader />
+          <div className="mx-auto mt-20 max-w-3xl px-4">
+            {!address && (
+              <div className="text-center">
+                <p className="mb-4">
+                  Connect your wallet to manage your staking.
+                </p>
+              </div>
+            )}
+            {address && signer && (
+              <Tabs defaultValue="overview" className="">
+                <TabsList className="mb-4 flex flex-wrap items-center gap-2 w-full">
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="stake">Stake</TabsTrigger>
+                  <TabsTrigger value="unstake">Unstake</TabsTrigger>
+                </TabsList>
+                <TabsContent value="overview">
+                  <div>
+                    <StakeOverview
+                      vestingAccount={vestingAccount}
+                      reflectionAccount={reflectionAccount}
+                      stakeAccount={stakeAccount}
+                      rewardAccount={rewardAccount}
+                      isLoading={isLoading || isFetching}
+                    />
+                  </div>
+                </TabsContent>
+                <TabsContent value="stake">
+                  <StakeForm stakeAccount={stakeAccount} signer={signer} />
+                </TabsContent>
+                <TabsContent value="unstake">
+                  <UnstakeForm stakeAccount={stakeAccount} signer={signer} />
+                </TabsContent>
+              </Tabs>
+            )}
+          </div>
+        </div>
+      </main>
+      <Toaster position="top-right" />
+    </div>
   );
 }
 

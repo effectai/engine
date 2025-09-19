@@ -2,7 +2,8 @@
   "name": "effect-protocol-mono",
   "private": true,
   "sideEffects": false,
-  "packageManager": "pnpm@10.9.0+sha512.0486e394640d3c1fb3c9d43d49cf92879ff74f8516959c235308f5a8f62e2e19528a65cdc2a3058f587cde71eba3d5b56327c8c33a97e4c4051ca48a10ca2d5f", "type": "module",
+  "packageManager": "pnpm@10.9.0+sha512.0486e394640d3c1fb3c9d43d49cf92879ff74f8516959c235308f5a8f62e2e19528a65cdc2a3058f587cde71eba3d5b56327c8c33a97e4c4051ca48a10ca2d5f",
+  "type": "module",
   "version": "1.0.0",
   "exports": {
     ".": {
@@ -14,23 +15,22 @@
     "dev": "pnpm turbo dev",
     "build": "turbo run build",
     "cli": "node tools/cli/dist/index.js",
-    "dashboard:generate-staging": "pnpm --filter effect-dashboard run generate-staging",
-    "dashboard:generate-prod": "pnpm --filter effect-dashboard run generate-prod",
-    "website:generate": "pnpm --filter effect-website run generate",
     "task-terminal:start": "cd apps/task-poster && node --import=tsx src/server.ts",
-    "manager:start": "node tools/cli/dist/index.js manager start -k ./packages/library/tests/keys/manager.json",
     "packages:build": "pnpm turbo build --filter @effectai/*",
-    "packages:build:prod": "pnpm turbo build --filter @effectai/* --concurrency=2",
-    "packages:dev": "pnpm turbo dev --filter @effectai/*",
-    "docs:dev": "pnpm --filter docs run dev",
-    "test": "vitest"
+    "test": "vitest",
+    "build:anchor": "node --experimental-strip-types tools/scripts/solana/generate-idls.ts && anchor build && node --experimental-strip-types tools/scripts/solana/sync-idls.ts"
   },
   "devDependencies": {
+    "@types/node": "^20.11.7",
     "@biomejs/biome": "1.9.4",
     "tsup": "^8.3.5",
     "tsx": "^4.1.2",
     "turbo": "2.2.3",
-    "vitest": "^2.1.3"
+    "vitest": "^2.1.3",
+    "codama": "^1.3.3",
+    "@codama/nodes-from-anchor": "^1.2.5",
+    "@codama/renderers-js": "^1.2.13",
+    "bs58": "^5.0.0"
   },
   "engines": {
     "node": ">=22.0.0"

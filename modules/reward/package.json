@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "compile:ts": "tsup clients/js --config ../../tsup.config.package.ts",
-    "generate:clients": "node --experimental-strip-types scripts/generate-clients.ts",
-    "build": "pnpm run compile:ts"
+    "generate:clients": "node --experimental-strip-types ../../tools/scripts/solana/generate-clients.ts reward",
+    "build": "pnpm run generate:clients && pnpm run compile:ts"
   },
   "main": "dist/index.cjs",
   "exports": {
