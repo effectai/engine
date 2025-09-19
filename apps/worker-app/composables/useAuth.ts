@@ -1,4 +1,4 @@
-import { generateKeyPairFromSeed } from "@effectai/protocol";
+import { generateKeyPairFromSeed } from "@effectai/protocol-core";
 import { useLocalStorage } from "@vueuse/core";
 import { AuthAdapter } from "@web3auth/auth-adapter";
 import {

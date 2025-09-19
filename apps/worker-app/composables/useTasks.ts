@@ -1,5 +1,6 @@
 import { useWorkerStore } from "@/stores/worker";
-import type { Task, WorkerTaskRecord } from "@effectai/protocol";
+import type { Task } from "@effectai/protobufs";
+import type { WorkerTaskRecord } from "@effectai/protocol-core";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 
 const activeTask = ref<WorkerTaskRecord | null>(null);

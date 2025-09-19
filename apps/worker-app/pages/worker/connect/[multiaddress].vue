@@ -65,101 +65,101 @@
 </template>
 
 <script lang="ts" setup>
-import { multiaddr } from "@effectai/protocol";
-import { tryOnBeforeUnmount } from "@vueuse/core";
-import { fromString, toString } from "uint8arrays";
+  import { multiaddr } from "@effectai/protocol-core";
+  import { tryOnBeforeUnmount } from "@vueuse/core";
+  import { fromString, toString } from "uint8arrays";
 
-definePageMeta({
-  middleware: ["auth"],
-});
+  definePageMeta({
+    middleware: ["auth"],
+  });
 
-const {
-  connectToManagerMutation,
-  isActive,
-  uptimeSeconds,
-  disconnectFromManagerMutation,
-} = useSession();
-const { mutateAsync: connect } = connectToManagerMutation;
-const { mutateAsync: disconnect } = disconnectFromManagerMutation;
+  const {
+    connectToManagerMutation,
+    isActive,
+    uptimeSeconds,
+    disconnectFromManagerMutation,
+  } = useSession();
+  const { mutateAsync: connect } = connectToManagerMutation;
+  const { mutateAsync: disconnect } = disconnectFromManagerMutation;
 
-const connectHandler = async (accessCode?: string) => {
-  try {
-    await connect({
-      multiAddress: decodedMultiAddr.value.toString(),
-      accessCode: accessCode ? accessCode : undefined,
-    });
-
-    toast.add({
-      title: "Connected to Manager Node",
-      description: "Successfully connected to manager node",
-      color: "success",
-    });
-
-    promptAccessCode.value = false;
-  } catch (error) {
-    if (error instanceof Error) {
-      if (error.message.includes("Access code is required")) {
-        promptAccessCode.value = true;
-      }
-    } else {
-      console.error("Unexpected error:", error);
-      toast.add({
-        title: "Connection Error",
-        description: "An unexpected error occurred while connecting.",
-        color: "error",
+  const connectHandler = async (accessCode?: string) => {
+    try {
+      await connect({
+        multiAddress: decodedMultiAddr.value.toString(),
+        accessCode: accessCode ? accessCode : undefined,
       });
-      return;
+
+      toast.add({
+        title: "Connected to Manager Node",
+        description: "Successfully connected to manager node",
+        color: "success",
+      });
+
+      promptAccessCode.value = false;
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes("Access code is required")) {
+          promptAccessCode.value = true;
+        }
+      } else {
+        console.error("Unexpected error:", error);
+        toast.add({
+          title: "Connection Error",
+          description: "An unexpected error occurred while connecting.",
+          color: "error",
+        });
+        return;
+      }
     }
-  }
-};
+  };
 
-// Automatically try to connect to the manager node when the component is mounted
-onBeforeMount(async () => {
-  connectHandler();
-});
+  // Automatically try to connect to the manager node when the component is mounted
+  onBeforeMount(async () => {
+    connectHandler();
+  });
 
-const route = useRoute();
-const toast = useToast();
+  const route = useRoute();
+  const toast = useToast();
 
-const { totalEffectEarnings, totalTasksCompleted, performanceScore } =
-  useWorkerNode();
+  const { totalEffectEarnings, totalTasksCompleted, performanceScore } =
+    useWorkerNode();
 
-const formattedUptime = computed(() => {
-  const seconds = uptimeSeconds.value;
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
+  const formattedUptime = computed(() => {
+    const seconds = uptimeSeconds.value;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
 
-  return [hours, minutes, secs]
-    .map((v) => v.toString().padStart(2, "0"))
-    .join(":");
-});
+    return [hours, minutes, secs]
+      .map((v) => v.toString().padStart(2, "0"))
+      .join(":");
+  });
 
-const promptAccessCode = ref(false);
-const accessCode = ref("");
+  const promptAccessCode = ref(false);
+  const accessCode = ref("");
 
-const decodedMultiAddr = computed(() => {
-  const encodedMultiAddress = route.params.multiaddress as string;
-  const decodedBytes = fromString(encodedMultiAddress, "base64url");
-  return multiaddr(decodedBytes);
-});
+  const decodedMultiAddr = computed(() => {
+    const encodedMultiAddress = route.params.multiaddress as string;
+    const decodedBytes = fromString(encodedMultiAddress, "base64url");
+    return multiaddr(decodedBytes);
+  });
 
-const config = useRuntimeConfig();
-const isOpenClaimModal = ref(false);
-const { data: _payout } = usePayout();
-// const { data: identify } = useIdentify(managerMultiaddr);
+  const config = useRuntimeConfig();
+  const isOpenClaimModal = ref(false);
+  const { data: _payout } = usePayout();
+  // const { data: identify } = useIdentify(managerMultiaddr);
 
-// watch(
-//   () => identify.value?.isConnected,
-//   (isConnected, oldValue) => {
-//     if (isConnected === false && oldValue === true) {
-//       navigateTo("/worker/connect");
-//     }
-//   },
-//   { immediate: true },
-// );
-//
-tryOnBeforeUnmount(async () => {
-  await disconnect();
-});
+  // watch(
+  //   () => identify.value?.isConnected,
+  //   (isConnected, oldValue) => {
+  //     if (isConnected === false && oldValue === true) {
+  //       navigateTo("/worker/connect");
+  //     }
+  //   },
+  //   { immediate: true },
+  // );
+  //
+  tryOnBeforeUnmount(async () => {
+    await disconnect();
+  });
 </script>
