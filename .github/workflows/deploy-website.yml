@@ -1,0 +1,63 @@
+name: Deploy website to GitHub Pages (on Tag)
+
+on:
+  push:
+    tags:
+      - 'website-v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write 
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+env:
+  APP_DIR: apps/website
+  BUILD_DIR: dist                 
+  PNPM_VERSION: 10                  
+  NODE_VERSION: 24                 
+  PKG_FILTER: "website"
+
+jobs:
+  build:
+    permissions:
+      contents: write 
+      pages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies (workspace)
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Website 
+        run: cd ${{ env.APP_DIR }} && pnpm generate
+
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: apps/website/dist
+          destination_dir: website 
+          keep_files: true
+
