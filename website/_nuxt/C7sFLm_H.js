@@ -1,0 +1,1 @@
+import{u as t}from"./Cyh0wUt6.js";import{c as a,o,B as r}from"#entry";const s={id:"main",ref:"main"},d={__name:"default",setup(m){return t({htmlAttrs:{"data-theme":"light"}}),(e,n)=>(o(),a("div",s,[r(e.$slots,"default")],512))}};export{d as default};

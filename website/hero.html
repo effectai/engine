@@ -1,0 +1,387 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Effect AI — Hero</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    .hero {
+      position: relative;
+      height: 92vh; /* tweak to taste */
+      background: radial-gradient(120% 140% at 60% 10%, #f8f9fb 0%, #f2f3f6 40%, #eef0f4 100%);
+      overflow: hidden;
+    }
+    canvas.webgl {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      display: block;
+      filter: saturate(0.9) contrast(1.02);
+    }
+    .content {
+      position: relative; z-index: 2; color: #0b1020;
+      padding: clamp(24px, 6vw, 80px);
+      max-width: 1100px;
+    }
+    .title { font-size: clamp(32px, 6vw, 72px); line-height: 1.05; font-weight: 500; letter-spacing: -0.02em;}
+    .lead  { font-size: clamp(16px, 2.2vw, 22px); opacity: .8; max-width: 840px; margin-top: 18px;}
+    @media (prefers-reduced-motion: reduce) {
+      canvas.webgl { filter: none; }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <canvas class="webgl"></canvas>
+    <div class="content">
+      <h1 class="title">Unlocking The Next Era<br/>Of Composable AI Infrastructure.</h1>
+      <p class="lead">A permissionless protocol that orchestrates human and machine capabilities into verifiable, reusable workflows.</p>
+      <!-- your buttons go here -->
+    </div>
+  </section>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.161.0/build/three.module.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+
+    // --- Scene basics --------------------------------------------------------
+    const canvas = document.querySelector(".webgl");
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+
+    const scene = new THREE.Scene();
+    const fogColor = new THREE.Color("#f3f5f8");
+    scene.fog = new THREE.Fog(fogColor, 8, 32);
+
+    const camera = new THREE.PerspectiveCamera(45, 2, 0.1, 100);
+    camera.position.set(0, 3.6, 8);
+    scene.add(camera);
+
+    // Soft ambient + fake sun (used in shader as a direction)
+    const sunDir = new THREE.Vector3(0.6, 1.2, -0.2).normalize();
+
+    // --- Dune mesh (single shader plane) ------------------------------------
+    const geo = new THREE.PlaneGeometry(30, 18, 400, 240);
+    geo.rotateX(-Math.PI / 2 + 0.12);
+    geo.translate(0, -0.5, 0);
+
+    const uniforms = {
+      uTime: { value: 0 },
+      uSunDir: { value: sunDir },
+      uFogColor: { value: fogColor },
+      uFogNear: { value: scene.fog.near },
+      uFogFar:  { value: scene.fog.far },
+      uMouse: { value: new THREE.Vector2(0,0) },         // NDC mouse
+      uRipplePos: { value: new THREE.Vector2(0,0) },     // world xz on plane
+      uParallax: { value: new THREE.Vector2(0,0) },      // camera sway
+      uLight: { value: new THREE.Color("#ffffff") },
+      uDark:  { value: new THREE.Color("#dfe4ec") },      // gentle grayB
+      uStripeFreq:      { value: 5 },  // stripes per world unit along dunes
+      uStripeStrength:  { value: 0.05 },  // 0..~0.3 for contrast
+      uFoldAmp:  { value: 1.5 },   // 0.3–0.9 = stronger folds
+      uFoldFreq: { value: 2.1 },   // 0.5–1.2 = fold spacing
+      uWarpAmp:  { value: 0.4 },   // 0.0–0.6 = waviness of lines
+      uStripeAngle: { value: 0 }, // radians; tilt of dune direction
+      uStripeFreq:      { value: 4.0 },   // already have
+  uStripeStrength:  { value: 0.16 },  // already have
+  uStripeDuty:      { value: 0.35 },  // 0.25–0.55: crest position (asymmetry)
+  uStripeSteep:     { value: 2.2 },   // >1 = steeper slipface
+  uStripeEdge:      { value: 1.0 }    // anti-alias width multiplier (0.7–1.5)
+    };
+
+const mat = new THREE.ShaderMaterial({
+  uniforms,
+  vertexShader: /* glsl */`
+varying vec3 vWorldPos;
+varying vec3 vNormal;
+varying float vStripeCoord;   // curved “U” axis that lines will follow
+
+uniform float uTime;
+uniform vec2  uRipplePos;
+uniform float uFoldAmp, uFoldFreq, uWarpAmp, uWarpFreq, uStripeAngle;
+
+// --- simplex noise (iq)
+vec3 mod289(vec3 x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
+vec4 mod289(vec4 x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
+vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+float snoise(vec3 v){
+  const vec2 C = vec2(1.0/6.0, 1.0/3.0) ;
+  const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+  vec3 i  = floor(v + dot(v, C.yyy));
+  vec3 x0 = v - i + dot(i, C.xxx);
+  vec3 g = step(x0.yzx, x0.xyz);
+  vec3 l = 1.0 - g;
+  vec3 i1 = min(g.xyz, l.zxy);
+  vec3 i2 = max(g.xyz, l.zxy);
+  vec3 x1 = x0 - i1 + C.xxx;
+  vec3 x2 = x0 - i2 + C.yyy;
+  vec3 x3 = x0 - D.yyy;
+  i = mod289(i);
+  vec4 p = permute( permute( permute(
+              i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+            + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+            + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+  float n_ = 0.142857142857;
+  vec3  ns = n_ * D.wyz - D.xzx;
+  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+  vec4 x_ = floor(j * ns.z);
+  vec4 y_ = floor(j - 7.0 * x_);
+  vec4 x = x_ * ns.x + ns.yyyy;
+  vec4 y = y_ * ns.x + ns.yyyy;
+  vec4 h = 1.0 - abs(x) - abs(y);
+  vec4 b0 = vec4( x.xy, y.xy );
+  vec4 b1 = vec4( x.zw, y.zw );
+  vec4 s0 = floor(b0)*2.0 + 1.0;
+  vec4 s1 = floor(b1)*2.0 + 1.0;
+  vec4 sh = -step(h, vec4(0.0));
+  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+  vec3 p0 = vec3(a0.xy,h.x);
+  vec3 p1 = vec3(a0.zw,h.y);
+  vec3 p2 = vec3(a1.xy,h.z);
+  vec3 p3 = vec3(a1.zw,h.w);
+  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+  p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+  m = m * m;
+  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
+}
+
+float fbm(vec3 p){
+  float a=0.5, f=1.0, s=0.0;
+  for(int i=0;i<4;i++){ s += a * snoise(p*f); f *= 1.9; a *= 0.55; }
+  return s;
+}
+
+// Build a curved “U” coordinate that bends with folds and wiggles.
+float curvedU(vec2 xz, float t){
+  // base dune direction (tilt)
+  vec2 dir = vec2(cos(uStripeAngle), sin(uStripeAngle));
+  float U = dot(xz, dir);
+
+  // large folds that arc across Z (like big sand drifts)
+  float fold = uFoldAmp * sin(xz.y * uFoldFreq);
+
+  fold += 0.2 * sin(xz.x * uFoldFreq + t * 0.3); // small wiggle
+
+  U += fold;
+
+  return U;
+}
+
+// Calmer dunes with big folds: ridges are functions of curved U
+float heightAt(vec2 xz, float t){
+  float U = curvedU(xz, t);
+
+  float major = sin(U*3.0 + t*0.10);
+  float minor = 0.45*sin(U*1.3 - 1.0 + t*0.06);
+
+  // small noise just to break uniformity
+  float n = 0.5 * fbm(vec3(xz*0.35, t*0.09));
+
+  // amplitude swells inside folds so crests feel like “pillows”
+  float swell = 1.0 + 0.35 * sin(xz.y * (uFoldFreq*0.8));
+
+  // combine: major fold + minor wiggle + noise
+  float h = (major + minor + n) * swell;
+
+
+  // subtle downhill slope to the right
+  h += xz.y * 0.22;
+
+  return h;
+}
+
+void main(){
+  vec3 p = position;
+
+  // world xz used for everything
+  vec2 xz = vec2(p.x*0.23 + 4.0, p.z*0.23);
+
+  // send the curved “U” so stripes follow folds
+  vStripeCoord = curvedU(xz, uTime);
+
+  float h = heightAt(xz, uTime);
+  p.y += h;
+
+  // normal via finite differences
+  float eps = 0.001;
+  float hx = heightAt(xz + vec2(eps,0.0), uTime);
+  float hz = heightAt(xz + vec2(0.0,eps), uTime);
+  vec3 dx = vec3(1.0, (hx-h)/eps, 0.0);
+  vec3 dz = vec3(0.0, (hz-h)/eps, 1.0);
+  vNormal = normalize(cross(dz, dx));
+
+  vec4 wp = modelMatrix * vec4(p, 1.0);
+  vWorldPos = wp.xyz;
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}
+  `,
+  fragmentShader:`
+varying vec3 vWorldPos;
+varying vec3 vNormal;
+varying float vStripeCoord;
+
+uniform vec3  uSunDir;
+uniform vec3  uFogColor;
+uniform float uFogNear;
+uniform float uFogFar;
+uniform vec3  uLight;
+uniform vec3  uDark;
+
+uniform float uStripeFreq;
+uniform float uStripeStrength;
+uniform float uStripeDuty;
+uniform float uStripeSteep;
+uniform float uStripeEdge;
+uniform float uFoldAmp;
+
+void main(){
+  vec3 n = normalize(vNormal);
+  float ndl = max(dot(n, normalize(uSunDir)), 0.0);
+  float facing = pow(1.0 - max(dot(n, vec3(0.0,1.0,0.0)), 0.0), 1.2);
+
+  vec3 base = mix(uLight, uDark, 0.42 + facing*0.58);
+  vec3 col  = base * (0.66 + 0.52*ndl);
+
+  // Anti-aliased dune lines along the curved U axis
+  // --- dune fold stripes: asymmetric, anti-aliased ------------------------
+float coord = vStripeCoord ;
+float t = fract(coord);
+
+// asymmetric triangle profile with duty cycle
+float duty = clamp(uStripeDuty, 0.05, 0.95);
+float up   = t / duty;                          // gentle rise
+float down = 1.0 - (t - duty) / max(1.0 - duty, 1e-3); // sharp fall
+float tri  = mix(up, down, step(duty, t));
+tri = clamp(tri, 0.0, 1.0);
+
+// steepness controls how “slipface” the fall looks
+tri = pow(tri, uStripeSteep);
+
+// soft crest highlight (narrow ridge line)
+float w = fwidth(coord) * uStripeEdge;
+float crest = 1.0 - smoothstep(0.0, w, abs(fract(coord) - duty));
+
+// combine: broad fold shading + crisp crest
+float shade = mix(0.92, 1.08, tri);      // fold albedo modulation
+shade = mix(shade, shade * 1.06, crest); // tiny extra pop on crest
+
+col *= mix(1.0 - uStripeStrength, 1.0 + uStripeStrength, shade);  float dither = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233))) * 43758.5453) * 0.004;
+  col += dither;
+
+  float dist = length(vWorldPos);
+  float fog = smoothstep(uFogNear, uFogFar, dist);
+  col = mix(uFogColor, col, 1.0 - fog * 3.0);
+
+  gl_FragColor = vec4(col, 1.0);
+}
+  `,
+  dithering:false 
+});
+
+       const dunes = new THREE.Mesh(geo, mat);
+    dunes.receiveShadow = true;
+    scene.add(dunes);
+
+    // --- Subtle floating dust particles (very light) ------------------------
+    const dust = (() => {
+      const g = new THREE.BufferGeometry();
+      const N = 600;
+      const p = new Float32Array(N * 3);
+      for (let i = 0; i < N; i++) {
+        p[3*i+0] = (Math.random()-0.5)*24;
+        p[3*i+1] = Math.random()*3 + 0.2;
+        p[3*i+2] = (Math.random()-0.2)*16 - 2;
+      }
+      g.setAttribute("position", new THREE.BufferAttribute(p, 3));
+      const m = new THREE.PointsMaterial({ size: 0.02, color: 0xffffff, opacity: 0.35, transparent: true, depthWrite: false });
+      const pts = new THREE.Points(g, m);
+      pts.renderOrder = 1;
+      scene.add(pts);
+      return { g, pts };
+    })();
+
+    // --- Resize --------------------------------------------------------------
+    function resize() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener("resize", resize, { passive: true });
+    resize();
+
+    // --- Mouse parallax + world ripple position -----------------------------
+    const mouseNDC = new THREE.Vector2(0,0);
+    const raycaster = new THREE.Raycaster();
+    const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0); // y=0 world plane (approx)
+
+    function onPointerMove(e){
+      const rect = canvas.getBoundingClientRect();
+      mouseNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouseNDC.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+    }
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+
+    // --- Animation loop ------------------------------------------------------
+    let t0 = performance.now();
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function tick(now){
+      const dt = (now - t0) * 0.0002; t0 = now;
+      if (!reduceMotion) uniforms.uTime.value += dt;
+
+      // camera sway toward mouse (subtle)
+      const targetX = mouseNDC.x * 0.4;
+      const targetY = mouseNDC.y * 0.15;
+      camera.position.x += (targetX - camera.position.x) * 0.06;
+      camera.position.y += (3.6 + targetY - camera.position.y) * 0.06;
+      camera.lookAt(0, 0.4, 0);
+
+      // compute ripple world xz from mouse ray
+      raycaster.setFromCamera(mouseNDC, camera);
+      const hit = new THREE.Vector3();
+      raycaster.ray.intersectPlane(plane, hit);
+      uniforms.uRipplePos.value.set(hit.x*0.23 + 4.0, hit.z*0.23);
+
+      // drift dust forward
+      const pos = dust.g.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        let z = pos.getZ(i) + dt * 0.25;
+        if (z > 8) z = -8 - Math.random()*6;
+        pos.setZ(i, z);
+      }
+      pos.needsUpdate = true;
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    // --- Light CPU fallback if WebGL is struggling --------------------------
+    let frames = 0, slowHits = 0;
+    function fpsCheck(){
+      frames++;
+      if (frames % 60 === 0) {
+        const t = renderer.info.render.frame;
+        // naive: if little progress or tab throttled, reduce dust to zero
+        if (t === 0) slowHits++;
+        if (slowHits > 2) dust.pts.visible = false;
+      }
+      requestAnimationFrame(fpsCheck);
+    }
+    requestAnimationFrame(fpsCheck);
+  </script>
+</body>
+</html>
+
