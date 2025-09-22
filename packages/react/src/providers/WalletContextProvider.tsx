@@ -175,7 +175,7 @@ export function useWalletContext() {
   const ctx = useContext(WalletContext);
   if (!ctx)
     throw new Error(
-      "useProfileContext must be used within a ProfileContextProvider",
+      "useWalletContext must be used within a WalletContextProvider",
     );
   return ctx;
 }

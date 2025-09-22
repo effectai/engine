@@ -14,6 +14,7 @@ export const useGetLamports = (
       queryKey: ["balances", address, "lamports", { scope: "balance" }],
       queryFn: async ({ signal }) => {
         if (!address || !connection) return null;
+        console.log("fetching balance for address", address);
         return await connection.getLamportBalance(address);
       },
       enabled,

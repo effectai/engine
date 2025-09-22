@@ -11,7 +11,10 @@ export const deriveRewardAccountsPda = async ({
   mint: Address;
 }) => {
   const [reflectionAccount] = await getProgramDerivedAddress({
-    seeds: [Buffer.from("reflection"), getAddressEncoder().encode(mint)],
+    seeds: [
+      Buffer.from("reflection", "utf-8"),
+      getAddressEncoder().encode(mint),
+    ],
     programAddress: EFFECT_REWARD_PROGRAM_ADDRESS,
   });
 

@@ -11,6 +11,9 @@ import { useWalletContext } from "@/providers/WalletContextProvider";
 export function AppHeader() {
   const { lamports, effectBalance } = useWalletContext();
 
+  const lamportBalance = lamports ? Number(lamports) : 0;
+  const tokenBalance = effectBalance ? Number(effectBalance.uiAmount) : 0;
+
   return (
     <header
       className={cn(
@@ -22,7 +25,7 @@ export function AppHeader() {
         <div className="flex items-center gap-2">
           <Logo className="w-full" />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 hidden sm:flex">
           <a
             href="https://jup.ag/swap?sell=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&buy=EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E"
             target="_blank"
@@ -32,7 +35,7 @@ export function AppHeader() {
               className="text-xs"
               ticker="EFFECT"
               icon={<EffectCoin />}
-              balance={effectBalance?.uiAmount ?? 0}
+              balance={tokenBalance}
               isLoading={false}
             />
           </a>
@@ -40,7 +43,7 @@ export function AppHeader() {
             className="text-xs"
             ticker="SOL"
             icon={<SolanaMark />}
-            balance={Number((lamports ?? 0n) / BigInt(1e9))}
+            balance={lamportBalance / 1e9}
             isLoading={false}
           />
         </div>
