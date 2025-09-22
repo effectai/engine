@@ -20,7 +20,11 @@ export default defineNuxtConfig({
     clientNodeCompat: true,
   },
   vite: {
+    esbuild: {
+      target: "esnext",
+    },
     build: {
+      target: "esnext",
       sourcemap: true,
       minify: false,
     },

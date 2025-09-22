@@ -17,12 +17,12 @@
   "main": "dist/index.cjs",
   "exports": {
     ".": {
+      "browser": {
+        "import": "./dist/browser.browser.mjs",
+        "require": "./dist/browser.browser.cjs"
+      },
       "import": "./dist/node.js",
       "require": "./dist/node.cjs",
-      "browser": {
-	"import": "./dist/browser.browser.mjs",
-	"require": "./dist/browser.browser.cjs"
-	},
       "types": "./dist/index.d.ts"
     }
   },
