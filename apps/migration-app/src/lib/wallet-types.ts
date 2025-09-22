@@ -28,5 +28,4 @@ export interface DestWallet {
   isConnected: boolean;
   connect(): Promise<void>;
   disconnect(): Promise<void>;
-  // add any Solana-specific helpers you need (send tx, sign msg, etc.)
 }

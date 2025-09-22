@@ -49,20 +49,6 @@ export function Stepper({
     <div className={cn("w-full", className)}>
       <div className="relative w-full">
         <div className="flex-col flex">
-          <div className="mr-6 flex">
-            <Button
-              variant="outline"
-              size="sm"
-              className="ml-auto"
-              href="https://efx.io/support"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <DiscIcon />
-              Discord
-            </Button>
-          </div>
-
           <div className="flex flex-col justify-center w-full">
             <div className="w-full flex justify-center flex-col items-center mx-auto ">
               <ol className="flex items-center gap-3">

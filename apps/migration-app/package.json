@@ -1,5 +1,5 @@
 {
-  "name": "migration-app",
+  "name": "@effectai/migration-app",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,10 +12,11 @@
   "dependencies": {
     "@effectai/config": "workspace:*",
     "@effectai/migration": "workspace:*",
-    "@effectai/staking": "workspace:*",
-    "@effectai/utils": "workspace:*",
     "@effectai/react": "workspace:*",
     "@effectai/solana-utils": "workspace:*",
+    "@effectai/staking": "workspace:*",
+    "@effectai/utils": "workspace:*",
+    "@solana-program/token": "^0.5.1",
     "@jup-ag/wallet-adapter": "^0.2.3",
     "@reown/appkit": "1.7.20",
     "@reown/appkit-adapter-wagmi": "1.7.20",
@@ -38,7 +39,8 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.12",
     "viem": "^2.31.3",
-    "wagmi": "^2.12.31"
+    "wagmi": "^2.12.31",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

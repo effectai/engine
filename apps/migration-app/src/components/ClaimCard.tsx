@@ -8,14 +8,17 @@ import {
   CardFooter,
   Button,
   Badge,
+  useWalletContext,
+  useConnectionContext,
 } from "@effectai/react";
 import { Info, CheckCircle2, Clock, Check } from "lucide-react";
 import type {
   fetchMaybeMigrationAccount,
   MigrationAccount,
 } from "@effectai/migration";
-import { useMigration } from "@/providers/MigrationProvider";
 import { useWalletAccountTransactionSigner } from "@solana/react";
+import { useMigrationStore } from "@/stores/migrationStore";
+import { useClaimMutation } from "@/hooks/useClaimMutation";
 
 type Props = {
   migrationVaultBalance: number | null;
@@ -23,24 +26,17 @@ type Props = {
   foreignPublicKey: Uint8Array;
   message: string | Uint8Array;
   signature: string | Uint8Array;
-  claim: (args: {
-    signer: unknown;
-    migrationAccount: MigrationAccount;
-    foreignPublicKey: string;
-    message: Props["message"];
-    signature: Props["signature"];
-  }) => Promise<void> | void;
   className?: string;
 };
 
 export default function ClaimCard(props: Props) {
   const [submitting, setSubmitting] = useState(false);
   const balance = props.migrationVaultBalance ?? 0;
-  const { sol, claim } = useMigration();
-  const signer = useWalletAccountTransactionSigner(
-    sol.uiWalletEntry.uiAccount,
-    "solana:mainnet",
-  );
+
+  const { signer } = useWalletContext();
+  const { connection } = useConnectionContext();
+
+  const { mutateAsync: claim } = useClaimMutation();
 
   const formattedBalance = useMemo(
     () =>
@@ -70,9 +66,11 @@ export default function ClaimCard(props: Props) {
   const onClaim = async () => {
     try {
       setSubmitting(true);
-      await props.claim({
+      await claim({
+        connection,
         signer,
-        migrationAccount: props.migrationAccount,
+        address: signer?.address,
+        migrationAccount: props.migrationAccount.address,
         foreignPublicKey: props.foreignPublicKey,
         message: props.message,
         signature: props.signature,
@@ -152,8 +150,7 @@ export default function ClaimCard(props: Props) {
         </p>
         <p className="text-red-500 text-sm">
           IMPORTANT: claimed tokens will be locked in a staking account. If you
-          do not have a staking account, one will be created for you (at no
-          cost).
+          do not have a staking account, one will be created for you at no cost.
         </p>
       </CardContent>
 

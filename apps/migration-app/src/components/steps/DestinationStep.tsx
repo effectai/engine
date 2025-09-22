@@ -16,6 +16,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  useWalletContext,
 } from "@effectai/react";
 
 import {
@@ -28,33 +29,43 @@ import {
 } from "lucide-react";
 import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
 import { BlockchainAddress } from "../BlockchainAddress";
+import { useMigrationStore } from "@/stores/migrationStore";
 
-type Props = {
-  current: "solana" | string;
-  hasSolanaWalletInstalled: boolean;
-  destinationAddress: string | null;
-  setDestinationAddress: (v: string | null) => void;
-  manualAddressInput: string;
-  setManualAddressInput: (v: string) => void;
-  balanceLow?: boolean;
-  goTo: (k: string) => void;
-  selectAddress: () => void;
-};
-
-export function SolanaDestinationStep({
-  current,
-  hasSolanaWalletInstalled,
-  destinationAddress,
-  setDestinationAddress,
-  manualAddressInput,
-  setManualAddressInput,
-  balanceLow,
-  goTo,
-  selectAddress,
-}: Props) {
+export function SolanaDestinationStep({}: Props) {
   const [manualMode, setManualMode] = React.useState(false);
 
-  if (current !== "solana") return null;
+  const goTo = useMigrationStore((s) => s.goTo);
+
+  const { address, lamports } = useWalletContext();
+  const destinationAddress = useMigrationStore((s) => s.destinationAddress);
+  const setDestinationAddress = useMigrationStore(
+    (s) => s.setDestinationAddress,
+  );
+
+  //whenever address from wallet changes, update destinationAddress in store (if not in manual mode)
+  //this allows user to switch wallet and have the new address picked up automatically
+  //but if user is in manual mode, don't override their input
+
+  React.useEffect(() => {
+    if (manualMode) return;
+    if (address) {
+      setDestinationAddress(address);
+    }
+  }, [address, manualMode, setDestinationAddress]);
+
+  const selectAddress = () => {
+    const input = manualAddressInput.trim();
+    //validate base58
+    //https://en.wikipedia.org/wiki/Base58
+    //
+  };
+
+  const [manualAddressInput, setManualAddressInput] = React.useState("");
+
+  const hasSolanaWalletInstalled = React.useMemo(
+    () => typeof window !== "undefined" && !!(window as any).solana,
+    [],
+  );
 
   const canContinue = !!destinationAddress;
 
@@ -165,17 +176,6 @@ export function SolanaDestinationStep({
                 Switch
               </Button>
             </div>
-
-            {balanceLow && (
-              <Alert variant="destructive" className="mt-4">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Low SOL balance</AlertTitle>
-                <AlertDescription>
-                  Your SOL balance looks low. Transactions may fail. Please top
-                  up a small amount of SOL for fees.
-                </AlertDescription>
-              </Alert>
-            )}
           </>
         )}
       </CardContent>

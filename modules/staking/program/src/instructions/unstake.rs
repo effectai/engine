@@ -4,7 +4,7 @@ use constants::UNSTAKE_DELAY_DAYS;
 use effect_common::cpi;
 use effect_common::constants::SECONDS_PER_DAY;
 
-use effect_reward::program::EffectRewards;
+use effect_reward::program::EffectReward;
 use effect_vesting::program::EffectVesting;
 
 #[derive(Accounts)]
@@ -60,7 +60,7 @@ pub struct Unstake<'info> {
 
     pub token_program: Program<'info, Token>,
 
-    pub reward_program: Program<'info, EffectRewards>,
+    pub reward_program: Program<'info, EffectReward>,
 
     pub vesting_program: Program<'info, EffectVesting>,
 

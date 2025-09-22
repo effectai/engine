@@ -13,9 +13,11 @@ import {
   WalletContextProvider,
 } from "@effectai/react";
 
+const profile = import.meta.env.VITE_EFFECT_PROFILE || "mainnet";
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ProfileContextProvider>
+    <ProfileContextProvider profile={profile}>
       <ConnectionContextProvider>
         <UnifiedWalletContextProvider>
           <WalletContextProvider>

@@ -7,18 +7,8 @@ import {
   askForConfirmation,
 } from "@effectai/utils";
 import { PublicKey } from "@solana/web3.js";
-import {
-  address,
-  appendTransactionMessageInstructions,
-  createKeyPairSignerFromPrivateKeyBytes,
-  createTransactionMessage,
-  pipe,
-  sendAndConfirmTransactionFactory,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  signTransactionMessageWithSigners,
-} from "@solana/kit";
-import { loadSolanaContext, useConnection } from "../../helpers.js";
+import { address } from "@solana/kit";
+import { useConnection } from "../../helpers.js";
 import { getCreateAssociatedTokenInstructionAsync } from "@solana-program/token";
 import {
   getAssociatedTokenAccount,

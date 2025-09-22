@@ -165,6 +165,7 @@ export function useEosWallet(): SourceWallet & EosWalletState {
   );
 
   return {
+    key: "eos",
     // state
     session,
     address,

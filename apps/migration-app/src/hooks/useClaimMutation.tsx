@@ -1,21 +1,20 @@
 import {
   fetchStakingAccountsByWalletAddress,
   getStakeInstructionAsync,
-} from "@effectai/stake";
+} from "@effectai/staking";
 import {
   type Address,
   type TransactionSigner,
   generateKeyPairSigner,
   address as toAddress,
 } from "@solana/kit";
+import { getAssociatedTokenAccount } from "@effectai/solana-utils";
 import { useMutation } from "@tanstack/react-query";
 import type { Connection } from "solana-kite";
 import { useProfileContext } from "@effectai/react";
 import { getClaimStakeInstructionAsync } from "@effectai/migration";
-import {
-  executeTransaction,
-  maybeCreateAssociatedTokenAccountInstructions,
-} from "@effectai/solana-utils";
+import { executeTransaction } from "@effectai/solana-utils";
+import { getCreateAssociatedTokenInstructionAsync } from "@solana-program/token";
 
 export const useClaimMutation = () => {
   const { mint } = useProfileContext();
@@ -39,7 +38,6 @@ export const useClaimMutation = () => {
         message,
         migrationAccount,
       } = args;
-
       //get stake accounts, if there is none, create one.
       const [stakeAccount] = await fetchStakingAccountsByWalletAddress({
         walletAddress: address,
@@ -48,19 +46,23 @@ export const useClaimMutation = () => {
 
       const instructions = [];
 
-      const userTokenAccount = await connection.getTokenAccountAddress(
-        address,
-        mint,
-      );
-
-      const createAtaIx = await maybeCreateAssociatedTokenAccountInstructions({
-        rpc: connection.rpc,
-        tokenAddress: userTokenAccount,
-        signer,
-        owner: toAddress(address),
+      const userTokenAccount = await getAssociatedTokenAccount({
+        owner: address,
         mint,
       });
-      instructions.push(...createAtaIx);
+
+      const isClosed = await connection.checkTokenAccountIsClosed({
+        tokenAccount: userTokenAccount,
+      });
+
+      if (isClosed) {
+        const createAtaIx = await getCreateAssociatedTokenInstructionAsync({
+          mint: mint,
+          owner: signer.address,
+          payer: signer,
+        });
+        instructions.push(createAtaIx);
+      }
 
       if (!stakeAccount) {
         const newStakeAccount = await generateKeyPairSigner();

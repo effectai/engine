@@ -1,14 +1,15 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, useWalletContext } from "@effectai/react";
-
-import { useMigration } from "@/providers/MigrationProvider";
-import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
 import {
-  address as toAddress,
-  type Address,
-  type EncodedAccount,
-} from "@solana/kit";
+  Button,
+  useConnectionContext,
+  useProfileContext,
+  useWalletContext,
+} from "@effectai/react";
+
+import { useMigrationStore } from "@/stores/migrationStore";
+
+import { useGetMigrationAccountQuery } from "@/hooks/useGetMigrationAccountQuery";
 
 import {
   deriveMigrationAccountPDA,
@@ -19,6 +20,8 @@ import { AuthenticateStep } from "./steps/AuthenticateStep";
 import { SolanaDestinationStep } from "./steps/DestinationStep";
 import { AuthorizeStep } from "./steps/AuthorizeStep";
 import { ClaimStep } from "./steps/ClaimStep";
+import type { Address } from "@solana/kit";
+import { SNAPSHOT_DATE } from "@/consts";
 
 const steps: StepDef[] = [
   { key: "intro", label: "Intro", hidden: true },
@@ -34,162 +37,12 @@ const steps: StepDef[] = [
 
 // ---- Main Migration Flow ----
 export default function MigrationFlow() {
-  const { address } = useWalletContext();
-  const { source, sourceChain, config, connection, claim, sol } =
-    useMigration();
-
-  // UI state
-  const [current, setCurrent] = useState<Step>("intro");
-  const [toggleManualAddress, setToggleManualAddress] = useState(false);
-  const [manualAddressInput, setManualAddressInput] = useState("");
-  const [destinationAddress, setDestinationAddress] = useState<string | null>(
-    null,
-  );
-
-  const [signature, setSignature] = useState<Uint8Array | null>(null);
-  const [message, setMessage] = useState<Uint8Array | null>(null);
-  const [foreignPublicKey, setForeignPublicKey] = useState<Uint8Array | null>(
-    null,
-  );
-
-  const [nativeBalance, setNativeBalance] = useState<{
-    value: number;
-    symbol: string;
-  } | null>(null);
-  const [efxBalance, setEfxBalance] = useState<{
-    value: number;
-    symbol: string;
-  } | null>(null);
-
-  const [migrationVaultAddress, setMigrationVaultAddress] = useState<
-    string | null
-  >(null);
-
-  const [migrationVaultBalance, setMigrationVaultBalance] = useState<
-    number | null
-  >(null);
-
-  const [migrationAccount, setMigrationAccount] = useState<Awaited<
-    ReturnType<typeof fetchMaybeMigrationAccount>
-  > | null>(null);
-
-  const snapshotDate = useMemo(() => new Date("2025-01-01T12:00:00Z"), []);
-  const hasSolanaWalletInstalled = useMemo(
-    () => typeof window !== "undefined" && !!(window as any).solana,
-    [],
-  );
-
-  //TODO:: FETCH SOL BALANCE
-  const balanceLow = false;
-
-  // Load balances for source when connected
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (source.isConnected) {
-        try {
-          const [n, e] = await Promise.all([
-            source.getNativeBalance(),
-            source.getEfxBalance(),
-          ]);
-          if (mounted) {
-            setNativeBalance(n);
-            setEfxBalance(e);
-          }
-        } catch (e) {
-          // noop
-        }
-      } else {
-        setNativeBalance(null);
-        setEfxBalance(null);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [source.isConnected, sourceChain]);
-
-  //Fetch migration vault account balance when migration account is set
-  const goTo = (s: Step) => setCurrent(s);
-
-  const selectAddress = useCallback(() => {
-    if (!manualAddressInput) return;
-    setDestinationAddress(manualAddressInput.trim());
-    setToggleManualAddress(false);
-    goTo("authorize");
-  }, [manualAddressInput]);
-
-  useEffect(() => {
-    if (address) {
-      setDestinationAddress(address);
-    }
-  }, [address]);
-
-  const disconnectSourceWallets = useCallback(async () => {
-    await source.disconnect();
-    setNativeBalance(null);
-    setEfxBalance(null);
-    setSignature(null);
-    setMessage(null);
-    setForeignPublicKey(null);
-    goTo("authenticate");
-  }, [source]);
-
-  const authorize = useCallback(async () => {
-    if (!destinationAddress) throw new Error("No destination address");
-    const { foreignPublicKey, signature, message } =
-      await source.authorizeTokenClaim(destinationAddress);
-    setForeignPublicKey(foreignPublicKey);
-    setSignature(signature);
-    setMessage(message);
-
-    const { migrationAccount: derivedMigrationAccountAddress, vaultAccount } =
-      await deriveMigrationAccountPDA({
-        foreignAddress: foreignPublicKey,
-        mint: toAddress(config.EFFECT_SPL_MINT),
-      });
-
-    const migrationAccountData = await fetchMaybeMigrationAccount(
-      connection.rpc,
-      derivedMigrationAccountAddress,
-    );
-
-    if (migrationAccountData.exists) {
-      setMigrationVaultAddress(vaultAccount);
-      setMigrationAccount(migrationAccountData);
-    }
-
-    goTo("claim");
-  }, [source, destinationAddress, sourceChain, connection, config]);
-
-  // Mobile/share helpers used in claim step (optional)
-  const isMobile = useMemo(() => {
-    if (typeof navigator === "undefined") return false;
-    return /Mobi|Android/i.test(navigator.userAgent);
-  }, []);
-
-  const authorizeUrl = useMemo(() => {
-    if (!signature || !message || !foreignPublicKey) return "";
-    const payload = Buffer.from(
-      JSON.stringify({ signature, message, foreignPublicKey }),
-    ).toString("base64");
-    return `${typeof window !== "undefined" ? window.location.origin : ""}/migrate?auth=${payload}`;
-  }, [signature, message, foreignPublicKey]);
-
-  const shareAuthorize = useCallback(async () => {
-    if (navigator.share && authorizeUrl) {
-      await navigator.share({ title: "EFFECT Migration", url: authorizeUrl });
-    }
-  }, [authorizeUrl]);
-
-  const copyAuthorize = useCallback(async () => {
-    if (!authorizeUrl) return;
-    await navigator.clipboard.writeText(authorizeUrl);
-  }, [authorizeUrl]);
+  const { currentStep, goTo } = useMigrationStore();
+  const snapshotDate = new Date(SNAPSHOT_DATE).toLocaleDateString();
 
   return (
     <div className="max-w-5xl mx-auto">
-      {current === "intro" && (
+      {currentStep === "intro" && (
         <section id="step-intro" className="prose dark:prose-invert mt-12">
           <h1 className="text-primary">Migrate Your $EFX Tokens to Solana</h1>
           <p>Welcome to the official $EFX → $EFFECT token migration portal!</p>
@@ -254,67 +107,23 @@ export default function MigrationFlow() {
         </section>
       )}
 
-      {current !== "intro" && (
-        <Stepper steps={steps} current={current} onStepChange={(s) => goTo(s)}>
+      {currentStep !== "intro" && (
+        <Stepper
+          steps={steps}
+          current={currentStep}
+          onStepChange={(s) => goTo(s)}
+        >
           {/* AUTHENTICATE */}
-          {current === "authenticate" && (
-            <AuthenticateStep
-              current="authenticate"
-              source={source}
-              goTo={goTo}
-              nativeBalance={nativeBalance}
-              efxBalance={efxBalance}
-              snapshotDate={snapshotDate}
-              foreignPublicKey={foreignPublicKey}
-              disconnectSourceWallets={disconnectSourceWallets}
-            />
-          )}
+          {currentStep === "authenticate" && <AuthenticateStep />}
 
           {/* SOLANA DESTINATION */}
-          {current === "solana" && (
-            <SolanaDestinationStep
-              current="solana"
-              hasSolanaWalletInstalled={hasSolanaWalletInstalled}
-              destinationAddress={destinationAddress}
-              setDestinationAddress={setDestinationAddress}
-              manualAddressInput={manualAddressInput}
-              setManualAddressInput={setManualAddressInput}
-              selectAddress={selectAddress}
-              balanceLow={balanceLow}
-              goTo={goTo}
-            />
-          )}
+          {currentStep === "solana" && <SolanaDestinationStep />}
 
           {/* AUTHORIZE */}
-          {current === "authorize" && source.address && (
-            <AuthorizeStep
-              sourceAddress={source.address}
-              signature={signature}
-              authorize={authorize}
-              current="authorize"
-              goTo={goTo}
-              foreignPublicKey={foreignPublicKey}
-            />
-          )}
+          {currentStep === "authorize" && <AuthorizeStep />}
 
           {/* CLAIM */}
-          {current === "claim" && (
-            <ClaimStep
-              solanaWalletAddress={solanaWalletAddress}
-              claim={claim}
-              copyAuthorize={copyAuthorize}
-              shareAuthorize={shareAuthorize}
-              authorizeUrl={authorizeUrl}
-              current="claim"
-              isMobile={isMobile}
-              hasSolanaWalletInstalled={hasSolanaWalletInstalled}
-              disconnectSourceWallets={disconnectSourceWallets}
-              source={source}
-              message={message}
-              migrationVaultBalance={migrationVaultBalance}
-              migrationAccount={migrationAccount}
-            />
-          )}
+          {currentStep === "claim" && <ClaimStep />}
         </Stepper>
       )}
     </div>

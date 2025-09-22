@@ -3,8 +3,7 @@ import { connect } from "solana-kite";
 import type { SourceChain, SourceWallet, DestWallet } from "@/lib/wallet-types";
 import { useEosWallet } from "@/lib/useEosWallet";
 import { useBscWallet } from "@/lib/useBscWallet";
-import { EFFECT } from "@/lib/useEffectConfig";
-import { useWalletContext } from "@effectai/react";
+import { useConnectionContext, useWalletContext } from "@effectai/react";
 
 type MigrationContextValue = {
   sourceChain: SourceChain;
@@ -21,49 +20,45 @@ const Ctx = createContext<MigrationContextValue | null>(null);
 const STORAGE_KEY = "effect:selected-source-chain";
 
 export function MigrationProvider({ children }: { children: React.ReactNode }) {
-  const [sourceChain, setSourceChainState] = useState<SourceChain>("EOS");
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === "EOS" || saved === "BSC") setSourceChainState(saved);
-  }, []);
-  const setSourceChain = (c: SourceChain) => {
-    setSourceChainState(c);
-    try {
-      localStorage.setItem(STORAGE_KEY, c);
-    } catch {}
-  };
-
-  const eos = useEosWallet();
-  const bsc = useBscWallet();
-  const sol = useWalletContext();
-
-  const source: SourceWallet = useMemo(() => {
-    return sourceChain === "EOS" ? eos : bsc;
-  }, [sourceChain, eos, bsc]);
-
-  const ready = true;
-  const canMigrate = !!source.isConnected && sol.address;
-
-  const connection = connect(
-    EFFECT.EFFECT_SOLANA_RPC_NODE_URL,
-    EFFECT.EFFECT_SOLANA_RPC_WS_URL,
-  );
-
-  const value = useMemo(
-    () => ({
-      config: EFFECT,
-      connection,
-      sourceChain,
-      setSourceChain,
-      source,
-      ready,
-      canMigrate,
-      sol,
-    }),
-    [sourceChain, connection, source, ready, canMigrate, sol],
-  );
-
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  // const [sourceChain, setSourceChainState] = useState<SourceChain>("EOS");
+  // useEffect(() => {
+  //   const saved = localStorage.getItem(STORAGE_KEY);
+  //   if (saved === "EOS" || saved === "BSC") setSourceChainState(saved);
+  // }, []);
+  // const setSourceChain = (c: SourceChain) => {
+  //   setSourceChainState(c);
+  //   try {
+  //     localStorage.setItem(STORAGE_KEY, c);
+  //   } catch {}
+  // };
+  // //
+  // // const eos = useEosWallet();
+  // // const bsc = useBscWallet();
+  // // const sol = useWalletContext();
+  // //
+  // const source: SourceWallet = useMemo(() => {
+  //   return sourceChain === "EOS" ? eos : bsc;
+  // }, [sourceChain, eos, bsc]);
+  //
+  // const ready = true;
+  // const canMigrate = !!source.isConnected && sol.address;
+  //
+  // const { connection } = useConnectionContext();
+  //
+  // const value = useMemo(
+  //   () => ({
+  //     connection,
+  //     sourceChain,
+  //     setSourceChain,
+  //     source,
+  //     ready,
+  //     canMigrate,
+  //     dest: sol,
+  //   }),
+  //   [sourceChain, connection, source, ready, canMigrate, sol, ready],
+  // );
+  //
+  return <Ctx.Provider>{children}</Ctx.Provider>;
 }
 
 export function useMigration() {

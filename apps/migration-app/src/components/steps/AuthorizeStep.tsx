@@ -28,16 +28,7 @@ import {
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
-
-type Props = {
-  current: "authorize" | string;
-  sourceAddress: string;
-  foreignPublicKey: Uint8Array | null;
-  signature?: string | Uint8Array | null;
-  message?: string | Uint8Array | null;
-  authorize: () => Promise<void> | void;
-  goTo: (k: string) => void;
-};
+import { useMigrationStore } from "@/stores/migrationStore";
 
 function previewBytes(value?: string | Uint8Array | null, max = 18) {
   if (!value) return "—";
@@ -47,24 +38,23 @@ function previewBytes(value?: string | Uint8Array | null, max = 18) {
   return `${s.slice(0, Math.ceil((max - 1) / 2))}…${s.slice(-Math.floor((max - 1) / 2))}`;
 }
 
-export function AuthorizeStep({
-  current,
-  foreignPublicKey,
-  signature,
-  message,
-  authorize,
-  goTo,
-  sourceAddress,
-}: Props) {
+export function AuthorizeStep({}: Props) {
   const [loading, setLoading] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
 
-  if (current !== "authorize") return null;
+  const signature = useMigrationStore((s) => s.signature);
+  const message = useMigrationStore((s) => s.message);
+  const foreignPublicKey = useMigrationStore((s) => s.foreignPublicKey);
+  const authorize = useMigrationStore((s) => s.authorize);
+  const goTo = useMigrationStore((s) => s.goTo);
+
+  const sourceAddress = useMigrationStore((s) => s.sourceWallet?.address);
 
   const authorized = Boolean(signature && message && foreignPublicKey);
   const onAuthorize = async () => {
     setErr(null);
     try {
+      console.log("Authorizing...");
       setLoading(true);
       await Promise.resolve(authorize());
     } catch (e: any) {

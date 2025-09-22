@@ -15,10 +15,14 @@ const ProfileContext = createContext<ProfileContextProviderValue | undefined>(
 );
 
 export function ProfileContextProvider({
+  profile,
   children,
-}: { children: React.ReactNode }) {
-  const PROFILE_NAME = (process.env.VITE_EFFECT_PROFILE ||
+}: { profile?: ProfileName; children: React.ReactNode }) {
+  const PROFILE_NAME = (profile ||
+    process.env.VITE_EFFECT_PROFILE ||
     "mainnet") as ProfileName;
+
+  console.log("Using EFFECT profile:", PROFILE_NAME);
 
   const base = profiles[PROFILE_NAME];
   if (!base) throw new Error(`Unknown EFFECT profile: ${PROFILE_NAME}`);

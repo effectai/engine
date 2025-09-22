@@ -71,6 +71,7 @@ export function useBscWallet(): SourceWallet {
   }, [address]);
 
   return {
+    key: "bsc",
     address,
     isConnected,
     walletMeta,
