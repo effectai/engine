@@ -18,7 +18,7 @@ export function ProfileContextProvider({
   children,
 }: { children: React.ReactNode }) {
   const PROFILE_NAME = (process.env.VITE_EFFECT_PROFILE ||
-    "localnet") as ProfileName;
+    "mainnet") as ProfileName;
 
   const base = profiles[PROFILE_NAME];
   if (!base) throw new Error(`Unknown EFFECT profile: ${PROFILE_NAME}`);
