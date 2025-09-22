@@ -1,8 +1,8 @@
 import {
   type Base58EncodedBytes,
   getBase58Codec,
-  type Rpc,
-  type SolanaRpcApi,
+  type RpcMainnet,
+  type SolanaRpcApiMainnet,
 } from "@solana/kit";
 import {
   EFFECT_STAKING_PROGRAM_ADDRESS,
@@ -14,7 +14,7 @@ export const fetchStakingAccountsByWalletAddress = async ({
   rpc,
 }: {
   walletAddress: string;
-  rpc: Rpc<SolanaRpcApi>;
+  rpc: RpcMainnet<SolanaRpcApiMainnet>;
 }) => {
   return await rpc
     .getProgramAccounts(EFFECT_STAKING_PROGRAM_ADDRESS, {

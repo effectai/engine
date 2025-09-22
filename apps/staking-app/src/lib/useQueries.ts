@@ -12,7 +12,12 @@ import {
   getActiveVestingAccountsForTokenAccount,
   deriveVestingAccountsPDA,
 } from "@effectai/vesting";
-import { getBase64Encoder, type Account, type Address } from "@solana/kit";
+import {
+  getBase64Encoder,
+  type Account,
+  type RpcMainnet,
+  type SolanaRpcApiMainnet,
+} from "@solana/kit";
 import { address as toAddress } from "@solana/kit";
 import {
   decodeStakeAccount,
@@ -39,13 +44,12 @@ export function useStakeAccount(
 
   return useQuery({
     queryKey: stakingKeys.stakeAccount(address ?? null),
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!address || !connection) return null;
 
       const res = await fetchStakingAccountsByWalletAddress({
         walletAddress: address,
-        rpc: connection.rpc,
-        signal,
+        rpc: connection.rpc as RpcMainnet<SolanaRpcApiMainnet>,
       });
 
       const account = res?.[0];
@@ -74,7 +78,7 @@ export const useStakingRewardAccount = (
 
   return useQuery({
     queryKey: ["staking", "rewardAccount", stakeAccount?.address],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!stakeAccount || !connection) return null;
 
       const { stakingRewardAccount } = await deriveStakingRewardAccountPda({
@@ -98,7 +102,7 @@ export const useReflectionAccount = (connection: Connection | null) => {
 
   return useQuery({
     queryKey: ["staking", "reflection"],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!connection) return null;
 
       const { reflectionAccount } = await deriveRewardAccountsPda({
@@ -121,7 +125,7 @@ export const useRewardVestingAccount = (connection: Connection | null) => {
 
   return useQuery({
     queryKey: ["staking", "rewardVesting"],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!connection) return null;
       const activeVestingAccount = import.meta.env
         .VITE_EFFECT_ACTIVE_REWARD_VESTING_ACCOUNT;
@@ -146,7 +150,7 @@ export const useActiveVestingAccounts = (
 
   return useQuery({
     queryKey: ["vesting", "activeVestingAccounts", walletAddress],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!walletAddress || !connection) return [];
 
       const tokenAccount = await connection.getTokenAccountAddress(
@@ -155,11 +159,11 @@ export const useActiveVestingAccounts = (
       );
 
       const accounts = await getActiveVestingAccountsForTokenAccount({
-        rpc: connection.rpc,
+        rpc: connection.rpc as RpcMainnet<SolanaRpcApiMainnet>,
         tokenAccount,
       });
 
-      return accounts.map((acc) =>
+      return accounts.map((acc: any) =>
         decodeVestingAccount({
           executable: acc.account.executable,
           space: acc.account.space,
@@ -184,7 +188,7 @@ export const useGetInterMediaryRewardVaultBalance = (
 
   return useQuery({
     queryKey: ["staking", "intermediaryRewardVaultBalance"],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!connection) return null;
 
       const { intermediaryReflectionVaultAccount } =
@@ -214,7 +218,7 @@ export const useGetVestingVaultBalance = (
       "vestingVaultBalance",
       vestingAccount?.address ?? "unknown",
     ],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!vestingAccount || !connection) return null;
 
       const [vaultAddress] = await deriveVestingAccountsPDA({

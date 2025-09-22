@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import type { VestingAccount } from "@effectai/vesting";
-import type { Account, TokenBalance } from "@solana/kit";
+import type { Account } from "@solana/kit";
 import { useEffect, useRef, useState } from "react";
 
 export {

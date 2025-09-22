@@ -117,7 +117,6 @@ export function StakeOverview({
     return toNumberTokens(totalMicro);
   }, [
     rewardAccount?.exists,
-    rewardAccount?.data?.weightedAmount,
     reflectionAccount?.data?.totalWeightedAmount,
     reflectionAccount?.data?.rate,
     vestingAccount,
@@ -245,7 +244,7 @@ export function StakeOverview({
           <Row
             label="Total EFFECT Staked"
             value={
-              reflectionAccount?.exists
+              reflectionAccount?.data
                 ? `${formatNumber(Number(reflectionAccount?.data.totalWeightedAmount / BigInt(1e6)))} EFFECT`
                 : "-"
             }

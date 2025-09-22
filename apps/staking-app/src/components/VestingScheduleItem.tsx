@@ -37,7 +37,6 @@ export function VestingScheduleItem({
 
   const startSec = Number(vestingAccount.data.startTime ?? 0);
   const ratePerSec = vestingAccount.data.releaseRate;
-  const ratePerDay = mulBigInt(ratePerSec, 86400n);
 
   const { data: recipientTokenAccount } = useGetEffectTokenAccount(
     connection,
@@ -54,13 +53,14 @@ export function VestingScheduleItem({
   const secondsToUnlock = Math.max(0, startSec - nowSec);
 
   const claimed = vestingAccount.data.distributedTokens ?? 0n;
-  const total = claimed + (balance?.amount ?? 0n);
+  const total = claimed + BigInt(balance?.amount?.toString() ?? 0n);
   const elapsed = locked ? 0 : Math.max(0, nowSec - startSec);
   const theoreticalReleased = mulBigInt(ratePerSec, BigInt(elapsed));
   const released = theoreticalReleased > total ? total : theoreticalReleased;
 
   let claimable = released > claimed ? released - claimed : 0n;
-  if (balance != null && claimable > balance) claimable = balance;
+  if (balance != null && claimable > BigInt(balance?.amount?.toString()))
+    claimable = BigInt(balance?.amount.toString()) ?? 0n;
 
   const progress = total > 0n ? (Number(released) / Number(total)) * 100 : 0;
 

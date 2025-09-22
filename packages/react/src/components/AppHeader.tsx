@@ -32,7 +32,7 @@ export function AppHeader() {
               className="text-xs"
               ticker="EFFECT"
               icon={<EffectCoin />}
-              balance={effectBalance?.uiAmount.toFixed(2) ?? 0}
+              balance={effectBalance?.uiAmount ?? 0}
               isLoading={false}
             />
           </a>
@@ -40,7 +40,7 @@ export function AppHeader() {
             className="text-xs"
             ticker="SOL"
             icon={<SolanaMark />}
-            balance={(lamports ?? 0n) / BigInt(1e9)}
+            balance={Number((lamports ?? 0n) / BigInt(1e9))}
             isLoading={false}
           />
         </div>

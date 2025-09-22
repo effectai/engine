@@ -41,7 +41,10 @@ const amountSchema = (max: number) =>
     .transform((s) => s.replace(",", "."))
     .refine((s) => /^\d*\.?\d*$/.test(s), "Enter a valid number")
     .transform((s) => (s === "" ? 0 : Number(s)))
-    .refine((n) => isFinite(n) && n >= 0, "Amount must be a positive number")
+    .refine(
+      (n) => Number.isFinite(n) && n >= 0,
+      "Amount must be a positive number",
+    )
     .refine((n) => n > 0, "Amount must be greater than 0")
     .refine((n) => n <= max, "Amount exceeds available balance")
     //have max 6 decimal places
@@ -56,14 +59,13 @@ export function StakeForm({
   initialAmount = 0,
   className,
 }: Props) {
-  const { address, lamports, effectBalance, userTokenAccount } =
-    useWalletContext();
+  const { address, effectBalance, userTokenAccount } = useWalletContext();
 
   const { connection } = useConnectionContext();
 
   const max = Number(effectBalance?.uiAmount ?? 0);
 
-  const form = useForm<{ amount: string }>({
+  const form = useForm({
     resolver: zodResolver(z.object({ amount: amountSchema(max) })),
     defaultValues: { amount: initialAmount ? String(initialAmount) : "" },
     mode: "onChange",
@@ -87,6 +89,7 @@ export function StakeForm({
   const { mutateAsync: topup } = useTopupMutation();
   const onTopupHandler = React.useCallback(
     async (amount: number) => {
+      if (!stakeAccount || !userTokenAccount) return;
       topup({
         amount,
         connection,
@@ -95,12 +98,13 @@ export function StakeForm({
         userTokenAccount,
       });
     },
-    [connection, address, signer, stakeAccount, amount, userTokenAccount],
+    [connection, signer, stakeAccount, userTokenAccount, topup],
   );
 
   const { mutateAsync: stake } = useStakeMutation();
   const onStakeHandler = React.useCallback(
     async (amount: number) => {
+      if (!address || !userTokenAccount) return;
       stake({
         amount,
         connection,
@@ -108,7 +112,7 @@ export function StakeForm({
         userTokenAccount,
       });
     },
-    [connection, address, signer, userTokenAccount, amount],
+    [connection, address, signer, userTokenAccount, stake],
   );
 
   const handleSubmit = form.handleSubmit(async (values) => {
@@ -129,7 +133,7 @@ export function StakeForm({
         <Form {...form}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="amount"
               render={({ field }) => (
                 <FormItem>

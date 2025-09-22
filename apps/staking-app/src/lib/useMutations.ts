@@ -44,7 +44,7 @@ export const useClaimVestingMutation = () => {
         commitment: "confirmed",
       });
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (_data) => {
       console.log("invalidating claim-vesting queries");
       queryClient.invalidateQueries({ queryKey: ["vesting"] });
       queryClient.invalidateQueries({
@@ -90,7 +90,7 @@ export const useTopupMutation = () => {
         commitment: "confirmed",
       });
     },
-    onSuccess: (signature, variables) => {
+    onSuccess: (signature) => {
       notifyTransactionSuccess(
         signature,
         "Top-up successful",
@@ -153,7 +153,7 @@ export const useStakeMutation = () => {
         commitment: "confirmed",
       });
     },
-    onSuccess: (signature, variables) => {
+    onSuccess: (signature) => {
       notifyTransactionSuccess(
         signature,
         "Stake successful",
@@ -205,7 +205,7 @@ export const useUnstakeMutation = () => {
         commitment: "confirmed",
       });
     },
-    onSuccess: (signature, variables) => {
+    onSuccess: (signature) => {
       notifyTransactionSuccess(
         signature,
         "Unstake successful",
@@ -257,7 +257,7 @@ export const useClaimRewardMutation = () => {
         commitment: "confirmed",
       });
     },
-    onSuccess: (signature, variables) => {
+    onSuccess: (signature) => {
       notifyTransactionSuccess(
         signature,
         "Claim successful",

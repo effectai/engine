@@ -18,7 +18,7 @@ import {
 } from "@effectai/react";
 import { cn } from "@/lib/utils";
 import type { Account, TransactionSigner } from "@solana/kit";
-import { SolanaError, address as toAddress } from "@solana/kit";
+import { SolanaError } from "@solana/kit";
 import { formatNumber, Row, shorten, trimTrailingZeros } from "@/lib/utils";
 import type { StakeAccount } from "@effectai/staking";
 import { useActiveVestingAccounts } from "@/lib/useQueries";
@@ -45,7 +45,7 @@ export function UnstakeForm({
 
   const max = stakeAccount?.data
     ? Number(stakeAccount.data.amount / BigInt(1e6))
-    : 0n;
+    : 0;
 
   const { data: vestingAccounts } = useActiveVestingAccounts(
     connection,
@@ -62,7 +62,7 @@ export function UnstakeForm({
           .refine((s) => /^\d*\.?\d*$/.test(s), "Enter a valid number")
           .transform((s) => (s === "" ? 0 : Number(s)))
           .refine(
-            (n) => isFinite(n) && n >= 0,
+            (n) => Number.isFinite(n) && n >= 0,
             "Amount must be a positive number",
           )
           .refine((n) => n > 0, "Amount must be greater than 0")
@@ -71,7 +71,7 @@ export function UnstakeForm({
     [max],
   );
 
-  const form = useForm<z.infer<typeof schema>>({
+  const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: { amount: "" },
     mode: "onChange",
@@ -97,7 +97,13 @@ export function UnstakeForm({
   const onUnstakeHandler = React.useCallback(
     async (amount: number) => {
       try {
-        if (!connection || !address || !signer || !userTokenAccount) {
+        if (
+          !connection ||
+          !address ||
+          !signer ||
+          !userTokenAccount ||
+          !stakeAccount
+        ) {
           throw new Error("Wallet not connected");
         }
 
@@ -157,7 +163,7 @@ export function UnstakeForm({
 
               {/* Amount */}
               <FormField
-                control={form.control}
+                control={form.control as any}
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
