@@ -1,7 +1,7 @@
-import { useWorkerStore } from "@/stores/worker";
 import type { Task } from "@effectai/protobufs";
 import type { WorkerTaskRecord } from "@effectai/protocol-core";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
+import { storeToRefs } from "pinia";
 
 const activeTask = ref<WorkerTaskRecord | null>(null);
 

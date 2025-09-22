@@ -21,7 +21,9 @@ export const useFetchManagerNodes = () => {
 
       const results = await Promise.all(
         managers.map(async (manager) => {
-          const { data } = await useFetch<ManagerInfoResponse>(manager);
+          const { data } = await useFetch<ManagerInfoResponse>(manager, {
+            deep: true
+          });
 
           if (!data.value) {
             return null;

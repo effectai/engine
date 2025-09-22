@@ -1,7 +1,6 @@
 import { beforeEach, describe, it, test, vi } from "vitest";
 import { createPaymentWorker } from "./createPaymentWorker";
 import { createPaymentStore } from "@effectai/protocol-core";
-import { createDataStore } from "@effectai/test-utils";
 import { ulid } from "ulid";
 import { promises } from "node:fs";
 

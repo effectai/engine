@@ -4,11 +4,10 @@ import {
   getClaimProofsInstructionAsync,
   getInitInstructionAsync,
 } from "@effectai/payment";
-import type { ProofResponse } from "@effectai/protocol";
+import type { ProofResponse } from "@effectai/protobufs";
 import {
   executeTransaction,
   getAssociatedTokenAccount,
-  maybeCreateAssociatedTokenAccountInstructions,
 } from "@effectai/solana-utils";
 import {
   address,

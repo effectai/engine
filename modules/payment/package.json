@@ -9,14 +9,21 @@
     "build:circuits": "node --experimental-strip-types scripts/build-circuits.ts",
     "build": "pnpm run generate:clients && pnpm run generate:constants && pnpm run compile:ts",
     "build:circuit": "pnpm run generate:circuit && pnpm run generate:constants && pnpm run compile:ts && pnpm run build:circuits",
-    "compile:ts": "tsup clients/js --config ../../tsup.config.package.ts",
+    "bundle:browser": "tsup clients/js/browser.ts --config ../../tsup.config.browser.ts",
+    "bundle:node": "tsup clients/js/node.ts --config ../../tsup.config.package.ts",
+    "compile:ts": "pnpm run bundle:node && pnpm run bundle:browser",
     "generate:clients": "node --experimental-strip-types ../../tools/scripts/solana/generate-clients.ts payment"
   },
   "main": "dist/index.cjs",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/node.js",
+      "require": "./dist/node.cjs",
+      "browser": {
+	"import": "./dist/browser.browser.mjs",
+	"require": "./dist/browser.browser.cjs"
+	},
+      "types": "./dist/index.d.ts"
     }
   },
   "dependencies": {

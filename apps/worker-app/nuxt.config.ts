@@ -1,19 +1,9 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
-import { nodePolyfills } from "vite-plugin-node-polyfills";
-
 export default defineNuxtConfig({
   ssr: false,
-  compatibilityDate: "2024-04-03",
+  compatibilityDate: "2025-03-01",
   devtools: { enabled: true },
   css: ["@/assets/css/main.css"],
   modules: ["@pinia/nuxt", "@nuxt/ui", "@vueuse/nuxt"],
-  app: {
-    head: {
-      bodyAttrs: {
-        class: "bg-white dark:bg-[#333]",
-      },
-    },
-  },
   runtimeConfig: {
     public: {
       ALTERNATIVE_FRONTEND_URL: process.env.ALTERNATIVE_FRONTEND_URL,
@@ -26,15 +16,13 @@ export default defineNuxtConfig({
       WEB3_AUTH_CLIENT_ID: process.env.WEB3AUTH_CLIENT_ID,
     },
   },
+  experimental: {
+    clientNodeCompat: true,
+  },
   vite: {
-    plugins: [
-      nodePolyfills({
-        exclude: ["fs"],
-      }),
-    ],
-    define: {
-      "process.env": {},
-      global: "globalThis",
+    build: {
+      sourcemap: true,
+      minify: false,
     },
   },
 });

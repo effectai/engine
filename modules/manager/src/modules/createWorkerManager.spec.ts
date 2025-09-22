@@ -5,7 +5,7 @@ import { createPaymentManager } from "./createPaymentManager.js";
 import { createWorkerManager } from "./createWorkerManager.js";
 
 import { promises } from "node:fs";
-import { createDataStore } from "@effectai/test-utils";
+// import { createDataStore } from "@effectai/test-utils";
 import { Key, type Datastore } from "@effectai/protocol-core";
 
 describe("createWorkerManager", () => {

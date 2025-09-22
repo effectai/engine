@@ -4,6 +4,7 @@ import {
   type PeerId,
   peerIdFromString,
 } from "@effectai/protocol-core";
+
 import { type Address, address } from "@solana/kit";
 
 export interface Manager {
