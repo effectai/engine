@@ -14,7 +14,7 @@
     </template>
 
     <!-- Modal & Main Content -->
-    <!-- <ClaimPaymentsModal v-model="isOpenClaimModal" /> -->
+    <ClaimPaymentsModal v-model="isOpenClaimModal" />
     <div class="p-4 space-y-4">
       <!-- Alerts & Wallet Info -->
       <div class="rounded-xl bg-gray-100 dark:bg-white/5 p-4">
@@ -125,16 +125,16 @@ const exportPrivateKey = async () => {
   }
 };
 
-// const { useGetPaymentsQuery, computedTotalPaymentAmount } = usePayments();
+const { useGetPaymentsQuery, computedTotalPaymentAmount } = usePayments();
 const { useGetBalanceQuery } = useSolanaWallet();
 const { useGetEffectBalanceQuery } = useSolanaWallet();
 const { data: balance } = useGetBalanceQuery(account);
 const { data: effectBalance } = useGetEffectBalanceQuery(account);
-// const { data: managerPaymentBatches } = useGetPaymentsQuery();
+const { data: managerPaymentBatches } = useGetPaymentsQuery();
 
-// const totalUnclaimedPayments = useNumberFormat(
-//   computedTotalPaymentAmount(managerPaymentBatches),
-// );
+const totalUnclaimedPayments = useNumberFormat(
+  computedTotalPaymentAmount(managerPaymentBatches),
+);
 </script>
 
 <style scoped></style>
