@@ -1,27 +1,14 @@
 "use client";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Button,
-  useConnectionContext,
-  useProfileContext,
-  useWalletContext,
-} from "@effectai/react";
-
 import { useMigrationStore } from "@/stores/migrationStore";
+import { Button, useProfileContext } from "@effectai/react";
 
-import { useGetMigrationAccountQuery } from "@/hooks/useGetMigrationAccountQuery";
-
-import {
-  deriveMigrationAccountPDA,
-  fetchMaybeMigrationAccount,
-} from "@effectai/migration";
-import { Stepper, type StepDef } from "./Stepper";
+import { SNAPSHOT_DATE } from "@/consts";
+import { decodeAuthorizePayload } from "@/lib/utils";
+import { type StepDef, Stepper } from "./Stepper";
 import { AuthenticateStep } from "./steps/AuthenticateStep";
-import { SolanaDestinationStep } from "./steps/DestinationStep";
 import { AuthorizeStep } from "./steps/AuthorizeStep";
 import { ClaimStep } from "./steps/ClaimStep";
-import type { Address } from "@solana/kit";
-import { SNAPSHOT_DATE } from "@/consts";
+import { SolanaDestinationStep } from "./steps/DestinationStep";
 
 const steps: StepDef[] = [
   { key: "intro", label: "Intro", hidden: true },
@@ -39,6 +26,27 @@ const steps: StepDef[] = [
 export default function MigrationFlow() {
   const { currentStep, goTo } = useMigrationStore();
   const snapshotDate = new Date(SNAPSHOT_DATE).toLocaleDateString();
+
+  //unpack and decode auth parameters from URL (if any)
+  const url = new URL(window.location.href);
+  const auth = url.searchParams.get("auth");
+
+  const setForeignPublicKey = useMigrationStore((s) => s.setForeignPublicKey);
+  const setMessage = useMigrationStore((s) => s.setMessage);
+  const setSignature = useMigrationStore((s) => s.setSignature);
+  const { mint } = useProfileContext();
+
+  if (auth) {
+    const decoded = decodeAuthorizePayload(auth);
+    if (decoded) {
+      if (currentStep !== "claim") {
+        setForeignPublicKey(decoded.foreignPublicKey, mint);
+        setMessage(decoded.message);
+        setSignature(decoded.signature);
+        goTo("claim");
+      }
+    }
+  }
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -111,7 +119,7 @@ export default function MigrationFlow() {
         <Stepper
           steps={steps}
           current={currentStep}
-          onStepChange={(s) => goTo(s)}
+          onStepChange={(s) => goTo(s as any)}
         >
           {/* AUTHENTICATE */}
           {currentStep === "authenticate" && <AuthenticateStep />}

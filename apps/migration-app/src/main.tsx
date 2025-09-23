@@ -21,7 +21,7 @@ createRoot(document.getElementById("root")!).render(
       <ConnectionContextProvider>
         <UnifiedWalletContextProvider>
           <WalletContextProvider>
-            <WagmiProvider>
+            <WagmiProvider cookies={null}>
               <MigrationProvider>
                 <App />
               </MigrationProvider>

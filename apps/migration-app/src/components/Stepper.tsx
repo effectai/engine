@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, Circle, DiscIcon } from "lucide-react";
+import { Check } from "lucide-react";
 import {
   Button,
   Tooltip,
@@ -9,7 +9,6 @@ import {
   Badge,
 } from "@effectai/react";
 import { cn } from "@/lib/utils"; // shadcn helper (clsx+twMerge)
-import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
 
 export type StepKey = string; // or your union type
 

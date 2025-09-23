@@ -10,14 +10,12 @@ import {
   Badge,
   useWalletContext,
   useConnectionContext,
+  Alert,
+  AlertTitle,
+  AlertDescription,
 } from "@effectai/react";
 import { Info, CheckCircle2, Clock, Check } from "lucide-react";
-import type {
-  fetchMaybeMigrationAccount,
-  MigrationAccount,
-} from "@effectai/migration";
-import { useWalletAccountTransactionSigner } from "@solana/react";
-import { useMigrationStore } from "@/stores/migrationStore";
+import type { fetchMaybeMigrationAccount } from "@effectai/migration";
 import { useClaimMutation } from "@/hooks/useClaimMutation";
 
 type Props = {
@@ -36,7 +34,7 @@ export default function ClaimCard(props: Props) {
   const { signer } = useWalletContext();
   const { connection } = useConnectionContext();
 
-  const { mutateAsync: claim } = useClaimMutation();
+  const { mutateAsync: claim, isSuccess } = useClaimMutation();
 
   const formattedBalance = useMemo(
     () =>
@@ -48,7 +46,7 @@ export default function ClaimCard(props: Props) {
 
   const stakedSince = useMemo(() => {
     if (!props.migrationAccount.exists) return null;
-    // stakeStartTime assumed seconds; convert to ms
+
     const d = new Date(
       Number(props.migrationAccount.data.stakeStartTime) * 1000,
     );
@@ -66,26 +64,77 @@ export default function ClaimCard(props: Props) {
   const onClaim = async () => {
     try {
       setSubmitting(true);
+
+      if (!signer) {
+        throw new Error("No Solana wallet connected");
+      }
+
+      const message =
+        typeof props.message === "string"
+          ? new TextEncoder().encode(props.message)
+          : props.message;
+
+      const signature =
+        typeof props.signature === "string"
+          ? Uint8Array.from(Buffer.from(props.signature, "hex"))
+          : props.signature;
+
       await claim({
         connection,
         signer,
         address: signer?.address,
         migrationAccount: props.migrationAccount.address,
-        foreignPublicKey: props.foreignPublicKey,
-        message: props.message,
-        signature: props.signature,
+        message,
+        signature,
       });
     } finally {
       setSubmitting(false);
     }
   };
 
+  return isSuccess ? (
+    <ClaimSuccessCard className={props.className} />
+  ) : (
+    <>
+      <Alert>
+        <CheckCircle2 className="h-4 w-4" />
+        <AlertTitle>Almost there</AlertTitle>
+        <AlertDescription>
+          Review the claim details and submit the transaction on Solana. Keep a
+          small amount of SOL for fees.
+        </AlertDescription>
+      </Alert>
+
+      <ClaimPendingCard
+        className={props.className}
+        balance={balance}
+        formattedBalance={formattedBalance}
+        vaultBalance={props.migrationVaultBalance}
+        stakedSince={stakedSince}
+        onClaim={onClaim}
+        canClaim={canClaim}
+        submitting={submitting}
+      />
+    </>
+  );
+}
+
+export const ClaimPendingCard = (props: {
+  className?: string;
+  balance: number;
+  formattedBalance?: string;
+  vaultBalance?: number | null;
+  stakedSince?: string | null;
+  onClaim: () => void;
+  canClaim: boolean;
+  submitting: boolean;
+}) => {
   return (
     <Card className={props.className}>
       <CardHeader className="space-y-1">
         <CardTitle className="flex items-center gap-2 text-lg">
           Ready to claim your <span className="font-bold">EFFECT</span> tokens
-          {balance > 0 ? (
+          {props.balance > 0 ? (
             <Badge className="ml-2 bg-accent text-black">
               <CheckCircle2 className="mr-1 h-4 w-4" />
               Eligible
@@ -108,11 +157,11 @@ export default function ClaimCard(props: Props) {
             <div className="col-span-1">
               <dt className="text-muted-foreground">Migration vault</dt>
               <dd className="mt-0.5 font-medium">
-                {props.migrationVaultBalance === null ? (
+                {props.vaultBalance === null ? (
                   <span className="italic text-muted-foreground">Loading…</span>
                 ) : (
                   <>
-                    {formattedBalance}{" "}
+                    {props.formattedBalance}{" "}
                     <span className="text-muted-foreground">EFFECT</span>
                   </>
                 )}
@@ -122,7 +171,7 @@ export default function ClaimCard(props: Props) {
             <div className="col-span-1">
               <dt className="text-muted-foreground">Stake status</dt>
               <dd className="mt-0.5 font-medium">
-                {props.migrationAccount.exists ? (
+                {props.stakedSince ? (
                   <span className="inline-flex items-center gap-1">
                     <CheckCircle2 />
                     Staked
@@ -136,7 +185,7 @@ export default function ClaimCard(props: Props) {
             <div className="col-span-2 md:col-span-1">
               <dt className="text-muted-foreground">Staked on</dt>
               <dd className="mt-0.5 font-medium">
-                {stakedSince ?? (
+                {props.stakedSince ?? (
                   <span className="text-muted-foreground">—</span>
                 )}
               </dd>
@@ -158,13 +207,54 @@ export default function ClaimCard(props: Props) {
         <Button
           size="sm"
           className="min-w-28"
-          onClick={onClaim}
-          disabled={!canClaim}
-          aria-disabled={!canClaim}
+          onClick={props.onClaim}
+          disabled={!props.canClaim}
+          aria-disabled={!props.canClaim}
         >
-          {submitting ? "Claiming…" : "Claim"}
+          {props.submitting ? "Claiming…" : "Claim"}
         </Button>
       </CardFooter>
     </Card>
   );
-}
+};
+
+export const ClaimSuccessCard = (props: { className?: string }) => {
+  return (
+    <Card className={props.className}>
+      <CardHeader className="space-y-1">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          Claim submitted
+          <Badge className="ml-2 bg-accent text-black">
+            <Check className="mr-1 h-4 w-4" />
+            Success
+          </Badge>
+        </CardTitle>
+        <CardDescription>
+          Your claim has been submitted successfully. It may take a few minutes
+          to process.
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        <div className="rounded-xl bg-muted/50 p-4">
+          <dl className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+            <div className="col-span-1">
+              <dt className="text-muted-foreground">Processing time</dt>
+              <dd className="mt-0.5 font-medium inline-flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                Until confirmed on Solana
+              </dd>
+            </div>
+
+            <div className="col-span-1">
+              <dt className="text-muted-foreground">Next steps</dt>
+              <dd className="mt-0.5 font-medium">
+                Head over to staking.effect.ai to manage your EFFECT tokens.
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};

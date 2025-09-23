@@ -14,15 +14,9 @@ import {
   useConnectionContext,
 } from "@effectai/react";
 
-import {
-  Info,
-  ShieldAlert,
-  Wallet,
-  ArrowRight,
-  Power,
-  ArrowLeft,
-  WalletIcon,
-} from "lucide-react";
+import { useMigration } from "@/providers/MigrationProvider";
+
+import { Info, ShieldAlert, ArrowRight, WalletIcon } from "lucide-react";
 import { WalletCard } from "../WalletCard";
 import { ConnectSourceWalletForm } from "../ConnectSourceWalletForm";
 import { SNAPSHOT_DATE } from "@/consts";
@@ -30,18 +24,39 @@ import { useMigrationStore } from "@/stores/migrationStore";
 import { useGetSourceNativeBalanceQuery } from "@/hooks/useGetSourceNativeBalanceQuery";
 import { useGetSourceEfxBalanceQuery } from "@/hooks/useGetSourceEfxBalanceQuery";
 import { useGetMigrationAccountQuery } from "@/hooks/useGetMigrationAccountQuery";
+import { useEffect } from "react";
 
 export function AuthenticateStep() {
   const snapshot = SNAPSHOT_DATE.toLocaleString();
 
-  const {
-    foreignPublicKey,
-    disconnect,
-    sourceWallet,
-    sourceChain,
-    migrationAddress,
-    goTo,
-  } = useMigrationStore();
+  const { disconnect, migrationAddress, goTo } = useMigrationStore();
+  const { sourceWallet, setSourceChain, sourceChain } = useMigration();
+
+  const setForeignPublicKey = useMigrationStore((s) => s.setForeignPublicKey);
+  const { mint } = useProfileContext();
+
+  useEffect(() => {
+    const runner = async () => {
+      const foreignKey = await sourceWallet?.getForeignPublicKey();
+
+      if (foreignKey) {
+        console.log("Setting foreign public key:", foreignKey);
+        setForeignPublicKey(foreignKey, mint);
+      }
+
+      return;
+    };
+
+    runner();
+  }, [mint, setForeignPublicKey, sourceWallet?.address]);
+
+  const onDisconnect = () => {
+    sourceWallet?.disconnect();
+    setSourceChain(null);
+    disconnect();
+  };
+
+  const connected = Boolean(sourceWallet?.isConnected && sourceWallet?.address);
 
   const { data: nativeBalance } = useGetSourceNativeBalanceQuery(sourceWallet);
   const { data: efxBalance } = useGetSourceEfxBalanceQuery(sourceWallet);
@@ -65,24 +80,28 @@ export function AuthenticateStep() {
             </CardDescription>
           </div>
           <Badge variant="secondary" className="whitespace-nowrap">
-            Snapshot: {snapshot}
+            Snapshot: {new Date(snapshot).toLocaleString()}
           </Badge>
         </div>
       </CardHeader>
 
       <CardContent className="pt-6">
         {/* 1) Not connected → Connect UI */}
-        {!sourceWallet ? (
+        {!connected ? (
           <div className="rounded-xl bg-muted/30 p-5">
-            <ConnectSourceWalletForm />
+            <ConnectSourceWalletForm
+              sourceChain={sourceChain}
+              setSourceChain={setSourceChain}
+              sourceWallet={sourceWallet}
+            />
           </div>
         ) : (
           /* 2) Connected → Wallet card + next/alerts */
           <div className="flex flex-col items-center gap-4">
             <WalletCard
-              address={String(sourceWallet!.address)}
-              chainLabel={sourceWallet!.walletMeta?.chain ?? "Source"}
-              onDisconnect={disconnect}
+              address={String(sourceWallet.address)}
+              chainLabel={sourceWallet.walletMeta?.chain ?? "Source"}
+              onDisconnect={onDisconnect}
               nativeBalance={nativeBalance}
               efxBalance={efxBalance}
             />
@@ -103,9 +122,10 @@ export function AuthenticateStep() {
                     <ShieldAlert className="h-4 w-4" />
                     <AlertTitle>No active claims</AlertTitle>
                     <AlertDescription>
-                      We couldn’t find any EFX holdings or stake for this
-                      account at the snapshot. Double-check you’re using the
-                      correct account (and chain).
+                      We couldn’t find any active claims for EFX holdings for
+                      this account at the snapshot. Double-check if you've
+                      already claimed and you’re using the correct account (and
+                      chain).
                     </AlertDescription>
                   </Alert>
                 )}

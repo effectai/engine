@@ -1,14 +1,12 @@
-import type { SourceChain } from "@/lib/wallet-types";
-import { useMigration } from "@/providers/MigrationProvider";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, useProfileContext } from "@effectai/react";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import type { SourceChain, SourceWallet } from "@/lib/wallet-types";
+import { useEffect } from "react";
+import { Button } from "@effectai/react";
+import { Loader2 } from "lucide-react";
 
 import bscIcon from "@/assets/bsc.svg";
 import eosIcon from "@/assets/eos.svg";
-import { useMigrationStore } from "@/stores/migrationStore";
-import { useBscWallet } from "@/lib/useBscWallet";
-import { useEosWallet } from "@/lib/useEosWallet";
+import { useMutation } from "@tanstack/react-query";
+
 const CHAINS: Record<
   SourceChain,
   { label: string; icon: string; variant?: "default" | "outline" }
@@ -17,90 +15,63 @@ const CHAINS: Record<
   EOS: { label: "EOS", icon: eosIcon, variant: "outline" },
 };
 
-export function ConnectSourceWalletForm() {
-  const sourceChain = useMigrationStore((s) => s.sourceChain);
-  const setSourceChain = useMigrationStore((s) => s.setSourceChain);
-  const sourceWallet = useMigrationStore((s) => s.sourceWallet);
-  const setSourceWallet = useMigrationStore((s) => s.setSourceWallet);
-  const setForeignPublicKey = useMigrationStore((s) => s.setForeignPublicKey);
-  const { mint } = useProfileContext();
+type Props = {
+  sourceChain: SourceChain | null;
+  setSourceChain: (c: SourceChain) => void;
+  sourceWallet: SourceWallet | null;
+};
 
-  const [pendingChain, setPendingChain] = useState<SourceChain | null>(null);
+export function ConnectSourceWalletForm({
+  sourceChain,
+  setSourceChain,
+  sourceWallet,
+}: Props) {
+  const { mutateAsync: connectSourceWallet, isPending } = useMutation({
+    mutationKey: ["connect-source-wallet"],
+    mutationFn: async () => {
+      if (!sourceWallet) throw new Error("No source wallet");
+      await sourceWallet.connect();
+    },
+  });
 
-  const eos = useEosWallet();
-  const bsc = useBscWallet();
-
-  const isConnected = sourceWallet?.isConnected;
-  const connectedChain = sourceWallet?.walletMeta?.chain ?? null;
-
-  // Try to connect automatically after user selects a chain
-  useEffect(() => {
-    if (!pendingChain) return;
-    if (sourceChain !== pendingChain) return;
-
-    if (isConnected) {
-      setPendingChain(null);
-      return;
-    }
-
-    const run = async () => {
-      console.log("Attempting to connect to", pendingChain);
-      if (pendingChain === "EOS") {
-        const w = eos;
-        await w.connect();
-        if (w.isConnected) setSourceWallet(w, mint);
-      } else if (pendingChain === "BSC") {
-        const w = bsc;
-        await w.connect();
-        if (w.isConnected) setSourceWallet(w, mint);
-      }
-    };
-    run();
-  }, [pendingChain, sourceChain, isConnected, setSourceWallet, eos, bsc]);
-
-  const onPickChain = (chain: SourceChain) => {
-    setPendingChain(chain);
-    setSourceChain(chain);
+  const chooseChain = (c: SourceChain) => {
+    setSourceChain(c);
   };
 
-  const statusText = useMemo(() => {
-    if (isConnected) {
-      return (
-        <>
-          <CheckCircle2 className="mr-1 h-4 w-4" />
-          Connected to <b>{connectedChain ?? "wallet"}</b>.
-        </>
-      );
-    }
-    if (pendingChain) {
-      return (
-        <>
-          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-          Connecting to <b>{pendingChain}</b>…
-        </>
-      );
-    }
-    return <>Select a source chain to connect your wallet.</>;
-  }, [isConnected, connectedChain, pendingChain]);
+  useEffect(() => {
+    let cancelled = false;
+    if (!sourceChain) return;
+
+    (async () => {
+      try {
+        console.log("Connecting to source wallet for chain:", sourceChain);
+        await connectSourceWallet();
+        if (cancelled) return;
+      } catch (e) {
+        console.warn("Failed to connect source wallet:", e);
+      } finally {
+        if (cancelled) return;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sourceChain, connectSourceWallet]);
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="text-sm inline-flex items-center text-muted-foreground">
-        {statusText}
-      </div>
-
-      {!isConnected && (
+      {
         <div className="flex items-center gap-2">
           {(Object.keys(CHAINS) as SourceChain[]).map((id) => {
             const cfg = CHAINS[id];
             const isSelected = sourceChain === id;
-            const isPending = pendingChain === id;
 
             return (
               <Button
                 key={id}
                 variant={cfg.variant ?? "default"}
-                onClick={() => onPickChain(id)}
+                onClick={() => chooseChain(id)}
                 className="flex items-center gap-2"
                 disabled={isPending}
                 aria-pressed={isSelected}
@@ -122,7 +93,7 @@ export function ConnectSourceWalletForm() {
             );
           })}
         </div>
-      )}
+      }
     </div>
   );
 }

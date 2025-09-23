@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from "@effectai/react";
 import { BlockchainAddress } from "../BlockchainAddress";
+import { useMigration } from "@/providers/MigrationProvider";
 
 import {
   ShieldCheck,
@@ -38,25 +39,40 @@ function previewBytes(value?: string | Uint8Array | null, max = 18) {
   return `${s.slice(0, Math.ceil((max - 1) / 2))}…${s.slice(-Math.floor((max - 1) / 2))}`;
 }
 
-export function AuthorizeStep({}: Props) {
+export function AuthorizeStep() {
   const [loading, setLoading] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
 
-  const signature = useMigrationStore((s) => s.signature);
-  const message = useMigrationStore((s) => s.message);
-  const foreignPublicKey = useMigrationStore((s) => s.foreignPublicKey);
-  const authorize = useMigrationStore((s) => s.authorize);
-  const goTo = useMigrationStore((s) => s.goTo);
+  const { sourceWallet } = useMigration();
+  if (!sourceWallet) return;
 
-  const sourceAddress = useMigrationStore((s) => s.sourceWallet?.address);
+  const sourceAddress = sourceWallet.address;
+
+  const signature = useMigrationStore((s) => s.signature);
+  const setSignature = useMigrationStore((s) => s.setSignature);
+
+  const message = useMigrationStore((s) => s.message);
+  const setMessage = useMigrationStore((s) => s.setMessage);
+
+  const foreignPublicKey = useMigrationStore((s) => s.foreignPublicKey);
+  const destinationAddress = useMigrationStore((s) => s.destinationAddress);
+  const goTo = useMigrationStore((s) => s.goTo);
 
   const authorized = Boolean(signature && message && foreignPublicKey);
   const onAuthorize = async () => {
     setErr(null);
     try {
-      console.log("Authorizing...");
+      if (!destinationAddress) {
+        setErr("Destination address is required");
+        return;
+      }
+
       setLoading(true);
-      await Promise.resolve(authorize());
+      const { message, signature } =
+        await sourceWallet.authorizeTokenClaim(destinationAddress);
+
+      setMessage(message);
+      setSignature(signature);
     } catch (e: any) {
       setErr(e?.message ?? "Authorization failed. Please try again.");
     } finally {
@@ -111,7 +127,7 @@ export function AuthorizeStep({}: Props) {
             <div>
               <dt className="text-muted-foreground">Source account</dt>
               <dd className="mt-0.5 font-mono break-all">
-                <BlockchainAddress address={sourceAddress} />
+                {sourceAddress && <BlockchainAddress address={sourceAddress} />}
               </dd>
             </div>
             <div>

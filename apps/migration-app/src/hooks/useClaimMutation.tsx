@@ -6,7 +6,6 @@ import {
   type Address,
   type TransactionSigner,
   generateKeyPairSigner,
-  address as toAddress,
 } from "@solana/kit";
 import { getAssociatedTokenAccount } from "@effectai/solana-utils";
 import { useMutation } from "@tanstack/react-query";
@@ -41,7 +40,7 @@ export const useClaimMutation = () => {
       //get stake accounts, if there is none, create one.
       const [stakeAccount] = await fetchStakingAccountsByWalletAddress({
         walletAddress: address,
-        rpc: connection.rpc,
+        rpc: connection.rpc as any,
       });
 
       const instructions = [];
