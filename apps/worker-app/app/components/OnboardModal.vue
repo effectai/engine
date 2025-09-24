@@ -1,6 +1,12 @@
 <template>
   <div>
-    <UModal title="Welcome To The Alpha" v-model:open="isOpen" size="md">
+    <UModal
+      title="Welcome To The Alpha"
+      v-model:open="isOpen"
+      :close="false"
+      size="md"
+      :dismissible="false"
+    >
       <template #body>
         <div class="space-y-4">
           <UAlert
@@ -62,6 +68,7 @@ import { useLocalStorage } from "@vueuse/core";
 
 const accepted = ref(false);
 const newUser = useLocalStorage("newUser", true);
+
 const isOpen = computed({
   get: () => newUser.value,
   set: (val: boolean) => {

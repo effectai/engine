@@ -25,7 +25,7 @@ interface Session {
 
 import { useNow } from "@vueuse/core";
 export const useSessionStore = defineStore("session", () => {
-  // State
+  const toast = useToast();
   const current = shallowRef<Session | null>(null);
   const status = ref<"idle" | "connecting" | "active" | "error">("idle");
   const error = shallowRef<Error | null>(null);
@@ -72,6 +72,7 @@ export const useSessionStore = defineStore("session", () => {
         recipient,
         nonce: currentNonce,
         accessCode,
+        capabilities: ["human"],
       });
 
       if (!result) throw new Error("Connection handshake failed");
@@ -94,6 +95,13 @@ export const useSessionStore = defineStore("session", () => {
       return result;
     } catch (err) {
       status.value = "error";
+
+      toast.add({
+        color: "error",
+        title: "Connection Error",
+        description: err instanceof Error ? err.message : String(err),
+      });
+
       error.value = err instanceof Error ? err : new Error(String(err));
       throw error.value;
     }

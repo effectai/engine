@@ -1,10 +1,24 @@
 import { cn } from "@/lib/utils";
-import { LogIn } from "lucide-react";
+import { ExternalLink, LogIn } from "lucide-react";
 import { Logo } from "./Logo";
 import { TokenBalanceBadge } from "./TokenBadge";
 import { SolanaMark, EffectCoin } from "./Icons";
-import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
+import {
+  UnifiedWalletButton,
+  useUnifiedWalletContext,
+  useWallet,
+} from "@jup-ag/wallet-adapter";
 import { Button } from "./ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { shorten } from "@/lib/utils";
 
 import { useWalletContext } from "@/providers/WalletContextProvider";
 
@@ -13,6 +27,7 @@ export function AppHeader() {
 
   const lamportBalance = lamports ? Number(lamports) : 0;
   const tokenBalance = effectBalance ? Number(effectBalance.uiAmount) : 0;
+  const { address } = useWalletContext();
 
   return (
     <header
@@ -23,7 +38,9 @@ export function AppHeader() {
     >
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <Logo className="w-full" />
+          <a href="/">
+            <Logo className="w-full" />
+          </a>
         </div>
         <div className="flex items-center gap-2 hidden sm:flex">
           <a
@@ -49,20 +66,86 @@ export function AppHeader() {
         </div>
 
         <nav className="flex items-center gap-2">
-          <UnifiedWalletButton
-            overrideContent={
-              <Button
-                variant="default"
-                size="sm"
-                className="flex items-center gap-1"
-              >
-                <LogIn className="h-4 w-4" />
-                Connect
-              </Button>
-            }
-          />
+          {!address ? (
+            <UnifiedWalletButton
+              overrideContent={
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex items-center gap-1"
+                >
+                  <LogIn className="h-4 w-4" /> Connect{" "}
+                </Button>
+              }
+            />
+          ) : (
+            <ProfileMenu />
+          )}
         </nav>
       </div>
     </header>
+  );
+}
+
+export function ProfileMenu() {
+  const { wallet, disconnect } = useWallet();
+  const { address } = useWalletContext();
+
+  return (
+    wallet &&
+    address && (
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <div className="flex items-center gap-2 cursor-pointer">
+            <Avatar>
+              <AvatarImage src={wallet.adapter.icon} />
+              <AvatarFallback>CN</AvatarFallback>
+            </Avatar>
+
+            <span className="text-sm">{shorten(address)}</span>
+          </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem>Profile</DropdownMenuItem>
+          <DropdownMenuItem className="text-red-500" onClick={disconnect}>
+            Disconnect
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Apps</DropdownMenuLabel>
+          <DropdownMenuItem>
+            <a
+              href="https://staking.effect.ai"
+              className="w-full flex justify-between items-center"
+              rel="noreferrer"
+            >
+              Staking
+              <ExternalLink />
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <a
+              href="https://worker.effect.ai"
+              className="w-full flex justify-between items-center"
+              rel="noreferrer"
+            >
+              Worker
+              <ExternalLink />
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <a
+              href="https://migrate.effect.ai"
+              className="w-full flex justify-between items-center"
+              rel="noreferrer"
+            >
+              Migration
+              <ExternalLink />
+            </a>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
   );
 }

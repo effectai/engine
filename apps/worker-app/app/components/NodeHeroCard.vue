@@ -186,7 +186,7 @@
                 <circle cx="12" cy="8" r="6"></circle>
                 <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
               </svg>
-              <p class="text-xl font-bold">0</p>
+              <p class="text-xl font-bold">{{ userCapabilityCount }}</p>
               <p class="text-xs text-gray-300">Active Capabilities</p>
             </div>
 
@@ -230,41 +230,43 @@
 </template>
 
 <script setup lang="ts">
-  const {
-    peerId,
-    useWorkerLevel,
-    totalTasksCompleted,
-    totalEffectEarnings,
-    tasksRejected,
-    daysInNetwork,
-    performanceScore,
-  } = useWorkerNode();
+const {
+  peerId,
+  useWorkerLevel,
+  totalTasksCompleted,
+  totalEffectEarnings,
+  tasksRejected,
+  daysInNetwork,
+  performanceScore,
+} = useWorkerNode();
 
-  import { useClipboard, useNavigatorLanguage } from "@vueuse/core";
+const { userCapabilityCount } = useCapabilities();
 
-  const { level, progress, experience, experiencePerLevel } = useWorkerLevel();
-  const { language } = useNavigatorLanguage();
+import { useClipboard, useNavigatorLanguage } from "@vueuse/core";
 
-  const radius = computed(() => 45);
-  const circumference = computed(() => 2 * Math.PI * radius.value);
-  const normalizedPercentage = computed(() =>
-    Math.min(Math.max(progress.value, 0), 100),
+const { level, progress, experience, experiencePerLevel } = useWorkerLevel();
+const { language } = useNavigatorLanguage();
+
+const radius = computed(() => 45);
+const circumference = computed(() => 2 * Math.PI * radius.value);
+const normalizedPercentage = computed(() =>
+  Math.min(Math.max(progress.value, 0), 100),
+);
+const dashoffset = computed(
+  () => circumference.value * (1 - normalizedPercentage.value / 100),
+);
+
+const { userInfo } = useAuth();
+const username = computed(() => userInfo.value?.username || "Unknown User");
+const profileImage = computed(() => {
+  return (
+    userInfo.value?.profileImage ||
+    "https://avatars.dicebear.com/api/identicon/default.svg"
   );
-  const dashoffset = computed(
-    () => circumference.value * (1 - normalizedPercentage.value / 100),
-  );
+});
 
-  const { userInfo } = useAuth();
-  const username = computed(() => userInfo.value?.username || "Unknown User");
-  const profileImage = computed(() => {
-    return (
-      userInfo.value?.profileImage ||
-      "https://avatars.dicebear.com/api/identicon/default.svg"
-    );
-  });
-
-  const { copy } = useClipboard();
-  const isOpen = ref(false);
+const { copy } = useClipboard();
+const isOpen = ref(false);
 </script>
 
 <style scoped></style>

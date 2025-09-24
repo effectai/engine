@@ -7,25 +7,24 @@
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 items-stretch"
     >
       <PaymentCard class="" />
-      <CapabilitiesList v-coming-soon class="" />
+      <CapabilitiesList class="" />
     </div>
 
-    <UCard v-coming-soon class="mb-4 p-0" :ui="{ body: 'p-1 sm:p-0' }">
+    <UCard class="mb-4 p-0" :ui="{ body: 'p-1 sm:p-0' }">
       <template #header>
         <div class="flex items-center gap-2">
           <UIcon name="i-heroicons-server-stack" />
-          <h2 class="text-lg font-semibold">Available Capabilities</h2>
+          <h2 class="text-lg font-semibold">Capability Marketplace</h2>
         </div>
       </template>
       <div class="flex items-stretch flex-wrap p-4">
         <CapabilitiesListItem
-          v-for="item in availableCapabilities"
+          v-for="item in userAvailableCapabilities"
           :key="item.id"
           :name="item.name"
+          :href="item.href"
           :category="item.category"
           :description="item.description"
-          :cost="item.cost"
-          :estimated-earnings="item.estimatedEarnings"
           :tags="item.tags"
         />
       </div>
@@ -41,48 +40,11 @@
 </template>
 
 <script setup lang="ts">
+const { userAvailableCapabilities } = useCapabilities();
+
 definePageMeta({
   middleware: ["auth"],
 });
-
-const availableCapabilities = ref([
-  {
-    id: 1,
-    name: "Dutch Language",
-    category: "Language",
-    description: "Unlocks Dutch translation and content generation tasks",
-    cost: 50,
-    estimatedEarnings: 800,
-    tags: ["Language assessment", "Certification"],
-  },
-  {
-    id: 2,
-    name: "English Language",
-    category: "Language",
-    description: "Fluent English for content generation tasks",
-    cost: 50,
-    estimatedEarnings: 800,
-    tags: ["Language assessment", "Certification"],
-  },
-  {
-    id: 3,
-    name: "Llama 3 Inference",
-    category: "Computing",
-    description: "Supports Llama 3 model inference tasks",
-    cost: 100,
-    estimatedEarnings: 1200,
-    tags: ["High performance", "AI inference", "Llama 3"],
-  },
-  {
-    id: 4,
-    name: "Cuda API",
-    category: "Computing",
-    description: "Enables GPU-accelerated tasks using Cuda API",
-    cost: 150,
-    estimatedEarnings: 1500,
-    tags: ["High performance", "AI inference", "Cuda"],
-  },
-]);
 </script>
 
 <style scoped></style>

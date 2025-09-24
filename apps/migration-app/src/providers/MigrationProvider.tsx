@@ -6,9 +6,7 @@ import { useBscWallet } from "@/lib/useBscWallet";
 type MigrationContextValue = {
   sourceChain: SourceChain | null; // EOS or BSC (selected)
   setSourceChain: (c: SourceChain | null) => void;
-
   sourceWallet: SourceWallet; // EOS or BSC (selected)
-
   ready: boolean; // both providers mounted
 };
 

@@ -52,7 +52,7 @@ export default function MigrationFlow() {
     <div className="max-w-5xl mx-auto">
       {currentStep === "intro" && (
         <section id="step-intro" className="prose dark:prose-invert mt-12">
-          <h1 className="text-primary">Migrate Your $EFX Tokens to Solana</h1>
+          <h1 className="">Migrate Your $EFX Tokens to Solana</h1>
           <p>Welcome to the official $EFX → $EFFECT token migration portal!</p>
           <p>
             As you may know by now, Effect AI is migrating its native token to

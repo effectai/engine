@@ -28,7 +28,8 @@
   "dependencies": {
     "@effectai/config": "workspace:*",
     "@jup-ag/wallet-adapter": "^0.2.3",
-    "@radix-ui/react-dropdown-menu": "^2.1.6",
+    "@radix-ui/react-avatar": "^1.1.10",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-icons": "^1.3.2",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-progress": "^1.1.7",
@@ -50,9 +51,9 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.460.0",
+    "next-themes": "^0.4.6",
     "react-hook-form": "^7.62.0",
     "rollup-plugin-visualizer": "^6.0.3",
-    "next-themes": "^0.4.6",
     "solana-kite": "^1.5.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3"

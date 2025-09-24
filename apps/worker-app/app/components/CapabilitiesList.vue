@@ -10,13 +10,20 @@
       </div>
     </template>
     <div>
+      <div
+        v-if="userCapabilities.length === 0"
+        class="p-4 text-center text-gray-500"
+      >
+        No capabilities added yet. Visit the marketplace to add more.
+      </div>
+
       <ul>
         <li
-          v-for="capability in capabilities"
+          v-for="capability in userCapabilities"
           :key="capability.id"
-          class="p-4 border-b border-gray-400 dark:border-gray-700 last:border-0"
+          class="p-4 border-b border-gray-200"
         >
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2" v-if="capability">
             <UIcon
               v-if="capability.icon"
               :name="capability.icon"
@@ -33,11 +40,10 @@
             </div>
           </div>
           <div class="text-sm text-gray mt-2">
-            Tasks: {{ capability.totalTasks }} | Earned:
-            {{ capability.totalEarned }}
-            <span v-if="capability.popularity">
-              | Popularity: {{ capability.popularity }}
-            </span>
+            <UBadge color="success" size="sm" class="mr-2">
+              acquired on:
+              {{ new Date(capability.awardedAt).toLocaleDateString() }}
+            </UBadge>
           </div>
         </li>
       </ul>
@@ -46,37 +52,8 @@
 </template>
 
 <script setup lang="ts">
-const capabilities = ref([
-  {
-    id: 2,
-    name: "English Language",
-    value: "Fluent",
-    category: "Language",
-    totalTasks: 120,
-    icon: "mdi-language",
-    totalEarned: "500",
-  },
-  {
-    id: 3,
-    name: "Nvidia GPU",
-    value: "RTX 3080",
-    popularity: 8,
-    category: "Hardware",
-    totalTasks: 50,
-    totalEarned: "500",
-    icon: "mdi-gpu",
-  },
-  {
-    id: 4,
-    name: "Processor",
-    value: "Threadripper 3990X",
-    category: "Device",
-    totalTasks: 30,
-    totalEarned: "500",
-    popularity: 5,
-    icon: "mdi-chip",
-  },
-]);
+const { userCapabilities } = useCapabilities();
+console.log(userCapabilities);
 </script>
 
 <style scoped></style>
