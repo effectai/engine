@@ -57,6 +57,7 @@ export const useSessionStore = defineStore("session", () => {
     },
   ) => {
     const worker = useWorkerStore();
+    const { userCapabilityAssignmentIds } = useCapabilities();
 
     try {
       status.value = "connecting";
@@ -72,7 +73,7 @@ export const useSessionStore = defineStore("session", () => {
         recipient,
         nonce: currentNonce,
         accessCode,
-        capabilities: ["human"],
+        capabilities: userCapabilityAssignmentIds.value,
       });
 
       if (!result) throw new Error("Connection handshake failed");

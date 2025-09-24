@@ -1,100 +1,101 @@
 <template>
-  <UCard variant="outline" class="mb-4">
+  <UCard variant="outline" class="mb-4 overflow-hidden">
     <!-- Header -->
     <template #header>
-      <div class="flex justify-between items-center">
+      <div class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-2">
-          <UIcon name="mdi:payment" />
-          <h2 class="text-lg font-semibold">Settlements</h2>
+          <UIcon
+            name="mdi:payment"
+            class="h-6 w-6 text-gray-500 dark:text-gray-400"
+          />
+          <h2 class="text-lg font-semibold">Node Info</h2>
         </div>
-        <UButton @click="exportPrivateKey" icon="mdi-key" color="neutral">
-          Export Private Key
-        </UButton>
+
+        <div class="flex items-center gap-2">
+          <UDivider orientation="vertical" class="!h-5" />
+        </div>
       </div>
     </template>
 
-    <!-- Modal & Main Content -->
+    <!-- Claim modal -->
     <ClaimPaymentsModal v-model="isOpenClaimModal" />
-    <div class="p-4 space-y-4">
-      <!-- Alerts & Wallet Info -->
-      <div class="rounded-xl bg-gray-100 dark:bg-white/5 p-4">
-        <div class="space-y-3">
+
+    <!-- Main content -->
+    <div class="p-4 space-y-5">
+      <!-- Wallet summary -->
+      <div
+        class="rounded-xl border-gray-200/70 dark:border-gray-800/60 bg-white/70 dark:bg-white/5 p-4"
+      >
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Chain -->
           <div class="flex items-center justify-between">
             <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"
-              >Blockchain:</span
+              >Blockchain</span
             >
-            <span class="text-sm text-gray-600 dark:text-gray-400 capitalize">
-              {{ walletMeta.chain }}
+            <div class="flex items-center gap-2">
+              <UBadge
+                size="xs"
+                color="neutral"
+                variant="subtle"
+                class="capitalize"
+              >
+                {{ walletMeta?.chain || "—" }}
+              </UBadge>
+            </div>
+          </div>
+
+          <!-- Address -->
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+              >Address</span
+            >
+            <div class="flex items-center gap-2">
+              <BlockchainAddress class="text-sm" :address="account" />
+            </div>
+          </div>
+
+          <!-- Token balance -->
+          <div class="flex items-center justify-between">
+            <span
+              class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+            >
+              {{ balance?.symbol || "Token" }} Balance
+            </span>
+            <span class="text-sm text-gray-900 dark:text-gray-300 font-medium">
+              {{ balance ? formatNumber(balance.value) : "—" }}
             </span>
           </div>
 
+          <!-- EFFECT balance -->
           <div class="flex items-center justify-between">
             <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"
-              >Address:</span
+              >EFFECT Balance</span
             >
-            <BlockchainAddress class="text-sm" :address="account" />
-          </div>
-
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"
-              >{{ balance?.symbol }} Balance:</span
-            >
-            <span class="text-sm text-gray-600 dark:text-gray-400">
-              {{ (balance && formatNumber(balance.value)) || "-" }}
-            </span>
-          </div>
-
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"
-              >EFFECT Balance:</span
-            >
-            <span class="text-sm text-gray-600 dark:text-gray-400">
-              {{ (effectBalance && formatNumber(effectBalance.value)) || "-" }}
+            <span class="text-sm text-gray-900 dark:text-gray-300 font-medium">
+              {{ effectBalance ? formatNumber(effectBalance.value) : "—" }}
             </span>
           </div>
         </div>
       </div>
-
-      <!-- Payments List -->
-      <div
-        v-if="!managerPaymentBatches || managerPaymentBatches.length === 0"
-        class="text-center py-4"
-      >
-        <p class="text-gray-500 dark:text-gray-400">No payments found.</p>
-      </div>
-      <div v-else>
-        <!-- your payment batch list content -->
+      <div class="flex items-center justify-between">
+        <span class="underline"
+          >You have {{ totalUnclaimedPayments }} EFFECT claimable</span
+        >
+        <UButton
+          @click="isOpenClaimModal = true"
+          :disabled="!totalUnclaimedPayments || totalUnclaimedPayments === '0'"
+          color="neutral"
+          class="text-xs"
+        >
+          <UIcon name="mdi:cash" class="w-4 h-4 mr-1" />
+          Claim Payments</UButton
+        >
       </div>
     </div>
 
     <!-- Footer -->
-    <template #footer>
-      <div class="">
-        <div
-          class="flex flex-col sm:flex-row items-center justify-center gap-4"
-        >
-          <img src="@/assets/img/effect-coin.jpg" class="w-10 rounded-full" />
-          <div>
-            <p class="text-2xl font-bold">
-              {{ totalUnclaimedPayments }} EFFECT
-            </p>
-            <p class="text-xs text-gray-900 dark:text-gray-400">
-              Total Unclaimed EFFECT
-            </p>
-            <UButton
-              class="mt-2"
-              color="neutral"
-              @click="isOpenClaimModal = true"
-            >
-              Claim Payments
-            </UButton>
-          </div>
-        </div>
-      </div>
-    </template>
   </UCard>
 </template>
-
 <script setup lang="ts">
 const { account } = useAuth();
 const isOpenClaimModal = ref(false);
@@ -135,6 +136,13 @@ const { data: managerPaymentBatches } = useGetPaymentsQuery();
 const totalUnclaimedPayments = useNumberFormat(
   computedTotalPaymentAmount(managerPaymentBatches),
 );
+
+function formatNumber(v?: number) {
+  if (v == null) return "—";
+  return new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 6,
+  }).format(v);
+}
 </script>
 
 <style scoped></style>

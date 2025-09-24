@@ -11,6 +11,7 @@
         </div>
         <div class="flex items-center space-x-4">
           <div class="flex items-center space-x-3 mr-6">
+            <SocialBar :socials="[discord, twitter]" />
             <UDropdownMenu
               v-if="username"
               :items="items"
@@ -42,6 +43,7 @@
 </template>
 
 <script setup lang="ts">
+import { discord, twitter } from "~/constants/socials";
 import type { DropdownMenuItem } from "@nuxt/ui";
 
 const { userInfo, logout } = useAuth();
@@ -58,6 +60,16 @@ const logoutHandler = async () => {
 
 const items: DropdownMenuItem[][] = [
   [
+    {
+      onSelect: () => window.open("https://effect.ai", "_blank"),
+      label: "Website",
+      icon: "i-lucide-external-link",
+    },
+    {
+      onSelect: () => window.open("https://staking.effect.ai", "_blank"),
+      label: "Staking app",
+      icon: "i-lucide-external-link",
+    },
     {
       onSelect: () => logoutHandler(),
       label: "Logout",

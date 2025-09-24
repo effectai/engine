@@ -1,11 +1,9 @@
 <template>
-  <AwardCapability
-    name="Microphone Access"
-    capabilityId="effectai/capability-microphone-access:0.0.1"
-    v-if="detected"
-  />
-  <div v-else class="microphone-check">
-    <h2>🎙 Microphone Check</h2>
+  <div
+    class="microphone-check container mx-auto p-4 max-w-md bg-white rounded shadow"
+  >
+    <AwardCapability :capability="capability" v-if="detected" />
+    <h2 class="text-xl">🎙 Microphone Check</h2>
 
     <p v-if="!isTesting">
       Please read the following sentence aloud once you click **Start Test**:
@@ -131,4 +129,10 @@ function stopTest() {
   if (audioCtx) audioCtx.close();
   stream = audioCtx = analyser = sourceNode = null;
 }
+
+const { availableCapabilities } = useCapabilities();
+
+const capability = availableCapabilities.find((c) =>
+  c.id.startsWith("effectai/microphone-access"),
+);
 </script>

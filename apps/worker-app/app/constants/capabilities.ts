@@ -1,7 +1,19 @@
-export const availableCapabilities = [
+export type Capability = {
+  icon: string;
+  id: string;
+  href?: string;
+  name: string;
+  category: string;
+  description: string;
+  cost: number; // Cost to acquire the capability
+  estimatedEarnings: number; // Estimated earnings from using the capability
+  tags: string[];
+};
+
+export const availableCapabilities: Capability[] = [
   {
     icon: "i-lucide-mic",
-    id: "effectai/capability-microphone-access:0.0.1",
+    id: "effectai/microphone-access:0.0.1",
     href: "capabilities/microphone",
     name: "Microphone Access",
     category: "Hardware",
@@ -12,7 +24,7 @@ export const availableCapabilities = [
   },
   {
     icon: "i-lucide-book-open",
-    id: "effectai/capability-english-language:0.0.1",
+    id: "effectai/english-language:0.0.1",
     href: "capabilities/language-english",
     name: "English Language",
     category: "Language",
@@ -23,10 +35,11 @@ export const availableCapabilities = [
   },
   {
     icon: "i-lucide-wifi",
-    id: "effectai/capability-high-speed-internet:0.0.1",
-    name: "High-Speed Internet",
+    id: "effectai/high-speed-internet:0.0.1",
+    href: "capabilities/internet",
+    name: "Internet Speed Test",
     category: "Network",
-    description: "Reliable high-speed internet connection",
+    description: "High-speed internet connection for data-intensive tasks",
     cost: 100,
     estimatedEarnings: 1500,
     tags: ["Network", "Internet", "Speed"],

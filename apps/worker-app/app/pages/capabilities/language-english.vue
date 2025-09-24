@@ -1,5 +1,7 @@
 <template>
   <div class="eng-test">
+    <AwardCapability :capability="capability" v-if="showAward" />
+
     <h2 class="text-xl my-6 text-center">English Proficiency Quick Test</h2>
 
     <div v-if="phase === 'intro'" class="card">
@@ -101,7 +103,8 @@
       </details>
 
       <div class="nav">
-        <button class="btn" @click="reset">Restart</button>
+        <button v-if="!passed" class="btn" @click="reset">Restart</button>
+        <UButton v-if="passed" @click="showAward = true">Next</UButton>
       </div>
     </div>
   </div>
@@ -281,9 +284,18 @@ const level = computed(() => {
   };
 });
 
+const passed = computed(() => phase.value === "result" && score.value >= 8); // pass if 8 or more correct
+const showAward = ref(false);
+
 function formatAns(a) {
   return a == null || a === "" ? "—" : a;
 }
+
+const { availableCapabilities } = useCapabilities();
+
+const capability = availableCapabilities.find((c) =>
+  c.id.startsWith("effectai/english-language"),
+);
 </script>
 
 <style scoped>

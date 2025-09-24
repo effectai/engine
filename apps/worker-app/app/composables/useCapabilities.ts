@@ -25,6 +25,10 @@ export const useCapabilities = () => {
       })),
   );
 
+  const userCapabilityAssignmentIds = computed(() =>
+    userCapabilityAssignmentMap.value.map((assignment) => assignment.id),
+  );
+
   const userAvailableCapabilities = computed(() =>
     availableCapabilities.filter(
       (capability) =>
@@ -36,10 +40,17 @@ export const useCapabilities = () => {
 
   const userCapabilityCount = computed(() => userCapabilities.value.length);
 
+  const clearUserCapabilities = () => {
+    userCapabilityAssignmentMap.value = [];
+  };
+
   return {
     userCapabilities,
     userCapabilityAssignmentMap,
     userAvailableCapabilities,
     userCapabilityCount,
+    userCapabilityAssignmentIds,
+    clearUserCapabilities,
+    availableCapabilities,
   };
 };

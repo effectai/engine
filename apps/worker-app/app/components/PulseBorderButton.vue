@@ -24,7 +24,7 @@ const emits = defineEmits(["click"]);
     --border-angle: 0turn;
     --main-bg: conic-gradient(
       from var(--border-angle),
-      #213,
+      #213 0%,
       #112 5%,
       #112 60%,
       #213 95%
@@ -42,12 +42,10 @@ const emits = defineEmits(["click"]);
       rgba(100, 100, 100, 0.7) 75%,
       rgba(255, 255, 255, 0.1) 100%
     );
+
     background:
-      // padding-box clip this background in to the overall element except the border.
       var(--main-bg) padding-box,
-      // border-box extends this background to the border space
       var(--gradient-border) border-box,
-      // Duplicate main background to fill in behind the gradient border. You can remove this if you want the border to extend "outside" the box background.
       var(--main-bg) border-box;
 
     background-position: center center;

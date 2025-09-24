@@ -7,7 +7,7 @@ import {
   webSockets,
 } from "@effectai/protocol-core";
 
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 
 import { createPaymentManager } from "./modules/createPaymentManager.js";
 import { createTaskManager } from "./modules/createTaskManager.js";
@@ -22,7 +22,7 @@ import { PAYMENT_BATCH_SIZE, TASK_ACCEPTANCE_TIME } from "./consts.js";
 
 import {
   HttpTransport,
-  HttpHandler,
+  type HttpHandler,
   Libp2pTransport,
   type TaskRecord,
   createEffectEntity,
@@ -238,7 +238,7 @@ export const createManager = async ({
 
         logger.log.info(
           { peerId: peerId.toString(), recipient, nonce, accessCode },
-          "Worker connected",
+          `Worker connected with Capabilities: ${capabilities}`,
         );
 
         return {

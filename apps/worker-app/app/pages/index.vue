@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="">
     <OnboardModal />
     <NodeHeroCard />
 
@@ -10,19 +10,21 @@
       <CapabilitiesList class="" />
     </div>
 
-    <UCard class="mb-4 p-0" :ui="{ body: 'p-1 sm:p-0' }">
+    <UCard class="mb-4 p-0" :ui="{ body: 'p-1 sm:p-0' }" variant="outline">
       <template #header>
         <div class="flex items-center gap-2">
           <UIcon name="i-heroicons-server-stack" />
           <h2 class="text-lg font-semibold">Capability Marketplace</h2>
         </div>
       </template>
-      <div class="flex items-stretch flex-wrap p-4">
+      <div class="flex items-stretch flex-wrap p-4 gap-2">
         <CapabilitiesListItem
           v-for="item in userAvailableCapabilities"
           :key="item.id"
           :name="item.name"
           :href="item.href"
+          :cost="0"
+          :icon="item.icon"
           :category="item.category"
           :description="item.description"
           :tags="item.tags"
@@ -40,11 +42,15 @@
 </template>
 
 <script setup lang="ts">
-const { userAvailableCapabilities } = useCapabilities();
+const { userAvailableCapabilities, clearUserCapabilities } = useCapabilities();
 
 definePageMeta({
   middleware: ["auth"],
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+  #dashboard {
+    background: black !important;
+  }
+</style>

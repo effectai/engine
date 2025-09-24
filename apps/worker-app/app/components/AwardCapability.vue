@@ -1,54 +1,76 @@
 <template>
-  <div class="award-wrap">
-    <!-- Canvas for confetti -->
-    <canvas ref="canvas" class="confetti"></canvas>
+  <UModal
+    default-open="true"
+    :dismissible="false"
+    :ui="{
+      content: 'p-0 bg-transparent min-w-4xl',
+    }"
+  >
+    <template #content
+      ><div class="award-wrap">
+        <!-- Canvas for confetti -->
+        <canvas ref="canvas" class="confetti"></canvas>
 
-    <!-- Capability card -->
-    <div class="card" :class="{ claimed }" @animationend="onCardAnimEnd">
-      <div class="badge">
-        <div class="icon">{{ icon }}</div>
-      </div>
+        <!-- Capability card -->
+        <div
+          class="card flex flex-col items-center text-center pulse"
+          :class="{ claimed }"
+          @animationend="onCardAnimEnd"
+        >
+          <div class="badge">
+            <div class="icon">{{ icon }}</div>
+          </div>
 
-      <div class="meta">
-        <div class="kicker">Capability Unlocked</div>
-        <h3 class="title">{{ name }}</h3>
-        <p class="desc" v-if="description">{{ description }}</p>
+          <div class="meta">
+            <div class="kicker">Capability Unlocked</div>
+            <h3 class="title">{{ capability.name }}</h3>
+            <p class="desc" v-if="description">{{ capability.description }}</p>
 
-        <div class="actions">
-          <button v-if="!claimed" class="btn primary" @click="claim">
-            Claim capability
-          </button>
-          <button v-else class="btn subtle" @click="continueHandler">
-            Continue
-          </button>
+            <div class="actions mt-4">
+              <button v-if="!claimed" class="btn primary" @click="claim">
+                Claim capability
+              </button>
+              <button v-else class="btn subtle" @click="continueHandler">
+                Continue
+              </button>
+            </div>
+          </div>
+
+          <!-- Shine sweep -->
+          <div class="shine"></div>
+          <!-- Glow ring -->
+          <div class="ring"></div>
         </div>
-      </div>
 
-      <!-- Shine sweep -->
-      <div class="shine"></div>
-      <!-- Glow ring -->
-      <div class="ring"></div>
-    </div>
+        <!-- Floating bits (subtle ambient animation) -->
+        <div class="bits">
+          <span
+            v-for="n in 12"
+            :key="n"
+            class="bit"
+            :style="bitStyle(n)"
+          ></span>
+        </div>
 
-    <!-- Floating bits (subtle ambient animation) -->
-    <div class="bits">
-      <span v-for="n in 12" :key="n" class="bit" :style="bitStyle(n)"></span>
-    </div>
-
-    <!-- Success toast -->
-    <transition name="toast">
-      <div v-if="claimed && showToast" class="toast">
-        <span class="check">✓</span>
-        <span>{{ successText }}</span>
-      </div>
-    </transition>
-  </div>
+        <!-- Success toast -->
+        <transition name="toast">
+          <div v-if="claimed && showToast" class="toast">
+            <span class="check">✓</span>
+            <span>{{ successText }}</span>
+          </div>
+        </transition>
+      </div></template
+    >
+  </UModal>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
+
+import type { Capability } from "~/constants/capabilities";
+
 const props = defineProps({
-  capabilityId: { type: String, required: true },
+  capability: Object as () => Capability,
   name: { type: String, required: true },
   description: { type: String, default: "" },
   icon: { type: String, default: "🛡" },
@@ -162,12 +184,12 @@ async function claim() {
 const capabilities = useLocalStorage("user-capabilities", []);
 
 const awardCapability = async () => {
-  if (capabilities.value.includes(props.capabilityId)) {
+  if (capabilities.value.includes(props.capability.id)) {
     return false;
   }
 
   capabilities.value.push({
-    id: props.capabilityId,
+    id: props.capability.id,
     awardedAt: new Date().toISOString(),
   });
 
