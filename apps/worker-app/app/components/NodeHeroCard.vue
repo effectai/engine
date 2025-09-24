@@ -164,10 +164,14 @@
 
           <!-- Mini stats -->
           <div class="grid grid-cols-2 gap-4 mt-4">
-            <div class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs">
+            <div
+              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono"
+            >
               Node age: {{ daysInNetwork }} days
             </div>
-            <div class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs">
+            <div
+              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono"
+            >
               Capabilities: {{ userCapabilityCount }}
             </div>
           </div>

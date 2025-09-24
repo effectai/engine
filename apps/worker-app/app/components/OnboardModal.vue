@@ -46,12 +46,6 @@
       <template #footer="{ close }">
         <div class="flex justify-end gap-2">
           <UButton
-            color="neutral"
-            variant="outline"
-            label="Exit"
-            @click="close"
-          />
-          <UButton
             label="I Agree & Continue"
             :disabled="!accepted"
             icon="i-lucide-check"
