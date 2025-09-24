@@ -89,7 +89,6 @@ const items: DropdownMenuItem[][] = [
           "_blank",
         ),
       label: "Trade EFFECT",
-      color: "primary",
       icon: "i-lucide-credit-card",
     },
     {
