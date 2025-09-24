@@ -1,16 +1,13 @@
 <template>
   <UModal
-    default-open="true"
+    :default-open="true"
     :dismissible="false"
     :ui="{
-      content: 'p-0 bg-transparent min-w-4xl',
+      content: 'p-0 bg-transparent min-w-2xl',
     }"
   >
     <template #content
       ><div class="award-wrap">
-        <!-- Canvas for confetti -->
-        <canvas ref="canvas" class="confetti"></canvas>
-
         <!-- Capability card -->
         <div
           class="card flex flex-col items-center text-center pulse"
@@ -26,7 +23,7 @@
             <h3 class="title">{{ capability.name }}</h3>
             <p class="desc" v-if="description">{{ capability.description }}</p>
 
-            <div class="actions mt-4">
+            <div class="actions mt-10">
               <button v-if="!claimed" class="btn primary" @click="claim">
                 Claim capability
               </button>
@@ -41,17 +38,6 @@
           <!-- Glow ring -->
           <div class="ring"></div>
         </div>
-
-        <!-- Floating bits (subtle ambient animation) -->
-        <div class="bits">
-          <span
-            v-for="n in 12"
-            :key="n"
-            class="bit"
-            :style="bitStyle(n)"
-          ></span>
-        </div>
-
         <!-- Success toast -->
         <transition name="toast">
           <div v-if="claimed && showToast" class="toast">
@@ -251,16 +237,8 @@ onBeforeUnmount(() => {
     position: relative;
     display: grid;
     place-items: center;
-    padding: 32px 16px;
-    min-height: 360px;
+    background: transparent;
     overflow: hidden;
-    background: radial-gradient(
-      1200px 600px at 50% -20%,
-      #f5f7ff 10%,
-      #ffffff 65%
-    );
-    border-radius: 16px;
-    border: 1px solid #eef0f6;
   }
 
   /* Confetti canvas covers area */
@@ -274,9 +252,9 @@ onBeforeUnmount(() => {
 
   /* Capability card */
   .card {
+    width: 100%;
     position: relative;
-    width: min(520px, 92vw);
-    padding: 22px 20px 18px;
+    padding: 4rem;
     border-radius: 20px;
     background: linear-gradient(180deg, #ffffff, #fbfbff);
     border: 1px solid #e9ecf6;

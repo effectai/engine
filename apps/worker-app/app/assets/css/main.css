@@ -4,38 +4,16 @@
 @import "@nuxt/ui";
 @plugin "@tailwindcss/typography";
 
-.title {
-  font-size: 1.5em;
-  font-weight: bold;
-}
-
-.subtitle {
-  font-size: 1.5em;
-  font-weight: 100;
-}
-
-.navigate-back {
-  font-size: 1em;
-  font-weight: 100;
-  color: blue;
-  text-decoration: underline;
-  font-size: 0.8rem;
-}
-
-:root {
-  /* solana wallet button styling */
-  --swv-button-background-color: #000 !important;
-  --swv-button-hover-background-color: #000 !important;
-}
-
-.coming-soon {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-}
-
 @theme {
- --color-brand: #E2FF03;
+	--color-brand-50: #F9FFE6;
+	--color-brand-100: #ECFFB3;
+	--color-brand-200: #D5FF66;
+	--color-brand-300: #B0FF1A;
+	--color-brand-400: #8AFF00;
+	--color-brand-500: #66E600;
+	--color-brand-600: #4DB300;
+	--color-brand-700: #339900;
+	--color-brand-800: #1A8000;
+	--color-brand-900: #006600;
+	--color-brand-950: #003300;
 }

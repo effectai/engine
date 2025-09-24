@@ -1,25 +1,28 @@
 <template>
   <div
-    class="microphone-check container mx-auto p-4 max-w-md bg-white rounded shadow"
+    class="microphone-check container mx-auto p-10 max-w-2xl bg-white rounded shadow"
   >
     <AwardCapability :capability="capability" v-if="detected" />
-    <h2 class="text-xl">🎙 Microphone Check</h2>
+    <h2 class="text-xl font-bold my-5">🎙 Microphone Check</h2>
 
     <p v-if="!isTesting">
-      Please read the following sentence aloud once you click **Start Test**:
+      Please make sure your microphone is connected and working. Click "Start
+      Test" and read the sentence below aloud to verify audio input.
     </p>
     <blockquote
       v-if="!isTesting"
-      style="font-style: italic; margin: 0.5rem 0; color: #444"
+      style="font-style: italic; margin: 3rem 0; color: #444"
     >
       "The quick brown fox jumps over the lazy dog."
     </blockquote>
 
     <div v-if="error" style="color: #b00020; margin: 0.5rem 0">{{ error }}</div>
 
-    <div style="margin: 0.5rem 0">
-      <button v-if="!isTesting" @click="startTest">Start Test</button>
-      <button v-else @click="stopTest">Stop</button>
+    <div>
+      <UButton color="neutral" v-if="!isTesting" @click="startTest"
+        >Start Test</UButton
+      >
+      <UButton color="neutral" v-else @click="stopTest">Stop</UButton>
     </div>
 
     <div v-if="isTesting" style="margin-top: 0.5rem">

@@ -4,6 +4,19 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   css: ["@/assets/css/main.css"],
   modules: ["@pinia/nuxt", "@nuxt/ui", "@vueuse/nuxt"],
+  ui: {
+    theme: {
+      colors: [
+        "primary",
+        "neutral",
+        "danger",
+        "success",
+        "warning",
+        "info",
+        "brand",
+      ],
+    },
+  },
   runtimeConfig: {
     public: {
       ALTERNATIVE_FRONTEND_URL: process.env.ALTERNATIVE_FRONTEND_URL,
