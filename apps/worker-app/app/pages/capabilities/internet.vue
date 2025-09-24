@@ -1,5 +1,6 @@
 <template>
   <div class="net-cap">
+    <AwardCapability :capability="capability" v-if="showModal" />
     <h2 class="text-xl my-5">🌐 Network Capability Test</h2>
 
     <div class="card">
@@ -54,10 +55,14 @@
         </div>
       </div>
 
-      <details class="details">
-        <summary>Debug</summary>
-        <pre>{{ debug }}</pre>
-      </details>
+      <UButton
+        class="mt-5"
+        @click="showModal = true"
+        v-if="verdict"
+        color="neutral"
+      >
+        Next
+      </UButton>
     </div>
   </div>
 </template>
@@ -73,6 +78,13 @@ import { ref, computed } from "vue";
 const endpoint = ref("https://speed.cloudflare.com");
 const downBytes = ref(50_000_000); // 8 MB
 const upBytes = ref(65000); // 4 MB
+const showModal = ref(false);
+
+const { availableCapabilities } = useCapabilities();
+
+const capability = availableCapabilities.find((c) =>
+  c.id.startsWith("effectai/internet-speed"),
+);
 
 const running = ref(false);
 const progress = ref(0);
@@ -239,7 +251,6 @@ async function downloadTest(url, signal) {
 
 async function uploadTest(url, bytes, signal) {
   try {
-    console.log("Uploading", bytes, "bytes to", url);
     const buf = new Uint8Array(bytes);
     crypto.getRandomValues(buf);
     const t0 = performance.now();
@@ -288,21 +299,21 @@ const verdict = computed(() => {
     D = r.downloadMbps ?? 0,
     U = r.uploadMbps ?? 0;
 
-  if (L < 40 && D > 50 && U > 10) {
+  if (L < 40 && D > 50) {
     return {
       tier: "great",
       label: "Excellent",
       note: "Ready for HD calls / realtime AI.",
     };
   }
-  if (L < 80 && D > 20 && U > 5) {
+  if (L < 80 && D > 20) {
     return {
       tier: "good",
       label: "Good",
       note: "Suitable for most calls and tasks.",
     };
   }
-  if (L < 150 && D > 5 && U > 1) {
+  if (L < 150 && D > 5) {
     return {
       tier: "ok",
       label: "Basic",

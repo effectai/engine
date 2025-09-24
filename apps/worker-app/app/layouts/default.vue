@@ -70,6 +70,17 @@ const items: DropdownMenuItem[][] = [
       label: "Staking app",
       icon: "i-lucide-external-link",
     },
+
+    {
+      onSelect: () => window.open(discord.link, "_blank"),
+      label: "Discord",
+      icon: discord.className,
+    },
+    {
+      onSelect: () => window.open(twitter.link, "_blank"),
+      label: "Twitter",
+      icon: "i-lucide-twitter",
+    },
     {
       onSelect: () => logoutHandler(),
       label: "Logout",

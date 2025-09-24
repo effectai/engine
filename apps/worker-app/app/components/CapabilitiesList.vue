@@ -29,15 +29,8 @@
       >
         <UIcon name="i-heroicons-sparkles-20-solid" class="h-6 w-6" />
       </div>
-      <p class="italic">You haven’t acquired any capabilities yet.</p>
-      <div class="mt-3">
-        <UButton
-          color="neutral"
-          icon="i-heroicons-plus-circle-20-solid"
-          size="sm"
-          >Discover capabilities</UButton
-        >
-      </div>
+      <p class="italic mt-6">You haven’t acquired any capabilities yet.</p>
+      <div class="mt-3"></div>
     </div>
 
     <!-- List -->

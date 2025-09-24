@@ -21,10 +21,10 @@
     <ClaimPaymentsModal v-model="isOpenClaimModal" />
 
     <!-- Main content -->
-    <div class="p-4 space-y-5">
+    <div class="p-4 space-y-5 flex flex-col h-full">
       <!-- Wallet summary -->
       <div
-        class="rounded-xl border-gray-200/70 dark:border-gray-800/60 bg-white/70 dark:bg-white/5 p-4"
+        class="rounded-xl border-gray-200/70 dark:border-gray-800/60 bg-white/70 dark:bg-white/5"
       >
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <!-- Chain -->
@@ -77,7 +77,10 @@
           </div>
         </div>
       </div>
-      <div class="flex items-center justify-between">
+    </div>
+
+    <template #footer>
+      <div class="flex items-center justify-between p-4">
         <span class="underline"
           >You have {{ totalUnclaimedPayments }} EFFECT claimable</span
         >
@@ -91,9 +94,7 @@
           Claim Payments</UButton
         >
       </div>
-    </div>
-
-    <!-- Footer -->
+    </template>
   </UCard>
 </template>
 <script setup lang="ts">

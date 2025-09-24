@@ -35,7 +35,7 @@ export const availableCapabilities: Capability[] = [
   },
   {
     icon: "i-lucide-wifi",
-    id: "effectai/high-speed-internet:0.0.1",
+    id: "effectai/internet-speed:0.0.1",
     href: "capabilities/internet",
     name: "Internet Speed Test",
     category: "Network",

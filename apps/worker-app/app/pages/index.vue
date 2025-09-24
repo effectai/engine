@@ -18,6 +18,23 @@
         </div>
       </template>
       <div class="flex items-stretch flex-wrap p-4 gap-2">
+        <div
+          v-if="userAvailableCapabilities.length === 0"
+          class="p-8 text-center text-gray-500 dark:text-gray-400 w-full"
+        >
+          <div
+            class="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-gray-100 dark:bg-gray-800"
+          >
+            <UIcon
+              name="i-heroicons-sparkles-20-solid"
+              class="h-6 w-6 center"
+            />
+          </div>
+          <p class="italic">
+            No additional capabilities available at the moment.
+          </p>
+        </div>
+
         <CapabilitiesListItem
           v-for="item in userAvailableCapabilities"
           :key="item.id"
@@ -31,12 +48,7 @@
         />
       </div>
 
-      <div class="text-center mt-4">
-        <UButton size="sm" class="font-medium mb-3" color="none">
-          Discover More Capabilities
-          <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 ml-1" />
-        </UButton>
-      </div>
+      <div class="text-center mt-4"></div>
     </UCard>
   </div>
 </template>

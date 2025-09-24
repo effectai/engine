@@ -1,5 +1,5 @@
 <template>
-  <div class="flex">
+  <div class="flex hidden sm:block">
     <div class="text-black text-2xl w-full flex" style="">
       <a
         v-for="social in socials"
