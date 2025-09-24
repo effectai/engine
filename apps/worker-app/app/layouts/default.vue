@@ -81,6 +81,17 @@ const items: DropdownMenuItem[][] = [
       label: "Twitter",
       icon: "i-lucide-twitter",
     },
+
+    {
+      onSelect: () =>
+        window.open(
+          "https://jup.ag/swap?sell=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&buy=EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E",
+          "_blank",
+        ),
+      label: "Trade EFFECT",
+      color: "primary",
+      icon: "i-lucide-credit-card",
+    },
     {
       onSelect: () => logoutHandler(),
       label: "Logout",

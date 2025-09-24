@@ -33,7 +33,7 @@
         </div>
         <nuxt-link :to="`${href}`">
           <button
-            class="w-full mt-4 px-3 py-1.5 bg-black text-white rounded text-xs hover:bg-gray-800 transition-colors flex items-center justify-center"
+            class="w-full mt-4 px-3 py-1.5 bg-black text-white rounded text-xs flex items-center justify-center"
           >
             Register Capability<svg
               xmlns="http://www.w3.org/2000/svg"

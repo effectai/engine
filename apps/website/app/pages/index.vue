@@ -51,7 +51,7 @@
             </a>
 
             <a
-              href="https://portal.effect.ai"
+              href="https://worker.effect.ai"
               target="_blank"
               class="inline-flex items-center gap-3 rounded-full px-6 py-3 bg-black text-white hover:bg-gray-900 transition duration-300 shadow-md hover:shadow-lg"
             >
@@ -138,7 +138,7 @@
                 available tasks and start earning today.
               </p>
               <div class="mt-8 text-left">
-                <a href="https://portal.effect.ai/worker">
+                <a href="https://worker.effect.ai">
                   <button
                     class="button flex items-center gap-2 rounded-full border border-white bg-white bg-opacity-0 hover:bg-black hover:text-white cursor-pointer hover:text-gray-900 transition px-5 py-2 text-md font-medium text-black"
                   >

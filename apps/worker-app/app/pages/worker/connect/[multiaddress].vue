@@ -78,7 +78,7 @@
           Tag
           <a
             class="underline underline-offset-2"
-            href="https://x.com/intent/tweet?text=@effectaix%20%2B%202%20friends%20%F0%9F%94%A5"
+            href="https://x.com/intent/tweet?text=@effectaix%20%2B%202%20friends%20%F0%9F%94%A5 for%20a%20chance%20to%20win%20an%20access%20code%21"
             target="_blank"
             rel="noopener noreferrer"
             >@effectaix</a

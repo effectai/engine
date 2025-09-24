@@ -87,8 +87,7 @@
         <UButton
           @click="isOpenClaimModal = true"
           :disabled="!totalUnclaimedPayments || totalUnclaimedPayments === '0'"
-          color="neutral"
-          class="text-xs"
+          class="text-xs text-black"
         >
           <UIcon name="mdi:cash" class="w-4 h-4 mr-1" />
           Claim Payments</UButton

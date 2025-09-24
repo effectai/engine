@@ -24,7 +24,7 @@
             <UIcon name="i-lucide-cpu" size="16" />
             NODE ADDRESS
           </div>
-          <code class="text-emerald-400" v-if="peerId">{{
+          <code class="text-black" v-if="peerId">{{
             sliceBoth(peerId.toString())
           }}</code>
         </div>
@@ -37,7 +37,7 @@
             MANAGER NODE
           </div>
 
-          <code class="text-emerald-400" v-if="managerInfo">{{
+          <code class="text-black" v-if="managerInfo">{{
             sliceBoth(managerInfo.peerId?.toString())
           }}</code>
         </div>
@@ -50,7 +50,7 @@
             <UIcon name="i-lucide-activity" size="16" />
             NETWORK LATENCY
           </div>
-          <code class="text-emerald-400">{{ latency }} ms</code>
+          <code class="text-black">{{ latency }} ms</code>
         </div>
         <div
           class="flex items-center justify-between p-2 border border-zinc-700 rounded"
@@ -59,9 +59,7 @@
             <UIcon name="i-lucide-parking-meter" size="16" />
             NONCE
           </div>
-          <code class="text-emerald-400" v-if="nonces">{{
-            nonces.nextNonce
-          }}</code>
+          <code class="text-black" v-if="nonces">{{ nonces.nextNonce }}</code>
         </div>
       </div>
     </div>

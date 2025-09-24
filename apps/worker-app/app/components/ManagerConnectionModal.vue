@@ -7,7 +7,9 @@
       class: 'rounded-full',
     }"
   >
-    <PulseBorderButton class="w-full" label="Connect" />
+    <UButton icon="i-lucide-plug-zap" size="lg" class="text-black"
+      >Connect</UButton
+    >
     <template #content>
       <div v-if="isFetching" class="p-6 text-center">
         <div class="flex justify-center items-center space-x-2 text-gray-500">

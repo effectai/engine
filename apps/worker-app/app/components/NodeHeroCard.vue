@@ -15,24 +15,116 @@
 
       <!-- Main Grid -->
       <div class="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6">
-        <!-- Profile/Stats (Left column) -->
-        <div class="md:col-span-5 space-y-4">
-          <div class="flex items-center space-x-3 mb-2">
-            <div
-              class="w-12 h-12 bg-white/50 rounded-lg flex items-center justify-center backdrop-blur-sm"
-            >
-              <img
-                :src="profileImage"
-                alt="Profile Picture"
-                class="w-10 h-10 rounded-full object-cover"
-              />
+        <div class="md:col-span-5 space-y-4 md:col-start-1">
+          <div class="md:col-span-3 gap-2 flex justify-between items-center">
+            <div class="flex items-center space-x-3 mb-2">
+              <div
+                class="w-12 h-12 bg-white/50 rounded-lg flex items-center justify-center backdrop-blur-sm"
+              >
+                <img
+                  :src="profileImage"
+                  alt="Profile Picture"
+                  class="w-10 h-10 rounded-full object-cover"
+                />
+              </div>
+              <div>
+                <h2 class="text-xl sm:text-2xl font-bold">{{ username }}</h2>
+                <p class="text-gray-800 text-sm">
+                  Worker Node ({{ language }})
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 class="text-xl sm:text-2xl font-bold">{{ username }}</h2>
-              <p class="text-gray-800 text-sm">Worker Node ({{ language }})</p>
+
+            <div class="relative">
+              <svg class="sm:w-26 sm:h-26 -rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  stroke="rgba(255,255,255,0.4)"
+                  stroke-width="6"
+                  fill="none"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  stroke="#E2FF03"
+                  stroke-width="6"
+                  fill="none"
+                  stroke-linecap="round"
+                  :stroke-dasharray="circumference"
+                  :stroke-dashoffset="dashoffset"
+                  class="transition-all duration-1000 ease-out"
+                />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="text-center">
+                  <div class="text-2xl sm:text-3xl font-bold">{{ level }}</div>
+                  <div class="text-xs text-gray-800">LEVEL</div>
+                </div>
+              </div>
             </div>
           </div>
 
+          <!-- Progress bar -->
+          <div>
+            <div class="flex justify-between items-center text-sm">
+              <span class="text-gray-800">Experience Progress</span>
+              <span class="font-mono"
+                >{{ experience }} / {{ experiencePerLevel[level] }}</span
+              >
+            </div>
+            <div class="w-full bg-white/50 rounded-full h-2 mt-1">
+              <div
+                class="bg-white h-2 rounded-full transition-all duration-1000 ease-out"
+                :style="`width: ${progress}%`"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Mini stats -->
+          <div class="grid grid-cols-2 gap-4 mt-4">
+            <div
+              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono"
+            >
+              Tasks completed: {{ totalTasksCompleted }}
+            </div>
+            <div
+              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between"
+            >
+              <label>Capabilities:</label>
+              {{ userCapabilityCount }}
+            </div>
+          </div>
+
+          <!-- Total earnings -->
+          <div class="text-center p-4 bg-white/50 rounded-lg backdrop-blur-sm">
+            <div class="flex items-center justify-center gap-4">
+              <img
+                src="@/assets/img/effect-coin.jpg"
+                class="w-10 rounded-full"
+              />
+              <div>
+                <p class="text-xl font-bold">
+                  {{ totalEffectEarnings }} EFFECT
+                </p>
+                <p class="text-xs text-gray-800">Total Earnings</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex space-x-2 items-center mt-2">
+            <ManagerConnectionModal class="" />
+            <IdentityDocument :peerId="peerId" />
+          </div>
+        </div>
+
+        <!-- Profile/Stats (Left column) -->
+        <div
+          class="md:col-span-5 space-y-4 md:col-start-8 flex flex-col justify-end"
+        >
           <!-- Peer ID -->
           <div
             class="flex items-center justify-between p-3 bg-white/50 rounded-lg backdrop-blur-sm"
@@ -98,100 +190,9 @@
               <p class="text-lg font-bold">{{ performanceScore }}%</p>
             </div>
           </div>
-
-          <!-- Actions -->
-          <div
-            class="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
-          >
-            <ManagerConnectionModal class="flex-0 min-w-[180px]" />
-            <IdentityDocument :peerId="peerId" />
-          </div>
         </div>
 
         <!-- Progress and summary (Right column) -->
-        <div class="md:col-span-4 space-y-4 md:col-start-9 mt-5">
-          <div class="md:col-span-3 flex justify-center items-center">
-            <div class="relative">
-              <svg
-                class="w-24 h-24 sm:w-32 sm:h-32 -rotate-90"
-                viewBox="0 0 100 100"
-              >
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  stroke="rgba(255,255,255,0.4)"
-                  stroke-width="6"
-                  fill="none"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  stroke="#E2FF03"
-                  stroke-width="6"
-                  fill="none"
-                  stroke-linecap="round"
-                  :stroke-dasharray="circumference"
-                  :stroke-dashoffset="dashoffset"
-                  class="transition-all duration-1000 ease-out"
-                />
-              </svg>
-              <div class="absolute inset-0 flex items-center justify-center">
-                <div class="text-center">
-                  <div class="text-2xl sm:text-3xl font-bold">{{ level }}</div>
-                  <div class="text-xs text-gray-800">LEVEL</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Progress bar -->
-          <div>
-            <div class="flex justify-between items-center text-sm">
-              <span class="text-gray-800">Experience Progress</span>
-              <span class="font-mono"
-                >{{ experience }} / {{ experiencePerLevel[level] }}</span
-              >
-            </div>
-            <div class="w-full bg-white/50 rounded-full h-2 mt-1">
-              <div
-                class="bg-white h-2 rounded-full transition-all duration-1000 ease-out"
-                :style="`width: ${progress}%`"
-              ></div>
-            </div>
-          </div>
-
-          <!-- Mini stats -->
-          <div class="grid grid-cols-2 gap-4 mt-4">
-            <div
-              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono"
-            >
-              Node age: {{ daysInNetwork }} days
-            </div>
-            <div
-              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono"
-            >
-              Capabilities: {{ userCapabilityCount }}
-            </div>
-          </div>
-
-          <!-- Total earnings -->
-          <div class="text-center p-4 bg-white/50 rounded-lg backdrop-blur-sm">
-            <div class="flex items-center justify-center gap-4">
-              <img
-                src="@/assets/img/effect-coin.jpg"
-                class="w-10 rounded-full"
-              />
-              <div>
-                <p class="text-xl font-bold">
-                  {{ totalEffectEarnings }} EFFECT
-                </p>
-                <p class="text-xs text-gray-800">Total Earnings</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>

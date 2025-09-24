@@ -1,13 +1,12 @@
 <template>
   <UModal>
     <UButton
-      icon="i-heroicons-document-text"
-      size="lg"
+      variant="link"
+      icon="i-lucide-file"
+      class="underline"
       color="neutral"
-      class="w-full flex-grow sm:w-auto justify-center cursor-pointer"
+      >Identity Document</UButton
     >
-      Identity Document
-    </UButton>
 
     <template #header>Identity Document</template>
     <template #content

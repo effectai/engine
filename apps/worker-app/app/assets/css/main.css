@@ -4,16 +4,6 @@
 @import "@nuxt/ui";
 @plugin "@tailwindcss/typography";
 
-@theme {
-	--color-brand-50: #F9FFE6;
-	--color-brand-100: #ECFFB3;
-	--color-brand-200: #D5FF66;
-	--color-brand-300: #B0FF1A;
-	--color-brand-400: #8AFF00;
-	--color-brand-500: #66E600;
-	--color-brand-600: #4DB300;
-	--color-brand-700: #339900;
-	--color-brand-800: #1A8000;
-	--color-brand-900: #006600;
-	--color-brand-950: #003300;
+:root {
+	--ui-primary: #E2FF03;
 }
