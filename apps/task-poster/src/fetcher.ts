@@ -457,7 +457,7 @@ export const addFetcherRoutes = (app: Express): void => {
       res.send(page(`
 <h3>Step ${f.name}</h3>
 <ul>
-  <li>Last fetch: ${Math.ceil((Date.now() - f!.lastImport)/1000)}s ago</li>
+  <li>Last fetch: ${Math.ceil((Date.now() - (f!.lastImport || 0)/1000))}s ago</li>
   <li>Type: ${f.type}</li>
   <li>Queued: ${queueSize}</li>
   <li>Active: ${activeSize}</li>

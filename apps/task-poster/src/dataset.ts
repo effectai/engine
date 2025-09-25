@@ -343,7 +343,7 @@ export const addDatasetRoutes = (app: Express): void => {
     const dataset = await db.get<DatasetRecord>(["dataset", id]);
     if (!dataset) return make404(res);
 
-    res.send(await importProgress(dataset!.data));
+    // res.send(await importProgress(dataset!.data));
   });
 
   app.get("/d/:id", async (req, res) => {
