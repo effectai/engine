@@ -59,7 +59,7 @@
         <UButton
           color="primary"
           size="lg"
-          class="flex-1"
+          class="flex-1 text-black"
           :disabled="!accessCode?.trim()"
           :loading="connecting"
           @click="connectHandler(accessCode)"
@@ -69,7 +69,7 @@
       </UFormGroup>
       <UAlert
         icon="i-heroicons-megaphone"
-        color="primary"
+        color="neutral"
         variant="subtle"
         title="Don’t have an access code?"
         class="mt-2"

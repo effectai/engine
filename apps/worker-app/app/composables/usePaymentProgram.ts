@@ -66,12 +66,12 @@ export function usePaymentProgram() {
     });
 
     if (closed) {
-      const createAtaIx =
-        await getCreateAssociatedTokenIdempotentInstructionAsync({
-          mint,
-          payer: signer,
-          owner: signer.address,
-        });
+      console.log("ATA is closed, recreating", ata);
+      const createAtaIx = await getCreateAssociatedTokenInstructionAsync({
+        mint,
+        payer: signer,
+        owner: signer.address,
+      });
 
       claimWithProofIx.push(createAtaIx);
     }

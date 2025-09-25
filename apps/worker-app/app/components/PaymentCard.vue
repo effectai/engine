@@ -2,17 +2,18 @@
   <UCard variant="outline" class="mb-4 overflow-hidden">
     <!-- Header -->
     <template #header>
-      <div class="flex items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <UIcon
-            name="mdi:payment"
-            class="h-6 w-6 text-gray-500 dark:text-gray-400"
-          />
-          <h2 class="text-lg font-semibold">Node Info</h2>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <UDivider orientation="vertical" class="!h-5" />
+      <div class="flex items-center justify-between gap-3 w-full">
+        <div class="flex w-full items-center gap-2 justify-between">
+          <div class="flex items-center gap-2">
+            <UIcon
+              name="mdi:payment"
+              class="h-6 w-6 text-gray-500 dark:text-gray-400"
+            />
+            <h2 class="text-lg font-semibold">Node Info</h2>
+          </div>
+          <UDropdownMenu :items="items">
+            <UButton icon="i-lucide-menu" color="neutral" variant="outline" />
+          </UDropdownMenu>
         </div>
       </div>
     </template>
@@ -97,6 +98,7 @@
   </UCard>
 </template>
 <script setup lang="ts">
+import type { DropdownMenuItem } from "@nuxt/ui";
 const { account } = useAuth();
 const isOpenClaimModal = ref(false);
 
@@ -125,6 +127,14 @@ const exportPrivateKey = async () => {
       });
   }
 };
+
+const items: DropdownMenuItem[] = [
+  {
+    label: "Export Private Key",
+    icon: "material-symbols:key",
+    onSelect: exportPrivateKey,
+  },
+];
 
 const { useGetPaymentsQuery, computedTotalPaymentAmount } = usePayments();
 const { useGetBalanceQuery } = useSolanaWallet();
