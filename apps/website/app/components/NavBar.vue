@@ -38,7 +38,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { discord, telegram, twitter } from "./../constants/socials.ts";
+import { discord, telegram, twitter } from "~/constants/socials";
 
 const socials = [twitter, telegram, discord];
 

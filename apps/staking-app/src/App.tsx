@@ -5,9 +5,11 @@ import {
   TabsTrigger,
   AppHeader,
   Toaster,
+  Skeleton,
   useWalletContext,
   useConnectionContext,
 } from "@effectai/react";
+import { ConnectWalletEmptyState } from "./components/ConnectWalletEmptyState";
 import { StakeForm } from "./components/StakingForm";
 import { StakeOverview } from "./components/StakingOverview";
 import { UnstakeForm } from "./components/UnstakeForm";
@@ -42,13 +44,7 @@ function App() {
         <div className="container mx-auto w-full max-w-6xl p-4">
           <AppHeader />
           <div className="mx-auto mt-20 max-w-3xl px-4">
-            {!address && (
-              <div className="text-center">
-                <p className="mb-4">
-                  Connect your wallet to manage your staking.
-                </p>
-              </div>
-            )}
+            {!address && <ConnectWalletEmptyState />}
             {address && signer && (
               <Tabs defaultValue="overview" className="">
                 <TabsList className="mb-4 flex flex-wrap items-center gap-2 w-full">

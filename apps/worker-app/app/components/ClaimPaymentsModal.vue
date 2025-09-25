@@ -163,7 +163,7 @@ const canClaim = computed(() => {
   ) {
     return false;
   }
-  if (!balance.value || balance.value.value <= 0.01) {
+  if (!balance.value || balance.value.value <= 0.004) {
     return false;
   }
 

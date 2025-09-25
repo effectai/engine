@@ -36,6 +36,7 @@
           </ul>
 
           <UCheckbox
+            color="neutral"
             v-model="accepted"
             required
             label="I understand and accept the Alpha terms above."
@@ -49,6 +50,7 @@
             label="I Agree & Continue"
             :disabled="!accepted"
             icon="i-lucide-check"
+            color="neutral"
             @click="agree(close)"
           />
         </div>

@@ -18,7 +18,7 @@ export const useSolanaWallet = () => {
         const data = await connection.getLamportBalance(account.value);
 
         return {
-          value: data / BigInt(1e9),
+          value: Number(data) / 1e9,
           symbol: "SOL",
         };
       },
