@@ -18,15 +18,10 @@ import {
   SolanaError,
 } from "@solana/kit";
 import {
-  getSetComputeUnitLimitInstruction,
-  getSetComputeUnitPriceInstruction,
-} from "@solana-program/compute-budget";
-import {
   fetchMaybeToken,
-  getCreateAssociatedTokenIdempotentInstructionAsync,
   getCreateAssociatedTokenInstructionAsync,
 } from "@solana-program/token";
-import { useMutation, useQuery } from "@tanstack/vue-query";
+import { useQuery } from "@tanstack/vue-query";
 
 export function usePaymentProgram() {
   const { mint } = useEffectConfig();
@@ -61,11 +56,9 @@ export function usePaymentProgram() {
     });
 
     //check if ata exists
-    const closed = await connection.checkTokenAccountIsClosed({
-      tokenAccount: ata,
-    });
+    const maybeTokenAccount = await fetchMaybeToken(connection.rpc, ata);
 
-    if (closed) {
+    if (!maybeTokenAccount.exists) {
       console.log("ATA is closed, recreating", ata);
       const createAtaIx = await getCreateAssociatedTokenInstructionAsync({
         mint,

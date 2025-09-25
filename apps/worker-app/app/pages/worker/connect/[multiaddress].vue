@@ -149,6 +149,11 @@ const { mutateAsync: disconnect } = disconnectFromManagerMutation;
 
 const connectHandler = async (accessCode?: string) => {
   try {
+    console.log(
+      "Attempting to connect to manager node with" +
+        (accessCode ? ` access code: ${accessCode}` : "out access code"),
+    );
+
     await connect({
       multiAddress: decodedMultiAddr.value.toString(),
       accessCode: accessCode ? accessCode : undefined,
