@@ -121,7 +121,7 @@
             <div class="flex justify-between items-center text-sm">
               <span class="text-gray-800">Experience Progress</span>
               <span class="font-mono"
-                >{{ experience }} / {{ currentLevelExpMin }}</span
+                >{{ experience }} / {{ currentLevelStep }}</span
               >
             </div>
             <div class="w-full bg-white/50 rounded-full h-2 mt-1">
@@ -145,7 +145,7 @@ const { userCapabilityCount } = useCapabilities();
 
 import { useClipboard, useNavigatorLanguage } from "@vueuse/core";
 
-const { level, progress, experience, currentLevelExpMin } = useWorkerLevel();
+const { level, progress, experience, currentLevelStep } = useWorkerLevel();
 const { language } = useNavigatorLanguage();
 
 const radius = computed(() => 45);

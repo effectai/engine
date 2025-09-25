@@ -3,7 +3,7 @@
     :default-open="true"
     :dismissible="false"
     :ui="{
-      content: 'p-0 bg-transparent min-w-2xl',
+      content: 'p-0 bg-transparent',
     }"
   >
     <template #content
@@ -12,7 +12,6 @@
         <div
           class="card flex flex-col items-center text-center pulse"
           :class="{ claimed }"
-          @animationend="onCardAnimEnd"
         >
           <div class="badge">
             <div class="icon">{{ icon }}</div>
@@ -23,13 +22,22 @@
             <h3 class="title">{{ capability.name }}</h3>
             <p class="desc" v-if="description">{{ capability.description }}</p>
 
-            <div class="actions mt-10">
-              <button v-if="!claimed" class="btn primary" @click="claim">
+            <div class="actions mt-8">
+              <UButton
+                size="xl"
+                v-if="!claimed"
+                class="btn text-black"
+                @click="claim"
+              >
                 Claim capability
-              </button>
-              <button v-else class="btn subtle" @click="continueHandler">
-                Continue
-              </button>
+              </UButton>
+              <UButton
+                v-else
+                class="btn text-black cursor-pointer"
+                @click="continueHandler"
+              >
+                Back To Dashboard
+              </UButton>
             </div>
           </div>
 
@@ -52,6 +60,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
+import confetti from "canvas-confetti";
 
 import type { Capability } from "~/constants/capabilities";
 
@@ -73,25 +82,15 @@ const particles = [];
 const claimed = ref(false);
 const showToast = ref(false);
 
-function burst(x, y, count = 120) {
-  const colors = ["#8b5cf6", "#22c55e", "#eab308", "#f43f5e", "#06b6d4"];
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 5 + Math.random() * 7;
-    particles.push({
-      x,
-      y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 6,
-      g: 0.18 + Math.random() * 0.12,
-      life: 60 + Math.random() * 40,
-      color: colors[(Math.random() * colors.length) | 0],
-      size: 3 + Math.random() * 3,
-      rot: Math.random() * Math.PI,
-      vr: (Math.random() - 0.5) * 0.2,
-      shape: Math.random() > 0.5 ? "rect" : "circle",
-    });
-  }
+function burst() {
+  confetti({
+    particleCount: 120,
+    spread: 70,
+    startVelocity: 30,
+    gravity: 0.6,
+    ticks: 200,
+    origin: { x: 0.5, y: 0.55 },
+  });
 }
 
 function loop() {
@@ -130,7 +129,7 @@ function loop() {
 
 const router = useRouter();
 const continueHandler = () => {
-  router.push("/"); // Adjust the path as needed
+  router.push("/");
 };
 
 const { awardCapability } = useCapabilities();
@@ -150,15 +149,8 @@ async function claim() {
   await nextTick();
   const rect = el?.getBoundingClientRect?.();
   const can = canvas.value;
-  if (rect && can) {
-    const x = rect.left + rect.width / 2 - can.getBoundingClientRect().left;
-    const y = rect.top + rect.height * 0.35 - can.getBoundingClientRect().top;
-    burst(x, y, 160);
-    // Stagger a couple of extra pops for flair
-    setTimeout(() => burst(x - 80, y - 20, 90), 120);
-    setTimeout(() => burst(x + 80, y - 20, 90), 220);
-  }
 
+  burst();
   claimed.value = true;
   showToast.value = true;
   emit("claimed");
@@ -166,10 +158,6 @@ async function claim() {
 
   // hide toast after a moment
   setTimeout(() => (showToast.value = false), 2200);
-}
-
-function onCardAnimEnd(e) {
-  // no-op, but kept in case you want hooks on keyframe end
 }
 
 /**
@@ -228,15 +216,6 @@ onBeforeUnmount(() => {
   }
 
   /* Confetti canvas covers area */
-  .confetti {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  /* Capability card */
   .card {
     width: 100%;
     position: relative;

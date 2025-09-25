@@ -33,6 +33,7 @@
     "@web3auth/ws-embed": "^4.0.4",
     "bip39": "^3.1.0",
     "buffer": "^6.0.3",
+    "canvas-confetti": "^1.9.3",
     "datastore-idb": "^3.0.1",
     "nuxt": "^4.1.2",
     "p-limit": "^6.2.0",
