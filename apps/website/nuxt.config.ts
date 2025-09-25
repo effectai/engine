@@ -11,4 +11,3 @@ export default defineNuxtConfig({
   },
   modules: ["@nuxt/icon", "@nuxt/content", "@nuxt/image"],
 });
-

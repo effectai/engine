@@ -177,6 +177,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "anchor-id-injector"
+version = "0.1.0"
+dependencies = [
+ "bs58",
+ "proc-macro2",
+ "quote",
+ "serde_json",
+ "syn 2.0.104",
+]
+
+[[package]]
 name = "anchor-lang"
 version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -904,16 +915,22 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "bs58",
+ "paste",
+ "serde_json",
 ]
 
 [[package]]
 name = "effect-migration"
 version = "0.1.0"
 dependencies = [
+ "anchor-id-injector",
  "anchor-lang",
  "anchor-spl",
+ "bs58",
  "effect-common",
  "libsecp256k1 0.7.2",
+ "serde_json",
  "sha2 0.10.9",
 ]
 
@@ -921,6 +938,7 @@ dependencies = [
 name = "effect-payment"
 version = "0.1.0"
 dependencies = [
+ "anchor-id-injector",
  "anchor-lang",
  "anchor-spl",
  "ark-bn254 0.5.0",
@@ -933,9 +951,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "effect-rewards"
+name = "effect-reward"
 version = "0.1.0"
 dependencies = [
+ "anchor-id-injector",
  "anchor-lang",
  "anchor-spl",
  "effect-common",
@@ -945,6 +964,7 @@ dependencies = [
 name = "effect-staking"
 version = "0.1.0"
 dependencies = [
+ "anchor-id-injector",
  "anchor-lang",
  "anchor-spl",
  "effect-common",
@@ -954,6 +974,7 @@ dependencies = [
 name = "effect-vesting"
 version = "0.1.0"
 dependencies = [
+ "anchor-id-injector",
  "anchor-lang",
  "anchor-spl",
  "effect-common",

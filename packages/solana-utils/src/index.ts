@@ -19,18 +19,10 @@ import {
   pipe,
   createTransactionMessage,
   KeyPairSigner,
-  IInstruction,
+  Instruction,
   signTransactionMessageWithSigners,
   createKeyPairSignerFromPrivateKeyBytes,
 } from "@solana/kit";
-
-import {
-  getInitializeMintInstruction,
-  getCreateAssociatedTokenInstructionAsync,
-  getMintToCheckedInstruction,
-  TOKEN_PROGRAM_ADDRESS,
-  getMintSize,
-} from "@solana-program/token";
 
 async function getConfig(): Promise<any> {
   // Path to Solana CLI config file
@@ -193,34 +185,6 @@ export const createLocalSolanaProvider =
     };
   };
 
-export const executeWithSolanaProvider = async ({
-  provider,
-  signer,
-  instructions,
-  commitment = "finalized",
-}: {
-  provider: SolanaProviderFactory;
-  signer: KeyPairSigner;
-  instructions: IInstruction[];
-  commitment?: "processed" | "confirmed" | "finalized";
-}) => {
-  const recentBlockhash = await provider.rpc.getLatestBlockhash().send();
-
-  const transactionMessage = pipe(
-    createTransactionMessage({ version: 0 }),
-    (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-    (tx) =>
-      setTransactionMessageLifetimeUsingBlockhash(recentBlockhash.value, tx),
-    (tx) => appendTransactionMessageInstructions(instructions, tx),
-  );
-
-  const signedTx = await signTransactionMessageWithSigners(transactionMessage);
-
-  await provider.sendAndConfirmTransaction(signedTx, {
-    commitment,
-  });
-};
-
 export const useDeriveMigrationAccounts = ({
   mint,
   foreignAddress,
@@ -334,3 +298,4 @@ export const useDeriveStakeAccounts = ({
 };
 
 export * from "./instructions";
+export * from "./transactions";

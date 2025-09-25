@@ -2,7 +2,7 @@
   <main class="font-inter">
     <section
       id="main-hero"
-      class="relative -mt-[75px] bg-[url('/img/hero-background.png')] bg-no-repeat bg-cover px-section-x py-section-y min-h-[80vh] md:min-h-[calc(100vh-75px)]"
+      class="relative -mt-[75px] bg-[url('/img/hero-background.png')] bg-no-repeat bg-cover px-section-x py-section-y"
     >
       <div
         class="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_60%_at_20%_30%,rgba(255,255,255,0.55),transparent_60%)] mix-blend-screen"
@@ -11,7 +11,7 @@
       <div class="relative max-w-7xl mx-auto">
         <div class="flex flex-col items-start text-left max-w-4xl">
           <h1
-            class="mb-6 mt-10 text-4xl sm:text-5xl md:text-6xl font-light text-gray-900 leading-tight tracking-tight min-h-[120px]"
+            class="mb-6 mt-10 text-4xl sm:text-5xl md:text-6xl font-light text-gray-900 leading-tight tracking-tight"
           >
             <span>Unlocking the Next Era <br /></span>
             <span
@@ -24,22 +24,24 @@
             </span>
           </h1>
           <p class="text-base text-xl text-gray-700 mb-10 leading-relaxed">
-            AI's next revolution isn't about better models — it's about
-            networked capabilities.
             <br class="hidden sm:block" />
-            <span class="inline-block mt-3">
-              Effect AI introduces a permissionless protocol that orchestrates
-              human and machine capabilities into verifiable, reusable
-              workflows. Empowering developers and contributors worldwide to
-              scale open AI infrastructure without centralized intermediaries.
+            <span class="inline-block mt-3 md:hidden">
+              A decentralized protocol for building, sharing, and earning from
+              AI infrastructure powered by humans and machines.
+            </span>
+            <span class="hidden md:inline-block">
+              Effect AI is a decentralized protocol for building, sharing, and
+              earning from AI infrastructure powered by humans and machines. It
+              connects people, models, and compute into a unified capability
+              network for scalable, real-time AI execution.
             </span>
           </p>
 
-          <div class="flex flex-wrap gap-4">
+          <div class="flex flex-wrap gap-6 flex-nowrap">
             <a
               href="/whitepaper.pdf"
               target="_blank"
-              class="inline-flex items-center gap-3 rounded-full px-6 py-3 border border-black text-black hover:bg-black hover:text-white transition duration-300 shadow-sm hover:shadow-md"
+              class="inline-flex items-center gap-3 rounded-full px-6 py-3 transition duration-299 shadow-md hover:shadow-lg bg-[#E2FF03] text-black hover:border-black text-black border-1 border-black"
             >
               Whitepaper
               <Icon
@@ -47,49 +49,178 @@
                 class="text-xl"
               />
             </a>
-
             <a
-              href="https://portal.effect.ai"
+              href="https://jup.ag/swap?sell=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&buy=EFFECT1A1R3Dz8Hg4q5SXKjkiPc6KDRUWQ7Czjvy4H7E"
               target="_blank"
-              class="inline-flex items-center gap-3 rounded-full px-6 py-3 bg-black text-white hover:bg-gray-900 transition duration-300 shadow-md hover:shadow-lg"
+              class="underline inline-flex items-center gap-2 text-lg text-gray-800 font-medium hover:text-gray-600 transition text-sm"
             >
-              Join our Alpha
+              Trade EFFECT on JUP
+              <Icon name="i-lucide:external-link" class="text-xl" />
             </a>
           </div>
         </div>
       </div>
     </section>
 
-    <section
-      class="py-section-y pb-0 px-section-x bg-effect-black overflow-hidden"
-    >
-      <div
-        class="grid grid-cols-1 lg:grid-cols-12 max-w-7xl mx-auto gap-y-12 lg:gap-y-0 space-y-8 lg:space-y-0"
-      >
-        <div class="col-span-4">
-          <div>
-            <p
-              class="text-sm text-gray-400 font-medium uppercase mb-4 tracking-wide"
-            >
-              Start Building with Effect AI
+    <!-- Apps Showcase -->
+    <section class="px-section-x py-section-y bg-effect-black">
+      <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-10">
+          <p class="text-xs uppercase tracking-wider text-gray-300">
+            Explore our apps
+          </p>
+          <h2 class="mt-2 text-3xl md:text-5xl font-semibold text-[#D6D6D6]">
+            Build, Earn & Scale — all within Effect AI
+          </h2>
+        </div>
+
+        <!-- Cards -->
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <!-- Worker -->
+          <div
+            class="group relative overflow-hidden border border-white/10 bg-white/5 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset] transition-colors hover:border-white/20"
+          >
+            <div class="mb-4 flex items-center justify-between">
+              <span class="text-sm text-gray-300">01</span>
+              <div class="flex gap-2">
+                <span
+                  class="rounded-full border px-2.5 py-1 text-xs font-medium text-white"
+                >
+                  Alpha
+                </span>
+                <span
+                  class="rounded-full border border-white/30 bg-[#E2FF03] px-2.5 py-1 text-xs font-medium"
+                >
+                  Flagship
+                </span>
+              </div>
+            </div>
+            <h3 class="text-xl font-semibold text-white">Worker</h3>
+            <p class="mt-2 text-sm leading-6 text-gray-300">
+              Complete tasks and earn EFFECT directly to your wallet with
+              low-friction payouts.
             </p>
+            <div class="mt-6 flex items-center gap-4 w-full justify-between">
+              <a
+                href="https://worker.effect.ai"
+                target="_blank"
+                class="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+              >
+                Open Worker
+                <Icon
+                  name="material-symbols:arrow-right-alt-rounded"
+                  class="text-lg"
+                />
+              </a>
+              <a
+                href="https://github.com/effectai/engine/tree/main/apps/worker-app"
+                class="inline-flex items-center bg-white rounded-full p-1 hover:bg-gray-200 transition"
+                ><Icon name="octicon:mark-github-16" class="text-black text-xl"
+              /></a>
+            </div>
+            <div
+              class="pointer-events-none absolute -top-24 -right-24 h-48 w-48 rounded-full bg-amber-500/10 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            ></div>
+          </div>
 
-            <h2 class="text-5xl text-[#D6D6D6] leading-snug mb-6 mr-12">
-              Building the Future of AI Together
-            </h2>
-
-            <a
-              href="https://github.com/effectai"
-              target="_blank"
-              class="inline-flex items-center gap-2 px-6 py-3 border border-white text-white rounded-full hover:bg-white hover:text-black transition duration-300 mt-6"
-            >
-              Contribute
-              <Icon name="uil:github" class="text-lg" />
-            </a>
+          <!-- Staking -->
+          <div
+            class="group relative overflow-hidden border border-white/10 bg-white/5 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset] transition-colors hover:border-white/20"
+          >
+            <div class="mb-4 flex items-center justify-between">
+              <span class="text-sm text-gray-300">02</span>
+              <span
+                class="rounded-full border px-2.5 py-1 text-xs font-medium bg-[#E2FF03] text-black"
+              >
+                Live
+              </span>
+            </div>
+            <h3 class="text-xl font-semibold text-white">Staking</h3>
+            <p class="mt-2 text-sm leading-6 text-gray-300">
+              Stake EFFECT to secure the network and share in protocol rewards.
+            </p>
+            <div class="mt-6 flex items-center gap-4 w-full justify-between">
+              <a
+                href="https://staking.effect.ai"
+                target="_blank"
+                class="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+              >
+                Open Staking
+                <Icon
+                  name="material-symbols:arrow-right-alt-rounded"
+                  class="text-lg"
+                />
+              </a>
+              <a
+                href="https://github.com/effectai/engine/tree/main/apps/staking-app"
+                class="inline-flex items-center bg-white rounded-full p-1 hover:bg-gray-200 transition"
+                ><Icon name="octicon:mark-github-16" class="text-black text-xl"
+              /></a>
+            </div>
+            <div
+              class="pointer-events-none absolute -top-24 -right-24 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            ></div>
+          </div>
+          <!-- Migration -->
+          <div
+            class="group relative overflow-hidden border border-white/10 bg-white/5 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset] transition-colors hover:border-white/20"
+          >
+            <div class="mb-4 flex items-center justify-between">
+              <span class="text-sm text-gray-300">03</span>
+              <span
+                class="rounded-full border px-2.5 py-1 text-xs font-medium bg-[#E2FF03] text-black"
+              >
+                Live
+              </span>
+            </div>
+            <h3 class="text-xl font-semibold text-white">Migration</h3>
+            <p class="mt-2 text-sm leading-6 text-gray-300">
+              Migrate deprecated $EFX tokens to the new EFFECT on Solana with a
+              guided, secure flow.
+            </p>
+            <div class="mt-6 flex items-center gap-4 w-full justify-between">
+              <a
+                href="https://migrate.effect.ai"
+                target="_blank"
+                class="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+              >
+                Open Migration
+                <Icon
+                  name="material-symbols:arrow-right-alt-rounded"
+                  class="text-lg"
+                />
+              </a>
+              <a
+                href="https://github.com/effectai/engine/tree/main/apps/migration-app"
+                class="inline-flex items-center bg-white rounded-full p-1 hover:bg-gray-200 transition"
+                ><Icon name="octicon:mark-github-16" class="text-black text-xl"
+              /></a>
+            </div>
+            <!-- subtle spotlight -->
+            <div
+              class="pointer-events-none absolute -top-24 -right-24 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            ></div>
           </div>
         </div>
-        <div class="col-span-8">
-          <Contributors class="flex justify-center lg:justify-start mt-5" />
+
+        <!-- Secondary CTA -->
+        <div class="mt-10 flex flex-wrap items-center justify-between gap-4">
+          <p class="text-sm text-gray-300">
+            Discover how Effect AI can power your applications — request a demo
+            to get started with our team.
+          </p>
+          <a
+            href="https://effectai.formaloo.co/xj6xry"
+            target="_blank"
+            class="inline-flex items-center gap-2 rounded-full px-5 py-2 bg-white/10 text-white ring-1 ring-white/15 transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/30"
+          >
+            Request Demo
+            <Icon
+              name="material-symbols:arrow-right-alt-rounded"
+              class="text-lg"
+            />
+          </a>
         </div>
       </div>
     </section>
@@ -121,58 +252,35 @@
         </div>
       </div>
     </section>
-    <section class="bg-effect-black px-section-x py-section-y">
-      <div class="max-w-7xl mx-auto">
-        <div class="flex flex-wrap">
-          <div
-            class="text-gray-100 flex-1 min-w-[280px] p-6 border border-[#515053]"
-          >
-            <div class="space-y-4 flex flex-col h-full">
-              <div class="text-sm font-semibold">01</div>
-              <h2 class="text-4xl font-medium text-left">Complete Tasks</h2>
-              <p class="text-lg font-normal text-left flex-1 mt-12">
-                Put your skills or resources to work and get paid instantly in
-                EFFECT, directly to your wallet. Choose from a variety of
-                available tasks and start earning today.
-              </p>
-              <div class="mt-8 text-left">
-                <a href="https://portal.effect.ai/worker">
-                  <button
-                    class="button flex items-center gap-2 rounded-full border border-white bg-white bg-opacity-0 hover:bg-black hover:text-white cursor-pointer hover:text-gray-900 transition px-5 py-2 text-md font-medium text-black"
-                  >
-                    Start Earning
-                    <span class="icon text-white">
-                      <i class="fas fa-arrow-right"></i>
-                    </span>
-                  </button>
-                </a>
-              </div>
-            </div>
+
+    <section
+      class="py-section-y pb-0 px-section-x bg-effect-black overflow-hidden"
+    >
+      <div
+        class="grid grid-cols-1 lg:grid-cols-12 max-w-7xl mx-auto gap-y-12 lg:gap-y-0 space-y-8 lg:space-y-0"
+      >
+        <div class="col-span-4">
+          <div>
+            <p class="text-xs uppercase tracking-wider text-gray-300">
+              Start Building with Effect AI
+            </p>
+
+            <h2 class="mt-2 text-3xl md:text-5xl font-semibold text-[#D6D6D6]">
+              Building the Future of AI Together
+            </h2>
+
+            <a
+              href="https://github.com/effectai"
+              target="_blank"
+              class="inline-flex items-center gap-2 px-6 py-3 border border-white text-white rounded-full hover:bg-white hover:text-black transition duration-300 mt-6"
+            >
+              Contribute
+              <Icon name="uil:github" class="text-lg" />
+            </a>
           </div>
-          <div
-            class="text-gray-100 flex-1 min-w-[280px] p-6 border border-[#515053]"
-          >
-            <div class="space-y-4 flex flex-col h-full">
-              <div class="text-sm font-semibold">02</div>
-              <h2 class="text-4xl font-medium text-left">Build AI Workflows</h2>
-              <p class="text-lg font-normal text-left space-y-4 flex-1 mt-12">
-                Deploy your own decentralized applications with your specific
-                use case on Effect AI. Design custom workflows, post tasks, and
-                tap into a decentralized global worker mesh.
-              </p>
-              <div class="mt-8 text-left">
-                <a href="https://effectai.formaloo.co/xj6xry" target="_blank"
-                  ><button
-                    class="button flex items-center gap-2 rounded-full border border-white bg-white bg-opacity-0 cursor-pointer px-5 py-2 text-md font-medium text-black hover:bg-black hover:text-white"
-                  >
-                    Request Demo
-                    <span class="icon text-white">
-                      <i class="fas fa-arrow-right"></i>
-                    </span></button
-                ></a>
-              </div>
-            </div>
-          </div>
+        </div>
+        <div class="col-span-8">
+          <Contributors class="flex justify-center lg:justify-start mt-5" />
         </div>
       </div>
     </section>
@@ -204,11 +312,11 @@
       >
         <div class="col-span-4 flex flex-col">
           <p class="text-xs text-gray-200 font-medium uppercase mb-5">
-            Some of our partners &amp; dapps
+            Partners & Ecosystem
           </p>
 
-          <h2 class="text-5xl text-[#D6D6D6] leading-snug mb-6">
-            Explore the Frontier of AI Excellence within the Effect AI Ecosystem
+          <h2 class="mt-2 text-3xl md:text-5xl font-semibold text-[#D6D6D6]">
+            Collaborating with Industry Leaders
           </h2>
         </div>
 
@@ -249,10 +357,26 @@ useSeoMeta({
 const phrases = [
   "Composable AI Infrastructure.",
   "Decentralized Intelligence.",
-  "Permissionless AI Workflows.",
+  "AI Workflows.",
 ];
 
-const { text: typed, caretVisible } = useTypewriter(phrases, {
+const isActive = ref(true);
+onMounted(() => {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        isActive.value = entry.isIntersecting;
+      });
+    },
+    { threshold: 0.1 },
+  );
+  const hero = document.getElementById("main-hero");
+
+  if (hero) {
+    observer.observe(hero);
+  }
+});
+const { text: typed, caretVisible } = useTypewriter(phrases, isActive, {
   speed: 45,
   backSpeed: 30,
   hold: 5000,

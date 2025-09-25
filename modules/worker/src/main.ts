@@ -160,10 +160,12 @@ export const createWorker = async ({
     {
       recipient,
       nonce,
+      capabilities,
       accessCode,
     }: {
       recipient: string;
       nonce: bigint;
+      capabilities: string[];
       accessCode?: string;
     },
   ) => {
@@ -172,6 +174,7 @@ export const createWorker = async ({
         timestamp: Math.floor(Date.now() / 1000),
         recipient,
         nonce,
+        capabilities: capabilities.join(","),
         accessCode,
       },
     });

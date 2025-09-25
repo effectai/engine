@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { contributors } from "./../../constants/contributions";
+import { contributors } from "~/constants/contributions";
 import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import { useIntersectionObserver } from "@vueuse/core";
 

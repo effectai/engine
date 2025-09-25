@@ -7,7 +7,7 @@ import {
   webSockets,
 } from "@effectai/protocol-core";
 
-import { Request, Response } from 'express';
+import type { Request, Response } from "express";
 
 import { createPaymentManager } from "./modules/createPaymentManager.js";
 import { createTaskManager } from "./modules/createTaskManager.js";
@@ -22,7 +22,7 @@ import { PAYMENT_BATCH_SIZE, TASK_ACCEPTANCE_TIME } from "./consts.js";
 
 import {
   HttpTransport,
-  HttpHandler,
+  type HttpHandler,
   Libp2pTransport,
   type TaskRecord,
   createEffectEntity,
@@ -227,17 +227,18 @@ export const createManager = async ({
     })
     .onMessage(
       "requestToWork",
-      async ({ recipient, nonce, accessCode }, { peerId }) => {
+      async ({ recipient, nonce, accessCode, capabilities }, { peerId }) => {
         await workerManager.connectWorker(
           peerId.toString(),
           recipient,
           nonce,
+          capabilities.split(","),
           accessCode,
         );
 
         logger.log.info(
           { peerId: peerId.toString(), recipient, nonce, accessCode },
-          "Worker connected",
+          `Worker connected with Capabilities: ${capabilities}`,
         );
 
         return {
@@ -360,18 +361,23 @@ export const createManager = async ({
   entity.get("/task-results", (async (req: Request, res: Response) => {
     const { ids } = req.query;
 
-    if (!ids) return res.status(404).json('not found')
+    if (!ids) return res.status(404).json("not found");
 
-    const taskIds = (ids as string).split(';');
+    const taskIds = (ids as string).split(";");
 
     const tasks = taskIds.map(async (taskId: string) => {
-      return await taskManager.getTask({
-	taskId,
-	index: "completed"
-      }).then(a => a.events
-	.filter((e: any) => e.type === 'submission')
-	.map((e: any) => ({ ...e, taskId}))[0])
-	.catch(_e => ({ taskId, error: "NOT FOUND"}));
+      return await taskManager
+        .getTask({
+          taskId,
+          index: "completed",
+        })
+        .then(
+          (a) =>
+            a.events
+              .filter((e: any) => e.type === "submission")
+              .map((e: any) => ({ ...e, taskId }))[0],
+        )
+        .catch((_e) => ({ taskId, error: "NOT FOUND" }));
     });
 
     const all = await Promise.all(tasks);
@@ -381,8 +387,8 @@ export const createManager = async ({
   entity.get("/", async (_req, res) => {
     const announcedAddresses =
       managerSettings.announce.length === 0
-	? [entity.getMultiAddress()?.[0]]
-	: managerSettings.announce;
+        ? [entity.getMultiAddress()?.[0]]
+        : managerSettings.announce;
 
     res.json({
       peerId: entity.getPeerId().toString(),
@@ -401,8 +407,8 @@ export const createManager = async ({
     const { template, providerPeerIdStr } = req.body;
     try {
       await taskManager.registerTemplate({
-	template,
-	providerPeerIdStr,
+        template,
+        providerPeerIdStr,
       });
 
       res.json({ status: "Template registered", id: template.templateId });

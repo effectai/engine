@@ -4,18 +4,26 @@
   "type": "module",
   "scripts": {
     "export:vkey": "node --experimental-strip-types scripts/verification-to-rust.cjs circuits/build/PaymentBatch_verification.json ./program/src",
-    "generate:constants": "NODE_ENV=production node --experimental-strip-types scripts/generate-constants.ts",
+    "generate:constants": "node --experimental-strip-types scripts/generate-constants.ts",
     "generate:circuit": "node --experimental-strip-types scripts/generate-circuit.ts",
     "build:circuits": "node --experimental-strip-types scripts/build-circuits.ts",
-    "compile:ts": "tsup clients/js --config ../../tsup.config.package.ts",
-    "build": "pnpm run generate:constants && pnpm run compile:ts",
-    "build:circuit": "pnpm run generate:circuit && pnpm run generate:constants && pnpm run compile:ts && pnpm run build:circuits"
+    "build": "pnpm run generate:clients && pnpm run generate:constants && pnpm run compile:ts",
+    "build:circuit": "pnpm run generate:circuit && pnpm run generate:constants && pnpm run compile:ts && pnpm run build:circuits",
+    "bundle:browser": "tsup clients/js/browser.ts --config ../../tsup.config.browser.ts",
+    "bundle:node": "tsup clients/js/node.ts --config ../../tsup.config.package.ts",
+    "compile:ts": "pnpm run bundle:node && pnpm run bundle:browser",
+    "generate:clients": "node --experimental-strip-types ../../tools/scripts/solana/generate-clients.ts payment"
   },
   "main": "dist/index.cjs",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "browser": {
+        "import": "./dist/browser.browser.mjs",
+        "require": "./dist/browser.browser.cjs"
+      },
+      "import": "./dist/node.js",
+      "require": "./dist/node.cjs",
+      "types": "./dist/index.d.ts"
     }
   },
   "dependencies": {

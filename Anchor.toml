@@ -5,9 +5,6 @@ package_manager = "pnpm"
 resolution = true
 skip-lint = false
 
-[programs.localnet]
-effect_payment = "effphQKcAYeN6CkbygjnJUsuYXGUtkikSPZ6B8hSggC"
-
 [registry]
 url = "https://api.apr.dev"
 
@@ -16,13 +13,7 @@ cluster = "localnet"
 wallet = "./tools/keys/authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV.json"
 
 [workspace]
-members = [
-  "modules/payment/program",
-  "modules/migration/program",
-  "modules/stake/program",
-  "modules/reward/program",
-  "modules/vesting/program",
-]
+members = ["modules/payment/program", "modules/migration/program", "modules/staking/program", "modules/reward/program", "modules/vesting/program"]
 
 [scripts]
 test = "pnpm vitest"

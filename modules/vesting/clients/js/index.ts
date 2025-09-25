@@ -1,3 +1,3 @@
-export * from "./@generated/vesting/index.js";
+export * from "./@generated/index.js";
 export * from "./fetch.js";
 export * from "./derive.js";

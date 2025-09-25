@@ -1,24 +1,24 @@
 import * as React from "react";
-import { Button } from "@effectai/ui";
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
   CardFooter,
-} from "@effectai/ui";
-import { Alert, AlertDescription, AlertTitle } from "@effectai/ui";
-import { Separator } from "@effectai/ui";
-import { Badge } from "@effectai/ui";
-import { BlockchainAddress } from "../BlockchainAddress";
-
-import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Separator,
+  Badge,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@effectai/ui";
+} from "@effectai/react";
+import { BlockchainAddress } from "../BlockchainAddress";
+import { useMigration } from "@/providers/MigrationProvider";
 
 import {
   ShieldCheck,
@@ -29,16 +29,7 @@ import {
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
-
-type Props = {
-  current: "authorize" | string;
-  sourceAddress: string;
-  foreignPublicKey: Uint8Array | null;
-  signature?: string | Uint8Array | null;
-  message?: string | Uint8Array | null;
-  authorize: () => Promise<void> | void;
-  goTo: (k: string) => void;
-};
+import { useMigrationStore } from "@/stores/migrationStore";
 
 function previewBytes(value?: string | Uint8Array | null, max = 18) {
   if (!value) return "—";
@@ -48,26 +39,40 @@ function previewBytes(value?: string | Uint8Array | null, max = 18) {
   return `${s.slice(0, Math.ceil((max - 1) / 2))}…${s.slice(-Math.floor((max - 1) / 2))}`;
 }
 
-export function AuthorizeStep({
-  current,
-  foreignPublicKey,
-  signature,
-  message,
-  authorize,
-  goTo,
-  sourceAddress,
-}: Props) {
+export function AuthorizeStep() {
   const [loading, setLoading] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
 
-  if (current !== "authorize") return null;
+  const { sourceWallet } = useMigration();
+  if (!sourceWallet) return;
+
+  const sourceAddress = sourceWallet.address;
+
+  const signature = useMigrationStore((s) => s.signature);
+  const setSignature = useMigrationStore((s) => s.setSignature);
+
+  const message = useMigrationStore((s) => s.message);
+  const setMessage = useMigrationStore((s) => s.setMessage);
+
+  const foreignPublicKey = useMigrationStore((s) => s.foreignPublicKey);
+  const destinationAddress = useMigrationStore((s) => s.destinationAddress);
+  const goTo = useMigrationStore((s) => s.goTo);
 
   const authorized = Boolean(signature && message && foreignPublicKey);
   const onAuthorize = async () => {
     setErr(null);
     try {
+      if (!destinationAddress) {
+        setErr("Destination address is required");
+        return;
+      }
+
       setLoading(true);
-      await Promise.resolve(authorize());
+      const { message, signature } =
+        await sourceWallet.authorizeTokenClaim(destinationAddress);
+
+      setMessage(message);
+      setSignature(signature);
     } catch (e: any) {
       setErr(e?.message ?? "Authorization failed. Please try again.");
     } finally {
@@ -122,7 +127,7 @@ export function AuthorizeStep({
             <div>
               <dt className="text-muted-foreground">Source account</dt>
               <dd className="mt-0.5 font-mono break-all">
-                <BlockchainAddress address={sourceAddress} />
+                {sourceAddress && <BlockchainAddress address={sourceAddress} />}
               </dd>
             </div>
             <div>

@@ -6,7 +6,6 @@ import path from "node:path";
 import { groth16, type Groth16Proof } from "snarkjs";
 import type { Payment } from "@effectai/protobufs";
 import { PAYMENT_BATCH_SIZE } from "./consts.js";
-export type { Groth16Proof } from "snarkjs";
 export { buildEddsa } from "circomlibjs";
 
 export type DeepNonNullable<T> = T extends Function
