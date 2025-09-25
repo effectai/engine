@@ -83,13 +83,20 @@ export function VestingScheduleItem({
     <Card className={cn("w-full shadow-none py-0", className)}>
       <CardContent className="p-1 sm:p-4">
         <div className="flex flex-col gap-3 sm:gap-2">
+          {balance && (
+            <span className="text-center text-xs text-muted-foreground my-2 font-mono">
+              Unstaking {formatNumber(balance.uiAmount ?? 0)} EFFECT
+            </span>
+          )}
           {/* Top row: title + time + claimable & button */}
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center justify-between w-full gap-2 text-xs text-muted-foreground">
               {locked ? (
                 <>
-                  <Lock className="h-4 w-4" />
-                  <span>Unlocks in</span>
+                  <div className="flex items-center gap-1">
+                    <Lock className="h-4 w-4" />
+                    <span>Unlocks in</span>
+                  </div>
                   <span className="font-mono text-foreground">
                     {formatDuration(secondsToUnlock)}
                   </span>
