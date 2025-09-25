@@ -12,7 +12,7 @@
 ;; - effect/setup-terminals: opens dedicated vterms for: manager and
 ;; task poster, each in a guix container
 
-(defun effect/open-project-terminals (root)
+(defun effect/open-terminals (root)
   (delete-other-windows)
   (let ((default-directory root))
     (vterm (format "*vterm- run manager"))
@@ -32,13 +32,13 @@
 
     (balance-windows)))
 
-(defun effect/setup-terminals ()
+(defun effect/setup-vterms ()
   "Open several vterms for Effect dev."
   (interactive)
   (if-let ((root (project-current)))
       (let ((root-dir (project-root root)))
 	(message "Opening terminal in %S" root-dir)
-	(my/open-effect-terminals root-dir))
+	(effect/open-terminals root-dir))
     (user-error "Not in a project")))
 
 (provide 'effect/emacs-setup)

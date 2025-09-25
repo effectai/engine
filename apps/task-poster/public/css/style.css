@@ -111,10 +111,16 @@ fieldset {
     border: 2px solid var(--border);
     border-radius: calc(var(--radius) * 1.6);
     padding: calc(var(--line-height) * 0.5);
+    width: 100%;
+    margin-bottom: var(--line-height);
 }
 
-fieldset *:first-child {
+
+fieldset *:first-child{
     margin-top: 0;
+}
+fieldset > legend + * {
+    margin-top: 0 !important;
 }
 
 fieldset input,
@@ -446,3 +452,5 @@ header { margin-bottom: 25px; border-bottom: 0px solid var(--accent); }
 
 .blockz { display: flex; justify-content: space-between; }
 .blockz>.block { flex: none; width: 15px !important; height: 15px; flex-shrink: 0; }
+
+
