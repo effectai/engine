@@ -37,7 +37,7 @@
             </span>
           </p>
 
-          <div class="flex flex-wrap gap-6">
+          <div class="flex flex-wrap gap-6 flex-nowrap">
             <a
               href="/whitepaper.pdf"
               target="_blank"

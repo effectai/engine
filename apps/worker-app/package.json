@@ -43,6 +43,7 @@
     "ulid": "3.0.0",
     "vite-plugin-node-polyfills": "^0.24.0",
     "vue": "^3.5.20",
+    "vue-json-tree": "^0.4.3",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {

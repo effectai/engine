@@ -10,9 +10,6 @@ export const useWorkerNode = () => {
   const { data: rejectedTasks } = useGetTasks(ref("rejected"));
   const tasksRejected = computed(() => rejectedTasks.value?.length || 0);
 
-  // const { useGetPaymentsQuery } = usePayments();
-  // const { data: managerPaymentBatches } = useGetPaymentsQuery();
-
   const totalEffectEarnings = computed(() => {
     return (
       Number(
@@ -22,43 +19,6 @@ export const useWorkerNode = () => {
       ) / 1e6
     );
   });
-
-  const useWorkerLevel = () => {
-    const level = computed(() => {
-      const totalTasks = totalTasksCompleted.value;
-      if (totalTasks < 10) return 1;
-      if (totalTasks < 50) return 2;
-      if (totalTasks < 100) return 3;
-      if (totalTasks < 200) return 4;
-      return 5;
-    });
-
-    const experiencePerLevel = computed(() => {
-      return {
-        1: 25000,
-        2: 50000,
-        3: 100000,
-        4: 200000,
-        5: 500000,
-      };
-    });
-
-    const progress = computed(() => {
-      const currentLevel = level.value;
-      const currentExperience = Number(totalEffectEarnings.value);
-      const requiredExperience =
-        experiencePerLevel.value[currentLevel] || 25000;
-
-      return ((currentExperience + 1) / requiredExperience) * 100;
-    });
-
-    return {
-      level,
-      progress,
-      experience: totalEffectEarnings.value,
-      experiencePerLevel: experiencePerLevel.value,
-    };
-  };
 
   const daysInNetwork = computed(() => {
     if (!completedTasks.value || completedTasks.value.length === 0) return 1;
@@ -86,6 +46,5 @@ export const useWorkerNode = () => {
     totalEffectEarnings,
     daysInNetwork,
     performanceScore,
-    useWorkerLevel,
   };
 };

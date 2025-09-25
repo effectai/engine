@@ -1,5 +1,5 @@
 <template>
-  <UModal>
+  <UModal title="Identity Document" :ui="{ content: 'max-w-4xl' }">
     <UButton
       variant="link"
       icon="i-lucide-file"
@@ -8,83 +8,34 @@
       >Identity Document</UButton
     >
 
-    <template #header>Identity Document</template>
-    <template #content
+    <template #body
       ><div class="id-doc">
         <div class="head">
-          <div class="title">Identity Document</div>
-          <div class="meta">
+          <div class="meta flex flex-wrap gap-4">
             <span v-if="peerId"
               >Peer: <strong>{{ sliceBoth(peerId.toString()) }}</strong></span
             >
             <span
               >Updated: <strong>{{ updatedHuman }}</strong></span
             >
-            <span
-              >Payments: <strong>{{ payments?.length ?? 0 }}</strong></span
-            >
-            <span
-              >Tasks: <strong>{{ tasksCompleted?.length ?? 0 }}</strong></span
-            >
-            <span
-              >Capabilities:
-              <strong>{{ capabilities?.length ?? 0 }}</strong></span
-            >
           </div>
+
+          <JsonTree :data="doc" :level="1" />
           <div class="actions">
             <button class="btn" @click="copyJson" :disabled="copied">
-              {{ copied ? "Copied!" : "Copy JSON" }}
-            </button>
-            <button class="btn" @click="downloadJson">Download JSON</button>
-            <button class="btn subtle" @click="toggleSections">
-              {{ collapsed ? "Expand sections" : "Collapse sections" }}
+              {{ copied ? "Copied!" : "Export" }}
             </button>
           </div>
         </div>
 
-        <div class="grid">
-          <section class="panel" :class="{ collapsed }">
-            <header @click="toggle('payments')">
-              <span>Payments</span>
-              <small>{{ payments?.length ?? 0 }}</small>
-            </header>
-            <div class="body">
-              <pre class="code">{{ pretty(payments) }}</pre>
-            </div>
-          </section>
-
-          <section class="panel" :class="{ collapsed }">
-            <header @click="toggle('tasks')">
-              <span>Tasks Completed</span>
-              <small>{{ tasksCompleted?.length ?? 0 }}</small>
-            </header>
-            <div class="body">
-              <pre class="code">{{ pretty(tasksCompleted) }}</pre>
-            </div>
-          </section>
-
-          <section class="panel" :class="{ collapsed }">
-            <header @click="toggle('capabilities')">
-              <span>Capabilities</span>
-              <small>{{ capabilities?.length ?? 0 }}</small>
-            </header>
-            <div class="body">
-              <pre class="code">{{ pretty(capabilities) }}</pre>
-            </div>
-          </section>
-        </div>
-
-        <details class="full-json">
-          <summary>View full JSON document</summary>
-          <pre class="code">{{ pretty(doc) }}</pre>
-        </details>
-      </div></template
-    ></UModal
-  >
+        <div class="grid"></div></div></template
+  ></UModal>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import JsonTree from "vue-json-tree";
+const { userCapabilities } = useCapabilities();
 
 /** Minimal, extensible types */
 export interface Payment {
@@ -131,11 +82,10 @@ const updatedHuman = computed(() => {
 });
 
 const doc = computed(() => ({
-  peerId: props.peerId ?? null,
+  peerId: props.peerId.toString() ?? null,
   updatedAt: props.updatedAt ?? new Date().toISOString(),
-  payments: props.payments ?? [],
   tasksCompleted: props.tasksCompleted ?? [],
-  capabilities: props.capabilities ?? [],
+  capabilities: props.capabilities ?? userCapabilities.value ?? [],
 }));
 
 function pretty(v: unknown) {

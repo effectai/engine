@@ -28,6 +28,22 @@
         class="rounded-xl border-gray-200/70 dark:border-gray-800/60 bg-white/70 dark:bg-white/5"
       >
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+              >Peer ID</span
+            >
+            <div class="flex items-center gap-2">
+              {{ sliceBoth(peerId.toString()) }}
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+              >Lifespan</span
+            >
+            <div class="flex items-center gap-2">{{ daysInNetwork }} days</div>
+          </div>
+
           <!-- Chain -->
           <div class="flex items-center justify-between">
             <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"
@@ -101,6 +117,7 @@
 import type { DropdownMenuItem } from "@nuxt/ui";
 const { account } = useAuth();
 const isOpenClaimModal = ref(false);
+const { peerId, daysInNetwork } = useWorkerNode();
 
 const walletMeta = {
   name: "Effect Node Wallet",

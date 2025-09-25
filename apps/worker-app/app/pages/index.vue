@@ -6,8 +6,8 @@
     <div
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 items-stretch"
     >
-      <PaymentCard class="" />
-      <CapabilitiesList class="" />
+      <NodeInfoCard />
+      <CapabilitiesList />
     </div>
 
     <UCard class="mb-4 p-0" :ui="{ body: 'p-1 sm:p-0' }" variant="outline">
