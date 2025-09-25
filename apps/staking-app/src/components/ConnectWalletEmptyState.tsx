@@ -27,8 +27,7 @@ export function ConnectWalletEmptyState() {
               Effect AI: Staking App
             </h2>
             <p className="mt-2 max-w-prose text-sm text-neutral-600 dark:text-neutral-400">
-              Connect a wallet to manage staking View your staked balance,
-              pending rewards, and unstaking details.
+              View your staked balance, pending rewards, and unstaking details.
             </p>
 
             <div className="mt-5">
