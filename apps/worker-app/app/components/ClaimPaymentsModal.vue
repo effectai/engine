@@ -171,13 +171,7 @@ const canClaim = computed(() => {
 });
 
 const { data: balance } = useGetBalanceQuery(account);
-const {
-  mutateAsync: claimPayments,
-  currentProof,
-  currentPhase,
-  totalProofs,
-  isPending,
-} = useClaimPayments();
+const { mutateAsync: claimPayments } = useClaimPayments();
 
 const toast = useToast();
 const { data: managers, isFetching, isError, error } = useFetchManagerNodes();

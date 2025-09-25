@@ -5,7 +5,6 @@ import {
   TabsTrigger,
   AppHeader,
   Toaster,
-  Skeleton,
   useWalletContext,
   useConnectionContext,
 } from "@effectai/react";
