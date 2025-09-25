@@ -36,11 +36,12 @@
           <!-- Header -->
           <div class="text-center">
             <div
-              class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15"
+              class="mx-auto mb-4 flex items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15 p-4"
             >
-              <UIcon
-                name="i-heroicons-cube-transparent-20-solid"
-                class="text-xl text-black"
+              <img
+                class="w-32"
+                src="@/assets/img/logo-dark.svg"
+                alt="Effect AI Logo"
               />
             </div>
             <h1 class="text-2xl font-semibold tracking-tight text-black">

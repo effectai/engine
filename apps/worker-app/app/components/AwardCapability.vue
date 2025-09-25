@@ -133,6 +133,7 @@ const continueHandler = () => {
   router.push("/"); // Adjust the path as needed
 };
 
+const { awardCapability } = useCapabilities();
 async function claim() {
   if (claimed.value) return;
 
@@ -161,26 +162,11 @@ async function claim() {
   claimed.value = true;
   showToast.value = true;
   emit("claimed");
-  await awardCapability();
+  awardCapability(props.capability?.id);
 
   // hide toast after a moment
   setTimeout(() => (showToast.value = false), 2200);
 }
-
-const capabilities = useLocalStorage("user-capabilities", []);
-
-const awardCapability = async () => {
-  if (capabilities.value.includes(props.capability.id)) {
-    return false;
-  }
-
-  capabilities.value.push({
-    id: props.capability.id,
-    awardedAt: new Date().toISOString(),
-  });
-
-  return true;
-};
 
 function onCardAnimEnd(e) {
   // no-op, but kept in case you want hooks on keyframe end

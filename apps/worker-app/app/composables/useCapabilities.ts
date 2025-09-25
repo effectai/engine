@@ -6,9 +6,29 @@ type UserCapabilityAssignment = {
 };
 
 export const useCapabilities = () => {
+  const { peerId } = useWorkerNode();
+
+  if (!peerId.value) throw new Error("Peer ID is not available");
+
+  const awardCapability = (capabilityId: string) => {
+    if (
+      userCapabilityAssignmentMap.value.some(
+        (assignment) => assignment.id === capabilityId,
+      )
+    ) {
+      console.warn(`Capability ${capabilityId} already awarded.`);
+      return;
+    }
+
+    userCapabilityAssignmentMap.value.push({
+      id: capabilityId,
+      awardedAt: new Date(),
+    });
+  };
+
   const userCapabilityAssignmentMap = useLocalStorage<
     UserCapabilityAssignment[]
-  >("user-capabilities", []);
+  >(`${peerId.value?.toString()}-capabilities`, []);
 
   const userCapabilities = computed(() =>
     availableCapabilities
@@ -52,5 +72,6 @@ export const useCapabilities = () => {
     userCapabilityAssignmentIds,
     clearUserCapabilities,
     availableCapabilities,
+    awardCapability,
   };
 };
