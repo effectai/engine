@@ -185,9 +185,7 @@ export const createCsvFetcher = async (
 ) => {
   const csvData = await parseCsv(fields.csv, fields.delimiter);
 
-  const lastFetcher = await db.listAll<Fetcher>(["fetcher", ds.id, {}, "info"], 1, true);
-  const lastId = lastFetcher.length ? lastFetcher![0].key[2] : 0;
-  const nextId = lastId as number + 1;
+  const nextId = db.count(["fetcher", ds.id, {}, "info"]) + 1;
 
   const f: Fetcher = {
     name: fields.name,
@@ -257,7 +255,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 export const getPendingTasks = async (f: Fetcher) => {
   
   const tasks = await db.listAll<boolean>(
-    ["fetcher", f.datasetId, f.index, "queue", {}], 10, false
+    ["fetcher", f.datasetId, f.index, "queue", {}], f.batchSize, false
   );
 
   return tasks.map(t => t.key[4]);
