@@ -492,7 +492,7 @@ export const addFetcherRoutes = (app: Express): void => {
       resultIds.map(i => db.get<any>(["task-result", i.key[4]]))
     )).map(p => p!.data);
 
-    let cols = ["timestamp", "peer", "taskId", "result"];
+    let cols = ["timestamp", "submissionByPeer", "taskId", "result"];
 
     if (f)
       res.send(page(`
