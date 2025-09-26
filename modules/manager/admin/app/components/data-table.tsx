@@ -27,16 +27,21 @@ import { useState } from "react";
 import { Input } from "./ui/input";
 
 interface DataTableProps<TData, TValue> {
+  pageSize?: number;
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
 }
 
 export function DataTable<TData, TValue>({
+  pageSize = 25,
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [pageSizeInput, setPageSizeInput] = useState(pageSize);
+  const [pageIndex, setPageIndex] = useState(0);
+
   const table = useReactTable({
     data,
     columns,
@@ -47,6 +52,10 @@ export function DataTable<TData, TValue>({
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     state: {
+      pagination: {
+        pageIndex: pageIndex,
+        pageSize: pageSizeInput,
+      },
       sorting,
       columnFilters,
     },
@@ -54,7 +63,6 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
-      <div className="flex items-center py-4"></div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -106,10 +114,22 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
+        <Input
+          type="number"
+          value={table.getState().pagination.pageSize}
+          onChange={(e) => {
+            const value = e.target.value;
+            setPageSizeInput(Number(value));
+          }}
+          className="w-16"
+          min={1}
+          max={1000}
+          step={1}
+        />
         <Button
           variant="outline"
           size="sm"
-          onClick={() => table.previousPage()}
+          onClick={() => setPageIndex(pageIndex - 1)}
           disabled={!table.getCanPreviousPage()}
         >
           Previous
@@ -117,7 +137,7 @@ export function DataTable<TData, TValue>({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => table.nextPage()}
+          onClick={() => setPageIndex(pageIndex + 1)}
           disabled={!table.getCanNextPage()}
         >
           Next

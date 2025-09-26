@@ -1,13 +1,9 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { sliceBoth } from "@/app/lib/utils";
-import { Link, useNavigate } from "@remix-run/react";
-import type { WorkerRecord } from "../../../../dist/stores/managerWorkerStore";
-import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/app/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
-import { AccessCodeRecord } from "../../../../dist/stores/managerAccessCodeStore";
+import type { AccessCodeRecord } from "../../../../dist/stores/managerAccessCodeStore";
 import { Badge } from "@/app/components/ui/badge";
 
 export const columns: ColumnDef<AccessCodeRecord>[] = [
@@ -16,6 +12,7 @@ export const columns: ColumnDef<AccessCodeRecord>[] = [
     header: "code",
   },
   {
+    accessorFn: (row) => row.events.find((e) => e.type === "create")?.timestamp,
     id: "createdAt",
     header: ({ column }) => {
       return (
