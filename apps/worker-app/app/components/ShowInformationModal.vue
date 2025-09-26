@@ -7,8 +7,9 @@
   >
     <template #content>
       <UCard
+        class="overflow-scroll"
         :ui="{
-          base: 'relative overflow-hidden',
+          base: 'relative overflow-scroll',
           ring: '',
           divide: 'divide-y divide-gray-200 dark:divide-gray-700',
           body: {
@@ -28,7 +29,7 @@
         </template>
 
         <template #default>
-          <div v-html="instructions"></div>
+          <div class="overflow-scroll" v-html="instructions"></div>
         </template>
 
         <template #footer>

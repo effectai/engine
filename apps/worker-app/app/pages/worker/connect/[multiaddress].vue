@@ -229,7 +229,7 @@ const { data: _payout } = usePayout();
 //   { immediate: true },
 // );
 //
-tryOnBeforeUnmount(async () => {
-  await disconnect();
+tryOnBeforeUnmount(() => {
+  disconnect();
 });
 </script>
