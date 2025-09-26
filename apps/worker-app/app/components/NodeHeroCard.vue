@@ -41,23 +41,23 @@
           <!-- Mini stats -->
           <div class="grid grid-cols-3 gap-4 mt-4">
             <div
-              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between"
+              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between flex-col"
             >
               <label>Tasks completed:</label>
               {{ totalTasksCompleted }}
             </div>
 
             <div
-              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between"
+              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between flex-col"
             >
               <label>Capabilities:</label>
               {{ userCapabilityCount }}
             </div>
 
             <div
-              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between"
+              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between flex-col"
             >
-              <label>Peformance Score:</label>
+              <label class="font-bold">Peformance Score</label>
               {{ performanceScore }}%
             </div>
           </div>
@@ -86,7 +86,9 @@
         </div>
 
         <!-- Level and Experience -->
-        <div class="md:col-span-6 space-y-4 md:col-start-8 flex flex-col">
+        <div
+          class="hidden sm:block md:col-span-6 space-y-4 md:col-start-8 flex flex-col"
+        >
           <div class="relative w-32 h-32 sm:w-48 sm:h-48 mx-auto">
             <svg class="sm:w-48 sm:h-48 -rotate-90" viewBox="0 0 100 100">
               <circle

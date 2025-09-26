@@ -6,7 +6,8 @@ type UserCapabilityAssignment = {
 };
 
 export const useCapabilities = () => {
-  const { peerId } = useWorkerNode();
+  const workerStore = useWorkerStore();
+  const { peerId } = storeToRefs(workerStore);
 
   if (!peerId.value) throw new Error("Peer ID is not available");
 

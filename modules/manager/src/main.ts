@@ -329,8 +329,24 @@ export const createManager = async ({
       };
     });
 
+  const WHITELISTED_IPS = [
+    "::1",
+    "::ffff:127.0.0.1",
+    "127.0.0.1",
+    "188.245.239.237",
+  ];
+
   // Register http routes for manager
   entity.post("/task", async (req, res) => {
+    //get IP address of requester
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    logger.log.info({ ip }, "Received task submission via HTTP");
+
+    //check if IP is whitelisted
+    if (!WHITELISTED_IPS.some((whitelisted) => ip?.includes(whitelisted))) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
     const task = req.body;
     try {
       await taskManager.createTask({

@@ -116,6 +116,7 @@ export const useSessionStore = defineStore("session", () => {
       const worker = useWorkerStore();
       assertExists(worker.instance, "Worker instance is not available");
       await worker.instance.stop();
+      console.log("Worker instance stopped");
       status.value = "idle";
       error.value = null;
       current.value = null;
