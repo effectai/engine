@@ -64,7 +64,7 @@ const loggedInPage = (msg = "") => `
 
 // configure valid auth keys here
 // TODO: move to config
-const validKeys = ["0500486958191779"];
+const validKeys = (process.env.AUTH_KEYS || "0").split(",");
 const isValidKey = (k: string | null) => k && validKeys.includes(k);
 
 const getAuthToken = (req: Request) => {
