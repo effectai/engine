@@ -52,8 +52,8 @@ const parseCsv = (csv: string, delimiter = ","): Promise<any[]> => {
       .on("error", (error) => reject(error))
       .on("data", (row) => data.push(row))
       .on("end", (rowCount: number) => {
-        console.log(`CSV: Parsed ${rowCount} rows`);
-        resolve(data);
+	console.log(`CSV: Parsed ${rowCount} rows`);
+	resolve(data);
       });
   });
 };
@@ -131,13 +131,13 @@ export const fetcherForm = async (dsId: number, values: FormValues, msg = "") =>
       <label for="fetcher-type"><strong>Data source</strong><br/>
       <small>How new tasks will be fetched.</small></label>
       <select name="processor" id="processor">
-        <option value="csv">CSV</option>
-        <option value="fetcher">Previous step</option>
-        <option value="constant">Constant value</option>
+	<option value="csv">CSV</option>
+	<option value="fetcher">Previous step</option>
+	<option value="constant">Constant value</option>
       </select>
 
   </fieldset>
-  
+
   <fieldset>
     <legend>execution engine</legend>
 
@@ -242,18 +242,18 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
   return csvData.map(
     (d, idx) =>
       ({
-        id: ulid(),
-        title: fetcher.name,
-        reward: BigInt(fetcher.price * 1000000),
-        timeLimitSeconds: 600,
-        templateId: fetcher.template,
-        templateData: JSON.stringify(d),
+	id: ulid(),
+	title: fetcher.name,
+	reward: BigInt(fetcher.price * 1000000),
+	timeLimitSeconds: 600,
+	templateId: fetcher.template,
+	templateData: JSON.stringify(d),
       }) as Task,
   );
 };
 
 export const getPendingTasks = async (f: Fetcher) => {
-  
+
   const tasks = await db.listAll<boolean>(
     ["fetcher", f.datasetId, f.index, "queue", {}], f.batchSize, false
   );
@@ -264,9 +264,10 @@ export const getPendingTasks = async (f: Fetcher) => {
 const importCsv = async (fetcher: Fetcher, csv: string) => {
   let tasks = await getTasks(fetcher, csv);
   tasks.forEach(async (t) =>  {
-    const tid = ulid();
-    await db.set<Task>(["task", tid], t);
-    await db.set<boolean>(["fetcher", fetcher.datasetId, fetcher.index, "queue", tid], true);
+    await db.set<Task>(["task", t.id], t);
+    await db.set<boolean>(
+      ["fetcher", fetcher.datasetId, fetcher.index, "queue", t.id], true
+    );
   });
 };
 
@@ -276,7 +277,7 @@ const importCsv = async (fetcher: Fetcher, csv: string) => {
  *
  * 1) read tasks from the `backlog` queue and post to effect
  * 2) read tasks from the `active` queue and fetch results
- * 3) 
+ * 3)
  */
 export const processFetcher = async (fetcher: Fetcher) => {
   // check if it's already time
@@ -290,7 +291,7 @@ export const processFetcher = async (fetcher: Fetcher) => {
     console.log(`Fetcher ${fid} import ${remaining / 1000}s remaining`);
     return -1;
   }
- 
+
   publishProgress[fetcher.datasetId] ??= {};
 
   // check for import lock
@@ -306,6 +307,9 @@ export const processFetcher = async (fetcher: Fetcher) => {
   };
 
   const imported = await importTasks(fetcher);
+
+  // TODO: put proper value for result batch size
+  await processResults(fetcher, 20);
 
   publishProgress[fetcher.datasetId][fetcher.index] = null;
 
@@ -355,13 +359,13 @@ export const importTasks = async (f: Fetcher) => {
 
     try {
       const serializedTask = {
-        ...task!.data,
-        // convert bigint to string for serialization
-        reward: task!.data.reward.toString(),
+	...task!.data,
+	// convert bigint to string for serialization
+	reward: task!.data.reward.toString(),
       };
 
       const { data } = await api.post<APIResponse>("/task", serializedTask);
-      
+
       db.beginTransaction();
       await db.delete([...fetcher.key.slice(0, 3), "queue", taskId]);
       await db.set<boolean>([...fetcher.key.slice(0, 3), "active", taskId], true);
@@ -381,6 +385,33 @@ export const importTasks = async (f: Fetcher) => {
   await db.set<Fetcher>(fetcher!.key, fetcher!.data);
 
   return tasks.length;
+};
+
+export const processResults = async (f: Fetcher, batchSize: number) => {
+  const keyBase = ["fetcher", f.datasetId, f.index];
+
+  const tasks = await db.listAll<boolean>(
+    [...keyBase, "active", {}], batchSize, false
+  );
+
+  let ids = tasks.map(t => t.key[4]);
+
+  if (!ids || ids.length === 0)
+    return;
+
+  const { data } = await api.get<APIResponse>(
+    "/task-results", {params: {ids: ids.join(";")}}
+  );
+
+  for (const d of data as any) {
+    if (d.type !== "submission")
+      continue;
+    db.beginTransaction();
+    await db.delete([...keyBase, "active", d.taskId]);
+    await db.set<boolean>([...keyBase, "done", d.taskId], true);
+    await db.set<any>(["task-result", d.taskId], d);
+    await db.endTransaction();
+  }
 };
 
 type ValidationFunction = (v: any) => string | boolean | undefined | null;
@@ -409,8 +440,8 @@ const validations: ValidationMap = {
     return !v
       ? "Batch size is required"
       : isNaN(num)
-        ? "Must be a number"
-        : num <= 0 && "Must be greater than 0";
+	? "Must be a number"
+	: num <= 0 && "Must be greater than 0";
   },
 
   price: (v: any) => {
@@ -418,10 +449,10 @@ const validations: ValidationMap = {
     return !v
       ? "Price is required"
       : isNaN(num)
-        ? "Must be a number"
-        : num <= 0
-          ? "Price must be greater than 0"
-          : num > 100 && "Price too large";
+	? "Must be a number"
+	: num <= 0
+	  ? "Price must be greater than 0"
+	  : num > 100 && "Price too large";
   },
 
   template: (v: string) => (!v || v.length === 0) && "Template is required",
@@ -443,7 +474,6 @@ export const addFetcherRoutes = (app: Express): void => {
   // TODO: parse the ?type=csv parameter for more fetchers
   app.get("/d/:id/create-fetcher", async (req, res) => {
     const id = Number(req.params.id);
-    console.log('...', id)
     res.send(page(await fetcherForm(id, {}, "")))
   });
 
@@ -453,7 +483,16 @@ export const addFetcherRoutes = (app: Express): void => {
     const f = await getFetcher(id, fid);
 
     const queueSize = countTasks(f!, "queue");
-    const activeSize = countTasks(f!, "active"); 
+    const activeSize = countTasks(f!, "active");
+
+    const resultIds = (await db.listAll<boolean>(
+      ["fetcher", f!.datasetId, f!.index, "done", {}]
+    ))!;
+    const results = (await Promise.all(
+      resultIds.map(i => db.get<any>(["task-result", i.key[4]]))
+    )).map(p => p!.data);
+
+    let cols = ["timestamp", "peer", "taskId", "result"];
 
     if (f)
       res.send(page(`
@@ -464,6 +503,14 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Queued: ${queueSize}</li>
   <li>Active: ${activeSize}</li>
 </ul>
+
+<h3>Last 20 results</h3>
+<table>
+    <thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead>
+    <tbody>${results.map((r: any) => `
+      <tr>${cols.map(c => `<th>${r[c]}</th>`).join("")}</tr>`).join("")}
+    </tbody>
+</table>
 `));
     else
       return make404(res);
@@ -472,16 +519,16 @@ export const addFetcherRoutes = (app: Express): void => {
   app.post("/d/:id/fetcher-create", async (req, res) => {
     const id = Number(req.params.id);
     const dataset = (await db.get<DatasetRecord>(["dataset", id, "info"]))!.data;
-    
+
     let { valid, errors } = await validateForm(req.body);
     let msg = Object.values(errors).join("<br/>- ");
     msg = msg ? "- " + msg : "";
 
     if (valid) {
       const f = await createCsvFetcher(dataset, req.body);
-      
+
     } else {
-      msg = '<h4 style="margin-top: 0;">Could not create dataset:</h4>' + msg;    
+      msg = '<h4 style="margin-top: 0;">Could not create dataset:</h4>' + msg;
     }
 
     if (valid) {
@@ -490,7 +537,6 @@ export const addFetcherRoutes = (app: Express): void => {
     } else {
       console.log(`Invalid form submission ${msg}`);
       res.send(await fetcherForm(id, req.body, msg));
-    }    
+    }
   });
 };
-
