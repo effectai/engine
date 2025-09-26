@@ -86,7 +86,9 @@
         </div>
 
         <!-- Level and Experience -->
-        <div class="md:col-span-6 space-y-4 md:col-start-8 flex flex-col">
+        <div
+          class="hidden sm:block md:col-span-6 space-y-4 md:col-start-8 flex flex-col"
+        >
           <div class="relative w-32 h-32 sm:w-48 sm:h-48 mx-auto">
             <svg class="sm:w-48 sm:h-48 -rotate-90" viewBox="0 0 100 100">
               <circle
