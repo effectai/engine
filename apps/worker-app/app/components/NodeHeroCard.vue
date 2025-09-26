@@ -41,23 +41,23 @@
           <!-- Mini stats -->
           <div class="grid grid-cols-3 gap-4 mt-4">
             <div
-              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between"
+              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between flex-col"
             >
               <label>Tasks completed:</label>
               {{ totalTasksCompleted }}
             </div>
 
             <div
-              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between"
+              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between flex-col"
             >
               <label>Capabilities:</label>
               {{ userCapabilityCount }}
             </div>
 
             <div
-              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between"
+              class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between flex-col"
             >
-              <label>Peformance Score:</label>
+              <label class="font-bold">Peformance Score</label>
               {{ performanceScore }}%
             </div>
           </div>
