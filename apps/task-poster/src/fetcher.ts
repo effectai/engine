@@ -419,7 +419,9 @@ const validations: ValidationMap = {
       ? "Price is required"
       : isNaN(num)
         ? "Must be a number"
-        : num <= 0 && "Price must be greater than 0";
+        : num <= 0
+          ? "Price must be greater than 0"
+          : num > 100 && "Price too large";
   },
 
   template: (v: string) => (!v || v.length === 0) && "Template is required",
