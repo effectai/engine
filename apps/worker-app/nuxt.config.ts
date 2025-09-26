@@ -3,6 +3,9 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-03-01",
   devtools: { enabled: true },
   css: ["@/assets/css/main.css"],
+  ui: {
+    colorMode: false,
+  },
   modules: ["@pinia/nuxt", "@nuxt/ui", "@vueuse/nuxt"],
 
   runtimeConfig: {
