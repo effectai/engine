@@ -506,10 +506,10 @@ export const addFetcherRoutes = (app: Express): void => {
 </ul>
 
 <h3>Last 200 results</h3>
-<table>
+<table style="font-size: 9px;">
     <thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead>
     <tbody>${results.map((r: any) => `
-      <tr>${cols.map(c => `<th>${r[c]}</th>`).join("")}</tr>`).join("")}
+      <tr>${cols.map(c => `<td>${r[c]}</td>`).join("")}</tr>`).join("")}
     </tbody>
 </table>
 `));
