@@ -246,7 +246,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
       ({
         id: ulid(),
         title: fetcher.name,
-        reward: BigInt(fetcher.price),
+        reward: BigInt(fetcher.price * 1000000),
         timeLimitSeconds: 600,
         templateId: fetcher.template,
         templateData: JSON.stringify(d),
