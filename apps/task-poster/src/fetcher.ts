@@ -309,6 +309,7 @@ export const processFetcher = async (fetcher: Fetcher) => {
   const imported = await importTasks(fetcher);
 
   // TODO: put proper value for result batch size
+  console.log('procssing');
   await processResults(fetcher, 20);
 
   publishProgress[fetcher.datasetId][fetcher.index] = null;
@@ -316,7 +317,7 @@ export const processFetcher = async (fetcher: Fetcher) => {
   return imported;
 }
 
-export const countTasks = (f: Fetcher, type: "active" | "queue" | "finished") => {
+export const countTasks = (f: Fetcher, type: "active" | "queue" | "done") => {
   return db.count(["fetcher", f.datasetId, f.index, type, {}]);
 };
 
@@ -393,15 +394,17 @@ export const processResults = async (f: Fetcher, batchSize: number) => {
   const tasks = await db.listAll<boolean>(
     [...keyBase, "active", {}], batchSize, false
   );
+  console.log('test',tasks)
 
   let ids = tasks.map(t => t.key[4]);
-
+  console.log(ids);
   if (!ids || ids.length === 0)
     return;
 
   const { data } = await api.get<APIResponse>(
     "/task-results", {params: {ids: ids.join(";")}}
   );
+  console.log(data);
 
   for (const d of data as any) {
     if (d.type !== "submission")
@@ -484,6 +487,7 @@ export const addFetcherRoutes = (app: Express): void => {
 
     const queueSize = countTasks(f!, "queue");
     const activeSize = countTasks(f!, "active");
+    const doneSize = countTasks(f!, "done");    
 
     const resultIds = (await db.listAll<boolean>(
       ["fetcher", f!.datasetId, f!.index, "done", {}]
@@ -502,6 +506,7 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Type: ${f.type}</li>
   <li>Queued: ${queueSize}</li>
   <li>Active: ${activeSize}</li>
+  <li>Finished: ${doneSize}</li>
 </ul>
 
 <h3>Last 20 results</h3>
