@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const BATCH_SIZE = process.env.PAYMENT_BATCH_SIZE || 10;
+const BATCH_SIZE = process.env.PAYMENT_BATCH_SIZE || 50;
 console.log("🔧 Generating PaymentBatch circuit with batch size:", BATCH_SIZE);
 
 const template = `
