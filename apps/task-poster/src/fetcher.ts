@@ -309,7 +309,6 @@ export const processFetcher = async (fetcher: Fetcher) => {
   const imported = await importTasks(fetcher);
 
   // TODO: put proper value for result batch size
-  console.log('procssing');
   await processResults(fetcher, 20);
 
   publishProgress[fetcher.datasetId][fetcher.index] = null;
@@ -394,17 +393,14 @@ export const processResults = async (f: Fetcher, batchSize: number) => {
   const tasks = await db.listAll<boolean>(
     [...keyBase, "active", {}], batchSize, false
   );
-  console.log('test',tasks)
 
   let ids = tasks.map(t => t.key[4]);
-  console.log(ids);
   if (!ids || ids.length === 0)
     return;
 
   const { data } = await api.get<APIResponse>(
     "/task-results", {params: {ids: ids.join(";")}}
   );
-  console.log(data);
 
   for (const d of data as any) {
     if (d.type !== "submission")
@@ -490,7 +486,7 @@ export const addFetcherRoutes = (app: Express): void => {
     const doneSize = countTasks(f!, "done");    
 
     const resultIds = (await db.listAll<boolean>(
-      ["fetcher", f!.datasetId, f!.index, "done", {}]
+      ["fetcher", f!.datasetId, f!.index, "done", {}], 200, true
     ))!;
     const results = (await Promise.all(
       resultIds.map(i => db.get<any>(["task-result", i.key[4]]))
@@ -509,7 +505,7 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Finished: ${doneSize}</li>
 </ul>
 
-<h3>Last 20 results</h3>
+<h3>Last 200 results</h3>
 <table>
     <thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead>
     <tbody>${results.map((r: any) => `
