@@ -327,16 +327,18 @@ export const importTasks = async (f: Fetcher) => {
     ["fetcher", f.datasetId, f.index, "info"]
   ))!;
 
+  const totalQueued = countTasks(f, "queue");
+
   // short wire if finished
-  if (fetcher.data.taskIdx >= fetcher.data.totalTasks) {
+  if (totalQueued <= 0) {
     console.log(`Skip import of ${fetcher.key}: no pending tasks`);
     return 0;
   }
 
   const tasks = await getPendingTasks(fetcher.data);
-  const totalQueued = countTasks(f, "queue");
+
   console.log(
-    `Starting import of ds ${fetcher.data.datasetId} for ${tasks.length} of ` +
+    `Starting import of ${fetcher.key} for ${tasks.length} of ` +
       `${totalQueued} pending`,
   );
 
