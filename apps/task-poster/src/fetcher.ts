@@ -357,10 +357,12 @@ const handleFetcherImport = async(f: Fetcher, fields: FormValues) => {
     case "csv":
 
       // nothing special here
+      break;
     case "constant":
       fetcher.data.targetQueueSize = fields.target;
       fetcher.data.maxTasks = fields.max;
       fetcher.data.constantData = fields.data;
+      break;
   }
 
   const tasks = await importFetcherData(fetcher.data, fields.csv);
@@ -648,6 +650,7 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Active: ${activeSize}</li>
   <li>Finished: ${doneSize}</li>
   <li>Total: ${f.totalTasks}</li>
+  <li>Batch / Freq: ${f.batchSize} / ${f.frequency}</li>
 </ul>
 
 <section>
