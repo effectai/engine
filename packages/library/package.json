@@ -17,14 +17,11 @@
   "main": "./dist/node.js",
   "module": "./dist/node.js",
   "exports": {
-    "types": "./dist/node.d.ts",
-    "browser": {
-      "types": "./dist/browser.d.ts",
-      "import": "./dist/browser.browser.mjs"
-    },
-    "node": {
+    ".": {
       "types": "./dist/node.d.ts",
-      "import": "./dist/node.js"
+      "browser": "./dist/browser.browser.mjs",
+      "import": "./dist/node.js",
+      "default": "./dist/node.js"
     }
   },
   "dependencies": {
@@ -35,7 +32,6 @@
     "@effectai/payment": "workspace:*"
   },
   "devDependencies": {
-    "@effectai/test-utils": "workspace:*",
     "@solana/web3.js": "^1.98.2",
     "@biomejs/biome": "1.9.4",
     "@types/circomlibjs": "^0.1.6",

@@ -10,7 +10,7 @@ export const themes: Map<string, string> = new Map([
   ["pistachio", ":root {--background: #1d2021; --foreground: #ebdbb2; --accent: #8ec07c;}"]
 ]);
 
-export const page = (body: string): string => `
+export const page = (body: string, bodyClass = "container"): string => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,11 +25,12 @@ export const page = (body: string): string => `
   </style>
 </head>
 <body>
-  <header>
+  <header class="container">
     <h1><a href="/">Task Terminal</a></h1>
   </header>
-  ${body}
-
+  <div class="${bodyClass}">
+    ${body}
+  </div>
 </body>
 </html>
 `;

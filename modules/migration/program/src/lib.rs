@@ -1,5 +1,7 @@
+use anchor_id_injector::inject_declare_id_output;
 use anchor_lang::prelude::*;
 
+// mod effect_staking_env;
 mod errors;
 mod instructions;
 mod macros;
@@ -9,7 +11,8 @@ mod utils;
 
 pub use instructions::*;
 
-declare_id!("effM4rzQbgZD8J5wkubJbSVxTgRFWtatQcQEgYuwqrR");
+inject_declare_id_output!("../../../target/deploy/effect_migration-keypair.json");
+declare_program!(effect_staking);
 
 #[program]
 pub mod effect_migration {

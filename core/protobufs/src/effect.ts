@@ -364,6 +364,7 @@ export interface RequestToWork {
   timestamp: number
   recipient: string
   nonce: bigint
+  capabilities: string
   accessCode?: string
 }
 
@@ -392,8 +393,13 @@ export namespace RequestToWork {
           w.uint64(obj.nonce)
         }
 
-        if (obj.accessCode != null) {
+        if ((obj.capabilities != null && obj.capabilities !== '')) {
           w.uint32(34)
+          w.string(obj.capabilities)
+        }
+
+        if (obj.accessCode != null) {
+          w.uint32(42)
           w.string(obj.accessCode)
         }
 
@@ -404,7 +410,8 @@ export namespace RequestToWork {
         const obj: any = {
           timestamp: 0,
           recipient: '',
-          nonce: 0n
+          nonce: 0n,
+          capabilities: ''
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -426,6 +433,10 @@ export namespace RequestToWork {
               break
             }
             case 4: {
+              obj.capabilities = reader.string()
+              break
+            }
+            case 5: {
               obj.accessCode = reader.string()
               break
             }
@@ -2754,6 +2765,7 @@ export interface Task {
   timeLimitSeconds: number
   templateId: string
   templateData: string
+  capability?: string
 }
 
 export namespace Task {
@@ -2794,6 +2806,11 @@ export namespace Task {
         if ((obj.templateData != null && obj.templateData !== '')) {
           w.uint32(50)
           w.string(obj.templateData)
+        }
+
+        if (obj.capability != null) {
+          w.uint32(58)
+          w.string(obj.capability)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -2837,6 +2854,10 @@ export namespace Task {
             }
             case 6: {
               obj.templateData = reader.string()
+              break
+            }
+            case 7: {
+              obj.capability = reader.string()
               break
             }
             default: {

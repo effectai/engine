@@ -9,8 +9,10 @@ crate-type = ["cdylib", "lib"]
 name = "effect_payment"
 
 [features]
+default = ["mainnet"]
 cpi = ["no-entrypoint"]
-testing = []
+localnet = []
+mainnet = []
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
@@ -26,3 +28,5 @@ ark-serialize = "0.5.0"
 hex = "0.4.3"
 num-bigint = "0.4"
 num-traits = "0.2"
+anchor-id-injector = { path = "../../../tools/crates/anchor-id-injector" } 
+

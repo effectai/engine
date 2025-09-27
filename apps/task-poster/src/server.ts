@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from 'express';
 import express from "express";
 import { addAuthRoutes } from "./auth.js";
+import { addFetcherRoutes } from "./fetcher.js";
 import {
   addDatasetRoutes,
   getActiveDatasets,
@@ -87,8 +88,8 @@ const main = async () => {
   const app = express();
   app.disable("x-powered-by");
   app.use(express.static("public"));
-  app.use(express.urlencoded({ limit: "2mb", extended: true }));
-  app.use(express.json({ limit: "2mb" }));
+  app.use(express.urlencoded({ limit: "20mb", extended: true }));
+  app.use(express.json({ limit: "20mb" }));
 
   // gracefull error when files are too lar1ge
   app.use((err: Error, _: Request, res: Response, next: NextFunction) => {
@@ -114,6 +115,7 @@ const main = async () => {
   addTemplateRoutes(app);
   addDatasetRoutes(app);
   addAuthRoutes(app);
+  addFetcherRoutes(app);
 
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);

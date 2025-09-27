@@ -7,7 +7,9 @@ import path from "node:path";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
+    dedupe: ["zustand"],
     alias: {
+      "@/stores": path.resolve(__dirname, "./src/stores"),
       "@": path.resolve(__dirname, "./src"),
     },
   },

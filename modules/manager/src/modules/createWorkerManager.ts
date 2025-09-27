@@ -64,6 +64,7 @@ export const createWorkerManager = ({
     peerId: string,
     recipient: string,
     nonce: bigint,
+    capabilities: string[],
     accessCode?: string,
   ) => {
     try {
@@ -136,6 +137,7 @@ export const createWorkerManager = ({
 
       // === Final update before queueing ===
       await workerStore.updateWorker(peerId, () => ({
+        capabilities,
         recipient,
         lastPayout: currentTime,
         lastActivity: currentTime,
@@ -158,13 +160,17 @@ export const createWorkerManager = ({
     return worker;
   };
 
-  const selectWorker = async (): Promise<string | null> => {
+  const selectWorker = async (capability?: string): Promise<string | null> => {
     const queue = workerQueue.getQueue();
 
     for (const workerId of queue) {
       const worker = await getWorker(workerId);
 
-      if (!worker) {
+      //TODO:: optimize this..
+      if (
+        !worker ||
+        (capability && !worker.state.capabilities.includes(capability))
+      ) {
         continue;
       }
 

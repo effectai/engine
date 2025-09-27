@@ -52,7 +52,6 @@
     "@solana/web3.js": "^1.98.2"
   },
   "devDependencies": {
-    "@effectai/test-utils": "workspace:*",
     "protons-runtime": "^5.5.0",
     "protons": "^7.6.0",
     "@types/cors": "^2.8.17",

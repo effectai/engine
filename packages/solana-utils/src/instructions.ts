@@ -1,7 +1,7 @@
 import {
   deriveRewardAccountsPda,
   deriveStakingRewardAccountPda,
-  EFFECT_REWARDS_PROGRAM_ADDRESS,
+  EFFECT_REWARD_PROGRAM_ADDRESS,
   fetchMaybeRewardAccount,
   getClaimInstructionAsync,
   getCloseInstructionAsync,
@@ -12,7 +12,7 @@ import {
 import {
   getTopupInstructionAsync,
   getUnstakeInstructionAsync,
-} from "@effectai/stake";
+} from "@effectai/staking";
 
 import { getTopupInstructionAsync as getRewardTopupInstructionAsync } from "@effectai/reward";
 
@@ -31,6 +31,7 @@ import {
   fetchVestingAccount,
   getClaimInstructionAsync as getVestingClaimInstructionAsync,
 } from "@effectai/vesting";
+import { getCreateAssociatedTokenInstructionAsync } from "@solana-program/token";
 
 export const buildClaimRewardsInstruction = async ({
   mint,
@@ -53,7 +54,7 @@ export const buildClaimRewardsInstruction = async ({
       getAddressEncoder().encode(mint),
     ],
 
-    programAddress: EFFECT_REWARDS_PROGRAM_ADDRESS,
+    programAddress: EFFECT_REWARD_PROGRAM_ADDRESS,
   });
 
   const vestingAccountData = await fetchVestingAccount(rpc, vestingAccount);
@@ -101,8 +102,6 @@ export const buildUnstakeInstruction = async ({
     rpc,
     stakingRewardAccount,
   );
-
-  console.log("maybeStakingRewardAccount", maybeStakingRewardAccount);
 
   const { reflectionAccount } = await deriveRewardAccountsPda({ mint });
 
@@ -187,4 +186,28 @@ export const buildTopupInstruction = async ({
   return maybeStakingRewardAccount.exists
     ? [topupIx, syncRewardsIx]
     : [enterRewardPoolIx, topupIx, syncRewardsIx];
+};
+
+export const maybeCreateAssociatedTokenAccountInstructions = async ({
+  rpc,
+  tokenAddress,
+  signer,
+  mint,
+  owner,
+}: {
+  signer: TransactionSigner;
+  rpc: Rpc<SolanaRpcApiMainnet>;
+  tokenAddress: Address;
+  mint: Address;
+  owner: Address;
+}) => {
+  const account = await rpc.getAccountInfo(tokenAddress).send();
+  if (!account || account.value === null) {
+    return await getCreateAssociatedTokenInstructionAsync({
+      payer: signer,
+      mint,
+      owner,
+    });
+  }
+  return [];
 };

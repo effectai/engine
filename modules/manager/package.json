@@ -34,7 +34,6 @@
     "bs58": "^6.0.0"
   },
   "devDependencies": {
-    "@effectai/test-utils": "workspace:*",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "typescript": "^5.8.3",

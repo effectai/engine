@@ -9,8 +9,10 @@ crate-type = ["cdylib", "lib"]
 name = "effect_migration"
 
 [features]
+default=["localnet"]
 cpi = ["no-entrypoint"]
-testing = []
+localnet = []
+mainnet = []
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
@@ -22,3 +24,12 @@ anchor-spl = "0.31.1"
 libsecp256k1 = "0.7.1"
 sha2 = "0.10.8"
 effect-common = { path = "../../../core/program/" }
+anchor-id-injector = { path = "../../../tools/crates/anchor-id-injector" } 
+
+[build-dependencies]
+serde_json = "1"
+bs58 = "0.5"
+
+
+
+

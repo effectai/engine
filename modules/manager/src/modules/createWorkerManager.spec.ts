@@ -5,7 +5,7 @@ import { createPaymentManager } from "./createPaymentManager.js";
 import { createWorkerManager } from "./createWorkerManager.js";
 
 import { promises } from "node:fs";
-import { createDataStore } from "@effectai/test-utils";
+// import { createDataStore } from "@effectai/test-utils";
 import { Key, type Datastore } from "@effectai/protocol-core";
 
 describe("createWorkerManager", () => {
@@ -46,6 +46,7 @@ describe("createWorkerManager", () => {
         mockPeerId,
         mockRecipient.toString(),
         1n,
+        ["model/gpt5"],
         code,
       );
 
@@ -84,7 +85,12 @@ describe("createWorkerManager", () => {
 
       //connect 3 workers.
       for (const worker of workerPeers) {
-        await workerManager.connectWorker(worker, mockRecipient.toString(), 1n);
+        await workerManager.connectWorker(
+          worker,
+          mockRecipient.toString(),
+          1n,
+          ["model/gpt5"],
+        );
       }
 
       //expect 3 workers in store
@@ -92,7 +98,7 @@ describe("createWorkerManager", () => {
 
       let selectedWorker: string | null = null;
       //expect to have a peer in the peerQueue
-      selectedWorker = await workerManager.selectWorker();
+      selectedWorker = await workerManager.selectWorker("model/gpt5");
       expect(selectedWorker).toBe("worker1");
 
       //make worker 2 busy
@@ -101,7 +107,7 @@ describe("createWorkerManager", () => {
       }));
 
       //expect worker 2 to be busy
-      selectedWorker = await workerManager.selectWorker();
+      selectedWorker = await workerManager.selectWorker("model/gpt5");
       expect(selectedWorker).toBe("worker3");
 
       //expect to have 3 workers in the queue

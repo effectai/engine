@@ -1,5 +1,5 @@
 {
-  "name": "@effectai/effect-ai-worker",
+  "name": "effect-ai-worker",
   "version": "0.0.0",
   "type": "module",
   "description": "Automatic CLI-based worker powered by LLMs.",

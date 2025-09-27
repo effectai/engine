@@ -2,8 +2,8 @@
 
 import { useMemo, useCallback } from "react";
 import type { SourceWallet, WalletConnectionMeta } from "./wallet-types";
-import { useAccount, useConnect, useDisconnect, useConfig } from "wagmi";
-import { useBalance, useSignMessage } from "wagmi";
+import { useAccount, useDisconnect, useConfig, useBalance } from "wagmi";
+import { useSignMessage } from "wagmi";
 import { toBytes } from "viem";
 import { useAppKit } from "@reown/appkit/react";
 
@@ -12,7 +12,6 @@ const EFX_TOKEN = "0xC51Ef828319b131B595b7ec4B28210eCf4d05aD0" as const;
 export function useBscWallet(): SourceWallet {
   const { address, isConnected, connector } = useAccount();
   const { signMessageAsync } = useSignMessage();
-  const { connect, connectors, status: connectStatus } = useConnect();
   const { disconnect } = useDisconnect();
   const config = useConfig();
   const { open } = useAppKit();
@@ -31,22 +30,22 @@ export function useBscWallet(): SourceWallet {
 
   const getEfxBalance = useCallback(async () => {
     if (!address) throw new Error("No address found");
-    const bal = await getBalance(config, { address, token: EFX_TOKEN });
-    return { symbol: "EFX", value: Number(bal.formatted) };
-  }, [address, config]);
+    const bal = useBalance({ address, token: EFX_TOKEN });
+    return { symbol: "EFX", value: Number(bal.data?.formatted) };
+  }, [address]);
 
   const getNativeBalance = useCallback(async () => {
     if (!address) throw new Error("No address found");
-    const bal = await getBalance(config, { address }); // native BNB
-    return { symbol: "BNB", value: Number(bal.formatted) };
-  }, [address, config]);
+    const bal = useBalance({ address }); // native BNB
+    return { symbol: "BNB", value: Number(bal.data?.formatted) };
+  }, [address]);
 
   const authorizeTokenClaim = useCallback(
     async (destinationAddress: string) => {
       if (!address) throw new Error("No public key/address");
 
       const originalMessage =
-        `Effect.AI: I authorize my tokens to be claimed at the following Solana address:` +
+        "Effect.AI: I authorize my tokens to be claimed at the following Solana address:" +
         destinationAddress;
 
       const signature = await signMessageAsync({
