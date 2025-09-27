@@ -226,7 +226,12 @@ const confirmForm = async (
   ${fetchers.sort((f1, f2) => f1.index - f2.index).map((f: Fetcher) => `
     <div class="box">
       <strong><a href="/d/${id}/f/${f.index}">#${f.index} ${f.name}</a></strong>
-      <small>queue: ${fetcher.countTasks(f, "queue")} - active: ${fetcher.countTasks(f, "active")}</small>
+      <small>${f.type} (${f.type == "constant" ? f.maxTasks : f.totalTasks})</small>
+      <br/>
+      <small>queue: ${fetcher.countTasks(f, "queue")} -
+             active: ${fetcher.countTasks(f, "active")} -
+             done: ${fetcher.countTasks(f, "done")}</small>
+
     </div>
   `).join('')}
   </div>
