@@ -22,9 +22,7 @@ export type Fetcher = {
   lastImport: number | undefined;
   datasetId: number;
   index: number; // the index relative to other fetchers in the dataset
-  type: "csv";
-  data: string; // deprecated field, data is stored as separate object
-  delimiter: "," | "\t" | ";";
+  type: "csv" | "constant";
 
   name: string;
   price: number;
@@ -34,8 +32,21 @@ export type Fetcher = {
 
   taskIdx: number; // the last task processed
   totalTasks: number;
+
   dataSample: any;
   status: "active" | "archived";
+
+  // fields for csv fetchers
+  delimiter?: "," | "\t" | ";";
+  csvHeader?: string;
+
+  // fields for constant fetchers
+  constantData?: string;
+  targetQueueSize?: number;
+  maxTasks?: number;
+
+  // fields for previous step fetchers
+  previousIndex?: number;
 };
 
 const api = axios.create({
@@ -75,11 +86,6 @@ const addVal = (values: FormValues, key: string): string =>
   `${values[key] ? `value="${values[key]}"` : ""}`;
 type FormValues = Record<string, any>;
 
-// how to validate the csv field:
-// delimiter: (v: string) =>
-// ![",", "\t", ";"].includes(v) && "Invalid CSV delimiter",
-
-
 export const csvFetcherForm = async (dsId: number, values: FormValues) => `
 <fieldset>
     <legend>csv data</legend>
@@ -105,9 +111,6 @@ export const csvFetcherForm = async (dsId: number, values: FormValues) => `
 export const fetcherForm = async (dsId: number, values: FormValues, msg = "") => `
 <div id="page">
 <form hx-post="/d/${dsId}/fetcher-create">
-  <div id="messages">
-    ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
-  </div>
   <fieldset>
     <legend>step info</legend>
     <label for="name"><strong>Name</strong></label>
@@ -142,7 +145,7 @@ export const fetcherForm = async (dsId: number, values: FormValues, msg = "") =>
 
       <label for="fetcher-type"><strong>Data source</strong><br/>
       <small>How new tasks will be fetched.</small></label>
-      <select name="processor" id="processor">
+      <select name="type" id="type">
 	<option value="csv">CSV</option>
 	<option value="fetcher">Previous step</option>
 	<option value="constant">Constant value</option>
@@ -182,16 +185,63 @@ export const fetcherForm = async (dsId: number, values: FormValues, msg = "") =>
     </section>
   </fieldset>
 
-${await csvFetcherForm(dsId, values)}
-
-<button type="submit">Create</button>
-
+ <button type="submit">Create</button>
 </form>
 </div>
 `;
 
+const constantFetcherForm = async (dsId: number, values: FormValues) => `
+<fieldset>
+    <legend>constant fetcher config</legend>
+    <div class="columns gap">
+      <div class="column">
+	<label for="frequency"><strong>Target queue size</strong><br/>
+	<small>Constant task backlog to maintain.</small></label>
+	<input
+	  type="number"
+	  id="target" ${addVal(values, "target")}
+	  name="target"/>
+      </div>
 
-export const createCsvFetcher = async (
+      <div class="column">
+	<label for="batchSize"><strong>Max total tasks</strong><br/>
+	<small>Maximum tasks it will emit.</small></label>
+	<input
+	  type="number"
+	  id="max" ${addVal(values, "max")}
+	  name="max"/>
+      </div>
+    </div>
+
+    <section>
+      <label for="data"><strong>Constant Data</strong><br/>
+      <small>This data will be repeated for each task, can be empty. ` +
+	`</small></label>
+      <textarea placeholder="JSON" id="data" name="data" rows="10">` +
+  `${values.data || ""}</textarea>
+    </section>
+</fieldset>
+`;
+
+const fetcherImportForm = async (f: Fetcher, values: {}, msg = "") => `
+<div hx-swap="outerHTML" id="page">
+<form hx-target="#page" hx-post="/d/${f.datasetId}/f/${f.index}/import">
+  <div id="messages">
+    ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
+  </div>
+
+
+  ${f.type === "csv"
+    ? await csvFetcherForm(f.datasetId, values)
+    : f.type === "constant"
+      ? await constantFetcherForm(f.datasetId, values)
+      : `Error, invalid fetcher type ${f.type}`}
+  <button type="submit">Configure</button>
+</form>
+</div>
+`
+
+export const createFetcher = async (
   ds: DatasetRecord,
   fields: Record<any, any>,
 ) => {
@@ -204,8 +254,7 @@ export const createCsvFetcher = async (
     lastImport: undefined,
     datasetId: ds.id,
     index: nextId,
-    type: "csv",
-    data: "",
+    type: fields.type,
     taskIdx: 0,
     totalTasks: csvData.length,
     dataSample: csvData[0],
@@ -219,9 +268,6 @@ export const createCsvFetcher = async (
   };
 
   await db.set<Fetcher>(["fetcher", ds.id, nextId, "info"], f);
-  await db.set<string>(["fetcher", ds.id, nextId, "data"], fields.csv);
-
-  await importCsv(f, fields.csv);
 
   return f;
 };
@@ -249,10 +295,23 @@ const delay = (m: number): Promise<void> =>
   new Promise((r) => setTimeout(r, m));
 
 export const getTasks = async (fetcher: Fetcher, csv: string) => {
-  const csvData = await parseCsv(csv);
+  let data: any[] = [];
+  switch (fetcher.type) {
+    case "csv":
+      if (csv && csv.length > 0)
+	data = await parseCsv(csv);
+      break;
+    case "constant":
+      if (fetcher.totalTasks <= (fetcher.maxTasks || 0)) {
+	const queueSize = countTasks(fetcher, "queue");
+	const nCreate = Math.max((fetcher.targetQueueSize || 0) - queueSize, 0);
+	data = Array(nCreate).fill(fetcher.constantData || "");
+	break;
+      }
+  }
 
-  return csvData.map(
-    (d, idx) =>
+  const tasks = data.map(
+    (d, _idx) =>
       ({
 	id: ulid(),
 	title: fetcher.name,
@@ -262,6 +321,8 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	templateData: JSON.stringify(d),
       }) as Task,
   );
+
+  return tasks;
 };
 
 export const getPendingTasks = async (f: Fetcher) => {
@@ -273,16 +334,39 @@ export const getPendingTasks = async (f: Fetcher) => {
   return tasks.map(t => t.key[4]);
 };
 
-const importCsv = async (fetcher: Fetcher, csv: string) => {
+// fetch new tasks and add the to the fetcher queue
+const importFetcherData = async (fetcher: Fetcher, csv: string = "") => {
   let tasks = await getTasks(fetcher, csv);
-  tasks.forEach(async (t) =>  {
+  console.log(`trace: Importing ${tasks.length} new tasks for fetcher`);
+  for (const t of tasks) {
     await db.set<Task>(["task", t.id], t);
     await db.set<boolean>(
       ["fetcher", fetcher.datasetId, fetcher.index, "queue", t.id], true
     );
-  });
+  }
+  return tasks;
 };
 
+// form submission handler for fetcher import
+const handleFetcherImport = async(f: Fetcher, fields: FormValues) => {
+  const fetcher = (await db.get<Fetcher>(
+    ["fetcher", f.datasetId, f.index, "info"]
+  ))!;
+
+  switch (f.type) {
+    case "csv":
+
+      // nothing special here
+    case "constant":
+      fetcher.data.targetQueueSize = fields.target;
+      fetcher.data.maxTasks = fields.max;
+      fetcher.data.constantData = fields.data;
+  }
+
+  const tasks = await importFetcherData(fetcher.data, fields.csv);
+  fetcher.data.totalTasks += tasks.length;
+  await db.set<Fetcher>(fetcher.key, fetcher.data);
+};
 
 /**
  * Process fetcher
@@ -309,6 +393,10 @@ export const processFetcher = async (fetcher: Fetcher) => {
     failed: 0,
   };
 
+  // fetch tasks into the backlog
+  const fetched = await importFetcherData(fetcher);
+
+  // post queue to Effect
   const imported = await importTasks(fetcher);
 
   // TODO: put proper value for result batch size
@@ -316,6 +404,17 @@ export const processFetcher = async (fetcher: Fetcher) => {
 
   // release lock
   publishProgress[fetcher.datasetId][fetcher.index] = null;
+
+
+  const fetcherEntry = (await db.get<Fetcher>(
+    ["fetcher", fetcher.datasetId, fetcher.index, "info"]
+  ))!;
+
+  fetcherEntry.data.totalTasks += fetched.length;
+  fetcherEntry.data.taskIdx += imported;
+  if (imported > 0)
+    fetcherEntry.data.lastImport = Date.now();
+  await db.set<Fetcher>(fetcherEntry.key, fetcherEntry.data);
 
   return imported;
 }
@@ -343,26 +442,22 @@ export const importTasks = async (f: Fetcher) => {
     return -1;
   }
 
-  const fetcher = (await db.get<Fetcher>(
-    ["fetcher", f.datasetId, f.index, "info"]
-  ))!;
-
   const totalQueued = countTasks(f, "queue");
 
   // short wire if finished
   if (totalQueued <= 0) {
-    console.log(`Skip import of ${fetcher.key}: no pending tasks`);
+    console.log(`Skip import of ${fid}: no pending tasks`);
     return 0;
   }
 
-  const tasks = await getPendingTasks(fetcher.data);
+  const tasks = await getPendingTasks(f);
 
   console.log(
-    `Starting import of ${fetcher.key} for ${tasks.length} of ` +
+    `Starting import of ${fid} for ${tasks.length} of ` +
       `${totalQueued} pending`,
   );
 
-  let thisProgress = publishProgress[fetcher.data.datasetId][fetcher.data.index];
+  let thisProgress = publishProgress[f.datasetId][f.index];
 
   // track state for progress bar
   thisProgress.max = tasks.length;
@@ -383,8 +478,8 @@ export const importTasks = async (f: Fetcher) => {
       const { data } = await api.post<APIResponse>("/task", serializedTask);
 
       db.beginTransaction();
-      await db.delete([...fetcher.key.slice(0, 3), "queue", taskId]);
-      await db.set<boolean>([...fetcher.key.slice(0, 3), "active", taskId], true);
+      await db.delete(["fetcher", ...fid, "queue", taskId]);
+      await db.set<boolean>(["fetcher", ...fid, "active", taskId], true);
       await db.endTransaction();
       thisProgress.current += 1;
     } catch (e) {
@@ -393,10 +488,6 @@ export const importTasks = async (f: Fetcher) => {
       thisProgress.failed += 1;
     }
   }
-
-  fetcher.data.taskIdx += tasks.length;
-  fetcher.data.lastImport = Date.now();
-  await db.set<Fetcher>(fetcher.key, fetcher.data);
 
   return tasks.length;
 };
@@ -437,7 +528,34 @@ export const processResults = async (f: Fetcher, batchSize: number) => {
 type ValidationFunction = (v: any) => string | boolean | undefined | null;
 type ValidationMap = Record<string, ValidationFunction>;
 
-const validations: ValidationMap = {
+const importValidations = (f: Fetcher) : ValidationMap => {
+  switch (f.type) {
+  case "csv":
+    return {
+      delimiter: (v: string) =>
+	![",", "\t", ";"].includes(v) && "Invalid CSV delimiter",
+      csv: (v: string) => (!v || v.length === 0) && "CSV is required",
+    };
+    case "constant":
+      return {
+	max: (v) => {
+	  const num = Number(v);
+	  return !num ? "Max required"
+	    : isNaN(num) ? "Max must be number"
+	      : num <= 0 && "Max must be positive";
+	},
+	target: (v) => {
+	  const num = Number(v);
+	  return !num ? "Target required"
+	    : isNaN(num) ? "Target must be number"
+	      : num <= 0 && "Target must be positive";
+	}
+      }
+  }
+  return {};
+};
+
+const formValidations: ValidationMap = {
   name: (v: string) => (!v || v.length === 0) && "Name is required",
 
   endpoint: (v: string) =>
@@ -478,7 +596,10 @@ const validations: ValidationMap = {
   template: (v: string) => (!v || v.length === 0) && "Template is required",
 };
 
-const validateForm = async (values: FormValues) => {
+const validateForm = async (
+  values: FormValues,
+  validations: any = formValidations
+) => {
   const errors: Record<string, string> = {};
 
   Object.keys(validations).forEach((field) => {
@@ -526,8 +647,14 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Queued: ${queueSize}</li>
   <li>Active: ${activeSize}</li>
   <li>Finished: ${doneSize}</li>
+  <li>Total: ${f.totalTasks}</li>
 </ul>
 
+<section>
+  <a href="/d/${id}/f/${fid}/import"><button>Add Data</button></a>
+</section>
+
+<section>
 <h3>Last 200 results</h3>
 </div>
 <table style="font-size: 9px; margin: 0 auto;">
@@ -536,6 +663,7 @@ export const addFetcherRoutes = (app: Express): void => {
       <tr>${cols.map(c => `<td>${r[c]}</td>`).join("")}</tr>`).join("")}
     </tbody>
 </table>
+</section>
 `, ""));
     else
       return make404(res);
@@ -550,18 +678,59 @@ export const addFetcherRoutes = (app: Express): void => {
     msg = msg ? "- " + msg : "";
 
     if (valid) {
-      const f = await createCsvFetcher(dataset, req.body);
-
+      const f = await createFetcher(dataset, req.body);
+      res.setHeader("HX-Replace-Url", `/d/${id}/f/${f.index}/import`);
+      res.send(await fetcherImportForm(f!, req.body, "Fetcher saved. Add data."));
     } else {
       msg = '<h4 style="margin-top: 0;">Could not create dataset:</h4>' + msg;
     }
 
     if (valid) {
-      res.setHeader("HX-Location", `/d/${id}`);
-      res.end();
+      // res.setHeader("HX-Location", `/d/${id}`);
+      // res.end();
     } else {
       console.log(`Invalid form submission ${msg}`);
       res.send(await fetcherForm(id, req.body, msg));
+    }
+  });
+
+  app.get("/d/:id/f/:fid/import", async (req, res) => {
+    const id = Number(req.params.id);
+    const fid = Number(req.params.fid);
+    const f = await getFetcher(id, fid);
+
+    res.send(page(await fetcherImportForm(f!, {
+      max: f?.maxTasks,
+      target: f?.targetQueueSize,
+      data: f?.constantData,
+    })));
+  });
+
+  app.post("/d/:id/f/:fid/import", async (req, res) => {
+    const id = Number(req.params.id);
+    const fid = Number(req.params.fid);
+    const f = await getFetcher(id, fid);
+
+    let { valid, errors } = await validateForm(req.body, importValidations(f!));
+    let msg = Object.values(errors).join("<br/>- ");
+    msg = msg ? "- " + msg : "";
+
+    if (valid) {
+      try {
+	await handleFetcherImport(f!, req.body);
+
+	res.setHeader("HX-Location", `/d/${id}/f/${fid}`);
+	res.end();
+      } catch (e) {
+	valid = false;
+	msg += "- " + e;
+      }
+    }
+
+    if (!valid) {
+      msg = '<h4 style="margin-top: 0;">Could not create dataset:</h4>' + msg;
+      console.log(`Invalid form submission ${msg}`);
+      res.send(await fetcherImportForm(f!, req.body, msg));
     }
   });
 };

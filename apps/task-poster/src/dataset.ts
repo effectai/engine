@@ -5,7 +5,6 @@ import { requireAuth } from "./auth.js";
 import * as fetcher from "./fetcher.js";
 import type { Fetcher } from "./fetcher.js";
 import {
-  createCsvFetcher,
   getFetcher,
   getFetchers,
   getTasks,
