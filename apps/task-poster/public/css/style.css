@@ -32,7 +32,6 @@ body {
 	Consolas,
 	"Ubuntu Mono",
 	monospace;
-    max-width: 800px;
     font-size: var(--font-size);
     font-weight: 400;
     line-height: var(--line-height);
@@ -45,6 +44,8 @@ body {
     margin: 0 auto;
     padding: 0;
 }
+
+.container { max-width: 800px; margin: 0 auto; }
 
 h1 {
     font-size: calc(var(--font-size) * 1.45);

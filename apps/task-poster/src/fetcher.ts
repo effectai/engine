@@ -58,6 +58,18 @@ const parseCsv = (csv: string, delimiter = ","): Promise<any[]> => {
   });
 };
 
+const formatDate = (ts: number) =>
+  new Date(ts * 1000).toLocaleString("en-GB", {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZoneName: 'short',
+  }).replace(',', '');
+
 // little shorthand to inject form field's value if it exists
 const addVal = (values: FormValues, key: string): string =>
   `${values[key] ? `value="${values[key]}"` : ""}`;
@@ -280,19 +292,9 @@ const importCsv = async (fetcher: Fetcher, csv: string) => {
  * 3)
  */
 export const processFetcher = async (fetcher: Fetcher) => {
-  // check if it's already time
-  const remaining = fetcher.lastImport
-    ? fetcher.lastImport + fetcher.frequency * 1000 - Date.now()
-    : 0;
+  publishProgress[fetcher.datasetId] ??= {};
 
   const fid = [fetcher.datasetId, fetcher.index];
-
-  if (remaining > 0) {
-    console.log(`Fetcher ${fid} import ${remaining / 1000}s remaining`);
-    return -1;
-  }
-
-  publishProgress[fetcher.datasetId] ??= {};
 
   // check for import lock
   if (publishProgress[fetcher.datasetId][fetcher.index]) {
@@ -300,6 +302,7 @@ export const processFetcher = async (fetcher: Fetcher) => {
     return -1;
   }
 
+  // establish lock. TODO: small race condition here
   publishProgress[fetcher.datasetId][fetcher.index] = {
     current: 0,
     max: 0,
@@ -311,6 +314,7 @@ export const processFetcher = async (fetcher: Fetcher) => {
   // TODO: put proper value for result batch size
   await processResults(fetcher, 20);
 
+  // release lock
   publishProgress[fetcher.datasetId][fetcher.index] = null;
 
   return imported;
@@ -327,6 +331,18 @@ export const countTasks = (f: Fetcher, type: "active" | "queue" | "done") => {
  * not import now
  */
 export const importTasks = async (f: Fetcher) => {
+  // check if it's already time
+  const remaining = f.lastImport
+    ? f.lastImport + f.frequency * 1000 - Date.now()
+    : 0;
+
+  const fid = [f.datasetId, f.index];
+
+  if (remaining > 0) {
+    console.log(`Fetcher ${fid} import ${remaining / 1000}s remaining`);
+    return -1;
+  }
+
   const fetcher = (await db.get<Fetcher>(
     ["fetcher", f.datasetId, f.index, "info"]
   ))!;
@@ -378,11 +394,9 @@ export const importTasks = async (f: Fetcher) => {
     }
   }
 
-  // release the lock and update stats
-  fetcher!.data.taskIdx += tasks.length;
-  fetcher!.data.lastImport = Date.now();
-
-  await db.set<Fetcher>(fetcher!.key, fetcher!.data);
+  fetcher.data.taskIdx += tasks.length;
+  fetcher.data.lastImport = Date.now();
+  await db.set<Fetcher>(fetcher.key, fetcher.data);
 
   return tasks.length;
 };
@@ -398,19 +412,26 @@ export const processResults = async (f: Fetcher, batchSize: number) => {
   if (!ids || ids.length === 0)
     return;
 
+  console.log(`trace: Checking results for ${ids.length} active tasks`);
+
   const { data } = await api.get<APIResponse>(
     "/task-results", {params: {ids: ids.join(";")}}
   );
 
+  let importCount = 0;
   for (const d of data as any) {
     if (d.type !== "submission")
       continue;
     db.beginTransaction();
     await db.delete([...keyBase, "active", d.taskId]);
     await db.set<boolean>([...keyBase, "done", d.taskId], true);
+    // TODO: add type for TaskResult in the sdk
     await db.set<any>(["task-result", d.taskId], d);
     await db.endTransaction();
+    importCount++;
   }
+
+  console.log(`trace: ${importCount} tasks finished`);
 };
 
 type ValidationFunction = (v: any) => string | boolean | undefined | null;
@@ -483,22 +504,24 @@ export const addFetcherRoutes = (app: Express): void => {
 
     const queueSize = countTasks(f!, "queue");
     const activeSize = countTasks(f!, "active");
-    const doneSize = countTasks(f!, "done");    
+    const doneSize = countTasks(f!, "done");
 
     const resultIds = (await db.listAll<boolean>(
       ["fetcher", f!.datasetId, f!.index, "done", {}], 200, true
     ))!;
     const results = (await Promise.all(
       resultIds.map(i => db.get<any>(["task-result", i.key[4]]))
-    )).map(p => p!.data);
+    )).map(p => p!.data)
+      .map(p => { p["timestamp"] = formatDate(p["timestamp"]); return p; });
 
     let cols = ["timestamp", "submissionByPeer", "taskId", "result"];
 
     if (f)
       res.send(page(`
+<div class="container">
 <h3>Step ${f.name}</h3>
 <ul>
-  <li>Last fetch: ${Math.ceil((Date.now() - (f!.lastImport || 0)/1000))}s ago</li>
+  <li>Last fetch: ${formatDate((f!.lastImport || 0) / 1000)}</li>
   <li>Type: ${f.type}</li>
   <li>Queued: ${queueSize}</li>
   <li>Active: ${activeSize}</li>
@@ -506,13 +529,14 @@ export const addFetcherRoutes = (app: Express): void => {
 </ul>
 
 <h3>Last 200 results</h3>
-<table style="font-size: 9px;">
+</div>
+<table style="font-size: 9px; margin: 0 auto;">
     <thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead>
     <tbody>${results.map((r: any) => `
       <tr>${cols.map(c => `<td>${r[c]}</td>`).join("")}</tr>`).join("")}
     </tbody>
 </table>
-`));
+`, ""));
     else
       return make404(res);
   });
