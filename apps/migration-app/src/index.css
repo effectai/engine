@@ -1,9 +1,24 @@
 @import 'tailwindcss';
 @import "tw-animate-css";
-@import "@effectai/ui/theme.css";
+@import "@effectai/react/theme.css";
 
 @custom-variant dark (&:is(.dark *));
 @plugin "@tailwindcss/typography";
-@source "../node_modules/@effectai/ui";
+@source "../node_modules/@effectai/react";
 
+#root > dialog[open] {
+  position: fixed !important;
+  border: 0 !important;
+  width: 100dvw !important;     
+  height: 100dvh !important;     
+  justify-content: center !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  overflow: hidden;
+}
+
+#root > dialog[open]::backdrop {
+  background: rgba(0,0,0,0.25) !important;
+  backdrop-filter: blur(4px) !important;
+}
 

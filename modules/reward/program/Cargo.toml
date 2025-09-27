@@ -1,5 +1,5 @@
 [package]
-name = "effect-rewards"
+name = "effect-reward"
 version = "0.1.0"
 description = "Reflection rewards for Effect AI"
 edition = "2021"
@@ -10,9 +10,12 @@ keywords = ["solana", "effect", "ai", "rewards", "anchor"]
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "effect_rewards"
+name = "effect_reward"
 
 [features]
+default = ["mainnet"]
+mainnet = []
+localnet = []
 no-entrypoint = []
 cpi = ["no-entrypoint"]
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
@@ -21,3 +24,4 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 anchor-lang = "0.31.1"
 anchor-spl = "0.31.1"
 effect-common = { path = "../../../core/program" }
+anchor-id-injector = { path = "../../../tools/crates/anchor-id-injector" } 

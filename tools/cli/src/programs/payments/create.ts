@@ -1,5 +1,4 @@
 import {
-  executeWithSolanaProvider,
   getAssociatedTokenAccount,
   loadSolanaProviderFromConfig,
 } from "@effectai/solana-utils";
@@ -8,6 +7,7 @@ import type { Command } from "commander";
 
 import { generateKeyPairSigner, address } from "@solana/kit";
 import { getCreatePaymentPoolInstructionAsync } from "@effectai/payment";
+import { useConnection } from "../../helpers.js";
 
 export function registerCreatePaymentPoolCommand(program: Command) {
   program
@@ -23,7 +23,8 @@ export function registerCreatePaymentPoolCommand(program: Command) {
       "the amount to transfer into the payment account",
     )
     .action(async (options) => {
-      const { signer, provider } = await loadSolanaProviderFromConfig();
+      const { signer } = await loadSolanaProviderFromConfig();
+      const { connection } = await useConnection();
 
       const mint = address(options.mint);
 
@@ -43,13 +44,13 @@ export function registerCreatePaymentPoolCommand(program: Command) {
         userTokenAccount: ata,
       });
 
-      await executeWithSolanaProvider({
-        provider,
-        signer,
+      await connection.sendTransactionFromInstructions({
+        feePayer: signer,
         instructions: [createPaymentPoolIx],
+        commitment: "confirmed",
       });
 
-      console.log("created!", paymentAccount.address);
+      console.log("Payment Pool Created: ", paymentAccount.address);
 
       return;
     });

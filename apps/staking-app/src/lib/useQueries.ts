@@ -12,46 +12,28 @@ import {
   getActiveVestingAccountsForTokenAccount,
   deriveVestingAccountsPDA,
 } from "@effectai/vesting";
-import { getBase64Encoder, type Account } from "@solana/kit";
+import {
+  getBase64Encoder,
+  type Account,
+  type RpcMainnet,
+  type SolanaRpcApiMainnet,
+} from "@solana/kit";
 import { address as toAddress } from "@solana/kit";
 import {
   decodeStakeAccount,
   fetchStakingAccountsByWalletAddress,
   EFFECT_STAKING_PROGRAM_ADDRESS,
   type StakeAccount,
-} from "@effectai/stake";
+} from "@effectai/staking";
 
 export type StakeAccountDecoded = Account<StakeAccount>; // your types
 import { useQuery } from "@tanstack/react-query";
 import type { Connection } from "solana-kite";
-
-import { EFFECT } from "@/lib/useEffectConfig";
+import { useProfileContext } from "@effectai/react";
 
 export const stakingKeys = {
   stakeAccount: (owner: string | null | undefined) =>
     ["staking", "stakeAccount", owner ?? "unknown"] as const,
-};
-
-export const useEffectBalance = (
-  connection: Connection,
-  tokenAccount: string | null | undefined,
-) => {
-  const enabled = Boolean(tokenAccount && connection?.rpc);
-  return useQuery({
-    queryKey: ["balance", tokenAccount ?? "unknown"],
-    queryFn: async ({ signal }) => {
-      if (!tokenAccount || !connection) return null;
-
-      return await connection.getTokenAccountBalance({
-        tokenAccount: toAddress(tokenAccount),
-      });
-    },
-    enabled,
-    staleTime: 15_000,
-    gcTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-    retry: 2,
-  });
 };
 
 export function useStakeAccount(
@@ -62,13 +44,12 @@ export function useStakeAccount(
 
   return useQuery({
     queryKey: stakingKeys.stakeAccount(address ?? null),
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!address || !connection) return null;
 
       const res = await fetchStakingAccountsByWalletAddress({
         walletAddress: address,
-        rpc: connection.rpc,
-        signal,
+        rpc: connection.rpc as RpcMainnet<SolanaRpcApiMainnet>,
       });
 
       const account = res?.[0];
@@ -86,10 +67,6 @@ export function useStakeAccount(
       });
     },
     enabled,
-    staleTime: 15_000,
-    gcTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-    retry: 2,
   });
 }
 
@@ -101,7 +78,7 @@ export const useStakingRewardAccount = (
 
   return useQuery({
     queryKey: ["staking", "rewardAccount", stakeAccount?.address],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!stakeAccount || !connection) return null;
 
       const { stakingRewardAccount } = await deriveStakingRewardAccountPda({
@@ -116,23 +93,20 @@ export const useStakingRewardAccount = (
       return account;
     },
     enabled,
-    staleTime: 15_000,
-    gcTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-    retry: 2,
   });
 };
 
 export const useReflectionAccount = (connection: Connection | null) => {
   const enabled = Boolean(connection?.rpc);
+  const { mint } = useProfileContext();
 
   return useQuery({
     queryKey: ["staking", "reflection"],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!connection) return null;
 
       const { reflectionAccount } = await deriveRewardAccountsPda({
-        mint: toAddress(EFFECT.EFFECT_SPL_MINT),
+        mint,
       });
 
       const account = await fetchReflectionAccount(
@@ -143,10 +117,6 @@ export const useReflectionAccount = (connection: Connection | null) => {
       return account;
     },
     enabled,
-    staleTime: 15_000,
-    gcTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-    retry: 2,
   });
 };
 
@@ -155,7 +125,7 @@ export const useRewardVestingAccount = (connection: Connection | null) => {
 
   return useQuery({
     queryKey: ["staking", "rewardVesting"],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!connection) return null;
       const activeVestingAccount = import.meta.env
         .VITE_EFFECT_ACTIVE_REWARD_VESTING_ACCOUNT;
@@ -168,7 +138,6 @@ export const useRewardVestingAccount = (connection: Connection | null) => {
       return account;
     },
     enabled,
-    retry: 2,
   });
 };
 
@@ -177,23 +146,24 @@ export const useActiveVestingAccounts = (
   walletAddress: string | null | undefined,
 ) => {
   const enabled = Boolean(walletAddress && connection?.rpc);
+  const { mint } = useProfileContext();
 
   return useQuery({
     queryKey: ["vesting", "activeVestingAccounts", walletAddress],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!walletAddress || !connection) return [];
 
       const tokenAccount = await connection.getTokenAccountAddress(
         toAddress(walletAddress),
-        toAddress(EFFECT.EFFECT_SPL_MINT),
+        mint,
       );
 
       const accounts = await getActiveVestingAccountsForTokenAccount({
-        rpc: connection.rpc,
+        rpc: connection.rpc as RpcMainnet<SolanaRpcApiMainnet>,
         tokenAccount,
       });
 
-      return accounts.map((acc) =>
+      return accounts.map((acc: any) =>
         decodeVestingAccount({
           executable: acc.account.executable,
           space: acc.account.space,
@@ -207,34 +177,6 @@ export const useActiveVestingAccounts = (
       );
     },
     enabled,
-    staleTime: 15_000,
-    gcTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-    retry: 2,
-  });
-};
-
-export const useGetEffectTokenAccount = (
-  connection: Connection | null,
-  walletAddress: string | null | undefined,
-) => {
-  const enabled = Boolean(walletAddress && connection?.rpc);
-
-  return useQuery({
-    queryKey: ["effectTokenAccount", walletAddress],
-    queryFn: async ({ signal }) => {
-      if (!walletAddress || !connection) return null;
-
-      return await connection.getTokenAccountAddress(
-        toAddress(walletAddress),
-        toAddress(EFFECT.EFFECT_SPL_MINT),
-      );
-    },
-    enabled,
-    staleTime: 15_000,
-    gcTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-    retry: 2,
   });
 };
 
@@ -242,15 +184,16 @@ export const useGetInterMediaryRewardVaultBalance = (
   connection: Connection | null,
 ) => {
   const enabled = Boolean(connection?.rpc);
+  const { mint } = useProfileContext();
 
   return useQuery({
     queryKey: ["staking", "intermediaryRewardVaultBalance"],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!connection) return null;
 
       const { intermediaryReflectionVaultAccount } =
         await deriveRewardAccountsPda({
-          mint: toAddress(EFFECT.EFFECT_SPL_MINT),
+          mint,
         });
 
       const balance = await connection.getTokenAccountBalance({
@@ -260,10 +203,6 @@ export const useGetInterMediaryRewardVaultBalance = (
       return balance;
     },
     enabled,
-    staleTime: 15_000,
-    gcTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-    retry: 2,
   });
 };
 
@@ -279,7 +218,7 @@ export const useGetVestingVaultBalance = (
       "vestingVaultBalance",
       vestingAccount?.address ?? "unknown",
     ],
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       if (!vestingAccount || !connection) return null;
 
       const [vaultAddress] = await deriveVestingAccountsPDA({
@@ -293,9 +232,5 @@ export const useGetVestingVaultBalance = (
       return balance;
     },
     enabled,
-    staleTime: 15_000,
-    gcTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-    retry: 2,
   });
 };

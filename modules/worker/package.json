@@ -20,12 +20,11 @@
   "packageManager": "pnpm@10.9.0",
   "dependencies": {
     "@effectai/protocol-core": "workspace:*",
-		    "@effectai/protobufs": "workspace:*",
+    "@effectai/protobufs": "workspace:*",
     "@libp2p/ping": "^2.0.29",
     "@libp2p/webrtc": "^5.0.14"
   },
   "devDependencies": {
-    "@effectai/test-utils": "workspace:*",
     "typescript": "^5.8.3",
     "@types/node": "^22.15.21",
     "ulid": "3.0.0"

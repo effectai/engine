@@ -9,7 +9,7 @@ export const setupManagerDashboard = async ({
   context: ManagerContext;
 }) => {
   const username = "admin";
-  const password = "!effectai!#65";
+  const password = process.env.MANAGER_DASHBOARD_PASSWORD || "admin";
 
   function basicAuth(req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers.authorization;

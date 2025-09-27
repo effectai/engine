@@ -1,61 +1,69 @@
 import * as React from "react";
-import { Button } from "@effectai/ui";
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
   CardFooter,
-} from "@effectai/ui";
-import { Input } from "@effectai/ui";
-import { Alert, AlertDescription, AlertTitle } from "@effectai/ui";
-import { Badge } from "@effectai/ui";
-import {
+  Input,
+  Badge,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@effectai/ui";
-import {
-  Wallet,
-  Keyboard,
-  Copy,
-  ArrowRight,
-  AlertTriangle,
-  RefreshCcw,
-} from "lucide-react";
-import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
+  useWalletContext,
+} from "@effectai/react";
+
+import { Wallet, Keyboard, Copy, ArrowRight, RefreshCcw } from "lucide-react";
 import { BlockchainAddress } from "../BlockchainAddress";
+import { useMigrationStore } from "@/stores/migrationStore";
+import { isAddress } from "@solana/kit";
 
-type Props = {
-  current: "solana" | string;
-  hasSolanaWalletInstalled: boolean;
-  destinationAddress: string | null;
-  setDestinationAddress: (v: string | null) => void;
-  manualAddressInput: string;
-  setManualAddressInput: (v: string) => void;
-  balanceLow?: boolean;
-  goTo: (k: string) => void;
-  selectAddress: () => void;
-};
-
-export function SolanaDestinationStep({
-  current,
-  hasSolanaWalletInstalled,
-  destinationAddress,
-  setDestinationAddress,
-  manualAddressInput,
-  setManualAddressInput,
-  balanceLow,
-  goTo,
-  selectAddress,
-}: Props) {
+export function SolanaDestinationStep() {
   const [manualMode, setManualMode] = React.useState(false);
 
-  if (current !== "solana") return null;
+  const goTo = useMigrationStore((s) => s.goTo);
+
+  const { address } = useWalletContext();
+
+  const destinationAddress = useMigrationStore((s) => s.destinationAddress);
+  const setDestinationAddress = useMigrationStore(
+    (s) => s.setDestinationAddress,
+  );
+
+  React.useEffect(() => {
+    if (manualMode) return;
+    if (address) {
+      setDestinationAddress(address);
+    }
+  }, [address, manualMode, setDestinationAddress]);
+
+  const selectAddress = () => {
+    const input = manualAddressInput.trim();
+    if (isAddress(input)) {
+      setDestinationAddress(input);
+      console.log("Selected address:", input);
+      console.log(destinationAddress);
+    }
+  };
+
+  const [manualAddressInput, setManualAddressInput] = React.useState("");
+
+  const hasSolanaWalletInstalled = React.useMemo(
+    () => typeof window !== "undefined" && !!(window as any).solana,
+    [],
+  );
 
   const canContinue = !!destinationAddress;
+
+  const openWalletModal = () => {
+    const btn = document.querySelector('[data-slot="button"]') as HTMLElement;
+    if (btn) {
+      btn.click();
+    }
+  };
 
   return (
     <Card className="w-full">
@@ -64,7 +72,7 @@ export function SolanaDestinationStep({
           <div>
             <CardTitle className="flex items-center gap-2">
               <Wallet className="h-5 w-5" />
-              Choose your Solana address
+              Choose your Solana destination address
             </CardTitle>
             <CardDescription>
               This address will receive your new EFFECT tokens on Solana.
@@ -84,11 +92,9 @@ export function SolanaDestinationStep({
             <div className="flex flex-wrap items-center gap-2">
               {hasSolanaWalletInstalled && (
                 <>
-                  <UnifiedWalletButton
-                    overrideContent={
-                      <Button variant="default">Connect wallet</Button>
-                    }
-                  />
+                  <Button type="button" onClick={openWalletModal}>
+                    use wallet
+                  </Button>
                   <span className="text-sm text-muted-foreground">or</span>
                 </>
               )}
@@ -166,17 +172,6 @@ export function SolanaDestinationStep({
                 Switch
               </Button>
             </div>
-
-            {balanceLow && (
-              <Alert variant="destructive" className="mt-4">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Low SOL balance</AlertTitle>
-                <AlertDescription>
-                  Your SOL balance looks low. Transactions may fail. Please top
-                  up a small amount of SOL for fees.
-                </AlertDescription>
-              </Alert>
-            )}
           </>
         )}
       </CardContent>

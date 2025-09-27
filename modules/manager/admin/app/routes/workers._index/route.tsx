@@ -2,6 +2,7 @@ import { useLoaderData, useSearchParams } from "@remix-run/react";
 import { DataTable } from "~/components/data-table";
 import { columns } from "./columns";
 import type { LoaderFunctionArgs } from "@remix-run/node";
+import { Input } from "@/app/components/ui/input";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const workers = await context.workerManager.all();

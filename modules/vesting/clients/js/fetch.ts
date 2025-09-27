@@ -1,20 +1,20 @@
 import {
-  Address,
+  type Address,
   type Base58EncodedBytes,
   getBase58Codec,
-  type Rpc,
-  type SolanaRpcApi,
+  type RpcMainnet,
+  type SolanaRpcApiMainnet,
 } from "@solana/kit";
 import {
   EFFECT_VESTING_PROGRAM_ADDRESS,
   VESTING_ACCOUNT_DISCRIMINATOR,
-} from "./@generated/vesting";
+} from "./@generated";
 
 export const getActiveVestingAccountsForTokenAccount = async ({
   rpc,
   tokenAccount,
 }: {
-  rpc: Rpc<SolanaRpcApi>;
+  rpc: RpcMainnet<SolanaRpcApiMainnet>;
   tokenAccount: Address;
 }) => {
   return await rpc

@@ -1,13 +1,12 @@
-import type { KVTransactionResult } from "@cross/kv";
+import type { KVTransactionResult, KVKey } from "@cross/kv";
 import type { Template } from "@effectai/protobufs";
-import { parseString } from "@fast-csv/parse";
 import type { Express } from "express";
 import { requireAuth } from "./auth.js";
 import * as fetcher from "./fetcher.js";
 import type { Fetcher } from "./fetcher.js";
 import {
-  createCsvFetcher,
   getFetcher,
+  getFetchers,
   getTasks,
   importTasks,
 } from "./fetcher.js";
@@ -42,15 +41,22 @@ export type DatasetRecord = {
   template: string;
 };
 
+export const getDataset = async (id: number) =>
+  db.get<DatasetRecord>(["dataset", id, "info"]);
+
 export const getDatasets = async () =>
-  await db.listAll<DatasetRecord>(["dataset", {}]);
+  await db.listAll<DatasetRecord>(["dataset", {}, "info"]);
 
 export const getActiveDatasets = async (s: DatasetStatus) => {
   const p = Array.from(datasetIndex.byStatus[s]).map((id) =>
-    db.get<DatasetRecord>(["dataset", id]).then(a => a!.data),
+    db.get<DatasetRecord>(["dataset", id, "info"]).then(a => a!.data),
   );
+
   return Promise.all(p);
 };
+
+export const writeDataset = async(id: number, ds: DatasetRecord) => 
+  await db.set<DatasetRecord>(["dataset", id, "info"], ds);
 
 export const initialize = async () => {
   // build indexes
@@ -59,15 +65,16 @@ export const initialize = async () => {
   );
 
   // keep index up to date
-  db.watch(["dataset", {}], (data: KVTransactionResult<DatasetRecord>) => {
+  db.watch(["dataset", {}, "info"], (data: KVTransactionResult<DatasetRecord>) => {
     const id = data.data.id;
+
     statusValues.forEach((v: DatasetStatus) =>
       datasetIndex.byStatus[v] ? datasetIndex.byStatus[v].delete(id) : null,
     );
     datasetIndex.byStatus[data.data.status].add(id);
   });
 
-  db.watch(["fetcher", {}, {}], (data: KVTransactionResult<Fetcher>) => {
+  db.watch(["fetcher", {}, {}, "info"], (data: KVTransactionResult<Fetcher>) => {
     console.log(`Trace: saved fetcher ${data.key}`);
   });
 };
@@ -90,7 +97,7 @@ const form = async (msg = "", values: FormValues = {}): Promise<string> =>
       id="name"  ${addVal(values, "name")}
       name="name"/>
 
-    <section>
+    <sqection>
       <label for="template"><strong>Template</strong><br/><small>This template will be used ` +
   `for each task that gets posted in this dataset.</small></label>
       <select name="template" id="template">
@@ -99,33 +106,6 @@ const form = async (msg = "", values: FormValues = {}): Promise<string> =>
       `<option value="${t.data.templateId}"` +
       `${values.template == t.data.templateId ? " selected" : ""}>` +
       `${t.data.name} (${t.data.templateId})</option>`,
-  )}
-      </select>
-
-      <label for="endpoint"><strong>Endpoint</strong><br/><small>The HTTP endpoint where ` +
-  `new data will bet fetched from priodically. Data should be returned as CSV text.` +
-  `</small></label>
-      <input
-	placeholder="<disabled, coming soon>"
-	type="text"
-	disabled
-	id="name" ${addVal(values, "endpoint")}
-	name="endpoint"/>
-
-      <label for="csv"><strong>Initial data</strong><br/>
-      <small>Initial CSV dataset to be used for tasks. First row must define ` +
-  `the header. You will be able to add more data later.</small></label>
-      <textarea placeholder="CSV" id="csv" name="csv" rows="3">` +
-  `${values.csv || ""}</textarea>
-      <select name="delimiter">
-	${[
-    [",", "Comma"],
-    ["\t", "Tab"],
-    [";", "Semicolon"],
-  ].map(
-    ([v, n]) =>
-      `<option ${values.delimiter == v ? "selected " : ""}value="${v}">` +
-      `${n} separated</option>`,
   )}
       </select>
     </section>
@@ -209,22 +189,6 @@ const validations: ValidationMap = {
   },
 
   template: (v: string) => (!v || v.length === 0) && "Template is required",
-  delimiter: (v: string) =>
-    ![",", "\t", ";"].includes(v) && "Invalid CSV delimiter",
-};
-
-const parseCsv = (csv: string): Promise<any[]> => {
-  return new Promise((resolve, reject) => {
-    const data: any[] = [];
-
-    parseString(csv, { headers: true })
-      .on("error", (error) => reject(error))
-      .on("data", (row) => data.push(row))
-      .on("end", (rowCount: number) => {
-        console.log(`Parsed ${rowCount} rows`);
-        resolve(data);
-      });
-  });
 };
 
 const validateForm = async (values: FormValues) => {
@@ -234,17 +198,6 @@ const validateForm = async (values: FormValues) => {
     const error = validations[field](values[field]);
     if (error) errors[field] = error as string;
   });
-
-  // csv check
-  if (values.csv && values.csv.length > 0) {
-    try {
-      const taskData = await parseCsv(values.csv);
-      if (taskData.length === 0)
-        errors["csv"] = `CSV needs at least 1 data row`;
-    } catch (e) {
-      errors["csv"] = `CSV ${e}`;
-    }
-  }
 
   const valid = Object.keys(errors).length === 0;
   return { valid, errors };
@@ -258,48 +211,35 @@ const escapeHTML = (html: string): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-const importProgress = async (ds: DatasetRecord) => {
-  const dsId = ds.id;
-
-  const fetcher = await getFetcher(ds);
-
-  const currentIdx = publishProgress[dsId]
-    ? publishProgress[dsId].current + fetcher.taskIdx
-    : fetcher.taskIdx;
-
-  const progressDots = Array(currentIdx)
-    .fill(".")
-    .map((_) => '<div class="block"></div>')
-    .join("");
-
-  const pendingDots = Array(fetcher.totalTasks - currentIdx)
-    .fill(".")
-    .map((_) => '<div class="block empty"></div>')
-    .join("");
-
-  return `
-<div hx-get="/d/${dsId}/progress"
-  hx-trigger="every 1000 ms"
-  hx-target="this"
-  hx-swap="outerHTML">
-<h3>Data progress</h3>
-<span id="pb">${currentIdx}</span> / ${fetcher.totalTasks}
-<p id="pb-blocks" class="blocks">${progressDots}${pendingDots}</p>
-<p>Last import: ${
-    fetcher.lastImport ? new Date(fetcher.lastImport).toLocaleString() : "never"
-  }</p>
-</div>`;
-};
-
 const confirmForm = async (
   id: number,
   ds: DatasetRecord,
   values: FormValues = {},
+  fetchers: Fetcher[] = [],
 ): Promise<string> => `
 <div>
 <h3>Dataset ${id}</h3>
 <p>Status: ${ds.status}</p>
-${await importProgress(ds)}
+<section>
+  <h3>Steps</h3>
+  <div class="boxbox">
+  ${fetchers.sort((f1, f2) => f1.index - f2.index).map((f: Fetcher) => `
+    <div class="box">
+      <strong><a href="/d/${id}/f/${f.index}">#${f.index} ${f.name}</a></strong>
+      <small>${f.type} (${f.type == "constant" ? f.maxTasks : f.totalTasks})</small>
+      <br/>
+      <small>queue: ${fetcher.countTasks(f, "queue")} -
+             active: ${fetcher.countTasks(f, "active")} -
+             done: ${fetcher.countTasks(f, "done")}</small>
+
+    </div>
+  `).join('')}
+  </div>
+  <section>
+    <a href="${id}/create-fetcher?type=csv"><button>+ Add Step</button></a>
+  </section>
+</section>
+<section>
 <h3>Template example</h3>
 <div id="bar">
 <iframe
@@ -307,6 +247,7 @@ ${await importProgress(ds)}
   width="100%"
   srcdoc="${escapeHTML(values.renderedTemplate)}"></iframe>
 </div>
+</section>
 <form hx-post="/d/${id}" hx-swap="outerHTML">
 <section>
 ${
@@ -335,13 +276,19 @@ export const startAutoImport = async () => {
     // to make it async, use:
     // await Promise.all(activeDatasets.map(async (ds) => {
     for (const ds of activeDatasets) {
-      const imported = await fetcher.importTasks(ds);
-      const dsId = ["dataset", ds.id];
-      if (!imported || imported === 0) {
-        console.log(`Dataset ${dsId} finished`);
-        ds.status = "finished";
-        await db.set<DatasetRecord>(dsId, ds);
+      let imported = 0;
+      const fetchers = await getFetchers(ds);
+      for (const f of fetchers) {
+	imported += await fetcher.processFetcher(f);
       }
+
+      // TODO: finish dataset when all fetchers are finished
+      // const dsId = ["dataset", ds.id];
+      // if (!imported || imported === 0) {
+      //   console.log(`Dataset ${dsId} finished`);
+      //   ds.status = "finished";
+      //   await db.set<DatasetRecord>(dsId, ds);
+      // }
     }
 
     // pause on the main loop
@@ -365,7 +312,7 @@ export const addDatasetRoutes = (app: Express): void => {
         // use time in nanoseconds as incremental dataset ID (not perfect)
         id = Number(process.hrtime.bigint());
 
-        const { csv, delimiter, ...datasetFields } = req.body;
+        const datasetFields = req.body;
         const dataset: DatasetRecord = {
           ...datasetFields,
           id,
@@ -373,8 +320,7 @@ export const addDatasetRoutes = (app: Express): void => {
           status: "draft",
         };
 
-        await db.set<DatasetRecord>(["dataset", id], dataset);
-        await createCsvFetcher(dataset, csv, delimiter);
+        await writeDataset(id, dataset);
 
         console.log(`Created dataset ${id}`);
         msg = `<p>Success! Dataset ${id}</p>`;
@@ -401,7 +347,7 @@ export const addDatasetRoutes = (app: Express): void => {
     const dataset = await db.get<DatasetRecord>(["dataset", id]);
     if (!dataset) return make404(res);
 
-    res.send(await importProgress(dataset!.data));
+    // res.send(await importProgress(dataset!.data));
   });
 
   app.get("/d/:id", async (req, res) => {
@@ -410,14 +356,16 @@ export const addDatasetRoutes = (app: Express): void => {
 
     if (!dataset) return make404(res);
 
-    let fetcher, renderedTemplate;
-    try {
-      fetcher = await getFetcher(dataset!.data);
+    const fetchers = await getFetchers(dataset.data);
 
+    let renderedTemplate;
+    try {
+      // fetcher = await getFetcher(dataset!.data);
       const tpl = await getTemplate(dataset!.data.template);
+
       renderedTemplate = await renderTemplate(
         tpl!.data.data,
-        fetcher.dataSample,
+	{}
       );
     } catch (e) {
       res.status(500);
@@ -429,17 +377,20 @@ export const addDatasetRoutes = (app: Express): void => {
     res.send(
       page(`
 <div id="page">
-        ${await confirmForm(id, dataset.data!, {
-          ...dataset!.data,
-          renderedTemplate,
-        })}
+        ${await confirmForm(
+	  id,
+	  dataset.data!,
+	  { ...dataset.data, renderedTemplate },
+	  fetchers
+	)}
 `),
     );
   });
 
+
   app.post("/d/:id", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
-    const dataset = await db.get<DatasetRecord>(["dataset", id]);
+    const dataset = await getDataset(id);
 
     if (!dataset) return make404(res);
 
@@ -453,12 +404,6 @@ export const addDatasetRoutes = (app: Express): void => {
       // finish the HTTP request
       res.setHeader("HX-Location", `/d/${id}`);
       res.end();
-
-      // start the fetcher
-      await importTasks(dataset!.data);
-
-      // start auto importing from now on
-      await fetcher.importTasks(dataset!.data);
     } else if (req.query.action === "archive") {
       if (dataset!.data.status !== "active") return make500(res);
       console.log(`Trace: archiving dataset ${id}`);

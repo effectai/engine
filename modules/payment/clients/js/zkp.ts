@@ -6,7 +6,6 @@ import path from "node:path";
 import { groth16, type Groth16Proof } from "snarkjs";
 import type { Payment } from "@effectai/protobufs";
 import { PAYMENT_BATCH_SIZE } from "./consts.js";
-export type { Groth16Proof } from "snarkjs";
 export { buildEddsa } from "circomlibjs";
 
 export type DeepNonNullable<T> = T extends Function
@@ -92,6 +91,13 @@ export const generatePaymentProof = async ({
 
     const enabled = Array(PAYMENT_BATCH_SIZE).fill(0).fill(1, 0, batchSize);
     const lastNonce = payments[payments.length - 1].nonce;
+
+    console.log(
+      "Generating proof for :",
+      recipient,
+      paymentAccount,
+      payments.length,
+    );
 
     const proofInputs = {
       pubX: eddsa.F.toObject(pubX),

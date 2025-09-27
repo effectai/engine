@@ -274,7 +274,7 @@ export const addTemplateRoutes = (app: Express): void => {
   ${await templatePreviewFrame(req.body.html)}
   <section>
 <form>
-    <textarea style="display: none;" name="html">${req.body.html}</textarea>
+    <textarea style="display: none;" name="html">${escapeHTML(req.body.html)}</textarea>
     <input type="hidden" name="name" value="${req.body.name}">
     <div class="btns">
       <button hx-target="#page" hx-post="/t/create?action=edit">< Edit</button>
@@ -316,7 +316,8 @@ export const addTemplateRoutes = (app: Express): void => {
   height="450px"
   width="100%"
   srcdoc="${escapeHTML(renderedTemplate)}"></iframe>
-${templateDataForm(html, fields, req.body)}`);
+
+${templateDataForm(escapeHTML(html), fields, req.body)}`);
   });
 
   app.post("/t/:id", requireAuth, async (req, res) => {

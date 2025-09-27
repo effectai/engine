@@ -1,4 +1,5 @@
-export * from "./@generated/payments/index.js";
-export * from "./zkp.js";
+export * from "./@generated";
 export * from "./consts.js";
 export * from "./utils.js";
+
+export { prove, buildEddsa } from "./zkp.js";

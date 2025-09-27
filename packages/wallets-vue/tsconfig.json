@@ -1,6 +1,0 @@
-{
-  "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "@effectai/wallets-vue",
-  "extends": "../../tsconfig.base.json",
-  "include": ["src"]
-}

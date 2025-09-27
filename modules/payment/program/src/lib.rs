@@ -1,3 +1,4 @@
+use anchor_id_injector::inject_declare_id_output;
 use anchor_lang::prelude::*;
 
 mod errors;
@@ -11,10 +12,11 @@ mod verifying_key;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("effphQKcAYeN6CkbygjnJUsuYXGUtkikSPZ6B8hSggC");
+inject_declare_id_output!("../../../target/deploy/effect_payment-keypair.json");
 
 #[program]
 pub mod effect_payment {
+
     use super::*;
 
     pub fn claim_proofs(

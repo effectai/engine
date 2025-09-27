@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { dapps } from "./../constants/dapps.ts";
+import { dapps } from "~/constants/dapps";
 </script>
 
 <style scoped>

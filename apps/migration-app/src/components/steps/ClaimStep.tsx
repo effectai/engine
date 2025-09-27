@@ -1,74 +1,82 @@
 import * as React from "react";
-import { Button } from "@effectai/ui";
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
   CardFooter,
-} from "@effectai/ui";
-import { Alert, AlertDescription, AlertTitle } from "@effectai/ui";
-import { Input } from "@effectai/ui";
-import { Badge } from "@effectai/ui";
-import {
-  Wallet,
-  Link as LinkIcon,
-  Share2,
-  Copy,
-  PlugZap,
-  AlertTriangle,
-  CheckCircle2,
-} from "lucide-react";
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Input,
+  Badge,
+  useWalletContext,
+} from "@effectai/react";
+import { Wallet, Share2, Copy, PlugZap, AlertTriangle } from "lucide-react";
 import ClaimCard from "../ClaimCard";
-import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
 import { BlockchainAddress } from "../BlockchainAddress";
+import { useGetMigrationAccountVaultBalanceQuery } from "../../hooks/useGetMigrationAccountQuery";
+import { useGetMigrationAccountQuery } from "@/hooks/useGetMigrationAccountQuery";
+import { useConnectionContext } from "@effectai/react";
+import { useMigrationStore } from "@/stores/migrationStore";
 
-type Props = {
-  current: "claim" | string;
-  source: { address?: string | null };
-  migrationAccount: any | null;
-  disconnectSourceWallets: () => void | Promise<void>;
+export function ClaimStep() {
+  const { connection } = useConnectionContext();
 
-  // mobile fallback
-  isMobile: boolean;
-  hasSolanaWalletInstalled: boolean;
-  authorizeUrl: string;
-  shareAuthorize: () => void;
-  copyAuthorize: () => void;
+  const migrationAccountAddress = useMigrationStore((s) => s.migrationAddress);
+  const authorizeUrl = useMigrationStore((s) => s.authorizeUrl);
 
-  // solana connect state
-  solanaWalletAddress: string | null;
-  UnifiedWalletButton: React.ComponentType;
+  const foreignPublicKey = useMigrationStore((s) => s.foreignPublicKey);
+  const signature = useMigrationStore((s) => s.signature);
+  const message = useMigrationStore((s) => s.message);
 
-  // claim data
-  foreignPublicKey?: Uint8Array | null;
-  signature?: string | Uint8Array | null;
-  message?: string | Uint8Array | null;
-  migrationVaultBalance: number | null | undefined;
-  claim: (args: any) => Promise<void> | void;
-};
+  const copyAuthorize = React.useCallback(() => {
+    const url = authorizeUrl();
+    navigator.clipboard.writeText(url);
+  }, [authorizeUrl]);
 
-export function ClaimStep({
-  current,
-  source,
-  migrationAccount,
-  disconnectSourceWallets,
-  isMobile,
-  hasSolanaWalletInstalled,
-  authorizeUrl,
-  shareAuthorize,
-  copyAuthorize,
-  solanaWalletAddress,
-  foreignPublicKey,
-  signature,
-  message,
-  migrationVaultBalance,
-  claim,
-}: Props) {
-  if (current !== "claim") return null;
+  const shareAuthorize = React.useCallback(() => {
+    const url = authorizeUrl();
+    if ("share" in navigator) {
+      navigator.share({
+        title: "Claim your EFFECT tokens",
+        text: "Complete your token migration by claiming your EFFECT tokens on Solana.",
+        url,
+      });
+    }
+  }, [authorizeUrl]);
 
-  const showNoClaims = !migrationAccount;
+  const disconnect = useMigrationStore((s) => s.disconnect);
+  const { address } = useWalletContext();
+
+  const hasSolanaWalletInstalled = React.useMemo(
+    () => typeof window !== "undefined" && !!(window as any).solana,
+    [],
+  );
+
+  const isMobile = React.useMemo(() => {
+    if (typeof navigator === "undefined") return false;
+    return /Mobi|Android/i.test(navigator.userAgent);
+  }, []);
+
+  const { data: migrationAccount } = useGetMigrationAccountQuery(
+    connection,
+    migrationAccountAddress,
+  );
+
+  const { data: vaultBalance } = useGetMigrationAccountVaultBalanceQuery(
+    connection,
+    migrationAccountAddress,
+  );
+
+  const openWalletModal = () => {
+    const btn = document.querySelector('[data-slot="button"]') as HTMLElement;
+    if (btn) {
+      btn.click();
+    }
+  };
 
   return (
     <Card className="w-full">
@@ -92,14 +100,14 @@ export function ClaimStep({
       </CardHeader>
 
       <CardContent className="pt-6 space-y-6">
-        {showNoClaims ? (
+        {!migrationAccount ? (
           <>
-            {source.address && (
+            {foreignPublicKey && (
               <div className="text-sm">
                 <span className="text-muted-foreground">
                   Source account:&nbsp;
                 </span>
-                <BlockchainAddress address={String(source.address)} />
+                <BlockchainAddress address={String(foreignPublicKey)} />
               </div>
             )}
 
@@ -113,7 +121,7 @@ export function ClaimStep({
             </Alert>
 
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={disconnectSourceWallets}>
+              <Button variant="outline" onClick={disconnect}>
                 <PlugZap className="mr-2 h-4 w-4" />
                 Disconnect
               </Button>
@@ -135,7 +143,7 @@ export function ClaimStep({
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Input readOnly value={authorizeUrl} />
+                    <Input readOnly value={authorizeUrl()} />
                     <Button variant="outline" onClick={copyAuthorize}>
                       <Copy className="mr-2 h-4 w-4" />
                       Copy
@@ -149,13 +157,13 @@ export function ClaimStep({
                   </div>
                 </CardContent>
               </Card>
-            ) : !solanaWalletAddress ? (
+            ) : !address ? (
               // Prompt to connect Solana wallet
               <div className="rounded-xl border bg-muted/30 p-5">
                 <p className="text-sm text-muted-foreground mb-3">
                   Connect a Solana wallet to receive your tokens.
                 </p>
-                <UnifiedWalletButton />
+                <Button onClick={openWalletModal}> Connect Wallet </Button>
               </div>
             ) : (
               // Ready to claim
@@ -165,23 +173,13 @@ export function ClaimStep({
                   signature &&
                   message && (
                     <ClaimCard
+                      migrationVaultBalance={vaultBalance?.uiAmount ?? null}
                       migrationAccount={migrationAccount}
                       message={message}
                       foreignPublicKey={foreignPublicKey}
                       signature={signature}
-                      migrationVaultBalance={migrationVaultBalance}
-                      claim={claim}
                     />
                   )}
-
-                <Alert>
-                  <CheckCircle2 className="h-4 w-4" />
-                  <AlertTitle>Almost there</AlertTitle>
-                  <AlertDescription>
-                    Review the claim details and submit the transaction on
-                    Solana. Keep a small amount of SOL for fees.
-                  </AlertDescription>
-                </Alert>
               </>
             )}
           </div>

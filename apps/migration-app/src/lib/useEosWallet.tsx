@@ -15,7 +15,7 @@ import { WalletPluginAnchor } from "@wharfkit/wallet-plugin-anchor";
 import { WalletPluginTokenPocket } from "@wharfkit/wallet-plugin-tokenpocket";
 import { WalletPluginWombat } from "@wharfkit/wallet-plugin-wombat";
 import { WebRenderer } from "@wharfkit/web-renderer";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { SourceWallet, WalletConnectionMeta } from "./wallet-types";
 
 export function extractEosPublicKeyBytes(eosPubkey: string): Uint8Array | null {
@@ -53,19 +53,21 @@ export function useEosWallet(): SourceWallet & EosWalletState {
   }, []);
 
   const address = session?.actor?.toString();
+
   const walletMeta: WalletConnectionMeta | null = session
     ? {
-        name: session.walletPlugin.metadata.name,
+        name: session.walletPlugin.metadata.name || "Unknown EOS Wallet",
         icon: session.walletPlugin.metadata.logo?.light,
         permission: session.permission.toString(),
         chain: "EOS",
       }
     : null;
 
-  const isConnected = !!session;
+  const isConnected = !!session && !!address;
 
   const connect = useCallback(async () => {
     const result = await sessionKit.login();
+    console.log("EOS login result:", result);
     setSession(result.session);
   }, [sessionKit]);
 

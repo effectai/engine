@@ -2,30 +2,32 @@ import * as React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@effectai/ui";
-import { Input } from "@effectai/ui";
 import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
   Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "@effectai/react";
 import { cn } from "@/lib/utils";
 import type { Account, TransactionSigner } from "@solana/kit";
-import { SolanaError, address as toAddress } from "@solana/kit";
-import { formatNumber, Row, shorten, trimTrailingZeros } from "@/lib/helpers";
-import type { StakeAccount } from "@effectai/stake";
-import { buildUnstakeInstruction } from "@effectai/solana-utils";
-import { useSolanaContext } from "@/providers/SolanaProvider";
-import { EFFECT } from "@/lib/useEffectConfig";
+import { SolanaError } from "@solana/kit";
+import { formatNumber, Row, shorten, trimTrailingZeros } from "@/lib/utils";
+import type { StakeAccount } from "@effectai/staking";
 import { useActiveVestingAccounts } from "@/lib/useQueries";
+import { useUnstakeMutation } from "@/lib/useMutations";
 import { VestingScheduleItem } from "./VestingScheduleItem";
+import { useWalletContext, useConnectionContext } from "@effectai/react";
 
 type Props = {
-  stakeAccount: Account<StakeAccount>;
+  stakeAccount?: Account<StakeAccount> | null;
   signer: TransactionSigner;
   isPending?: boolean;
   tokenSymbol?: string;
@@ -33,14 +35,17 @@ type Props = {
 };
 
 export function UnstakeForm({
-  signer,
   stakeAccount,
   isPending = false,
   tokenSymbol = "EFFECT",
   className,
 }: Props) {
-  const { connection, address } = useSolanaContext();
-  const max = Number(stakeAccount.data.amount / BigInt(1e6));
+  const { address, signer, userTokenAccount } = useWalletContext();
+  const { connection } = useConnectionContext();
+
+  const max = stakeAccount?.data
+    ? Number(stakeAccount.data.amount / BigInt(1e6))
+    : 0;
 
   const { data: vestingAccounts } = useActiveVestingAccounts(
     connection,
@@ -57,7 +62,7 @@ export function UnstakeForm({
           .refine((s) => /^\d*\.?\d*$/.test(s), "Enter a valid number")
           .transform((s) => (s === "" ? 0 : Number(s)))
           .refine(
-            (n) => isFinite(n) && n >= 0,
+            (n) => Number.isFinite(n) && n >= 0,
             "Amount must be a positive number",
           )
           .refine((n) => n > 0, "Amount must be greater than 0")
@@ -66,7 +71,7 @@ export function UnstakeForm({
     [max],
   );
 
-  const form = useForm<z.infer<typeof schema>>({
+  const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: { amount: "" },
     mode: "onChange",
@@ -88,31 +93,26 @@ export function UnstakeForm({
     form.setValue("amount", trimTrailingZeros(v), { shouldValidate: true });
   };
 
+  const { mutateAsync: unstake } = useUnstakeMutation();
   const onUnstakeHandler = React.useCallback(
     async (amount: number) => {
       try {
-        if (!connection || !address || !signer) {
-          throw new Error("No connection available");
+        if (
+          !connection ||
+          !address ||
+          !signer ||
+          !userTokenAccount ||
+          !stakeAccount
+        ) {
+          throw new Error("Wallet not connected");
         }
 
-        const userTokenAccount = await connection.getTokenAccountAddress(
-          toAddress(address),
-          toAddress(EFFECT.EFFECT_SPL_MINT),
-        );
-
-        const unstakeInstructions = await buildUnstakeInstruction({
-          amount: amount * 1e6,
-          mint: toAddress(EFFECT.EFFECT_SPL_MINT),
-          userTokenAccount,
-          stakeAccount: stakeAccount.address,
-          rpc: connection.rpc,
+        await unstake({
+          connection,
           signer,
-        });
-
-        return await connection.sendTransactionFromInstructions({
-          feePayer: signer,
-          instructions: unstakeInstructions,
-          maximumClientSideRetries: 3,
+          stakeAccount,
+          recipientTokenAccount: userTokenAccount,
+          amount,
         });
       } catch (e) {
         if (e instanceof SolanaError) {
@@ -130,8 +130,13 @@ export function UnstakeForm({
   });
 
   return (
-    <div className="space-y-6 gap-3 flex">
-      <Card className={cn("flex flex-col flex-none", className)}>
+    <div className="space-y-6 gap-0 flex flex-col lg:flex-row">
+      <Card
+        className={cn(
+          "flex flex-col flex-grow rounded-none m-0 flex-shrink-0",
+          className,
+        )}
+      >
         <CardHeader>
           <CardTitle>Unstake Tokens</CardTitle>
         </CardHeader>
@@ -139,25 +144,26 @@ export function UnstakeForm({
         <CardContent>
           <Form {...form}>
             <form onSubmit={onSubmit} className="space-y-6">
-              {/* Context */}
               <div className="rounded-xl border bg-muted/30 px-3 py-4 space-y-2 text-sm">
                 <Row
                   label="Stake account"
-                  value={shorten(stakeAccount.address)}
+                  value={
+                    stakeAccount?.address ? shorten(stakeAccount.address) : "-"
+                  }
                 />
                 <Row
                   label="Currently staked"
-                  value={`${formatNumber(Number(stakeAccount.data.amount / BigInt(1e6)))} ${tokenSymbol}`}
+                  value={`${stakeAccount?.data ? formatNumber(Number(stakeAccount?.data.amount / BigInt(1e6))) : 0n} ${tokenSymbol}`}
                 />
                 <Row
                   label="Available to unstake"
-                  value={`${formatNumber(max)} ${tokenSymbol}`}
+                  value={`${formatNumber(Number(max))} ${tokenSymbol}`}
                 />
               </div>
 
               {/* Amount */}
               <FormField
-                control={form.control}
+                control={form.control as any}
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
@@ -199,7 +205,6 @@ export function UnstakeForm({
                 )}
               />
 
-              {/* Quick % chips */}
               <div className="flex flex-wrap gap-2">
                 {[25, 50, 75, 100].map((p) => (
                   <Button
@@ -215,7 +220,6 @@ export function UnstakeForm({
                 ))}
               </div>
 
-              {/* Preview */}
               <div className="rounded-xl border bg-muted/20 px-3 py-3 text-sm">
                 <Row
                   label="Unstaking"
@@ -237,21 +241,15 @@ export function UnstakeForm({
         </CardContent>
       </Card>
       {vestingAccounts && vestingAccounts.length > 0 && (
-        <Card className="flex flex-col flex-none w-96">
+        <Card className="flex flex-col flex-grow rounded-none shadow-none">
           <CardHeader>
             <CardTitle className="text-sm">Active Unstakes</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Unstaking will initiate a 7-day cooldown period, after which you can
-            withdraw your tokens. During this time, your tokens will not earn
-            rewards.
             {vestingAccounts && vestingAccounts.length > 0 && (
               <div className="mt-3 space-y-2">
                 {vestingAccounts.map((v, idx) => (
-                  <VestingScheduleItem
-                    key={v.id ?? idx} // ensure stable key (fallback to index if no id)
-                    vestingAccount={v} // pass the actual data down as a prop
-                  />
+                  <VestingScheduleItem key={idx} vestingAccount={v} />
                 ))}
               </div>
             )}{" "}
