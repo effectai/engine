@@ -507,24 +507,28 @@ export const processResults = async (f: Fetcher, batchSize: number) => {
 
   console.log(`trace: Checking results for ${ids.length} active tasks`);
 
-  const { data } = await api.get<APIResponse>(
-    "/task-results", {params: {ids: ids.join(";")}}
-  );
+  try {
+    const { data } = await api.get<APIResponse>(
+      "/task-results", {params: {ids: ids.join(";")}}
+    );
 
-  let importCount = 0;
-  for (const d of data as any) {
-    if (d.type !== "submission")
-      continue;
-    db.beginTransaction();
-    await db.delete([...keyBase, "active", d.taskId]);
-    await db.set<boolean>([...keyBase, "done", d.taskId], true);
-    // TODO: add type for TaskResult in the sdk
-    await db.set<any>(["task-result", d.taskId], d);
-    await db.endTransaction();
-    importCount++;
+    let importCount = 0;
+    for (const d of data as any) {
+      if (d.type !== "submission")
+	continue;
+      db.beginTransaction();
+      await db.delete([...keyBase, "active", d.taskId]);
+      await db.set<boolean>([...keyBase, "done", d.taskId], true);
+      // TODO: add type for TaskResult in the sdk
+      await db.set<any>(["task-result", d.taskId], d);
+      await db.endTransaction();
+      importCount++;
+
+      console.log(`trace: ${importCount} tasks finished`);
+    }
+  } catch (e) {
+    console.log(`error: ${e}`);
   }
-
-  console.log(`trace: ${importCount} tasks finished`);
 };
 
 type ValidationFunction = (v: any) => string | boolean | undefined | null;
