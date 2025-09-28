@@ -85,6 +85,7 @@
           sentence: "${sentence}",
           audioBlob: "",
           ipfsCID: "",
+          // ipfsHOST: "https://ipfs.effect.ai/api/v0/add?pin=true",
           notComplete: false,
           instructions: `
           <div class="">
@@ -190,6 +191,7 @@
                   values: {
                     taskTitle: this.title,
                     sentence: this.sentence,
+                    answer: "https://ipfs.effect.ai/ipfs/" + this.ipfsCID,
                   },
                 },
                 "*"
