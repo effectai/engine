@@ -689,6 +689,7 @@ export const addFetcherRoutes = (app: Express): void => {
 
 <section>
   <a href="/d/${id}/f/${fid}/import"><button>Add Data</button></a>
+  <a href="/d/${id}/f/${fid}/edit"><button>Edit Step</button></a>
 </section>
 
 <section>
