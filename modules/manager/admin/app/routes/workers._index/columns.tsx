@@ -2,14 +2,11 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { formatReward, sliceBoth } from "@/app/lib/utils";
-import { Link, useNavigate } from "@remix-run/react";
-import type {
-  WorkerRecord,
-  WorkerState,
-} from "../../../../dist/stores/managerWorkerStore";
+import { Link } from "@remix-run/react";
+import type { WorkerState } from "../../../../dist/stores/managerWorkerStore";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/app/components/ui/button";
-import { ArrowUpDown, Circle, CircleOff } from "lucide-react";
+import { ArrowUpDown, Circle, CircleOff, Search } from "lucide-react";
 import { Badge } from "@/app/components/ui/badge";
 
 const calculateSuccessRate = (item: WorkerData) => {
@@ -22,25 +19,40 @@ export type WorkerData = {
   };
 };
 
-export const columns: ColumnDef<WorkerData>[] = [
+// 🔑 columns is now a function that takes callbacks
+export const columns = ({
+  onSearchIDClick,
+  onSearchACClick,
+}: {
+  onSearchIDClick: () => void;
+  onSearchACClick: () => void;
+}): ColumnDef<WorkerData>[] => [
   {
     accessorKey: "state.isOnline",
     header: "Status",
     cell: ({ row }) => {
-      const isOnline = row.original.state.isOnline as boolean;
+      const isOnline = row.original.state.isOnline;
+      const isBanned = row.original.state.banned;
 
       return (
-        <Badge variant={isOnline ? "default" : "destructive"} className="gap-2">
-          {isOnline ? (
+        <Badge variant={isBanned ? "purple" : isOnline ? "green" : "destructive"} className="gap-2">
+          {isBanned ? (
             <>
               <Circle className="h-3 w-3 fill-current" />
-              Online
+              Banned
             </>
           ) : (
-            <>
-              <CircleOff className="h-3 w-3" />
-              Offline
-            </>
+            isOnline ? (
+              <>
+                <Circle className="h-3 w-3 fill-current" />
+                Online
+              </>
+            ) : (
+              <>
+                <CircleOff className="h-3 w-3" />
+                Offline
+              </>
+            )
           )}
         </Badge>
       );
@@ -48,7 +60,12 @@ export const columns: ColumnDef<WorkerData>[] = [
   },
   {
     accessorKey: "state.id",
-    header: "ID",
+    header: () => (
+      <Button variant="ghost" onClick={onSearchIDClick}>
+        ID
+        <Search className="ml-2 h-4 w-4" />
+      </Button>
+    ),
     cell: ({ row }) => {
       const id = row.original.state.peerId;
       return (
@@ -65,38 +82,36 @@ export const columns: ColumnDef<WorkerData>[] = [
     accessorKey: "state.lastActivity",
     header: "Last Activity",
     cell: ({ row }) => {
-      //get time ago from timestamp
       const distance = formatDistanceToNow(
         new Date(row.original.state.lastActivity * 1000),
-        {
-          addSuffix: true,
-        },
+        { addSuffix: true }
       );
-
       return <span>{distance}</span>;
     },
   },
   {
     accessorKey: "state.accessCodeRedeemed",
-    header: "Access Code",
+    header: () => (
+      <Button variant="ghost" onClick={onSearchACClick}>
+        Access Code
+        <Search className="ml-2 h-4 w-4" />
+      </Button>
+    ),
   },
   {
     id: "successRate",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Success Rate
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Success Rate
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
     sortingFn: (rowA, rowB) => {
       const successRateA = calculateSuccessRate(rowA.original);
       const successRateB = calculateSuccessRate(rowB.original);
-
       return successRateB - successRateA;
     },
     cell: ({ row }) => {
@@ -118,26 +133,23 @@ export const columns: ColumnDef<WorkerData>[] = [
     },
   },
   {
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Total Earned
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
     accessorKey: "state.totalEarned",
-    cell: ({ row }) => {
-      return row.original.state.totalEarned ? (
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Total Earned
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) =>
+      row.original.state.totalEarned ? (
         <span>
           {formatReward(BigInt(row.original.state.totalEarned))} EFFECT
         </span>
       ) : (
         0n
-      );
-    },
+      ),
   },
 ];
