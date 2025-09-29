@@ -245,10 +245,12 @@ export const writeFetcher = async(f:Fetcher) =>
 export const createFetcher = async (
   ds: DatasetRecord,
   fields: Record<any, any>,
+  fetcherIdx: number | undefined = undefined,
 ) => {
   const csvData = await parseCsv(fields.csv, fields.delimiter);
 
-  const nextId = db.count(["fetcher", ds.id, {}, "info"]) + 1;
+  const nextId = fetcherIdx ? fetcherIdx :
+    db.count(["fetcher", ds.id, {}, "info"]) + 1;
 
   const f: Fetcher = {
     name: fields.name,
@@ -644,7 +646,7 @@ export const addFetcherRoutes = (app: Express): void => {
     msg = msg ? "- " + msg : "";
 
     if (valid) {
-      const f = await createFetcher(dataset, req.body);
+      const f = await createFetcher(dataset, req.body, fid);
       res.setHeader("HX-Location", `/d/${id}/f/${f.index}`);
       res.send();
     } else {
