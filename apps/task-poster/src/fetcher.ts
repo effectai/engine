@@ -108,9 +108,9 @@ export const csvFetcherForm = async (dsId: number, values: FormValues) => `
 </fieldset>
 `;
 
-export const fetcherForm = async (dsId: number, values: FormValues, msg = "") => `
+export const fetcherForm = async (dsId: number, values: FormValues, msg = "", fid: number | undefined = undefined) => `
 <div id="page">
-<form hx-post="/d/${dsId}/fetcher-create">
+<form hx-post="/d/${dsId}/${fid ? `f/${fid}/edit` : "fetcher-create"}">
   <fieldset>
     <legend>step info</legend>
     <label for="name"><strong>Name</strong></label>
@@ -143,12 +143,10 @@ export const fetcherForm = async (dsId: number, values: FormValues, msg = "") =>
     </section>
 
 
-      <label for="fetcher-type"><strong>Data source</strong><br/>
+      <label for="type"><strong>Data source</strong><br/>
       <small>How new tasks will be fetched.</small></label>
-      <select name="type" id="type">
-	<option value="csv">CSV</option>
-	<option value="fetcher">Previous step</option>
-	<option value="constant">Constant value</option>
+      <select name="type" id="type">${["csv", "fetcher", "constant"].map(a =>
+	`<option value="${a}" ${values.type == a ? "selected" : ""}>${a}</option>`).join("")}
       </select>
 
   </fieldset>
@@ -185,7 +183,7 @@ export const fetcherForm = async (dsId: number, values: FormValues, msg = "") =>
     </section>
   </fieldset>
 
- <button type="submit">Create</button>
+ <button type="submit">${fid ? "Update" : "Create"}</button>
 </form>
 </div>
 `;
@@ -240,6 +238,9 @@ const fetcherImportForm = async (f: Fetcher, values: {}, msg = "") => `
 </form>
 </div>
 `
+
+export const writeFetcher = async(f:Fetcher) =>
+  await db.set<Fetcher>(["fetcher", f.index, f.datasetId, "info"], f);
 
 export const createFetcher = async (
   ds: DatasetRecord,
@@ -622,6 +623,35 @@ export const addFetcherRoutes = (app: Express): void => {
   app.get("/d/:id/create-fetcher", async (req, res) => {
     const id = Number(req.params.id);
     res.send(page(await fetcherForm(id, {}, "")))
+  });
+
+  app.get("/d/:id/f/:fid/edit", async (req, res) => {
+    const id = Number(req.params.id);
+    const fid = Number(req.params.fid);
+    const f = await getFetcher(id, fid);
+
+    res.send(page(await fetcherForm(id, f!, "", fid)));
+  });
+
+  app.post("/d/:id/f/:fid/edit", async (req, res) => {
+    const id = Number(req.params.id);
+    const fid = Number(req.params.fid);
+    const f = await getFetcher(id, fid);
+    const dataset = (await db.get<DatasetRecord>(["dataset", id, "info"]))!.data;
+
+    let { valid, errors } = await validateForm(req.body);
+    let msg = Object.values(errors).join("<br/>- ");
+    msg = msg ? "- " + msg : "";
+
+    if (valid) {
+      const f = await createFetcher(dataset, req.body);
+      res.setHeader("HX-Location", `/d/${id}/f/${f.index}`);
+      res.send();
+    } else {
+      msg = '<h4 style="margin-top: 0;">Could not create dataset:</h4>' + msg;
+      console.log(`Invalid form submission ${msg}`);
+      res.send(await fetcherForm(id, req.body, msg));
+    }
   });
 
   app.get("/d/:id/f/:fid", async (req, res) => {
