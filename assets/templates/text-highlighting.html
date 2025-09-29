@@ -65,7 +65,6 @@
 <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
 <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
 
-<script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
 <script type="module">
   import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
 
@@ -74,7 +73,7 @@
       return {
         title: "Effect AI Sentence Redaction",
         btnLoading: false,
-        sentence: "${sentence}",
+        sentence: "The meeting is set for 1984-12-30 at 20:22:34 in Karenfurt.",
         loading: true,
         notComplete: false,
         selection: "",
@@ -123,29 +122,31 @@
         this.selection = text
       },
       addSelection(){
-        this.selectionList.push([this.selection,this.selectedTag])
+        if (this.selection == "" || this.selectedTag == ""){
+          alert("You are missing a selection!")
+        }
+        else{
+          this.selectionList.push([this.selection,this.selectedTag])
+          this.selection = ""
+        }
+        
       },
       removeSelection(index){
         this.selectionList.splice(index, 1)
       },
       async uploadAndSubmit() {
         this.btnLoading = true;
-          try {
-            parent.postMessage(
-              {
-                task: "submit",
-                values: {
-                  taskTitle: this.title,
-                  sentence: this.sentence,
-                  answer: JSON.parse(JSON.stringify(this.selectionList))
-                },
-              },
-              "*"
-            );
-            
-          } catch (error) {
-            console.error("Failed to upload to IPFS", error);
-          }
+        parent.postMessage(
+          {
+            task: "submit",
+            values: {
+              taskTitle: this.title,
+              sentence: this.sentence,
+              answer: this.selectionList
+            },
+          },
+          "*"
+        );
         this.btnLoading = false;
       },
     },

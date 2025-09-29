@@ -27,22 +27,34 @@
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
           :class="{ 'is-primary': this.answer == 'Dog' }"
-          @click="this.answer='Dog'">Dog</button>
+          @click="this.answer='Dog'">
+          <span class="tag mr-2">1</span>
+          Dog
+        </button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
           :class="{ 'is-primary': this.answer == 'Cow' }"
-          @click="this.answer='Cow'">Cow</button>
+          @click="this.answer='Cow'">
+          <span class="tag mr-2">2</span>
+          Cow
+        </button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
           :class="{ 'is-primary': this.answer == 'Dolphin' }"
-          @click="this.answer='Dolphin'">Dolphin</button>
+          @click="this.answer='Dolphin'">
+          <span class="tag mr-2">3</span>
+          Dolphin
+        </button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
           :class="{ 'is-primary': this.answer == 'Walrus' }"
-          @click="this.answer='Walrus'">Walrus</button>
+          @click="this.answer='Walrus'">
+          <span class="tag mr-2">4</span>
+          Walrus
+        </button>
       </div>
     </div>
 
@@ -50,22 +62,34 @@
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
           :class="{ 'is-primary': this.answer == 'Lion' }"
-          @click="this.answer='Lion'">Lion</button>
+          @click="this.answer='Lion'">
+          <span class="tag mr-2">5</span>
+          Lion
+        </button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
           :class="{ 'is-primary': this.answer == 'Pig' }"
-          @click="this.answer='Pig'">Pig</button>
+          @click="this.answer='Pig'">
+          <span class="tag mr-2">6</span>
+          Pig
+        </button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
           :class="{ 'is-primary': this.answer == 'Raccoon' }"
-          @click="this.answer='Raccoon'">Raccoon</button>
+          @click="this.answer='Raccoon'">
+          <span class="tag mr-2">7</span>
+          Raccoon
+        </button>
       </div>
       <div class="column is-narrow" style="text-align: center;">
         <button class="button is-medium"
           :class="{ 'is-primary': this.answer == 'Other' }"
-          @click="this.answer='Other'">Other</button>
+          @click="this.answer='Other'">
+          <span class="tag mr-2">8</span>
+          Other
+        </button>
       </div>
     </div>
 
@@ -117,14 +141,46 @@
       created() {},
       mounted() {
         window.top.postMessage(
-        {
-          type: 'task-instructions',
-          instructions: this.instructions
-        },
-        "*"
-      );
+          {
+            type: 'task-instructions',
+            instructions: this.instructions
+          },
+          "*"
+        );
+        window.addEventListener('keydown', this.handleKeyPress);
       },
       methods: {
+        handleKeyPress(event) {
+          switch (event.key) {
+            case '1':
+              this.answer = 'Dog';
+              break;
+            case '2':
+              this.answer = 'Cow';
+              break;
+            case '3':
+              this.answer = 'Dolphin';
+              break;
+            case '4':
+              this.answer = 'Walrus';
+              break;
+            case '5':
+              this.answer = 'Lion';
+              break;
+            case '6':
+              this.answer = 'Pig';
+              break;
+            case '7':
+              this.answer = 'Raccoon';
+              break;
+            case '8':
+              this.answer = 'Other';
+              break;
+            case 'Enter':
+              this.uploadAndSubmit();
+              break;
+          }
+        },
         async uploadAndSubmit() {
           this.btnLoading = true;
           if(this.answer == ""){

@@ -5,23 +5,23 @@
 
   <div class="mx-auto" style="max-width: 80%">
 
-  <p class="mb-5">Check if this is a linguistically correct sentence?</p>
+  <p class="mb-5">Is a linguistically correct sentence?</p>
   <div class="box">
     <p class="is-size-4 has-text-weight-semibold">{{sentence}}</p>
   </div>
 
   <div class="mb-5">
     <button class="button is-medium"
-    :class="{ 'is-danger': this.answer == 'No' }"
-    @click="this.answer='No'">No</button>
+    :class="{ 'is-success': this.answer == 'Yes' }"
+    @click="this.answer='Yes'">Yes</button>
 
     <button class="button is-medium mx-3"
     :class="{ 'is-dark': this.answer == 'Skip' }"
     @click="this.answer='Skip'">Skip</button>
 
     <button class="button is-medium"
-    :class="{ 'is-success': this.answer == 'Yes' }"
-    @click="this.answer='Yes'">Yes</button>
+    :class="{ 'is-danger': this.answer == 'No' }"
+    @click="this.answer='No'">No</button>
   </div>
 
   <p style="color: red;"
