@@ -33,7 +33,7 @@ export type Fetcher = {
   taskIdx: number; // the last task processed
   totalTasks: number;
 
-  dataSample: any;
+  dataSample?: any;
   status: "active" | "archived";
 
   // fields for csv fetchers
@@ -239,38 +239,40 @@ const fetcherImportForm = async (f: Fetcher, values: {}, msg = "") => `
 </div>
 `
 
-export const writeFetcher = async(f:Fetcher) =>
-  await db.set<Fetcher>(["fetcher", f.index, f.datasetId, "info"], f);
+export const writeFetcher = async(f: Fetcher) =>
+  await db.set<Fetcher>(["fetcher", f.datasetId, f.index, "info"], f);
 
 export const createFetcher = async (
   ds: DatasetRecord,
   fields: Record<any, any>,
-  fetcherIdx: number | undefined = undefined,
+  oldFetcher: Fetcher | undefined = undefined,
 ) => {
-  const csvData = await parseCsv(fields.csv, fields.delimiter);
-
-  const nextId = fetcherIdx ? fetcherIdx :
+  const nextId = oldFetcher ? oldFetcher.index :
     db.count(["fetcher", ds.id, {}, "info"]) + 1;
 
-  const f: Fetcher = {
+  const newFetcher: Fetcher = {
     name: fields.name,
-    lastImport: undefined,
+    lastImport: oldFetcher?.lastImport ?? undefined,
     datasetId: ds.id,
     index: nextId,
     type: fields.type,
-    taskIdx: 0,
-    totalTasks: csvData.length,
-    dataSample: csvData[0],
+    taskIdx: oldFetcher?.taskIdx ?? 0,
+    totalTasks: oldFetcher?.totalTasks ?? 0,
 
-    delimiter: fields.delimiter,
     price: fields.price,
     template: fields.template,
+
     frequency: fields.frequency,
     batchSize: fields.batchSize,
-    status: "active",
+
+    status: oldFetcher?.status ?? "active",
   };
 
-  await db.set<Fetcher>(["fetcher", ds.id, nextId, "info"], f);
+  // if we are updating an older fetcher, copy over any optional
+  // fields and data
+  const f = oldFetcher ? Object.assign(oldFetcher, newFetcher) : newFetcher;
+
+  await writeFetcher(f);
 
   return f;
 };
@@ -646,8 +648,8 @@ export const addFetcherRoutes = (app: Express): void => {
     msg = msg ? "- " + msg : "";
 
     if (valid) {
-      const f = await createFetcher(dataset, req.body, fid);
-      res.setHeader("HX-Location", `/d/${id}/f/${f.index}`);
+      await createFetcher(dataset, req.body, f);
+      res.setHeader("HX-Location", `/d/${id}/f/${f!.index}`);
       res.send();
     } else {
       msg = '<h4 style="margin-top: 0;">Could not create dataset:</h4>' + msg;
