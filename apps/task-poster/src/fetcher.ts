@@ -713,6 +713,13 @@ export const addFetcherRoutes = (app: Express): void => {
     })));
   });
 
+  app.get("/task/:tid", async (req, res) => {
+    const tid = req.params.tid;
+    const t = await db.get<Task>(["task", tid]);
+    const ts = JSON.stringify(t, (_, v) => typeof v === 'bigint' ? v.toString() : v)
+    res.send(ts);
+  });
+
   app.post("/d/:id/f/:fid/import", async (req, res) => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
