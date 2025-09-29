@@ -16,20 +16,6 @@
         >
         </textarea>
       </div>
-
-      <div class="container is-max-desktop box">
-        <label class="label">Instructions:</label>
-        <div class="has-text-left">
-          <li>No copyright restrictions (cc-0)</li>
-          <li>Fewer than 15 words per sentence</li>
-          <li>Use correct grammar</li>
-          <li>Use correct spelling and punctuation</li>
-          <li>No numbers and special characters</li>
-          <li>No foreign letters</li>
-          <li>Include appropriate citation</li>
-          <li>Ideally natural and conversational (it should be easy to read the sentence)</li>
-        </div>
-      </div>
     
     <p class="is-size-7 mb-2">By clicking this button, you accept that the sentence contributed here will be added to a publicly available cc-0 licensed dataset.</p>
 
@@ -63,14 +49,118 @@
           btnLoading: false,
           notComplete: false,
           instructions: `
-          <div class="">
-            <li>Has fewer than 15 words per sentence</li>
-            <li>Uses correct grammar</li>
-            <li>Uses correct spelling and punctuation</li>
-            <li>No numbers and special characters</li>
-            <li>No foreign letters</li>
-            <li>Ideally natural and conversational (it should be easy to read the sentence)</li>
+          <div>
+            <h2>Create a sentence - Common Voice</h2>
+            <p>
+              In this task, you'll be writing short, simple, and natural sentences that
+              follow the guidelines below. The goal is to create clear and conversational
+              text that's easy to read and helps train AI models effectively.
+            </p>
+
+            <h3>1. Instructions</h3>
+            <p>
+              Your job is to write short, natural sentences that follow the guidelines
+              below. These sentences will be used to train AI models, so it's important
+              they are clear, easy to understand, and written in good English.
+            </p>
+
+            <h4>Sentence Guidelines</h4>
+            <ul>
+              <li>Keep each sentence short — fewer than 15 words.</li>
+              <li>Write in proper grammar with correct spelling and punctuation.</li>
+              <li>Use natural, conversational English that feels like everyday speech.</li>
+              <li>
+                Avoid slang that's hard to understand, but it's OK if the sentence feels
+                casual.
+              </li>
+              <li>
+                Each sentence should stand on its own (not depend on another sentence).
+              </li>
+            </ul>
+
+            <h4>What NOT to Include</h4>
+            <ul>
+              <li>Numbers or special characters (e.g. $, %, @, #, 123).</li>
+              <li>Foreign letters or words.</li>
+              <li>Overly complex or technical language that's hard to read.</li>
+              <li>Personal information (like names, addresses, phone numbers, or emails).</li>
+            </ul>
+
+            <h3>2. Examples</h3>
+            <p><strong>✅ Good Sentences</strong></p>
+            <ul>
+              <li>The sky is blue with light clouds.</li>
+              <li>My dog likes to nap in the sun.</li>
+              <li>People enjoy walking through the park.</li>
+            </ul>
+
+            <p><strong>❌ Bad Sentences</strong></p>
+            <ul>
+              <li>Sky IS bLUE &amp; FULL OF $HINY CLOUDS!!! (wrong spelling, special characters)</li>
+              <li>The country has 331,449,281 people. (numbers not allowed)</li>
+              <li>The sun sets. The moon rises. (too short, not conversational)</li>
+            </ul>
+
+            <h3>3. Tips for Success</h3>
+            <ul>
+              <li>Imagine you're writing something you would actually say out loud.</li>
+              <li>Vary your topics so sentences aren't too similar.</li>
+              <li>Read your sentence out loud. If it sounds awkward, rewrite it.</li>
+            </ul>
+
+            <h3>4. Example Starter Topics for Sentences</h3>
+            <p>
+              If you're not sure what to write about, here are some broad topics you can
+              use for inspiration. Each one can spark many short, natural sentences.
+            </p>
+
+            <ul>
+              <li>
+                <strong>Food &amp; Drinks</strong> — meals, flavors, cooking, favorite snacks
+                (no name brands)<br />
+                <em>Example:</em> “I like fresh bread.”
+              </li>
+              <li>
+                <strong>Weather &amp; Seasons</strong> — rain, sun, snow, temperature<br />
+                <em>Example:</em> “The sky is cloudy today.”
+              </li>
+              <li>
+                <strong>Animals &amp; Pets</strong> — dogs, birds, farm animals, wildlife<br />
+                <em>Example:</em> “My dog sleeps on the chair.”
+              </li>
+              <li>
+                <strong>Daily Routines</strong> — chores, habits, errands, morning or evening
+                activities<br />
+                <em>Example:</em> “I brush my teeth at night.”
+              </li>
+              <li>
+                <strong>Home &amp; Family</strong> — family members, house, rooms, common
+                activities<br />
+                <em>Example:</em> “My sister reads in the living room.”
+              </li>
+              <li>
+                <strong>Nature &amp; Outdoors</strong> — trees, flowers, parks, landscapes<br />
+                <em>Example:</em> “The forest is full of tall trees.”
+              </li>
+              <li>
+                <strong>Travel and Places</strong> — cities, transportation, landmarks, trips<br />
+                <em>Example:</em> “The bus stops near the library.”
+              </li>
+              <li>
+                <strong>School &amp; Learning</strong> — reading, writing, teachers, books<br />
+                <em>Example:</em> “The student writes in a notebook.”
+              </li>
+              <li>
+                <strong>Work &amp; Hobbies</strong> — jobs, crafts, games, sports<br />
+                <em>Example:</em> “I play guitar in the evening.”
+              </li>
+              <li>
+                <strong>Feelings &amp; Opinions</strong> — emotions, likes, dislikes<br />
+                <em>Example:</em> “I feel happy when I see my friends.”
+              </li>
+            </ul>
           </div>
+
         `
         };
       },
