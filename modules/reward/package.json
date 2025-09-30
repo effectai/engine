@@ -5,7 +5,9 @@
   "scripts": {
     "compile:ts": "tsup clients/js --config ../../tsup.config.package.ts",
     "generate:clients": "node --experimental-strip-types ../../tools/scripts/solana/generate-clients.ts reward",
-    "build": "pnpm run generate:clients && pnpm run compile:ts"
+    "build": "pnpm run generate:clients && pnpm run compile:ts",
+    "sync:idl": "cd ../../ && node --experimental-strip-types tools/scripts/solana/sync-idls.ts",
+    "test": "anchor build -p effect_reward && pnpm sync:idl && pnpm generate:clients && node --experimental-strip-types scripts/test-runner.ts"
   },
   "main": "dist/index.cjs",
   "exports": {
@@ -18,9 +20,15 @@
     "@solana/kit": "^2.1.1"
   },
   "devDependencies": {
-    "@types/node": "^20.11.7",
-    "codama": "^1.3.3",
     "@codama/nodes-from-anchor": "^1.2.5",
-    "@codama/renderers-js": "^1.2.13"
+    "@codama/renderers-js": "^1.2.13",
+    "@solana-program/token": "^0.5.1",
+    "@solana-program/system": "^0.7.0",
+    "@types/node": "^20.11.7",
+    "solana-kite": "^1.5.4",
+    "codama": "^1.3.3",
+    "execa": "^9.6.0",
+    "tsx": "^4.20.5",
+    "vitest": "^2.1.9"
   }
 }

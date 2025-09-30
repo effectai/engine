@@ -6,12 +6,14 @@ use effect_common::cpi;
 use crate::PaymentAccount;
 
 #[derive(Accounts)]
-#[instruction(manager_authority: Pubkey, amount: u64)]
+#[instruction(manager_authority: Pubkey, application_pubkey: Pubkey, amount: u64)]
 pub struct Create<'info> {
     #[account(
         init, 
+        seeds = [b"payment", manager_authority.as_ref(), application_pubkey.as_ref(), mint.key().as_ref()],
+        bump,
         payer = authority, 
-        space = PaymentAccount::SIZE + 32
+        space = PaymentAccount::SIZE + 8,
     )]
     pub payment_account: Account<'info, PaymentAccount>,
 
@@ -42,7 +44,7 @@ pub struct Create<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn handler(ctx: Context<Create>, manager_authority: Pubkey, amount: u64) -> Result<()> {
-    ctx.accounts.payment_account.initialize(manager_authority, ctx.accounts.mint.key(), ctx.accounts.user_token_account.key(), ctx.accounts.authority.key());
+pub fn handler(ctx: Context<Create>, manager_authority: Pubkey, application_pubkey:Pubkey, amount: u64) -> Result<()> {
+    ctx.accounts.payment_account.initialize(manager_authority, application_pubkey, ctx.accounts.mint.key(), ctx.accounts.user_token_account.key(), ctx.accounts.authority.key());
     transfer_tokens_to_vault!(ctx.accounts, payment_vault_token_account, amount)
 }

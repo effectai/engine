@@ -1,0 +1,42 @@
+{
+  "name": "@effectai/provider",
+  "version": "1.0.0",
+  "description": "Effect AI Provider",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup --config ../../tsup.config.package.ts",
+    "dev": "tsup --config ../../tsup.config.package.ts --watch src"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.9.0",
+  "dependencies": {
+    "pino": "9.6.0",
+    "pino-pretty": "^13.0.0",
+    "ulid": "3.0.0",
+    "@effectai/protocol-core": "workspace:*",
+    "@effectai/protobufs": "workspace:*",
+    "@effectai/payment": "workspace:*",
+    "@libp2p/interface": "^2.7.0",
+    "@solana/web3.js": "^1.98.2",
+    "datastore-level": "^11.0.1",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "bs58": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "typescript": "^5.8.3",
+    "@remix-run/node": "^2.16.5",
+    "@remix-run/react": "^2.16.5"
+  }
+}

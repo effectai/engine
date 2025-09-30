@@ -1,19 +1,4 @@
 import {
-  Address,
-  appendTransactionMessageInstructions,
-  createSolanaRpc,
-  createSolanaRpcSubscriptions,
-  createTransactionMessage,
-  generateKeyPairSigner,
-  KeyPairSigner,
-  pipe,
-  sendAndConfirmTransactionFactory,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  signTransactionMessageWithSigners,
-} from "@solana/kit";
-
-import {
   getInitializeMintInstruction,
   getCreateAssociatedTokenInstructionAsync,
   getMintToCheckedInstruction,
@@ -22,104 +7,72 @@ import {
 } from "@solana-program/token";
 
 import { getCreateAccountInstruction } from "@solana-program/system";
-
+import type { Connection } from "solana-kite";
 import {
-  loadKeypairSigner,
-  getAssociatedTokenAccount,
-} from "@effectai/solana-utils";
-
-import { fileURLToPath } from "node:url";
-import path from "node:path";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+  type Address,
+  generateKeyPairSigner,
+  type KeyPairSigner,
+  lamports,
+} from "@solana/kit";
 
 export type SetupReturn = {
-  rpc: ReturnType<typeof createSolanaRpc>;
-  sendAndConfirmTransaction: ReturnType<
-    typeof sendAndConfirmTransactionFactory
-  >;
-  signer: KeyPairSigner;
   mint: Address;
   ata: Address;
 };
 
-export const setup = async (): Promise<SetupReturn> => {
-  // Load our local testing keypair
-  const signer = await loadKeypairSigner(
-    `${__dirname}/../../../tests/keys/authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV.json`,
-  );
-
+export const setup = async (
+  connection: Connection,
+  signer: KeyPairSigner,
+): Promise<SetupReturn> => {
   const mint = await generateKeyPairSigner();
-  const rpc = createSolanaRpc("http://127.0.0.1:8899");
-  const rpcSubscriptions = createSolanaRpcSubscriptions("ws://localhost:8900");
 
-  const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
-    rpc,
-    rpcSubscriptions,
-  });
-
-  const account = await getAssociatedTokenAccount({
-    owner: signer.address,
-    mint: mint.address,
-  });
-
-  // figure out the rent-exempt minimum balance for a mint account
-  const lamports = await rpc
+  const rent = await connection.rpc
     .getMinimumBalanceForRentExemption(BigInt(getMintSize()))
     .send();
 
-  const createMintAccountIx = getCreateAccountInstruction({
+  const createAccountInstruction = getCreateAccountInstruction({
     payer: signer,
-    space: getMintSize(),
-    lamports,
     newAccount: mint,
+    lamports: lamports(rent),
+    space: BigInt(getMintSize()),
     programAddress: TOKEN_PROGRAM_ADDRESS,
   });
 
-  const initializeMintIx = getInitializeMintInstruction({
+  const initializeMintInstruction = getInitializeMintInstruction({
     mint: mint.address,
+    decimals: 6,
     mintAuthority: signer.address,
-    decimals: 6,
   });
 
-  const createAtaIx = await getCreateAssociatedTokenInstructionAsync({
-    mint: mint.address,
-    owner: signer.address,
+  const ata = await connection.getTokenAccountAddress(
+    signer.address,
+    mint.address,
+  );
+
+  const createAta = await getCreateAssociatedTokenInstructionAsync({
     payer: signer,
+    owner: signer.address,
+    mint: mint.address,
   });
 
-  const mintToIx = getMintToCheckedInstruction({
+  const mintToInstruction = getMintToCheckedInstruction({
     decimals: 6,
-    token: account,
     mint: mint.address,
-    amount: 100_000_000_000n, // 100 000 tokens with 6 decimals
+    amount: BigInt(1_000_000_000), // 1000 tokens
+    token: ata,
     mintAuthority: signer,
   });
 
-  const recentBlockhash = await rpc.getLatestBlockhash().send();
+  //execute tx
+  await connection.sendTransactionFromInstructions({
+    feePayer: signer,
+    instructions: [
+      createAccountInstruction,
+      initializeMintInstruction,
+      createAta,
+      mintToInstruction,
+    ],
+  });
 
-  const transactionMessage = pipe(
-    createTransactionMessage({ version: 0 }),
-    (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-    (tx) =>
-      setTransactionMessageLifetimeUsingBlockhash(recentBlockhash.value, tx),
-    (tx) =>
-      appendTransactionMessageInstructions(
-        [createMintAccountIx, initializeMintIx, createAtaIx, mintToIx],
-        tx,
-      ),
-  );
-
-  const result = await signTransactionMessageWithSigners(transactionMessage);
-
-  await sendAndConfirmTransaction(result, { commitment: "confirmed" });
-
-  return {
-    mint: mint.address,
-    rpc,
-    sendAndConfirmTransaction,
-    signer,
-    ata: account,
-  };
+  return { mint: mint.address, ata };
 };

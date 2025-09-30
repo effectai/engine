@@ -3,7 +3,6 @@ import { createPaymentWorker } from "./modules/createPaymentWorker.js";
 import { createTaskWorker } from "./modules/createTaskWorker.js";
 import { createWorkerTaskStore } from "./stores/workerTaskStore.js";
 import { createTemplateWorker } from "./modules/createTemplateWorker.js";
-// import type { PingService } from "@libp2p/ping";
 
 import {
   Libp2pTransport,
@@ -21,9 +20,13 @@ import {
   PROTOCOL_NAME,
   PROTOCOL_VERSION,
 } from "@effectai/protocol-core";
-import { PingService } from "@libp2p/ping";
+import type { PingService } from "@libp2p/ping";
 
-import { EffectProtocolMessage, Payment, Task } from "@effectai/protobufs";
+import {
+  EffectProtocolMessage,
+  type Payment,
+  type Task,
+} from "@effectai/protobufs";
 
 export interface WorkerEvents {
   "task:created": CustomEvent<Task>;

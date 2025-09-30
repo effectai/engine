@@ -99,7 +99,13 @@ pub fn handler(
     proof: [u8; 256],
 ) -> Result<()> {
     let manager_key = Pubkey::new_from_array(compress(pub_x, pub_y));
-    let expected_seeds = &[ctx.accounts.authority.key.as_ref(), manager_key.as_ref()];
+    let mint_key = ctx.accounts.mint.key();
+    let expected_seeds = &[
+        ctx.accounts.authority.key.as_ref(),
+        manager_key.as_ref(),
+        ctx.accounts.payment_account.application_account.as_ref(),
+        mint_key.as_ref(),
+    ];
     let (expected_pda, _) = Pubkey::find_program_address(expected_seeds, ctx.program_id);
 
     // Verify data account PDA
@@ -151,6 +157,7 @@ pub fn handler(
 
     // Update nonce to the max_nonce in the batch
     ctx.accounts.recipient_manager_data_account.nonce = max_nonce;
+    ctx.accounts.recipient_manager_data_account.total_amount += total_amount;
 
     // Transfer the total amount of all the proofs.
     if total_amount > 0 {

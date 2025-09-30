@@ -21,8 +21,8 @@ pub mod effect_reward {
     use super::*;
 
     /// Initialize the [ReflectionAccount](#reflection-account) and [VaultAccount](#vault_token_account-account).
-    pub fn init(ctx: Context<Init>) -> Result<()> {
-        ctx.accounts.handler()
+    pub fn init(ctx: Context<Init>, scope: Pubkey) -> Result<()> {
+        ctx.accounts.handler(scope)
     }
 
     pub fn init_intermediary_vault(ctx: Context<InitIntermediaryVault>) -> Result<()> {

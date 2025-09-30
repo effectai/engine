@@ -11,15 +11,18 @@ pub struct ReflectionAccount {
     pub rate: u128,
     pub total_reflection: u128,
     pub total_weighted_amount: u128,
+    pub scope: Pubkey,
+    pub bump: u8,
 }
 
 impl ReflectionAccount {
     pub const SIZE: usize = 8 + std::mem::size_of::<ReflectionAccount>();
 
-    pub fn init(&mut self, total_supply: u64) -> Result<()> {
+    pub fn init(&mut self, total_supply: u64, scope: Pubkey) -> Result<()> {
         // set initial rate based on total supply of the given mint.
         self.rate = (u128::MAX - (u128::MAX % total_supply as u128)) / total_supply as u128;
         self.total_reflection = 0;
+        self.scope = scope;
         self.total_weighted_amount = 0;
 
         Ok(())

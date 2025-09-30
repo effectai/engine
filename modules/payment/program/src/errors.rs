@@ -26,4 +26,7 @@ pub enum PaymentErrors {
 
     #[msg("Invalid Payment Account")]
     InvalidPaymentAccount,
+
+    #[msg("Invalid Stake Account Authority")]
+    InvalidStakeAccountAuthority,
 }

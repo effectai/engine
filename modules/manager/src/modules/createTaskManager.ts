@@ -20,6 +20,21 @@ import {
 } from "@effectai/protocol-core";
 
 import type { Task, Template } from "@effectai/protobufs";
+import {
+  Address,
+  getAddressDecoder,
+  getAddressEncoder,
+  getAddressFromPublicKey,
+  getProgramDerivedAddress,
+  Rpc,
+  SolanaRpcApiMainnet,
+} from "@solana/kit";
+import {
+  EFFECT_PAYMENT_PROGRAM_ADDRESS,
+  fetchMaybePaymentAccount,
+} from "@effectai/payment";
+
+import type { Connection } from "solana-kite";
 
 export interface PaginatedResult<T> {
   items: T[];
@@ -29,6 +44,41 @@ export interface PaginatedResult<T> {
   hasNext: boolean;
   hasPrevious: boolean;
 }
+
+export type ProviderEscrowInfo = {
+  escrowAddress: string;
+  balance: bigint;
+  lastChecked: number;
+  //keep track of tasks assigned / in-progress / completed
+  tasksInProgress: number;
+  //total number of tokens reserved for tasks in progress
+  totalReserved: bigint;
+};
+
+export const syncProviderEscrow = async (
+  connection: Connection,
+  paymentAccountAddress: Address,
+) => {
+  const escrowAccount = await fetchMaybePaymentAccount(
+    connection.rpc,
+    paymentAccountAddress,
+  );
+
+  if (!escrowAccount || !escrowAccount.exists) {
+    throw new Error("Escrow account not found");
+  }
+
+  //derive vault address from escrow
+  const [vaultAddress] = await getProgramDerivedAddress({
+    seeds: [getAddressEncoder().encode(paymentAccountAddress)],
+    programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
+  });
+
+  //fetch token account balance
+  const balance = await connection.getTokenAccountBalance({
+    tokenAccount: vaultAddress,
+  });
+};
 
 export function createTaskManager({
   manager,
@@ -81,6 +131,15 @@ export function createTaskManager({
     task: Task;
     providerPeerIdStr: string;
   }) => {
+    const peer = peerIdFromString(providerPeerIdStr);
+
+    if (!peer.publicKey) {
+      throw new Error("Peer does not have a public key");
+    }
+
+    // //check if there is enough balance in escrow to pay for the task.
+    // const totalCost = BigInt(task.reward) + BigInt(managerSettings.feePerTask);
+    //
     //TODO:: use zod here to validate the task.
     //we must have the templateId in our template store.
     const templateRecord = await templateStore.get({

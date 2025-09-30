@@ -4,6 +4,7 @@ use constants::{STAKE_DURATION_MAX, STAKE_DURATION_MIN};
 use effect_common::{constants::STAKE_MINIMUM_AMOUNT, cpi};
 
 #[derive(Accounts)]
+#[instruction(amount: u64, duration: u128, scope: Pubkey)]
 pub struct Stake<'info> {
     #[account(mut)]
     pub mint: Account<'info, Mint>,
@@ -37,7 +38,7 @@ pub struct Stake<'info> {
 }
 
 impl<'info> Stake<'info> {
-    pub fn handler(&mut self, amount: u64, duration: u128) -> Result<()> {
+    pub fn handler(&mut self, amount: u64, duration: u128, scope: Pubkey) -> Result<()> {
         require!(
             duration >= STAKE_DURATION_MIN,
             StakingErrors::DurationTooShort
@@ -57,6 +58,8 @@ impl<'info> Stake<'info> {
             self.authority.key(),
             duration.try_into().unwrap(),
             Clock::get().unwrap().unix_timestamp,
+            self.mint.key(),
+            scope,
         );
 
         // transfer tokens to the vault

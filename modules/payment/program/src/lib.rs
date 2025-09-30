@@ -34,13 +34,23 @@ pub mod effect_payment {
     pub fn create_payment_pool(
         ctx: Context<Create>,
         manager_authority: Pubkey,
+        application_pubkey: Pubkey,
         amount: u64,
     ) -> Result<()> {
-        create::handler(ctx, manager_authority, amount)
+        create::handler(ctx, manager_authority, application_pubkey, amount)
     }
 
     //initialize a recipient/manager data account that holds the nonce
-    pub fn init(ctx: Context<Init>, manager_authority: Pubkey) -> Result<()> {
-        init::handler(ctx, manager_authority)
+    pub fn init(
+        ctx: Context<Init>,
+        manager_authority: Pubkey,
+        application_pubkey: Pubkey,
+    ) -> Result<()> {
+        init::handler(ctx, manager_authority, application_pubkey)
+    }
+
+    //Redeem your VC's into a stake account
+    pub fn redeem(ctx: Context<Redeem>) -> Result<()> {
+        redeem::handler(ctx)
     }
 }

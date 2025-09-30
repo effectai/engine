@@ -1,0 +1,35 @@
+{
+  "name": "@effectai/application",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup --config ../../tsup.config.package.ts",
+    "dev": "tsup --config ../../tsup.config.package.ts --watch src"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.9.0",
+  "dependencies": {
+    "@effectai/protobufs": "workspace:*",
+    "@libp2p/interface": "^3.0.0",
+    "@libp2p/peer-id": "^6.0.1",
+    "ulid": "3.0.0",
+    "unstorage": "^1.17.1",
+    "vitest": "^2.1.9",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "typescript": "^5.8.3"
+  }
+}

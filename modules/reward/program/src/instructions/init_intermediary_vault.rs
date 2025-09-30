@@ -1,5 +1,3 @@
-
-
 use crate::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
@@ -28,7 +26,7 @@ pub struct InitIntermediaryVault<'info> {
         bump,
     )]
     pub intermediate_reward_vault_token_account: Account<'info, TokenAccount>,
-    
+
     #[account(mut)]
     pub authority: Signer<'info>,
 
@@ -41,6 +39,6 @@ pub struct InitIntermediaryVault<'info> {
 
 impl<'info> InitIntermediaryVault<'info> {
     pub fn handler(&mut self) -> Result<()> {
-      Ok(())
+        Ok(())
     }
 }

@@ -2,12 +2,13 @@ use crate::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 #[derive(Accounts)]
+#[instruction(scope: Pubkey)]
 pub struct Init<'info> {
     #[account(
         init,
         payer = authority,
         space = ReflectionAccount::SIZE,
-        seeds = [ b"reflection", mint.key().as_ref() ],
+        seeds = [ b"reflection", mint.key().as_ref(), scope.as_ref() ],
         bump
     )]
     pub reflection_account: Account<'info, ReflectionAccount>,
@@ -22,6 +23,16 @@ pub struct Init<'info> {
     )]
     pub reward_vault_token_account: Account<'info, TokenAccount>,
 
+    #[account(
+        init,
+        payer = authority,
+        token::mint = mint,
+        token::authority = intermediate_reward_vault_token_account,
+        seeds = [ reward_vault_token_account.key().as_ref() ],
+        bump,
+    )]
+    pub intermediate_reward_vault_token_account: Account<'info, TokenAccount>,
+
     #[account(mut)]
     pub authority: Signer<'info>,
 
@@ -33,9 +44,8 @@ pub struct Init<'info> {
 }
 
 impl<'info> Init<'info> {
-    pub fn handler(&mut self) -> Result<()> {
-        self.reflection_account.init(
-            self.mint.supply
-        )
+    pub fn handler(&mut self, scope: Pubkey) -> Result<()> {
+        self.reflection_account.init(self.mint.supply, scope);
+        Ok(())
     }
 }

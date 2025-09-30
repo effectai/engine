@@ -24,6 +24,7 @@ pub struct StakeAccount {
     pub stake_start_time: i64,
     pub weighted_amount: u128,
     pub mint: Pubkey,
+    pub scope: Pubkey,
 }
 
 impl StakeAccount {
@@ -33,10 +34,14 @@ impl StakeAccount {
         authority: Pubkey,
         lock_duration: u64,
         stake_start_time: i64,
+        mint: Pubkey,
+        scope: Pubkey,
     ) {
         self.amount = amount;
         self.authority = authority;
         self.lock_duration = lock_duration;
+        self.mint = mint;
+        self.scope = scope;
 
         if stake_start_time
             < Clock::get().unwrap().unix_timestamp

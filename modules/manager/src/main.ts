@@ -17,7 +17,6 @@ import { buildEddsa } from "@effectai/payment";
 import { createWorkerManager } from "./modules/createWorkerManager.js";
 import { proofResponseToGroth16Proof } from "./utils.js";
 
-import { PublicKey } from "@solana/web3.js";
 import { PAYMENT_BATCH_SIZE, TASK_ACCEPTANCE_TIME } from "./consts.js";
 
 import {
@@ -35,6 +34,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { createLogger } from "./logging.js";
 import { setupManagerDashboard } from "./modules/createAdminDashboard.js";
 import { createManagerControls } from "./modules/createManagerControls.js";
+import { getAddressDecoder } from "@solana/kit";
 
 export type ManagerEvents = {
   "task:created": (task: TaskRecord) => void;
@@ -149,9 +149,7 @@ export const createManager = async ({
   const eddsa = await buildEddsa();
   const pubKey = eddsa.prv2pub(privateKey.raw.slice(0, 32));
   const compressedPubKey = eddsa.babyJub.packPoint(pubKey);
-
-  //bs58 encode the compressed public key
-  const solanaPublicKey = new PublicKey(compressedPubKey);
+  const solanaPublicKey = getAddressDecoder().decode(compressedPubKey);
 
   // create the entity
   const entity = await createManagerEntity({
@@ -197,6 +195,11 @@ export const createManager = async ({
 
   // register message handlers
   entity
+    .onMessage("task", async (task, { peerId }) => {
+      //TODO:: validate the peerId is a valid provider.
+      //match application ID to template
+      //check if provider has enough funds in escrow.
+    })
     .onMessage("identifyRequest", async (_payload, { peerId }) => {
       //check if we've already onboarded this peer
       const worker = await workerManager.getWorker(peerId.toString());
@@ -213,7 +216,7 @@ export const createManager = async ({
       const message: EffectProtocolMessage = {
         identifyResponse: {
           peer: entity.node.peerId.publicKey.raw,
-          pubkey: solanaPublicKey.toBase58(),
+          pubkey: solanaPublicKey,
           batchSize: PAYMENT_BATCH_SIZE,
           taskTimeout: TASK_ACCEPTANCE_TIME,
           version: PROTOCOL_VERSION,
@@ -244,7 +247,7 @@ export const createManager = async ({
         return {
           requestToWorkResponse: {
             timestamp: Math.floor(Date.now() / 1000),
-            pubkey: solanaPublicKey.toBase58(),
+            pubkey: solanaPublicKey,
             peer: entity.node.peerId.toString(),
           },
         };
@@ -414,7 +417,7 @@ export const createManager = async ({
       cycle,
       requireAccessCodes: managerSettings.requireAccessCodes,
       announcedAddresses,
-      publicKey: solanaPublicKey.toBase58(),
+      publicKey: solanaPublicKey,
       connectedPeers: workerManager.workerQueue.queue.length,
     });
   });

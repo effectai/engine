@@ -8,14 +8,14 @@ use effect_staking::{accounts::StakeAccount, program::EffectStaking};
 pub struct Enter<'info> {
     #[account(
         mut,
-        seeds = [ b"reflection", mint.key().as_ref() ],
+        seeds = [ b"reflection", mint.key().as_ref(), stake_account.scope.as_ref() ],
         bump
     )]
     pub reflection_account: Account<'info, ReflectionAccount>,
 
     #[account(
         mut,
-        has_one = authority @ RewardErrors::Unauthorized,
+        constraint = stake_account.scope == reflection_account.scope @ RewardErrors::ScopeMismatch,
     )]
     pub stake_account: Account<'info, StakeAccount>,
 
