@@ -4,12 +4,6 @@ import type { Express } from "express";
 import { requireAuth } from "./auth.js";
 import * as fetcher from "./fetcher.js";
 import type { Fetcher } from "./fetcher.js";
-import {
-  getFetcher,
-  getFetchers,
-  getTasks,
-  importTasks,
-} from "./fetcher.js";
 import { isHtmx, make404, make500, page } from "./html.js";
 import { db, managerId, publishProgress } from "./state.js";
 import { getTemplate, getTemplates, renderTemplate } from "./templates.js";
@@ -183,9 +177,9 @@ export const startAutoImport = async () => {
     // await Promise.all(activeDatasets.map(async (ds) => {
     for (const ds of activeDatasets) {
       let imported = 0;
-      const fetchers = await getFetchers(ds);
+      const fetchers = await fetcher.getFetchers(ds);
       for (const f of fetchers) {
-	imported += await fetcher.processFetcher(f);
+	imported += await fetcher.processFetcher(f!);
       }
 
       // TODO: finish dataset when all fetchers are finished

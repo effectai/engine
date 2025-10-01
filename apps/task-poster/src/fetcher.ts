@@ -111,8 +111,7 @@ export const csvFetcherForm = async (dsId: number, values: FormValues) => `
 `;
 
 export const fetcherForm = async (
-  dsId: number, values: FormValues, msg = "", f: Fetcher | undefined = undefined)
-=> `
+  dsId: number, values: FormValues, msg = "", f: Fetcher | undefined = undefined) => `
 <div id="page">
 <form hx-post="/d/${dsId}/${f?.index ? `f/${f.index}/edit` : "fetcher-create"}">
   <fieldset>
@@ -391,7 +390,7 @@ const handleFetcherImport = async(f: Fetcher, fields: FormValues) => {
  */
 export const processFetcher = async (fetcher: Fetcher) => {
   if (fetcher.status !== "active")
-    return;
+    return 0;
   publishProgress[fetcher.datasetId] ??= {};
 
   const fid = [fetcher.datasetId, fetcher.index];
