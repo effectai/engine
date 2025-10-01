@@ -32,13 +32,7 @@ type FormValues = Record<string, any>;
 export type DatasetRecord = {
   id: number;
   status: DatasetStatus;
-  activeFetcher: number;
   name: string;
-  endpoint?: string;
-  price: number;
-  frequency: number;
-  batchSize: number;
-  template: string;
 };
 
 export const getDataset = async (id: number) =>
@@ -97,50 +91,6 @@ const form = async (msg = "", values: FormValues = {}): Promise<string> =>
       id="name"  ${addVal(values, "name")}
       name="name"/>
 
-    <sqection>
-      <label for="template"><strong>Template</strong><br/><small>This template will be used ` +
-  `for each task that gets posted in this dataset.</small></label>
-      <select name="template" id="template">
-	${(await getTemplates("active")).map(
-    (t) =>
-      `<option value="${t.data.templateId}"` +
-      `${values.template == t.data.templateId ? " selected" : ""}>` +
-      `${t.data.name} (${t.data.templateId})</option>`,
-  )}
-      </select>
-    </section>
-
-    <section class="columns gap">
-      <div class="column">
-	<label for="frequency"><strong>Batch frequency</strong><br/>
-<small>How frequent new data is fetched and posted.</small></label>
-	<input
-	  placeholder="Seconds"
-	  type="number"
-	  id="frequency" ${addVal(values, "frequency")}
-	  name="frequency"/>
-      </div>
-
-      <div class="column">
-	<label for="batchSize"><strong>Batch size</strong><br/>
-<small>How many items to process each batch.</small></label>
-	<input
-	  placeholder="Amount"
-	  type="number"
-	  id="batchSize" ${addVal(values, "batchSize")}
-	  name="batchSize"/>
-      </div>
-    </section>
-
-    <section>
-      <label for="price"><strong>Price per task</strong></label>
-      <input
-	placeholder="$EFFECT"
-	type="number"
-	id="price"  ${addVal(values, "price")}
-	name="price"/>
-    </section>
-
     <section>
       <button type="submit">Continue</button>
     </section>
@@ -154,41 +104,6 @@ type ValidationMap = Record<string, ValidationFunction>;
 // validation functions return string on error or falsey on success
 const validations: ValidationMap = {
   name: (v: string) => (!v || v.length === 0) && "Name is required",
-
-  endpoint: (v: string) =>
-    v &&
-    v.length > 0 &&
-    !v.startsWith("http") &&
-    "Endpoint must start with http",
-
-  frequency: (v: any) => {
-    const num = Number(v);
-    return (
-      (!v && "Frequency is required") ||
-      (isNaN(num) && "Must be a number") ||
-      (num <= 0 && "Must be greater than 0")
-    );
-  },
-
-  batchSize: (v: any) => {
-    const num = Number(v);
-    return !v
-      ? "Batch size is required"
-      : isNaN(num)
-        ? "Must be a number"
-        : num <= 0 && "Must be greater than 0";
-  },
-
-  price: (v: any) => {
-    const num = Number(v);
-    return !v
-      ? "Price is required"
-      : isNaN(num)
-        ? "Must be a number"
-        : num <= 0 && "Price must be greater than 0";
-  },
-
-  template: (v: string) => (!v || v.length === 0) && "Template is required",
 };
 
 const validateForm = async (values: FormValues) => {
@@ -239,15 +154,6 @@ const confirmForm = async (
     <a href="${id}/create-fetcher?type=csv"><button>+ Add Step</button></a>
   </section>
 </section>
-<section>
-<h3>Template example</h3>
-<div id="bar">
-<iframe
-  height="450px"
-  width="100%"
-  srcdoc="${escapeHTML(values.renderedTemplate)}"></iframe>
-</div>
-</section>
 <form hx-post="/d/${id}" hx-swap="outerHTML">
 <section>
 ${
@@ -255,7 +161,7 @@ ${
     ? `<button hx-post="/d/${id}?action=publish">Publish</button>`
     : ds.status === "active"
       ? `<button hx-post="/d/${id}?action=archive">Archive</button>`
-      : `Status: ${ds.status}`
+      : `<button hx-post="/d/${id}?action=publish">Publish</button>`
 }
 </div>
 </form>
@@ -358,29 +264,13 @@ export const addDatasetRoutes = (app: Express): void => {
 
     const fetchers = await getFetchers(dataset.data);
 
-    let renderedTemplate;
-    try {
-      // fetcher = await getFetcher(dataset!.data);
-      const tpl = await getTemplate(dataset!.data.template);
-
-      renderedTemplate = await renderTemplate(
-        tpl!.data.data,
-	{}
-      );
-    } catch (e) {
-      res.status(500);
-      console.log(`Error parsing task template ${e}`);
-      res.send(page("<h1>Error while parsing task template"));
-      return;
-    }
-
     res.send(
       page(`
 <div id="page">
         ${await confirmForm(
 	  id,
 	  dataset.data!,
-	  { ...dataset.data, renderedTemplate },
+	  { ...dataset.data },
 	  fetchers
 	)}
 `),
@@ -395,7 +285,8 @@ export const addDatasetRoutes = (app: Express): void => {
     if (!dataset) return make404(res);
 
     if (req.query.action == "publish") {
-      if (dataset!.data.status !== "draft") return make500(res);
+      if (dataset!.data.status !== "draft" && dataset!.data.status !== "archived")
+	return make500(res);
 
       // activate the dataset
       dataset!.data.status = "active";
