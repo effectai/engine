@@ -8,6 +8,7 @@ import { ulid } from "ulid";
 import type { DatasetRecord } from "./dataset.js";
 import { db, managerId, publishProgress } from "./state.js";
 import * as state from "./state.js";
+import { validateNumericParams } from "./util.js";
 import { KVKey, KVQuery, KVTransactionResult } from "@cross/kv";
 import { getTemplate, getTemplates, renderTemplate } from "./templates.js";
 
@@ -109,9 +110,11 @@ export const csvFetcherForm = async (dsId: number, values: FormValues) => `
 </fieldset>
 `;
 
-export const fetcherForm = async (dsId: number, values: FormValues, msg = "", fid: number | undefined = undefined) => `
+export const fetcherForm = async (
+  dsId: number, values: FormValues, msg = "", f: Fetcher | undefined = undefined)
+=> `
 <div id="page">
-<form hx-post="/d/${dsId}/${fid ? `f/${fid}/edit` : "fetcher-create"}">
+<form hx-post="/d/${dsId}/${f?.index ? `f/${f.index}/edit` : "fetcher-create"}">
   <fieldset>
     <legend>step info</legend>
     <label for="name"><strong>Name</strong></label>
@@ -184,7 +187,13 @@ export const fetcherForm = async (dsId: number, values: FormValues, msg = "", fi
     </section>
   </fieldset>
 
- <button type="submit">${fid ? "Update" : "Create"}</button>
+ <button type="submit">${f ? "Update" : "Create"}</button>
+
+ ${f ?
+   f.status === "active"
+     ? `<button hx-post="/d/${dsId}/f/${f.index}/edit?action=archive">Archive</button>`
+     : `<button hx-post="/d/${dsId}/f/${f.index}/edit?action=publish">Publish</button>`
+   : ""}
 </form>
 </div>
 `;
@@ -291,10 +300,7 @@ export const getFetcher = async (dsid: number, fid: number) => {
 export const getFetchers = async (ds: DatasetRecord) => {
   const f = await db.listAll<Fetcher>(["fetcher", ds.id, {}, "info"]);
 
-  // example: how to delete the last fetcher
-  // await db.delete(f[f.length-1].key);
-
-  return f.map(ff => ff.data);
+  return f.map(ff => ff.data).filter(ff => ff.status ===  "active");
 };
 
 const delay = (m: number): Promise<void> =>
@@ -384,6 +390,8 @@ const handleFetcherImport = async(f: Fetcher, fields: FormValues) => {
  * 3)
  */
 export const processFetcher = async (fetcher: Fetcher) => {
+  if (fetcher.status !== "active")
+    return;
   publishProgress[fetcher.datasetId] ??= {};
 
   const fid = [fetcher.datasetId, fetcher.index];
@@ -636,7 +644,7 @@ export const addFetcherRoutes = (app: Express): void => {
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
 
-    res.send(page(await fetcherForm(id, f!, "", fid)));
+    res.send(page(await fetcherForm(id, f!, "", f)));
   });
 
   app.post("/d/:id/f/:fid/edit", async (req, res) => {
@@ -644,6 +652,8 @@ export const addFetcherRoutes = (app: Express): void => {
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
     const dataset = (await db.get<DatasetRecord>(["dataset", id, "info"]))!.data;
+
+    f!.status = req.query.action === "archive" ? "archived" : "active";
 
     let { valid, errors } = await validateForm(req.body);
     let msg = Object.values(errors).join("<br/>- ");
@@ -660,7 +670,9 @@ export const addFetcherRoutes = (app: Express): void => {
     }
   });
 
-  app.get("/d/:id/f/:fid", async (req, res) => {
+  app.get("/d/:id/f/:fid",
+    validateNumericParams("id", "fid"),
+    async (req, res) => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
@@ -758,6 +770,16 @@ export const addFetcherRoutes = (app: Express): void => {
     res.send(ts);
   });
 
+  app.post("/d/:id/f/:fid/archive",
+    requireAuth,
+    validateNumericParams("id", "fid"),
+    async (req, res) => {
+    const id = Number(req.params.id);
+    const fid = Number(req.params.fid);
+    const f = await getFetcher(id, fid);
+
+  });
+
   app.post("/d/:id/f/:fid/import", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
@@ -786,7 +808,10 @@ export const addFetcherRoutes = (app: Express): void => {
     }
   });
 
-  app.get("/d/:id/f/:fid/download", requireAuth, async (req, res) => {
+  app.get("/d/:id/f/:fid/download",
+    validateNumericParams("id", "fid"),
+    requireAuth,
+    async (req, res) => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
 
@@ -806,8 +831,9 @@ export const addFetcherRoutes = (app: Express): void => {
       for await (const taskId of iterator) {
 	const task = (await db.get<any>(["task-result", taskId.key[4]]))!.data;
 
-	// csv encode the task results
+	// csv encode the task results. the other fields are plain
 	task["result"] = `"${String(task["result"]).replace(/"/g, '""')}"`;
+
 	const csvRow = cols.map(c => task[c]).join(",") + "\n";
 
 	const canContinue = res.write(csvRow);
