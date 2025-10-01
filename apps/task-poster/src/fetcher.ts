@@ -806,6 +806,8 @@ export const addFetcherRoutes = (app: Express): void => {
       for await (const taskId of iterator) {
 	const task = (await db.get<any>(["task-result", taskId.key[4]]))!.data;
 
+	// csv encode the task results
+	task["result"] = `"${String(task["result"]).replace(/"/g, '""')}"`;
 	const csvRow = cols.map(c => task[c]).join(",") + "\n";
 
 	const canContinue = res.write(csvRow);
