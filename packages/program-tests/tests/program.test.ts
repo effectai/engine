@@ -15,7 +15,6 @@ import {
 } from "@effectai/payment";
 import {
   address,
-  createKeyPairSignerFromPrivateKeyBytes,
   generateKeyPairSigner,
   getAddressDecoder,
   getAddressEncoder,
@@ -85,18 +84,20 @@ describe("Placeholder test", () => {
   it(
     "should redeem payments into stake account",
     async () => {
+      //setup our test mint and ata
       const { mint, ata } = await setup(connection, wallet);
 
+      //generate manager keypair
       const privateKeyBytes = randomBytes(32);
       const eddsa = await buildEddsa();
       const uPublicKey = eddsa.prv2pub(privateKeyBytes);
       const publicKey = eddsa.babyJub.packPoint(uPublicKey);
-
-      //create address from bytes
       const managerPublicKey = getAddressDecoder().decode(publicKey);
-      const applicationAccount = await generateKeyPairSigner();
-      const stakeAccount = await generateKeyPairSigner();
 
+      //generate application & stake account
+      const applicationAccount = await generateKeyPairSigner();
+
+      //derive our Payment Account
       const [paymentAccount] = await getProgramDerivedAddress({
         programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
         seeds: [
@@ -125,6 +126,7 @@ describe("Placeholder test", () => {
         }),
       );
 
+      //generate our proof
       const proofResult = await generatePaymentProof({
         recipient: wallet.address.toString(),
         publicKey: managerPublicKey,
@@ -132,7 +134,7 @@ describe("Placeholder test", () => {
         payments: signedPayments,
       });
 
-      //register our app
+      //register our test app
       const registerIx = getRegisterInstruction({
         authority: wallet,
         name: "Test App",
@@ -150,6 +152,7 @@ describe("Placeholder test", () => {
         authority: wallet,
       });
 
+      //init recipient-manager-app data account
       const initIx = await getInitInstructionAsync({
         applicationAccount: applicationAccount.address,
         authority: wallet,
@@ -157,16 +160,8 @@ describe("Placeholder test", () => {
         managerAuthority: managerPublicKey,
       });
 
-      const [recipientManagerDataAccount] = await getProgramDerivedAddress({
-        programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
-        seeds: [
-          getAddressEncoder().encode(wallet.address),
-          getAddressEncoder().encode(managerPublicKey),
-          getAddressEncoder().encode(applicationAccount.address),
-          getAddressEncoder().encode(mint),
-        ],
-      });
-
+      //create stake account
+      const stakeAccount = await generateKeyPairSigner();
       const stakeIx = await getStakeInstructionAsync({
         authority: wallet,
         duration: 30 * 24 * 60 * 60, // 30 days
@@ -182,6 +177,18 @@ describe("Placeholder test", () => {
         seeds: [getAddressEncoder().encode(stakeAccount.address)],
       });
 
+      //derive recipient-manager-app data account
+      const [recipientManagerDataAccount] = await getProgramDerivedAddress({
+        programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
+        seeds: [
+          getAddressEncoder().encode(wallet.address),
+          getAddressEncoder().encode(managerPublicKey),
+          getAddressEncoder().encode(applicationAccount.address),
+          getAddressEncoder().encode(mint),
+        ],
+      });
+
+      //claim proof instruction
       const claimProofIx = await getClaimProofsInstructionAsync({
         paymentAccount: address(paymentAccount),
         mint: address(mint),
@@ -196,6 +203,7 @@ describe("Placeholder test", () => {
         proof: convertProofToBytes(proofResult.proof),
       });
 
+      //after claiming our proof, redeem available credits into stake account.
       const redeemIx = getRedeemInstruction({
         stakeVaultTokenAccount,
         userTokenAccount: ata,
@@ -205,14 +213,14 @@ describe("Placeholder test", () => {
         stakeAccount: stakeAccount.address,
       });
 
-      //initReflection
+      //initReflection (contribution pool)
       const initReflectionIx = await getInitRewardInstructionAsync({
         authority: wallet,
         mint,
         scope: applicationAccount.address,
       });
 
-      //get reward vault token account
+      //get contribution pool reflection account
       const [reflectionAccount] = await getProgramDerivedAddress({
         programAddress: EFFECT_REWARD_PROGRAM_ADDRESS,
         seeds: [
@@ -222,12 +230,13 @@ describe("Placeholder test", () => {
         ],
       });
 
+      //derive reflection vault account
       const [reflectionVaultAccount] = await getProgramDerivedAddress({
         programAddress: EFFECT_REWARD_PROGRAM_ADDRESS,
         seeds: [getAddressEncoder().encode(reflectionAccount)],
       });
 
-      //send 500 tokens to the reflection vault account
+      //send 500 tokens to the contribution / app-shares pool
       const transferTokensIx = getTransferCheckedInstruction({
         source: ata,
         destination: reflectionVaultAccount,
@@ -237,6 +246,7 @@ describe("Placeholder test", () => {
         decimals: 6,
       });
 
+      // enter contribution pool with our scoped stake account
       const enterRewardIx = await getEnterInstructionAsync({
         authority: wallet,
         reflectionAccount,
@@ -244,6 +254,7 @@ describe("Placeholder test", () => {
         mint,
       });
 
+      // claim available rewards into our ata
       const claimIx = await getClaimInstructionAsync({
         authority: wallet,
         recipientTokenAccount: ata,
@@ -252,11 +263,13 @@ describe("Placeholder test", () => {
       });
 
       try {
+        // register app & payment account and claim our payments
         await connection.sendTransactionFromInstructions({
           instructions: [registerIx, createPaymentIx, initIx, claimProofIx],
           feePayer: wallet,
         });
 
+        // stake, redeem, init reflection, enter reward pool, transfer tokens to reflection pool, claim rewards
         await connection.sendTransactionFromInstructions({
           instructions: [
             stakeIx,
@@ -269,12 +282,12 @@ describe("Placeholder test", () => {
           feePayer: wallet,
         });
 
-        //assert that we have claimed 500 tokens
+        //assert that we have claimed 500 tokens (100% of what we sent to the app-shares pool)
         const balance = await connection.getTokenAccountBalance({
           tokenAccount: ata,
         });
 
-        expect(balance.uiAmount?.toString(), "500");
+        expect(balance.amount.toString(), "500000000");
       } catch (e) {
         console.error("Error creating payment account:", e);
         if (e instanceof SolanaError) {
