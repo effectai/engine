@@ -256,7 +256,7 @@ export const addDatasetRoutes = (app: Express): void => {
 
     if (!dataset) return make404(res);
 
-    const fetchers = await getFetchers(dataset.data);
+    const fetchers = await fetcher.getFetchers(dataset.data);
 
     res.send(
       page(`
