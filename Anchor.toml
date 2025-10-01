@@ -13,7 +13,7 @@ cluster = "localnet"
 wallet = "./tools/keys/authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV.json"
 
 [workspace]
-members = ["modules/payment/program", "modules/migration/program", "modules/staking/program", "modules/reward/program", "modules/vesting/program"]
+members = ["modules/payment/program", "modules/migration/program", "modules/staking/program", "modules/reward/program", "modules/vesting/program", "modules/application/program"]
 
 [scripts]
 test = "pnpm vitest"

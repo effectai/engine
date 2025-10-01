@@ -119,6 +119,7 @@ export const buildUnstakeInstruction = async ({
   });
 
   const enterRewardPoolIx = await getEnterInstructionAsync({
+    reflectionAccount,
     mint,
     stakeAccount,
     authority: signer,
@@ -159,12 +160,15 @@ export const buildTopupInstruction = async ({
     stakingAccount: stakeAccount,
   });
 
+  const { reflectionAccount } = await deriveRewardAccountsPda({ mint });
+
   const maybeStakingRewardAccount = await fetchMaybeRewardAccount(
     rpc,
     stakingRewardAccount,
   );
 
   const enterRewardPoolIx = await getEnterInstructionAsync({
+    reflectionAccount,
     mint,
     stakeAccount,
     authority: signer,
@@ -177,7 +181,6 @@ export const buildTopupInstruction = async ({
     amount,
   });
 
-  const { reflectionAccount } = await deriveRewardAccountsPda({ mint });
   const syncRewardsIx = await getSyncInstructionAsync({
     reflectionAccount: reflectionAccount,
     stakeAccount,

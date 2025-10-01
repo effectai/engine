@@ -6,9 +6,18 @@ import {
   getRedeemInstruction,
   getCreatePaymentPoolInstructionAsync,
   EFFECT_PAYMENT_PROGRAM_ADDRESS,
+  signPayment,
+  generatePaymentProof,
+  getClaimProofsInstructionAsync,
+  buildEddsa,
+  convertProofToBytes,
+  bigIntToBytes32,
 } from "@effectai/payment";
 import {
+  address,
+  createKeyPairSignerFromPrivateKeyBytes,
   generateKeyPairSigner,
+  getAddressDecoder,
   getAddressEncoder,
   getProgramDerivedAddress,
   SolanaError,
@@ -18,18 +27,18 @@ import { connect } from "solana-kite";
 import {
   EFFECT_STAKING_PROGRAM_ADDRESS,
   getStakeInstructionAsync,
-  getUpdateAuthorityInstruction,
 } from "@effectai/staking";
 
 import {
   getInitInstructionAsync as getInitRewardInstructionAsync,
-  getInitIntermediaryVaultInstructionAsync,
   getEnterInstructionAsync,
   getClaimInstructionAsync,
   EFFECT_REWARD_PROGRAM_ADDRESS,
 } from "@effectai/reward";
 
 import { getTransferCheckedInstruction } from "@solana-program/token";
+import { getRegisterInstruction } from "@effectai/application";
+import { randomBytes } from "node:crypto";
 
 describe("Placeholder test", () => {
   let validator: any;
@@ -37,7 +46,7 @@ describe("Placeholder test", () => {
   let wallet: KeyPairSigner;
 
   beforeAll(async () => {
-    const port = 8884;
+    const port = 8882;
     const programs: Program[] = [
       {
         so: "../../target/deploy/effect_payment.so",
@@ -50,6 +59,10 @@ describe("Placeholder test", () => {
       {
         so: "../../target/deploy/effect_reward.so",
         keypair: "../../target/deploy/effect_reward-keypair.json",
+      },
+      {
+        so: "../../target/deploy/effect_application.so",
+        keypair: "../../target/deploy/effect_application-keypair.json",
       },
     ];
 
@@ -74,33 +87,82 @@ describe("Placeholder test", () => {
     async () => {
       const { mint, ata } = await setup(connection, wallet);
 
-      const dummyManager = await generateKeyPairSigner();
-      const applicationPubkey = await generateKeyPairSigner();
+      const privateKeyBytes = randomBytes(32);
+      const eddsa = await buildEddsa();
+      const uPublicKey = eddsa.prv2pub(privateKeyBytes);
+      const publicKey = eddsa.babyJub.packPoint(uPublicKey);
+
+      //create address from bytes
+      const managerPublicKey = getAddressDecoder().decode(publicKey);
+      const applicationAccount = await generateKeyPairSigner();
       const stakeAccount = await generateKeyPairSigner();
+
+      const [paymentAccount] = await getProgramDerivedAddress({
+        programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
+        seeds: [
+          Buffer.from("payment", "utf-8"),
+          getAddressEncoder().encode(managerPublicKey),
+          getAddressEncoder().encode(applicationAccount.address),
+          getAddressEncoder().encode(mint),
+        ],
+      });
+
+      //generate 10 dummy payments
+      const payments = Array.from({ length: 10 }, (_, i) => ({
+        id: `test-payment-${i + 1}`,
+        version: 1,
+        publicKey: managerPublicKey,
+        nonce: BigInt(i + 1),
+        paymentAccount: paymentAccount.toString(),
+        amount: 1_000_000n,
+        recipient: wallet.address.toString(),
+      }));
+
+      // sign payments
+      const signedPayments = await Promise.all(
+        payments.map(async (payment) => {
+          return await signPayment(payment, privateKeyBytes);
+        }),
+      );
+
+      const proofResult = await generatePaymentProof({
+        recipient: wallet.address.toString(),
+        publicKey: managerPublicKey,
+        paymentAccount: paymentAccount.toString(),
+        payments: signedPayments,
+      });
+
+      //register our app
+      const registerIx = getRegisterInstruction({
+        authority: wallet,
+        name: "Test App",
+        description: "This is a test app",
+        applicationAccount,
+      });
 
       //create payment account
       const createPaymentIx = await getCreatePaymentPoolInstructionAsync({
         mint,
-        managerAuthority: dummyManager.address,
-        amount: 1_000_000n,
+        managerAuthority: managerPublicKey,
+        amount: 10_000_000n,
         userTokenAccount: ata,
-        applicationPubkey: applicationPubkey.address,
+        applicationAccount: applicationAccount.address,
         authority: wallet,
       });
 
       const initIx = await getInitInstructionAsync({
-        applicationPubkey: applicationPubkey.address,
+        applicationAccount: applicationAccount.address,
         authority: wallet,
         mint,
-        managerAuthority: dummyManager.address,
+        managerAuthority: managerPublicKey,
       });
 
       const [recipientManagerDataAccount] = await getProgramDerivedAddress({
         programAddress: EFFECT_PAYMENT_PROGRAM_ADDRESS,
         seeds: [
           getAddressEncoder().encode(wallet.address),
-          getAddressEncoder().encode(dummyManager.address),
-          getAddressEncoder().encode(applicationPubkey.address),
+          getAddressEncoder().encode(managerPublicKey),
+          getAddressEncoder().encode(applicationAccount.address),
           getAddressEncoder().encode(mint),
         ],
       });
@@ -112,19 +174,26 @@ describe("Placeholder test", () => {
         amount: 0n,
         userTokenAccount: ata,
         stakeAccount: stakeAccount,
-        scope: applicationPubkey.address,
-      });
-
-      //update stake ix to the recipientManagerDataAccount
-      const updateAuthorityIx = getUpdateAuthorityInstruction({
-        stakingAccount: stakeAccount.address,
-        newAuthority: recipientManagerDataAccount,
-        authority: wallet,
+        scope: applicationAccount.address,
       });
 
       const [stakeVaultTokenAccount] = await getProgramDerivedAddress({
         programAddress: EFFECT_STAKING_PROGRAM_ADDRESS,
         seeds: [getAddressEncoder().encode(stakeAccount.address)],
+      });
+
+      const claimProofIx = await getClaimProofsInstructionAsync({
+        paymentAccount: address(paymentAccount),
+        mint: address(mint),
+        recipientManagerDataAccount,
+        recipientTokenAccount: ata,
+        pubX: bigIntToBytes32(BigInt(proofResult.publicSignals.pubX)),
+        pubY: bigIntToBytes32(BigInt(proofResult.publicSignals.pubY)),
+        authority: wallet,
+        minNonce: Number(proofResult.publicSignals.minNonce),
+        maxNonce: Number(proofResult.publicSignals.maxNonce),
+        totalAmount: Number(proofResult.publicSignals.amount),
+        proof: convertProofToBytes(proofResult.proof),
       });
 
       const redeemIx = getRedeemInstruction({
@@ -140,7 +209,7 @@ describe("Placeholder test", () => {
       const initReflectionIx = await getInitRewardInstructionAsync({
         authority: wallet,
         mint,
-        scope: applicationPubkey.address,
+        scope: applicationAccount.address,
       });
 
       //get reward vault token account
@@ -149,7 +218,7 @@ describe("Placeholder test", () => {
         seeds: [
           Buffer.from("reflection", "utf-8"),
           getAddressEncoder().encode(mint),
-          getAddressEncoder().encode(applicationPubkey.address),
+          getAddressEncoder().encode(applicationAccount.address),
         ],
       });
 
@@ -183,12 +252,14 @@ describe("Placeholder test", () => {
       });
 
       try {
-        const tx = await connection.sendTransactionFromInstructions({
+        await connection.sendTransactionFromInstructions({
+          instructions: [registerIx, createPaymentIx, initIx, claimProofIx],
+          feePayer: wallet,
+        });
+
+        await connection.sendTransactionFromInstructions({
           instructions: [
-            createPaymentIx,
-            initIx,
             stakeIx,
-            updateAuthorityIx,
             redeemIx,
             initReflectionIx,
             transferTokensIx,
@@ -215,6 +286,6 @@ describe("Placeholder test", () => {
         throw e;
       }
     },
-    { timeout: 20000 },
+    { timeout: 50000 },
   );
 });

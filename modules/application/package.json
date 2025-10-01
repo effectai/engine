@@ -6,8 +6,10 @@
   "main": "./dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsup --config ../../tsup.config.package.ts",
-    "dev": "tsup --config ../../tsup.config.package.ts --watch src"
+    "build": "pnpm run generate:clients && pnpm run compile:ts",
+    "compile:ts": "tsup clients/js --config ../../tsup.config.package.ts",
+    "dev": "tsup --config ../../tsup.config.package.ts --watch src",
+    "generate:clients": "node --experimental-strip-types ../../tools/scripts/solana/generate-clients.ts application"
   },
   "exports": {
     ".": {
@@ -19,6 +21,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.9.0",
   "dependencies": {
+    "@solana/kit": "^3.0.3",
     "@effectai/protobufs": "workspace:*",
     "@libp2p/interface": "^3.0.0",
     "@libp2p/peer-id": "^6.0.1",

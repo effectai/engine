@@ -7,14 +7,18 @@ declare_program!(effect_payment);
 #[derive(Accounts)]
 pub struct Redeem<'info> {
     #[account(signer)]
-    pub authority: Account<'info, RecipientManagerDataAccount>,
+    pub authority: Signer<'info>,
 
     #[account(mut)]
     pub user_token_account: Account<'info, TokenAccount>,
 
+    #[account(mut)]
+    pub recipient_manager_app_data_account: Account<'info, RecipientManagerDataAccount>,
+
     #[account(
         mut,
         has_one = authority @ StakingErrors::Unauthorized,
+        constraint = stake_account.scope == recipient_manager_app_data_account.application_account.key() @ StakingErrors::Unauthorized,
     )]
     pub stake_account: Account<'info, StakeAccount>,
 
@@ -30,6 +34,12 @@ pub struct Redeem<'info> {
 
 impl<'info> Redeem<'info> {
     pub fn handler(&mut self, amount: u64) -> Result<()> {
+        msg!(
+            "Redeeming {} tokens from stake account {}",
+            amount,
+            self.stake_account.key()
+        );
+
         require!(amount > 0, StakingErrors::AmountNotEnough);
 
         self.stake_account.amount += amount;

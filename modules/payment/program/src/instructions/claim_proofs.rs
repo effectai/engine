@@ -78,7 +78,16 @@ pub struct Claim<'info> {
     )]
     pub recipient_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [
+            authority.key().as_ref(),
+            payment_account.manager_account.key().as_ref(),
+            payment_account.application_account.key().as_ref(),
+            mint.key().as_ref()
+        ],
+        bump,
+    )]
     pub recipient_manager_data_account: Account<'info, RecipientManagerDataAccount>,
 
     pub token_program: Program<'info, Token>,
@@ -100,6 +109,7 @@ pub fn handler(
 ) -> Result<()> {
     let manager_key = Pubkey::new_from_array(compress(pub_x, pub_y));
     let mint_key = ctx.accounts.mint.key();
+
     let expected_seeds = &[
         ctx.accounts.authority.key.as_ref(),
         manager_key.as_ref(),

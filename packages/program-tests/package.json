@@ -18,9 +18,11 @@
   "license": "ISC",
   "packageManager": "pnpm@10.9.0",
   "dependencies": {
+    "@effectai/application": "workspace:*",
     "@effectai/payment": "workspace:*",
     "@effectai/staking": "workspace:*",
-    "@effectai/reward": "workspace:*"
+    "@effectai/reward": "workspace:*",
+    "@effectai/utils": "workspace:*"
   },
   "devDependencies": {
     "@effectai/solana-utils": "workspace:*",

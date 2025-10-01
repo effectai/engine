@@ -6,6 +6,7 @@ members = [
   "modules/staking/program",
   "modules/reward/program",
   "modules/vesting/program",
+  "modules/application/program",
 ]
 resolver = "2"
 

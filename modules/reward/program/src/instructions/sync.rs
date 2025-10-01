@@ -25,7 +25,7 @@ pub struct Sync<'info> {
 
     #[account(
         mut,
-        seeds = [b"reflection", stake_vault_token_account.mint.as_ref()],
+        seeds = [b"reflection", stake_vault_token_account.mint.as_ref(), stake_account.scope.as_ref()],
         bump,
     )]
     pub reflection_account: Account<'info, ReflectionAccount>,

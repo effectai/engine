@@ -1,0 +1,26 @@
+[package]
+name = "effect-application"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "effect_application"
+
+[features]
+default = ["mainnet"]
+cpi = ["no-entrypoint"]
+localnet = []
+mainnet = []
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = { version = "0.31.1" }
+anchor-spl = "0.31.1"
+effect-common = { path = "../../../core/program" }
+anchor-id-injector = { path = "../../../tools/crates/anchor-id-injector" } 
+

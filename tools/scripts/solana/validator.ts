@@ -59,7 +59,7 @@ export async function deploy(port: number, programs: Program[]) {
     });
   }
 
-  async function waitForHealth(timeoutMs = 20_000) {
+  async function waitForHealth(timeoutMs = 30_000) {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       try {
@@ -90,7 +90,7 @@ export async function deploy(port: number, programs: Program[]) {
       { stdout: "pipe", stderr: "pipe" },
     );
 
-    await waitForHealth(20_000);
+    await waitForHealth(30_000);
 
     const handle: ValidatorHandle = {
       pid: child.pid!,

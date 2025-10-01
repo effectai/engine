@@ -14,6 +14,8 @@ pub use state::*;
 
 inject_declare_id_output!("../../../target/deploy/effect_payment-keypair.json");
 
+declare_program!(effect_application);
+
 #[program]
 pub mod effect_payment {
 
@@ -34,19 +36,14 @@ pub mod effect_payment {
     pub fn create_payment_pool(
         ctx: Context<Create>,
         manager_authority: Pubkey,
-        application_pubkey: Pubkey,
         amount: u64,
     ) -> Result<()> {
-        create::handler(ctx, manager_authority, application_pubkey, amount)
+        create::handler(ctx, manager_authority, amount)
     }
 
-    //initialize a recipient/manager data account that holds the nonce
-    pub fn init(
-        ctx: Context<Init>,
-        manager_authority: Pubkey,
-        application_pubkey: Pubkey,
-    ) -> Result<()> {
-        init::handler(ctx, manager_authority, application_pubkey)
+    //initialize a recipient/manager/application data account that holds the nonce
+    pub fn init(ctx: Context<Init>, manager_authority: Pubkey) -> Result<()> {
+        init::handler(ctx, manager_authority)
     }
 
     //Redeem your VC's into a stake account

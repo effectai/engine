@@ -583,40 +583,6 @@ importers:
         specifier: ^4.1.10
         version: 4.1.13
 
-  core/application:
-    dependencies:
-      '@effectai/protobufs':
-        specifier: workspace:*
-        version: link:../protobufs
-      '@libp2p/interface':
-        specifier: ^3.0.0
-        version: 3.0.0
-      '@libp2p/peer-id':
-        specifier: ^6.0.1
-        version: 6.0.1
-      ulid:
-        specifier: 3.0.0
-        version: 3.0.0
-      unstorage:
-        specifier: ^1.17.1
-        version: 1.17.1(db0@0.3.2(better-sqlite3@12.2.0))(idb-keyval@6.2.2)(ioredis@5.7.0)
-      vitest:
-        specifier: ^2.1.9
-        version: 2.1.9(@types/node@24.5.2)(lightningcss@1.30.1)(sass@1.92.1)(terser@5.44.0)
-      zod:
-        specifier: ^4.1.11
-        version: 4.1.11
-    devDependencies:
-      '@types/cors':
-        specifier: ^2.8.17
-        version: 2.8.19
-      '@types/express':
-        specifier: ^4.17.21
-        version: 4.17.23
-      typescript:
-        specifier: ^5.8.3
-        version: 5.9.2
-
   core/execution:
     dependencies:
       '@effectai/protobufs':
@@ -778,6 +744,43 @@ importers:
         specifier: ^1.17.1
         version: 1.17.1(db0@0.3.2(better-sqlite3@12.2.0))(idb-keyval@6.2.2)(ioredis@5.7.0)
     devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.2
+
+  modules/application:
+    dependencies:
+      '@effectai/protobufs':
+        specifier: workspace:*
+        version: link:../../core/protobufs
+      '@libp2p/interface':
+        specifier: ^3.0.0
+        version: 3.0.0
+      '@libp2p/peer-id':
+        specifier: ^6.0.1
+        version: 6.0.1
+      '@solana/kit':
+        specifier: ^3.0.3
+        version: 3.0.3(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.2)
+      ulid:
+        specifier: 3.0.0
+        version: 3.0.0
+      unstorage:
+        specifier: ^1.17.1
+        version: 1.17.1(db0@0.3.2(better-sqlite3@12.2.0))(idb-keyval@6.2.2)(ioredis@5.7.0)
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@24.5.2)(lightningcss@1.30.1)(sass@1.92.1)(terser@5.44.0)
+      zod:
+        specifier: ^4.1.11
+        version: 4.1.11
+    devDependencies:
+      '@types/cors':
+        specifier: ^2.8.17
+        version: 2.8.19
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.23
       typescript:
         specifier: ^5.8.3
         version: 5.9.2
@@ -1287,6 +1290,9 @@ importers:
 
   packages/program-tests:
     dependencies:
+      '@effectai/application':
+        specifier: workspace:*
+        version: link:../../modules/application
       '@effectai/payment':
         specifier: workspace:*
         version: link:../../modules/payment
@@ -1296,6 +1302,9 @@ importers:
       '@effectai/staking':
         specifier: workspace:*
         version: link:../../modules/staking
+      '@effectai/utils':
+        specifier: workspace:*
+        version: link:../utils
     devDependencies:
       '@effectai/solana-utils':
         specifier: workspace:*
@@ -1303,9 +1312,6 @@ importers:
       '@effectai/test-utils':
         specifier: workspace:*
         version: link:../test-utils
-      '@effectai/utils':
-        specifier: workspace:*
-        version: link:../utils
       '@solana-program/system':
         specifier: ^0.7.0
         version: 0.7.0(@solana/kit@2.3.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.2)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)))

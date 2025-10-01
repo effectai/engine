@@ -14,6 +14,7 @@ import {
   type KeyPairSigner,
   lamports,
 } from "@solana/kit";
+import { executeTransaction } from "@effectai/solana-utils";
 
 export type SetupReturn = {
   mint: Address;
@@ -63,9 +64,11 @@ export const setup = async (
     mintAuthority: signer,
   });
 
-  //execute tx
-  await connection.sendTransactionFromInstructions({
-    feePayer: signer,
+  await executeTransaction({
+    commitment: "processed",
+    rpcSubscriptions: connection.rpcSubscriptions,
+    rpc: connection.rpc,
+    signer,
     instructions: [
       createAccountInstruction,
       initializeMintInstruction,

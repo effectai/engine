@@ -91,14 +91,6 @@ export const generatePaymentProof = async ({
 
     const enabled = Array(PAYMENT_BATCH_SIZE).fill(0).fill(1, 0, batchSize);
     const lastNonce = payments[payments.length - 1].nonce;
-
-    console.log(
-      "Generating proof for :",
-      recipient,
-      paymentAccount,
-      payments.length,
-    );
-
     const proofInputs = {
       pubX: eddsa.F.toObject(pubX),
       pubY: eddsa.F.toObject(pubY),

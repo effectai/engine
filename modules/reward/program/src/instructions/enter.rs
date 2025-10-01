@@ -15,6 +15,7 @@ pub struct Enter<'info> {
 
     #[account(
         mut,
+        has_one = authority @ RewardErrors::Unauthorized,
         constraint = stake_account.scope == reflection_account.scope @ RewardErrors::ScopeMismatch,
     )]
     pub stake_account: Account<'info, StakeAccount>,
