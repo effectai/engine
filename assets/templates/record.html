@@ -1,212 +1,166 @@
 <div id="app" style="text-align: center">
-    <h1>Effect AI - Sentence Reader</h1>
-  
-    <hr />
-  
-    <div class="mx-auto" style="max-width: 80%">
-    
+  <h1>Effect AI - Sentence Reader</h1>
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
     <p class="mb-5">Click <b>Record</b> then read the sentence aloud</p>
+
     <div class="box">
-      <p class="is-size-4 has-text-weight-semibold" v-cloak>{{sentence}}</p>
+      <p class="is-size-4 has-text-weight-semibold" v-cloak>{{ sentence }}</p>
     </div>
 
-    <button class="button"
-      v-if="!isRecording"
-      @click.prevent="startRecording"
-      class="button is-primary is-large"
-      >
-      Record
-    </button>
-    
-    <button class="button"
-      v-cloak
-      v-else
-      @click.prevent="stopRecording"
-      class="button is-primary is-large"
-      >
-      Stop
-    </button>
+    <!-- WaveSurfer container -->
+    <div id="waveform" class="mb-4"></div>
 
-    <button class="button"
-      v-cloak
-      v-if="audioUrl!=''"
-      @click.prevent="playAudio"
-      class="button is-primary is-large"
-      >
-      Replay
-    </button>
-
-    <div class="container is-max-tablet box mt-5 ">
-      <label class="label">Instructions:</label>
-      <div class="has-text-left">
-        <li>We welcome different accents!</li>
-        <li>If you see a sentence that offends or upsets you please do use the flag button in the UI.</li>
-        <li>Reading all the words on the page correctly does matter. When listening, check very carefully that what has been recorded is exactly what has been written</li>
-        <li>You need to be able to hear every word of the recording.</li>
-        <li>A little background noise is okay, but if you can hear another person speaking distinct words, the clip should be re-recorded.</li>
-      </div>      
+    <div class="container mb-5">
+      <button v-if="!isRecording" @click.prevent="startRecording" class="button is-medium mx-2">Record</button>
+      <button v-else @click.prevent="stopRecording" class="button is-danger is-medium mx-2">Stop</button>
+      <button v-if="audioUrl" @click.prevent="playRecorded" class="button is-link is-medium mx-2">Replay</button>
     </div>
 
+    <p class="is-size-7 mb-2">
+      By clicking this button, you accept that the sentence contributed here will be added to a publicly available cc-0 licensed dataset.
+    </p>
 
-    <audio ref="audioPlayer" :src="audioUrl" style="display: none;"></audio>
-
-    <p class="is-size-7 mb-2">By clicking this button, you accept that the sentence contributed here will be added to a publicly available cc-0 licensed dataset.</p>
-
-    <p style="color: red;"
-    :class="{'is-hidden mb-3': !notComplete}">
+    <p style="color: red;" :class="{'is-hidden mb-3': !notComplete}">
       Task incomplete - Please complete all sections of the task
     </p>
-    
-    <button
-      @click.prevent="uploadAndSubmit"
-      class="button is-success is-large"
-      :class="{'is-loading': btnLoading}"
-    >
+
+    <button @click.prevent="uploadAndSubmit" class="button is-success is-large" :class="{'is-loading': btnLoading}">
       Submit
     </button>
   </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+
+<script type="module">
   
-  <!-- 📚 Load in resources: [Bulma, Effect Network Styling]  -->
-  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
-  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
-  
-  <script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
-  <script type="module">
-    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
-  
-    createApp({
-      data() {
-        return {
-          title: "Effect AI Sentence Reader",
-          recorder: null,      
-          audioChunks: [],     
-          audioUrl: "",        
-          isRecording: false,  
-          sentence: "${sentence}",
-          audioBlob: "",
-          ipfsCID: "",
-          // ipfsHOST: "https://ipfs.effect.ai/api/v0/add?pin=true",
-          notComplete: false,
-          instructions: `
-          <div class="">
-            <h2 class="text-lg">Misreadings:</h2>
-            <p>
-              Reading all the words on the page correctly does matter. Please check
-              carefully that what has been recorded is exactly what is 
-              written. Re-record if the recording has mistakes.
-            </p>
-            <br>
-            <p>Very common mistakes include:</p>
-            <li>Missing 'A' or 'The' at the beginning of the recording.</li>
-            <li>Missing an 's' at the end of a word.</li>
-            <li>Reading contractions that aren't actually there, such as "We're" instead of "We are", or vice versa.</li>
-            <li>Missing the end of the last word by cutting off the recording too quickly.</li>
-            <li>Taking several attempts to read a word.</li>
-          </div>`
-        };
-      },
-      computed: {},
-      created() {},
-      mounted() {
-        window.top.postMessage(
-        {
-          type: 'task-instructions',
-          instructions: this.instructions
-        },
-        "*"
-      );
-      },
-      methods: {
-        playAudio(){
-          const audio = this.$refs.audioPlayer; 
-          audio.play(); 
-        },
-        stopAudio(){
-          const audio = this.$refs.audioPlayer; 
-          audio.stop(); 
-        },
-        async startRecording() {
-         
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-          this.recorder = new MediaRecorder(stream)
-          this.audioChunks = [] 
+import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js";
+import RecordPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/record.esm.js";
 
-          
-          this.recorder.ondataavailable = (event) => {
-            this.audioChunks.push(event.data)
+createApp({
+  data() {
+    return {
+      title: "Effect AI Sentence Reader",
+      sentence: "${sentence}",
+      wavesurfer: null,
+      recordPlugin: null,
+      isRecording: false,
+      audioBlob: null,
+      audioUrl: "",
+      ipfsCID: "",
+      ipfsHOST: "${ipfsHOST}",
+      notComplete: false,
+      btnLoading: false,
+      instructions: `
+        <div>
+          <p>Please follow these steps carefully to ensure your audio is useful and clear:</p>
+          <br>
+          <li><strong>Read the sentence exactly</strong> - Include every article and the correct plural form. Don't shorten or add words.</li>
+          <br>
+          <li><strong>Speak clearly and naturally</strong> - Don't trail off or adding extra phrases.</li>
+          <br>
+          <li><strong>Accent Forgiveness</strong> - Varied pronunciation is fine as long as the intended text is recognizable.</li>
+          <br>
+          <li><strong>Avoid too much background noise</strong> - Quiet ambient noise is OK, but distinct words from others interfere with accuracy.</li>
+          <br>
+          <li>If the recording is too quiet, noisy, or breaks up, please re-record until the full sentence is audible and matches the text.</li>
+          <br>
+          <li>Clip length should stay under ~15 seconds. Most sentences take under 10 seconds. Aim for brevity and clarity.</li>
+        </div>`
+    };
+  },
+  mounted() {
+
+    window.top.postMessage({ type: "task-instructions", instructions: this.instructions }, "*");
+
+    this.recordPlugin = RecordPlugin.create();
+
+    this.wavesurfer = WaveSurfer.create({
+      container: "#waveform",
+      waveColor: "#ddd",
+      progressColor: "#0000FF",
+      cursorWidth: 0,
+      height: 100,
+      interact: false,
+      plugins: [this.recordPlugin],
+    });
+
+    this.recordPlugin.on("record-start", () => {
+      this.isRecording = true;
+      this.audioBlob = null;
+      this.audioUrl = "";
+    });
+
+    this.recordPlugin.on("record-end", (blob) => {
+      this.audioBlob = blob;
+      this.audioUrl = URL.createObjectURL(blob);
+      this.wavesurfer.load(this.audioUrl);
+      this.isRecording = false;
+    });
+
+  },
+  methods: {
+    async startRecording() {
+      try {
+        await this.recordPlugin.startRecording();
+      } catch (err) {
+        console.error("startRecording failed:", err);
+        this.isRecording = false;
+      }
+    },
+
+    stopRecording() {
+      try {
+        this.recordPlugin.stopRecording();
+      } catch (err) {
+        console.error("stopRecording failed:", err);
+      }
+    },
+
+    playRecorded() {
+      if (!this.audioUrl) return;
+      this.wavesurfer.playPause();
+    },
+
+    async uploadAndSubmit() {
+      this.btnLoading = true;
+      if (!this.audioBlob) {
+        this.notComplete = true;
+        this.btnLoading = false;
+        return;
+      }
+      try {
+        const file = new File([this.audioBlob], "recording.wav", { type: "audio/wav" });
+        const formData = new FormData();
+        formData.append("path", file);
+
+        // Replace IPFS upload endpoint
+        const response = await fetch(this.ipfsHOST || "/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error("Upload failed");
+        const result = await response.json();
+        this.ipfsCID = result.Hash || result.cid || result.id;
+        parent.postMessage({
+          task: "submit",
+          values: {
+            taskTitle: this.title,
+            sentence: this.sentence,
+            answer: this.ipfsHOST + this.ipfsCID
           }
-
-         
-          this.recorder.onstop = () => {
-            this.audioBlob = new Blob(this.audioChunks, { type: "audio/wav" })
-            this.audioUrl = URL.createObjectURL(this.audioBlob) 
-          }
-
-          this.recorder.start()
-          this.isRecording = true 
-        },
-        stopRecording() {
-          if (this.recorder && this.recorder.state === "recording") {
-            this.recorder.stop() 
-            this.isRecording = false 
-          }
-        },
-
-        async storeRecording(){
-          const file = new File([this.audioBlob], "recording.wav", { type: "audio/wav" });
-
-          const formData = new FormData();
-
-          formData.append('path', file);
-          try {
-            const response = await fetch(this.ipfsHOST, {
-              method: 'POST',
-              body: formData,
-            });
-
-            if (!response.ok) {
-              const errorText = await response.text();
-              throw new Error(`Upload failed: ${errorText}`);
-            }
-
-            const result = await response.json();
-            this.ipfsCID = result.Hash;
-
-          } catch (error) {
-            console.error('Error uploading to IPFS:', error);
-          }
-        },
-
-        async uploadAndSubmit() {
-          this.btnLoading = true;
-          if(this.audioChunks == ""){
-            this.notComplete = true
-          }
-          else
-            try {
-              await this.storeRecording();
-              parent.postMessage(
-                {
-                  task: "submit",
-                  values: {
-                    taskTitle: this.title,
-                    sentence: this.sentence,
-                    answer: "https://ipfs.effect.ai/ipfs/" + this.ipfsCID,
-                  },
-                },
-                "*"
-              );
-            } catch (error) {
-              console.error("Failed to upload to IPFS", error);
-            }
-          this.btnLoading = false;
-        },
-      },
-    }).mount("#app");
-  </script>
-
-  <style scoped>
-    [v-cloak] {
-      display: none;
+        }, "*");
+      } catch (err) {
+        console.error("Failed to upload", err);
+      } finally {
+        this.btnLoading = false;
+      }
     }
-  </style>
+  }
+}).mount("#app");
+</script>
+

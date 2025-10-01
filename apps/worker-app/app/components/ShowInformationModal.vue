@@ -1,9 +1,7 @@
 <template>
   <UModal
     v-model:open="data"
-    :ui="{
-      width: 'w-full sm:max-w-[42em]', // Set the full modal width here
-    }"
+    class="w-full sm:max-w-[60em]"
   >
     <template #content>
       <UCard
@@ -29,7 +27,7 @@
         </template>
 
         <template #default>
-          <div class="overflow-scroll" v-html="instructions"></div>
+          <div class="prose max-w-none" v-html="instructions"></div>
         </template>
 
         <template #footer>
