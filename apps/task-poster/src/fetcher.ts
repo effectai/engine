@@ -1,3 +1,4 @@
+import { requireAuth } from "./auth.js";
 import { isHtmx, make404, make500, page } from "./html.js";
 import type { Express } from "express";
 import type { Task } from "@effectai/protocol";
@@ -507,6 +508,7 @@ export const processResults = async (f: Fetcher, batchSize: number) => {
   );
 
   let ids = tasks.map(t => t.key[4]);
+
   if (!ids || ids.length === 0)
     return;
 
@@ -624,12 +626,12 @@ const validateForm = async (
 
 export const addFetcherRoutes = (app: Express): void => {
   // TODO: parse the ?type=csv parameter for more fetchers
-  app.get("/d/:id/create-fetcher", async (req, res) => {
+  app.get("/d/:id/create-fetcher", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
     res.send(page(await fetcherForm(id, {}, "")))
   });
 
-  app.get("/d/:id/f/:fid/edit", async (req, res) => {
+  app.get("/d/:id/f/:fid/edit", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
@@ -694,6 +696,7 @@ export const addFetcherRoutes = (app: Express): void => {
 <section>
   <a href="/d/${id}/f/${fid}/import"><button>Add Data</button></a>
   <a href="/d/${id}/f/${fid}/edit"><button>Edit Step</button></a>
+  <a href="/d/${id}/f/${fid}/download"><button>Download CSV</button></a>
 </section>
 
 <section>
@@ -711,7 +714,7 @@ export const addFetcherRoutes = (app: Express): void => {
       return make404(res);
   });
 
-  app.post("/d/:id/fetcher-create", async (req, res) => {
+  app.post("/d/:id/fetcher-create", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
     const dataset = (await db.get<DatasetRecord>(["dataset", id, "info"]))!.data;
 
@@ -736,7 +739,7 @@ export const addFetcherRoutes = (app: Express): void => {
     }
   });
 
-  app.get("/d/:id/f/:fid/import", async (req, res) => {
+  app.get("/d/:id/f/:fid/import", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
@@ -755,7 +758,7 @@ export const addFetcherRoutes = (app: Express): void => {
     res.send(ts);
   });
 
-  app.post("/d/:id/f/:fid/import", async (req, res) => {
+  app.post("/d/:id/f/:fid/import", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
@@ -782,4 +785,44 @@ export const addFetcherRoutes = (app: Express): void => {
       res.send(await fetcherImportForm(f!, req.body, msg));
     }
   });
+
+  app.get("/d/:id/f/:fid/download", requireAuth, async (req, res) => {
+    const id = Number(req.params.id);
+    const fid = Number(req.params.fid);
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="dataset-results-${id}-${fid}.csv"`
+    );
+
+    let cols = ["timestamp", "submissionByPeer", "taskId", "result"];
+
+    res.write(cols.join(",") + "\n");
+
+    try {
+      const iterator = db.iterate<boolean>(["fetcher", id, fid, "done", {}], undefined, false);
+
+      for await (const taskId of iterator) {
+	const task = (await db.get<any>(["task-result", taskId.key[4]]))!.data;
+
+	const csvRow = cols.map(c => task[c]).join(",") + "\n";
+
+	const canContinue = res.write(csvRow);
+
+	if (!canContinue) {
+	  // buffer is full, wait for drain event
+	  await new Promise((resolve) => {
+	    res.once('drain', resolve);
+	  });
+	}
+      }
+      res.end();
+    } catch (err) {
+      console.error('Error streaming data:', err);
+      if (!res.headersSent)
+	res.status(500).send('Error streaming data');
+      res.end();
+    }
+  })
 };
