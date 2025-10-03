@@ -93,7 +93,6 @@ export const action = async ({
     await context.workerManager.updateWorkerState(id, (state) => ({
       banned: false,
     }));
-    context.workerManager.workerQueue.removePeer(id);
   } else if (intent === "revoke") {
     await context.workerManager.updateWorkerState(id, (state) => ({
       accessCodeRedeemed: undefined,
