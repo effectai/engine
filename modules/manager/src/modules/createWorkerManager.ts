@@ -163,14 +163,16 @@ export const createWorkerManager = ({
   const selectWorker = async (capability?: string): Promise<string | null> => {
     const queue = workerQueue.getQueue();
 
+    //TODO:: optimize this..
     for (const workerId of queue) {
       const worker = await getWorker(workerId);
 
-      //TODO:: optimize this..
-      if (
-        !worker ||
-        (capability && !worker.state.capabilities.includes(capability))
-      ) {
+      const workerCapabilities =
+        worker?.state.capabilities.concat(
+          worker?.state.managerCapabilities || [],
+        ) || [];
+
+      if (!worker || (capability && !workerCapabilities.includes(capability))) {
         continue;
       }
 

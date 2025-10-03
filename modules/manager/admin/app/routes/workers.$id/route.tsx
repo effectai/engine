@@ -1,7 +1,9 @@
 import { JSONTreeViewer } from "@/app/components/json-tree-viewer";
 import { Button } from "@/app/components/ui/button";
+import { Input } from "@/app/components/ui/input";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
+import React from "react";
 
 export async function loader({ request, context, params }: LoaderFunctionArgs) {
   const id = params.id;
@@ -22,6 +24,9 @@ export async function loader({ request, context, params }: LoaderFunctionArgs) {
 
 export default function Component() {
   const { worker } = useLoaderData<typeof loader>();
+  const [capability, setCapability] = React.useState(
+    (worker.state.managerCapabilities || []).join(","),
+  );
 
   return (
     <div className="px-6">
@@ -44,6 +49,19 @@ export default function Component() {
 
       <h2>Worker State</h2>
       <JSONTreeViewer data={worker.state}></JSONTreeViewer>
+      <h2>Manager Capabilities</h2>
+      <Form method="post" className="flex gap-2">
+        <Input
+          name="capability"
+          value={capability}
+          onChange={(e) => setCapability(e.target.value)}
+          placeholder="capability1, capability2, capability3"
+        />
+
+        <Button type="submit" name="intent" value="addCapability">
+          Add Capability
+        </Button>
+      </Form>
     </div>
   );
 }
@@ -77,6 +95,23 @@ export const action = async ({
   } else if (intent === "promote") {
     await context.workerManager.updateWorkerState(id, (state) => ({
       isAdmin: true,
+    }));
+  } else if (intent === "addCapability") {
+    const raw = String(formData.get("capability") ?? "");
+    const parsed = Array.from(
+      new Set(
+        raw
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0),
+      ),
+    );
+
+    console.log("Updating capabilities to:", parsed);
+
+    await context.workerManager.updateWorkerState(id, (state: any) => ({
+      ...state,
+      managerCapabilities: parsed,
     }));
   }
 
