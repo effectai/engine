@@ -109,14 +109,18 @@ export const useSessionStore = defineStore("session", () => {
   };
 
   const terminate = async () => {
-    console.log("Terminating session...", current.value);
     if (!current.value) return;
 
     try {
       const worker = useWorkerStore();
       assertExists(worker.instance, "Worker instance is not available");
-      await worker.instance.stop();
-      console.log("Worker instance stopped");
+
+      console.log(
+        "Terminating session with manager:",
+        current.value.manager.peerId.toString(),
+      );
+
+      await worker.instance.disconnect(current.value.manager.peerId.toString());
       status.value = "idle";
       error.value = null;
       current.value = null;

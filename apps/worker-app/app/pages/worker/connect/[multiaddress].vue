@@ -217,18 +217,19 @@ const decodedMultiAddr = computed(() => {
 const config = useRuntimeConfig();
 const isOpenClaimModal = ref(false);
 const { data: _payout } = usePayout();
-// const { data: identify } = useIdentify(managerMultiaddr);
+const { useIdentifyQuery } = useIdentify();
+const { data: identify } = useIdentifyQuery(decodedMultiAddr.value.toString());
 
-// watch(
-//   () => identify.value?.isConnected,
-//   (isConnected, oldValue) => {
-//     if (isConnected === false && oldValue === true) {
-//       navigateTo("/worker/connect");
-//     }
-//   },
-//   { immediate: true },
-// );
-//
+watch(
+  () => identify.value?.isConnected,
+  (isConnected, oldValue) => {
+    if (isConnected === false && oldValue === true) {
+      navigateTo("/");
+    }
+  },
+  { immediate: true },
+);
+
 tryOnBeforeUnmount(() => {
   disconnect();
 });

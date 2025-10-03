@@ -43,7 +43,7 @@
             <div
               class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between flex-col"
             >
-              <label>Tasks completed:</label>
+              <label>Tasks Completed:</label>
               {{ totalTasksCompleted }}
             </div>
 
@@ -57,7 +57,7 @@
             <div
               class="p-2 bg-white/50 rounded-lg backdrop-blur-sm text-xs font-mono flex items-center justify-between flex-col"
             >
-              <label class="font-bold">Peformance Score</label>
+              <label class="">Performance Score:</label>
               {{ performanceScore }}%
             </div>
           </div>

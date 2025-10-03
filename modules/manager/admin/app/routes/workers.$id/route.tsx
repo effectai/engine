@@ -110,7 +110,6 @@ export const action = async ({
     console.log("Updating capabilities to:", parsed);
 
     await context.workerManager.updateWorkerState(id, (state: any) => ({
-      ...state,
       managerCapabilities: parsed,
     }));
   }

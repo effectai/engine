@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-const { userAvailableCapabilities, clearUserCapabilities } = useCapabilities();
+const { userAvailableCapabilities } = useCapabilities();
 
 definePageMeta({
   middleware: ["auth"],
