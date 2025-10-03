@@ -16,7 +16,8 @@ pub enum RewardErrors {
     NoClaimableRewards,
     #[msg("Invalid Mint")]
     InvalidMint,
-    #[msg("Scope ismatch")]
+    #[msg("Scope mismatch")]
     ScopeMismatch,
+    #[msg("Mismatched unstake permission")]
+    MismatchedUnstakePermission,
 }
-

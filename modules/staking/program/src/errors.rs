@@ -38,5 +38,6 @@ pub enum StakingErrors {
     InvalidMint,
     #[msg("Scope mismatch.")]
     ScopeMismatch,
+    #[msg("Not allowed to unstake.")]
+    NotAllowedToUnstake,
 }
-

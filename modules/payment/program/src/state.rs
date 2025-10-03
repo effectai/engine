@@ -22,7 +22,7 @@ pub struct RecipientManagerDataAccount {
     pub manager_account: Pubkey,
     pub application_account: Pubkey,
     pub nonce: u32,
-    pub total_amount: u64,
+    pub total_claimed: u64,
     pub bump: u8,
     pub mint: Pubkey,
 }

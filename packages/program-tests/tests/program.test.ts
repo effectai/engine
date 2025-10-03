@@ -36,7 +36,10 @@ import {
 } from "@effectai/reward";
 
 import { getTransferCheckedInstruction } from "@solana-program/token";
-import { getRegisterInstruction } from "@effectai/application";
+import {
+  getRegisterInstructionAsync,
+  PayoutStrategy,
+} from "@effectai/application";
 import { randomBytes } from "node:crypto";
 
 describe("Placeholder test", () => {
@@ -135,11 +138,13 @@ describe("Placeholder test", () => {
       });
 
       //register our test app
-      const registerIx = getRegisterInstruction({
+      const registerIx = await getRegisterInstructionAsync({
         authority: wallet,
         name: "Test App",
+        mint,
         description: "This is a test app",
         applicationAccount,
+        payoutStrategy: PayoutStrategy.Shares,
       });
 
       //create payment account
@@ -202,23 +207,9 @@ describe("Placeholder test", () => {
         maxNonce: Number(proofResult.publicSignals.maxNonce),
         totalAmount: Number(proofResult.publicSignals.amount),
         proof: convertProofToBytes(proofResult.proof),
-      });
-
-      //after claiming our proof, redeem available credits into stake account.
-      const redeemIx = getRedeemInstruction({
-        stakeVaultTokenAccount,
-        userTokenAccount: ata,
-        recipientManagerDataAccount,
-        authority: wallet,
-        mint,
         stakeAccount: stakeAccount.address,
-      });
-
-      //initReflection (contribution pool)
-      const initReflectionIx = await getInitRewardInstructionAsync({
-        authority: wallet,
-        mint,
-        scope: applicationAccount.address,
+        stakeVaultTokenAccount,
+        stakeProgram: EFFECT_STAKING_PROGRAM_ADDRESS,
       });
 
       //get contribution pool reflection account
@@ -266,20 +257,19 @@ describe("Placeholder test", () => {
       try {
         // register app & payment account and claim our payments
         await connection.sendTransactionFromInstructions({
-          instructions: [registerIx, createPaymentIx, initIx, claimProofIx],
+          instructions: [registerIx, createPaymentIx],
+          feePayer: wallet,
+        });
+
+        // init, stake, claim proof, redeem
+        await connection.sendTransactionFromInstructions({
+          instructions: [initIx, stakeIx, claimProofIx],
           feePayer: wallet,
         });
 
         // stake, redeem, init reflection, enter reward pool, transfer tokens to reflection pool, claim rewards
         await connection.sendTransactionFromInstructions({
-          instructions: [
-            stakeIx,
-            redeemIx,
-            initReflectionIx,
-            transferTokensIx,
-            enterRewardIx,
-            claimIx,
-          ],
+          instructions: [transferTokensIx, enterRewardIx, claimIx],
           feePayer: wallet,
         });
 

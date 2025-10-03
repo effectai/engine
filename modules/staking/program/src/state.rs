@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
 use effect_common::constants::{SECONDS_PER_DAY, STAKE_AGE_MAX_DAYS};
 
+use crate::StakingErrors;
+
 pub struct SettingsAccount {
     pub authority: Pubkey,
     pub token_account: Pubkey,
@@ -25,6 +27,7 @@ pub struct StakeAccount {
     pub weighted_amount: u128,
     pub mint: Pubkey,
     pub scope: Pubkey,
+    pub allow_unstake: bool,
 }
 
 impl StakeAccount {

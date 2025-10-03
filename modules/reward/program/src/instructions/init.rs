@@ -45,7 +45,7 @@ pub struct Init<'info> {
 
 impl<'info> Init<'info> {
     pub fn handler(&mut self, scope: Pubkey) -> Result<()> {
-        self.reflection_account.init(self.mint.supply, scope);
-        Ok(())
+        self.reflection_account
+            .init(self.mint.supply, self.mint.key(), scope)
     }
 }

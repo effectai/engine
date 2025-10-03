@@ -8,7 +8,7 @@ use effect_staking::{accounts::StakeAccount, program::EffectStaking};
 pub struct Enter<'info> {
     #[account(
         mut,
-        seeds = [ b"reflection", mint.key().as_ref(), stake_account.scope.as_ref() ],
+        seeds = [ b"reflection", mint.key().as_ref(), stake_account.scope.as_ref()],
         bump
     )]
     pub reflection_account: Account<'info, ReflectionAccount>,
@@ -17,6 +17,8 @@ pub struct Enter<'info> {
         mut,
         has_one = authority @ RewardErrors::Unauthorized,
         constraint = stake_account.scope == reflection_account.scope @ RewardErrors::ScopeMismatch,
+        constraint = stake_account.allow_unstake == (reflection_account.scope == reflection_account.mint) @ RewardErrors::MismatchedUnstakePermission,
+
     )]
     pub stake_account: Account<'info, StakeAccount>,
 

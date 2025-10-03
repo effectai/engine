@@ -32,7 +32,7 @@ pub fn handler(ctx: Context<Init>, manager_authority: Pubkey) -> Result<()> {
     recipient_manager_data_account.manager_account = manager_authority;
     recipient_manager_data_account.application_account = ctx.accounts.application_account.key();
     recipient_manager_data_account.nonce = 0;
-    recipient_manager_data_account.total_amount = 0;
+    recipient_manager_data_account.shares = 0;
     recipient_manager_data_account.mint = ctx.accounts.mint.key();
     recipient_manager_data_account.bump = ctx.bumps.recipient_manager_data_account;
     Ok(())

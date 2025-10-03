@@ -5,6 +5,7 @@ use effect_common::cpi;
 use effect_common::transfer_tokens_from_vault;
 
 use crate::effect_application::accounts::Application;
+use crate::effect_application::types::PayoutStrategy;
 use crate::errors::PaymentErrors;
 use crate::utils::{change_endianness, u32_to_32_byte_be_array, u64_to_32_byte_be_array};
 use crate::{id, vault_seed, PaymentAccount, RecipientManagerDataAccount};
@@ -15,6 +16,10 @@ type G1 = ark_bn254::g1::G1Affine;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use groth16_solana::groth16::Groth16Verifier;
 use num_bigint::{BigInt, Sign};
+
+use super::effect_staking;
+use super::effect_staking::accounts::StakeAccount;
+use super::effect_staking::program::EffectStaking;
 
 /* Function for compressing (packing) 2 public key coordinates (x, y) into a single 32-byte array.
  * The compression is done by taking the x coordinate and the y coordinate,
@@ -96,6 +101,10 @@ pub struct Claim<'info> {
     )]
     pub recipient_manager_data_account: Account<'info, RecipientManagerDataAccount>,
 
+    pub stake_account: Option<Account<'info, StakeAccount>>,
+    pub stake_vault_token_account: Option<Account<'info, TokenAccount>>,
+    pub stake_program: Option<Program<'info, EffectStaking>>,
+
     pub token_program: Program<'info, Token>,
 
     pub mint: Account<'info, Mint>,
@@ -168,22 +177,98 @@ pub fn handler(
     let mut verifier =
         Groth16Verifier::new(&proof_a, &proof_b, &proof_c, &public_inputs, &VERIFYINGKEY).unwrap();
 
+    // Check if proof verification was successful
     let result = verifier.verify().unwrap();
     require!(result, PaymentErrors::InvalidProof);
 
     // Update nonce to the max_nonce in the batch
     ctx.accounts.recipient_manager_data_account.nonce = max_nonce;
-    ctx.accounts.recipient_manager_data_account.total_amount += total_amount;
 
-    // Transfer the total amount of all the proofs.
-    if total_amount > 0 {
-        transfer_tokens_from_vault!(
-            ctx.accounts,
-            payment_vault_token_account,
-            recipient_token_account,
-            &[&vault_seed!(ctx.accounts.payment_account.key(), id())],
-            total_amount
-        )?;
+    // increment total_claimed
+    ctx.accounts.recipient_manager_data_account.total_claimed = total_amount;
+
+    let payment_strategy = ctx.accounts.application_account.payment_strategy;
+    match payment_strategy {
+        PayoutStrategy::Direct => {
+            if total_amount > 0 {
+                transfer_tokens_from_vault!(
+                    ctx.accounts,
+                    payment_vault_token_account,
+                    recipient_token_account,
+                    &[&vault_seed!(ctx.accounts.payment_account.key(), id())],
+                    total_amount
+                )?;
+            }
+        }
+
+        PayoutStrategy::Shares | PayoutStrategy::Staked => {
+            // ensure stake account and program are provided
+            let stake_account = ctx
+                .accounts
+                .stake_account
+                .as_ref()
+                .ok_or(PaymentErrors::MissingStakeAccountOrProgram)?;
+
+            let staking_program = ctx
+                .accounts
+                .stake_program
+                .as_ref()
+                .ok_or(PaymentErrors::MissingStakeAccountOrProgram)?;
+
+            match payment_strategy {
+                PayoutStrategy::Shares => {
+                    effect_staking::cpi::charge(
+                        CpiContext::new(
+                            staking_program.to_account_info(),
+                            effect_staking::cpi::accounts::Charge {
+                                stake_account: stake_account.to_account_info(),
+                                stake_vault_token_account: ctx
+                                    .accounts
+                                    .stake_vault_token_account
+                                    .as_ref()
+                                    .unwrap()
+                                    .to_account_info(),
+                                recipient_manager_app_data_account: ctx
+                                    .accounts
+                                    .recipient_manager_data_account
+                                    .to_account_info(),
+                                authority: ctx.accounts.authority.to_account_info(),
+                                user_token_account: ctx
+                                    .accounts
+                                    .recipient_token_account
+                                    .to_account_info(),
+                                token_program: ctx.accounts.token_program.to_account_info(),
+                            },
+                        ),
+                        total_amount,
+                    )?;
+                }
+                PayoutStrategy::Staked => {
+                    effect_staking::cpi::topup(
+                        CpiContext::new(
+                            staking_program.to_account_info(),
+                            effect_staking::cpi::accounts::Topup {
+                                stake_account: stake_account.to_account_info(),
+                                stake_vault_token_account: ctx
+                                    .accounts
+                                    .stake_vault_token_account
+                                    .as_ref()
+                                    .unwrap()
+                                    .to_account_info(),
+                                authority: ctx.accounts.authority.to_account_info(),
+                                user_token_account: ctx
+                                    .accounts
+                                    .recipient_token_account
+                                    .to_account_info(),
+                                token_program: ctx.accounts.token_program.to_account_info(),
+                            },
+                        ),
+                        total_amount,
+                    )?;
+                }
+                _ => unreachable!(),
+            }
+        }
     }
 
     Ok(())

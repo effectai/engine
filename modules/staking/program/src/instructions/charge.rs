@@ -5,7 +5,7 @@ use effect_payment::accounts::RecipientManagerDataAccount;
 declare_program!(effect_payment);
 
 #[derive(Accounts)]
-pub struct Redeem<'info> {
+pub struct Charge<'info> {
     #[account(signer)]
     pub authority: Signer<'info>,
 
@@ -32,14 +32,8 @@ pub struct Redeem<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> Redeem<'info> {
+impl<'info> Charge<'info> {
     pub fn handler(&mut self, amount: u64) -> Result<()> {
-        msg!(
-            "Redeeming {} tokens from stake account {}",
-            amount,
-            self.stake_account.key()
-        );
-
         require!(amount > 0, StakingErrors::AmountNotEnough);
 
         self.stake_account.amount += amount;

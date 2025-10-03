@@ -72,6 +72,11 @@ pub struct Unstake<'info> {
 impl<'info> Unstake<'info> {
     pub fn handler(&mut self, amount: u64) -> Result<()> {
 
+        //dont allow unstake if scope is not the same as mint
+        if self.stake_account.scope != self.stake_account.mint{
+            return Err(StakingErrors::Unauthorized.into());
+        }
+
         require!(
             amount <= self.stake_account.amount,
             StakingErrors::InvalidStakeAccount
