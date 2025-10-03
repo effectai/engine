@@ -33,6 +33,9 @@ export default function Component() {
           <Button type="submit" name="intent" value="ban">
             Ban
           </Button>
+          <Button type="submit" name="intent" value="unban">
+            Unban
+          </Button>
           <Button type="submit" name="intent" value="revoke">
             Revoke Access Code
           </Button>
@@ -66,6 +69,11 @@ export const action = async ({
   } else if (intent === "ban") {
     await context.workerManager.updateWorkerState(id, (state) => ({
       banned: true,
+    }));
+    context.workerManager.workerQueue.removePeer(id);
+  } else if (intent === "unban") {
+    await context.workerManager.updateWorkerState(id, (state) => ({
+      banned: false,
     }));
     context.workerManager.workerQueue.removePeer(id);
   } else if (intent === "revoke") {
