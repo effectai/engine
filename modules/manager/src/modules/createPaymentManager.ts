@@ -42,6 +42,11 @@ export async function createPaymentManager({
       throw new Error("Worker not found");
     }
 
+    //check if worker is currently in the queue
+    if (!workerManager.workerQueue.queue.includes(peerId.toString())) {
+      throw new Error("Worker is not currently connected");
+    }
+
     const currentTime = Math.floor(Date.now() / 1000);
     const secondsSinceLastPayout = currentTime - worker.state.lastPayout;
 

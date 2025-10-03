@@ -85,6 +85,7 @@ export const useAuth = () => {
   // Initialize Web3Auth
   const init = async () => {
     try {
+      console.log("Initializing Web3Auth...");
       const privateKeyProvider = new SolanaPrivateKeyProvider({
         config: { chainConfig },
       });
@@ -199,7 +200,11 @@ export const useAuth = () => {
     const authMethod = localStorage.getItem("authMethod");
 
     if (authMethod === "web3auth") {
-      await init();
+      // Re-initialize Web3Auth if not already done
+      if (!web3Auth.value) {
+        await init();
+      }
+
       if (web3Auth.value?.status === "connected") {
         const pk = await web3Auth.value.provider?.request({
           method: "solanaPrivateKey",

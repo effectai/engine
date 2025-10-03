@@ -23,7 +23,11 @@ import {
 } from "@effectai/protocol-core";
 import { PingService } from "@libp2p/ping";
 
-import { EffectProtocolMessage, Payment, Task } from "@effectai/protobufs";
+import {
+  EffectProtocolMessage,
+  type Payment,
+  type Task,
+} from "@effectai/protobufs";
 
 export interface WorkerEvents {
   "task:created": CustomEvent<Task>;
@@ -186,6 +190,10 @@ export const createWorker = async ({
     return response;
   };
 
+  const disconnect = async (manager: Multiaddr) => {
+    await entity.node.hangUp(manager);
+  };
+
   const ping = async (manager: Multiaddr) => {
     const pingService = entity.node.services.ping as PingService;
     return await pingService.ping(manager);
@@ -219,6 +227,7 @@ export const createWorker = async ({
     requestBulkProofs,
     identify,
     connect,
+    disconnect,
     start,
     stop,
     ping,

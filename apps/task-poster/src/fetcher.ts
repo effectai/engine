@@ -25,6 +25,7 @@ export type Fetcher = {
   datasetId: number;
   index: number; // the index relative to other fetchers in the dataset
   type: "csv" | "constant";
+  capabilities: string[];
 
   name: string;
   price: number;
@@ -34,6 +35,7 @@ export type Fetcher = {
 
   taskIdx: number; // the last task processed
   totalTasks: number;
+
 
   dataSample?: any;
   status: "active" | "archived";
@@ -174,15 +176,20 @@ export const fetcherForm = async (
       `${t.data.name} (${t.data.templateId})</option>`,
   )}
       </select>
-    </section>
 
-    <section>
       <label for="price"><strong>Price per task</strong></label>
       <input
 	placeholder="$EFFECT"
 	type="number"
 	id="price"  ${addVal(values, "price")}
 	name="price"/>
+
+      <label for="capabilities"><strong>Capabilities</strong><br/>
+      <small>Comme separated list of capabilities required for tasks (note: only 1 capability is used at the moment).</small></label>
+      <input
+	placeholder="effectai/common-voice-validator:1.0.0, effectai/admin:1.0.0"
+	id="capabilities"  ${addVal(values, "capabilities")}
+	name="capabilities"/>
     </section>
   </fieldset>
 
@@ -267,6 +274,7 @@ export const createFetcher = async (
     type: fields.type,
     taskIdx: oldFetcher?.taskIdx ?? 0,
     totalTasks: oldFetcher?.totalTasks ?? 0,
+    capabilities: fields.capabilities.split(",").map((s: string) => s.trim()),
 
     price: fields.price,
     template: fields.template,
@@ -315,8 +323,10 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
     case "constant":
       if (fetcher.totalTasks <= (fetcher.maxTasks || 0)) {
 	const queueSize = countTasks(fetcher, "queue");
-	const nCreate = Math.max((fetcher.targetQueueSize || 0) - queueSize, 0);
-	data = Array(nCreate).fill(fetcher.constantData || "");
+	const targetCreate = Math.max((fetcher.targetQueueSize || 0) - queueSize, 0);
+	const nCreate = Math.max((fetcher.maxTasks || 0) - fetcher.totalTasks, 0);
+	console.log(nCreate, targetCreate, queueSize)
+	data = Array(Math.min(nCreate, targetCreate)).fill(fetcher.constantData || "");
 	break;
       }
   }
@@ -330,6 +340,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	timeLimitSeconds: 600,
 	templateId: fetcher.template,
 	templateData: JSON.stringify(d),
+	capability: fetcher.capabilities[0],
       }) as Task,
   );
 
