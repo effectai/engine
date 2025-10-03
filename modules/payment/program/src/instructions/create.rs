@@ -6,7 +6,6 @@ use effect_common::cpi;
 use crate::PaymentAccount;
 use crate::effect_application::accounts::Application;
 
-
 #[derive(Accounts)]
 #[instruction(manager_authority: Pubkey, amount: u64)]
 pub struct Create<'info> {

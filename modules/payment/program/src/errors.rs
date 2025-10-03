@@ -32,4 +32,7 @@ pub enum PaymentErrors {
 
     #[msg("Invalid Stake Account Mint")]
     InvalidStakeAccountMint,
+
+    #[msg("Invalid Application Account")]
+    InvalidApplicationAccount,
 }

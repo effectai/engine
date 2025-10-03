@@ -4,6 +4,7 @@ use anchor_spl::token::{Mint, Token};
 use effect_common::cpi;
 use effect_common::transfer_tokens_from_vault;
 
+use crate::effect_application::accounts::Application;
 use crate::errors::PaymentErrors;
 use crate::utils::{change_endianness, u32_to_32_byte_be_array, u64_to_32_byte_be_array};
 use crate::{id, vault_seed, PaymentAccount, RecipientManagerDataAccount};
@@ -65,8 +66,13 @@ pub fn public_key_to_truncated_hex(bytes: [u8; 32]) -> [u8; 32] {
 
 #[derive(Accounts)]
 pub struct Claim<'info> {
-    #[account()]
+    #[account(
+        has_one = application_account @ PaymentErrors::InvalidApplicationAccount,
+    )]
     pub payment_account: Account<'info, PaymentAccount>,
+
+    #[account()]
+    application_account: Account<'info, Application>,
 
     #[account(mut, seeds = [payment_account.key().as_ref()], bump)]
     pub payment_vault_token_account: Account<'info, TokenAccount>,

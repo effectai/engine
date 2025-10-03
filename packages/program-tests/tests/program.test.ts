@@ -190,6 +190,7 @@ describe("Placeholder test", () => {
 
       //claim proof instruction
       const claimProofIx = await getClaimProofsInstructionAsync({
+        applicationAccount: applicationAccount.address,
         paymentAccount: address(paymentAccount),
         mint: address(mint),
         recipientManagerDataAccount,

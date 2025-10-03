@@ -19,6 +19,7 @@ pub fn handler(ctx: Context<Register>, name: String, description: String) -> Res
     application_account.authority = ctx.accounts.authority.key();
     application_account.name = name;
     application_account.description = description;
+    application_account.payment_strategy = crate::PaymentStrategy::Debit;
 
     Ok(())
 }
