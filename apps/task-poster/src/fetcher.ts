@@ -528,6 +528,14 @@ export const importTasks = async (f: Fetcher) => {
     } catch (e) {
       // TODO: save errors in db, retries with backoff
       console.log(`Error posting task ${taskId} ${e}`);
+
+      // if the task is undefined, just kill it
+      if (!task) {
+	db.beginTransaction();
+	await db.delete(["fetcher", ...fid, "queue", taskId]);
+	await db.set<boolean>(["fetcher", ...fid, "failed", taskId], true);
+	await db.endTransaction();
+      }
       thisProgress.failed += 1;
     }
   }
@@ -891,10 +899,12 @@ export const addFetcherRoutes = (app: Express): void => {
       const offset = Number(req.query.offset || "0");
 
       const tasks = await getPendingTasks(f!);
-      if (tasks.length <= offset)
-	return make404(res);
+
+      if (tasks.length <= offset) return make404(res);
 
       const task = await db.get<Task>(["task", tasks[offset]]);
+
+      if (!task) return make500(res);
 
       const tpl = await getTemplate(f!.template);
       const renderedTemplate = await renderTemplate(
