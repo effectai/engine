@@ -34,7 +34,7 @@ const api = axios.create({
   baseURL: state.managerUrl,
 });
 
-const escapeHTML = (html: string): string =>
+export const escapeHTML = (html: string): string =>
   html
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

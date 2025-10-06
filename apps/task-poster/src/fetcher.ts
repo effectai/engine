@@ -10,7 +10,7 @@ import { db, managerId, publishProgress } from "./state.js";
 import * as state from "./state.js";
 import { validateNumericParams } from "./util.js";
 import { KVKey, KVQuery, KVTransactionResult } from "@cross/kv";
-import { getTemplate, getTemplates, renderTemplate } from "./templates.js";
+import { getTemplate, getTemplates, renderTemplate, escapeHTML } from "./templates.js";
 
 // TODO: can this come out of the protocol package?
 
@@ -26,6 +26,7 @@ export type Fetcher = {
   index: number; // the index relative to other fetchers in the dataset
   type: "csv" | "constant";
   capabilities: string[];
+  engine: "effectai" | "none";
 
   name: string;
   price: number;
@@ -159,10 +160,11 @@ export const fetcherForm = async (
   <fieldset>
     <legend>execution engine</legend>
 
-    <label for="processor"><strong>Processor</strong><br/>
-    <small>How data will be processed.</small></label>
-    <select name="processor" id="processor">
-      <option value="template">Effect AI App</option>
+    <label for="engine"><strong>Engine</strong><br/>
+    <small>How data will be processed. None is great for testing an previewing ` +
+`data without posting any tasks.</small></label>
+    <select name="engine" id="type">${["effectai", "none"].map(a =>
+      `<option value="${a}" ${values.engine == a ? "selected" : ""}>${a}</option>`).join("")}
     </select>
 
     <section>
@@ -276,6 +278,7 @@ export const createFetcher = async (
     totalTasks: oldFetcher?.totalTasks ?? 0,
     capabilities: fields.capabilities.split(",").map((s: string) => s.trim()),
 
+    engine: fields.engine,
     price: fields.price,
     template: fields.template,
 
@@ -325,8 +328,9 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	const queueSize = countTasks(fetcher, "queue");
 	const targetCreate = Math.max((fetcher.targetQueueSize || 0) - queueSize, 0);
 	const nCreate = Math.max((fetcher.maxTasks || 0) - fetcher.totalTasks, 0);
+	const taskData = JSON.parse(fetcher.constantData || "");
 	console.log(nCreate, targetCreate, queueSize)
-	data = Array(Math.min(nCreate, targetCreate)).fill(fetcher.constantData || "");
+	data = Array(Math.min(nCreate, targetCreate)).fill(taskData);
 	break;
       }
   }
@@ -402,6 +406,7 @@ const handleFetcherImport = async(f: Fetcher, fields: FormValues) => {
 export const processFetcher = async (fetcher: Fetcher) => {
   if (fetcher.status !== "active")
     return 0;
+
   publishProgress[fetcher.datasetId] ??= {};
 
   const fid = [fetcher.datasetId, fetcher.index];
@@ -422,25 +427,33 @@ export const processFetcher = async (fetcher: Fetcher) => {
   // fetch tasks into the backlog
   const fetched = await importFetcherData(fetcher);
 
-  // post queue to Effect
-  const imported = await importTasks(fetcher);
+  // process the tasks using the engine
+  let imported = 0;
+  if (fetcher.engine === "effectai") {
+    // import to effect ai
+    imported = await importTasks(fetcher);
 
-  // TODO: put proper value for result batch size
-  await processResults(fetcher, 20);
+    // fetch results from effectai
+    // TODO: put proper value for result batch size
+    await processResults(fetcher, 20);
+  }
 
   // release lock
   publishProgress[fetcher.datasetId][fetcher.index] = null;
 
+  // update fetcher stats only if numbers were updated
+  if (fetched.length > 0 || imported > 0) {
+    const fetcherEntry = (await db.get<Fetcher>(
+      ["fetcher", fetcher.datasetId, fetcher.index, "info"]
+    ))!;
 
-  const fetcherEntry = (await db.get<Fetcher>(
-    ["fetcher", fetcher.datasetId, fetcher.index, "info"]
-  ))!;
+    fetcherEntry.data.totalTasks += fetched.length;
+    fetcherEntry.data.taskIdx += imported;
 
-  fetcherEntry.data.totalTasks += fetched.length;
-  fetcherEntry.data.taskIdx += imported;
-  if (imported > 0)
-    fetcherEntry.data.lastImport = Date.now();
-  await db.set<Fetcher>(fetcherEntry.key, fetcherEntry.data);
+    if (imported > 0)
+      fetcherEntry.data.lastImport = Date.now();
+    await db.set<Fetcher>(fetcherEntry.key, fetcherEntry.data);
+  }
 
   return imported;
 }
@@ -495,10 +508,14 @@ export const importTasks = async (f: Fetcher) => {
     const task = await db.get<Task>(["task", taskId]);
 
     try {
+      // TODO: actualize some of the data from the fetcher (like prize
+      // and templateId. these should probably not be stored to begin
+      // with, to avoid confusion.
       const serializedTask = {
 	...task!.data,
 	// convert bigint to string for serialization
-	reward: task!.data.reward.toString(),
+	reward: BigInt(f.price * 1000000).toString(),
+	templateId: f.template,
       };
 
       const { data } = await api.post<APIResponse>("/task", serializedTask);
@@ -719,6 +736,7 @@ export const addFetcherRoutes = (app: Express): void => {
   <a href="/d/${id}/f/${fid}/import"><button>Add Data</button></a>
   <a href="/d/${id}/f/${fid}/edit"><button>Edit Step</button></a>
   <a href="/d/${id}/f/${fid}/download"><button>Download CSV</button></a>
+  <a href="/d/${id}/f/${fid}/preview?offset=0"><button>Preview</button></a>
 </section>
 
 <section>
@@ -863,4 +881,36 @@ export const addFetcherRoutes = (app: Express): void => {
       res.end();
     }
   })
+
+  app.get("/d/:id/f/:fid/preview",
+    validateNumericParams("id", "fid"),
+    async (req, res) => {
+      const id = Number(req.params.id);
+      const fid = Number(req.params.fid);
+      const f = await getFetcher(id, fid);
+      const offset = Number(req.query.offset || "0");
+
+      const tasks = await getPendingTasks(f!);
+      if (tasks.length <= offset)
+	return make404(res);
+
+      const task = await db.get<Task>(["task", tasks[offset]]);
+
+      const tpl = await getTemplate(f!.template);
+      const renderedTemplate = await renderTemplate(
+	tpl!.data.data,
+	JSON.parse(task!.data.templateData)
+      );
+
+      res.send(page(`
+<div>
+  <a href="/d/${id}/f/${fid}/preview?offset=${offset + 1}"><button>Preview Next</button></a>
+</div><br/>
+<iframe
+  hx-swap-oob="true"
+  id="templateFrame"
+  height="450px"
+  width="100%"
+  srcdoc="${escapeHTML(renderedTemplate)}"></iframe>`));
+    });
 };
