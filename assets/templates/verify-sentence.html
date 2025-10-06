@@ -7,21 +7,21 @@
 
   <p class="mb-5">Is a linguistically correct sentence?</p>
   <div class="box">
-    <p class="is-size-4 has-text-weight-semibold">{{sentence}}</p>
+    <p class="is-size-4 has-text-weight-semibold">{{sentence.values.answer}}</p>
   </div>
 
   <div class="mb-5">
     <button class="button is-medium"
-    :class="{ 'is-success': this.answer == 'Yes' }"
-    @click="this.answer='Yes'">Yes</button>
+    :class="{ 'is-success': this.isValidated == 'Yes' }"
+    @click="this.isValidated='Yes'">Yes</button>
 
     <button class="button is-medium mx-3"
-    :class="{ 'is-dark': this.answer == 'Skip' }"
-    @click="this.answer='Skip'">Skip</button>
+    :class="{ 'is-dark': this.isValidated == 'Skip' }"
+    @click="this.isValidated='Skip'">Skip</button>
 
     <button class="button is-medium"
-    :class="{ 'is-danger': this.answer == 'No' }"
-    @click="this.answer='No'">No</button>
+    :class="{ 'is-danger': this.isValidated == 'No' }"
+    @click="this.isValidated='No'">No</button>
   </div>
 
   <p style="color: red;"
@@ -45,26 +45,95 @@
 <script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
 <script type="module">
   import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+  
 
   createApp({
     data() {
       return {
         title: "Effect AI Sentence Verifier",
         btnLoading: false,
-        sentence: "${sentence}",
-        answer: "",
+        author: "${submissionByPeer}", 
+        // incoming result - {"timestamp": "", "submissionByPeer": "", "taskId": "", "result": "JSON_STRING"}
+        sentence: JSON.parse("${result}"), 
+        isValidated: "",
         loading: true,
         notComplete: false,
         instructions: `
-          <div class="">
-            <li>Has fewer than 15 words per sentence</li>
-            <li>Uses correct grammar</li>
-            <li>Uses correct spelling and punctuation</li>
-            <li>No numbers and special characters</li>
-            <li>No foreign letters</li>
-            <li>Ideally natural and conversational (it should be easy to read the sentence)</li>
+          <div>
+            <h2>Verify a Sentence - Common Voice</h2>
+            <p>
+              In this task, you'll review short, simple, and natural sentences created by other contributors.
+              Your goal is to decide whether each sentence follows the project guidelines and can be used to train AI models effectively.
+            </p>
+
+            <h3>1. Instructions</h3>
+            <p>
+              Your job is to carefully read each sentence and decide whether it is clear, natural, and written in good English.
+              You should mark a sentence as <strong>“Correct”</strong> if it follows the rules below, or <strong>“Incorrect”</strong> if it does not.
+            </p>
+
+            <h4>Sentence Verification Guidelines</h4>
+            <ul>
+              <li>The sentence should be short — fewer than 15 words.</li>
+              <li>It must have proper grammar, spelling, and punctuation.</li>
+              <li>It should sound natural and conversational, like everyday speech.</li>
+              <li>Casual English is fine, but avoid confusing slang or unclear phrasing.</li>
+              <li>The sentence should make complete sense on its own.</li>
+            </ul>
+
+            <h4>Mark as INCORRECT if you see:</h4>
+            <ul>
+              <li>Numbers or special characters (e.g. $, %, @, #, 123).</li>
+              <li>Foreign letters or words not in English.</li>
+              <li>Overly complex, unnatural, or technical language.</li>
+              <li>Personal information (like names, addresses, phone numbers, or emails).</li>
+              <li>Major spelling or grammar mistakes.</li>
+              <li>Sentences that are too short or don’t sound like natural speech.</li>
+            </ul>
+
+            <h3>2. Examples</h3>
+            <p><strong>✅ Correct Sentences</strong></p>
+            <ul>
+              <li>The sky is blue with light clouds.</li>
+              <li>My dog likes to nap in the sun.</li>
+              <li>People enjoy walking through the park.</li>
+            </ul>
+
+            <p><strong>❌ Incorrect Sentences</strong></p>
+            <ul>
+              <li>Sky IS bLUE &amp; FULL OF $HINY CLOUDS!!! (wrong spelling, special characters)</li>
+              <li>The country has 331,449,281 people. (numbers not allowed)</li>
+              <li>The sun sets. The moon rises. (too short, not conversational)</li>
+              <li>Mi perro duerme en la silla. (foreign language)</li>
+            </ul>
+
+            <h3>3. Tips for Success</h3>
+            <ul>
+              <li>Read the sentence out loud — it should sound natural and easy to say.</li>
+              <li>If you have to read it twice to understand it, it’s probably incorrect.</li>
+              <li>Don’t overthink it — use your common sense and trust your ear for natural English.</li>
+            </ul>
+
+            <h3>4. Common Sentence Topics You’ll See</h3>
+            <p>
+              Sentences often describe simple, everyday topics. You don’t need to judge the topic —
+              just check that the sentence follows the rules and sounds natural.
+            </p>
+
+            <ul>
+              <li><strong>Food &amp; Drinks</strong> — “I like fresh bread.”</li>
+              <li><strong>Weather &amp; Seasons</strong> — “The sky is cloudy today.”</li>
+              <li><strong>Animals &amp; Pets</strong> — “My dog sleeps on the chair.”</li>
+              <li><strong>Daily Routines</strong> — “I brush my teeth at night.”</li>
+              <li><strong>Home &amp; Family</strong> — “My sister reads in the living room.”</li>
+              <li><strong>Nature &amp; Outdoors</strong> — “The forest is full of tall trees.”</li>
+              <li><strong>Travel and Places</strong> — “The bus stops near the library.”</li>
+              <li><strong>School &amp; Learning</strong> — “The student writes in a notebook.”</li>
+              <li><strong>Work &amp; Hobbies</strong> — “I play guitar in the evening.”</li>
+              <li><strong>Feelings &amp; Opinions</strong> — “I feel happy when I see my friends.”</li>
+            </ul>
           </div>
-        `
+          `
       };
     },
     computed: {},
@@ -81,7 +150,7 @@
     methods: {
       async uploadAndSubmit() {
         this.btnLoading = true;
-        if(this.answer == ""){
+        if(this.isValidated == ""){
             this.notComplete = true
           }
         else
@@ -91,8 +160,9 @@
                 task: "submit",
                 values: {
                   taskTitle: this.title,
-                  sentence: this.sentence,
-                  answer: this.answer
+                  author: this.author,
+                  sentence: this.sentence.values.answer,
+                  isValidated: this.isValidated
                 },
               },
               "*"
