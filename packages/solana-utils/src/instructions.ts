@@ -66,6 +66,7 @@ export const buildClaimRewardsInstruction = async ({
   });
 
   const topupRewardPoolIx = await getRewardTopupInstructionAsync({
+    reflectionAccount,
     mint,
   });
 
@@ -189,28 +190,4 @@ export const buildTopupInstruction = async ({
   return maybeStakingRewardAccount.exists
     ? [topupIx, syncRewardsIx]
     : [enterRewardPoolIx, topupIx, syncRewardsIx];
-};
-
-export const maybeCreateAssociatedTokenAccountInstructions = async ({
-  rpc,
-  tokenAddress,
-  signer,
-  mint,
-  owner,
-}: {
-  signer: TransactionSigner;
-  rpc: Rpc<SolanaRpcApiMainnet>;
-  tokenAddress: Address;
-  mint: Address;
-  owner: Address;
-}) => {
-  const account = await rpc.getAccountInfo(tokenAddress).send();
-  if (!account || account.value === null) {
-    return await getCreateAssociatedTokenInstructionAsync({
-      payer: signer,
-      mint,
-      owner,
-    });
-  }
-  return [];
 };

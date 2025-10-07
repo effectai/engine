@@ -6,17 +6,17 @@ use effect_staking::{accounts::StakeAccount, program::EffectStaking};
 pub struct Enter<'info> {
     #[account(
         mut,
-        seeds = [ b"reflection", mint.key().as_ref(), stake_account.scope.as_ref()],
-        bump
-    )]
-    pub reflection_account: Account<'info, ReflectionAccount>,
-
-    #[account(
-        mut,
         has_one = authority @ RewardErrors::Unauthorized,
         constraint = stake_account.lock_duration == reflection_account.settings.lock_duration @ RewardErrors::Unauthorized
     )]
     pub stake_account: Account<'info, StakeAccount>,
+
+    #[account(
+        mut,
+        seeds = [ b"reflection", mint.key().as_ref(), stake_account.scope.as_ref()],
+        bump
+    )]
+    pub reflection_account: Account<'info, ReflectionAccount>,
 
     #[account(
         mut,

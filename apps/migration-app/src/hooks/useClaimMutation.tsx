@@ -68,6 +68,8 @@ export const useClaimMutation = () => {
         stakeAccountToUse = newStakeAccount.address;
 
         const stakeIx = await getStakeInstructionAsync({
+          scope: mint,
+          allowTopup: true,
           mint,
           amount: 0,
           userTokenAccount,
