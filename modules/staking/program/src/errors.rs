@@ -40,4 +40,10 @@ pub enum StakingErrors {
     ScopeMismatch,
     #[msg("Not allowed to unstake.")]
     NotAllowedToUnstake,
+    #[msg("Already migrated.")]
+    AlreadyMigrated,
+    #[msg("Release rate too low")]
+    ReleaseRateTooLow,
+    #[msg("Topup not allowed")]
+    TopupNotAllowed,
 }

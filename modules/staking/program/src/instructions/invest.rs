@@ -2,7 +2,9 @@ use crate::*;
 use anchor_spl::token::{Token, TokenAccount};
 use effect_payment::accounts::RecipientManagerDataAccount;
 
-declare_program!(effect_payment);
+use super::effect_payment::{self, accounts::Application};
+
+declare_program!(effect_application);
 
 /*
 * Charge a stake account with a virtual amount
@@ -10,20 +12,28 @@ declare_program!(effect_payment);
 * */
 
 #[derive(Accounts)]
-pub struct Charge<'info> {
+pub struct Invest<'info> {
     #[account(signer)]
     pub authority: Signer<'info>,
 
     #[account(mut)]
     pub user_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut, signer)]
-    pub recipient_manager_app_data_account: Account<'info, RecipientManagerDataAccount>,
+    #[account()]
+    pub application_account: Account<'info, Application>,
+
+    #[account(
+        mut,
+        signer,
+        seeds = [application_account.key().as_ref()], 
+        bump, 
+        seeds::program = effect_payment::ID)
+    ]
+    pub application_vault_account: Account<'info, TokenAccount>,
 
     #[account(
         mut,
         has_one = authority @ StakingErrors::Unauthorized,
-        constraint = stake_account.scope == recipient_manager_app_data_account.application_account.key() @ StakingErrors::Unauthorized,
     )]
     pub stake_account: Account<'info, StakeAccount>,
 
@@ -37,13 +47,8 @@ pub struct Charge<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> Charge<'info> {
+impl<'info> Invest<'info> {
     pub fn handler(&mut self, amount: u64) -> Result<()> {
-        require!(amount > 0, StakingErrors::AmountNotEnough);
-
-        self.stake_account.amount += self.recipient_manager_app_data_account.total_claimed;
-        self.stake_account.weighted_amount += amount as u128;
-
-        Ok(())
+        self.stake_account.charge_virtual(amount)
     }
 }

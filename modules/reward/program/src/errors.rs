@@ -20,4 +20,6 @@ pub enum RewardErrors {
     ScopeMismatch,
     #[msg("Mismatched unstake permission")]
     MismatchedUnstakePermission,
+    #[msg("This account has already been migrated.")]
+    AlreadyMigrated,
 }

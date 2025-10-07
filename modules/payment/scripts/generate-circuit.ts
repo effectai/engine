@@ -23,6 +23,8 @@ template VerifyPaymentBatch(n) {
 
     signal input receiver;
     signal input paymentAccount;
+    signal input strategy;
+    signal input version;
 
     signal input pubX;
     signal input pubY;
@@ -51,6 +53,8 @@ template VerifyPaymentBatch(n) {
 	payVerifier[i].payAmount <== payAmount[i];
 	payVerifier[i].nonce <== nonce[i];
 	payVerifier[i].receiver <== receiver;
+	payVerifier[i].strategy <== strategy;
+	payVerifier[i].version <== version;
 	payVerifier[i].paymentAccount <== paymentAccount;
 	payVerifier[i].pubX <== pubX;
 	payVerifier[i].pubY <== pubY;
@@ -74,7 +78,7 @@ template VerifyPaymentBatch(n) {
     totalAmount <== total[n];
 }
 
-component main {public [pubX, pubY, receiver, paymentAccount]} = VerifyPaymentBatch(${BATCH_SIZE});
+component main {public [pubX, pubY, receiver, paymentAccount, strategy, version]} = VerifyPaymentBatch(${BATCH_SIZE});
 `;
 
 fs.writeFileSync("./circuits/PaymentBatch.circom", template);

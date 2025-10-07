@@ -1,7 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
 
-use crate::{effect_reward, Application, PayoutStrategy};
+use crate::{
+    effect_reward::{self, types::ReflectionSettings},
+    Application, PayoutStrategy,
+};
 
 #[derive(Accounts)]
 pub struct Register<'info> {
@@ -80,7 +83,12 @@ pub fn handler(
                 system_program: ctx.accounts.system_program.to_account_info(),
             },
         ),
-        ctx.accounts.application_account.key(),
+        ReflectionSettings {
+            lock_duration: 0,
+            mint: ctx.accounts.mint.key(),
+            scope: ctx.accounts.application_account.key(),
+            _reserved: [0; 128],
+        },
     )?;
 
     Ok(())

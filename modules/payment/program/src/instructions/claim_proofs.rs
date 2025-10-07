@@ -6,6 +6,9 @@ use effect_common::transfer_tokens_from_vault;
 
 use crate::effect_application::accounts::Application;
 use crate::effect_application::types::PayoutStrategy;
+use crate::effect_staking::accounts::StakeAccount;
+use crate::effect_staking::program::EffectStaking;
+
 use crate::errors::PaymentErrors;
 use crate::utils::{change_endianness, u32_to_32_byte_be_array, u64_to_32_byte_be_array};
 use crate::{id, vault_seed, PaymentAccount, RecipientManagerDataAccount};
@@ -16,10 +19,6 @@ type G1 = ark_bn254::g1::G1Affine;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use groth16_solana::groth16::Groth16Verifier;
 use num_bigint::{BigInt, Sign};
-
-use super::effect_staking;
-use super::effect_staking::accounts::StakeAccount;
-use super::effect_staking::program::EffectStaking;
 
 /* Function for compressing (packing) 2 public key coordinates (x, y) into a single 32-byte array.
  * The compression is done by taking the x coordinate and the y coordinate,
@@ -120,18 +119,28 @@ pub fn handler(
     min_nonce: u32,
     max_nonce: u32,
     total_amount: u64,
+    version: u8,
+    strategy: PayoutStrategy,
     proof: [u8; 256],
 ) -> Result<()> {
     let manager_key = Pubkey::new_from_array(compress(pub_x, pub_y));
     let mint_key = ctx.accounts.mint.key();
-
     let expected_seeds = &[
         ctx.accounts.authority.key.as_ref(),
         manager_key.as_ref(),
         ctx.accounts.payment_account.application_account.as_ref(),
         mint_key.as_ref(),
     ];
-    let (expected_pda, _) = Pubkey::find_program_address(expected_seeds, ctx.program_id);
+
+    let (expected_pda, bump) = Pubkey::find_program_address(expected_seeds, ctx.program_id);
+
+    let signer_seeds = &[
+        ctx.accounts.authority.key.as_ref(),
+        manager_key.as_ref(),
+        ctx.accounts.payment_account.application_account.as_ref(),
+        mint_key.as_ref(),
+        &[bump],
+    ];
 
     // Verify data account PDA
     require_keys_eq!(
@@ -170,6 +179,8 @@ pub fn handler(
         public_key_to_truncated_hex(ctx.accounts.payment_account.key().to_bytes())
             .try_into()
             .unwrap(),
+        u32_to_32_byte_be_array(strategy as u32),
+        u32_to_32_byte_be_array(version as u32),
         pub_x,
         pub_y,
     ];
@@ -185,7 +196,7 @@ pub fn handler(
     ctx.accounts.recipient_manager_data_account.nonce = max_nonce;
 
     // increment total_claimed
-    ctx.accounts.recipient_manager_data_account.total_claimed = total_amount;
+    ctx.accounts.recipient_manager_data_account.total_claimed += total_amount;
 
     let payment_strategy = ctx.accounts.application_account.payment_strategy;
     match payment_strategy {
@@ -217,10 +228,10 @@ pub fn handler(
 
             match payment_strategy {
                 PayoutStrategy::Shares => {
-                    effect_staking::cpi::charge(
-                        CpiContext::new(
+                    crate::effect_staking::cpi::charge(
+                        CpiContext::new_with_signer(
                             staking_program.to_account_info(),
-                            effect_staking::cpi::accounts::Charge {
+                            crate::effect_staking::cpi::accounts::Charge {
                                 stake_account: stake_account.to_account_info(),
                                 stake_vault_token_account: ctx
                                     .accounts
@@ -239,15 +250,16 @@ pub fn handler(
                                     .to_account_info(),
                                 token_program: ctx.accounts.token_program.to_account_info(),
                             },
+                            &[signer_seeds],
                         ),
                         total_amount,
                     )?;
                 }
                 PayoutStrategy::Staked => {
-                    effect_staking::cpi::topup(
+                    crate::effect_staking::cpi::topup(
                         CpiContext::new(
                             staking_program.to_account_info(),
-                            effect_staking::cpi::accounts::Topup {
+                            crate::effect_staking::cpi::accounts::Topup {
                                 stake_account: stake_account.to_account_info(),
                                 stake_vault_token_account: ctx
                                     .accounts

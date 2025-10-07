@@ -5,6 +5,7 @@ import {
   TOKEN_PROGRAM_ADDRESS,
   getMintSize,
 } from "@solana-program/token";
+import { expect } from "vitest";
 
 import { getCreateAccountInstruction } from "@solana-program/system";
 import type { Connection } from "solana-kite";
@@ -79,3 +80,30 @@ export const setup = async (
 
   return { mint: mint.address, ata };
 };
+
+const PROGRAM_ERR_RE = /custom program error: #(\d+)/;
+const ANCHOR_ERR_RE = /Error Number:\s*(\d+)/;
+
+function extractProgramErrorCode(e: any): number | null {
+  // 1) web3.js style message
+  const msg = e?.message ?? "";
+  const m = PROGRAM_ERR_RE.exec(msg);
+  if (m) return Number(m[1]);
+
+  // 2) Anchor logs (if available)
+  const logs: string[] | undefined =
+    e?.logs ?? e?.transaction?.meta?.logMessages;
+  if (logs && Array.isArray(logs)) {
+    const joined = logs.join("\n");
+    const a = ANCHOR_ERR_RE.exec(joined);
+    if (a) return Number(a[1]);
+  }
+
+  return null;
+}
+
+export async function expectCustomProgramError(p: Promise<any>, code: number) {
+  await expect(p).rejects.toSatisfy(
+    (e: any) => extractProgramErrorCode(e) === code,
+  );
+}

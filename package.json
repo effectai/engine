@@ -18,7 +18,8 @@
     "task-terminal:start": "cd apps/task-poster && node --import=tsx src/server.ts",
     "packages:build": "pnpm turbo build --filter @effectai/*",
     "test": "vitest",
-    "build:anchor": "node --experimental-strip-types tools/scripts/solana/generate-idls.ts && anchor build && node --experimental-strip-types tools/scripts/solana/sync-idls.ts"
+    "build:anchor": "node --experimental-strip-types tools/scripts/solana/generate-idls.ts && anchor build && node --experimental-strip-types tools/scripts/solana/sync-idls.ts",
+    "test:programs": "cd packages/program-tests && pnpm run test"
   },
   "devDependencies": {
     "@types/node": "^20.11.7",

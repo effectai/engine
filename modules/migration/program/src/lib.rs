@@ -1,7 +1,6 @@
 use anchor_id_injector::inject_declare_id_output;
 use anchor_lang::prelude::*;
 
-// mod effect_staking_env;
 mod errors;
 mod instructions;
 mod macros;

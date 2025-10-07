@@ -7,26 +7,29 @@ message Payment {
   // Payment version, used to handle different payment formats
   uint32 version = 2;
 
+  // Payment strategy (0=direct, 1=Credits, 2=Staked)
+  uint32 strategy = 3;
+
   // Amount to be payed out as float
-  uint64 amount = 3;
+  uint64 amount = 4;
 
   // The recipient is the public key of worker node that will receive the payment
-  string recipient = 4;
+  string recipient = 5;
 
   // The payment account is the public key of the escrow account holding the funds from which the payment will be redeemed.
-  string payment_account = 5;
+  string payment_account = 6;
 
   // Nonce is a incremental number retrieved from the worker node that is used to prevent replay attacks.
-  uint64 nonce = 6;
+  uint64 nonce = 7;
 
   // The public key of the manager node that signed the payment
-  string public_key = 7;
+  string public_key = 8;
 
   // The signature is the signed payment data by the manager node
-  PaymentSignature signature = 8;
+  PaymentSignature signature = 9;
 
   // Optional label for the payment, e.g. "payment for task #123"
-  optional string label = 9;
+  optional string label = 10;
 }   
 
 message Point {

@@ -23,8 +23,14 @@ declare_program!(effect_reward);
 pub mod effect_staking {
     use super::*;
 
-    pub fn stake(ctx: Context<Stake>, amount: u64, duration: u128, scope: Pubkey) -> Result<()> {
-        ctx.accounts.handler(amount, duration, scope)
+    pub fn stake(
+        ctx: Context<Stake>,
+        amount: u64,
+        duration: u128,
+        scope: Pubkey,
+        allow_topup: bool,
+    ) -> Result<()> {
+        ctx.accounts.handler(amount, duration, scope, allow_topup)
     }
 
     pub fn stake_genesis(
@@ -51,7 +57,11 @@ pub mod effect_staking {
         ctx.accounts.handler(amount)
     }
 
-    pub fn update_authority(ctx: Context<UpdateAuthority>) -> Result<()> {
+    pub fn migrate(ctx: Context<Migrate>) -> Result<()> {
         ctx.accounts.handler()
+    }
+
+    pub fn invest(ctx: Context<Invest>, amount: u64) -> Result<()> {
+        ctx.accounts.handler(amount)
     }
 }

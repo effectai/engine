@@ -1,14 +1,15 @@
 use crate::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
+use effect_common::id::ADMIN_AUTHORITY;
 
 #[derive(Accounts)]
-#[instruction(scope: Pubkey)]
+#[instruction(settings: ReflectionSettings)]
 pub struct Init<'info> {
     #[account(
         init,
         payer = authority,
         space = ReflectionAccount::SIZE,
-        seeds = [ b"reflection", mint.key().as_ref(), scope.as_ref() ],
+        seeds = [ b"reflection", mint.key().as_ref(), settings.scope.as_ref() ],
         bump
     )]
     pub reflection_account: Account<'info, ReflectionAccount>,
@@ -36,6 +37,9 @@ pub struct Init<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 
+    #[account(
+        constraint = mint.key() == settings.mint @ RewardErrors::ReflectionInvalid,
+    )]
     pub mint: Account<'info, Mint>,
 
     pub system_program: Program<'info, System>,
@@ -44,8 +48,12 @@ pub struct Init<'info> {
 }
 
 impl<'info> Init<'info> {
-    pub fn handler(&mut self, scope: Pubkey) -> Result<()> {
-        self.reflection_account
-            .init(self.mint.supply, self.mint.key(), scope)
+    pub fn handler(&mut self, settings: ReflectionSettings) -> Result<()> {
+        // for now only the admin authority can create a reflection pool for the mint itself (global pools)
+        if settings.scope == settings.mint && self.authority.key() != ADMIN_AUTHORITY {
+            return Err(RewardErrors::ReflectionInvalid.into());
+        }
+
+        self.reflection_account.init(self.mint.supply, settings)
     }
 }

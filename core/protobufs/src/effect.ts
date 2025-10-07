@@ -1594,6 +1594,7 @@ export namespace PaymentMessage {
 export interface Payment {
   id: string
   version: number
+  strategy: number
   amount: bigint
   recipient: string
   paymentAccount: string
@@ -1623,38 +1624,43 @@ export namespace Payment {
           w.uint32(obj.version)
         }
 
-        if ((obj.amount != null && obj.amount !== 0n)) {
+        if ((obj.strategy != null && obj.strategy !== 0)) {
           w.uint32(24)
+          w.uint32(obj.strategy)
+        }
+
+        if ((obj.amount != null && obj.amount !== 0n)) {
+          w.uint32(32)
           w.uint64(obj.amount)
         }
 
         if ((obj.recipient != null && obj.recipient !== '')) {
-          w.uint32(34)
+          w.uint32(42)
           w.string(obj.recipient)
         }
 
         if ((obj.paymentAccount != null && obj.paymentAccount !== '')) {
-          w.uint32(42)
+          w.uint32(50)
           w.string(obj.paymentAccount)
         }
 
         if ((obj.nonce != null && obj.nonce !== 0n)) {
-          w.uint32(48)
+          w.uint32(56)
           w.uint64(obj.nonce)
         }
 
         if ((obj.publicKey != null && obj.publicKey !== '')) {
-          w.uint32(58)
+          w.uint32(66)
           w.string(obj.publicKey)
         }
 
         if (obj.signature != null) {
-          w.uint32(66)
+          w.uint32(74)
           PaymentSignature.codec().encode(obj.signature, w)
         }
 
         if (obj.label != null) {
-          w.uint32(74)
+          w.uint32(82)
           w.string(obj.label)
         }
 
@@ -1665,6 +1671,7 @@ export namespace Payment {
         const obj: any = {
           id: '',
           version: 0,
+          strategy: 0,
           amount: 0n,
           recipient: '',
           paymentAccount: '',
@@ -1687,32 +1694,36 @@ export namespace Payment {
               break
             }
             case 3: {
-              obj.amount = reader.uint64()
+              obj.strategy = reader.uint32()
               break
             }
             case 4: {
-              obj.recipient = reader.string()
+              obj.amount = reader.uint64()
               break
             }
             case 5: {
-              obj.paymentAccount = reader.string()
+              obj.recipient = reader.string()
               break
             }
             case 6: {
-              obj.nonce = reader.uint64()
+              obj.paymentAccount = reader.string()
               break
             }
             case 7: {
-              obj.publicKey = reader.string()
+              obj.nonce = reader.uint64()
               break
             }
             case 8: {
+              obj.publicKey = reader.string()
+              break
+            }
+            case 9: {
               obj.signature = PaymentSignature.codec().decode(reader, reader.uint32(), {
                 limits: opts.limits?.signature
               })
               break
             }
-            case 9: {
+            case 10: {
               obj.label = reader.string()
               break
             }

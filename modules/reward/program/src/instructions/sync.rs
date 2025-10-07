@@ -5,7 +5,7 @@ use crate::{effect_staking::{accounts::StakeAccount, program::EffectStaking}, *}
 #[derive(Accounts)]
 pub struct Sync<'info> {
     #[account(
-        constraint = stake_account.scope == reflection_account.scope @ RewardErrors::ScopeMismatch,
+        constraint = stake_account.scope == reflection_account.settings.scope @ RewardErrors::ScopeMismatch,
     )]
     pub stake_account: Account<'info, StakeAccount>,
     

@@ -1,7 +1,5 @@
-use anchor_spl::token::{Mint, TokenAccount};
-
 use crate::*;
-
+use anchor_spl::token::{Mint, TokenAccount};
 use effect_staking::{accounts::StakeAccount, program::EffectStaking};
 
 #[derive(Accounts)]
@@ -16,9 +14,7 @@ pub struct Enter<'info> {
     #[account(
         mut,
         has_one = authority @ RewardErrors::Unauthorized,
-        constraint = stake_account.scope == reflection_account.scope @ RewardErrors::ScopeMismatch,
-        constraint = stake_account.allow_unstake == (reflection_account.scope == reflection_account.mint) @ RewardErrors::MismatchedUnstakePermission,
-
+        constraint = stake_account.lock_duration == reflection_account.settings.lock_duration @ RewardErrors::Unauthorized
     )]
     pub stake_account: Account<'info, StakeAccount>,
 
