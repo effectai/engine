@@ -71,11 +71,11 @@ export default function Component() {
           Add Capability
         </Button>
       </Form>
-      
+
       <br></br>
 
       <div className="flex flex-col gap-2">
-        {worker.state.managerCapabilities.map((cap, i) => (
+        {(worker.state.managerCapabilities || []).map((cap, i) => (
           <Form method="post" key={i} className="flex items-center gap-2">
             <input type="hidden" name="capability" value={cap} />
             <span>{cap}</span>
