@@ -49,10 +49,16 @@ export default function Component() {
           </Button>
         </Form>
       </div>
-
+      <br></br>
       <h2>Worker State</h2>
       <JSONTreeViewer data={worker.state}></JSONTreeViewer>
+
+      <br></br>
+
       <h2>Manager Capabilities</h2>
+
+      <br></br>
+
       <Form method="post" className="flex gap-2">
         <Input
           name="capability"
@@ -65,6 +71,20 @@ export default function Component() {
           Add Capability
         </Button>
       </Form>
+      
+      <br></br>
+
+      <div className="flex flex-col gap-2">
+        {worker.state.managerCapabilities.map((cap, i) => (
+          <Form method="post" key={i} className="flex items-center gap-2">
+            <input type="hidden" name="capability" value={cap} />
+            <span>{cap}</span>
+            <Button type="submit" name="intent" value="removeCapability" variant="destructive">
+              Remove
+            </Button>
+          </Form>
+        ))}
+      </div>
     </div>
   );
 }
@@ -114,10 +134,25 @@ export const action = async ({
       ),
     );
 
+    if (parsed.length === 0) {
+      console.warn("No capabilities provided; skipping update.");
+      return null;
+    }
+
     console.log("Updating capabilities to:", parsed);
 
     await context.workerManager.updateWorkerState(id, (state: any) => ({
-      managerCapabilities: parsed,
+      managerCapabilities: Array.from(
+        new Set([...(state.managerCapabilities || []), ...parsed]),
+      ),
+    }));
+  } else if (intent === "removeCapability") {
+    const capabilityToRemove = String(formData.get("capability") ?? "");
+
+    await context.workerManager.updateWorkerState(id, (state: any) => ({
+      managerCapabilities: (state.managerCapabilities || []).filter(
+        (cap: string) => cap !== capabilityToRemove
+      ),
     }));
   }
 
