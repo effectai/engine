@@ -381,26 +381,28 @@ const importFetcherData = async (fetcher: Fetcher, csv: string = "") => {
 };
 
 // form submission handler for fetcher import
-const handleFetcherImport = async(f: Fetcher, fields: FormValues) => {
-  const fetcher = (await db.get<Fetcher>(
-    ["fetcher", f.datasetId, f.index, "info"]
-  ))!;
-
-  switch (f.type) {
+const handleFetcherImport = async(fetcher: Fetcher, fields: FormValues) => {
+  switch (fetcher.type) {
     case "csv":
 
       // nothing special here
       break;
     case "constant":
-      fetcher.data.targetQueueSize = fields.target;
-      fetcher.data.maxTasks = fields.max;
-      fetcher.data.constantData = fields.data;
+      fetcher.targetQueueSize = fields.target;
+      fetcher.maxTasks = fields.max;
+      fetcher.constantData = fields.data;
+      await writeFetcher(fetcher);
       break;
   }
 
-  const tasks = await importFetcherData(fetcher.data, fields.csv);
-  fetcher.data.totalTasks += tasks.length;
-  await db.set<Fetcher>(fetcher.key, fetcher.data);
+  const tasks = await importFetcherData(fetcher, fields.csv);
+
+  // TODO: this part is ugly quick fix (loading saving often)
+  const fetcherEntry = (await db.get<Fetcher>(
+    ["fetcher", fetcher.datasetId, fetcher.index, "info"]
+  ))!;
+  fetcherEntry.data.totalTasks += tasks.length;
+  await db.set<Fetcher>(fetcherEntry.key, fetcherEntry.data);
 };
 
 /**
