@@ -328,7 +328,14 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	const queueSize = countTasks(fetcher, "queue");
 	const targetCreate = Math.max((fetcher.targetQueueSize || 0) - queueSize, 0);
 	const nCreate = Math.max((fetcher.maxTasks || 0) - fetcher.totalTasks, 0);
-	const taskData = JSON.parse(fetcher.constantData || "");
+
+	let taskData = "";
+	try {
+	  taskData = JSON.parse(fetcher.constantData || "");
+	} catch (e) {
+	  console.log(`Error parsing task data ${fetcher.constantData} ${e}`);
+	}
+
 	console.log(nCreate, targetCreate, queueSize)
 	data = Array(Math.min(nCreate, targetCreate)).fill(taskData);
 	break;
