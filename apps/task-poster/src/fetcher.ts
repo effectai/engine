@@ -10,7 +10,7 @@ import { db, managerId, publishProgress } from "./state.js";
 import * as state from "./state.js";
 import { validateNumericParams } from "./util.js";
 import { KVKey, KVQuery, KVTransactionResult } from "@cross/kv";
-import { getTemplate, getTemplates, renderTemplate } from "./templates.js";
+import { getTemplate, getTemplates, renderTemplate, escapeHTML } from "./templates.js";
 
 // TODO: can this come out of the protocol package?
 
@@ -24,7 +24,16 @@ export type Fetcher = {
   lastImport: number | undefined;
   datasetId: number;
   index: number; // the index relative to other fetchers in the dataset
-  type: "csv" | "constant";
+  type: "csv" | "constant" | "pipeline";
+  capabilities: string[];
+  engine: "effectai" | "none";
+
+  // pipelines import from the `finished` queue of an other fetcher;
+  // only when the regex matches on the result.
+  pipelineSource?: KVKey;
+  pipelineLastImportedTask?: string;
+  pipelineFilterRegex?: string;
+  pipelineCount?: number;
 
   name: string;
   price: number;
@@ -148,7 +157,7 @@ export const fetcherForm = async (
 
       <label for="type"><strong>Data source</strong><br/>
       <small>How new tasks will be fetched.</small></label>
-      <select name="type" id="type">${["csv", "fetcher", "constant"].map(a =>
+      <select name="type" id="type">${["csv", "pipeline", "constant"].map(a =>
 	`<option value="${a}" ${values.type == a ? "selected" : ""}>${a}</option>`).join("")}
       </select>
 
@@ -157,10 +166,11 @@ export const fetcherForm = async (
   <fieldset>
     <legend>execution engine</legend>
 
-    <label for="processor"><strong>Processor</strong><br/>
-    <small>How data will be processed.</small></label>
-    <select name="processor" id="processor">
-      <option value="template">Effect AI App</option>
+    <label for="engine"><strong>Engine</strong><br/>
+    <small>How data will be processed. None is great for testing an previewing ` +
+`data without posting any tasks.</small></label>
+    <select name="engine" id="type">${["effectai", "none"].map(a =>
+      `<option value="${a}" ${values.engine == a ? "selected" : ""}>${a}</option>`).join("")}
     </select>
 
     <section>
@@ -174,15 +184,20 @@ export const fetcherForm = async (
       `${t.data.name} (${t.data.templateId})</option>`,
   )}
       </select>
-    </section>
 
-    <section>
       <label for="price"><strong>Price per task</strong></label>
       <input
 	placeholder="$EFFECT"
 	type="number"
 	id="price"  ${addVal(values, "price")}
 	name="price"/>
+
+      <label for="capabilities"><strong>Capabilities</strong><br/>
+      <small>Comme separated list of capabilities required for tasks (note: only 1 capability is used at the moment).</small></label>
+      <input
+	placeholder="effectai/common-voice-validator:1.0.0, effectai/admin:1.0.0"
+	id="capabilities"  ${addVal(values, "capabilities")}
+	name="capabilities"/>
     </section>
   </fieldset>
 
@@ -230,6 +245,47 @@ const constantFetcherForm = async (dsId: number, values: FormValues) => `
 </fieldset>
 `;
 
+const pipelineFetcherForm = async (dsId: number, values: FormValues) => `
+<fieldset>
+    <legend>pipeline config</legend>
+
+    <label for="pipelineSource"><strong>Source Step</strong><br/>
+    <small>The <emph>done</emph> queue of the source step is used to fetch data`+
+  ` from.</small></label>
+      <select name="pipelineSource"
+	      id="pipelineSource"
+	      hx-target="#preview"
+	      hx-get="/d/${dsId}/pipeline-preview"
+	      hx-include="#filter">
+	${(await Promise.all((await getFetchers(dsId)).map(async (t) =>
+      `<option value="${t.index}"` +
+      `${values.target == t.index ? " selected" : ""}>` +
+	`#${t.index}: ${t.name}
+ (tasks: ${countTasks((await getFetcher(t.datasetId, t.index))!, "done")})
+       </option>`,
+	))).join("")}
+      </select>
+
+    <label for="filter"><strong>Regex filter</strong><br/>
+    <small>Regular expression task filter. If this regex matches the task ` +
+  `result string, the task will <strong>not</strong> get posted.</small></label>
+    <input
+      hx-target="#preview"
+      hx-get="/d/${dsId}/pipeline-preview"
+      hx-include="#pipelineSource"
+      hx-trigger="keyup changed delay:500ms, load"
+      type="text"
+      id="filter" ${addVal(values, "filter")}
+      name="filter"/>
+
+    <section>
+      <h3>Data Preview</h3>
+      <p><small>The first 50 inputs generated for this step.</small></p>
+      <pre id="preview"></pre>
+    </section>
+</fieldset>
+`;
+
 const fetcherImportForm = async (f: Fetcher, values: {}, msg = "") => `
 <div hx-swap="outerHTML" id="page">
 <form hx-target="#page" hx-post="/d/${f.datasetId}/f/${f.index}/import">
@@ -237,12 +293,13 @@ const fetcherImportForm = async (f: Fetcher, values: {}, msg = "") => `
     ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
   </div>
 
-
   ${f.type === "csv"
     ? await csvFetcherForm(f.datasetId, values)
     : f.type === "constant"
       ? await constantFetcherForm(f.datasetId, values)
-      : `Error, invalid fetcher type ${f.type}`}
+      : f.type === "pipeline"
+	? await pipelineFetcherForm(f.datasetId, values)
+	: `Error, invalid fetcher type ${f.type}`}
   <button type="submit">Configure</button>
 </form>
 </div>
@@ -267,7 +324,9 @@ export const createFetcher = async (
     type: fields.type,
     taskIdx: oldFetcher?.taskIdx ?? 0,
     totalTasks: oldFetcher?.totalTasks ?? 0,
+    capabilities: fields.capabilities.split(",").map((s: string) => s.trim()),
 
+    engine: fields.engine,
     price: fields.price,
     template: fields.template,
 
@@ -292,12 +351,9 @@ export const getFetcher = async (dsid: number, fid: number) => {
   return f?.data;
 };
 
-// get the raw string data of the fetcher
-
-
 // get all active fetchers
-export const getFetchers = async (ds: DatasetRecord) => {
-  const f = await db.listAll<Fetcher>(["fetcher", ds.id, {}, "info"]);
+export const getFetchers = async (dsId: number) => {
+  const f = await db.listAll<Fetcher>(["fetcher", dsId, {}, "info"]);
 
   return f.map(ff => ff.data).filter(ff => ff.status ===  "active");
 };
@@ -315,10 +371,72 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
     case "constant":
       if (fetcher.totalTasks <= (fetcher.maxTasks || 0)) {
 	const queueSize = countTasks(fetcher, "queue");
-	const nCreate = Math.max((fetcher.targetQueueSize || 0) - queueSize, 0);
-	data = Array(nCreate).fill(fetcher.constantData || "");
+	const targetCreate = Math.max((fetcher.targetQueueSize || 0) - queueSize, 0);
+	const nCreate = Math.max((fetcher.maxTasks || 0) - fetcher.totalTasks, 0);
+
+	let taskData = "";
+	try {
+	  taskData = JSON.parse(fetcher.constantData || "");
+	} catch (e) {
+	  console.log(`Error parsing task data ${fetcher.constantData} ${e}`);
+	}
+
+	console.log(nCreate, targetCreate, queueSize)
+	data = Array(Math.min(nCreate, targetCreate)).fill(taskData);
 	break;
       }
+    case "pipeline":
+      if (!fetcher.pipelineSource)
+	break;
+
+      const [_t, sId, sFId, _i] = fetcher.pipelineSource!;
+      const tot = db.count(["fetcher", sId, sFId, "done", {}]);
+
+      // shortwire if no new tasks
+      if (fetcher.pipelineCount ?? 0 >= tot) {
+	break;
+      }
+
+      // iterate newest first
+      const iterator = db.iterate<boolean>(["fetcher", sId, sFId, "done", {}], undefined, true);
+
+      // the high water mark
+      const regex = new RegExp(fetcher.pipelineFilterRegex as string);
+      let lastId;
+      for await (const taskId of iterator) {
+	console.log(taskId.key[4], '===', fetcher.pipelineLastImportedTask)
+
+	if (taskId.key[4] == fetcher.pipelineLastImportedTask)
+	  break;
+
+	const task = (await db.get<any>(["task-result", taskId.key[4]]))!.data;
+
+	if (!lastId) {
+	  console.log("SETTING LAST ID TO" , taskId.key[4])
+	  lastId = taskId.key[4];
+	}
+
+
+	// regex filter
+	if (regex.test(task.result)) {
+	  continue;
+	}
+
+	let cols = ["timestamp", "submissionByPeer", "taskId", "result"];
+	const t = Object.fromEntries(cols.map(k => [k, task[k]]));
+	data.push(t);
+      }
+
+      // make sure we are doing a fresh write
+      if (lastId) {
+	const ff = (await db.get<Fetcher>(
+	  ["fetcher", fetcher.datasetId, fetcher.index, "info"]
+	))!.data;
+	ff.pipelineLastImportedTask = lastId as string;
+	await writeFetcher(ff);
+      }
+
+      break;
   }
 
   const tasks = data.map(
@@ -330,6 +448,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	timeLimitSeconds: 600,
 	templateId: fetcher.template,
 	templateData: JSON.stringify(d),
+	capability: fetcher.capabilities[0],
       }) as Task,
   );
 
@@ -359,26 +478,40 @@ const importFetcherData = async (fetcher: Fetcher, csv: string = "") => {
 };
 
 // form submission handler for fetcher import
-const handleFetcherImport = async(f: Fetcher, fields: FormValues) => {
-  const fetcher = (await db.get<Fetcher>(
-    ["fetcher", f.datasetId, f.index, "info"]
-  ))!;
-
-  switch (f.type) {
+const handleFetcherImport = async(fetcher: Fetcher, fields: FormValues) => {
+  switch (fetcher.type) {
     case "csv":
 
       // nothing special here
       break;
     case "constant":
-      fetcher.data.targetQueueSize = fields.target;
-      fetcher.data.maxTasks = fields.max;
-      fetcher.data.constantData = fields.data;
+      fetcher.targetQueueSize = fields.target;
+      fetcher.maxTasks = fields.max;
+      fetcher.constantData = fields.data;
+      await writeFetcher(fetcher);
+      break;
+
+    case "pipeline":
+      fetcher.pipelineFilterRegex = fields.filter;
+      fetcher.pipelineSource = [
+	"fetcher",
+	fetcher.datasetId,
+	Number(fields.pipelineSource)
+      ];
+      await writeFetcher(fetcher);
       break;
   }
 
-  const tasks = await importFetcherData(fetcher.data, fields.csv);
-  fetcher.data.totalTasks += tasks.length;
-  await db.set<Fetcher>(fetcher.key, fetcher.data);
+  // TODO: this part is ugly quick fix to pass csv value
+  if (fetcher.type == "csv") {
+    const tasks = await importFetcherData(fetcher, fields.csv);
+
+    const fetcherEntry = (await db.get<Fetcher>(
+      ["fetcher", fetcher.datasetId, fetcher.index, "info"]
+    ))!;
+    fetcherEntry.data.totalTasks += tasks.length;
+    await db.set<Fetcher>(fetcherEntry.key, fetcherEntry.data);
+  }
 };
 
 /**
@@ -391,6 +524,7 @@ const handleFetcherImport = async(f: Fetcher, fields: FormValues) => {
 export const processFetcher = async (fetcher: Fetcher) => {
   if (fetcher.status !== "active")
     return 0;
+
   publishProgress[fetcher.datasetId] ??= {};
 
   const fid = [fetcher.datasetId, fetcher.index];
@@ -411,25 +545,33 @@ export const processFetcher = async (fetcher: Fetcher) => {
   // fetch tasks into the backlog
   const fetched = await importFetcherData(fetcher);
 
-  // post queue to Effect
-  const imported = await importTasks(fetcher);
+  // process the tasks using the engine
+  let imported = 0;
+  if (fetcher.engine === "effectai") {
+    // import to effect ai
+    imported = await importTasks(fetcher);
 
-  // TODO: put proper value for result batch size
-  await processResults(fetcher, 20);
+    // fetch results from effectai
+    // TODO: put proper value for result batch size
+    await processResults(fetcher, 20);
+  }
 
   // release lock
   publishProgress[fetcher.datasetId][fetcher.index] = null;
 
+  // update fetcher stats only if numbers were updated
+  if (fetched.length > 0 || imported > 0) {
+    const fetcherEntry = (await db.get<Fetcher>(
+      ["fetcher", fetcher.datasetId, fetcher.index, "info"]
+    ))!;
 
-  const fetcherEntry = (await db.get<Fetcher>(
-    ["fetcher", fetcher.datasetId, fetcher.index, "info"]
-  ))!;
+    fetcherEntry.data.totalTasks += fetched.length;
+    fetcherEntry.data.taskIdx += imported;
 
-  fetcherEntry.data.totalTasks += fetched.length;
-  fetcherEntry.data.taskIdx += imported;
-  if (imported > 0)
-    fetcherEntry.data.lastImport = Date.now();
-  await db.set<Fetcher>(fetcherEntry.key, fetcherEntry.data);
+    if (imported > 0)
+      fetcherEntry.data.lastImport = Date.now();
+    await db.set<Fetcher>(fetcherEntry.key, fetcherEntry.data);
+  }
 
   return imported;
 }
@@ -484,10 +626,14 @@ export const importTasks = async (f: Fetcher) => {
     const task = await db.get<Task>(["task", taskId]);
 
     try {
+      // TODO: actualize some of the data from the fetcher (like prize
+      // and templateId. these should probably not be stored to begin
+      // with, to avoid confusion.
       const serializedTask = {
 	...task!.data,
 	// convert bigint to string for serialization
-	reward: task!.data.reward.toString(),
+	reward: BigInt(f.price * 1000000).toString(),
+	templateId: f.template,
       };
 
       const { data } = await api.post<APIResponse>("/task", serializedTask);
@@ -500,6 +646,14 @@ export const importTasks = async (f: Fetcher) => {
     } catch (e) {
       // TODO: save errors in db, retries with backoff
       console.log(`Error posting task ${taskId} ${e}`);
+
+      // if the task is undefined, just kill it
+      if (!task) {
+	db.beginTransaction();
+	await db.delete(["fetcher", ...fid, "queue", taskId]);
+	await db.set<boolean>(["fetcher", ...fid, "failed", taskId], true);
+	await db.endTransaction();
+      }
       thisProgress.failed += 1;
     }
   }
@@ -708,6 +862,7 @@ export const addFetcherRoutes = (app: Express): void => {
   <a href="/d/${id}/f/${fid}/import"><button>Add Data</button></a>
   <a href="/d/${id}/f/${fid}/edit"><button>Edit Step</button></a>
   <a href="/d/${id}/f/${fid}/download"><button>Download CSV</button></a>
+  <a href="/d/${id}/f/${fid}/preview?offset=0"><button>Preview</button></a>
 </section>
 
 <section>
@@ -756,7 +911,9 @@ export const addFetcherRoutes = (app: Express): void => {
     const f = await getFetcher(id, fid);
 
     res.send(page(await fetcherImportForm(f!, {
+      filter: f?.pipelineFilterRegex,
       max: f?.maxTasks,
+      pipelineSource: f?.pipelineSource,
       target: f?.targetQueueSize,
       data: f?.constantData,
     })));
@@ -852,4 +1009,65 @@ export const addFetcherRoutes = (app: Express): void => {
       res.end();
     }
   })
+
+  app.get("/d/:id/f/:fid/preview",
+    validateNumericParams("id", "fid"),
+    async (req, res) => {
+      const id = Number(req.params.id);
+      const fid = Number(req.params.fid);
+      const f = await getFetcher(id, fid);
+      const offset = Number(req.query.offset || "0");
+
+      const tasks = await getPendingTasks(f!);
+
+      if (tasks.length <= offset) return make404(res);
+
+      const task = await db.get<Task>(["task", tasks[offset]]);
+
+      if (!task) return make500(res);
+
+      const tpl = await getTemplate(f!.template);
+      const renderedTemplate = await renderTemplate(
+	tpl!.data.data,
+	JSON.parse(task!.data.templateData)
+      );
+
+      res.send(page(`
+<div>
+  <a href="/d/${id}/f/${fid}/preview?offset=${offset + 1}"><button>Preview Next</button></a>
+</div><br/>
+<iframe
+  hx-swap-oob="true"
+  id="templateFrame"
+  height="450px"
+  width="100%"
+  srcdoc="${escapeHTML(renderedTemplate)}"></iframe>`));
+    });
+
+  app.get("/d/:id/pipeline-preview", async (req, res) => {
+    let { pipelineSource, filter } = req.query;
+    const id = Number(req.params.id);
+
+    let results = [];
+    let error = null;
+    try {
+      const resultIds = (await db.listAll<boolean>(
+	["fetcher", id, Number(pipelineSource), "done", {}], 50, true
+      ))!;
+
+      const regex = new RegExp(filter as string);
+
+      results = (await Promise.all(
+	resultIds.map(i => db.get<any>(["task-result", i.key[4]]))
+      )).map(p => p!.data)
+	.filter(i => !regex.test(i.result));
+    } catch (e) {
+      return res.send(`<div id="messages">Error parsing regex or fetching preview</div>`);
+    }
+
+    res.send(`
+<div id="preview">
+  ${results.map(r => `<pre>${JSON.stringify(r, null, 2)}</pre>`).join("")}
+</div>`);
+  });
 };

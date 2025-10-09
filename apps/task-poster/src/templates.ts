@@ -34,7 +34,7 @@ const api = axios.create({
   baseURL: state.managerUrl,
 });
 
-const escapeHTML = (html: string): string =>
+export const escapeHTML = (html: string): string =>
   html
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -99,7 +99,7 @@ const form = (msg = "", values: Record<string, string> = {}): string => `
       placeholder="<html>"
       id="html"
       name="html"
-      rows="10">${values.html || ""}</textarea>
+      rows="10">${escapeHTML(values.html || "")}</textarea>
 
     <button type="submit">Preview</button>
   </fieldset>
@@ -118,7 +118,7 @@ ${fields.map(
 <input
   ${values[name] ? `value="${escapeHTML(values[name])}" ` : ""}
   id="f${name}" name="${name}" type="text"></input>
-<textarea style="display: none;" name="html">${html}</textarea>
+<textarea style="display: none;" name="html">${escapeHTML(html)}</textarea>
 <button type="submit">Preview</button>
 </form>
 `,
