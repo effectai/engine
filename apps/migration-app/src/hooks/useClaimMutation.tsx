@@ -50,11 +50,11 @@ export const useClaimMutation = () => {
         mint,
       });
 
-      const isClosed = await connection.checkTokenAccountIsClosed({
-        tokenAccount: userTokenAccount,
-      });
+      const ataExists = await connection.rpc
+        .getAccountInfo(userTokenAccount)
+        .send();
 
-      if (isClosed) {
+      if (!ataExists.value) {
         const createAtaIx = await getCreateAssociatedTokenInstructionAsync({
           mint: mint,
           owner: signer.address,
