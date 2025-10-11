@@ -24,9 +24,16 @@ export type Fetcher = {
   lastImport: number | undefined;
   datasetId: number;
   index: number; // the index relative to other fetchers in the dataset
-  type: "csv" | "constant";
+  type: "csv" | "constant" | "pipeline";
   capabilities: string[];
   engine: "effectai" | "none";
+
+  // pipelines import from the `finished` queue of an other fetcher;
+  // only when the regex matches on the result.
+  pipelineSource?: KVKey;
+  pipelineLastImportedTask?: string;
+  pipelineFilterRegex?: string;
+  pipelineCount?: number;
 
   name: string;
   price: number;
@@ -36,7 +43,6 @@ export type Fetcher = {
 
   taskIdx: number; // the last task processed
   totalTasks: number;
-
 
   dataSample?: any;
   status: "active" | "archived";
@@ -151,7 +157,7 @@ export const fetcherForm = async (
 
       <label for="type"><strong>Data source</strong><br/>
       <small>How new tasks will be fetched.</small></label>
-      <select name="type" id="type">${["csv", "fetcher", "constant"].map(a =>
+      <select name="type" id="type">${["csv", "pipeline", "constant"].map(a =>
 	`<option value="${a}" ${values.type == a ? "selected" : ""}>${a}</option>`).join("")}
       </select>
 
@@ -239,6 +245,47 @@ const constantFetcherForm = async (dsId: number, values: FormValues) => `
 </fieldset>
 `;
 
+const pipelineFetcherForm = async (dsId: number, values: FormValues) => `
+<fieldset>
+    <legend>pipeline config</legend>
+
+    <label for="pipelineSource"><strong>Source Step</strong><br/>
+    <small>The <emph>done</emph> queue of the source step is used to fetch data`+
+  ` from.</small></label>
+      <select name="pipelineSource"
+	      id="pipelineSource"
+	      hx-target="#preview"
+	      hx-get="/d/${dsId}/pipeline-preview"
+	      hx-include="#filter">
+	${(await Promise.all((await getFetchers(dsId)).map(async (t) =>
+      `<option value="${t.index}"` +
+      `${values.target == t.index ? " selected" : ""}>` +
+	`#${t.index}: ${t.name}
+ (tasks: ${countTasks((await getFetcher(t.datasetId, t.index))!, "done")})
+       </option>`,
+	))).join("")}
+      </select>
+
+    <label for="filter"><strong>Regex filter</strong><br/>
+    <small>Regular expression task filter. If this regex matches the task ` +
+  `result string, the task will <strong>not</strong> get posted.</small></label>
+    <input
+      hx-target="#preview"
+      hx-get="/d/${dsId}/pipeline-preview"
+      hx-include="#pipelineSource"
+      hx-trigger="keyup changed delay:500ms, load"
+      type="text"
+      id="filter" ${addVal(values, "filter")}
+      name="filter"/>
+
+    <section>
+      <h3>Data Preview</h3>
+      <p><small>The first 50 inputs generated for this step.</small></p>
+      <pre id="preview"></pre>
+    </section>
+</fieldset>
+`;
+
 const fetcherImportForm = async (f: Fetcher, values: {}, msg = "") => `
 <div hx-swap="outerHTML" id="page">
 <form hx-target="#page" hx-post="/d/${f.datasetId}/f/${f.index}/import">
@@ -246,12 +293,13 @@ const fetcherImportForm = async (f: Fetcher, values: {}, msg = "") => `
     ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
   </div>
 
-
   ${f.type === "csv"
     ? await csvFetcherForm(f.datasetId, values)
     : f.type === "constant"
       ? await constantFetcherForm(f.datasetId, values)
-      : `Error, invalid fetcher type ${f.type}`}
+      : f.type === "pipeline"
+	? await pipelineFetcherForm(f.datasetId, values)
+	: `Error, invalid fetcher type ${f.type}`}
   <button type="submit">Configure</button>
 </form>
 </div>
@@ -303,12 +351,9 @@ export const getFetcher = async (dsid: number, fid: number) => {
   return f?.data;
 };
 
-// get the raw string data of the fetcher
-
-
 // get all active fetchers
-export const getFetchers = async (ds: DatasetRecord) => {
-  const f = await db.listAll<Fetcher>(["fetcher", ds.id, {}, "info"]);
+export const getFetchers = async (dsId: number) => {
+  const f = await db.listAll<Fetcher>(["fetcher", dsId, {}, "info"]);
 
   return f.map(ff => ff.data).filter(ff => ff.status ===  "active");
 };
@@ -328,11 +373,70 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	const queueSize = countTasks(fetcher, "queue");
 	const targetCreate = Math.max((fetcher.targetQueueSize || 0) - queueSize, 0);
 	const nCreate = Math.max((fetcher.maxTasks || 0) - fetcher.totalTasks, 0);
-	const taskData = JSON.parse(fetcher.constantData || "");
+
+	let taskData = "";
+	try {
+	  taskData = JSON.parse(fetcher.constantData || "");
+	} catch (e) {
+	  console.log(`Error parsing task data ${fetcher.constantData} ${e}`);
+	}
+
 	console.log(nCreate, targetCreate, queueSize)
 	data = Array(Math.min(nCreate, targetCreate)).fill(taskData);
 	break;
       }
+    case "pipeline":
+      if (!fetcher.pipelineSource)
+	break;
+
+      const [_t, sId, sFId, _i] = fetcher.pipelineSource!;
+      const tot = db.count(["fetcher", sId, sFId, "done", {}]);
+
+      // shortwire if no new tasks
+      if (fetcher.pipelineCount ?? 0 >= tot) {
+	break;
+      }
+
+      // iterate newest first
+      const iterator = db.iterate<boolean>(["fetcher", sId, sFId, "done", {}], undefined, true);
+
+      // the high water mark
+      const regex = new RegExp(fetcher.pipelineFilterRegex as string);
+      let lastId;
+      for await (const taskId of iterator) {
+	console.log(taskId.key[4], '===', fetcher.pipelineLastImportedTask)
+
+	if (taskId.key[4] == fetcher.pipelineLastImportedTask)
+	  break;
+
+	const task = (await db.get<any>(["task-result", taskId.key[4]]))!.data;
+
+	if (!lastId) {
+	  console.log("SETTING LAST ID TO" , taskId.key[4])
+	  lastId = taskId.key[4];
+	}
+
+
+	// regex filter
+	if (regex.test(task.result)) {
+	  continue;
+	}
+
+	let cols = ["timestamp", "submissionByPeer", "taskId", "result"];
+	const t = Object.fromEntries(cols.map(k => [k, task[k]]));
+	data.push(t);
+      }
+
+      // make sure we are doing a fresh write
+      if (lastId) {
+	const ff = (await db.get<Fetcher>(
+	  ["fetcher", fetcher.datasetId, fetcher.index, "info"]
+	))!.data;
+	ff.pipelineLastImportedTask = lastId as string;
+	await writeFetcher(ff);
+      }
+
+      break;
   }
 
   const tasks = data.map(
@@ -374,26 +478,40 @@ const importFetcherData = async (fetcher: Fetcher, csv: string = "") => {
 };
 
 // form submission handler for fetcher import
-const handleFetcherImport = async(f: Fetcher, fields: FormValues) => {
-  const fetcher = (await db.get<Fetcher>(
-    ["fetcher", f.datasetId, f.index, "info"]
-  ))!;
-
-  switch (f.type) {
+const handleFetcherImport = async(fetcher: Fetcher, fields: FormValues) => {
+  switch (fetcher.type) {
     case "csv":
 
       // nothing special here
       break;
     case "constant":
-      fetcher.data.targetQueueSize = fields.target;
-      fetcher.data.maxTasks = fields.max;
-      fetcher.data.constantData = fields.data;
+      fetcher.targetQueueSize = fields.target;
+      fetcher.maxTasks = fields.max;
+      fetcher.constantData = fields.data;
+      await writeFetcher(fetcher);
+      break;
+
+    case "pipeline":
+      fetcher.pipelineFilterRegex = fields.filter;
+      fetcher.pipelineSource = [
+	"fetcher",
+	fetcher.datasetId,
+	Number(fields.pipelineSource)
+      ];
+      await writeFetcher(fetcher);
       break;
   }
 
-  const tasks = await importFetcherData(fetcher.data, fields.csv);
-  fetcher.data.totalTasks += tasks.length;
-  await db.set<Fetcher>(fetcher.key, fetcher.data);
+  // TODO: this part is ugly quick fix to pass csv value
+  if (fetcher.type == "csv") {
+    const tasks = await importFetcherData(fetcher, fields.csv);
+
+    const fetcherEntry = (await db.get<Fetcher>(
+      ["fetcher", fetcher.datasetId, fetcher.index, "info"]
+    ))!;
+    fetcherEntry.data.totalTasks += tasks.length;
+    await db.set<Fetcher>(fetcherEntry.key, fetcherEntry.data);
+  }
 };
 
 /**
@@ -793,7 +911,9 @@ export const addFetcherRoutes = (app: Express): void => {
     const f = await getFetcher(id, fid);
 
     res.send(page(await fetcherImportForm(f!, {
+      filter: f?.pipelineFilterRegex,
       max: f?.maxTasks,
+      pipelineSource: f?.pipelineSource,
       target: f?.targetQueueSize,
       data: f?.constantData,
     })));
@@ -923,4 +1043,31 @@ export const addFetcherRoutes = (app: Express): void => {
   width="100%"
   srcdoc="${escapeHTML(renderedTemplate)}"></iframe>`));
     });
+
+  app.get("/d/:id/pipeline-preview", async (req, res) => {
+    let { pipelineSource, filter } = req.query;
+    const id = Number(req.params.id);
+
+    let results = [];
+    let error = null;
+    try {
+      const resultIds = (await db.listAll<boolean>(
+	["fetcher", id, Number(pipelineSource), "done", {}], 50, true
+      ))!;
+
+      const regex = new RegExp(filter as string);
+
+      results = (await Promise.all(
+	resultIds.map(i => db.get<any>(["task-result", i.key[4]]))
+      )).map(p => p!.data)
+	.filter(i => !regex.test(i.result));
+    } catch (e) {
+      return res.send(`<div id="messages">Error parsing regex or fetching preview</div>`);
+    }
+
+    res.send(`
+<div id="preview">
+  ${results.map(r => `<pre>${JSON.stringify(r, null, 2)}</pre>`).join("")}
+</div>`);
+  });
 };
