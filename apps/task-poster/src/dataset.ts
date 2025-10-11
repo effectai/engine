@@ -177,7 +177,7 @@ export const startAutoImport = async () => {
     // await Promise.all(activeDatasets.map(async (ds) => {
     for (const ds of activeDatasets) {
       let imported = 0;
-      const fetchers = await fetcher.getFetchers(ds);
+      const fetchers = await fetcher.getFetchers(ds.id);
       for (const f of fetchers) {
 	imported += await fetcher.processFetcher(f!);
       }
@@ -256,7 +256,7 @@ export const addDatasetRoutes = (app: Express): void => {
 
     if (!dataset) return make404(res);
 
-    const fetchers = await fetcher.getFetchers(dataset.data);
+    const fetchers = await fetcher.getFetchers(dataset.data.id);
 
     res.send(
       page(`

@@ -14,6 +14,10 @@ export const usePing = () => {
       return await worker.value.ping(multiaddr(manager.value.multiaddr));
     },
     enabled: isReady,
-    refetchInterval: 90_000,
+    refetchOnWindowFocus: false,
+
+    //never refetch
+    staleTime: Number.POSITIVE_INFINITY,
+    gcTime: Number.POSITIVE_INFINITY,
   });
 };

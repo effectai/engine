@@ -8,7 +8,7 @@ import type { AppKitNetwork } from "@reown/appkit/networks";
 import { createAppKit } from "@reown/appkit/react";
 import type { ReactNode } from "react";
 
-const projectId = "79d9a7fe570c471146ae1cbc2f6b05cf";
+const projectId = "380090a9c803ecf9e0184f7d58c95fb6";
 
 export const networks: [AppKitNetwork, ...AppKitNetwork[]] = [bsc];
 
