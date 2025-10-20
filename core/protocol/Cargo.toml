@@ -1,0 +1,12 @@
+[workspace]
+members = [
+  "application",
+  "codec",
+  "manager-node",
+  "proto",
+  "storage",
+  "worker-node",
+  "workflow",
+  "zkp-layer"
+]
+resolver = "2"

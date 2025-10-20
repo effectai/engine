@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package effect.task;
+import "./common.proto";
+
+message TaskPayload {
+  string id = 1;
+  string title = 2;
+  uint64 reward = 3;
+  uint32 time_limit_seconds = 4;
+  string template_id = 5;
+  string template_data = 6;
+  string application_id = 7;
+  string step_id = 8;
+  optional string capability = 9;
+}
+
+message TaskMessage {
+  string task_id = 1;
+  string type = 2; 
+  bytes data = 3; 
+  int32 timestamp = 4;
+}
+
+message TaskCtrlReq {
+  oneof kind {
+    TaskPayload task_payload = 1;
+    TaskMessage task_message = 2;
+  }
+}
+

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package effect.application;
+import "./common.proto";
+
+message ApplicationRequest {
+  string id = 1;
+}
+
+message Application {
+  string id = 1;
+  string name = 2;
+  string peer_id = 3;
+  uint64 created_at = 4;
+  string url = 5;
+  string description = 6;
+  string icon = 7;
+  repeated string tags = 8;
+  repeated ApplicationStep steps = 9;
+  uint64 updated_at = 10;
+}
+
+message ApplicationStep {
+  string template_id = 1;
+  string description = 2;
+  repeated string capabilities = 3;
+  string workflow_id = 4;
+  string delegation = 5;
+  string type = 6;
+  string data = 7;
+  uint64 created_at = 8;
+  map<string, string> metadata = 9;
+}
+
+message ApplicationResponse {
+  oneof kind {
+    Application application = 1;
+    effect.common.AckErr err = 2;
+  }
+}
+

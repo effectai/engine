@@ -1,0 +1,390 @@
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::Arc;
+
+use anyhow::{Result, anyhow};
+use libp2p::{PeerId, Swarm};
+use serde_json::{Value, json};
+use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
+
+use crate::manager::EffectBehaviour;
+use crate::sequencer::{JobNotification, Sequencer};
+use application::{Application, DelegationStrategy};
+use libp2p_request_response as rr;
+use proto::common::CtrlAck;
+use proto::task::{TaskCtrlReq, TaskPayload};
+use proto::{ack_err, ack_ok, now_ms};
+use storage::{ApplicationRecord, CompletedTask, LoadedTask, Store};
+use workflow::{self, DEFAULT_WORKFLOW_ID, Engine, Event, WorkflowAction};
+
+mod assignment;
+mod messaging;
+mod storage_state;
+
+pub use assignment::NetworkAction;
+pub use messaging::RequestOutcome;
+pub use messaging::TaskSubmission;
+
+pub struct TaskOrchestrator {
+    store: Arc<Store>,
+    engine: Engine,
+    pending_assignments: VecDeque<String>,
+    idle_workers: VecDeque<PeerId>,
+    connected_workers: HashSet<PeerId>,
+    task_assignments: HashMap<String, PeerId>,
+    task_policies: HashMap<String, DelegationStrategy>,
+    broadcast_targets: HashMap<String, HashSet<PeerId>>,
+    workflow_tx: UnboundedSender<WorkflowAction>,
+    workflow_rx: UnboundedReceiver<WorkflowAction>,
+    applications: HashMap<String, Application>,
+    job_notifier: Option<UnboundedSender<JobNotification>>,
+}
+
+fn merge_template_with_context(base: &str, context: &serde_json::Value) -> String {
+    let template_value =
+        serde_json::from_str(base).unwrap_or_else(|_| serde_json::Value::String(base.to_string()));
+    json!({
+        "template": template_value,
+        "context": context,
+    })
+    .to_string()
+}
+
+impl TaskOrchestrator {
+    pub fn new(store: Arc<Store>) -> Result<Self> {
+        let (tx, rx) = mpsc::unbounded_channel();
+        let engine = Engine::new();
+
+        let mut orchestrator = Self {
+            store,
+            engine,
+            pending_assignments: VecDeque::new(),
+            idle_workers: VecDeque::new(),
+            connected_workers: HashSet::new(),
+            task_assignments: HashMap::new(),
+            task_policies: HashMap::new(),
+            broadcast_targets: HashMap::new(),
+            workflow_tx: tx.clone(),
+            workflow_rx: rx,
+            applications: HashMap::new(),
+            job_notifier: None,
+        };
+
+        // build default workflow
+        let default_workflow = workflow::build_default_workflow(tx);
+        orchestrator.engine.register(default_workflow);
+
+        orchestrator.restore_from_storage()?;
+        Ok(orchestrator)
+    }
+
+    pub fn set_job_notifier(&mut self, tx: UnboundedSender<JobNotification>) {
+        self.job_notifier = Some(tx);
+    }
+
+    pub fn application(&mut self, application_id: &str) -> Result<Application> {
+        self.require_application(application_id)
+            .map(|app| app.clone())
+    }
+
+    pub fn register_application(&mut self, application: Application) -> Result<()> {
+        self.register_application_internal(application, true)
+    }
+
+    pub fn has_task(&self, task_id: &str) -> bool {
+        self.engine.get(&task_id.to_string()).is_some()
+    }
+
+    pub fn create_task(&mut self, submission: TaskSubmission) -> Result<Vec<NetworkAction>> {
+        let application_id = submission.application_id.clone();
+        let step_id = submission.step_id.clone();
+        let step = {
+            let application = self.require_application(&application_id)?;
+            application.step(&step_id).cloned().ok_or_else(|| {
+                anyhow!(
+                    "unknown step {} for application {}",
+                    step_id,
+                    application_id
+                )
+            })?
+        };
+
+        //TODO:: support custom workflows
+        let engine_workflow_id = DEFAULT_WORKFLOW_ID;
+
+        let capability = submission
+            .capability
+            .clone()
+            .or_else(|| step.capabilities.first().cloned())
+            .unwrap_or_default();
+
+        let base_template = submission
+            .template_data
+            .clone()
+            .unwrap_or_else(|| step.data.clone());
+
+        let template_data = if let Some(context) = submission.job_context.as_ref() {
+            let include_context = context
+                .as_object()
+                .map(|map| !map.is_empty())
+                .unwrap_or(false);
+            if include_context {
+                merge_template_with_context(&base_template, context)
+            } else {
+                base_template.clone()
+            }
+        } else {
+            base_template.clone()
+        };
+
+        let payload = TaskPayload {
+            id: submission.id.clone(),
+            title: submission.title.clone(),
+            reward: submission.reward,
+            time_limit_seconds: submission.time_limit_seconds,
+            template_id: step.template_id.clone(),
+            template_data,
+            application_id: submission.application_id.clone(),
+            step_id: submission.step_id.clone(),
+            capability,
+        };
+
+        let task_id = payload.id.clone();
+        self.task_policies.insert(task_id.clone(), step.delegation);
+        self.broadcast_targets.remove(&task_id);
+        self.engine
+            .create_task(engine_workflow_id, task_id.clone(), payload);
+        self.enqueue_task(task_id.clone());
+        self.persist_task_state(&task_id);
+        self.consume_workflow_actions();
+        Ok(self.assign_ready_tasks())
+    }
+
+    pub fn on_tick(&mut self, now_ms: u64) -> Vec<NetworkAction> {
+        self.engine.tick(now_ms);
+        self.consume_workflow_actions();
+        self.assign_ready_tasks()
+    }
+
+    pub fn completed_tasks(&self) -> Result<Vec<CompletedTask>> {
+        self.store.load_completed_tasks()
+    }
+
+    fn register_application_internal(
+        &mut self,
+        application: Application,
+        persist: bool,
+    ) -> Result<()> {
+        if persist {
+            let record = ApplicationRecord::from(application.clone());
+            self.store.put_application(&record)?;
+        }
+
+        self.applications
+            .insert(application.id.clone(), application);
+        Ok(())
+    }
+
+    fn require_application(&mut self, application_id: &str) -> Result<&Application> {
+        if !self.applications.contains_key(application_id) {
+            if let Some(record) = self.store.get_application(application_id)? {
+                let application: Application = record.into();
+                self.register_application_internal(application, false)?;
+            }
+        }
+
+        self.applications
+            .get(application_id)
+            .ok_or_else(|| anyhow!("unknown application {application_id}"))
+    }
+
+    fn enqueue_task(&mut self, task_id: String) {
+        if !self.pending_assignments.iter().any(|id| id == &task_id) {
+            self.pending_assignments.push_back(task_id);
+        }
+    }
+
+    fn record_event(&mut self, task_id: &str, event: Event) {
+        let key = task_id.to_string();
+        self.engine.submit_event(&key, event);
+        self.persist_task_state(&key);
+        self.consume_workflow_actions();
+    }
+
+    fn persist_task_state(&self, task_id: &String) {
+        if let Some(task) = self.engine.get(task_id) {
+            if let Err(err) = self.store.persist_active_task(
+                task_id,
+                &task.payload,
+                task.events(),
+                task.current,
+                task.completed,
+            ) {
+                tracing::error!(%task_id, ?err, "Failed to persist task state");
+            }
+        }
+    }
+
+    fn archive_task(&self, task_id: &str, result: Value) {
+        let key = task_id.to_string();
+        if let Some(task) = self.engine.get(&key) {
+            if let Err(err) =
+                self.store
+                    .archive_task(&key, &task.payload, task.events(), result, now_ms())
+            {
+                tracing::error!(%task_id, ?err, "Failed to archive task");
+            }
+        }
+    }
+}
+
+impl TaskOrchestrator {
+    fn consume_workflow_actions(&mut self) {
+        while let Ok(action) = self.workflow_rx.try_recv() {
+            match action {
+                WorkflowAction::Assign { task_id } => {
+                    self.task_assignments.remove(&task_id);
+                    self.broadcast_targets.remove(&task_id);
+                    self.enqueue_task(task_id);
+                }
+                WorkflowAction::Completed { task_id } => {
+                    self.task_assignments.remove(&task_id);
+                    self.pending_assignments.retain(|id| id != &task_id);
+                    self.broadcast_targets.remove(&task_id);
+                    self.task_policies.remove(&task_id);
+                    self.persist_task_state(&task_id);
+                }
+                WorkflowAction::TimedOut { task_id } => {
+                    self.task_assignments.remove(&task_id);
+                    self.broadcast_targets.remove(&task_id);
+                    self.enqueue_task(task_id.clone());
+                    self.persist_task_state(&task_id);
+                }
+            }
+        }
+    }
+}
+
+impl TaskOrchestrator {
+    pub fn handle_worker_connected(&mut self, peer: PeerId) -> Vec<NetworkAction> {
+        if self.connected_workers.insert(peer.clone()) {
+            self.idle_workers.push_back(peer.clone());
+        }
+        self.consume_workflow_actions();
+        self.assign_ready_tasks()
+    }
+
+    pub fn handle_worker_disconnected(&mut self, peer: &PeerId) -> Vec<NetworkAction> {
+        self.connected_workers.remove(peer);
+        self.idle_workers.retain(|p| p != peer);
+        for targets in self.broadcast_targets.values_mut() {
+            targets.remove(peer);
+        }
+
+        let mut affected_tasks = Vec::new();
+        self.task_assignments.retain(|task_id, assigned| {
+            if assigned == peer {
+                affected_tasks.push(task_id.clone());
+                false
+            } else {
+                true
+            }
+        });
+
+        for task_id in &affected_tasks {
+            self.enqueue_task(task_id.clone());
+            self.record_event(
+                task_id,
+                Event {
+                    name: "WorkerRejected".into(),
+                    payload: json!({
+                        "peer": peer.to_string(),
+                        "reason": "disconnect",
+                        "ts": now_ms(),
+                    }),
+                },
+            );
+        }
+
+        self.assign_ready_tasks()
+    }
+}
+
+pub fn handle_rr_event(
+    swarm: &mut Swarm<EffectBehaviour>,
+    orchestrator: &mut TaskOrchestrator,
+    job_sequencer: &mut Sequencer,
+    event: rr::Event<TaskCtrlReq, CtrlAck>,
+) {
+    match event {
+        rr::Event::Message { peer, message, .. } => match message {
+            rr::Message::Request {
+                request, channel, ..
+            } => {
+                let outcome = match request.kind {
+                    proto::task::mod_TaskCtrlReq::OneOfkind::task_payload(payload) => {
+                        match job_sequencer
+                            .submit_job(orchestrator, TaskSubmission::from_payload(payload))
+                        {
+                            Ok(actions) => RequestOutcome {
+                                response: ack_ok(),
+                                actions,
+                            },
+                            Err(err) => RequestOutcome {
+                                response: ack_err(400, err.to_string()),
+                                actions: Vec::new(),
+                            },
+                        }
+                    }
+                    proto::task::mod_TaskCtrlReq::OneOfkind::task_message(message) => {
+                        orchestrator.handle_task_message(&peer, message)
+                    }
+
+                    proto::task::mod_TaskCtrlReq::OneOfkind::None => RequestOutcome {
+                        response: ack_err(400, "empty TaskCtrlReq"),
+                        actions: Vec::new(),
+                    },
+                };
+
+                if swarm
+                    .behaviour_mut()
+                    .task_ctrl
+                    .send_response(channel, outcome.response)
+                    .is_err()
+                {
+                    tracing::warn!(%peer, "Failed to send response; channel dropped");
+                }
+
+                execute_actions(swarm, outcome.actions);
+            }
+            rr::Message::Response {
+                request_id,
+                response,
+            } => {
+                tracing::info!(%peer, ?request_id, ?response, "Received control response");
+            }
+        },
+        rr::Event::InboundFailure { peer, error, .. } => {
+            tracing::warn!(%peer, ?error, "Inbound control error");
+        }
+        rr::Event::OutboundFailure { peer, error, .. } => {
+            tracing::warn!(%peer, ?error, "Outbound control error");
+        }
+        rr::Event::ResponseSent { peer, .. } => {
+            tracing::debug!(%peer, "Control response sent");
+        }
+    }
+}
+
+fn execute_actions(swarm: &mut Swarm<EffectBehaviour>, actions: Vec<NetworkAction>) {
+    for action in actions {
+        match action {
+            NetworkAction::SendTask { peer, payload } => {
+                let request = TaskCtrlReq {
+                    kind: proto::task::mod_TaskCtrlReq::OneOfkind::task_payload(payload),
+                };
+                let request_id = swarm.behaviour_mut().task_ctrl.send_request(&peer, request);
+                tracing::info!(%peer, ?request_id, "Sent task payload");
+            }
+        }
+    }
+}

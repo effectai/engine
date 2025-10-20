@@ -18,3 +18,5 @@ target
 
 /idls
 /modules/*/**/@generated
+*.bin
+

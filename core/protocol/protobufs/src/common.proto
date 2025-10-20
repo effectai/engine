@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package effect.common;
+
+message AckOk  { uint32 timestamp = 1; }
+message AckErr { uint32 timestamp = 1; uint32 code = 2; string message = 3; }
+
+message CtrlAck {
+  oneof kind {
+    AckOk ok = 1;
+    AckErr err = 2;
+  }
+}
+

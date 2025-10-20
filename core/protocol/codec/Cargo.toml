@@ -1,0 +1,12 @@
+[package]
+name = "codec"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+async-trait = "0.1"
+futures = "0.3"
+libp2p = { version = "0.56", default-features = false }
+libp2p-request-response = "0.29"
+quick-protobuf = "0.8.0"
+unsigned-varint = { version = "0.8", features = ["std", "futures"] }
