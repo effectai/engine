@@ -27,6 +27,11 @@ export const page = (body: string, bodyClass = "container"): string => `
 <body>
   <header class="container">
     <h1><a href="/">Task Terminal</a></h1>
+
+    <nav>
+      <a href="/auth">Templates</a>&nbsp;
+      <a href="/auth">User</a>
+    </nav>
   </header>
   <div class="${bodyClass}">
     ${body}
