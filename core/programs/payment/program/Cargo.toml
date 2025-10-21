@@ -21,12 +21,12 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 [dependencies]
 anchor-lang = { version = "0.31.1" }
 anchor-spl = "0.31.1"
-effect-common = { path = "../../../core/program" }
+effect-common = { path = "../../common" }
 groth16-solana = "0.1.0"
 ark-bn254 = "0.5.0"
 ark-serialize = "0.5.0"
 hex = "0.4.3"
 num-bigint = "0.4"
 num-traits = "0.2"
-anchor-id-injector = { path = "../../../tools/crates/anchor-id-injector" } 
+anchor-id-injector = { path = "../../../../tools/crates/anchor-id-injector" } 
 

@@ -12,3 +12,4 @@ ulid = "1.2.1"
 proto = { path = "../proto" }
 workflow = { path = "../workflow" }
 serde_json = "1"
+quick-protobuf = "0.8.0"

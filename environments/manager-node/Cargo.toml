@@ -9,11 +9,11 @@ clap = { version = "4", features = ["derive"] }
 tokio = { version = "1", features = ["rt-multi-thread","macros","signal","time"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt","env-filter"] }
-storage = { path = "../storage" }
+storage = { path = "../../core/storage" }
 proto = { path = "../../core/proto" }
 codec = { path = "../../core/codec" }
-workflow = { path = "../workflow" }
-application = { path = "../application" }
+workflow = { path = "../../core/workflow" }
+application = { path = "../../core/application" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 futures = "0.3.0"
@@ -25,6 +25,8 @@ libp2p = { version = "0.56", default-features = true, features = [
 libp2p-stream = { version = "0.4.0-alpha" }
 libp2p-request-response = { version = "0.29", features = ["cbor"] }
 ulid = "1.2.1"
+zkp = { path = "../../core/zkp" }
+ark-serialize = "0.4"
 
 [dev-dependencies]
 tempfile = "3"

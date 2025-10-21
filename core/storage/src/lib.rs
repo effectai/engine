@@ -1,17 +1,26 @@
 use std::collections::HashMap;
+use std::fs;
 use std::path::Path;
 
-use anyhow::Result;
-use proto::task::TaskPayload;
+use anyhow::{Context, Result};
+use proto::task::{TaskPayload, TaskReceipt};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sled::Db;
 use workflow::Event;
+use quick_protobuf::{BytesReader, MessageRead, MessageWrite, Writer};
 
 const TREE_ACTIVE: &str = "active";
 const TREE_COMPLETED: &str = "completed";
 const TREE_APPLICATIONS: &str = "applications";
 const TREE_JOBS: &str = "jobs";
+const TREE_RECEIPTS: &str = "receipts";
+
+pub trait ReceiptStore {
+    fn put_receipt(&self, receipt: &TaskReceipt) -> Result<()>;
+    fn get_receipt(&self, task_id: &str) -> Result<Option<TaskReceipt>>;
+    fn list_receipts(&self) -> Result<Vec<TaskReceipt>>;
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct StoredTaskPayload {
@@ -142,6 +151,7 @@ pub struct Store {
     completed: sled::Tree,
     applications: sled::Tree,
     jobs: sled::Tree,
+    receipts: sled::Tree,
 }
 
 impl Store {
@@ -151,12 +161,14 @@ impl Store {
         let completed = db.open_tree(TREE_COMPLETED)?;
         let applications = db.open_tree(TREE_APPLICATIONS)?;
         let jobs = db.open_tree(TREE_JOBS)?;
+        let receipts = db.open_tree(TREE_RECEIPTS)?;
         Ok(Self {
             _db: db,
             active,
             completed,
             applications,
             jobs,
+            receipts,
         })
     }
 
@@ -292,9 +304,120 @@ impl Store {
             .and_then(|bytes| serde_json::from_slice(&bytes).ok()))
     }
 
-    pub fn remove_job(&self, job_id: &str) -> Result<()> {
+pub fn remove_job(&self, job_id: &str) -> Result<()> {
         self.jobs.remove(job_id.as_bytes())?;
         self.jobs.flush()?;
         Ok(())
+    }
+
+    pub fn put_receipt(&self, receipt: &TaskReceipt) -> Result<()> {
+        let encoded = encode_receipt(receipt)?;
+        self.receipts
+            .insert(receipt.task_id.as_bytes(), encoded)?;
+        self.receipts.flush()?;
+        Ok(())
+    }
+
+    pub fn get_receipt(&self, task_id: &str) -> Result<Option<TaskReceipt>> {
+        Ok(self
+            .receipts
+            .get(task_id.as_bytes())?
+            .map(|bytes| decode_receipt(&bytes))
+            .transpose()?)
+    }
+
+    pub fn list_receipts(&self) -> Result<Vec<TaskReceipt>> {
+        Ok(self
+            .receipts
+            .iter()
+            .values()
+            .filter_map(|res| res.ok())
+            .map(|bytes| decode_receipt(&bytes))
+            .collect::<Result<Vec<_>>>()?)
+    }
+}
+
+#[derive(Clone)]
+pub struct ReceiptDb {
+    _db: Db,
+    receipts: sled::Tree,
+}
+
+impl ReceiptDb {
+    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
+        let path_ref = path.as_ref();
+        fs::create_dir_all(path_ref)?;
+
+        let db = sled::open(path_ref)?;
+        let receipts = db.open_tree(TREE_RECEIPTS)?;
+        Ok(Self { _db: db, receipts })
+    }
+
+    pub fn put_receipt(&self, receipt: &TaskReceipt) -> Result<()> {
+        let encoded = encode_receipt(receipt)?;
+        self.receipts
+            .insert(receipt.task_id.as_bytes(), encoded)?;
+        self.receipts.flush()?;
+        Ok(())
+    }
+
+    pub fn get_receipt(&self, task_id: &str) -> Result<Option<TaskReceipt>> {
+        Ok(self
+            .receipts
+            .get(task_id.as_bytes())?
+            .map(|bytes| decode_receipt(&bytes))
+            .transpose()?)
+    }
+
+    pub fn list_receipts(&self) -> Result<Vec<TaskReceipt>> {
+        Ok(self
+            .receipts
+            .iter()
+            .values()
+            .filter_map(|res| res.ok())
+            .map(|bytes| decode_receipt(&bytes))
+            .collect::<Result<Vec<_>>>()?)
+    }
+}
+
+fn encode_receipt(receipt: &TaskReceipt) -> Result<Vec<u8>> {
+    let mut buf = Vec::with_capacity(receipt.get_size());
+    let mut writer = Writer::new(&mut buf);
+    receipt
+        .write_message(&mut writer)
+        .context("encode task receipt")?;
+    Ok(buf)
+}
+
+fn decode_receipt(bytes: &[u8]) -> Result<TaskReceipt> {
+    let mut reader = BytesReader::from_bytes(bytes);
+    TaskReceipt::from_reader(&mut reader, bytes).context("decode task receipt")
+}
+
+impl ReceiptStore for Store {
+    fn put_receipt(&self, receipt: &TaskReceipt) -> Result<()> {
+        Store::put_receipt(self, receipt)
+    }
+
+    fn get_receipt(&self, task_id: &str) -> Result<Option<TaskReceipt>> {
+        Store::get_receipt(self, task_id)
+    }
+
+    fn list_receipts(&self) -> Result<Vec<TaskReceipt>> {
+        Store::list_receipts(self)
+    }
+}
+
+impl ReceiptStore for ReceiptDb {
+    fn put_receipt(&self, receipt: &TaskReceipt) -> Result<()> {
+        ReceiptDb::put_receipt(self, receipt)
+    }
+
+    fn get_receipt(&self, task_id: &str) -> Result<Option<TaskReceipt>> {
+        ReceiptDb::get_receipt(self, task_id)
+    }
+
+    fn list_receipts(&self) -> Result<Vec<TaskReceipt>> {
+        ReceiptDb::list_receipts(self)
     }
 }

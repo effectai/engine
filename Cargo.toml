@@ -1,12 +1,21 @@
 [workspace]
 members = [
-  "core/program",
-  "modules/payment/program",
-  "modules/migration/program",
-  "modules/staking/program",
-  "modules/reward/program",
-  "modules/vesting/program",
-  "modules/application/program",
+  "core/programs/common",
+  "core/programs/payment/program",
+  "core/programs/migration/program",
+  "core/programs/staking/program",
+  "core/programs/reward/program",
+  "core/programs/application/program",
+  "core/programs/vesting/program",
+"core/application",
+  "core/codec",
+  "core/proto",
+  "core/storage",
+  "core/workflow",
+  "core/zkp",
+  "environments/manager-node",
+  "environments/worker-node",
+
 ]
 resolver = "2"
 

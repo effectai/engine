@@ -2204,6 +2204,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "proto",
+ "quick-protobuf",
  "serde",
  "serde_json",
  "sled",

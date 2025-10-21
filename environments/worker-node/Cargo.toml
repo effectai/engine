@@ -15,5 +15,6 @@ libp2p = { version = "0.56", default-features = true, features = [
   "macros","noise","ping","tcp","tokio","dns","yamux","request-response","quic"
 ] }
 libp2p-request-response = "0.29"
-codec = { path = "../codec" }
-proto = { path = "../proto" }
+codec = { path = "../../core/codec" }
+proto = { path = "../../core/proto" }
+storage = { path = "../../core/storage" }

@@ -5,6 +5,7 @@ use super::*;
 #[derive(Debug)]
 pub enum NetworkAction {
     SendTask { peer: PeerId, payload: TaskPayload },
+    SendReceipt { peer: PeerId, receipt: TaskReceipt },
 }
 
 pub(super) enum TaskAssignmentStatus {

@@ -1,20 +1,26 @@
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::convert::TryInto;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
+use ark_serialize::CanonicalSerialize;
 use libp2p::{PeerId, Swarm};
 use serde_json::{Value, json};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
+use ulid::Ulid;
 
 use crate::manager::EffectBehaviour;
 use crate::sequencer::{JobNotification, Sequencer};
 use application::{Application, DelegationStrategy};
 use libp2p_request_response as rr;
 use proto::common::CtrlAck;
-use proto::task::{TaskCtrlReq, TaskPayload};
+use proto::task::{TaskCtrlReq, TaskPayload, TaskReceipt};
 use proto::{ack_err, ack_ok, now_ms};
 use storage::{ApplicationRecord, CompletedTask, LoadedTask, Store};
 use workflow::{self, DEFAULT_WORKFLOW_ID, Engine, Event, WorkflowAction};
+use zkp::{ManagerKeypair, pack_receipt};
+use rand::{rngs::StdRng, SeedableRng};
 
 mod assignment;
 mod messaging;
@@ -37,6 +43,9 @@ pub struct TaskOrchestrator {
     workflow_rx: UnboundedReceiver<WorkflowAction>,
     applications: HashMap<String, Application>,
     job_notifier: Option<UnboundedSender<JobNotification>>,
+    receipt_keypair: ManagerKeypair,
+    receipt_rng: StdRng,
+    receipt_tree_depth: usize,
 }
 
 fn merge_template_with_context(base: &str, context: &serde_json::Value) -> String {
@@ -49,8 +58,10 @@ fn merge_template_with_context(base: &str, context: &serde_json::Value) -> Strin
     .to_string()
 }
 
+const RECEIPT_TREE_DEPTH: usize = 21;
+
 impl TaskOrchestrator {
-    pub fn new(store: Arc<Store>) -> Result<Self> {
+    pub fn new(store: Arc<Store>, receipt_keypair: ManagerKeypair) -> Result<Self> {
         let (tx, rx) = mpsc::unbounded_channel();
         let engine = Engine::new();
 
@@ -67,6 +78,9 @@ impl TaskOrchestrator {
             workflow_rx: rx,
             applications: HashMap::new(),
             job_notifier: None,
+            receipt_keypair,
+            receipt_rng: StdRng::from_entropy(),
+            receipt_tree_depth: RECEIPT_TREE_DEPTH,
         };
 
         // build default workflow
@@ -235,6 +249,56 @@ impl TaskOrchestrator {
             }
         }
     }
+
+    fn build_receipt(&mut self, task_id: &str) -> Option<TaskReceipt> {
+        let key = task_id.to_string();
+        let task = self.engine.get(&key)?;
+
+        let numeric_id = match Self::receipt_numeric_id(&task.payload.id) {
+            Some(value) => value,
+            None => {
+                tracing::warn!(
+                    task_id = %task.payload.id,
+                    "Failed to derive numeric id for receipt"
+                );
+                return None;
+            }
+        };
+
+        let duration = task.payload.time_limit_seconds as u64;
+        let (receipt, _) = pack_receipt(
+            &mut self.receipt_rng,
+            &self.receipt_keypair,
+            numeric_id,
+            task.payload.reward,
+            duration,
+            self.receipt_tree_depth,
+        );
+
+        Some(TaskReceipt {
+            task_id: task.payload.id.clone(),
+            reward: task.payload.reward,
+            duration,
+            signature: Some(proto::task::ManagerSignature {
+                r_x: field_to_bytes(&receipt.signature.r_x),
+                r_y: field_to_bytes(&receipt.signature.r_y),
+                s: field_to_bytes(&receipt.signature.s),
+            }),
+            manager: Some(proto::task::ManagerPublicKey {
+                x: field_to_bytes(&receipt.manager_public.x),
+                y: field_to_bytes(&receipt.manager_public.y),
+            }),
+            nullifier: field_to_bytes(&receipt.nullifier),
+        })
+    }
+
+    fn receipt_numeric_id(task_id: &str) -> Option<u64> {
+        let base_id = task_id.split("::").next().unwrap_or(task_id);
+
+        Ulid::from_str(base_id)
+            .ok()
+            .and_then(|ulid| bytes_to_u64(ulid.to_bytes()))
+    }
 }
 
 impl TaskOrchestrator {
@@ -262,6 +326,19 @@ impl TaskOrchestrator {
             }
         }
     }
+}
+
+fn field_to_bytes<F: CanonicalSerialize>(value: &F) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    value
+        .serialize_compressed(&mut bytes)
+        .expect("field serialization");
+    bytes
+}
+
+fn bytes_to_u64(bytes: [u8; 16]) -> Option<u64> {
+    let tail: [u8; 8] = bytes[8..16].try_into().ok()?;
+    Some(u64::from_be_bytes(tail))
 }
 
 impl TaskOrchestrator {
@@ -338,6 +415,10 @@ pub fn handle_rr_event(
                     proto::task::mod_TaskCtrlReq::OneOfkind::task_message(message) => {
                         orchestrator.handle_task_message(&peer, message)
                     }
+                    proto::task::mod_TaskCtrlReq::OneOfkind::task_receipt(_) => RequestOutcome {
+                        response: ack_err(400, "unexpected task receipt payload"),
+                        actions: Vec::new(),
+                    },
 
                     proto::task::mod_TaskCtrlReq::OneOfkind::None => RequestOutcome {
                         response: ack_err(400, "empty TaskCtrlReq"),
@@ -384,6 +465,13 @@ fn execute_actions(swarm: &mut Swarm<EffectBehaviour>, actions: Vec<NetworkActio
                 };
                 let request_id = swarm.behaviour_mut().task_ctrl.send_request(&peer, request);
                 tracing::info!(%peer, ?request_id, "Sent task payload");
+            }
+            NetworkAction::SendReceipt { peer, receipt } => {
+                let request = TaskCtrlReq {
+                    kind: proto::task::mod_TaskCtrlReq::OneOfkind::task_receipt(receipt),
+                };
+                let request_id = swarm.behaviour_mut().task_ctrl.send_request(&peer, request);
+                tracing::info!(%peer, ?request_id, "Sent task receipt");
             }
         }
     }

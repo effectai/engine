@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -16,6 +15,8 @@ use proto::task::TaskCtrlReq;
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 use tokio::time::{Interval, interval};
+use rand::{rngs::StdRng, SeedableRng};
+use zkp::generate_manager_keypair;
 
 use crate::orchestrator::application::{ApplicationManager, handle_application_event};
 use crate::orchestrator::task::{NetworkAction, TaskOrchestrator, TaskSubmission, handle_rr_event};
@@ -95,7 +96,10 @@ impl ManagerHandle {
 pub async fn spawn_manager(config: ManagerConfig) -> Result<ManagerHandle> {
     let store = Arc::new(Store::open(&config.data_dir)?);
 
-    let mut task_orchestrator = TaskOrchestrator::new(store.clone())?;
+    let mut key_rng = StdRng::from_entropy();
+    let receipt_keypair = generate_manager_keypair(&mut key_rng);
+
+    let mut task_orchestrator = TaskOrchestrator::new(store.clone(), receipt_keypair)?;
     let application_manager = ApplicationManager::new(store.clone())?;
 
     let mut job_sequencer = Sequencer::new(store.clone())?;
@@ -226,6 +230,13 @@ fn execute_actions(swarm: &mut Swarm<EffectBehaviour>, actions: Vec<NetworkActio
                 };
                 let request_id = swarm.behaviour_mut().task_ctrl.send_request(&peer, request);
                 tracing::info!(%peer, ?request_id, "Sent task payload");
+            }
+            NetworkAction::SendReceipt { peer, receipt } => {
+                let request = TaskCtrlReq {
+                    kind: proto::task::mod_TaskCtrlReq::OneOfkind::task_receipt(receipt),
+                };
+                let request_id = swarm.behaviour_mut().task_ctrl.send_request(&peer, request);
+                tracing::info!(%peer, ?request_id, "Sent task receipt");
             }
         }
     }

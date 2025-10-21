@@ -5,7 +5,6 @@ use application::Application;
 use libp2p::Swarm;
 use libp2p_request_response as rr;
 use proto::{
-    ack_err,
     application::{ApplicationRequest, ApplicationResponse},
     common::AckErr,
 };

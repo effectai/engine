@@ -37,11 +37,13 @@ async fn end_to_end_task_flow() -> Result<()> {
 
     let worker1 = spawn_worker(WorkerConfig {
         manager_addr: listen_addr.clone(),
+        data_dir: temp_dir.path().join("worker1"),
     })
     .await?;
 
     let worker2 = spawn_worker(WorkerConfig {
         manager_addr: listen_addr.clone(),
+        data_dir: temp_dir.path().join("worker2"),
     })
     .await?;
 

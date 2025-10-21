@@ -22,10 +22,33 @@ message TaskMessage {
   int32 timestamp = 4;
 }
 
+message ManagerPublicKey {
+  bytes x = 1; 
+  bytes y = 2;
+}
+
+message ManagerSignature {
+    bytes r_x = 1;
+    bytes r_y = 2;
+    bytes s   = 3;
+}
+
+message TaskReceipt {
+    string task_id = 1;
+    uint64 reward = 2;
+    uint64 duration = 3;
+    ManagerSignature signature = 4;
+    ManagerPublicKey manager = 5;
+    bytes nullifier = 6;  // same encoding you use in Merkle tree
+}
+
 message TaskCtrlReq {
   oneof kind {
     TaskPayload task_payload = 1;
     TaskMessage task_message = 2;
+    TaskReceipt task_receipt = 3;
   }
 }
+
+
 

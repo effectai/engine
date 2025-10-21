@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 
 use anyhow::{Context, Result};
 use codec::QpbRRCodec;
@@ -12,6 +12,7 @@ use proto::{ack_err, ack_ok, now_ms, now_timestamp_i32};
 use serde_json::{Value, json};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
+use storage::ReceiptDb;
 
 const CTRL_PROTOCOL: &str = "/effect/task-ctrl/1";
 
@@ -23,6 +24,7 @@ struct WorkerBehaviour {
 #[derive(Debug, Clone)]
 pub struct WorkerConfig {
     pub manager_addr: Multiaddr,
+    pub data_dir: PathBuf,
 }
 
 pub struct WorkerHandle {
@@ -52,6 +54,8 @@ pub async fn spawn_worker(config: WorkerConfig) -> Result<WorkerHandle> {
 }
 
 async fn run_worker(config: WorkerConfig, mut shutdown_rx: oneshot::Receiver<()>) -> Result<()> {
+    let receipt_store = ReceiptDb::open(&config.data_dir)
+        .context("failed to open receipt store")?;
     let mut swarm = build_swarm()?;
     swarm
         .dial(config.manager_addr.clone())
@@ -62,7 +66,7 @@ async fn run_worker(config: WorkerConfig, mut shutdown_rx: oneshot::Receiver<()>
             event = swarm.select_next_some() => {
                 match event {
                     SwarmEvent::Behaviour(WorkerBehaviourEvent::Ctrl(event)) => {
-                        handle_rr_event(&mut swarm, event);
+                        handle_rr_event(&receipt_store, &mut swarm, event);
                     }
                     other => tracing::trace!(?other, "worker swarm event"),
                 }
@@ -77,7 +81,11 @@ async fn run_worker(config: WorkerConfig, mut shutdown_rx: oneshot::Receiver<()>
     Ok(())
 }
 
-fn handle_rr_event(swarm: &mut Swarm<WorkerBehaviour>, event: rr::Event<TaskCtrlReq, CtrlAck>) {
+fn handle_rr_event(
+    receipt_store: &ReceiptDb,
+    swarm: &mut Swarm<WorkerBehaviour>,
+    event: rr::Event<TaskCtrlReq, CtrlAck>,
+) {
     match event {
         rr::Event::Message { peer, message, .. } => match message {
             rr::Message::Request {
@@ -87,7 +95,6 @@ fn handle_rr_event(swarm: &mut Swarm<WorkerBehaviour>, event: rr::Event<TaskCtrl
                     proto::task::mod_TaskCtrlReq::OneOfkind::task_payload(TaskPayload {
                         id,
                         title,
-                        template_data,
                         ..
                     }) => {
                         tracing::info!(%peer, %id, %title, "Worker received task payload");
@@ -117,6 +124,27 @@ fn handle_rr_event(swarm: &mut Swarm<WorkerBehaviour>, event: rr::Event<TaskCtrl
                             task_id = %message.task_id,
                             event = %message.type_pb,
                             "Worker received task message"
+                        );
+                        ack_ok()
+                    }
+                    proto::task::mod_TaskCtrlReq::OneOfkind::task_receipt(receipt) => {
+                        match receipt_store.put_receipt(&receipt) {
+                            Ok(_) => tracing::info!(
+                                %peer,
+                                task_id = %receipt.task_id,
+                                "Worker stored task receipt"
+                            ),
+                            Err(err) => tracing::error!(
+                                %peer,
+                                task_id = %receipt.task_id,
+                                ?err,
+                                "Worker failed to persist task receipt"
+                            ),
+                        }
+                        tracing::info!(
+                            %peer,
+                            task_id = %receipt.task_id,
+                            "Worker received task receipt"
                         );
                         ack_ok()
                     }

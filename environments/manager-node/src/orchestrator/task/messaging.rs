@@ -1,4 +1,3 @@
-use application::DelegationStrategy;
 use libp2p::PeerId;
 use proto::common::CtrlAck;
 use proto::task::{TaskCtrlReq, TaskMessage, TaskPayload};
@@ -63,6 +62,10 @@ impl TaskOrchestrator {
             proto::task::mod_TaskCtrlReq::OneOfkind::task_message(message) => {
                 self.handle_task_message(peer, message)
             }
+            proto::task::mod_TaskCtrlReq::OneOfkind::task_receipt(_) => RequestOutcome {
+                response: ack_err(400, "unexpected task receipt payload"),
+                actions: Vec::new(),
+            },
             proto::task::mod_TaskCtrlReq::OneOfkind::None => RequestOutcome {
                 response: ack_err(400, "empty TaskCtrlReq"),
                 actions: Vec::new(),
@@ -158,6 +161,13 @@ impl TaskOrchestrator {
                     self.idle_workers.push_back(peer.clone());
                     actions.extend(self.assign_ready_tasks());
                     self.archive_task(&task_id, result_value.clone());
+
+                    if let Some(receipt) = self.build_receipt(&task_id) {
+                        actions.push(NetworkAction::SendReceipt {
+                            peer: peer.clone(),
+                            receipt,
+                        });
+                    }
 
                     if let Some(tx) = self.job_notifier.clone() {
                         let _ = tx.send(JobNotification::StepCompleted {
