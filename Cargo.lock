@@ -2306,7 +2306,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.20",
  "ulid",
- "worker-node",
  "workflow",
  "zkp",
 ]
@@ -3607,6 +3606,25 @@ dependencies = [
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "tests-e2e"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "application",
+ "libp2p",
+ "manager-node",
+ "serde_json",
+ "storage",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.20",
+ "ulid",
+ "worker-node",
+ "workflow",
 ]
 
 [[package]]

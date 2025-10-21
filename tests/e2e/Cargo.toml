@@ -1,0 +1,22 @@
+[package]
+name = "tests-e2e"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+application = { path = "../../core/application" }
+libp2p = "0.56"
+manager-node = { path = "../../environments/manager-node" }
+serde_json = "1"
+storage = { path = "../../core/storage" }
+tempfile = "3"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+ulid = "1.2.1"
+worker-node = { path = "../../environments/worker-node" }
+workflow = { path = "../../core/workflow" }
+
+[dev-dependencies]
+tracing = "0.1"
+

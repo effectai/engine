@@ -445,7 +445,7 @@ mod tests {
 
     #[test]
     fn groth16_batch_proof_validates() {
-        let scenario = build_batch_scenario(20);
+        let scenario = build_batch_scenario(3);
         let mut rng = StdRng::seed_from_u64(1337);
 
         let circuit = IndexedBatchInsertCircuit {

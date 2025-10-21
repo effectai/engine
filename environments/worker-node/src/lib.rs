@@ -6,16 +6,17 @@ use futures::StreamExt;
 use libp2p::swarm::{NetworkBehaviour, SwarmEvent};
 use libp2p::{Multiaddr, PeerId, StreamProtocol, Swarm, noise, tcp, yamux};
 use libp2p_request_response as rr;
-use proto::common::CtrlAck;
+use proto::common::{CtrlAck, AckErr};
 use proto::task::TaskCtrlReq;
 use proto::{ack_err, ack_ok, now_ms, now_timestamp_i32};
 use serde_json::json;
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use storage::{ReceiptDb, ReceiptStore, Store, TaskStore, LoadedTask};
+use storage::{ReceiptDb, ReceiptStore, Store, TaskStore, ApplicationStore, ApplicationRecord, LoadedTask};
 use domain::receipt::TaskReceipt;
 use domain::task::{TaskPayload, TaskMessage};
 use net::task::{TaskInbound, TaskOutbound, TaskDecodeError};
+use net::application::{ApplicationRequest as NetApplicationRequest, ApplicationResponse as NetApplicationResponse};
 use workflow::Event;
 
 const CTRL_PROTOCOL: &str = "/effect/task-ctrl/1";
@@ -108,20 +109,21 @@ fn handle_rr_event(
     receipt_store: &ReceiptDb,
     task_store: &Store,
     swarm: &mut Swarm<WorkerBehaviour>,
-    event: rr::Event<TaskCtrlReq, CtrlAck>,
+    event: WorkerBehaviourEvent,
 ) {
     match event {
-        rr::Event::Message { peer, message, .. } => match message {
-            rr::Message::Request {
-                request, channel, ..
-            } => {
-                let response = match TaskInbound::try_from(request) {
-                    Ok(TaskInbound::Payload(payload)) => {
-                        let id = payload.id.clone();
-                        let title = payload.title.clone();
-                        tracing::info!(%peer, %id, %title, "Worker received task payload");
-                        persist_task_payload(task_store, &payload);
-                        let _ = swarm.behaviour_mut().ctrl.send_response(channel, ack_ok());
+        WorkerBehaviourEvent::Ctrl(inner) => match inner {
+            rr::Event::Message { peer, message, .. } => match message {
+                rr::Message::Request { request, channel, .. } => {
+                    let response = match TaskInbound::try_from(request) {
+                        Ok(TaskInbound::Payload(payload)) => {
+                            ensure_application_cached(task_store, swarm, &peer, &payload.application_id);
+
+                            let id = payload.id.clone();
+                            let title = payload.title.clone();
+                            tracing::info!(%peer, %id, %title, "Worker received task payload");
+                            persist_task_payload(task_store, &payload);
+                            let _ = swarm.behaviour_mut().ctrl.send_response(channel, ack_ok());
 
                         let accept_value = json!({ "status": "accepted", "ts": now_ms() });
                         record_task_event(
@@ -162,16 +164,16 @@ fn handle_rr_event(
                         send_task_message(swarm, &peer, completion_message);
 
                         return;
-                    }
-                    Ok(TaskInbound::Message(message)) => {
-                        tracing::info!(
-                            %peer,
-                            task_id = %message.task_id,
-                            event = %message.message_type,
-                            "Worker received task message"
-                        );
-                        ack_ok()
-                    }
+                        }
+                        Ok(TaskInbound::Message(message)) => {
+                            tracing::info!(
+                                %peer,
+                                task_id = %message.task_id,
+                                event = %message.message_type,
+                                "Worker received task message"
+                            );
+                            ack_ok()
+                        }
                     Ok(TaskInbound::Receipt(receipt)) => {
                         match receipt_store.put_receipt(&receipt) {
                             Ok(_) => tracing::info!(
@@ -191,36 +193,86 @@ fn handle_rr_event(
                             task_id = %receipt.task_id,
                             "Worker received task receipt"
                         );
-                        ack_ok()
-                    }
-                    Err(TaskDecodeError::Empty) => ack_err(400, "empty TaskCtrlReq"),
-                };
+                            ack_ok()
+                        }
+                        Err(TaskDecodeError::Empty) => ack_err(400, "empty TaskCtrlReq"),
+                    };
 
-                if swarm
-                    .behaviour_mut()
-                    .ctrl
-                    .send_response(channel, response)
-                    .is_err()
-                {
-                    tracing::warn!(%peer, "Worker failed to send response");
+                    if swarm
+                        .behaviour_mut()
+                        .ctrl
+                        .send_response(channel, response)
+                        .is_err()
+                    {
+                        tracing::warn!(%peer, "Worker failed to send response");
+                    }
                 }
+                rr::Message::Response {
+                    request_id,
+                    response,
+                } => {
+                    tracing::info!(%peer, ?request_id, ?response, "Worker received response");
+                }
+            },
+            rr::Event::OutboundFailure { peer, error, .. } => {
+                tracing::warn!(%peer, ?error, "Worker outbound failure");
             }
-            rr::Message::Response {
-                request_id,
-                response,
-            } => {
-                tracing::info!(%peer, ?request_id, ?response, "Worker received response");
+            rr::Event::InboundFailure { peer, error, .. } => {
+                tracing::warn!(%peer, ?error, "Worker inbound failure");
+            }
+            rr::Event::ResponseSent { peer, .. } => {
+                tracing::debug!(%peer, "Worker response sent");
             }
         },
-        rr::Event::OutboundFailure { peer, error, .. } => {
-            tracing::warn!(%peer, ?error, "Worker outbound failure");
-        }
-        rr::Event::InboundFailure { peer, error, .. } => {
-            tracing::warn!(%peer, ?error, "Worker inbound failure");
-        }
-        rr::Event::ResponseSent { peer, .. } => {
-            tracing::debug!(%peer, "Worker response sent");
-        }
+        WorkerBehaviourEvent::Application(inner) => match inner {
+            rr::Event::Message { peer, message, .. } => match message {
+                rr::Message::Request { channel, .. } => {
+                    let err = AckErr {
+                        timestamp: now_ms().min(u32::MAX as u64) as u32,
+                        code: 400,
+                        message: "worker cannot fulfil application requests".into(),
+                    };
+                    let response: proto_app::ApplicationResponse =
+                        NetApplicationResponse::Err(err).into();
+                    if swarm
+                        .behaviour_mut()
+                        .application
+                        .send_response(channel, response)
+                        .is_err()
+                    {
+                        tracing::warn!(%peer, "Worker failed to send application error response");
+                    }
+                }
+                rr::Message::Response { response, .. } => {
+                    let net_response = NetApplicationResponse::from(response);
+                    if let NetApplicationResponse::Application(app) = net_response {
+                        if let Err(err) =
+                            task_store.put_application(&ApplicationRecord::from_domain(&app))
+                        {
+                            tracing::error!(
+                                application_id = %app.id,
+                                ?err,
+                                "Worker failed to persist application"
+                            );
+                        } else {
+                            tracing::info!(
+                                application_id = %app.id,
+                                "Worker cached application"
+                            );
+                        }
+                    }
+                }
+            },
+            rr::Event::OutboundFailure { peer, error, .. } => {
+                tracing::warn!(%peer, ?error, "Worker application outbound failure");
+            }
+            rr::Event::InboundFailure { peer, error, .. } => {
+                tracing::warn!(%peer, ?error, "Worker application inbound failure");
+            }
+            rr::Event::ResponseSent { peer, .. } => {
+                tracing::debug!(%peer, "Worker application response sent");
+            }
+        },
     }
 }
 
@@ -277,4 +329,28 @@ fn build_swarm() -> Result<Swarm<WorkerBehaviour>> {
         })?
         .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(30)))
         .build())
+}
+fn ensure_application_cached(
+    store: &Store,
+    swarm: &mut Swarm<WorkerBehaviour>,
+    peer: &PeerId,
+    application_id: &str,
+) {
+    match store.get_application(application_id) {
+        Ok(Some(_)) => return,
+        Ok(None) => {
+            let request: proto_app::ApplicationRequest = NetApplicationRequest::Get {
+                id: application_id.to_string(),
+            }
+            .into();
+            let _ = swarm
+                .behaviour_mut()
+                .application
+                .send_request(peer, request);
+            tracing::debug!(application_id, "Worker requested application");
+        }
+        Err(err) => {
+            tracing::warn!(application_id, ?err, "Worker failed to read application store");
+        }
+    }
 }

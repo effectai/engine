@@ -13,7 +13,17 @@ use crate::sequencer::JobNotification;
 use super::{NetworkAction, TaskOrchestrator};
 
 pub fn submission_from_payload(payload: TaskPayload) -> TaskSubmission {
-    TaskSubmission::from_proto(payload.into_proto())
+    TaskSubmission {
+        id: payload.id,
+        title: payload.title,
+        reward: payload.reward,
+        time_limit_seconds: payload.time_limit_seconds,
+        application_id: payload.application_id,
+        step_id: payload.step_id,
+        capability: Some(payload.capability),
+        template_data: Some(payload.template_data),
+        job_context: None,
+    }
 }
 
 #[derive(Debug)]

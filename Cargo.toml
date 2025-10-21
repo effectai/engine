@@ -15,6 +15,7 @@ members = [
   "core/zkp",
   "environments/manager-node",
   "environments/worker-node",
+  "tests/e2e",
 
 ]
 resolver = "2"

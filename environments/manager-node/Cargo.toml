@@ -32,4 +32,3 @@ ark-serialize = "0.4"
 
 [dev-dependencies]
 tempfile = "3"
-worker-node = { path = "../worker-node" }
