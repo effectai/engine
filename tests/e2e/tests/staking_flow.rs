@@ -6,4 +6,3 @@ async fn staking_reward_flow() -> Result<()> {
     // TODO: initialize validator, deploy staking/reward/vesting programs, and assert reward accruals.
     Ok(())
 }
-

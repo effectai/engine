@@ -6,4 +6,3 @@ async fn persistence_restart_reconciliation() -> Result<()> {
     // TODO: restart manager and workers mid-job and verify sled-backed state reconciliation.
     Ok(())
 }
-

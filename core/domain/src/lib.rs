@@ -4,6 +4,6 @@ pub mod task;
 pub mod workflow;
 
 pub use application::{Application, ApplicationStep};
-pub use receipt::{TaskReceipt, ManagerSignature, ManagerPublicKey};
-pub use task::{TaskPayload, TaskSubmission, TaskEvent, TaskInstance, TaskMessage};
+pub use receipt::{ManagerPublicKey, ManagerSignature, TaskReceipt};
+pub use task::{TaskEvent, TaskInstance, TaskMessage, TaskPayload, TaskSubmission};
 pub use workflow::DelegationStrategy;

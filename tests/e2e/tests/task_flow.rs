@@ -206,4 +206,3 @@ async fn end_to_end_task_flow() -> Result<()> {
     worker2.shutdown().await?;
     manager.shutdown().await
 }
-

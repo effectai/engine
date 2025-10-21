@@ -56,10 +56,7 @@ pub fn build_indexed_tree<F: PrimeField + Absorb>(leaves: &[IndexedLeaf<F>]) -> 
     );
 
     let mut levels = Vec::new();
-    let hashed_leaves: Vec<F> = leaves
-        .iter()
-        .map(|leaf| hash_leaf_native(leaf))
-        .collect();
+    let hashed_leaves: Vec<F> = leaves.iter().map(|leaf| hash_leaf_native(leaf)).collect();
     levels.push(hashed_leaves);
 
     while levels.last().unwrap().len() > 1 {

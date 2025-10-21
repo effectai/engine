@@ -1,5 +1,5 @@
-use rand::Rng;
 use domain::task::TaskPayload;
+use rand::Rng;
 
 use super::*;
 

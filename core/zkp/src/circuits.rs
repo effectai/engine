@@ -122,7 +122,12 @@ impl<F: PrimeField> ConstraintSynthesizer<F> for IndexedInsertCircuit<F> {
         let low_next_value_var = FpVar::new_witness(cs.clone(), || Ok(self.low_leaf.next_value))?;
         let low_leaf_hash_old =
             hash_leaf_gadget(&low_value_var, &low_next_index_var, &low_next_value_var)?;
-        let _ = enforce_merkle_path(&low_leaf_hash_old, &low_bits, &low_sibling_vars, &initial_root_var)?;
+        let _ = enforce_merkle_path(
+            &low_leaf_hash_old,
+            &low_bits,
+            &low_sibling_vars,
+            &initial_root_var,
+        )?;
 
         let new_value_var = FpVar::new_witness(cs.clone(), || Ok(self.new_value))?;
         let new_gt_low = less_than(&low_value_var, &new_value_var)?;
@@ -176,8 +181,7 @@ impl<F: PrimeField> ConstraintSynthesizer<F> for IndexedInsertCircuit<F> {
             &initial_root_var,
         )?;
 
-        let updated_low_hash =
-            hash_leaf_gadget(&low_value_var, &new_index_const, &new_value_var)?;
+        let updated_low_hash = hash_leaf_gadget(&low_value_var, &new_index_const, &new_value_var)?;
         let root_after_low = recompute_root(&updated_low_hash, &low_bits, &low_sibling_vars)?;
 
         let _ = enforce_merkle_path(
@@ -259,11 +263,8 @@ impl<F: PrimeField> ConstraintSynthesizer<F> for IndexedBatchInsertCircuit<F> {
             let low_next_value_var =
                 FpVar::new_witness(cs.clone(), || Ok(step.low_leaf.next_value))?;
 
-            let low_leaf_hash_old = hash_leaf_gadget(
-                &low_value_var,
-                &low_next_index_var,
-                &low_next_value_var,
-            )?;
+            let low_leaf_hash_old =
+                hash_leaf_gadget(&low_value_var, &low_next_index_var, &low_next_value_var)?;
             let _ = enforce_merkle_path(
                 &low_leaf_hash_old,
                 &low_bits,
@@ -339,11 +340,8 @@ impl<F: PrimeField> ConstraintSynthesizer<F> for IndexedBatchInsertCircuit<F> {
                 &current_root,
             )?;
 
-            let updated_low_hash = hash_leaf_gadget(
-                &low_value_var,
-                &new_index_const,
-                &new_value_var,
-            )?;
+            let updated_low_hash =
+                hash_leaf_gadget(&low_value_var, &new_index_const, &new_value_var)?;
             let root_after_low = recompute_root(&updated_low_hash, &low_bits, &low_sibling_vars)?;
 
             let _ = enforce_merkle_path(
@@ -353,11 +351,8 @@ impl<F: PrimeField> ConstraintSynthesizer<F> for IndexedBatchInsertCircuit<F> {
                 &root_after_low,
             )?;
 
-            let new_leaf_updated_hash = hash_leaf_gadget(
-                &new_value_var,
-                &low_next_index_var,
-                &low_next_value_var,
-            )?;
+            let new_leaf_updated_hash =
+                hash_leaf_gadget(&new_value_var, &low_next_index_var, &low_next_value_var)?;
             let final_root_step =
                 recompute_root(&new_leaf_updated_hash, &new_bits, &new_sibling_after_vars)?;
             current_root = final_root_step;

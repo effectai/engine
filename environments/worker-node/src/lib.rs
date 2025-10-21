@@ -2,28 +2,37 @@ use std::{path::PathBuf, time::Duration};
 
 use anyhow::{Context, Result};
 use codec::QpbRRCodec;
+use domain::application::Application;
+use domain::receipt::TaskReceipt;
+use domain::task::{TaskMessage, TaskPayload};
 use futures::StreamExt;
 use libp2p::swarm::{NetworkBehaviour, SwarmEvent};
 use libp2p::{Multiaddr, PeerId, StreamProtocol, Swarm, noise, tcp, yamux};
 use libp2p_request_response as rr;
-use proto::common::{CtrlAck, AckErr};
+use net::application::{
+    ApplicationRequest as NetApplicationRequest, ApplicationResponse as NetApplicationResponse,
+};
+use net::task::{TaskDecodeError, TaskInbound, TaskOutbound};
+use proto::application as proto_app;
+use proto::common::{AckErr, CtrlAck};
 use proto::task::TaskCtrlReq;
 use proto::{ack_err, ack_ok, now_ms, now_timestamp_i32};
 use serde_json::json;
+use storage::{
+    ApplicationRecord, ApplicationStore, LoadedTask, ReceiptDb, ReceiptStore, Store, TaskStore,
+};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use storage::{ReceiptDb, ReceiptStore, Store, TaskStore, ApplicationStore, ApplicationRecord, LoadedTask};
-use domain::receipt::TaskReceipt;
-use domain::task::{TaskPayload, TaskMessage};
-use net::task::{TaskInbound, TaskOutbound, TaskDecodeError};
-use net::application::{ApplicationRequest as NetApplicationRequest, ApplicationResponse as NetApplicationResponse};
 use workflow::Event;
 
 const CTRL_PROTOCOL: &str = "/effect/task-ctrl/1";
+const APPLICATION_PROTOCOL: &str = "/effect/application-ctrl/1";
 
 #[derive(NetworkBehaviour)]
 struct WorkerBehaviour {
     ctrl: rr::Behaviour<QpbRRCodec<TaskCtrlReq, CtrlAck>>,
+    application:
+        rr::Behaviour<QpbRRCodec<proto_app::ApplicationRequest, proto_app::ApplicationResponse>>,
 }
 
 #[derive(Debug, Clone)]
@@ -65,7 +74,12 @@ pub async fn spawn_worker(config: WorkerConfig) -> Result<WorkerHandle> {
     let tasks_store = Store::open(config.data_dir.join("tasks"))?;
     let worker_receipts = receipts.clone();
     let worker_tasks = tasks_store.clone();
-    let join_handle = tokio::spawn(run_worker(config, worker_receipts, worker_tasks, shutdown_rx));
+    let join_handle = tokio::spawn(run_worker(
+        config,
+        worker_receipts,
+        worker_tasks,
+        shutdown_rx,
+    ));
     Ok(WorkerHandle {
         shutdown_tx: Some(shutdown_tx),
         join_handle,
@@ -89,7 +103,7 @@ async fn run_worker(
         tokio::select! {
             event = swarm.select_next_some() => {
                 match event {
-                    SwarmEvent::Behaviour(WorkerBehaviourEvent::Ctrl(event)) => {
+                    SwarmEvent::Behaviour(event) => {
                         handle_rr_event(&receipt_store, &task_store, &mut swarm, event);
                     }
                     other => tracing::trace!(?other, "worker swarm event"),
@@ -114,56 +128,85 @@ fn handle_rr_event(
     match event {
         WorkerBehaviourEvent::Ctrl(inner) => match inner {
             rr::Event::Message { peer, message, .. } => match message {
-                rr::Message::Request { request, channel, .. } => {
+                rr::Message::Request {
+                    request, channel, ..
+                } => {
                     let response = match TaskInbound::try_from(request) {
                         Ok(TaskInbound::Payload(payload)) => {
-                            ensure_application_cached(task_store, swarm, &peer, &payload.application_id);
+                            let application = ensure_application_cached(
+                                task_store,
+                                swarm,
+                                &peer,
+                                &payload.application_id,
+                            );
+
+                            // get the current step template for this task
+                            // tracing::debug!(
+                            //     %peer,
+                            //     application_id = %payload.application_id,
+                            //     task_id = %payload.id,
+                            //     template = %application
+                            //         .as_ref()
+                            //         .and_then(|app| app.get_step_template(&payload.step_name))
+                            //         .map(|t| t.name.as_str())
+                            //         .unwrap_or("unknown"),
+                            //     "Worker processing task payload"
+                            // );
+                            //
 
                             let id = payload.id.clone();
                             let title = payload.title.clone();
                             tracing::info!(%peer, %id, %title, "Worker received task payload");
+                            if let Some(app) = application {
+                                tracing::debug!(
+                                    %peer,
+                                    application_id = %app.id,
+                                    "Worker using cached application for task"
+                                );
+                            }
                             persist_task_payload(task_store, &payload);
-                            let _ = swarm.behaviour_mut().ctrl.send_response(channel, ack_ok());
 
-                        let accept_value = json!({ "status": "accepted", "ts": now_ms() });
-                        record_task_event(
-                            task_store,
-                            &id,
-                            Event {
-                                name: "WorkerAccepted".into(),
-                                payload: accept_value.clone(),
-                            },
-                            "Accepted",
-                            false,
-                        );
-                        let accept_message = TaskMessage {
-                            task_id: id.clone(),
-                            message_type: "accept".into(),
-                            data: serde_json::to_vec(&accept_value).unwrap_or_default(),
-                            timestamp: now_timestamp_i32(),
-                        };
-                        send_task_message(swarm, &peer, accept_message);
+                            let accept_value = json!({ "status": "accepted", "ts": now_ms() });
+                            record_task_event(
+                                task_store,
+                                &id,
+                                Event {
+                                    name: "WorkerAccepted".into(),
+                                    payload: accept_value.clone(),
+                                },
+                                "Accepted",
+                                false,
+                            );
 
-                        let completion_value = json!({ "result": "dummy result", "ts": now_ms() });
-                        record_task_event(
-                            task_store,
-                            &id,
-                            Event {
-                                name: "WorkerCompleted".into(),
-                                payload: completion_value.clone(),
-                            },
-                            "Completed",
-                            true,
-                        );
-                        let completion_message = TaskMessage {
-                            task_id: id.clone(),
-                            message_type: "completed".into(),
-                            data: serde_json::to_vec(&completion_value).unwrap_or_default(),
-                            timestamp: now_timestamp_i32(),
-                        };
-                        send_task_message(swarm, &peer, completion_message);
+                            let accept_message = TaskMessage {
+                                task_id: id.clone(),
+                                message_type: "accept".into(),
+                                data: serde_json::to_vec(&accept_value).unwrap_or_default(),
+                                timestamp: now_timestamp_i32(),
+                            };
+                            send_task_message(swarm, &peer, accept_message);
 
-                        return;
+                            let completion_value =
+                                json!({ "result": "dummy result", "ts": now_ms() });
+                            record_task_event(
+                                task_store,
+                                &id,
+                                Event {
+                                    name: "WorkerCompleted".into(),
+                                    payload: completion_value.clone(),
+                                },
+                                "Completed",
+                                true,
+                            );
+                            let completion_message = TaskMessage {
+                                task_id: id.clone(),
+                                message_type: "completed".into(),
+                                data: serde_json::to_vec(&completion_value).unwrap_or_default(),
+                                timestamp: now_timestamp_i32(),
+                            };
+                            send_task_message(swarm, &peer, completion_message);
+
+                            ack_ok()
                         }
                         Ok(TaskInbound::Message(message)) => {
                             tracing::info!(
@@ -174,25 +217,25 @@ fn handle_rr_event(
                             );
                             ack_ok()
                         }
-                    Ok(TaskInbound::Receipt(receipt)) => {
-                        match receipt_store.put_receipt(&receipt) {
-                            Ok(_) => tracing::info!(
+                        Ok(TaskInbound::Receipt(receipt)) => {
+                            match receipt_store.put_receipt(&receipt) {
+                                Ok(_) => tracing::info!(
+                                    %peer,
+                                    task_id = %receipt.task_id,
+                                    "Worker stored task receipt"
+                                ),
+                                Err(err) => tracing::error!(
+                                    %peer,
+                                    task_id = %receipt.task_id,
+                                    ?err,
+                                    "Worker failed to persist task receipt"
+                                ),
+                            }
+                            tracing::info!(
                                 %peer,
                                 task_id = %receipt.task_id,
-                                "Worker stored task receipt"
-                            ),
-                            Err(err) => tracing::error!(
-                                %peer,
-                                task_id = %receipt.task_id,
-                                ?err,
-                                "Worker failed to persist task receipt"
-                            ),
-                        }
-                        tracing::info!(
-                            %peer,
-                            task_id = %receipt.task_id,
-                            "Worker received task receipt"
-                        );
+                                "Worker received task receipt"
+                            );
                             ack_ok()
                         }
                         Err(TaskDecodeError::Empty) => ack_err(400, "empty TaskCtrlReq"),
@@ -244,20 +287,27 @@ fn handle_rr_event(
                     }
                 }
                 rr::Message::Response { response, .. } => {
-                    let net_response = NetApplicationResponse::from(response);
-                    if let NetApplicationResponse::Application(app) = net_response {
-                        if let Err(err) =
-                            task_store.put_application(&ApplicationRecord::from_domain(&app))
-                        {
-                            tracing::error!(
-                                application_id = %app.id,
-                                ?err,
-                                "Worker failed to persist application"
-                            );
-                        } else {
-                            tracing::info!(
-                                application_id = %app.id,
-                                "Worker cached application"
+                    match NetApplicationResponse::from(response) {
+                        NetApplicationResponse::Application(app) => {
+                            let record = ApplicationRecord::from_domain(&app);
+                            if let Err(err) = task_store.put_application(&record) {
+                                tracing::error!(
+                                    application_id = %record.id,
+                                    ?err,
+                                    "Worker failed to persist application"
+                                );
+                            } else {
+                                tracing::info!(
+                                    application_id = %record.id,
+                                    "Worker cached application"
+                                );
+                            }
+                        }
+                        NetApplicationResponse::Err(err) => {
+                            tracing::warn!(
+                                code = err.code,
+                                message = %err.message,
+                                "Worker received application error response"
                             );
                         }
                     }
@@ -276,11 +326,7 @@ fn handle_rr_event(
     }
 }
 
-fn send_task_message(
-    swarm: &mut Swarm<WorkerBehaviour>,
-    peer: &PeerId,
-    message: TaskMessage,
-) {
+fn send_task_message(swarm: &mut Swarm<WorkerBehaviour>, peer: &PeerId, message: TaskMessage) {
     let request: TaskCtrlReq = TaskOutbound::Message(message.clone()).into();
     let request_id = swarm.behaviour_mut().ctrl.send_request(peer, request);
     tracing::debug!(task_id = %message.task_id, event = %message.message_type, ?request_id, "Worker sent task update");
@@ -298,7 +344,9 @@ fn record_task_event(store: &Store, task_id: &str, event: Event, state: &str, co
             if let Some(record) = tasks.into_iter().find(|t| t.payload.id == task_id) {
                 let mut events = record.events;
                 events.push(event);
-                if let Err(err) = store.persist_active_task(task_id, &record.payload, &events, state, completed) {
+                if let Err(err) =
+                    store.persist_active_task(task_id, &record.payload, &events, state, completed)
+                {
                     tracing::error!(%task_id, ?err, "Worker failed to update task state");
                 }
             } else {
@@ -317,27 +365,42 @@ fn build_swarm() -> Result<Swarm<WorkerBehaviour>> {
             noise::Config::new,
             yamux::Config::default,
         )?
-        .with_behaviour(|_| WorkerBehaviour {
-            ctrl: rr::Behaviour::with_codec(
-                QpbRRCodec::<TaskCtrlReq, CtrlAck>::default(),
-                [(
-                    StreamProtocol::new(CTRL_PROTOCOL),
-                    rr::ProtocolSupport::Full,
-                )],
-                rr::Config::default(),
-            ),
+        .with_behaviour(|_| {
+            WorkerBehaviour {
+                    ctrl: rr::Behaviour::with_codec(
+                        QpbRRCodec::<TaskCtrlReq, CtrlAck>::default(),
+                        [(
+                            StreamProtocol::new(CTRL_PROTOCOL),
+                            rr::ProtocolSupport::Full,
+                        )],
+                        rr::Config::default(),
+                    ),
+                    application:
+                        rr::Behaviour::with_codec(
+                            QpbRRCodec::<
+                                proto_app::ApplicationRequest,
+                                proto_app::ApplicationResponse,
+                            >::default(),
+                            [(
+                                StreamProtocol::new(APPLICATION_PROTOCOL),
+                                rr::ProtocolSupport::Full,
+                            )],
+                            rr::Config::default(),
+                        ),
+                }
         })?
         .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(30)))
         .build())
 }
+
 fn ensure_application_cached(
     store: &Store,
     swarm: &mut Swarm<WorkerBehaviour>,
     peer: &PeerId,
     application_id: &str,
-) {
+) -> Option<Application> {
     match store.get_application(application_id) {
-        Ok(Some(_)) => return,
+        Ok(Some(record)) => Some(record.into_domain()),
         Ok(None) => {
             let request: proto_app::ApplicationRequest = NetApplicationRequest::Get {
                 id: application_id.to_string(),
@@ -348,9 +411,15 @@ fn ensure_application_cached(
                 .application
                 .send_request(peer, request);
             tracing::debug!(application_id, "Worker requested application");
+            None
         }
         Err(err) => {
-            tracing::warn!(application_id, ?err, "Worker failed to read application store");
+            tracing::warn!(
+                application_id,
+                ?err,
+                "Worker failed to read application store"
+            );
+            None
         }
     }
 }

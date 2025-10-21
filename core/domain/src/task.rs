@@ -84,11 +84,10 @@ pub struct TaskMessage {
 
 impl TaskSubmission {
     pub fn with_step_defaults(self, step: &ApplicationStep) -> Self {
-        let capability = self.capability.or_else(|| step.capabilities.first().cloned());
-        Self {
-            capability,
-            ..self
-        }
+        let capability = self
+            .capability
+            .or_else(|| step.capabilities.first().cloned());
+        Self { capability, ..self }
     }
 
     pub fn from_proto(payload: proto_task::TaskPayload) -> Self {

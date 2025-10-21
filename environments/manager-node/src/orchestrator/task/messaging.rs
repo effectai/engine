@@ -5,8 +5,8 @@ use proto::{ack_err, ack_ok};
 use serde_json::{self, json};
 use workflow::Event;
 
-use domain::task::{TaskSubmission, TaskMessage, TaskPayload};
-use net::task::{TaskInbound, TaskDecodeError};
+use domain::task::{TaskMessage, TaskPayload, TaskSubmission};
+use net::task::{TaskDecodeError, TaskInbound};
 
 use crate::sequencer::JobNotification;
 

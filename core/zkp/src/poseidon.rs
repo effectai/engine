@@ -1,5 +1,5 @@
-use ark_crypto_primitives::sponge::poseidon::traits::find_poseidon_ark_and_mds;
 use ark_crypto_primitives::sponge::poseidon::PoseidonConfig;
+use ark_crypto_primitives::sponge::poseidon::traits::find_poseidon_ark_and_mds;
 use ark_ff::PrimeField;
 
 /// Poseidon parameters for rate `rate` (capacity 1) using the commonly deployed

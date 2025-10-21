@@ -1,10 +1,12 @@
 use crate::applications::{ApplicationRecord, ApplicationStore};
 use crate::jobs::{JobStore, SequenceRecord};
-use crate::receipts::{decode_receipt, encode_receipt, ReceiptStore};
-use crate::tasks::{CompletedTask, LoadedTask, StoredCompletedTask, StoredTask, StoredTaskPayload, TaskStore};
+use crate::receipts::{ReceiptStore, decode_receipt, encode_receipt};
+use crate::tasks::{
+    CompletedTask, LoadedTask, StoredCompletedTask, StoredTask, StoredTaskPayload, TaskStore,
+};
 use anyhow::{Context, Result};
-use domain::task::TaskPayload;
 use domain::receipt::TaskReceipt;
+use domain::task::TaskPayload;
 use serde_json::Value;
 use sled::Db;
 use std::fs;

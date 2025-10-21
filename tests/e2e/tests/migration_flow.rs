@@ -6,4 +6,3 @@ async fn migration_handoff_flow() -> Result<()> {
     // TODO: seed migration claim, submit signed message, and validate staking genesis CPI.
     Ok(())
 }
-

@@ -28,13 +28,33 @@ impl TaskReceipt {
             reward: proto.reward,
             duration: proto.duration,
             signature: ManagerSignature {
-                r_x: proto.signature.as_ref().map(|s| s.r_x.clone()).unwrap_or_default(),
-                r_y: proto.signature.as_ref().map(|s| s.r_y.clone()).unwrap_or_default(),
-                s: proto.signature.as_ref().map(|s| s.s.clone()).unwrap_or_default(),
+                r_x: proto
+                    .signature
+                    .as_ref()
+                    .map(|s| s.r_x.clone())
+                    .unwrap_or_default(),
+                r_y: proto
+                    .signature
+                    .as_ref()
+                    .map(|s| s.r_y.clone())
+                    .unwrap_or_default(),
+                s: proto
+                    .signature
+                    .as_ref()
+                    .map(|s| s.s.clone())
+                    .unwrap_or_default(),
             },
             manager: ManagerPublicKey {
-                x: proto.manager.as_ref().map(|m| m.x.clone()).unwrap_or_default(),
-                y: proto.manager.as_ref().map(|m| m.y.clone()).unwrap_or_default(),
+                x: proto
+                    .manager
+                    .as_ref()
+                    .map(|m| m.x.clone())
+                    .unwrap_or_default(),
+                y: proto
+                    .manager
+                    .as_ref()
+                    .map(|m| m.y.clone())
+                    .unwrap_or_default(),
             },
             nullifier: proto.nullifier.clone(),
         }

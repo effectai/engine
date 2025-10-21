@@ -1,7 +1,9 @@
+use net::application::{
+    ApplicationRequest as NetApplicationRequest, ApplicationResponse as NetApplicationResponse,
+};
 use proto::application::{ApplicationRequest, ApplicationResponse};
 use proto::common::AckErr;
 use proto::now_ms;
-use net::application::{ApplicationRequest as NetApplicationRequest, ApplicationResponse as NetApplicationResponse};
 
 use super::*;
 

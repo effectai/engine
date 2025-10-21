@@ -1,6 +1,8 @@
 use ark_crypto_primitives::sponge::poseidon::constraints::PoseidonSpongeVar;
 use ark_crypto_primitives::sponge::poseidon::{PoseidonConfig, PoseidonSponge};
-use ark_crypto_primitives::sponge::{Absorb, CryptographicSponge, constraints::CryptographicSpongeVar};
+use ark_crypto_primitives::sponge::{
+    Absorb, CryptographicSponge, constraints::CryptographicSpongeVar,
+};
 use ark_ff::PrimeField;
 use ark_r1cs_std::{R1CSVar, fields::fp::FpVar};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};

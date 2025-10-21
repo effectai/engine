@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use crate::workflow::DelegationStrategy;
 use proto::application as proto_app;
@@ -36,6 +37,36 @@ impl Application {
             updated_at: self.updated_at,
         }
     }
+
+    pub fn from_proto(proto: proto_app::Application) -> Self {
+        let description = if proto.description.is_empty() {
+            None
+        } else {
+            Some(proto.description)
+        };
+        let icon = if proto.icon.is_empty() {
+            None
+        } else {
+            Some(proto.icon)
+        };
+
+        Application {
+            id: proto.id,
+            name: proto.name,
+            peer_id: proto.peer_id,
+            created_at: proto.created_at,
+            url: proto.url,
+            description,
+            icon,
+            tags: proto.tags,
+            steps: proto
+                .steps
+                .into_iter()
+                .map(ApplicationStep::from_proto)
+                .collect(),
+            updated_at: proto.updated_at,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -63,6 +94,29 @@ impl ApplicationStep {
             data: self.data.clone(),
             created_at: self.created_at,
             metadata: self.metadata.clone(),
+        }
+    }
+
+    pub fn from_proto(proto: proto_app::ApplicationStep) -> Self {
+        let description = if proto.description.is_empty() {
+            None
+        } else {
+            Some(proto.description)
+        };
+        let delegation =
+            DelegationStrategy::from_str(proto.delegation.as_str()).unwrap_or_default();
+        let metadata = proto.metadata;
+
+        ApplicationStep {
+            template_id: proto.template_id,
+            description,
+            capabilities: proto.capabilities,
+            workflow_id: proto.workflow_id,
+            delegation,
+            r#type: proto.type_pb,
+            data: proto.data,
+            created_at: proto.created_at,
+            metadata,
         }
     }
 }

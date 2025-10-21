@@ -8,22 +8,22 @@ use futures::StreamExt;
 use libp2p::swarm::{NetworkBehaviour, SwarmEvent};
 use libp2p::{Multiaddr, StreamProtocol, Swarm, noise, tcp, yamux};
 use libp2p_request_response as rr;
+use net::task::TaskOutbound;
 use proto::application::{ApplicationRequest, ApplicationResponse};
 use proto::common::CtrlAck;
 use proto::now_ms;
 use proto::task::TaskCtrlReq;
+use rand::{SeedableRng, rngs::StdRng};
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 use tokio::time::{Interval, interval};
-use rand::{rngs::StdRng, SeedableRng};
 use zkp::generate_manager_keypair;
-use net::task::TaskOutbound;
 
 use crate::orchestrator::application::{ApplicationManager, handle_application_event};
 use crate::orchestrator::task::{NetworkAction, TaskOrchestrator, handle_rr_event};
-use domain::task::TaskSubmission;
 use crate::sequencer::{JobNotification, Sequencer};
 use application::Application;
+use domain::task::TaskSubmission;
 use storage::Store;
 
 const TASK_CTRL_PROTOCOL: &str = "/effect/task-ctrl/1";

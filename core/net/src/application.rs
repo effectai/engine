@@ -39,3 +39,23 @@ impl From<ApplicationResponse> for proto_app::ApplicationResponse {
         }
     }
 }
+
+impl From<proto_app::ApplicationResponse> for ApplicationResponse {
+    fn from(value: proto_app::ApplicationResponse) -> Self {
+        match value.kind {
+            proto_app::mod_ApplicationResponse::OneOfkind::application(app) => {
+                ApplicationResponse::Application(Application::from_proto(app))
+            }
+            proto_app::mod_ApplicationResponse::OneOfkind::err(err) => {
+                ApplicationResponse::Err(err)
+            }
+            proto_app::mod_ApplicationResponse::OneOfkind::None => {
+                ApplicationResponse::Err(AckErr {
+                    timestamp: 0,
+                    code: 500,
+                    message: "empty application response".into(),
+                })
+            }
+        }
+    }
+}

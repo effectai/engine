@@ -6,4 +6,3 @@ async fn failure_scenarios() -> Result<()> {
     // TODO: simulate worker disconnects, invalid payloads, and ensure orchestrator recovers.
     Ok(())
 }
-
