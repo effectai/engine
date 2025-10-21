@@ -14,6 +14,11 @@ pub use state::*;
 
 inject_declare_id_output!("../../../target/deploy/effect_payment-keypair.json");
 
+declare_program!(effect_application);
+declare_program!(effect_staking);
+
+use effect_application::types::PayoutStrategy;
+
 #[program]
 pub mod effect_payment {
 
@@ -26,9 +31,21 @@ pub mod effect_payment {
         min_nonce: u32,
         max_nonce: u32,
         total_amount: u64,
+        version: u8,
+        strategy: PayoutStrategy,
         proof: [u8; 256],
     ) -> Result<()> {
-        claim_proofs::handler(ctx, pub_x, pub_y, min_nonce, max_nonce, total_amount, proof)
+        claim_proofs::handler(
+            ctx,
+            pub_x,
+            pub_y,
+            min_nonce,
+            max_nonce,
+            total_amount,
+            version,
+            strategy,
+            proof,
+        )
     }
 
     pub fn create_payment_pool(
@@ -39,7 +56,7 @@ pub mod effect_payment {
         create::handler(ctx, manager_authority, amount)
     }
 
-    //initialize a recipient/manager data account that holds the nonce
+    //initialize a recipient/manager/application data account that holds the nonce
     pub fn init(ctx: Context<Init>, manager_authority: Pubkey) -> Result<()> {
         init::handler(ctx, manager_authority)
     }

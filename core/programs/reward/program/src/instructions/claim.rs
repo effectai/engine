@@ -8,7 +8,7 @@ use effect_staking::accounts::StakeAccount;
 pub struct Claim<'info> {
     #[account(
         mut,
-        seeds = [b"reflection", recipient_token_account.mint.as_ref()],
+        seeds = [b"reflection", recipient_token_account.mint.as_ref(), stake_account.scope.as_ref()],
         bump,
     )]
     pub reflection_account: Account<'info, ReflectionAccount>,
@@ -22,7 +22,6 @@ pub struct Claim<'info> {
   
     #[account(
         mut,
-        has_one = authority @ RewardErrors::Unauthorized,
         constraint = stake_account.weighted_amount >= reward_account.weighted_amount @ RewardErrors::Decreased,
     )]
     pub stake_account: Account<'info, StakeAccount>,

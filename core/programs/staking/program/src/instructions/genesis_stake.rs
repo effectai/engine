@@ -19,7 +19,10 @@ pub struct GenesisStake<'info> {
     )]
     pub user_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = stake_account.lock_duration == 30 * 24 * 60 * 60 @ StakingErrors::DurationTooLong,
+    )]
     pub stake_account: Account<'info, StakeAccount>,
     
     #[account(

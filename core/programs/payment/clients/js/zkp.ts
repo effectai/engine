@@ -6,6 +6,7 @@ import path from "node:path";
 import { groth16, type Groth16Proof } from "snarkjs";
 import type { Payment } from "@effectai/protobufs";
 import { PAYMENT_BATCH_SIZE } from "./consts.js";
+import type { PayoutStrategy } from "./@generated/index";
 export { buildEddsa } from "circomlibjs";
 
 export type DeepNonNullable<T> = T extends Function
@@ -27,6 +28,8 @@ export type SignedPayment = Payment & {
 export type PublicSignals = {
   recipient: string;
   paymentAccount: string;
+  strategy: string;
+  version: string;
   minNonce: string;
   maxNonce: string;
   amount: string;
@@ -47,6 +50,8 @@ export const signPayment = async (
   const signature = eddsa.signPoseidon(
     privateKey,
     eddsa.poseidon([
+      int2hex(payment.version),
+      int2hex(payment.strategy),
       int2hex(payment.nonce.toString()),
       publicKeyToTruncatedHex(new PublicKey(payment.recipient)),
       publicKeyToTruncatedHex(new PublicKey(payment.paymentAccount)),
@@ -70,11 +75,15 @@ export const generatePaymentProof = async ({
   publicKey,
   recipient,
   paymentAccount,
+  strategy,
+  version,
   payments,
 }: {
   publicKey: string;
   recipient: string;
+  version: number;
   paymentAccount: string;
+  strategy: PayoutStrategy;
   payments: Array<SignedPayment>;
 }) => {
   try {
@@ -91,19 +100,13 @@ export const generatePaymentProof = async ({
 
     const enabled = Array(PAYMENT_BATCH_SIZE).fill(0).fill(1, 0, batchSize);
     const lastNonce = payments[payments.length - 1].nonce;
-
-    console.log(
-      "Generating proof for :",
-      recipient,
-      paymentAccount,
-      payments.length,
-    );
-
     const proofInputs = {
       pubX: eddsa.F.toObject(pubX),
       pubY: eddsa.F.toObject(pubY),
       receiver: publicKeyToTruncatedHex(new PublicKey(recipient)),
       paymentAccount: publicKeyToTruncatedHex(new PublicKey(paymentAccount)),
+      strategy: int2hex(strategy),
+      version: int2hex(version),
       nonce: padArray(
         payments.map((p) => int2hex(Number(p.nonce))),
         int2hex(lastNonce),
@@ -158,8 +161,10 @@ export const generatePaymentProof = async ({
         amount: result.publicSignals[2],
         recipient: result.publicSignals[3],
         paymentAccount: result.publicSignals[4],
-        pubX: result.publicSignals[5],
-        pubY: result.publicSignals[6],
+        strategy: result.publicSignals[5],
+        version: result.publicSignals[6],
+        pubX: result.publicSignals[7],
+        pubY: result.publicSignals[8],
       } as PublicSignals,
     };
   } catch (error) {
@@ -184,7 +189,7 @@ export const prove = async ({
 
   return await groth16.verify(
     PaymentBatchVerifier,
-    [...Object.values(publicSignals)],
+    [...Object.values(publicSignals).map((v) => v.toString())],
     proof,
   );
 };

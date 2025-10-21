@@ -1,21 +1,6 @@
 use anchor_lang::prelude::*;
 use effect_common::constants::{SECONDS_PER_DAY, STAKE_AGE_MAX_DAYS};
 
-pub struct SettingsAccount {
-    pub authority: Pubkey,
-    pub token_account: Pubkey,
-}
-
-impl SettingsAccount {
-    pub const SIZE: usize = 8 + std::mem::size_of::<SettingsAccount>();
-
-    pub fn set(&mut self, authority: Pubkey, token_account: Pubkey) -> Result<()> {
-        self.authority = authority;
-        self.token_account = token_account;
-        Ok(())
-    }
-}
-
 #[account]
 pub struct StakeAccount {
     pub amount: u64,
@@ -24,19 +9,37 @@ pub struct StakeAccount {
     pub stake_start_time: i64,
     pub weighted_amount: u128,
     pub mint: Pubkey,
+    pub version: u8,
+    pub scope: Pubkey,
+    pub allow_topup: bool,
+    pub _reserved: [u8; 32],
 }
 
 impl StakeAccount {
+    pub fn migrate(&mut self, scope: Pubkey) {
+        self.version = 1;
+        self.scope = scope;
+        self.mint = scope;
+        self.allow_topup = true;
+    }
+
     pub fn init(
         &mut self,
         amount: u64,
         authority: Pubkey,
         lock_duration: u64,
         stake_start_time: i64,
+        mint: Pubkey,
+        scope: Pubkey,
+        allow_topup: bool,
     ) {
         self.amount = amount;
         self.authority = authority;
         self.lock_duration = lock_duration;
+        self.mint = mint;
+        self.scope = scope;
+        self.version = 1;
+        self.allow_topup = allow_topup;
 
         if stake_start_time
             < Clock::get().unwrap().unix_timestamp
@@ -91,5 +94,11 @@ impl StakeAccount {
 
     fn update_weighted_amount(&mut self) {
         self.weighted_amount = self.amount as u128
+    }
+
+    pub fn charge_virtual(&mut self, amount: u64) -> Result<()> {
+        self.amount = amount;
+        self.update_weighted_amount();
+        Ok(())
     }
 }

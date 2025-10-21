@@ -4,6 +4,11 @@ use anchor_spl::token::{Mint, Token};
 use effect_common::cpi;
 use effect_common::transfer_tokens_from_vault;
 
+use crate::effect_application::accounts::Application;
+use crate::effect_application::types::PayoutStrategy;
+use crate::effect_staking::accounts::StakeAccount;
+use crate::effect_staking::program::EffectStaking;
+
 use crate::errors::PaymentErrors;
 use crate::utils::{change_endianness, u32_to_32_byte_be_array, u64_to_32_byte_be_array};
 use crate::{id, vault_seed, PaymentAccount, RecipientManagerDataAccount};
@@ -65,8 +70,13 @@ pub fn public_key_to_truncated_hex(bytes: [u8; 32]) -> [u8; 32] {
 
 #[derive(Accounts)]
 pub struct Claim<'info> {
-    #[account()]
+    #[account(
+        has_one = application_account @ PaymentErrors::InvalidApplicationAccount,
+    )]
     pub payment_account: Account<'info, PaymentAccount>,
+
+    #[account()]
+    application_account: Account<'info, Application>,
 
     #[account(mut, seeds = [payment_account.key().as_ref()], bump)]
     pub payment_vault_token_account: Account<'info, TokenAccount>,
@@ -78,8 +88,21 @@ pub struct Claim<'info> {
     )]
     pub recipient_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [
+            authority.key().as_ref(),
+            payment_account.manager_account.key().as_ref(),
+            payment_account.application_account.key().as_ref(),
+            mint.key().as_ref()
+        ],
+        bump,
+    )]
     pub recipient_manager_data_account: Account<'info, RecipientManagerDataAccount>,
+
+    pub stake_account: Option<Account<'info, StakeAccount>>,
+    pub stake_vault_token_account: Option<Account<'info, TokenAccount>>,
+    pub stake_program: Option<Program<'info, EffectStaking>>,
 
     pub token_program: Program<'info, Token>,
 
@@ -96,11 +119,28 @@ pub fn handler(
     min_nonce: u32,
     max_nonce: u32,
     total_amount: u64,
+    version: u8,
+    strategy: PayoutStrategy,
     proof: [u8; 256],
 ) -> Result<()> {
     let manager_key = Pubkey::new_from_array(compress(pub_x, pub_y));
-    let expected_seeds = &[ctx.accounts.authority.key.as_ref(), manager_key.as_ref()];
-    let (expected_pda, _) = Pubkey::find_program_address(expected_seeds, ctx.program_id);
+    let mint_key = ctx.accounts.mint.key();
+    let expected_seeds = &[
+        ctx.accounts.authority.key.as_ref(),
+        manager_key.as_ref(),
+        ctx.accounts.payment_account.application_account.as_ref(),
+        mint_key.as_ref(),
+    ];
+
+    let (expected_pda, bump) = Pubkey::find_program_address(expected_seeds, ctx.program_id);
+
+    let signer_seeds = &[
+        ctx.accounts.authority.key.as_ref(),
+        manager_key.as_ref(),
+        ctx.accounts.payment_account.application_account.as_ref(),
+        mint_key.as_ref(),
+        &[bump],
+    ];
 
     // Verify data account PDA
     require_keys_eq!(
@@ -139,6 +179,8 @@ pub fn handler(
         public_key_to_truncated_hex(ctx.accounts.payment_account.key().to_bytes())
             .try_into()
             .unwrap(),
+        u32_to_32_byte_be_array(strategy as u32),
+        u32_to_32_byte_be_array(version as u32),
         pub_x,
         pub_y,
     ];
@@ -146,21 +188,99 @@ pub fn handler(
     let mut verifier =
         Groth16Verifier::new(&proof_a, &proof_b, &proof_c, &public_inputs, &VERIFYINGKEY).unwrap();
 
+    // Check if proof verification was successful
     let result = verifier.verify().unwrap();
     require!(result, PaymentErrors::InvalidProof);
 
     // Update nonce to the max_nonce in the batch
     ctx.accounts.recipient_manager_data_account.nonce = max_nonce;
 
-    // Transfer the total amount of all the proofs.
-    if total_amount > 0 {
-        transfer_tokens_from_vault!(
-            ctx.accounts,
-            payment_vault_token_account,
-            recipient_token_account,
-            &[&vault_seed!(ctx.accounts.payment_account.key(), id())],
-            total_amount
-        )?;
+    // increment total_claimed
+    ctx.accounts.recipient_manager_data_account.total_claimed += total_amount;
+
+    let payment_strategy = ctx.accounts.application_account.payment_strategy;
+    match payment_strategy {
+        PayoutStrategy::Direct => {
+            if total_amount > 0 {
+                transfer_tokens_from_vault!(
+                    ctx.accounts,
+                    payment_vault_token_account,
+                    recipient_token_account,
+                    &[&vault_seed!(ctx.accounts.payment_account.key(), id())],
+                    total_amount
+                )?;
+            }
+        }
+
+        PayoutStrategy::Shares | PayoutStrategy::Staked => {
+            // ensure stake account and program are provided
+            let stake_account = ctx
+                .accounts
+                .stake_account
+                .as_ref()
+                .ok_or(PaymentErrors::MissingStakeAccountOrProgram)?;
+
+            let staking_program = ctx
+                .accounts
+                .stake_program
+                .as_ref()
+                .ok_or(PaymentErrors::MissingStakeAccountOrProgram)?;
+
+            match payment_strategy {
+                PayoutStrategy::Shares => {
+                    crate::effect_staking::cpi::charge(
+                        CpiContext::new_with_signer(
+                            staking_program.to_account_info(),
+                            crate::effect_staking::cpi::accounts::Charge {
+                                stake_account: stake_account.to_account_info(),
+                                stake_vault_token_account: ctx
+                                    .accounts
+                                    .stake_vault_token_account
+                                    .as_ref()
+                                    .unwrap()
+                                    .to_account_info(),
+                                recipient_manager_app_data_account: ctx
+                                    .accounts
+                                    .recipient_manager_data_account
+                                    .to_account_info(),
+                                authority: ctx.accounts.authority.to_account_info(),
+                                user_token_account: ctx
+                                    .accounts
+                                    .recipient_token_account
+                                    .to_account_info(),
+                                token_program: ctx.accounts.token_program.to_account_info(),
+                            },
+                            &[signer_seeds],
+                        ),
+                        total_amount,
+                    )?;
+                }
+                PayoutStrategy::Staked => {
+                    crate::effect_staking::cpi::topup(
+                        CpiContext::new(
+                            staking_program.to_account_info(),
+                            crate::effect_staking::cpi::accounts::Topup {
+                                stake_account: stake_account.to_account_info(),
+                                stake_vault_token_account: ctx
+                                    .accounts
+                                    .stake_vault_token_account
+                                    .as_ref()
+                                    .unwrap()
+                                    .to_account_info(),
+                                authority: ctx.accounts.authority.to_account_info(),
+                                user_token_account: ctx
+                                    .accounts
+                                    .recipient_token_account
+                                    .to_account_info(),
+                                token_program: ctx.accounts.token_program.to_account_info(),
+                            },
+                        ),
+                        total_amount,
+                    )?;
+                }
+                _ => unreachable!(),
+            }
+        }
     }
 
     Ok(())

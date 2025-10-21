@@ -1,12 +1,11 @@
-//! Instructions for Nosana Rewards.
-
 pub mod claim;
-pub mod close;
-pub mod open;
-pub mod update_recipient;
-
-// pub use claim_fee::*;
 pub use claim::*;
+
+pub mod close;
 pub use close::*;
+
+pub mod open;
 pub use open::*;
+
+pub mod update_recipient;
 pub use update_recipient::*;

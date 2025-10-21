@@ -15,6 +15,7 @@ pub struct Unstake<'info> {
     #[account(
         mut,
         has_one = authority @ StakingErrors::Unauthorized,
+        constraint = stake_account.scope == mint.key() @ StakingErrors::InvalidStakeAccount,
     )]
     pub stake_account: Account<'info, StakeAccount>,
 
@@ -57,20 +58,20 @@ pub struct Unstake<'info> {
     pub recipient_token_account: Account<'info, TokenAccount>,
 
     pub system_program: Program<'info, System>,
-
     pub token_program: Program<'info, Token>,
-
     pub reward_program: Program<'info, EffectReward>,
-
     pub vesting_program: Program<'info, EffectVesting>,
-
     pub rent: Sysvar<'info, Rent>,
-
     pub mint: Account<'info, Mint>,
 }
 
 impl<'info> Unstake<'info> {
     pub fn handler(&mut self, amount: u64) -> Result<()> {
+        // if lock_duration is 0, unstaking is not allowed
+        require!(
+            self.stake_account.lock_duration > 0,
+            StakingErrors::NotAllowedToUnstake
+        );
 
         require!(
             amount <= self.stake_account.amount,
@@ -79,6 +80,12 @@ impl<'info> Unstake<'info> {
 
         // determine release rate (linear)
         let release_rate = amount / self.stake_account.lock_duration;
+
+        let mint_info = &self.mint;
+        let decimals = mint_info.decimals;
+
+        let min_release_rate = 1 * 10u64.pow((decimals as u32).saturating_sub(decimals as u32)); 
+        require!(release_rate >= min_release_rate, StakingErrors::ReleaseRateTooLow);
 
         // open a vesting account
         let now: i64 = Clock::get()?.unix_timestamp;

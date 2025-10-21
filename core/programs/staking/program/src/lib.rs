@@ -23,8 +23,14 @@ declare_program!(effect_reward);
 pub mod effect_staking {
     use super::*;
 
-    pub fn stake(ctx: Context<Stake>, amount: u64, duration: u128) -> Result<()> {
-        ctx.accounts.handler(amount, duration)
+    pub fn stake(
+        ctx: Context<Stake>,
+        amount: u64,
+        duration: u128,
+        scope: Pubkey,
+        allow_topup: bool,
+    ) -> Result<()> {
+        ctx.accounts.handler(amount, duration, scope, allow_topup)
     }
 
     pub fn stake_genesis(
@@ -35,18 +41,27 @@ pub mod effect_staking {
         ctx.accounts.handler(amount, stake_start_time)
     }
 
-    /// Start the unstake duration.
     pub fn unstake(ctx: Context<Unstake>, amount: u64) -> Result<()> {
         ctx.accounts.handler(amount)
     }
 
-    /// Top-up `amount` of [NOS](/tokens/token) of a [StakeAccount](#stake-account).
     pub fn topup(ctx: Context<Topup>, amount: u64) -> Result<()> {
         ctx.accounts.handler(amount)
     }
 
-    /// Close a [StakeAccount](#stake-account) and [VaultAccount](#vault-account).
     pub fn close(ctx: Context<Close>) -> Result<()> {
         ctx.accounts.handler()
+    }
+
+    pub fn charge(ctx: Context<Charge>, amount: u64) -> Result<()> {
+        ctx.accounts.handler(amount)
+    }
+
+    pub fn migrate(ctx: Context<Migrate>) -> Result<()> {
+        ctx.accounts.handler()
+    }
+
+    pub fn invest(ctx: Context<Invest>, amount: u64) -> Result<()> {
+        ctx.accounts.handler(amount)
     }
 }

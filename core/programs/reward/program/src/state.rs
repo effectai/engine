@@ -1,9 +1,22 @@
 use anchor_lang::prelude::*;
 
 use crate::RewardErrors;
+
 /***
  * Accounts
  */
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct ReflectionSettings {
+    // The scope of the reflection pool, e.g. a specific program or application
+    pub scope: Pubkey,
+    // The minimal duration for staking to be eligible for reflections
+    pub lock_duration: u64,
+    // The mint of this reflection pool
+    pub mint: Pubkey,
+
+    //reserved for future use
+    pub _reserved: [u8; 128],
+}
 
 /// The `ReflectionAccount` struct holds all the information on the reflection pool.
 #[account]
@@ -11,16 +24,21 @@ pub struct ReflectionAccount {
     pub rate: u128,
     pub total_reflection: u128,
     pub total_weighted_amount: u128,
+    pub settings: ReflectionSettings,
+    pub version: u8,
 }
 
 impl ReflectionAccount {
     pub const SIZE: usize = 8 + std::mem::size_of::<ReflectionAccount>();
 
-    pub fn init(&mut self, total_supply: u64) -> Result<()> {
+    pub fn init(&mut self, total_supply: u64, settings: ReflectionSettings) -> Result<()> {
         // set initial rate based on total supply of the given mint.
         self.rate = (u128::MAX - (u128::MAX % total_supply as u128)) / total_supply as u128;
         self.total_reflection = 0;
         self.total_weighted_amount = 0;
+
+        self.settings = settings;
+        self.version = 1;
 
         Ok(())
     }

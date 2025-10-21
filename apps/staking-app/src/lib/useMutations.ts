@@ -132,6 +132,8 @@ export const useStakeMutation = () => {
 
       const stakeInstruction = await getStakeInstructionAsync({
         mint,
+        scope: mint,
+        allowTopup: true,
         stakeAccount,
         amount: amount * 1e6,
         duration: 30 * 24 * 60 * 60, // 30 days

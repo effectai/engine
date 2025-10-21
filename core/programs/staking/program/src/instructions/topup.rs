@@ -3,6 +3,7 @@ use anchor_spl::token::{Token, TokenAccount};
 use effect_common::cpi;
 
 #[derive(Accounts)]
+#[instruction(amount: u64)]
 pub struct Topup<'info> {
     #[account(mut)]
     pub user_token_account: Account<'info, TokenAccount>,
@@ -10,6 +11,8 @@ pub struct Topup<'info> {
     #[account(
         mut,
         has_one = authority @ StakingErrors::Unauthorized,
+        constraint = stake_account.allow_topup == true @ StakingErrors::TopupNotAllowed,
+        constraint = amount > 0 @ StakingErrors::AmountNotEnough,
     )]
     pub stake_account: Account<'info, StakeAccount>,
 
@@ -27,9 +30,6 @@ pub struct Topup<'info> {
 
 impl<'info> Topup<'info> {
     pub fn handler(&mut self, amount: u64) -> Result<()> {
-        // test amount
-        require!(amount > 0, StakingErrors::AmountNotEnough);
-
         // get stake account and topup stake
         let new_time = Clock::get().unwrap().unix_timestamp;
         self.stake_account.topup(amount, new_time);

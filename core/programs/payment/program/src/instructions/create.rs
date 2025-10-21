@@ -4,16 +4,22 @@ use effect_common::transfer_tokens_to_vault;
 use effect_common::cpi;
 
 use crate::PaymentAccount;
+use crate::effect_application::accounts::Application;
 
 #[derive(Accounts)]
 #[instruction(manager_authority: Pubkey, amount: u64)]
 pub struct Create<'info> {
     #[account(
         init, 
+        seeds = [b"payment", manager_authority.as_ref(), application_account.key().as_ref(), mint.key().as_ref()],
+        bump,
         payer = authority, 
-        space = PaymentAccount::SIZE + 32
+        space = PaymentAccount::SIZE + 8,
     )]
     pub payment_account: Account<'info, PaymentAccount>,
+
+    #[account(mut)]
+    pub application_account: Account<'info, Application>,
 
     #[account(
         init,
@@ -43,6 +49,6 @@ pub struct Create<'info> {
 }
 
 pub fn handler(ctx: Context<Create>, manager_authority: Pubkey, amount: u64) -> Result<()> {
-    ctx.accounts.payment_account.initialize(manager_authority, ctx.accounts.mint.key(), ctx.accounts.user_token_account.key(), ctx.accounts.authority.key());
+    ctx.accounts.payment_account.initialize(manager_authority, ctx.accounts.application_account.key(), ctx.accounts.mint.key(), ctx.accounts.user_token_account.key(), ctx.accounts.authority.key());
     transfer_tokens_to_vault!(ctx.accounts, payment_vault_token_account, amount)
 }

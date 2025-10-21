@@ -7,10 +7,11 @@ mod state;
 use anchor_id_injector::inject_declare_id_output;
 use anchor_lang::prelude::*;
 use effect_common::*;
-use errors::*;
-use instructions::*;
 
-pub use state::*;
+use errors::*;
+use state::*;
+
+pub use instructions::*;
 
 inject_declare_id_output!("../../../target/deploy/effect_vesting-keypair.json");
 

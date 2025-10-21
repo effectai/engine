@@ -910,6 +910,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "effect-application"
+version = "0.1.0"
+dependencies = [
+ "anchor-id-injector",
+ "anchor-lang",
+ "anchor-spl",
+ "effect-common",
+]
+
+[[package]]
 name = "effect-common"
 version = "0.1.0"
 dependencies = [

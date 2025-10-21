@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-// Custom Error
+
 #[error_code]
 pub enum MigrationError {
     #[msg("Invalid message provided.")]
@@ -22,7 +22,7 @@ pub enum MigrationError {
 
     #[msg("The memo in the transaction does not match the expected value.")]
     MemoMismatch,
-   
+
     #[msg("Memo field not found in actions.")]
     MemoNotFound,
 

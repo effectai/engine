@@ -1,0 +1,38 @@
+{
+  "name": "program-tests",
+  "version": "1.0.0",
+  "description": "suites for testing effect programs",
+  "main": "./dist/index.js",
+  "scripts": {
+    "test": "pnpm vitest"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.9.0",
+  "dependencies": {
+    "@effectai/application": "workspace:*",
+    "@effectai/payment": "workspace:*",
+    "@effectai/staking": "workspace:*",
+    "@effectai/reward": "workspace:*",
+    "@effectai/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@effectai/solana-utils": "workspace:*",
+    "@solana/kit": "^2.1.1",
+    "solana-kite": "^1.5.5",
+    "vitest": "^2.1.9",
+    "typescript": "^5.8.3",
+    "@solana-program/token": "^0.5.1",
+    "@solana-program/system": "^0.7.0",
+    "@effectai/utils": "workspace:*",
+    "@effectai/test-utils": "workspace:*"
+  }
+}

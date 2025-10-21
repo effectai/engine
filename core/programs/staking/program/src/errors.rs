@@ -1,4 +1,3 @@
-
 use anchor_lang::prelude::*;
 
 #[error_code]
@@ -37,4 +36,14 @@ pub enum StakingErrors {
     StakeNotEmpty,
     #[msg("Invalid Mint")]
     InvalidMint,
+    #[msg("Scope mismatch.")]
+    ScopeMismatch,
+    #[msg("Not allowed to unstake.")]
+    NotAllowedToUnstake,
+    #[msg("Already migrated.")]
+    AlreadyMigrated,
+    #[msg("Release rate too low")]
+    ReleaseRateTooLow,
+    #[msg("Topup not allowed")]
+    TopupNotAllowed,
 }

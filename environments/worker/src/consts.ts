@@ -1,1 +1,0 @@
-const TASK_ACCEPTANCE_TIME = 600000; // 24 hours

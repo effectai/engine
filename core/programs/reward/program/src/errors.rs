@@ -1,4 +1,3 @@
-
 use anchor_lang::prelude::*;
 
 #[error_code]
@@ -17,4 +16,10 @@ pub enum RewardErrors {
     NoClaimableRewards,
     #[msg("Invalid Mint")]
     InvalidMint,
+    #[msg("Scope mismatch")]
+    ScopeMismatch,
+    #[msg("Mismatched unstake permission")]
+    MismatchedUnstakePermission,
+    #[msg("This account has already been migrated.")]
+    AlreadyMigrated,
 }

@@ -4,7 +4,9 @@ use crate::{effect_staking::{accounts::StakeAccount, program::EffectStaking}, *}
 
 #[derive(Accounts)]
 pub struct Sync<'info> {
-    #[account()]
+    #[account(
+        constraint = stake_account.scope == reflection_account.settings.scope @ RewardErrors::ScopeMismatch,
+    )]
     pub stake_account: Account<'info, StakeAccount>,
     
     #[account(
@@ -23,7 +25,7 @@ pub struct Sync<'info> {
 
     #[account(
         mut,
-        seeds = [b"reflection", stake_vault_token_account.mint.as_ref()],
+        seeds = [b"reflection", stake_vault_token_account.mint.as_ref(), stake_account.scope.as_ref()],
         bump,
     )]
     pub reflection_account: Account<'info, ReflectionAccount>,

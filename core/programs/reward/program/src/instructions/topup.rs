@@ -7,11 +7,7 @@ pub struct Topup<'info> {
     #[account(mut)]
     pub mint: Account<'info, Mint>,
 
-    #[account(
-        mut,
-        seeds = [b"reflection", mint.key().as_ref()],
-        bump,
-    )]
+    #[account()]
     pub reflection_account: Account<'info, ReflectionAccount>,
 
     #[account(

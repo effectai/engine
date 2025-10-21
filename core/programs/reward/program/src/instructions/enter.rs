@@ -1,23 +1,22 @@
-use anchor_spl::token::{Mint, TokenAccount};
-
 use crate::*;
-
+use anchor_spl::token::{Mint, TokenAccount};
 use effect_staking::{accounts::StakeAccount, program::EffectStaking};
 
 #[derive(Accounts)]
 pub struct Enter<'info> {
     #[account(
         mut,
-        seeds = [ b"reflection", mint.key().as_ref() ],
-        bump
+        has_one = authority @ RewardErrors::Unauthorized,
+        constraint = stake_account.lock_duration == reflection_account.settings.lock_duration @ RewardErrors::Unauthorized
     )]
-    pub reflection_account: Account<'info, ReflectionAccount>,
+    pub stake_account: Account<'info, StakeAccount>,
 
     #[account(
         mut,
-        has_one = authority @ RewardErrors::Unauthorized,
+        seeds = [ b"reflection", mint.key().as_ref(), stake_account.scope.as_ref()],
+        bump
     )]
-    pub stake_account: Account<'info, StakeAccount>,
+    pub reflection_account: Account<'info, ReflectionAccount>,
 
     #[account(
         mut,
