@@ -1,0 +1,10 @@
+[workspace]
+members = [
+  "application",
+  "codec",
+  "proto",
+  "storage",
+  "workflow",
+  "zkp"
+]
+resolver = "2"
