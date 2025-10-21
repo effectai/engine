@@ -5,8 +5,8 @@ use anyhow::Result;
 use application::ApplicationBuilder;
 use libp2p::Multiaddr;
 use manager_node::{ManagerConfig, TaskSubmission, spawn_manager};
-use proto::now_ms;
-use serde_json::{Value, json};
+use serde_json::Value;
+use storage::{JobStore, TaskStore};
 use tokio::time::timeout;
 use ulid::Ulid;
 use worker_node::{WorkerConfig, spawn_worker};
@@ -61,7 +61,7 @@ async fn end_to_end_task_flow() -> Result<()> {
                 </p>",
                 )
         })?
-        .step("step-2", |ctx, step| {
+        .step("step-2", |_, step| {
             step.capability("effectai/demo")
                 .workflow(DEFAULT_WORKFLOW_ID)
                 .template_html(
@@ -138,15 +138,6 @@ async fn end_to_end_task_flow() -> Result<()> {
         let template_json: Value = serde_json::from_str(&task.payload.template_data)
             .expect("template data should encode context");
 
-        //
-        // let message = template_json
-        //     .get("template")
-        //     .and_then(|tpl| tpl.get("message"))
-        //     .and_then(|value| value.as_str())
-        //     .expect("step-2 template should include message");
-        // assert_eq!(message, "dummy result");
-        //
-
         let context = template_json
             .get("context")
             .and_then(|ctx| ctx.get("step-1"))
@@ -159,7 +150,15 @@ async fn end_to_end_task_flow() -> Result<()> {
         assert_eq!(result_value, "dummy result");
     }
 
-    assert!(store.load_jobs()?.is_empty(), "all jobs should be cleared");
+    timeout(Duration::from_secs(3), async {
+        loop {
+            if store.load_jobs()?.is_empty() {
+                break Result::<(), anyhow::Error>::Ok(());
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    })
+    .await??;
 
     //grab results of each task and log it
     let completed = store.load_completed_tasks()?;
@@ -179,6 +178,29 @@ async fn end_to_end_task_flow() -> Result<()> {
             results
         );
     }
+
+    let worker1_receipts = worker1.list_receipts()?;
+    let worker2_receipts = worker2.list_receipts()?;
+
+    //log receipts
+    tracing::info!(
+        "Worker 1 stored {} receipts, Worker 2 stored {} receipts",
+        worker1_receipts.len(),
+        worker2_receipts.len()
+    );
+
+    assert!(
+        !worker1_receipts.is_empty() || !worker2_receipts.is_empty(),
+        "expected at least one worker receipt to be stored"
+    );
+
+    let worker1_tasks = worker1.load_tasks()?;
+    let worker2_tasks = worker2.load_tasks()?;
+
+    assert!(
+        !worker1_tasks.is_empty() || !worker2_tasks.is_empty(),
+        "expected at least one worker task to be persisted"
+    );
 
     worker1.shutdown().await?;
     worker2.shutdown().await?;

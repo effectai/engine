@@ -17,9 +17,11 @@ use tokio::task::JoinHandle;
 use tokio::time::{Interval, interval};
 use rand::{rngs::StdRng, SeedableRng};
 use zkp::generate_manager_keypair;
+use net::task::TaskOutbound;
 
 use crate::orchestrator::application::{ApplicationManager, handle_application_event};
-use crate::orchestrator::task::{NetworkAction, TaskOrchestrator, TaskSubmission, handle_rr_event};
+use crate::orchestrator::task::{NetworkAction, TaskOrchestrator, handle_rr_event};
+use domain::task::TaskSubmission;
 use crate::sequencer::{JobNotification, Sequencer};
 use application::Application;
 use storage::Store;
@@ -225,16 +227,12 @@ fn execute_actions(swarm: &mut Swarm<EffectBehaviour>, actions: Vec<NetworkActio
     for action in actions {
         match action {
             NetworkAction::SendTask { peer, payload } => {
-                let request = TaskCtrlReq {
-                    kind: proto::task::mod_TaskCtrlReq::OneOfkind::task_payload(payload),
-                };
+                let request: TaskCtrlReq = TaskOutbound::Payload(payload).into();
                 let request_id = swarm.behaviour_mut().task_ctrl.send_request(&peer, request);
                 tracing::info!(%peer, ?request_id, "Sent task payload");
             }
             NetworkAction::SendReceipt { peer, receipt } => {
-                let request = TaskCtrlReq {
-                    kind: proto::task::mod_TaskCtrlReq::OneOfkind::task_receipt(receipt),
-                };
+                let request: TaskCtrlReq = TaskOutbound::Receipt(receipt).into();
                 let request_id = swarm.behaviour_mut().task_ctrl.send_request(&peer, request);
                 tracing::info!(%peer, ?request_id, "Sent task receipt");
             }

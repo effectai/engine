@@ -1,7 +1,9 @@
 [workspace]
 members = [
+  "domain",
   "application",
   "codec",
+  "net",
   "proto",
   "storage",
   "workflow",

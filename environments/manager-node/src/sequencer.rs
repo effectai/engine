@@ -5,8 +5,9 @@ use anyhow::{Result, anyhow};
 use application::template;
 use serde_json::{self, Value};
 
-use crate::orchestrator::task::{NetworkAction, TaskOrchestrator, TaskSubmission};
-use storage::{SequenceRecord, Store, StoredSequenceSubmission};
+use crate::orchestrator::task::{NetworkAction, TaskOrchestrator};
+use domain::task::TaskSubmission;
+use storage::{JobStore, SequenceRecord, Store, StoredSequenceSubmission};
 
 pub const STEP_TASK_DELIM: &str = "::step::";
 

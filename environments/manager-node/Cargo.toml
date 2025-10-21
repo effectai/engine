@@ -14,6 +14,8 @@ proto = { path = "../../core/proto" }
 codec = { path = "../../core/codec" }
 workflow = { path = "../../core/workflow" }
 application = { path = "../../core/application" }
+domain = { path = "../../core/domain" }
+net = { path = "../../core/net" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 futures = "0.3.0"

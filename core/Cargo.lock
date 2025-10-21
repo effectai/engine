@@ -123,6 +123,7 @@ name = "application"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "domain",
  "proto",
  "serde_json",
  "storage",
@@ -736,6 +737,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.106",
+]
+
+[[package]]
+name = "domain"
+version = "0.1.0"
+dependencies = [
+ "proto",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1530,6 +1540,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "net"
+version = "0.1.0"
+dependencies = [
+ "codec",
+ "domain",
+ "proto",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "num-bigint"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2203,6 +2223,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bincode",
+ "domain",
  "proto",
  "quick-protobuf",
  "serde",
@@ -2877,6 +2898,7 @@ checksum = "f17a85883d4e6d00e8a97c586de764dabcc06133f7f1d55dce5cdc070ad7fe59"
 name = "workflow"
 version = "0.1.0"
 dependencies = [
+ "domain",
  "proto",
  "serde",
  "serde_json",

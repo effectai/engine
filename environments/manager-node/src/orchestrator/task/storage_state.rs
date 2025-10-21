@@ -33,10 +33,12 @@ impl TaskOrchestrator {
 
         let task_id = stored.payload.id.clone();
 
+        let proto_payload = stored.payload.clone().into_proto();
+
         self.engine.restore_task(
             DEFAULT_WORKFLOW_ID,
             task_id.clone(),
-            stored.payload,
+            proto_payload,
             stored.events,
             &stored.current_state,
             stored.completed,

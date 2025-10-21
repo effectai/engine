@@ -1,4 +1,5 @@
 use rand::Rng;
+use domain::task::TaskPayload;
 
 use super::*;
 
@@ -37,7 +38,7 @@ impl TaskOrchestrator {
         task_id: &String,
         actions: &mut Vec<NetworkAction>,
     ) -> TaskAssignmentStatus {
-        let (completed, payload) = match self.engine.get(task_id) {
+        let (completed, payload_proto) = match self.engine.get(task_id) {
             Some(task) => (task.completed, task.payload.clone()),
             None => return TaskAssignmentStatus::Consumed,
         };
@@ -45,6 +46,8 @@ impl TaskOrchestrator {
         if completed {
             return TaskAssignmentStatus::Consumed;
         }
+
+        let payload = TaskPayload::from_proto(&payload_proto);
 
         let strategy = self.task_policies.get(task_id).copied().unwrap_or_default();
 

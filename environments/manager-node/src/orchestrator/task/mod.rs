@@ -12,15 +12,19 @@ use ulid::Ulid;
 
 use crate::manager::EffectBehaviour;
 use crate::sequencer::{JobNotification, Sequencer};
-use application::{Application, DelegationStrategy};
+use application::Application;
+use domain::receipt::{ManagerPublicKey, ManagerSignature, TaskReceipt};
+use domain::task::{TaskPayload, TaskSubmission};
+use domain::workflow::DelegationStrategy;
 use libp2p_request_response as rr;
+use net::task::{TaskDecodeError, TaskInbound, TaskOutbound};
 use proto::common::CtrlAck;
-use proto::task::{TaskCtrlReq, TaskPayload, TaskReceipt};
+use proto::task::TaskCtrlReq;
 use proto::{ack_err, ack_ok, now_ms};
-use storage::{ApplicationRecord, CompletedTask, LoadedTask, Store};
+use rand::{SeedableRng, rngs::StdRng};
+use storage::{ApplicationRecord, ApplicationStore, CompletedTask, LoadedTask, Store, TaskStore};
 use workflow::{self, DEFAULT_WORKFLOW_ID, Engine, Event, WorkflowAction};
 use zkp::{ManagerKeypair, pack_receipt};
-use rand::{rngs::StdRng, SeedableRng};
 
 mod assignment;
 mod messaging;
@@ -28,7 +32,6 @@ mod storage_state;
 
 pub use assignment::NetworkAction;
 pub use messaging::RequestOutcome;
-pub use messaging::TaskSubmission;
 
 pub struct TaskOrchestrator {
     store: Arc<Store>,
@@ -125,11 +128,8 @@ impl TaskOrchestrator {
         //TODO:: support custom workflows
         let engine_workflow_id = DEFAULT_WORKFLOW_ID;
 
-        let capability = submission
-            .capability
-            .clone()
-            .or_else(|| step.capabilities.first().cloned())
-            .unwrap_or_default();
+        let submission = submission.with_step_defaults(&step);
+        let capability = submission.capability.clone().unwrap_or_default();
 
         let base_template = submission
             .template_data
@@ -150,7 +150,7 @@ impl TaskOrchestrator {
             base_template.clone()
         };
 
-        let payload = TaskPayload {
+        let domain_payload = TaskPayload {
             id: submission.id.clone(),
             title: submission.title.clone(),
             reward: submission.reward,
@@ -159,14 +159,16 @@ impl TaskOrchestrator {
             template_data,
             application_id: submission.application_id.clone(),
             step_id: submission.step_id.clone(),
-            capability,
+            capability: capability.clone(),
         };
 
-        let task_id = payload.id.clone();
+        let payload_proto = domain_payload.clone().into_proto();
+
+        let task_id = domain_payload.id.clone();
         self.task_policies.insert(task_id.clone(), step.delegation);
         self.broadcast_targets.remove(&task_id);
         self.engine
-            .create_task(engine_workflow_id, task_id.clone(), payload);
+            .create_task(engine_workflow_id, task_id.clone(), payload_proto);
         self.enqueue_task(task_id.clone());
         self.persist_task_state(&task_id);
         self.consume_workflow_actions();
@@ -189,7 +191,7 @@ impl TaskOrchestrator {
         persist: bool,
     ) -> Result<()> {
         if persist {
-            let record = ApplicationRecord::from(application.clone());
+            let record = ApplicationRecord::from_domain(&application);
             self.store.put_application(&record)?;
         }
 
@@ -201,7 +203,7 @@ impl TaskOrchestrator {
     fn require_application(&mut self, application_id: &str) -> Result<&Application> {
         if !self.applications.contains_key(application_id) {
             if let Some(record) = self.store.get_application(application_id)? {
-                let application: Application = record.into();
+                let application = record.into_domain();
                 self.register_application_internal(application, false)?;
             }
         }
@@ -226,9 +228,10 @@ impl TaskOrchestrator {
 
     fn persist_task_state(&self, task_id: &String) {
         if let Some(task) = self.engine.get(task_id) {
+            let domain_payload = domain::task::TaskPayload::from_proto(&task.payload);
             if let Err(err) = self.store.persist_active_task(
                 task_id,
-                &task.payload,
+                &domain_payload,
                 task.events(),
                 task.current,
                 task.completed,
@@ -241,9 +244,10 @@ impl TaskOrchestrator {
     fn archive_task(&self, task_id: &str, result: Value) {
         let key = task_id.to_string();
         if let Some(task) = self.engine.get(&key) {
+            let domain_payload = domain::task::TaskPayload::from_proto(&task.payload);
             if let Err(err) =
                 self.store
-                    .archive_task(&key, &task.payload, task.events(), result, now_ms())
+                    .archive_task(&key, &domain_payload, task.events(), result, now_ms())
             {
                 tracing::error!(%task_id, ?err, "Failed to archive task");
             }
@@ -279,15 +283,15 @@ impl TaskOrchestrator {
             task_id: task.payload.id.clone(),
             reward: task.payload.reward,
             duration,
-            signature: Some(proto::task::ManagerSignature {
+            signature: ManagerSignature {
                 r_x: field_to_bytes(&receipt.signature.r_x),
                 r_y: field_to_bytes(&receipt.signature.r_y),
                 s: field_to_bytes(&receipt.signature.s),
-            }),
-            manager: Some(proto::task::ManagerPublicKey {
+            },
+            manager: ManagerPublicKey {
                 x: field_to_bytes(&receipt.manager_public.x),
                 y: field_to_bytes(&receipt.manager_public.y),
-            }),
+            },
             nullifier: field_to_bytes(&receipt.nullifier),
         })
     }
@@ -397,10 +401,10 @@ pub fn handle_rr_event(
             rr::Message::Request {
                 request, channel, ..
             } => {
-                let outcome = match request.kind {
-                    proto::task::mod_TaskCtrlReq::OneOfkind::task_payload(payload) => {
+                let outcome = match TaskInbound::try_from(request) {
+                    Ok(TaskInbound::Payload(payload)) => {
                         match job_sequencer
-                            .submit_job(orchestrator, TaskSubmission::from_payload(payload))
+                            .submit_job(orchestrator, messaging::submission_from_payload(payload))
                         {
                             Ok(actions) => RequestOutcome {
                                 response: ack_ok(),
@@ -412,15 +416,14 @@ pub fn handle_rr_event(
                             },
                         }
                     }
-                    proto::task::mod_TaskCtrlReq::OneOfkind::task_message(message) => {
+                    Ok(TaskInbound::Message(message)) => {
                         orchestrator.handle_task_message(&peer, message)
                     }
-                    proto::task::mod_TaskCtrlReq::OneOfkind::task_receipt(_) => RequestOutcome {
+                    Ok(TaskInbound::Receipt(_)) => RequestOutcome {
                         response: ack_err(400, "unexpected task receipt payload"),
                         actions: Vec::new(),
                     },
-
-                    proto::task::mod_TaskCtrlReq::OneOfkind::None => RequestOutcome {
+                    Err(TaskDecodeError::Empty) => RequestOutcome {
                         response: ack_err(400, "empty TaskCtrlReq"),
                         actions: Vec::new(),
                     },
@@ -460,16 +463,12 @@ fn execute_actions(swarm: &mut Swarm<EffectBehaviour>, actions: Vec<NetworkActio
     for action in actions {
         match action {
             NetworkAction::SendTask { peer, payload } => {
-                let request = TaskCtrlReq {
-                    kind: proto::task::mod_TaskCtrlReq::OneOfkind::task_payload(payload),
-                };
+                let request: TaskCtrlReq = TaskOutbound::Payload(payload).into();
                 let request_id = swarm.behaviour_mut().task_ctrl.send_request(&peer, request);
                 tracing::info!(%peer, ?request_id, "Sent task payload");
             }
             NetworkAction::SendReceipt { peer, receipt } => {
-                let request = TaskCtrlReq {
-                    kind: proto::task::mod_TaskCtrlReq::OneOfkind::task_receipt(receipt),
-                };
+                let request: TaskCtrlReq = TaskOutbound::Receipt(receipt).into();
                 let request_id = swarm.behaviour_mut().task_ctrl.send_request(&peer, request);
                 tracing::info!(%peer, ?request_id, "Sent task receipt");
             }

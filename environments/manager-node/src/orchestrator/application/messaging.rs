@@ -1,5 +1,7 @@
-use application::wire::to_proto_application;
 use proto::application::{ApplicationRequest, ApplicationResponse};
+use proto::common::AckErr;
+use proto::now_ms;
+use net::application::{ApplicationRequest as NetApplicationRequest, ApplicationResponse as NetApplicationResponse};
 
 use super::*;
 
@@ -8,12 +10,17 @@ impl ApplicationManager {
         &self,
         request: ApplicationRequest,
     ) -> Result<ApplicationResponse, anyhow::Error> {
-        match request {
-            proto::application::ApplicationRequest { id } => {
-                if let Some(app) = self.get_application(&id).ok() {
-                    Ok(to_proto_application(&app))
+        match NetApplicationRequest::from(request) {
+            NetApplicationRequest::Get { id } => {
+                if let Ok(app) = self.get_application(&id) {
+                    Ok(NetApplicationResponse::Application(app).into())
                 } else {
-                    Err(anyhow::anyhow!("Application not found"))
+                    let err = AckErr {
+                        timestamp: now_ms().min(u32::MAX as u64) as u32,
+                        code: 404,
+                        message: "Application not found".into(),
+                    };
+                    Ok(NetApplicationResponse::Err(err).into())
                 }
             }
         }

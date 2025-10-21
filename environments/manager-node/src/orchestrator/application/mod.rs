@@ -8,7 +8,7 @@ use proto::{
     application::{ApplicationRequest, ApplicationResponse},
     common::AckErr,
 };
-use storage::{ApplicationRecord, Store};
+use storage::{ApplicationRecord, ApplicationStore, Store};
 use workflow::WorkflowDefinition;
 
 use crate::manager::EffectBehaviour;
@@ -32,11 +32,11 @@ impl ApplicationManager {
         self.store
             .get_application(app_id)?
             .ok_or_else(|| anyhow::anyhow!("Application not found"))
-            .map(|record| Application::from(record))
+            .map(|record| record.into_domain())
     }
 
     pub fn add_application(&mut self, app: Application) -> Result<()> {
-        let app = ApplicationRecord::from(app);
+        let app = ApplicationRecord::from_domain(&app);
         self.store.put_application(&app)?;
         Ok(())
     }

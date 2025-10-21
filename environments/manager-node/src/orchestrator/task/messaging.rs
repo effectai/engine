@@ -1,41 +1,19 @@
 use libp2p::PeerId;
 use proto::common::CtrlAck;
-use proto::task::{TaskCtrlReq, TaskMessage, TaskPayload};
+use proto::task::TaskCtrlReq;
 use proto::{ack_err, ack_ok};
-use serde_json::{Value, json};
+use serde_json::{self, json};
 use workflow::Event;
+
+use domain::task::{TaskSubmission, TaskMessage, TaskPayload};
+use net::task::{TaskInbound, TaskDecodeError};
 
 use crate::sequencer::JobNotification;
 
 use super::{NetworkAction, TaskOrchestrator};
 
-#[derive(Debug, Clone)]
-pub struct TaskSubmission {
-    pub id: String,
-    pub title: String,
-    pub reward: u64,
-    pub time_limit_seconds: u32,
-    pub application_id: String,
-    pub step_id: String,
-    pub capability: Option<String>,
-    pub template_data: Option<String>,
-    pub job_context: Option<Value>,
-}
-
-impl TaskSubmission {
-    pub fn from_payload(payload: TaskPayload) -> Self {
-        Self {
-            id: payload.id,
-            title: payload.title,
-            reward: payload.reward,
-            time_limit_seconds: payload.time_limit_seconds,
-            application_id: payload.application_id,
-            step_id: payload.step_id,
-            capability: Some(payload.capability),
-            template_data: Some(payload.template_data),
-            job_context: None,
-        }
-    }
+pub fn submission_from_payload(payload: TaskPayload) -> TaskSubmission {
+    TaskSubmission::from_proto(payload.into_proto())
 }
 
 #[derive(Debug)]
@@ -46,9 +24,10 @@ pub struct RequestOutcome {
 
 impl TaskOrchestrator {
     pub fn handle_request(&mut self, peer: &PeerId, request: TaskCtrlReq) -> RequestOutcome {
-        match request.kind {
-            proto::task::mod_TaskCtrlReq::OneOfkind::task_payload(payload) => {
-                match self.create_task(TaskSubmission::from_payload(payload)) {
+        match TaskInbound::try_from(request) {
+            Ok(TaskInbound::Payload(payload)) => {
+                let submission = submission_from_payload(payload.clone());
+                match self.create_task(submission) {
                     Ok(actions) => RequestOutcome {
                         response: ack_ok(),
                         actions,
@@ -59,14 +38,12 @@ impl TaskOrchestrator {
                     },
                 }
             }
-            proto::task::mod_TaskCtrlReq::OneOfkind::task_message(message) => {
-                self.handle_task_message(peer, message)
-            }
-            proto::task::mod_TaskCtrlReq::OneOfkind::task_receipt(_) => RequestOutcome {
+            Ok(TaskInbound::Message(message)) => self.handle_task_message(peer, message),
+            Ok(TaskInbound::Receipt(_)) => RequestOutcome {
                 response: ack_err(400, "unexpected task receipt payload"),
                 actions: Vec::new(),
             },
-            proto::task::mod_TaskCtrlReq::OneOfkind::None => RequestOutcome {
+            Err(TaskDecodeError::Empty) => RequestOutcome {
                 response: ack_err(400, "empty TaskCtrlReq"),
                 actions: Vec::new(),
             },
@@ -76,7 +53,7 @@ impl TaskOrchestrator {
     pub fn handle_task_message(&mut self, peer: &PeerId, message: TaskMessage) -> RequestOutcome {
         let TaskMessage {
             task_id,
-            type_pb,
+            message_type,
             data,
             timestamp,
         } = message;
@@ -94,7 +71,7 @@ impl TaskOrchestrator {
         let assignee = workflow::current_assignee(task.events());
 
         let mut actions = Vec::new();
-        let response = match type_pb.as_str() {
+        let response = match message_type.as_str() {
             "accept" => {
                 self.idle_workers.retain(|p| p != peer);
                 self.task_assignments.insert(task_id.clone(), peer.clone());
