@@ -25,10 +25,7 @@ const campaignCard = (d: DatasetRecord) => {
 
   return (
     `
-<strong><a href="/d/${d.id}">${d.name}</a></strong>` +
-    ` <small>Started ${formatDate(d.id)}</small>
-<div><small>Tasks: 2.3M - Workers: 17,000 - Completed: 97%</small></div>
-`
+<strong><a href="/d/${d.id}">${d.name}</a></strong>`
   );
 };
 
