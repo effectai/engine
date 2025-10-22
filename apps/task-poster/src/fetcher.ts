@@ -259,7 +259,8 @@ const pipelineFetcherForm = async (dsId: number, values: FormValues) => `
 	      hx-include="#filter">
 	${(await Promise.all((await getFetchers(dsId)).map(async (t) =>
       `<option value="${t.index}"` +
-      `${values.target == t.index ? " selected" : ""}>` +
+      `${values.pipelineSource ? "disabled" : " "}` +
+      `${values.pipelineSource[2] == t.index ? " selected" : ""}>` +
 	`#${t.index}: ${t.name}
  (tasks: ${countTasks((await getFetcher(t.datasetId, t.index))!, "done")})
        </option>`,
@@ -493,11 +494,15 @@ const handleFetcherImport = async(fetcher: Fetcher, fields: FormValues) => {
 
     case "pipeline":
       fetcher.pipelineFilterRegex = fields.filter;
-      fetcher.pipelineSource = [
-	"fetcher",
-	fetcher.datasetId,
-	Number(fields.pipelineSource)
-      ];
+      if (!fetcher.pipelineSource) {
+	fetcher.pipelineSource = [
+	  "fetcher",
+	  fetcher.datasetId,
+	  Number(fields.pipelineSource)
+	];
+      } else if (fetcher.pipelineSource[2] != fields.pipelineSource){
+	throw new Error("Can't edit pipeline source");
+      }
       await writeFetcher(fetcher);
       break;
   }
@@ -847,6 +852,7 @@ export const addFetcherRoutes = (app: Express): void => {
     if (f)
       res.send(page(`
 <div class="container">
+<a href="/d/${id}">< back</a>
 <h3>Step ${f.name}</h3>
 <ul>
   <li>Last fetch: ${formatDate((f!.lastImport || 0) / 1000)}</li>
