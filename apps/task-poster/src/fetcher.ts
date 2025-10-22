@@ -403,20 +403,13 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 
       // the high water mark
       const regex = new RegExp(fetcher.pipelineFilterRegex as string);
-      let lastId;
-      for await (const taskId of iterator) {
-	console.log(taskId.key[4], '===', fetcher.pipelineLastImportedTask)
 
+      let dataQueue: any[] = [];
+      for await (const taskId of iterator) {
 	if (taskId.key[4] == fetcher.pipelineLastImportedTask)
 	  break;
 
 	const task = (await db.get<any>(["task-result", taskId.key[4]]))!.data;
-
-	if (!lastId) {
-	  console.log("SETTING LAST ID TO" , taskId.key[4])
-	  lastId = taskId.key[4];
-	}
-
 
 	// regex filter
 	if (regex.test(task.result)) {
@@ -425,8 +418,11 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 
 	let cols = ["timestamp", "submissionByPeer", "taskId", "result"];
 	const t = Object.fromEntries(cols.map(k => [k, task[k]]));
-	data.push(t);
+	dataQueue.push(t);
       }
+
+      data = dataQueue.slice(-fetcher.batchSize);
+      const lastId = data?.[0]?.taskId;
 
       // make sure we are doing a fresh write
       if (lastId) {
