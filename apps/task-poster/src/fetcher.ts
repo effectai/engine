@@ -260,7 +260,7 @@ const pipelineFetcherForm = async (dsId: number, values: FormValues) => `
 	${(await Promise.all((await getFetchers(dsId)).map(async (t) =>
       `<option value="${t.index}"` +
       `${values.pipelineSource ? "disabled" : " "}` +
-      `${values.pipelineSource[2] == t.index ? " selected" : ""}>` +
+      `${values.pipelineSource?.[2] == t.index ? " selected" : ""}>` +
 	`#${t.index}: ${t.name}
  (tasks: ${countTasks((await getFetcher(t.datasetId, t.index))!, "done")})
        </option>`,
