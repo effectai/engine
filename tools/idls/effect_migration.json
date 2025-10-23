@@ -9,23 +9,12 @@
   "instructions": [
     {
       "name": "claim_stake",
-      "discriminator": [
-        62,
-        145,
-        133,
-        242,
-        244,
-        59,
-        53,
-        139
-      ],
+      "discriminator": [62, 145, 133, 242, 244, 59, 53, 139],
       "accounts": [
         {
           "name": "authority",
           "signer": true,
-          "relations": [
-            "stake_account"
-          ]
+          "relations": ["stake_account"]
         },
         {
           "name": "recipient_token_account",
@@ -74,7 +63,7 @@
         {
           "name": "rent_receiver",
           "writable": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "address": "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"
         },
         {
           "name": "rent",
@@ -110,16 +99,7 @@
     },
     {
       "name": "create_stake_claim",
-      "discriminator": [
-        209,
-        124,
-        209,
-        232,
-        131,
-        66,
-        118,
-        116
-      ],
+      "discriminator": [209, 124, 209, 232, 131, 66, 118, 116],
       "accounts": [
         {
           "name": "migration_account",
@@ -156,7 +136,7 @@
           "name": "authority",
           "writable": true,
           "signer": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "address": "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"
         },
         {
           "name": "user_token_account",
@@ -192,16 +172,7 @@
     },
     {
       "name": "destroy_claim",
-      "discriminator": [
-        223,
-        1,
-        238,
-        215,
-        51,
-        229,
-        149,
-        94
-      ],
+      "discriminator": [223, 1, 238, 215, 51, 229, 149, 94],
       "accounts": [
         {
           "name": "migration_account",
@@ -226,7 +197,7 @@
           "name": "authority",
           "writable": true,
           "signer": true,
-          "address": "authGiAp86YEPGjqpKNxAMHxqcgvjmBfQkqqvhf7yMV"
+          "address": "nXwHwpf23pp1GVE9AXV3KJTN4orAqWGFgwHQT8E7qEx"
         },
         {
           "name": "user_token_account",
@@ -251,29 +222,11 @@
   "accounts": [
     {
       "name": "MigrationAccount",
-      "discriminator": [
-        129,
-        168,
-        118,
-        35,
-        238,
-        212,
-        16,
-        172
-      ]
+      "discriminator": [129, 168, 118, 35, 238, 212, 16, 172]
     },
     {
       "name": "StakeAccount",
-      "discriminator": [
-        80,
-        158,
-        67,
-        124,
-        50,
-        189,
-        192,
-        255
-      ]
+      "discriminator": [80, 158, 67, 124, 50, 189, 192, 255]
     }
   ],
   "errors": [
@@ -346,3 +299,4 @@
     }
   ]
 }
+
