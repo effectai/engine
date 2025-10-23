@@ -83,7 +83,7 @@
                 lyrics: "${lyrics}",
                 allowedStart: "${start}",
                 allowedEnd: "${end}",
-
+                jobID: "${jobID}",
                 sliders: [],
                 filters: [],
                 replaySpeed: 1,
@@ -304,6 +304,7 @@
                         values: {
                         taskTitle: this.title,
                         answer: {
+                            jobID: this.jobID,
                             song: this.songSource,
                             allowedStart: "${start}",
                             allowedEnd: "${end}",

@@ -7,7 +7,7 @@
 
   <p class="mb-5">Is a linguistically correct sentence?</p>
   <div class="box">
-    <p class="is-size-4 has-text-weight-semibold">{{sentence.values.answer}}</p>
+    <p class="is-size-4 has-text-weight-semibold">{{sentence}}</p>
   </div>
 
   <div class="mb-5">
@@ -54,7 +54,7 @@
         btnLoading: false,
         author: "${submissionByPeer}", 
         // incoming result - {"timestamp": "", "submissionByPeer": "", "taskId": "", "result": "JSON_STRING"}
-        sentence: JSON.parse("${result}"), 
+        sentence: (JSON.parse("${result}")).values.answer, 
         isValidated: "",
         loading: true,
         notComplete: false,
@@ -162,7 +162,7 @@
                 values: {
                   taskTitle: this.title,
                   author: this.author,
-                  sentence: this.sentence.values.answer,
+                  sentence: this.sentence,
                   isValidated: this.isValidated
                 },
               },
