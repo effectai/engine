@@ -73,7 +73,7 @@ export const generateDag = (steps: any[]) => {
   return `
   <div class="graph-container" style="height: ${graphHeight}px; width: ${graphWidth}px;">
     <!-- SVG for edges -->
-    <svg style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
+    <svg style="position: absolute; width: 1000px; height: 100%; pointer-events: none;">
       <defs>
 	<marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
 	  <polygon points="0 0, 10 3, 0 6" fill="#666" />
