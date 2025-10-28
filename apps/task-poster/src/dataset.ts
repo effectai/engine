@@ -7,6 +7,7 @@ import type { Fetcher } from "./fetcher.js";
 import { isHtmx, make404, make500, page } from "./html.js";
 import { db, managerId, publishProgress } from "./state.js";
 import { getTemplate, getTemplates, renderTemplate } from "./templates.js";
+import { generateDag } from "./dag.js";
 
 type DatasetStatus = "active" | "draft" | "finished" | "archived";
 const statusValues: DatasetStatus[] = [
@@ -139,27 +140,25 @@ const confirmForm = async (
   values: FormValues = {},
   fetchers: Fetcher[] = [],
 ): Promise<string> => `
-<div>
-<h3>Dataset ${id}</h3>
-<p>Status: ${ds.status}</p>
+<div class="container">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+  <h3>${ds.name}</h3>
+  <nav style="display: flex; gap: 1.0rem;">
+    <a href="/d/${id}/edit"><button>Edit</button></a>
+    <button class="download">Download</button>
+  </nav>
+</div>
+<p>Mozilla Common Voice is an open-source dataset of voice recordings in multiple languages, created to help train and develop speech recognition systems. It contains thousands of validated hours of speech contributed by volunteers around the world.</p>
 <section>
   <h3>Steps</h3>
-  <div class="boxbox">
-  ${fetchers.sort((f1, f2) => f1.index - f2.index).map((f: Fetcher) => `
-    <div class="box">
-      <strong><a href="/d/${id}/f/${f.index}">#${f.index} ${f.name}</a></strong>
-      <small>${f.type} (${f.type == "constant" ? f.maxTasks : f.totalTasks})</small>
-      <br/>
-      <small>queue: ${fetcher.countTasks(f, "queue")} -
-             active: ${fetcher.countTasks(f, "active")} -
-             done: ${fetcher.countTasks(f, "done")}</small>
-
-    </div>
+  ${generateDag(fetchers)}
+    ${fetchers.sort((f1, f2) => f1.index - f2.index).map((f: Fetcher) => `
   `).join('')}
-  </div>
-  <section>
-    <a href="${id}/create-fetcher?type=csv"><button>+ Add Step</button></a>
-  </section>
+  <div style="display: flex; justify-content: center;">
+    <a href="${id}/create-fetcher?type=csv">
+      <button>+ Add Step</button>
+    </a>
+   </div>
 </section>
 <form hx-post="/d/${id}" hx-swap="outerHTML">
 <section>
@@ -167,13 +166,14 @@ ${
   ds.status === "draft"
     ? `<button hx-post="/d/${id}?action=publish">Publish</button>`
     : ds.status === "active"
-      ? `<button hx-post="/d/${id}?action=archive">Archive</button>`
+    ? `<button  hx-confirm="Are you sure you wish to arhive this?"
+                hx-post="/d/${id}?action=archive">Archive Dataset</button>`
       : `<button hx-post="/d/${id}?action=publish">Publish</button>`
 }
 </div>
 </form>
 </section>
-${ds.status == "active" ? `<section><h3>Add more data<h3></section>` : ``}
+<section></section>
 `;
 
 // starts auto-importing of active datasets

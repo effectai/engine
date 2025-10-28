@@ -860,7 +860,7 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Batch / Freq: ${f.batchSize} / ${f.frequency}</li>
 </ul>
 
-<section>
+<section style="display: flex; gap: 1.0rem">
   <a href="/d/${id}/f/${fid}/import"><button>Add Data</button></a>
   <a href="/d/${id}/f/${fid}/edit"><button>Edit Step</button></a>
   <a href="/d/${id}/f/${fid}/download"><button>Download CSV</button></a>
