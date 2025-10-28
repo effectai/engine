@@ -210,6 +210,11 @@ export const startAutoImport = async () => {
 };
 
 export const addDatasetRoutes = (app: Express): void => {
+  app.get("/d/archived", requireAuth, async (_req, res) => {
+    const ds = await getActiveDatasets("archived");
+    res.send(page(ds.map(d => `<a href="/d/${d.id}">${d.name}</a>`).join("")) );
+  });
+
   app.get("/d/create", requireAuth, async (_req, res) => {
     res.send(page(await form()));
   });
