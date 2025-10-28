@@ -148,7 +148,7 @@ const confirmForm = async (
     <button class="download">Download</button>
   </nav>
 </div>
-<p>Mozilla Common Voice is an open-source dataset of voice recordings in multiple languages, created to help train and develop speech recognition systems. It contains thousands of validated hours of speech contributed by volunteers around the world.</p>
+<p>${ds.description || "" }</p>
 <section>
   <h3>Steps</h3>
   ${generateDag(fetchers)}
