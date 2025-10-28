@@ -148,6 +148,8 @@ const confirmForm = async (
     <button class="download">Download</button>
   </nav>
 </div>
+${ds.image ? 
+  `<img style="border-radius: 15px; object-fit: cover; overflow: hidden;" height="150px" width="100%" src="${ds.image}"/>` : '' }
 <p>${ds.description || "" }</p>
 <section>
   <h3>Steps</h3>
