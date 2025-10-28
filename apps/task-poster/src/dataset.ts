@@ -27,6 +27,8 @@ export type DatasetRecord = {
   id: number;
   status: DatasetStatus;
   name: string;
+  image?: string;
+  description?: string;
 };
 
 export const getDataset = async (id: number) =>
@@ -73,7 +75,7 @@ const addVal = (values: FormValues, key: string): string =>
 
 const form = async (msg = "", values: FormValues = {}): Promise<string> =>
   `
-<form id="main-form" hx-post="/d/create" hx-swap="outerHTML show:window:top">
+<form id="main-form" hx-post="${values.id ? "/d/" + values.id  : "/d/create"}" hx-swap="outerHTML show:window:top">
   <div id="messages">
     ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
   </div>
@@ -84,6 +86,17 @@ const form = async (msg = "", values: FormValues = {}): Promise<string> =>
       type="text"
       id="name"  ${addVal(values, "name")}
       name="name"/>
+
+    <label for="description"><strong>Description</strong></label>
+    <textarea id="description" name="description" rows="8">` +
+  `${values.description || ""}</textarea>
+
+    <label for="name"><strong>Image</strong></label>
+    <input
+      placeholder="URL"
+      type="text"
+      id="image"  ${addVal(values, "image")}
+      name="image"/>
 
     <section>
       <button type="submit">Continue</button>
@@ -242,12 +255,12 @@ export const addDatasetRoutes = (app: Express): void => {
     }
   });
 
-  app.get("/d/:id/progress", async (req, res) => {
+  app.get("/d/:id/edit", async (req, res) => {
     const id = Number(req.params.id);
     const dataset = await db.get<DatasetRecord>(["dataset", id]);
-    if (!dataset) return make404(res);
 
-    // res.send(await importProgress(dataset!.data));
+    if (!dataset) return make404(res);
+    res.send(page(await form("", dataset?.data)));
   });
 
   app.get("/d/:id", async (req, res) => {
@@ -270,7 +283,6 @@ export const addDatasetRoutes = (app: Express): void => {
 `),
     );
   });
-
 
   app.post("/d/:id", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
@@ -303,6 +315,31 @@ export const addDatasetRoutes = (app: Express): void => {
         <p><a href="/"><button>Home</button></a></p>
       </div>
       `);
+    } else {
+      // this is the EDIT action
+      let { valid, errors } = await validateForm(req.body);
+      let msg = Object.values(errors).join("<br/>- ");
+      msg = msg ? "- " + msg : "";
+      let id;
+
+      if (valid) {
+	dataset!.data.name = req.body.name;
+	dataset!.data.image = req.body.image;
+	dataset!.data.description = req.body.description;
+	await db.set<DatasetRecord>(dataset!.key, dataset!.data);
+        msg = `<p>Success! Dataset ${id}</p>`;
+      } else {
+	msg = '<h4 style="margin-top: 0;">Could not create dataset:</h4>' + msg;
+      }
+
+      if (valid) {
+	res.setHeader("HX-Location", `/d/${dataset.data.id}`);
+	res.end();
+      } else {
+	console.log(`Invalid form submission ${msg}`);
+	res.send(await form(msg, req.body));
+      }
     }
   });
+
 };
