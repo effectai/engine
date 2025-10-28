@@ -12,6 +12,7 @@
   "dependencies": {
     "buffer": "^6.0.3",
     "@effectai/config": "workspace:*",
+    "@solana/webcrypto-ed25519-polyfill": "^2.3.0",
     "@effectai/migration": "workspace:*",
     "@effectai/react": "workspace:*",
     "@effectai/solana-utils": "workspace:*",
