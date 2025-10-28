@@ -154,7 +154,7 @@ const confirmForm = async (
   ${generateDag(fetchers)}
     ${fetchers.sort((f1, f2) => f1.index - f2.index).map((f: Fetcher) => `
   `).join('')}
-  <div style="display: flex; justify-content: center;">
+  <div class="mt" style="display: flex; justify-content: center;">
     <a href="${id}/create-fetcher?type=csv">
       <button>+ Add Step</button>
     </a>
