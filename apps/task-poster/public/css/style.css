@@ -80,7 +80,7 @@ table {
     margin: 25px 0;
 }
 
-a {  text-decoration: none; }
+a {  text-decoration: none; color: var(--foreground); }
 a:visited { color: inherit; }
 
 button {
