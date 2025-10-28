@@ -1,7 +1,7 @@
 import * as fetcher from "./fetcher.js";
 import dagre from '@dagrejs/dagre';
 
-export const generateDag = (steps) => {
+export const generateDag = (steps: any[]) => {
   const g = new dagre.graphlib.Graph();
 
   g.setGraph({
@@ -38,7 +38,7 @@ export const generateDag = (steps) => {
   dagre.layout(g);
 
   const nodes = g.nodes().map(v => {
-    const node = g.node(v);
+    const node = g.node(v) as any;
     return {
       id: v,
       label: node.label,
@@ -67,8 +67,8 @@ export const generateDag = (steps) => {
   });
 
   // Calculate total graph dimensions
-  const graphWidth = g.graph().width + 40;
-  const graphHeight = g.graph().height + 40;
+  const graphWidth = g.graph().width || 0 + 40;
+  const graphHeight = g.graph().height || 0 + 40;
 
   return `
   <div class="graph-container" style="height: ${graphHeight}px; width: ${graphWidth}px;">
