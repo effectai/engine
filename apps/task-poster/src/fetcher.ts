@@ -848,8 +848,7 @@ export const addFetcherRoutes = (app: Express): void => {
     if (f)
       res.send(page(`
 <div class="container">
-<a href="/d/${id}">< back</a>
-<h3>Step ${f.name}</h3>
+<h3><small><a style="font-weight: normal;" href="/d/${id}">< back</small></a> Step ${f.name}</h3>
 <ul>
   <li>Last fetch: ${formatDate((f!.lastImport || 0) / 1000)}</li>
   <li>Type: ${f.type}</li>

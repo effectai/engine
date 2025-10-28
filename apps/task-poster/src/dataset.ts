@@ -260,7 +260,7 @@ export const addDatasetRoutes = (app: Express): void => {
     }
   });
 
-  app.get("/d/:id/edit", async (req, res) => {
+  app.get("/d/:id/edit", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
     const dataset = await db.get<DatasetRecord>(["dataset", id]);
 

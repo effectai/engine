@@ -31,7 +31,7 @@ const loggedInPage = (msg = "") => `
   ${msg ? `<p class="notif" id="messages">${msg}</p>` : ""}
 
 
-  <fieldset class="box fill">
+  <fieldset class="box">
     <h3>Status</h3>
 
     <p>Authorized as administrator</p>
@@ -52,12 +52,12 @@ const loggedInPage = (msg = "") => `
   </fieldset>
 
 
-  <section>
-  <form hx-target="body" hx-post="/auth/logout">
-  <button type="submit">Logout</button>
-  <a href="/"><button type="button">Datasets</button></a>
-  <a href="/templates"><button type="button">Templates</button></a>
-  </form>
+  <section class="button-bar">
+    <form hx-target="body" hx-post="/auth/logout">
+      <button type="submit">Logout</button>
+    </form>
+    <a href="/"><button type="button">Datasets</button></a>
+    <a href="/templates"><button type="button">Templates</button></a>
   </section>
 </div>
 `;
@@ -88,6 +88,9 @@ export const requireAuth = async (
     res.status(401).send(page(await loginPage(`Auth Required`)));
   }
 };
+
+export const hasAuth = (req: Request) =>
+  isValidKey(getAuthToken(req));
 
 export const addAuthRoutes = (app: Express): void => {
   app.get("/auth", async (req, res) => {

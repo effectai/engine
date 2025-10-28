@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from 'express';
 import express from "express";
-import { addAuthRoutes } from "./auth.js";
+import { addAuthRoutes, hasAuth } from "./auth.js";
 import { addFetcherRoutes } from "./fetcher.js";
 import {
   addDatasetRoutes,
@@ -28,7 +28,7 @@ const campaignCard = (d: DatasetRecord) => {
   <img src="${ d.image || "https://effect.ai/img/hero-background.png" }"/>
   <div class="content">
   <strong>${d.name}</strong><br/>
-  <small>The open, global, voice dataset.</small>
+  <small class="one-line">${d.description || "..."}</small>
 <small>
 <ul>
   <li>Size: 12GB</li>
@@ -42,7 +42,7 @@ const campaignCard = (d: DatasetRecord) => {
 };
 
 const addMainRoutes = (app: Express) => {
-  app.get("/", async (_: Request, res: Response) => {
+  app.get("/", async (req: Request, res: Response) => {
     const datasets = await getActiveDatasets("active");
 
     const dsList = datasets.map((d) => campaignCard(d));
@@ -57,9 +57,7 @@ const addMainRoutes = (app: Express) => {
     res.send(
       page(
 	`
-
   <h2>Browse Datasets</h2>
-
   <div class="boxbox">
   ${
     dsList.length
@@ -68,12 +66,10 @@ const addMainRoutes = (app: Express) => {
   }
   </div>
 
-<div class="mt buttons">
+<div class="mt button-bar">
   <a href="/d/create"><button>+ New Dataset</button></a>
+  ${hasAuth(req) ? `<a href="/d/archived"><button>> Archived Datasets</button></a>` : "" }
 </div>
-
-
-
 `,
       ),
     );
