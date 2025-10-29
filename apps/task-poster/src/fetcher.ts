@@ -250,8 +250,7 @@ const pipelineFetcherForm = async (dsId: number, values: FormValues) => `
     <legend>pipeline config</legend>
 
     <label for="pipelineSource"><strong>Source Step</strong><br/>
-    <small>The <emph>done</emph> queue of the source step is used to fetch data`+
-  ` from.</small></label>
+    <small>The <emph>done</emph> queue of the source step is used to fetch data from.</small></label>
       <select name="pipelineSource"
 	      id="pipelineSource"
 	      hx-target="#preview"
@@ -267,9 +266,15 @@ const pipelineFetcherForm = async (dsId: number, values: FormValues) => `
 	))).join("")}
       </select>
 
-    <label for="filter"><strong>Regex filter</strong><br/>
-    <small>Regular expression task filter. If this regex matches the task ` +
-  `result string, the task will <strong>not</strong> get posted.</small></label>
+    ${!values.pipelineSource ? `
+    <div class="checkbox">
+    <input type="checkbox" id="importAll" name="importAll" />
+    <label for="importAll">Import all finished tasks</strong></label>
+    </div>
+    ` : ''}
+
+    <label for="filter"><strong>Regex Exclude Filter</strong><br/>
+    <small>Regular expression task filter. If this regex matches the task result string, the task will <strong>not</strong> get posted.</small></label>
     <input
       hx-target="#preview"
       hx-get="/d/${dsId}/pipeline-preview"
@@ -496,6 +501,14 @@ const handleFetcherImport = async(fetcher: Fetcher, fields: FormValues) => {
 	  fetcher.datasetId,
 	  Number(fields.pipelineSource)
 	];
+	if (!fields.importAll) {
+	  const lastId = (await db.listAll<boolean>(
+	    fetcher.pipelineSource.concat(["done"]), 1, true
+	  ));
+          fetcher.pipelineLastImportedTask = lastId?.length ?
+            lastId[0].key[lastId[0].key.length - 1] as string : undefined;
+	}
+
       } else if (fetcher.pipelineSource[2] != fields.pipelineSource){
 	throw new Error("Can't edit pipeline source");
       }

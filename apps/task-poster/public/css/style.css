@@ -214,6 +214,8 @@ label input {
     margin-top: 0;
 }
 
+fieldset .checkbox label { width: auto; display: inline-block; }
+
 input,
 textarea,
 select {
@@ -228,8 +230,11 @@ select {
 }
 
 input[type="checkbox"] {
-    width: auto;
+    width: 18px;
+    heiht: 18px;
+    display: inline-block;
 }
+
 
 input:focus-visible,
 input:active,
