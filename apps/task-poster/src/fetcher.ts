@@ -836,7 +836,7 @@ export const addFetcherRoutes = (app: Express): void => {
     const doneSize = countTasks(f!, "done");
 
     const resultIds = (await db.listAll<boolean>(
-      ["fetcher", f!.datasetId, f!.index, "done", {}], 200, true
+      ["fetcher", f!.datasetId, f!.index, "done", {}], 10, true
     ))!;
     const results = (await Promise.all(
       resultIds.map(i => db.get<any>(["task-result", i.key[4]]))
@@ -867,7 +867,7 @@ export const addFetcherRoutes = (app: Express): void => {
 </section>
 
 <section>
-<h3>Last 200 results</h3>
+<h3>Last Results</h3>
 </div>
 <table style="font-size: 9px; margin: 0 auto;">
     <thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead>

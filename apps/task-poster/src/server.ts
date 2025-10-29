@@ -28,13 +28,7 @@ const campaignCard = (d: DatasetRecord) => {
   <img src="${ d.image || "https://effect.ai/img/hero-background.png" }"/>
   <div class="content">
   <strong>${d.name}</strong><br/>
-  <small class="one-line">${d.description || "..."}</small>
-<small>
-<ul>
-  <li>Size: 12GB</li>
-  <li>Workers: 43</li>
-</ul>
-</small>
+  <small class="ne-line">${d.description || "..."}</small>
 </div>
 </a>`
 
