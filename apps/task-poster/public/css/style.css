@@ -558,9 +558,7 @@ section>h2:first-child { margin-top: 0; }
     .graph-container {
       position: relative;
       background: white;
-      overflow: scroll;
       margin: 0 auto;
-      max-width: 800px;
     }
     .node {
       overflow: hidden;

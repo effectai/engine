@@ -149,7 +149,7 @@ const confirmForm = async (
   </nav>
 </div>
 ${ds.image ? 
-  `<img style="border-radius: 15px; object-fit: cover; overflow: hidden;" height="150px" width="100%" src="${ds.image}"/>` : '' }
+  `<img style="border: 1px solid var(--border); border-radius: 15px; object-fit: cover; overflow: hidden;" height="150px" width="100%" src="${ds.image}"/>` : '' }
 <p>${ds.description || "" }</p>
 <section>
   <h3>Steps</h3>
