@@ -44,4 +44,15 @@ export const availableCapabilities: Capability[] = [
     estimatedEarnings: 1500,
     tags: ["Network", "Internet", "Speed"],
   },
+  {
+    icon: "i-lucide-ghost",
+    id: "effectai/halloween-spirit:0.0.1",
+    href: "capabilities/halloween",
+    name: "Halloween Spirit",
+    category: "Seasonal",
+    description: "Because even AI deserves a little fright",
+    cost: 0,
+    estimatedEarnings: 0,
+    tags: ["Seasonal", "Spooky"],
+},
 ];

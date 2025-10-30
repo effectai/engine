@@ -7,7 +7,7 @@
       class: 'rounded-full',
     }"
   >
-    <UButton icon="i-lucide-plug-zap" size="lg" class="text-black"
+    <UButton icon="i-lucide-plug-zap" size="lg" class="text-black cursor-pointer"
       >Connect</UButton
     >
     <template #content>
