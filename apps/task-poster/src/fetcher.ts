@@ -414,7 +414,11 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	if (taskId.key[4] == fetcher.pipelineLastImportedTask)
 	  break;
 
-	const task = (await db.get<any>(["task-result", taskId.key[4]]))!.data;
+	const task = (await db.get<any>(["task-result", taskId.key[4]]))?.data;
+	if (!task) {
+	  console.error("Error: task in pipeline input does not exist", taskId);
+	  continue;
+	}
 
 	// regex filter
 	if (regex.test(task.result)) {
@@ -590,7 +594,7 @@ export const processFetcher = async (fetcher: Fetcher) => {
   return imported;
 }
 
-export const countTasks = (f: Fetcher, type: "active" | "queue" | "done") => {
+export const countTasks = (f: Fetcher, type: "active" | "queue" | "done" | "failed") => {
   return db.count(["fetcher", f.datasetId, f.index, type, {}]);
 };
 
@@ -847,6 +851,7 @@ export const addFetcherRoutes = (app: Express): void => {
     const queueSize = countTasks(f!, "queue");
     const activeSize = countTasks(f!, "active");
     const doneSize = countTasks(f!, "done");
+    const failedSize = countTasks(f!, "failed");
 
     const resultIds = (await db.listAll<boolean>(
       ["fetcher", f!.datasetId, f!.index, "done", {}], 10, true
@@ -868,6 +873,7 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Queued: ${queueSize}</li>
   <li>Active: ${activeSize}</li>
   <li>Finished: ${doneSize}</li>
+  <li>Failed: ${failedSize}</li>
   <li>Total: ${f.totalTasks}</li>
   <li>Batch / Freq: ${f.batchSize} / ${f.frequency}</li>
 </ul>
@@ -939,6 +945,15 @@ export const addFetcherRoutes = (app: Express): void => {
     const ts = JSON.stringify(t, (_, v) => typeof v === 'bigint' ? v.toString() : v)
     res.send(ts);
   });
+
+  app.get("/d/:id/f/:fid/debug",
+    validateNumericParams("id", "fid"),
+    async (req, res) => {
+      const id = Number(req.params.id);
+      const fid = Number(req.params.fid);
+      const f = await getFetcher(id, fid);
+      res.send(f);
+    });
 
   app.post("/d/:id/f/:fid/archive",
     requireAuth,
