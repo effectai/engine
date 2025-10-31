@@ -818,7 +818,7 @@ export const addFetcherRoutes = (app: Express): void => {
     res.send(page(await fetcherForm(id, f!, "", f)));
   });
 
-  app.post("/d/:id/f/:fid/edit", async (req, res) => {
+  app.post("/d/:id/f/:fid/edit", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
@@ -874,7 +874,6 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Active: ${activeSize}</li>
   <li>Finished: ${doneSize}</li>
   <li>Failed: ${failedSize}</li>
-  <li>Total: ${f.totalTasks}</li>
   <li>Batch / Freq: ${f.batchSize} / ${f.frequency}</li>
 </ul>
 
