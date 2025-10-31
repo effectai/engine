@@ -1039,6 +1039,23 @@ export const addFetcherRoutes = (app: Express): void => {
     }
   })
 
+  app.get("/d/:id/f/:fid/deleteQueue", validateNumericParams("id", "fid"), requireAuth, async (req, res) => {
+    const id = Number(req.params.id);
+    const fid = Number(req.params.fid);
+    let deleted = 0;
+    try {
+      const iterator = db.iterate(["fetcher", id, fid, "queue", {}], undefined, false);
+      for await (const taskId of iterator) {
+	await db.delete(taskId.key);
+	deleted++;
+      }
+    } catch (err) {
+      console.error('Error streaming data:', err);
+      res.end();
+    }
+    res.end("ok: " + deleted);
+  });
+
   app.get("/d/:id/f/:fid/preview",
     validateNumericParams("id", "fid"),
     async (req, res) => {
