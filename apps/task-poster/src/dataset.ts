@@ -7,6 +7,7 @@ import type { Fetcher } from "./fetcher.js";
 import { isHtmx, make404, make500, page } from "./html.js";
 import { db, managerId, publishProgress } from "./state.js";
 import { getTemplate, getTemplates, renderTemplate } from "./templates.js";
+import { generateDag } from "./dag.js";
 
 type DatasetStatus = "active" | "draft" | "finished" | "archived";
 const statusValues: DatasetStatus[] = [
@@ -27,6 +28,8 @@ export type DatasetRecord = {
   id: number;
   status: DatasetStatus;
   name: string;
+  image?: string;
+  description?: string;
 };
 
 export const getDataset = async (id: number) =>
@@ -73,7 +76,7 @@ const addVal = (values: FormValues, key: string): string =>
 
 const form = async (msg = "", values: FormValues = {}): Promise<string> =>
   `
-<form id="main-form" hx-post="/d/create" hx-swap="outerHTML show:window:top">
+<form id="main-form" hx-post="${values.id ? "/d/" + values.id  : "/d/create"}" hx-swap="outerHTML show:window:top">
   <div id="messages">
     ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
   </div>
@@ -84,6 +87,17 @@ const form = async (msg = "", values: FormValues = {}): Promise<string> =>
       type="text"
       id="name"  ${addVal(values, "name")}
       name="name"/>
+
+    <label for="description"><strong>Description</strong></label>
+    <textarea id="description" name="description" rows="8">` +
+  `${values.description || ""}</textarea>
+
+    <label for="name"><strong>Image</strong></label>
+    <input
+      placeholder="URL"
+      type="text"
+      id="image"  ${addVal(values, "image")}
+      name="image"/>
 
     <section>
       <button type="submit">Continue</button>
@@ -126,27 +140,27 @@ const confirmForm = async (
   values: FormValues = {},
   fetchers: Fetcher[] = [],
 ): Promise<string> => `
-<div>
-<h3>Dataset ${id}</h3>
-<p>Status: ${ds.status}</p>
+<div class="container">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+  <h3>${ds.name}</h3>
+  <nav style="display: flex; gap: 1.0rem;">
+    <a href="/d/${id}/edit"><button>Edit</button></a>
+    <button class="download">Download</button>
+  </nav>
+</div>
+${ds.image ? 
+  `<img style="border: 1px solid var(--border); border-radius: 15px; object-fit: cover; overflow: hidden;" height="150px" width="100%" src="${ds.image}"/>` : '' }
+<p>${ds.description || "" }</p>
 <section>
   <h3>Steps</h3>
-  <div class="boxbox">
-  ${fetchers.sort((f1, f2) => f1.index - f2.index).map((f: Fetcher) => `
-    <div class="box">
-      <strong><a href="/d/${id}/f/${f.index}">#${f.index} ${f.name}</a></strong>
-      <small>${f.type} (${f.type == "constant" ? f.maxTasks : f.totalTasks})</small>
-      <br/>
-      <small>queue: ${fetcher.countTasks(f, "queue")} -
-             active: ${fetcher.countTasks(f, "active")} -
-             done: ${fetcher.countTasks(f, "done")}</small>
-
-    </div>
+  ${generateDag(fetchers)}
+    ${fetchers.sort((f1, f2) => f1.index - f2.index).map((f: Fetcher) => `
   `).join('')}
-  </div>
-  <section>
-    <a href="${id}/create-fetcher?type=csv"><button>+ Add Step</button></a>
-  </section>
+  <div class="mt" style="display: flex; justify-content: center;">
+    <a href="${id}/create-fetcher?type=csv">
+      <button>+ Add Step</button>
+    </a>
+   </div>
 </section>
 <form hx-post="/d/${id}" hx-swap="outerHTML">
 <section>
@@ -154,13 +168,14 @@ ${
   ds.status === "draft"
     ? `<button hx-post="/d/${id}?action=publish">Publish</button>`
     : ds.status === "active"
-      ? `<button hx-post="/d/${id}?action=archive">Archive</button>`
+    ? `<button  hx-confirm="Are you sure you wish to arhive this?"
+                hx-post="/d/${id}?action=archive">Archive Dataset</button>`
       : `<button hx-post="/d/${id}?action=publish">Publish</button>`
 }
 </div>
 </form>
 </section>
-${ds.status == "active" ? `<section><h3>Add more data<h3></section>` : ``}
+<section></section>
 `;
 
 // starts auto-importing of active datasets
@@ -197,6 +212,11 @@ export const startAutoImport = async () => {
 };
 
 export const addDatasetRoutes = (app: Express): void => {
+  app.get("/d/archived", requireAuth, async (_req, res) => {
+    const ds = await getActiveDatasets("archived");
+    res.send(page(ds.map(d => `<a href="/d/${d.id}">${d.name}</a>`).join("")) );
+  });
+
   app.get("/d/create", requireAuth, async (_req, res) => {
     res.send(page(await form()));
   });
@@ -242,12 +262,12 @@ export const addDatasetRoutes = (app: Express): void => {
     }
   });
 
-  app.get("/d/:id/progress", async (req, res) => {
+  app.get("/d/:id/edit", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
     const dataset = await db.get<DatasetRecord>(["dataset", id]);
-    if (!dataset) return make404(res);
 
-    // res.send(await importProgress(dataset!.data));
+    if (!dataset) return make404(res);
+    res.send(page(await form("", dataset?.data)));
   });
 
   app.get("/d/:id", async (req, res) => {
@@ -270,7 +290,6 @@ export const addDatasetRoutes = (app: Express): void => {
 `),
     );
   });
-
 
   app.post("/d/:id", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
@@ -303,6 +322,31 @@ export const addDatasetRoutes = (app: Express): void => {
         <p><a href="/"><button>Home</button></a></p>
       </div>
       `);
+    } else {
+      // this is the EDIT action
+      let { valid, errors } = await validateForm(req.body);
+      let msg = Object.values(errors).join("<br/>- ");
+      msg = msg ? "- " + msg : "";
+      let id;
+
+      if (valid) {
+	dataset!.data.name = req.body.name;
+	dataset!.data.image = req.body.image;
+	dataset!.data.description = req.body.description;
+	await db.set<DatasetRecord>(dataset!.key, dataset!.data);
+        msg = `<p>Success! Dataset ${id}</p>`;
+      } else {
+	msg = '<h4 style="margin-top: 0;">Could not create dataset:</h4>' + msg;
+      }
+
+      if (valid) {
+	res.setHeader("HX-Location", `/d/${dataset.data.id}`);
+	res.end();
+      } else {
+	console.log(`Invalid form submission ${msg}`);
+	res.send(await form(msg, req.body));
+      }
     }
   });
+
 };

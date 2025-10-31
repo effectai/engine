@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@cross/kv": "npm:@jsr/cross__kv@^0.17.3",
+    "@dagrejs/dagre": "^1.1.5",
     "@effectai/payment": "workspace:*",
     "@effectai/protobufs": "workspace:*",
     "@effectai/protocol": "workspace:*",

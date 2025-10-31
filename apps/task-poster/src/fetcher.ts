@@ -250,8 +250,7 @@ const pipelineFetcherForm = async (dsId: number, values: FormValues) => `
     <legend>pipeline config</legend>
 
     <label for="pipelineSource"><strong>Source Step</strong><br/>
-    <small>The <emph>done</emph> queue of the source step is used to fetch data`+
-  ` from.</small></label>
+    <small>The <emph>done</emph> queue of the source step is used to fetch data from.</small></label>
       <select name="pipelineSource"
 	      id="pipelineSource"
 	      hx-target="#preview"
@@ -267,9 +266,15 @@ const pipelineFetcherForm = async (dsId: number, values: FormValues) => `
 	))).join("")}
       </select>
 
-    <label for="filter"><strong>Regex filter</strong><br/>
-    <small>Regular expression task filter. If this regex matches the task ` +
-  `result string, the task will <strong>not</strong> get posted.</small></label>
+    ${!values.pipelineSource ? `
+    <div class="checkbox">
+    <input type="checkbox" id="importAll" name="importAll" />
+    <label for="importAll">Import all finished tasks</strong></label>
+    </div>
+    ` : ''}
+
+    <label for="filter"><strong>Regex Exclude Filter</strong><br/>
+    <small>Regular expression task filter. If this regex matches the task result string, the task will <strong>not</strong> get posted.</small></label>
     <input
       hx-target="#preview"
       hx-get="/d/${dsId}/pipeline-preview"
@@ -409,7 +414,11 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	if (taskId.key[4] == fetcher.pipelineLastImportedTask)
 	  break;
 
-	const task = (await db.get<any>(["task-result", taskId.key[4]]))!.data;
+	const task = (await db.get<any>(["task-result", taskId.key[4]]))?.data;
+	if (!task) {
+	  console.error("Error: task in pipeline input does not exist", taskId);
+	  continue;
+	}
 
 	// regex filter
 	if (regex.test(task.result)) {
@@ -496,6 +505,14 @@ const handleFetcherImport = async(fetcher: Fetcher, fields: FormValues) => {
 	  fetcher.datasetId,
 	  Number(fields.pipelineSource)
 	];
+	if (!fields.importAll) {
+	  const lastId = (await db.listAll<boolean>(
+	    fetcher.pipelineSource.concat(["done"]), 1, true
+	  ));
+          fetcher.pipelineLastImportedTask = lastId?.length ?
+            lastId[0].key[lastId[0].key.length - 1] as string : undefined;
+	}
+
       } else if (fetcher.pipelineSource[2] != fields.pipelineSource){
 	throw new Error("Can't edit pipeline source");
       }
@@ -577,7 +594,7 @@ export const processFetcher = async (fetcher: Fetcher) => {
   return imported;
 }
 
-export const countTasks = (f: Fetcher, type: "active" | "queue" | "done") => {
+export const countTasks = (f: Fetcher, type: "active" | "queue" | "done" | "failed") => {
   return db.count(["fetcher", f.datasetId, f.index, type, {}]);
 };
 
@@ -834,9 +851,10 @@ export const addFetcherRoutes = (app: Express): void => {
     const queueSize = countTasks(f!, "queue");
     const activeSize = countTasks(f!, "active");
     const doneSize = countTasks(f!, "done");
+    const failedSize = countTasks(f!, "failed");
 
     const resultIds = (await db.listAll<boolean>(
-      ["fetcher", f!.datasetId, f!.index, "done", {}], 200, true
+      ["fetcher", f!.datasetId, f!.index, "done", {}], 10, true
     ))!;
     const results = (await Promise.all(
       resultIds.map(i => db.get<any>(["task-result", i.key[4]]))
@@ -848,19 +866,19 @@ export const addFetcherRoutes = (app: Express): void => {
     if (f)
       res.send(page(`
 <div class="container">
-<a href="/d/${id}">< back</a>
-<h3>Step ${f.name}</h3>
+<h3><small><a style="font-weight: normal;" href="/d/${id}">< back</small></a> ${f.name}</h3>
 <ul>
   <li>Last fetch: ${formatDate((f!.lastImport || 0) / 1000)}</li>
   <li>Type: ${f.type}</li>
   <li>Queued: ${queueSize}</li>
   <li>Active: ${activeSize}</li>
   <li>Finished: ${doneSize}</li>
+  <li>Failed: ${failedSize}</li>
   <li>Total: ${f.totalTasks}</li>
   <li>Batch / Freq: ${f.batchSize} / ${f.frequency}</li>
 </ul>
 
-<section>
+<section style="display: flex; gap: 1.0rem">
   <a href="/d/${id}/f/${fid}/import"><button>Add Data</button></a>
   <a href="/d/${id}/f/${fid}/edit"><button>Edit Step</button></a>
   <a href="/d/${id}/f/${fid}/download"><button>Download CSV</button></a>
@@ -868,7 +886,7 @@ export const addFetcherRoutes = (app: Express): void => {
 </section>
 
 <section>
-<h3>Last 200 results</h3>
+<h3>Last Results</h3>
 </div>
 <table style="font-size: 9px; margin: 0 auto;">
     <thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead>
@@ -927,6 +945,15 @@ export const addFetcherRoutes = (app: Express): void => {
     const ts = JSON.stringify(t, (_, v) => typeof v === 'bigint' ? v.toString() : v)
     res.send(ts);
   });
+
+  app.get("/d/:id/f/:fid/debug",
+    validateNumericParams("id", "fid"),
+    async (req, res) => {
+      const id = Number(req.params.id);
+      const fid = Number(req.params.fid);
+      const f = await getFetcher(id, fid);
+      res.send(f);
+    });
 
   app.post("/d/:id/f/:fid/archive",
     requireAuth,
@@ -1011,6 +1038,23 @@ export const addFetcherRoutes = (app: Express): void => {
       res.end();
     }
   })
+
+  app.get("/d/:id/f/:fid/deleteQueue", validateNumericParams("id", "fid"), requireAuth, async (req, res) => {
+    const id = Number(req.params.id);
+    const fid = Number(req.params.fid);
+    let deleted = 0;
+    try {
+      const iterator = db.iterate(["fetcher", id, fid, "queue", {}], undefined, false);
+      for await (const taskId of iterator) {
+	await db.delete(taskId.key);
+	deleted++;
+      }
+    } catch (err) {
+      console.error('Error streaming data:', err);
+      res.end();
+    }
+    res.end("ok: " + deleted);
+  });
 
   app.get("/d/:id/f/:fid/preview",
     validateNumericParams("id", "fid"),
