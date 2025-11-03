@@ -216,7 +216,7 @@ export const createWorkerManager = ({
   };
 
   const isBusy = async (workerRecord: WorkerRecord) => {
-    return getAssignmentCount(workerRecord.state.peerId) >= 2;
+    return getAssignmentCount(workerRecord.state.peerId) >= 3;
   };
 
   const incrementStateValue = async (
