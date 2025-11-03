@@ -26,6 +26,33 @@ export const createWorkerManager = ({
     datastore,
   });
 
+  const workerAssignments = new Map<string, Set<string>>();
+  const assignmentsFor = (workerId: string) => {
+    let assignments = workerAssignments.get(workerId);
+    if (!assignments) {
+      assignments = new Set<string>();
+      workerAssignments.set(workerId, assignments);
+    }
+    return assignments;
+  };
+  const getAssignmentCount = (workerId: string) =>
+    workerAssignments.get(workerId)?.size ?? 0;
+  const markTaskAssigned = (workerId: string, taskId: string) => {
+    assignmentsFor(workerId).add(taskId);
+  };
+  const markTaskReleased = (workerId: string, taskId: string) => {
+    const assignments = workerAssignments.get(workerId);
+    if (!assignments) {
+      return;
+    }
+
+    assignments.delete(taskId);
+
+    if (assignments.size === 0) {
+      workerAssignments.delete(workerId);
+    }
+  };
+
   const accessCodeStore = createAccessCodeStore({ datastore });
 
   const generateAccessCode = async () => {
@@ -189,13 +216,7 @@ export const createWorkerManager = ({
   };
 
   const isBusy = async (workerRecord: WorkerRecord) => {
-    // check if worker is busy (i.e. has more than 3 tasks in assigned / accepted)
-    return (
-      workerRecord.state.totalTasks -
-        (workerRecord.state.tasksCompleted +
-          workerRecord.state.tasksRejected) >=
-      3
-    );
+    return getAssignmentCount(workerRecord.state.peerId) >= 3;
   };
 
   const incrementStateValue = async (
@@ -249,6 +270,8 @@ export const createWorkerManager = ({
     getWorkers,
     connectWorker,
     disconnectWorker,
+    markTaskAssigned,
+    markTaskReleased,
     generateAccessCode,
     getAccessCodes,
     updateWorkerState,
