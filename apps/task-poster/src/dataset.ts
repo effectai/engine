@@ -144,6 +144,7 @@ const confirmForm = async (
 <div style="display: flex; justify-content: space-between; align-items: center;">
   <h3>${ds.name}</h3>
   <nav style="display: flex; gap: 1.0rem;">
+    <a href="/d/${id}/stats"><button>Stats</button></a>
     <a href="/d/${id}/edit"><button>Edit</button></a>
     <button class="download">Download</button>
   </nav>
