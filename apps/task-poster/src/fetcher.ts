@@ -1068,7 +1068,7 @@ export const addFetcherRoutes = (app: Express): void => {
 
 	for await (const taskId of iterator) {
 	  const task = (await db.get<any>(["task-result", taskId.key[4]]))!.data;
-	  console.log(taskId.timestamp, from, to);
+
 	  if (taskId.timestamp < from || taskId.timestamp > to) {
 	    skipped++;
 	    continue;
