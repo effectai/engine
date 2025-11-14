@@ -2,12 +2,12 @@
 title: "Raising the Bar: What We Achieved in Alpha Phases 3 and 4"
 description: "A deep look at the milestones, progress, and insights gained during Phases 3 and 4 of the Effect Alpha."
 image:
-  src: "/img/news/effectnli.jpg"
+  src: "/img/news/BlogBG-08.png"
 author: "Miguel"
 head:
   meta:
     - name: "keywords"
-      content: "AI, agents, machine, learning, natural, language, interfaces, alpha, testing, solana, effect"
+      content: "AI, agents, machine, learning, natural, language, interfaces, alpha, testing, solana, effect, data, human AI collaboration, decentralized, effect alpha, datasets"
     - name: "author"
       content: "Miguel - Effect.AI"
     - name: "copyright"
