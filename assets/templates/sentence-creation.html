@@ -1,3 +1,4 @@
+<meta charset="UTF-8">
 <div id="app" style="text-align: center">
     <h1>Effect AI - Sentence Creator</h1>
   
@@ -12,7 +13,8 @@
           class="textarea"
           placeholder="Enter your sentence here"
           type="text" 
-          v-model="tmpSentence"
+          v-model="sentence"
+          @keydown.enter.prevent
         >
         </textarea>
       </div>
@@ -20,8 +22,13 @@
     <p class="is-size-7 mb-2">By clicking this button, you accept that the sentence contributed here will be added to a publicly available cc-0 licensed dataset.</p>
 
     <p style="color: red;"
-    :class="{'is-hidden mb-3': !notComplete}">
-      Task incomplete - Please complete all sections of the task
+    :class="{'is-hidden mb-3': !tooLong}">
+      Sentence is too long - Sentence should be no longer than 15 words
+    </p>
+
+    <p style="color: red;"
+    :class="{'is-hidden mb-3': !tooShort}">
+      Sentence is too short - Sentence should be longer than 4 words
     </p>
 
     <button
@@ -45,9 +52,10 @@
       data() {
         return {
           title: "Effect AI Sentence Creator",
-          tmpSentence: "",
+          sentence: "",
           btnLoading: false,
-          notComplete: false,
+          tooShort: false,
+          tooLong: false,
           instructions: `
           <div>
             <h2>Create a sentence - Common Voice</h2>
@@ -176,19 +184,39 @@
       );
       },
       methods: {
+        sanitize(text) {
+          text = text
+          .replace(/\r\n/g, '\n')      // normalize Windows newlines
+          .replace(/[ \t]+$/gm, '')    // remove trailing spaces per line
+          .replace(/\n{2,}/g, '\n')    // collapse multiple blank lines
+          .trim();  
+
+          return text
+        },
         async uploadAndSubmit() {
           this.btnLoading = true;
-          if(this.tmpSentence == ""){
-            this.notComplete = true
-          }
-          else
+
+          const cleanSentence = this.sanitize(this.sentence).trim();
+          const wordCount = cleanSentence.split(/\s+/).length;
+
+          this.tooShort = false;
+          this.tooLong = false;
+
+          if (cleanSentence === "") {
+            this.notComplete = true;
+          } else if (wordCount < 5) {
+            this.tooShort = true;
+          } else if (wordCount > 15) {
+            this.tooLong = true;
+          } 
+          else {
             try {
               parent.postMessage(
                 {
                   task: "submit",
                   values: {
                     taskTitle: this.title,
-                    answer: this.tmpSentence,
+                    answer: cleanSentence,
                   },
                 },
                 "*"
@@ -196,6 +224,8 @@
             } catch (error) {
               console.error("Failed to upload to IPFS", error);
             }
+          }
+
           this.btnLoading = false;
         },
       },

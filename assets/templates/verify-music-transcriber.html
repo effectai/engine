@@ -1,0 +1,211 @@
+<div id="app" style="text-align: center">
+  <h1 class="title is-3">Effect AI - Lyric Verification</h1>
+  <p class="subtitle is-6">Listen to the full song and verify all transcribed lyrics</p>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
+    <div class="box">
+      <!-- Loading indicator -->
+      <div v-if="loading" class="has-text-centered mb-2">
+        Loading audio...
+        <progress class="progress is-primary" max="100" :value="loadProgress"></progress>
+      </div>
+      <div id="waveform" v-show="!loading"></div>
+    </div>
+
+    <!-- Playback Info -->
+    <div v-show="!loading" class="my-3">
+      <p>Current Playback: {{ formatTime(currentTime) }}</p>
+    </div>
+
+    <!-- Controls -->
+    <div class="flex items-center justify-between w-full" v-show="!loading">
+      <div class="flex justify-between mb-3">
+        <button @click="playFull" class="button is-primary mx-2">▶ Play / Pause</button>
+        <button @click="stopPlayback" class="button is-light mx-2">⏹ Stop</button>
+      </div>
+
+      <div class="flex items-center">
+        <p class="mb-1">Speed:</p>
+        <button @click="changePlaySpeed(0.75)" class="button mx-1">0.75x</button>
+        <button @click="changePlaySpeed(1)" class="button mx-1">1x</button>
+        <button @click="changePlaySpeed(1.25)" class="button mx-1">1.25x</button>
+      </div>
+    </div>
+
+    <hr v-show="!loading" />
+
+    <!-- All Lyrics Verification List -->
+    <div v-show="!loading" class="mt-4">
+      <h2 class="title is-5 mb-3">Full Lyrics Verification</h2>
+
+      <div
+        v-for="(seg, index) in parsedSegments"
+        :key="index"
+        class="p-3 mb-2 has-text-left box"
+        :class="{'has-background-link-light': isActiveSegment(seg)}"
+        style="cursor: pointer"
+        @click="jumpTo(seg)"
+      >
+        <div class="is-flex is-justify-content-space-between is-align-items-center">
+          <p>
+            <strong>{{Number(seg.start).toFixed(2)}} → {{Number(seg.end).toFixed(2)}}</strong>
+          </p>
+          <span v-if="isActiveSegment(seg)" class="tag is-link">Now Playing</span>
+        </div>
+
+        <textarea
+          v-model="seg.lyrics"
+          class="textarea mt-2"
+          rows="2"
+          placeholder="Edit or confirm this lyric section..."
+        ></textarea>
+      </div>
+    </div>
+
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-success is-large mt-4"
+      :class="{'is-loading': btnLoading}"
+    >
+      Submit Verified Lyrics
+    </button>
+  </div>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css"
+  />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+    import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js";
+    import RegionsPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.esm.js";
+
+    createApp({
+      data() {
+        return {
+          title: "Effect AI - Lyric Verification",
+          songSource: "${song_url}",
+          jobID: "${jobID}",
+        //   rawSegments: "[{\"start\":0,\"end\":6.5,\"lyrics\":\"I'm walking in the rain\"},{\"start\":6.5,\"end\":12.3,\"lyrics\":\"Love is all we need\"},{\"start\":12.3,\"end\":19.3,\"lyrics\":\"Hey there maam\"},{\"start\":19.3,\"end\":25,\"lyrics\":\"Can you feel it\"},{\"start\":25,\"end\":31,\"lyrics\":\"Can you feel the love\"}]",
+          rawSegments: "${segments}",
+          parsedSegments: [],
+          wavesurfer: null,
+          currentTime: 0,
+          currentSegment: null,
+          loadProgress: 0,
+          loading: true,
+          btnLoading: false,
+          playbackRate: 1,
+        };
+      },
+      mounted() {
+        this.parsedSegments = JSON.parse(this.rawSegments);
+        console.log("Parsed segments:", this.parsedSegments);
+        console.log("First segment:", this.parsedSegments[0]);
+        const regions = RegionsPlugin.create();
+
+        this.wavesurfer = WaveSurfer.create({
+          container: "#waveform",
+          waveColor: "#ddd",
+          progressColor: "#4f46e5",
+          height: 100,
+          url: this.songSource,
+          plugins: [regions],
+        });
+
+        this.wavesurfer.on("loading", (percent) => (this.loadProgress = percent));
+        this.wavesurfer.on("ready", () => {
+          this.loading = false;
+
+          // Add regions for each SRT section
+          this.parsedSegments.forEach((seg, i) => {
+            regions.addRegion({
+              id: "seg-" + i,
+              start: seg.start,
+              end: seg.end,
+              color: "rgba(79, 70, 229, 0.15)",
+              drag: false,
+              resize: false,
+            });
+          });
+        });
+
+        // Track playback to highlight active lyric section
+        this.wavesurfer.on("audioprocess", (time) => {
+          this.currentTime = time;
+          const active = this.parsedSegments.find(
+            (seg) => time >= seg.start && time <= seg.end
+          );
+          if (active) this.currentSegment = active;
+          else this.currentSegment = null;
+        });
+      },
+      methods: {
+        playFull() {
+          if (this.wavesurfer) this.wavesurfer.playPause();
+        },
+        stopPlayback() {
+          if (this.wavesurfer) {
+            this.wavesurfer.pause();
+            this.wavesurfer.seekTo(0);
+          }
+        },
+        changePlaySpeed(rate) {
+          this.playbackRate = rate;
+          this.wavesurfer.setPlaybackRate(rate, true);
+        },
+        jumpTo(seg) {
+          if (this.wavesurfer) {
+            const position = seg.start / this.wavesurfer.getDuration();
+            this.wavesurfer.seekTo(position);
+            this.wavesurfer.play();
+          }
+        },
+        formatTime(seconds) {
+          console.log(seconds)
+          if (!seconds && seconds !== 0) return "--:--";
+          const m = Math.floor(seconds / 60);
+          const s = Math.floor(seconds % 60)
+            .toString()
+            .padStart(2, "0");
+          return `${m}:${s}`;
+        },
+        isActiveSegment(seg) {
+          return this.currentSegment === seg;
+        },
+        async uploadAndSubmit() {
+          this.btnLoading = true;
+          try {
+            const verifiedSegments = this.parsedSegments.map((seg) => ({
+              start: seg.start,
+              end: seg.end,
+              lyrics: seg.lyrics.trim(),
+            }));
+
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  taskTitle: this.title,
+                  answer: {
+                    jobID: this.jobID,
+                    song: this.songSource,
+                    verifiedLyrics: verifiedSegments,
+                  },
+                },
+              },
+              "*"
+            );
+          } catch (err) {
+            console.error("Submit failed", err);
+          }
+          this.btnLoading = false;
+        },
+      },
+    }).mount("#app");
+  </script>
+</div>
