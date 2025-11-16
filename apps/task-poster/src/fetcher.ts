@@ -361,7 +361,7 @@ export const getFetcher = async (dsid: number, fid: number) => {
 export const getFetchers = async (dsId: number) => {
   const f = await db.listAll<Fetcher>(["fetcher", dsId, {}, "info"]);
 
-  return f.map(ff => ff.data).filter(ff => ff.status ===  "active");
+  return f.map(ff => ff.data).filter(ff => ff?.status ===  "active");
 };
 
 const delay = (m: number): Promise<void> =>
