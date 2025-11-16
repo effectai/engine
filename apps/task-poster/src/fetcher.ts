@@ -1147,10 +1147,17 @@ ${Object.entries(peers)
       if (!task) return make500(res);
 
       const tpl = await getTemplate(f!.template);
-      const renderedTemplate = await renderTemplate(
-	tpl!.data.data,
-	JSON.parse(task!.data.templateData)
-      );
+
+      let renderedTemplate = "Error: could not render template";
+
+      try {
+	renderedTemplate = await renderTemplate(
+	  tpl!.data.data,
+	  JSON.parse(task!.data.templateData)
+	);
+      } catch (e) {
+	console.error("Fatal Error: could not render template", e);
+      }
 
       res.send(page(`
 <div>
