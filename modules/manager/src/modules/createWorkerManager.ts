@@ -223,36 +223,6 @@ export const createWorkerManager = ({
     return null;
   };
 
-
-
-  // const selectWorker = async (capability?: string): Promise<string | null> => {
-  //   const queue = workerQueue.getQueue();
-
-  //   //TODO:: optimize this..
-  //   for (const workerId of queue) {
-  //     const worker = await getWorker(workerId);
-
-  //     const workerCapabilities =
-  //       worker?.state.capabilities.concat(
-  //         worker?.state.managerCapabilities || [],
-  //       ) || [];
-
-  //     if (!worker || (capability && !workerCapabilities.includes(capability))) {
-  //       continue;
-  //     }
-
-  //     const busy = await isBusy(worker);
-
-  //     if (!busy) {
-  //       workerQueue.dequeuePeer(workerId);
-  //       return workerId;
-  //     }
-  //   }
-
-  //   // No available worker found
-  //   return null;
-  // };
-
   const isBusy = async (workerRecord: WorkerRecord) => {
     return getAssignmentCount(workerRecord.state.peerId) >= 3;
   };
