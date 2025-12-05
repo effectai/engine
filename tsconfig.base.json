@@ -18,7 +18,11 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "useDefineForClassFields": true
+    "useDefineForClassFields": true,
+    "baseUrl": ".",
+    "paths": {
+      "@capabilities": ["apps/worker-app/app/constants/capabilities.ts"]
+    }
   },
   "exclude": ["node_modules"]
 }
