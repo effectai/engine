@@ -6,7 +6,6 @@
 
   <div class="mx-auto" style="max-width: 80%">
     <div class="box">
-      <!-- Loading indicator -->
       <div v-if="loading" class="has-text-centered mb-2">
         Loading audio...
         <progress class="progress is-primary" max="100" :value="loadProgress"></progress>
@@ -14,45 +13,112 @@
       <div id="waveform" v-show="!loading"></div>
     </div>
 
-    <!-- Playback Info -->
-    <div v-show="!loading" class="my-3">
-      <p>Current Playback: {{ formatTime(currentTime) }}</p>
-    </div>
-
-    <!-- Controls -->
-    <div class="flex items-center justify-between w-full" v-show="!loading">
-      <div class="flex justify-between mb-3">
-        <button @click="playFull" class="button is-primary mx-2">▶ Play / Pause</button>
-        <button @click="stopPlayback" class="button is-light mx-2">⏹ Stop</button>
-      </div>
-
-      <div class="flex items-center">
-        <p class="mb-1">Speed:</p>
-        <button @click="changePlaySpeed(0.75)" class="button mx-1">0.75x</button>
-        <button @click="changePlaySpeed(1)" class="button mx-1">1x</button>
-        <button @click="changePlaySpeed(1.25)" class="button mx-1">1.25x</button>
-      </div>
-    </div>
-
-    <hr v-show="!loading" />
-
-    <!-- All Lyrics Verification List -->
     <div v-show="!loading" class="mt-4">
-      <h2 class="title is-5 mb-3">Full Lyrics Verification</h2>
 
       <div
         v-for="(seg, index) in parsedSegments"
         :key="index"
-        class="p-3 mb-2 has-text-left box"
+        class="p-3 mb-3 has-text-left box"
         :class="{'has-background-link-light': isActiveSegment(seg)}"
-        style="cursor: pointer"
-        @click="jumpTo(seg)"
+        style="cursor: default"
       >
-        <div class="is-flex is-justify-content-space-between is-align-items-center">
-          <p>
-            <strong>{{Number(seg.start).toFixed(2)}} → {{Number(seg.end).toFixed(2)}}</strong>
-          </p>
-          <span v-if="isActiveSegment(seg)" class="tag is-link">Now Playing</span>
+
+        <div class="is-flex is-justify-content-space-between is-align-items-center mb-2" style="gap: 10px;">
+          <div class="is-flex is-align-items-center" style="gap: 8px;">
+            <input
+              type="number"
+              step="0.01"
+              class="input is-small"
+              style="width: 95px"
+              v-model.number="seg.start"
+              @change="onTimestampChange(seg, index)"
+              @dblclick="snapStart(seg)"
+              title="Double click to set start to current playhead"
+            />
+
+            <span>→</span>
+
+            <input
+              type="number"
+              step="0.01"
+              class="input is-small"
+              style="width: 95px"
+              v-model.number="seg.end"
+              @change="onTimestampChange(seg, index)"
+              @dblclick="snapEnd(seg)"
+              title="Double click to set end to current playhead"
+            />
+            
+          <span>
+            Current Playback:
+            {{ formatSecondsMs(
+                seg.currentPlayTime !== undefined
+                ? seg.currentPlayTime
+                : (isActiveSegment(seg) ? currentTime : seg.start)
+            ) }}
+          </span>
+
+          </div>
+
+
+          <div class="is-flex is-align-items-center" style="gap: 8px;">
+
+            <div v-if="isActiveSegment(seg)" class="tag is-link">Now Playing</div>
+
+            <button
+              class="button is-small is-success is-light"
+              @click="playRegion(index)"
+              :title="'Play only this region'"
+            >
+              ▶ Play Region
+            </button>
+
+            <button
+              class="button is-small is-link is-light"
+              @click="playFull"
+              title="Play full song from the current position"
+            >
+              ▶ / ❚❚ Full Song
+            </button>
+
+            <button @click="changePlaySpeed(0.75)" class="button is-small">0.75x</button>
+            <button @click="changePlaySpeed(1)" class="button is-small">1x</button>
+            <button @click="changePlaySpeed(1.25)" class="button is-small">1.25x</button>
+
+          </div>
+        </div>
+
+        <div v-if="seg.warnings && seg.warnings.length" class="mb-2">
+          <div v-for="(w, wi) in seg.warnings" :key="wi" class="notification is-warning is-light py-2">
+            {{ w }}
+          </div>
+        </div>
+
+        <div class="mb-2">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="flex:1; height:8px; background:#eee; border-radius:4px; position:relative; overflow:hidden; cursor:pointer"
+                 @click="seekToSegmentPosition(index, $event)">
+
+              <div 
+                :style="{ width: segmentProgress(seg) + '%', 
+                height: '100%', 
+                position: 'absolute', 
+                left: 0, 
+                top: 0, 
+                background: 'rgba(79,70,229,0.65)' }">
+              </div>
+            </div>
+
+            <div style="min-width:70px; text-align:right; font-size:0.9rem;">
+              <span>
+                {{ formatSecondsMs(
+                    seg.currentPlayTime !== undefined
+                      ? seg.currentPlayTime
+                      : (isActiveSegment(seg) ? currentTime : seg.start)
+                  ) }}
+              </span>
+            </div>
+          </div>
         </div>
 
         <textarea
@@ -64,7 +130,12 @@
       </div>
     </div>
 
+    <p style="color: red;" :class="{ 'is-hidden mb-3': !hasAnyWarnings() }">
+      Task incomplete - Please resolve all warnings before submitting.
+    </p>
+
     <button
+      v-show="!loading"
       @click.prevent="uploadAndSubmit"
       class="button is-success is-large mt-4"
       :class="{'is-loading': btnLoading}"
@@ -73,11 +144,8 @@
     </button>
   </div>
 
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css"
-  />
-  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css"/>
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet"/>
 
   <script type="module">
     import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
@@ -87,26 +155,122 @@
     createApp({
       data() {
         return {
-          title: "Effect AI - Lyric Verification",
           songSource: "${song_url}",
           jobID: "${jobID}",
-        //   rawSegments: "[{\"start\":0,\"end\":6.5,\"lyrics\":\"I'm walking in the rain\"},{\"start\":6.5,\"end\":12.3,\"lyrics\":\"Love is all we need\"},{\"start\":12.3,\"end\":19.3,\"lyrics\":\"Hey there maam\"},{\"start\":19.3,\"end\":25,\"lyrics\":\"Can you feel it\"},{\"start\":25,\"end\":31,\"lyrics\":\"Can you feel the love\"}]",
           rawSegments: "${segments}",
+          title: "Effect AI - Lyric Verification",
           parsedSegments: [],
           wavesurfer: null,
+          regionsPlugin: null,
           currentTime: 0,
           currentSegment: null,
           loadProgress: 0,
           loading: true,
           btnLoading: false,
           playbackRate: 1,
+          playingIndex: null,
+          minSegmentDuration: 0.12,
+          instructions: `
+            <div>
+                <h2>Lyric Timestamp Verification</h2>
+                <p>
+                    In this task, you will listen to a song and verify the timing and text for each lyric segment.
+                    Each line has its own card with start and end times, a mini player, and editable lyrics.
+                    Your goal is to make sure every line starts and ends at the correct moment and the text
+                    accurately matches what the singer says.
+                </p>
+
+                <h3>1. Understanding the Controls</h3>
+                <p>Here is what each button and control does in the interface:</p>
+
+                <h4>Each Lyric Card</h4>
+                <ul>
+                    <li><strong>Start Time:</strong> The moment the singer begins the lyric. You can type or adjust this value.</li>
+                    <li><strong>End Time:</strong> The moment the singer finishes the lyric. Must always be after the start time.</li>
+                    <li><strong>"Play Region" Button:</strong> Plays only this lyric segment for fine tuning. Stops at the end time of the given segment.</li>
+                    <li><strong>"Full Song" Button:</strong> Allows you to play/pause the entire song (not just the region).</li>
+                    <li><strong>Mini Scrubber Bar:</strong> Lets you scrub within just this lyric segment.</li>
+                    <li><strong>Warning Area:</strong> Pop-up warnings will show problems such as overlapping segments or invalid timings.</li>
+                </ul>
+
+                <p>
+                    You cannot submit the task until all warnings are resolved. 
+                    Warnings include end times before start times or overlapping with the next segment.
+                </p>
+
+                <h3>2. Adjusting the Timings</h3>
+                <p>
+                    Listen carefully and make sure each lyric card's start and end times match the actual audio.
+                    Use the mini players to preview just that line. Fix timing issues until all warnings disappear.
+                    Aim for accuracy within about <strong>0.2 seconds</strong> of the given phrase.
+                </p>
+
+                <ul>
+                    <li>Start time should be when the singer begins the line.</li>
+                    <li>End time should be when the singer finishes the line.</li>
+                    <li>End time must always be after the start time.</li>
+                    <li>Segments must not overlap with each other.</li>
+                </ul>
+
+                <h3>3. Correcting the Lyrics</h3>
+                <p>
+                    Edit the lyric text so it matches what the singer actually says. 
+                    Fix spelling mistakes, missing words, or incorrect words. 
+                    Do not add punctuation unless the singer clearly ends a phrase.
+                </p>
+
+                <ul>
+                    <li>Write exactly what you hear, not what you assume.</li>
+                    <li>Keep spelling accurate and clean.</li>
+                    <li>Do not rewrite stylistic pronunciation.</li>
+                    <li>If a word/part of a phrase is unclear, replace that section of the segment with <strong>[Inaudible]</strong></li>
+                </ul>
+
+                <h3>4. What to Avoid</h3>
+                <ul>
+                    <li>Do not allow timing conflicts or overlapping segments.</li>
+                    <li>Do not set end times before start times.</li>
+                    <li>Do not add words that are not sung.</li>
+                    <li>Do not alter the meaning of the lyrics.</li>
+                    <li>Do not add punctuation that is not reflected in the audio.</li>
+                </ul>
+
+                <h3>5. Final Check</h3>
+                <ul>
+                    <li>Make sure every segment has accurate timing.</li>
+                    <li>Ensure all warnings have been cleared.</li>
+                    <li>Confirm all lyrics are correctly written.</li>
+                    <li>Use the mini players to double check your adjustments.</li>
+                </ul>
+
+                <h3>6. Submitting Your Work</h3>
+                <p>
+                    When all segments are correct and no warnings remain, the Submit button will become available. 
+                    Submit the task to complete it.
+                </p>
+            </div>
+            `
+
         };
       },
+
       mounted() {
-        this.parsedSegments = JSON.parse(this.rawSegments);
-        console.log("Parsed segments:", this.parsedSegments);
-        console.log("First segment:", this.parsedSegments[0]);
-        const regions = RegionsPlugin.create();
+
+        window.top.postMessage(
+          {
+            type: 'task-instructions',
+            instructions: this.instructions
+          },
+        "*"
+        );
+
+        this.parsedSegments = JSON.parse(this.rawSegments).map((s) => ({
+          ...s,
+          warnings: [],
+          currentPlayTime: undefined
+        }));
+
+        this.regionsPlugin = RegionsPlugin.create();
 
         this.wavesurfer = WaveSurfer.create({
           container: "#waveform",
@@ -114,98 +278,217 @@
           progressColor: "#4f46e5",
           height: 100,
           url: this.songSource,
-          plugins: [regions],
+          plugins: [this.regionsPlugin]
         });
 
-        this.wavesurfer.on("loading", (percent) => (this.loadProgress = percent));
+        this.wavesurfer.on("loading", (p) => (this.loadProgress = p));
         this.wavesurfer.on("ready", () => {
           this.loading = false;
-
-          // Add regions for each SRT section
-          this.parsedSegments.forEach((seg, i) => {
-            regions.addRegion({
-              id: "seg-" + i,
-              start: seg.start,
-              end: seg.end,
-              color: "rgba(79, 70, 229, 0.15)",
-              drag: false,
-              resize: false,
-            });
-          });
+          this.refreshRegions();
         });
 
-        // Track playback to highlight active lyric section
         this.wavesurfer.on("audioprocess", (time) => {
           this.currentTime = time;
-          const active = this.parsedSegments.find(
-            (seg) => time >= seg.start && time <= seg.end
-          );
-          if (active) this.currentSegment = active;
-          else this.currentSegment = null;
+
+          const active = this.parsedSegments.find((seg) => time >= seg.start && time <= seg.end) || null;
+          this.currentSegment = active;
+
+          this.parsedSegments.forEach((seg) => {
+            if (time >= seg.start && time <= seg.end) seg.currentPlayTime = time;
+            else seg.currentPlayTime = undefined;
+          });
+
+          if (this.playingIndex !== null) {
+            const seg = this.parsedSegments[this.playingIndex];
+            if (seg && time >= seg.end) {
+              this.wavesurfer.pause();
+              this.playingIndex = null;
+            }
+          }
+        });
+
+        this.wavesurfer.on("finish", () => {
+          this.currentTime = this.wavesurfer.getDuration();
+          this.playingIndex = null;
         });
       },
+
       methods: {
+        hasAnyWarnings() {
+          return this.parsedSegments.some(seg => seg.warnings && seg.warnings.length > 0);
+        },
+
         playFull() {
           if (this.wavesurfer) this.wavesurfer.playPause();
         },
+
         stopPlayback() {
           if (this.wavesurfer) {
             this.wavesurfer.pause();
             this.wavesurfer.seekTo(0);
+            this.playingIndex = null;
           }
         },
+
         changePlaySpeed(rate) {
           this.playbackRate = rate;
-          this.wavesurfer.setPlaybackRate(rate, true);
+          if (this.wavesurfer) this.wavesurfer.setPlaybackRate(rate, true);
         },
-        jumpTo(seg) {
-          if (this.wavesurfer) {
-            const position = seg.start / this.wavesurfer.getDuration();
-            this.wavesurfer.seekTo(position);
-            this.wavesurfer.play();
+
+        playRegion(index) {
+          const seg = this.parsedSegments[index];
+          if (!seg || !this.wavesurfer) return;
+
+          const pct = seg.start / this.wavesurfer.getDuration();
+          this.wavesurfer.seekTo(pct);
+          this.playingIndex = index;
+          this.wavesurfer.play();
+        },
+
+        seekToSegmentPosition(index, event) {
+          const seg = this.parsedSegments[index];
+          if (!seg || !this.wavesurfer) return;
+
+          const rect = event.currentTarget.getBoundingClientRect();
+          const pct = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+
+          const targetTime = seg.start + pct * Math.max(this.minSegmentDuration, seg.end - seg.start);
+          this.wavesurfer.seekTo(targetTime / this.wavesurfer.getDuration());
+          this.playingIndex = null;
+        },
+
+        segmentProgress(seg) {
+          const segDuration = Math.max(this.minSegmentDuration, seg.end - seg.start);
+          const t = seg.currentPlayTime !== undefined ? seg.currentPlayTime :
+            (this.isActiveSegment(seg) ? this.currentTime : seg.start);
+          const clamped = Math.max(seg.start, Math.min(seg.end, t));
+          return ((clamped - seg.start) / segDuration) * 100;
+        },
+
+        onTimestampChange(seg, index) {
+          seg.start = Number(Number(seg.start).toFixed(2));
+          seg.end = Number(Number(seg.end).toFixed(2));
+
+          const dur = this.wavesurfer ? this.wavesurfer.getDuration() : Infinity;
+
+          seg.warnings = [];
+
+          if (seg.start < 0) seg.start = 0;
+          if (seg.end > dur) seg.end = Number(dur.toFixed(2));
+
+          if (seg.end <= seg.start) {
+            seg.warnings.push("End time must be after start.");
+          }
+
+          this.checkOverlaps();
+          this.refreshRegions();
+        },
+
+        checkOverlaps() {
+          this.parsedSegments.forEach((s) => {
+            s.warnings = s.warnings.filter(w => !w.includes("Overlap"));
+          });
+
+          for (let i = 0; i < this.parsedSegments.length; i++) {
+            const s = this.parsedSegments[i];
+            const prev = this.parsedSegments[i - 1];
+            const next = this.parsedSegments[i + 1];
+
+            if (prev && s.start < prev.end) {
+              s.warnings.push("Overlap detected with previous segment.");
+            }
+            if (next && s.end > next.start) {
+              s.warnings.push("Overlap detected with next segment.");
+            }
           }
         },
+
+
+        refreshRegions() {
+          if (!this.regionsPlugin || !this.wavesurfer) return;
+          const regions = this.wavesurfer.getActivePlugins().regions;
+          regions.clearRegions();
+
+          this.parsedSegments.forEach((seg, i) => {
+            regions.addRegion({
+              id: "seg-" + i,
+              start: Number(seg.start),
+              end: Number(seg.end),
+              color: "rgba(79, 70, 229, 0.12)",
+              drag: false,
+              resize: false
+            });
+          });
+        },
+
+        snapStart(seg) {
+          seg.start = Number(this.currentTime.toFixed(2));
+          if (seg.end <= seg.start) seg.end = Number((seg.start + this.minSegmentDuration).toFixed(2));
+          this.checkOverlaps();
+          this.refreshRegions();
+        },
+
+        snapEnd(seg) {
+          seg.end = Number(this.currentTime.toFixed(2));
+          if (seg.end <= seg.start)
+            seg.end = Number((seg.start + this.minSegmentDuration).toFixed(2));
+          this.checkOverlaps();
+          this.refreshRegions();
+        },
+
+        async uploadAndSubmit() {
+
+          if (this.hasAnyWarnings()) {
+            return;
+          }
+
+          this.btnLoading = true;
+
+          try {
+            const dur = this.wavesurfer ? this.wavesurfer.getDuration() : Infinity;
+
+            const verifiedSegments = this.parsedSegments.map((seg) => {
+              return {
+                start: Number(seg.start.toFixed(2)),
+                end: Number(
+                  Math.min(seg.end, dur).toFixed(2)
+                ),
+                lyrics: (seg.lyrics || "").trim()
+              };
+            });
+
+            parent.postMessage({
+              task: "submit",
+              values: {
+                taskTitle: this.title,
+                answer: {
+                  jobID: this.jobID,
+                  song: this.songSource,
+                  verifiedLyrics: verifiedSegments
+                }
+              }
+            }, "*");
+
+          } finally {
+            this.btnLoading = false;
+          }
+        },
+
         formatTime(seconds) {
-          console.log(seconds)
-          if (!seconds && seconds !== 0) return "--:--";
+          if (seconds === undefined || seconds === null || isNaN(seconds)) return "--:--";
           const m = Math.floor(seconds / 60);
-          const s = Math.floor(seconds % 60)
-            .toString()
-            .padStart(2, "0");
+          const s = Math.floor(seconds % 60).toString().padStart(2, "0");
           return `${m}:${s}`;
         },
+        formatSecondsMs(seconds) {
+          if (seconds === undefined || seconds === null || isNaN(seconds)) return "--.--";
+          return seconds.toFixed(2); // exactly ss.ms
+        },
+
         isActiveSegment(seg) {
           return this.currentSegment === seg;
-        },
-        async uploadAndSubmit() {
-          this.btnLoading = true;
-          try {
-            const verifiedSegments = this.parsedSegments.map((seg) => ({
-              start: seg.start,
-              end: seg.end,
-              lyrics: seg.lyrics.trim(),
-            }));
-
-            parent.postMessage(
-              {
-                task: "submit",
-                values: {
-                  taskTitle: this.title,
-                  answer: {
-                    jobID: this.jobID,
-                    song: this.songSource,
-                    verifiedLyrics: verifiedSegments,
-                  },
-                },
-              },
-              "*"
-            );
-          } catch (err) {
-            console.error("Submit failed", err);
-          }
-          this.btnLoading = false;
-        },
-      },
+        }
+      }
     }).mount("#app");
   </script>
 </div>
