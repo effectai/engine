@@ -48,7 +48,7 @@ body {
     padding: 0;
 }
 
-.container { max-width: 800px; margin: 0 auto; overflow: hidden; }
+.container { max-width: 800px; margin: 0 auto; overflow: hidden; padding: 0 1rem; }
 
 
 h1 {
