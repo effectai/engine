@@ -310,8 +310,13 @@ export function createTaskManager({
       throw new Error("Task is already assigned.");
     }
 
+    const originalWorkerId = taskRecord?.state.templateData
+    ? JSON.parse(taskRecord.state.templateData)?.submissionByPeer
+    : undefined;
+
     const worker = await workerManager.selectWorker(
       taskRecord.state.capability || undefined,
+      originalWorkerId || undefined,
     );
 
     if (!worker) {
