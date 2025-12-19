@@ -1,3 +1,5 @@
+import { availableCapabilities } from "@capabilities";
+
 import type { ManagerSettings } from "../main.js";
 import {
   type WorkerRecord,
@@ -25,6 +27,33 @@ export const createWorkerManager = ({
   const workerStore = createWorkerStore({
     datastore,
   });
+  
+  const workerAssignments = new Map<string, Set<string>>();
+  const assignmentsFor = (workerId: string) => {
+    let assignments = workerAssignments.get(workerId);
+    if (!assignments) {
+      assignments = new Set<string>();
+      workerAssignments.set(workerId, assignments);
+    }
+    return assignments;
+  };
+  const getAssignmentCount = (workerId: string) =>
+    workerAssignments.get(workerId)?.size ?? 0;
+  const markTaskAssigned = (workerId: string, taskId: string) => {
+    assignmentsFor(workerId).add(taskId);
+  };
+  const markTaskReleased = (workerId: string, taskId: string) => {
+    const assignments = workerAssignments.get(workerId);
+    if (!assignments) {
+      return;
+    }
+
+    assignments.delete(taskId);
+
+    if (assignments.size === 0) {
+      workerAssignments.delete(workerId);
+    }
+  };
 
   const accessCodeStore = createAccessCodeStore({ datastore });
 
@@ -160,6 +189,10 @@ export const createWorkerManager = ({
     return worker;
   };
 
+    const getCapabilityInfo = (id: string) =>
+    availableCapabilities.find(capability => capability.id === id);
+
+
   const selectWorker = async (
     capability?: string,
     originalWorkerId?: string
@@ -169,18 +202,22 @@ export const createWorkerManager = ({
     //TODO:: optimize this..
     for (const workerId of queue) {
       const worker = await getWorker(workerId);
+      if (!worker || originalWorkerId === workerId) continue;
 
       const workerCapabilities =
-        worker?.state.capabilities.concat(
-          worker?.state.managerCapabilities || [],
-        ) || [];
+        worker.state.capabilities.concat(worker.state.managerCapabilities || []);
 
-      if (!worker || (capability && !workerCapabilities.includes(capability)) || (originalWorkerId === workerId)) {
-        continue;
+      if (capability) {
+        const info = getCapabilityInfo(capability);
+
+        const hasCapability = workerCapabilities.includes(capability);
+        const hasAntiCapability =
+          info?.antiCapability && workerCapabilities.includes(info.antiCapability);
+
+        if (!hasCapability || hasAntiCapability) continue;
       }
 
       const busy = await isBusy(worker);
-
       if (!busy) {
         workerQueue.dequeuePeer(workerId);
         return workerId;
@@ -192,13 +229,7 @@ export const createWorkerManager = ({
   };
 
   const isBusy = async (workerRecord: WorkerRecord) => {
-    // check if worker is busy (i.e. has more than 3 tasks in assigned / accepted)
-    return (
-      workerRecord.state.totalTasks -
-        (workerRecord.state.tasksCompleted +
-          workerRecord.state.tasksRejected) >=
-      3
-    );
+    return getAssignmentCount(workerRecord.state.peerId) >= 3;
   };
 
   const incrementStateValue = async (
@@ -252,6 +283,8 @@ export const createWorkerManager = ({
     getWorkers,
     connectWorker,
     disconnectWorker,
+    markTaskAssigned,
+    markTaskReleased,
     generateAccessCode,
     getAccessCodes,
     updateWorkerState,
