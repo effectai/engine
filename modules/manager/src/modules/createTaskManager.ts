@@ -131,10 +131,16 @@ export function createTaskManager({
     workerPeerIdStr: string;
     reason: string;
   }) => {
-    const taskRecord = await taskStore.reject({
+    await taskStore.reject({
       entityId: taskId,
       peerIdStr: workerPeerIdStr,
       reason,
+    });
+
+    workerManager.markTaskReleased(workerPeerIdStr, taskId);
+
+    const taskRecord = await taskStore.getTask({
+      entityId: taskId,
     });
 
     await workerManager.incrementStateValue(workerPeerIdStr, "tasksRejected");
@@ -158,6 +164,8 @@ export function createTaskManager({
       result,
       peerIdStr: workerPeerIdStr,
     });
+
+    workerManager.markTaskReleased(workerPeerIdStr, taskId);
 
     await workerManager.incrementStateValue(workerPeerIdStr, "tasksCompleted");
 
@@ -201,6 +209,11 @@ export function createTaskManager({
       peerIdStr: latestAssignEvent.assignedToPeer,
       reason: "Worker took too long to accept/reject task",
     });
+
+    workerManager.markTaskReleased(
+      latestAssignEvent.assignedToPeer,
+      taskRecord.state.id,
+    );
 
     await workerManager.incrementStateValue(
       latestAssignEvent.assignedToPeer,
@@ -327,6 +340,8 @@ export function createTaskManager({
       entityId: taskRecord.state.id,
       workerPeerIdStr: worker,
     });
+
+    workerManager.markTaskAssigned(worker, taskRecord.state.id);
 
     await workerManager.incrementStateValue(worker, "totalTasks");
 

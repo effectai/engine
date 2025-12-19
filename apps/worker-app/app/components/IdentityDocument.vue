@@ -3,7 +3,7 @@
     <UButton
       variant="link"
       icon="i-lucide-file"
-      class="underline"
+      class="underline cursor-pointer"
       color="neutral"
       >Identity Document</UButton
     >

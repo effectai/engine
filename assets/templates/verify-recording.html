@@ -1,0 +1,165 @@
+<div id="app" style="text-align: center">
+  <h1>Effect AI - Recording Verification</h1>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
+    <p class="mb-5">Does the recording clearly and correctly match the sentence?</p>
+
+    <div class="box">
+      <p class="is-size-4 has-text-weight-semibold">{{ sentence }}</p>
+    </div>
+
+    <!-- Audio Player -->
+    <div class="mb-4">
+      <audio :src="recordingUrl" controls style="width: 25%;"></audio>
+    </div>
+
+    <div class="mb-5">
+      <button
+        class="button is-medium"
+        :class="{ 'is-success': isValidated == 'Yes' }"
+        @click="isValidated = 'Yes'"
+      >
+        Yes
+      </button>
+
+      <button
+        class="button is-medium mx-3"
+        :class="{ 'is-dark': isValidated == 'Skip' }"
+        @click="isValidated = 'Skip'"
+      >
+        Skip
+      </button>
+
+      <button
+        class="button is-medium"
+        :class="{ 'is-danger': isValidated == 'No' }"
+        @click="isValidated = 'No'"
+      >
+        No
+      </button>
+    </div>
+
+    <p style="color: red;" :class="{ 'is-hidden mb-3': !notComplete }">
+      Task incomplete - Please complete all sections of the task
+    </p>
+
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-success is-large"
+      :class="{ 'is-loading': btnLoading }"
+    >
+      Submit
+    </button>
+  </div>
+</div>
+
+<!-- 📚 Load in resources -->
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+<link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+<script type="module">
+  import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+  createApp({
+    data() {
+      return {
+        title: "Effect AI Recording Verifier",
+        btnLoading: false,
+        author: "${submissionByPeer}",
+        sentence: JSON.parse("${result}").values.sentence,
+        recordingUrl: JSON.parse("${result}").values.recording,
+        isValidated: "",
+        notComplete: false,
+        instructions: `
+          <div>
+            <h2>Verify a Recording - Common Voice</h2>
+            <p>
+              In this task, you'll listen to short recordings made by other contributors.
+              Your goal is to decide whether the speaker read the sentence correctly, clearly,
+              and completely as written.
+            </p>
+
+            <h3>1. Instructions</h3>
+            <ul>
+              <li>Listen carefully to the entire recording.</li>
+              <li>Check that the spoken words match the displayed sentence exactly.</li>
+              <li>Make sure the pronunciation is understandable and there are no skipped or extra words.</li>
+              <li>Minor accent differences are acceptable as long as the sentence is correct and clear.</li>
+              <li>If the audio is cut off, too noisy, or missing words, mark it as <strong>No</strong>.</li>
+            </ul>
+
+            <h3>2. Mark as <strong>Yes</strong> if:</h3>
+            <ul>
+              <li>The sentence is read exactly as written.</li>
+              <li>The recording is clear, complete, and easy to understand.</li>
+              <li>There's no distracting background noise or mumbling.</li>
+            </ul>
+
+            <h3>3. Mark as <strong>No</strong> if:</h3>
+            <ul>
+              <li>Words are missing, added, or misread.</li>
+              <li>The recording is too quiet, distorted, or incomplete.</li>
+              <li>There's heavy background noise that makes it hard to hear.</li>
+              <li>The speaker did not read the sentence at all.</li>
+            </ul>
+
+            <h3>4. Mark as <strong>Skip</strong> if:</h3>
+            <ul>
+              <li>You're unsure whether it's correct.</li>
+              <li>The audio fails to play.</li>
+            </ul>
+
+            <h3>5. Tips</h3>
+            <ul>
+              <li>Use headphones for clearer judgment.</li>
+              <li>Replay the audio if needed, but don't overthink minor issues.</li>
+              <li>Focus on intelligibility and accuracy, not accent or style.</li>
+            </ul>
+          </div>
+        `
+      };
+    },
+    mounted() {
+      window.top.postMessage(
+        {
+          type: "task-instructions",
+          instructions: this.instructions,
+        },
+        "*"
+      );
+    },
+    methods: {
+      async uploadAndSubmit() {
+        this.btnLoading = true;
+
+        if (this.isValidated === "") {
+          this.notComplete = true;
+          this.btnLoading = false;
+          return;
+        }
+
+        try {
+          parent.postMessage(
+            {
+              task: "submit",
+              values: {
+                taskTitle: this.title,
+                author: this.author,
+                sentence: this.sentence,
+                recording: this.recordingUrl,
+                isValidated: this.isValidated,
+              },
+            },
+            "*"
+          );
+        } catch (error) {
+          console.error("Failed to submit", error);
+        }
+
+        this.btnLoading = false;
+      },
+    },
+  }).mount("#app");
+</script>

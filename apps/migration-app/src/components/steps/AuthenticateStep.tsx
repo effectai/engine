@@ -40,7 +40,6 @@ export function AuthenticateStep() {
       const foreignKey = await sourceWallet?.getForeignPublicKey();
 
       if (foreignKey) {
-        console.log("Setting foreign public key:", foreignKey);
         setForeignPublicKey(foreignKey, mint);
       }
 

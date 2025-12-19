@@ -51,7 +51,9 @@ export const useClaimMutation = () => {
       });
 
       const ataExists = await connection.rpc
-        .getAccountInfo(userTokenAccount)
+        .getAccountInfo(userTokenAccount, {
+          encoding: "base64",
+        })
         .send();
 
       if (!ataExists.value) {

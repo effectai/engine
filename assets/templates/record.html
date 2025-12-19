@@ -26,6 +26,10 @@
       Task incomplete - Please complete all sections of the task
     </p>
 
+    <p style="color: red;" :class="{'is-hidden mb-3': !fileTooBig}">
+      File size too large. Please stop recording once you've finished reading the sentence.
+    </p>
+
     <button @click.prevent="uploadAndSubmit" class="button is-success is-large" :class="{'is-loading': btnLoading}">
       Submit
     </button>
@@ -44,16 +48,17 @@ createApp({
   data() {
     return {
       title: "Effect AI Sentence Reader",
-      sentence: "${sentence}",
+      sentence: (JSON.parse("${result}")).values.sentence,
       wavesurfer: null,
       recordPlugin: null,
       isRecording: false,
       audioBlob: null,
       audioUrl: "",
       ipfsCID: "",
-      ipfsHOST: "${ipfsHOST}",
+      ipfsHOST: "ipfs.effect.ai",
       notComplete: false,
       btnLoading: false,
+      fileTooBig: false,
       instructions: `
         <div>
           <p>Please follow these steps carefully to ensure your audio is useful and clear:</p>
@@ -103,6 +108,16 @@ createApp({
 
   },
   methods: {
+    checkSize(){
+      const file = new File([this.audioBlob], "recording.wav", { type: "audio/wav" });
+      const fileSize = (file.size / 1024).toFixed(2);
+
+      if (fileSize > 200){
+        this.fileTooBig = true
+      }
+      else
+        this.fileTooBig = false
+    },
     async startRecording() {
       try {
         await this.recordPlugin.startRecording();
@@ -132,13 +147,20 @@ createApp({
         this.btnLoading = false;
         return;
       }
-      try {
+
+      this.checkSize()
+      if (this.fileTooBig) {
+        this.btnLoading = false;
+        return;
+      }
+
+      try{
         const file = new File([this.audioBlob], "recording.wav", { type: "audio/wav" });
         const formData = new FormData();
         formData.append("path", file);
 
         // Replace IPFS upload endpoint
-        const response = await fetch(this.ipfsHOST || "/api/upload", {
+        const response = await fetch("https://" + this.ipfsHOST + "/api/v0/add?pin=true", {
           method: "POST",
           body: formData,
         });
@@ -151,7 +173,7 @@ createApp({
           values: {
             taskTitle: this.title,
             sentence: this.sentence,
-            answer: this.ipfsHOST + this.ipfsCID
+            recording: "https://" + this.ipfsHOST + "/ipfs/" + this.ipfsCID
           }
         }, "*");
       } catch (err) {

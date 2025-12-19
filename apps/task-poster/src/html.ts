@@ -16,17 +16,29 @@ export const page = (body: string, bodyClass = "container"): string => `
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Task Terminal - Effect</title>
+  <title>Dataffect</title>
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <link rel="stylesheet" href="/css/style.css">
-  ${curTheme ? `<style>${themes.get(curTheme || "default")}</style>` : ``}
+  ${curTheme && false ? `<style>${themes.get(curTheme || "default")}</style>` : ``}
   <style>
 
   </style>
 </head>
 <body>
-  <header class="container">
-    <h1><a href="/">Task Terminal</a></h1>
+  <header class="header">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; width: 20px; height: 20px; gap: 2px; margin-right: 0.2rem;">
+        <div style="background-color: var(--accent);"></div>
+        <div style="border: 1px solid var(--accent);"></div>
+        <div style="border: 1px solid var(--accent);"></div>
+        <div style="background-color: var(--accent);"></div>
+      </div>
+      <h1><a href="/">dataffect</a></h1>
+    </div>
+    <nav style="display: flex; gap: 1.0rem;">
+      <a href="/templates"><button>Templates</button></a>
+      <a href="/auth"><button class="filled">Login</button></a>
+    </nav>
   </header>
   <div class="${bodyClass}">
     ${body}

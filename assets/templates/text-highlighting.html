@@ -11,7 +11,7 @@
   </div>
 
   <div class="mb-5">
-    <label class="label">Tags</label>
+    <label class="label">Select Tag</label>
     <div class="buttons is-centered">
       <button class="button is-normal" @click="this.selectedTag='[NAME]'">[NAME]</button>
       <button class="button is-normal" @click="this.selectedTag='[DATE_1]'">[DATE_1]</button>
@@ -26,24 +26,33 @@
 
   <div class="has-text-centered">
     <div class="is-flex is-justify-content-center is-align-items-center mb-2" style="gap: 0.5rem;">
-      <p>Selection:</p>
+      <p>Current Selection:</p>
       <input class="input" type="text" placeholder="Type selection here" v-model="selection" style="max-width: 300px;" />
     </div>
   </div>
     
-    <p>Tag: <b>{{ selectedTag }}</b></p>
-    <button class="button is-success mt-3" @click="addSelection">Add</button>
+    <p>Tag Chosen: <b class="has-text-info">{{ selectedTag || 'None' }}</b></p>
+    <button class="button is-success mt-3" @click="addSelection">Add Tag</button>
   </div>
 
-  <div class="container is-max-desktop box mt-5 ">
+  <div class="container is-max-desktop box mt-5">
     <label class="label">Current Tag Pairs:</label>
 
-    <div class="mb-2" v-for="([selection, tagSelected], index) in selectionList" :key="index">
+    <!-- <div class="mb-2" v-for="([selection, tagSelected], index) in selectionList" :key="index">
       {{ selection }} -> {{ tagSelected }} 
 
       <button class="button is-small is-danger"
       @click="removeSelection(index)">Remove</button>
-    </div>      
+    </div>       -->
+    <div v-for="([sel, tag], index) in selectionList" :key="index"
+      class="is-flex is-justify-content-space-between is-align-items-center mb-2 p-2 mx-auto"
+      style="background-color:#f1f5f9; border-radius:8px; max-width: 50%;">
+      <div>
+        <strong>{{ sel }}</strong>
+        <span class="tag is-info is-light ml-2">{{ tag }}</span>
+      </div>
+      <button class="delete is-small" @click="removeSelection(index)"></button>
+    </div>
 
   </div>
 
