@@ -1,3 +1,20 @@
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css"/>
+<link href="https://app.effect.network/force-defaults.css" rel="stylesheet"/>
+
+<style> 
+  @media (max-width: 1080px) {
+    .mobile-card {
+      flex-direction: column-reverse !important;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .mobile-card2 {
+      flex-direction: column-reverse !important;
+    }
+  }
+</style>
+
 <div id="app" style="text-align: center">
   <h1 class="title is-3">Effect AI - Lyric Verification</h1>
   <p class="subtitle is-6">Listen to the full song and verify all transcribed lyrics</p>
@@ -23,67 +40,74 @@
         style="cursor: default"
       >
 
-        <div class="is-flex is-justify-content-space-between is-align-items-center mb-2" style="gap: 10px;">
-          <div class="is-flex is-align-items-center" style="gap: 8px;">
-            <input
-              type="number"
-              step="0.01"
-              class="input is-small"
-              style="width: 95px"
-              v-model.number="seg.start"
-              @change="onTimestampChange(seg, index)"
-              @dblclick="snapStart(seg)"
-              title="Double click to set start to current playhead"
-            />
+        <div class="mobile-card is-flex is-justify-content-space-between is-align-items-center mb-2" style="gap: 30px;">
+          <div class="mobile-card2 is-flex is-align-items-center" style="gap: 8px;">
+            <div>
+              <input
+                type="number"
+                step="0.01"
+                class="input is-small"
+                style="width: 95px"
+                v-model.number="seg.start"
+                @change="onTimestampChange(seg, index)"
+                @dblclick="snapStart(seg)"
+                title="Double click to set start to current playhead"
+              />
 
-            <span>→</span>
+              <span class="mx-1">→</span>
 
-            <input
-              type="number"
-              step="0.01"
-              class="input is-small"
-              style="width: 95px"
-              v-model.number="seg.end"
-              @change="onTimestampChange(seg, index)"
-              @dblclick="snapEnd(seg)"
-              title="Double click to set end to current playhead"
-            />
-            
-          <span>
-            Current Playback:
-            {{ formatSecondsMs(
-                seg.currentPlayTime !== undefined
-                ? seg.currentPlayTime
-                : (isActiveSegment(seg) ? currentTime : seg.start)
-            ) }}
-          </span>
+              <input
+                type="number"
+                step="0.01"
+                class="input is-small"
+                style="width: 95px"
+                v-model.number="seg.end"
+                @change="onTimestampChange(seg, index)"
+                @dblclick="snapEnd(seg)"
+                title="Double click to set end to current playhead"
+              />
+            </div>
+
+            <span>
+              Current Playback:
+              {{ formatSecondsMs(
+                  seg.currentPlayTime !== undefined
+                  ? seg.currentPlayTime
+                  : (isActiveSegment(seg) ? currentTime : seg.start)
+              ) }}
+            </span>
 
           </div>
 
 
-          <div class="is-flex is-align-items-center" style="gap: 8px;">
+          <div class="mobile-card2 is-flex is-align-items-center" style="gap: 8px;">
 
             <div v-if="isActiveSegment(seg)" class="tag is-link">Now Playing</div>
 
-            <button
-              class="button is-small is-success is-light"
-              @click="playRegion(index)"
-              :title="'Play only this region'"
-            >
-              ▶ Play Region
-            </button>
+            <div class="is-flex">
+              <button
+                class="button is-small is-success is-light mx-1"
+                @click="playRegion(index)"
+                :title="'Play only this region'"
+              >
+                ▶ Play Region
+              </button>
 
-            <button
-              class="button is-small is-link is-light"
-              @click="playFull"
-              title="Play full song from the current position"
-            >
-              ▶ / ❚❚ Full Song
-            </button>
+              <button
+                class="button is-small is-link is-light mx-1"
+                @click="playFull"
+                title="Play full song from the current position"
+              >
+                ▶ / ❚❚ Full Song
+              </button>
+            </div>
 
-            <button @click="changePlaySpeed(0.75)" class="button is-small">0.75x</button>
-            <button @click="changePlaySpeed(1)" class="button is-small">1x</button>
-            <button @click="changePlaySpeed(1.25)" class="button is-small">1.25x</button>
+            <div>
+              <button @click="changePlaySpeed(0.75)" class="button is-small mx-1">0.75x</button>
+              <button @click="changePlaySpeed(1)" class="button is-small mx-1">1x</button>
+              <button @click="changePlaySpeed(1.25)" class="button is-small mx-1">1.25x</button>
+            </div>
+            
 
           </div>
         </div>
@@ -144,8 +168,9 @@
     </button>
   </div>
 
-  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css"/>
-  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet"/>
+
+
+
 
   <script type="module">
     import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
