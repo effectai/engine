@@ -57,7 +57,7 @@ export default function Component() {
           </Button>
         </Form>
       </div>
-
+      <br></br>
       <h2>Worker State</h2>
       <JSONTreeViewer data={worker.state} className="mb-4"/>
 

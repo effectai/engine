@@ -27,7 +27,7 @@ export const createWorkerManager = ({
   const workerStore = createWorkerStore({
     datastore,
   });
-
+  
   const workerAssignments = new Map<string, Set<string>>();
   const assignmentsFor = (workerId: string) => {
     let assignments = workerAssignments.get(workerId);
@@ -189,16 +189,20 @@ export const createWorkerManager = ({
     return worker;
   };
 
-  const getCapabilityInfo = (id: string) =>
+    const getCapabilityInfo = (id: string) =>
     availableCapabilities.find(capability => capability.id === id);
 
 
-  const selectWorker = async (capability?: string): Promise<string | null> => {
+  const selectWorker = async (
+    capability?: string,
+    originalWorkerId?: string
+  ): Promise<string | null> => {
     const queue = workerQueue.getQueue();
 
+    //TODO:: optimize this..
     for (const workerId of queue) {
       const worker = await getWorker(workerId);
-      if (!worker) continue;
+      if (!worker || originalWorkerId === workerId) continue;
 
       const workerCapabilities =
         worker.state.capabilities.concat(worker.state.managerCapabilities || []);
@@ -220,6 +224,7 @@ export const createWorkerManager = ({
       }
     }
 
+    // No available worker found
     return null;
   };
 
