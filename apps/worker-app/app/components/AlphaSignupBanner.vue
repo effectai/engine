@@ -11,29 +11,31 @@
         >
           <UIcon
             name="i-heroicons-beaker"
-            class="h-5 w-5 text-grey"
+            class="h-5 w-5 text-gray-900 dark:text-gray-100"
           />
         </div>
 
-        <div>
+        <div class="space-y-1">
           <h2 class="text-base font-semibold">
-            Alpha Testing for Workers
+            Become an Alpha Tester
           </h2>
-          <p class="text-sm text-gray-600 dark:text-gray-400 max-w-xl">
-            Join the alpha and help shape the future of worker tasks, 
-            with early access to new task types and evolving ways to earn.
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Want to become an Alpha Tester? Need an access code to connect? 
+            Get your access to Alpha now!
           </p>
         </div>
       </div>
 
-      <UButton
-        class="text-black"
-        icon="i-heroicons-arrow-top-right-on-square"
-        :to="'https://forms.gle/ovZXKQBvemXVn5Gy5'"
-        target="_blank"
-      >
-        Apply for Alpha
-      </UButton>
+      <div class="flex-shrink-0">
+        <UButton
+          class="text-black whitespace-nowrap"
+          icon="i-heroicons-arrow-top-right-on-square"
+          :to="'https://forms.gle/ovZXKQBvemXVn5Gy5'"
+          target="_blank"
+        >
+          Get Access
+        </UButton>
+      </div>
     </div>
   </UCard>
 </template>
