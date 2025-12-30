@@ -1,6 +1,7 @@
 <template>
   <div class="">
     <OnboardModal />
+    <AlphaSignupBanner />
     <NodeHeroCard />
 
     <div
