@@ -421,7 +421,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	}
 
 	// regex filter
-	if (!task.result || regex.test(task.result)) {
+	if (!task.result || regex.test(task.result) || task.result == "<TASK REPORTED AND SKIPPED>") {
 	  continue;
 	}
 
