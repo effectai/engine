@@ -361,7 +361,7 @@ export const getFetcher = async (dsid: number, fid: number) => {
 export const getFetchers = async (dsId: number) => {
   const f = await db.listAll<Fetcher>(["fetcher", dsId, {}, "info"]);
 
-  return f.map(ff => ff.data).filter(ff => ff.status ===  "active");
+  return f.map(ff => ff.data).filter(ff => ff?.status ===  "active");
 };
 
 const delay = (m: number): Promise<void> =>
@@ -421,7 +421,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	}
 
 	// regex filter
-	if (regex.test(task.result)) {
+	if (!task.result || regex.test(task.result)) {
 	  continue;
 	}
 
@@ -992,7 +992,8 @@ export const addFetcherRoutes = (app: Express): void => {
     }
   });
 
-  app.get("/d/:id/f/:fid/download",
+  app.get(
+    "/d/:id/f/:fid/download",
     validateNumericParams("id", "fid"),
     requireAuth,
     async (req, res) => {
@@ -1036,7 +1037,81 @@ export const addFetcherRoutes = (app: Express): void => {
 	res.status(500).send('Error streaming data');
       res.end();
     }
-  })
+  });
+
+  app.post(
+    "/d/:id/stats",
+    validateNumericParams("id"),
+    requireAuth,
+    async (req, res) => {
+      const id = Number(req.params.id);
+      const inFrom = new Date(req.body.from).getTime();
+      const inTo = new Date(req.body.to).getTime();
+
+      const from = isNaN(inFrom) ? 0 : inFrom;
+      const to = isNaN(inTo) ? Number.MAX_SAFE_INTEGER : inTo;
+
+      // {
+      //   timestamp: 1759534321,
+      //   type: 'submission',
+      //   result: '{"task":"submit","values":{"taskTitle":"Effect AI - Music Transcriber","answer":{"song":"https://discoveryprovider.audius.co/v1/tracks/j4za4/stream","allowedStart":"182.,"allowedEnd":"186.2","aiLyrics":"And the only text I got was from my mom today","verifiedLyrics":"And the only text I got was from my mom today\\n\\nAnd the only text i got was fr my mom today,"}}}',
+      //   submissionByPeer: '12D3KooWQaAnLAMkeYAgPyqLKhGdyMHvbZxDRwrLgNeqgqUfiBpC',
+      //   taskId: '01K6NQ74FZGDBH3WHTVR5B806Q'
+      // }
+
+      let peers: Record<string, number> = {};
+      let total = 0;
+      let skipped = 0;
+
+      try {
+	const iterator = db.iterate<boolean>(["fetcher", id, {}, "done", {}], undefined, false);
+
+	for await (const taskId of iterator) {
+	  const task = (await db.get<any>(["task-result", taskId.key[4]]))!.data;
+
+	  if (taskId.timestamp < from || taskId.timestamp > to) {
+	    skipped++;
+	    continue;
+	  }
+
+          peers[task.submissionByPeer] = peers[task.submissionByPeer]
+	    ? peers[task.submissionByPeer] + 1 : 1;
+	  total++;
+	}
+
+	res.send(`
+	<strong>Contributors:</strong> ${Object.keys(peers).length} <br/>
+	<strong>Total tasks:</strong> ${total} <br/>
+	<strong>Tasks skipped:</strong> ${skipped} <br/>
+<br/>
+<small>
+${Object.entries(peers)
+  .sort((a, b) => a[1] < b[1] ? 1 : -1)
+  .map(([p, a]) => `${p}: ${a} ${(a/total * 100).toFixed(1)}%`).join("\n")}
+</small>
+`
+	);
+      } catch (err) {
+	console.error('Error streaming data:', err);
+	res.status(500).send("Error");
+      }
+    });
+
+  app.get("/d/:id/stats", validateNumericParams("id"), requireAuth,
+    async (req, res) => {
+      const id = Number(req.params.id);
+
+      res.send(page(`
+<form hx-post hx-target="#stats" hx-indicator="#loading-spinner">
+<h3>Get Stats</h3>
+<label>From</label><input name="from" type="date" />
+<label>To</label><input name="to" type="date" />
+<button class="mt" type="submit">Submit</button>
+</form>
+<div class="htmx-indicator" id="loading-spinner"></div>
+<div class="mt" id="stats"></div>
+`))
+    });  
 
   app.get("/d/:id/f/:fid/deleteQueue", validateNumericParams("id", "fid"), requireAuth, async (req, res) => {
     const id = Number(req.params.id);
@@ -1072,10 +1147,17 @@ export const addFetcherRoutes = (app: Express): void => {
       if (!task) return make500(res);
 
       const tpl = await getTemplate(f!.template);
-      const renderedTemplate = await renderTemplate(
-	tpl!.data.data,
-	JSON.parse(task!.data.templateData)
-      );
+
+      let renderedTemplate = "Error: could not render template";
+
+      try {
+	renderedTemplate = await renderTemplate(
+	  tpl!.data.data,
+	  JSON.parse(task!.data.templateData)
+	);
+      } catch (e) {
+	console.error("Fatal Error: could not render template", e);
+      }
 
       res.send(page(`
 <div>

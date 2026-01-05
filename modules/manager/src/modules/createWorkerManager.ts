@@ -1,3 +1,5 @@
+import { availableCapabilities } from "@capabilities";
+
 import type { ManagerSettings } from "../main.js";
 import {
   type WorkerRecord,
@@ -25,7 +27,7 @@ export const createWorkerManager = ({
   const workerStore = createWorkerStore({
     datastore,
   });
-
+  
   const workerAssignments = new Map<string, Set<string>>();
   const assignmentsFor = (workerId: string) => {
     let assignments = workerAssignments.get(workerId);
@@ -187,24 +189,35 @@ export const createWorkerManager = ({
     return worker;
   };
 
-  const selectWorker = async (capability?: string): Promise<string | null> => {
+    const getCapabilityInfo = (id: string) =>
+    availableCapabilities.find(capability => capability.id === id);
+
+
+  const selectWorker = async (
+    capability?: string,
+    originalWorkerId?: string
+  ): Promise<string | null> => {
     const queue = workerQueue.getQueue();
 
     //TODO:: optimize this..
     for (const workerId of queue) {
       const worker = await getWorker(workerId);
+      if (!worker || originalWorkerId === workerId) continue;
 
       const workerCapabilities =
-        worker?.state.capabilities.concat(
-          worker?.state.managerCapabilities || [],
-        ) || [];
+        worker.state.capabilities.concat(worker.state.managerCapabilities || []);
 
-      if (!worker || (capability && !workerCapabilities.includes(capability))) {
-        continue;
+      if (capability) {
+        const info = getCapabilityInfo(capability);
+
+        const hasCapability = workerCapabilities.includes(capability);
+        const hasAntiCapability =
+          info?.antiCapability && workerCapabilities.includes(info.antiCapability);
+
+        if (!hasCapability || hasAntiCapability) continue;
       }
 
       const busy = await isBusy(worker);
-
       if (!busy) {
         workerQueue.dequeuePeer(workerId);
         return workerId;

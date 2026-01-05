@@ -2,7 +2,7 @@ import { JSONTreeViewer } from "@/app/components/json-tree-viewer";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { Form, useLoaderData } from "@remix-run/react";
+import { Form, useLoaderData, useNavigation } from "@remix-run/react";
 import React from "react";
 
 export async function loader({ request, context, params }: LoaderFunctionArgs) {
@@ -24,14 +24,22 @@ export async function loader({ request, context, params }: LoaderFunctionArgs) {
 
 export default function Component() {
   const { worker } = useLoaderData<typeof loader>();
-  const [capability, setCapability] = React.useState(
-    (worker.state.managerCapabilities || []).join(","),
-  );
+  const [capability, setCapability] = React.useState("");
+  const navigation = useNavigation();
+
+  // Clear textbox after form submits
+  React.useEffect(() => {
+    if (navigation.state === "idle") {
+      setCapability("");
+    }
+  }, [navigation.state]);
+
+  const managerCapability = worker.state.managerCapabilities || [];
 
   return (
     <div className="px-6">
       <div className="flex gap-3">
-        <Form method="post" className="flex gap-2">
+        <Form method="post" className="flex gap-2 mb-4">
           <Button type="submit" name="intent" value="kick">
             Kick
           </Button>
@@ -49,22 +57,43 @@ export default function Component() {
           </Button>
         </Form>
       </div>
-
+      <br></br>
       <h2>Worker State</h2>
-      <JSONTreeViewer data={worker.state}></JSONTreeViewer>
+      <JSONTreeViewer data={worker.state} className="mb-4"/>
+
       <h2>Manager Capabilities</h2>
-      <Form method="post" className="flex gap-2">
+
+      <Form method="post" className="flex gap-2 mb-3">
         <Input
           name="capability"
           value={capability}
           onChange={(e) => setCapability(e.target.value)}
           placeholder="capability1, capability2, capability3"
         />
-
         <Button type="submit" name="intent" value="addCapability">
           Add Capability
         </Button>
       </Form>
+
+      <div className="flex gap-2 flex-wrap mb-3">
+        {managerCapability.map((cap) => (
+          <Form key={cap} method="post" className="inline">
+            <input type="hidden" name="capability" value={cap} />
+            <input type="hidden" name="intent" value="deleteCapability" />
+
+            <div className="flex items-center gap-1 bg-gray-100 text-black px-3 py-1 rounded select-none">
+              {cap}
+
+              <button
+                type="submit"
+                className="cursor-pointer pl-2 text-red-600 leading-none"
+              >
+                x
+              </button>
+            </div>
+          </Form>
+        ))}
+      </div>
     </div>
   );
 }
@@ -85,39 +114,49 @@ export const action = async ({
   if (intent === "kick") {
     context.workerManager.workerQueue.removePeer(id);
   } else if (intent === "ban") {
-    await context.workerManager.updateWorkerState(id, (state) => ({
+    await context.workerManager.updateWorkerState(id, () => ({ 
       banned: true,
     }));
     context.workerManager.workerQueue.removePeer(id);
   } else if (intent === "unban") {
-    await context.workerManager.updateWorkerState(id, (state) => ({
+    await context.workerManager.updateWorkerState(id, () => ({ 
       banned: false,
     }));
   } else if (intent === "revoke") {
-    await context.workerManager.updateWorkerState(id, (state) => ({
+    await context.workerManager.updateWorkerState(id, () => ({
       accessCodeRedeemed: undefined,
     }));
-
     context.workerManager.workerQueue.removePeer(id);
   } else if (intent === "promote") {
-    await context.workerManager.updateWorkerState(id, (state) => ({
-      isAdmin: true,
+    await context.workerManager.updateWorkerState(id, () => ({ 
+      isAdmin: true, 
     }));
   } else if (intent === "addCapability") {
     const raw = String(formData.get("capability") ?? "");
-    const parsed = Array.from(
-      new Set(
-        raw
-          .split(",")
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0),
-      ),
-    );
 
-    console.log("Updating capabilities to:", parsed);
+    const newCap = raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
 
-    await context.workerManager.updateWorkerState(id, (state: any) => ({
-      managerCapabilities: parsed,
+    const worker = await context.workerManager.getWorker(id);
+    const current = worker?.state.managerCapabilities || [];
+
+    const merged = Array.from(new Set([...current, ...newCap]));
+
+    await context.workerManager.updateWorkerState(id, () => ({
+      managerCapabilities: merged,
+    }));
+
+  } else if (intent === "deleteCapability") {
+    const toRemove = String(formData.get("capability") ?? "");
+    const worker = await context.workerManager.getWorker(id);
+    const current = worker?.state.managerCapabilities || [];
+
+    const updated = current.filter((c) => c !== toRemove);
+
+    await context.workerManager.updateWorkerState(id, () => ({
+      managerCapabilities: updated,
     }));
   }
 
