@@ -1,0 +1,245 @@
+<div id="app" style="text-align: center">
+  <h1>Effect AI - Prompt Recording Verification</h1>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
+    <div class="box">
+      <p class="is-size-4 has-text-weight-semibold">{{ prompt }}</p>
+    </div>
+
+    <div class="mb-4">
+      <audio
+        :src="recordingUrl"
+        controls
+        controlslist="nodownload"
+        style="width: 25%;"
+      ></audio>
+    </div>
+
+    <hr />
+
+    <div class="mx-auto" style="text-align: center; max-width: 50%">
+      <h2 class="is-size-4 has-text-weight-semibold mb-5">
+        Recording Metadata
+      </h2>
+
+      <!-- First question always visible -->
+      <div class="field mb-6">
+        <label class="label">{{ metadataFields[0].label }}</label>
+        <div class="buttons is-centered">
+          <button
+            v-for="option in metadataFields[0].options"
+            :key="option.value"
+            class="button"
+            :class="{ 'is-primary': metadataFields[0].model === option.value }"
+            @click="setFieldValue(metadataFields[0], option.value)"
+          >
+            {{ option.text }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Remaining questions only if Yes -->
+      <div
+        v-if="isValidated === 'Yes'"
+        v-for="field in metadataFields.slice(1)"
+        :key="field.label"
+        class="field mb-6"
+      >
+        <label class="label">{{ field.label }}</label>
+        <div class="buttons is-centered">
+          <button
+            v-for="option in field.options"
+            :key="option.value"
+            class="button"
+            :class="{ 'is-primary': field.model === option.value }"
+            @click="setFieldValue(field, option.value)"
+          >
+            {{ option.text }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <p style="color: red;" v-if="isIncomplete">
+      Task incomplete - Please complete all required sections
+    </p>
+
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-success is-large"
+      :class="{ 'is-loading': btnLoading }"
+    >
+      Submit
+    </button>
+  </div>
+</div>
+
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css"
+/>
+
+<script type="module">
+import { createApp, reactive } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+createApp({
+  data() {
+    const metadata = reactive({
+      voiceGender: "",
+      voiceClarity: "",
+      backgroundNoise: "",
+      speakingPace: "",
+      accent: "",
+      audioQuality: ""
+    });
+
+    return {
+      title: "Effect AI - Prompt Recording Verification",
+      btnLoading: false,
+      author: "${submissionByPeer}",
+      prompt: JSON.parse("${result}").values.prompt,
+      recordingUrl: JSON.parse("${result}").values.recording,
+      isValidated: "",
+      metadata,
+      metadataFields: [
+        {
+          label: "Does the recording clearly and correctly answer the prompt?",
+          key: "isValidated",
+          model: "",
+          options: [
+            { text: "Yes", value: "Yes" },
+            { text: "No", value: "No" }
+          ]
+        },
+        {
+          label: "Perceived voice gender",
+          key: "voiceGender",
+          model: "",
+          options: [
+            { text: "Male", value: "male" },
+            { text: "Female", value: "female" },
+            { text: "Cannot determine", value: "unknown" }
+          ]
+        },
+        {
+          label: "Is the voice clear and intelligible?",
+          key: "voiceClarity",
+          model: "",
+          options: [
+            { text: "Clear", value: "clear" },
+            { text: "Mostly clear", value: "mostly_clear" },
+            { text: "Unclear", value: "unclear" }
+          ]
+        },
+        {
+          label: "Background noise level",
+          key: "backgroundNoise",
+          model: "",
+          options: [
+            { text: "None", value: "none" },
+            { text: "Low", value: "low" },
+            { text: "Moderate", value: "moderate" },
+            { text: "High", value: "high" }
+          ]
+        },
+        {
+          label: "Speaking pace",
+          key: "speakingPace",
+          model: "",
+          options: [
+            { text: "Slow", value: "slow" },
+            { text: "Normal", value: "normal" },
+            { text: "Fast", value: "fast" }
+          ]
+        },
+        {
+          label: "Noticeable accent",
+          key: "accent",
+          model: "",
+          options: [
+            { text: "None", value: "none" },
+            { text: "Mild", value: "mild" },
+            { text: "Strong", value: "strong" }
+          ]
+        },
+        {
+          label: "Overall audio quality",
+          key: "audioQuality",
+          model: "",
+          options: [
+            { text: "Good", value: "good" },
+            { text: "Acceptable", value: "acceptable" },
+            { text: "Poor", value: "poor" }
+          ]
+        }
+      ],
+      instructions: `
+        <div>
+          <h2>Verify Response to Prompt</h2>
+          <p>
+            Listen to the recording and decide whether the speaker clearly
+            answers the displayed prompt.
+          </p>
+        </div>
+      `
+    };
+  },
+  computed: {
+    isIncomplete() {
+      if (this.isValidated === "") return true;
+      if (this.isValidated === "No") return false;
+      return Object.values(this.metadata).some(value => value === "");
+    }
+  },
+  mounted() {
+    window.top.postMessage(
+      {
+        type: "task-instructions",
+        instructions: this.instructions
+      },
+      "*"
+    );
+  },
+  methods: {
+    setFieldValue(field, value) {
+      if (field.key === "isValidated") {
+        this.isValidated = value;
+      } else {
+        this.metadata[field.key] = value;
+      }
+      field.model = value;
+    },
+    uploadAndSubmit() {
+      this.btnLoading = true;
+
+      if (this.isIncomplete) {
+        this.btnLoading = false;
+        return;
+      }
+
+      try {
+        parent.postMessage(
+          {
+            task: "submit",
+            values: {
+              taskTitle: this.title,
+              author: this.author,
+              prompt: this.prompt,
+              recording: this.recordingUrl,
+              metadata: { ...this.metadata },
+              isValidated: this.isValidated
+            }
+          },
+          "*"
+        );
+      } catch (error) {
+        console.error("Failed to submit", error);
+      }
+
+      this.btnLoading = false;
+    }
+  }
+}).mount("#app");
+</script>
