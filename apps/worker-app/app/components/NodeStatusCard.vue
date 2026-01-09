@@ -50,7 +50,7 @@
             <UIcon name="i-lucide-activity" size="16" />
             NETWORK LATENCY
           </div>
-          <code class="text-black">{{ latency }} ms</code>
+          <code class="text-black">N/A</code>
         </div>
         <div
           class="flex items-center justify-between p-2 border border-zinc-700 rounded"
@@ -73,7 +73,6 @@ const managerPeerId = computed(() => managerInfo.value?.peerIdStr);
 const managerPublicKey = computed(() => managerInfo.value.publicKeyStr);
 const { data: nonces } = useGetNoncesQuery(managerPublicKey, managerPeerId);
 
-const { data: latency } = usePing();
 const { peerId } = useWorkerNode();
 
 const toast = useToast();
