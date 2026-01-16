@@ -1,5 +1,5 @@
 <div id="app" style="text-align: center">
-  <h1>Effect AI - Sentence Reader</h1>
+  <h1>Azure Cognitive Speech - Sentence Reader</h1>
   <hr />
 
   <div class="mx-auto" style="max-width: 80%">
@@ -47,8 +47,10 @@ import RecordPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/record.
 createApp({
   data() {
     return {
-      title: "Effect AI Sentence Reader",
-      sentence: (JSON.parse("${result}")).values.sentence,
+      title: "Azure Cognitive Speech - Sentence Reader",
+      sentence: "${sentence}",
+      sentence_type: "${sentence_type}",
+      language: "${language}",
       wavesurfer: null,
       recordPlugin: null,
       isRecording: false,
@@ -61,22 +63,86 @@ createApp({
       fileTooBig: false,
       instructions: `
         <div>
-          <p>Please follow these steps carefully to ensure your audio is useful and clear:</p>
-          <br>
-          <li><strong>Read the sentence exactly</strong> - Include every article and the correct plural form. Don't shorten or add words.</li>
-          <br>
-          <li><strong>Speak clearly and naturally</strong> - Don't trail off or adding extra phrases.</li>
-          <br>
-          <li><strong>Accent Forgiveness</strong> - Varied pronunciation is fine as long as the intended text is recognizable.</li>
-          <br>
-          <li><strong>Avoid too much background noise</strong> - Quiet ambient noise is OK, but distinct words from others interfere with accuracy.</li>
-          <br>
-          <li>If the recording is too quiet, noisy, or breaks up, please re-record until the full sentence is audible and matches the text.</li>
-          <br>
-          <li>Clip length should stay under ~15 seconds. Most sentences take under 10 seconds. Aim for brevity and clarity.</li>
-        </div>`
+          <h2>Record a Sentence</h2>
+          <p>
+            In this task, you will record yourself reading a single sentence shown on the screen.
+            The goal is to collect clear, natural speech that accurately reflects the written text
+            and can be used to train and evaluate speech models.
+          </p>
+
+          <h3>1. Instructions</h3>
+          <p>
+            Your job is to read the sentence out loud exactly as it appears. These recordings will
+            be used in a speech dataset, so accuracy, clarity, and consistency are important.
+          </p>
+
+          <h4>Recording Guidelines</h4>
+          <ul>
+            <li>Read the sentence exactly as written, word for word.</li>
+            <li><strong>DO NOT</strong> leave long pauses between the beginning and end of the sentence.</li>
+            <li><strong>DO NOT</strong> add, remove, or change any words.</li>
+            <li>Speak clearly at a natural, conversational pace.</li>
+            <li>Use normal intonation as if you were speaking to another person.</li>
+            <li>Record in a quiet environment when possible.</li>
+            <li>Keep the recording under 15 seconds. Most sentences should take under 10 seconds.</li>
+          </ul>
+
+          <h4>Abbreviations and Spelled Letters</h4>
+          <ul>
+            <li>
+              If the sentence contains letters separated by spaces, say each letter out loud.
+            </li>
+            <li>
+              Example: “N Y C” should be spoken as “N” “Y” “C”.
+            </li>
+            <li>
+              Do not turn letter sequences into a word unless the sentence clearly spells a word
+              letter by letter.
+            </li>
+          </ul>
+
+          <h4>What NOT to Do</h4>
+          <ul>
+            <li>Do not paraphrase or correct the sentence.</li>
+            <li>Do not repeat the sentence unless asked to.</li>
+            <li>Do not add commentary, filler words, or extra sounds.</li>
+            <li>Do not whisper, shout, or speak unnaturally.</li>
+            <li>Do not record with loud background speech, music, or television.</li>
+          </ul>
+
+          <h3>2. Examples</h3>
+
+          <p><strong>✅ Good Recordings</strong></p>
+          <ul>
+            <li>Clear voice, steady pace, no background speech.</li>
+            <li>All words and letters spoken exactly as shown.</li>
+            <li>Natural pronunciation and rhythm.</li>
+          </ul>
+
+          <p><strong>❌ Bad Recordings</strong></p>
+          <ul>
+            <li>Skipping words or changing phrasing.</li>
+            <li>Reading abbreviations as a word instead of individual letters.</li>
+            <li>Audio that is too quiet, distorted, or clipped.</li>
+            <li>Background voices that interfere with the sentence.</li>
+          </ul>
+
+          <h3>3. Tips for Success</h3>
+          <ul>
+            <li>Read the sentence silently once before recording.</li>
+            <li>Take a short breath before you start speaking.</li>
+            <li>If you make a mistake, re record the sentence.</li>
+            <li>Focus on accuracy over speed.</li>
+          </ul>
+
+          <p>
+            When you are satisfied with your recording, submit it and move on to the next task.
+            Thank you for contributing to this speech dataset.
+          </p>
+        </div>
+        `
     };
-  },
+  },  
   mounted() {
 
     window.top.postMessage({ type: "task-instructions", instructions: this.instructions }, "*");
@@ -173,6 +239,8 @@ createApp({
           values: {
             taskTitle: this.title,
             sentence: this.sentence,
+            sentence_type: this.sentence_type,
+            language: this.language,
             recording: "https://" + this.ipfsHOST + "/ipfs/" + this.ipfsCID
           }
         }, "*");

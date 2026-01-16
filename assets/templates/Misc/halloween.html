@@ -1,0 +1,86 @@
+<div id="app" style="text-align: center">
+  <h1>Effect AI - Happy Halloween!!</h1>
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
+    <!-- Image display -->
+    <img
+      @load="loading = false"
+      id="image"
+      ref="image"
+      :src="imageSource"
+      style="max-width: 400px; height: auto; margin: 0 auto; display: block"
+    />
+
+    <div v-if="loading" class="mt-3">Loading image...</div>
+
+    <hr />
+
+    <!-- Submit button -->
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-success is-large mt-4"
+      :class="{'is-loading': btnLoading}"
+    >
+      Claim your treat!
+    </button>
+  </div>
+
+  <!-- Styles -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css"
+  />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <!-- Vue app -->
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    createApp({
+      data() {
+        return {
+          title: "Effect AI - Happy Halloween",
+          imageSource: "${image_url}", // this gets replaced dynamically
+          loading: true,
+          btnLoading: false,
+          instructions: `
+            <div>
+              <p><strong>Happy Halloween!!</strong></p>
+            </div>
+          `,
+        };
+      },
+      mounted() {
+        // Send task instructions to the parent frame
+        window.top.postMessage(
+          {
+            type: "task-instructions",
+            instructions: this.instructions,
+          },
+          "*"
+        );
+      },
+      methods: {
+        async uploadAndSubmit() {
+          this.btnLoading = true;
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  taskTitle: this.title,
+                  image: this.imageSource,
+                },
+              },
+              "*"
+            );
+          } catch (error) {
+            console.error("Error submitting task:", error);
+          }
+          this.btnLoading = false;
+        },
+      },
+    }).mount("#app");
+  </script>
+</div>

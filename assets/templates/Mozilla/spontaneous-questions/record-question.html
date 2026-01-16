@@ -1,0 +1,235 @@
+<div id="app" style="text-align: center">
+  <h1>Effect AI - Question Answering</h1>
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
+    <p class="mb-5">Click <b>Record</b> then answer the question aloud</p>
+    <div class="box">
+      <p class="is-size-4 has-text-weight-semibold" v-cloak>{{ question }}</p>
+    </div>
+
+    <!-- WaveSurfer container -->
+    <div id="waveform" class="mb-4"></div>
+
+    <div class="container mb-5">
+      <button v-if="!isRecording" @click.prevent="startRecording" class="button is-medium mx-2">Record</button>
+      <button v-else @click.prevent="stopRecording" class="button is-danger is-medium mx-2">Stop</button>
+      <button v-if="audioUrl" @click.prevent="playRecorded" class="button is-link is-medium mx-2">Replay</button>
+    </div>
+
+    <p class="is-size-7 mb-2">
+      By clicking this button, you accept that the question contributed here will be added to a publicly available cc-0 licensed dataset.
+    </p>
+
+    <p style="color: red;" :class="{'is-hidden mb-3': !notComplete}">
+      Task incomplete - Please complete all sections of the task
+    </p>
+
+    <p style="color: red;" :class="{'is-hidden mb-3': !fileTooBig}">
+      File size too large. Please stop recording once you've finished answering the question.
+    </p>
+
+    <button @click.prevent="uploadAndSubmit" class="button is-success is-large" :class="{'is-loading': btnLoading}">
+      Submit
+    </button>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+
+<script type="module">
+  
+import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js";
+import RecordPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/record.esm.js";
+
+createApp({
+  data() {
+    return {
+      title: "Effect AI Question Answering",
+      question: (JSON.parse("${result}")).values.question,
+      wavesurfer: null,
+      recordPlugin: null,
+      isRecording: false,
+      audioBlob: null,
+      audioUrl: "",
+      ipfsCID: "",
+      ipfsHOST: "ipfs.effect.ai",
+      notComplete: false,
+      btnLoading: false,
+      fileTooBig: false,
+      instructions: `
+        <div>
+          <h2>Answer a Question</h2>
+          <p>
+            In this task, you will record yourself answering a short question shown on the screen.
+            The goal is to collect natural spoken responses that are clear, personal, and brief.
+          </p>
+
+          <h3>1. Instructions</h3>
+          <p>
+            Your job is to answer the question out loud in your own words.
+            These recordings will be used in a speech dataset, so clarity and natural speech are important.
+          </p>
+
+          <h4>Recording Guidelines</h4>
+          <ul>
+            <li>Answer the question naturally, as if speaking to another person.</li>
+            <li>Keep your response short and focused.</li>
+            <li>Do not speak for too long. Try to stay under 30 seconds.</li>
+            <li>Speak clearly at a normal, conversational pace.</li>
+            <li>Use your own words. There is no single correct answer.</li>
+            <li>Record in a quiet environment when possible.</li>
+          </ul>
+
+          <h4>What NOT to Do</h4>
+          <ul>
+            <li>Do not read the question instead of answering it.</li>
+            <li>Do not give very long or detailed stories.</li>
+            <li>Do not include names, addresses, or other identifying information.</li>
+            <li>Do not add filler sounds for long periods.</li>
+            <li>Do not record with loud background noise, music, or voices.</li>
+          </ul>
+
+          <h3>2. Examples</h3>
+
+          <p><strong>✅ Good Answers</strong></p>
+          <ul>
+            <li>A short story that answers the question clearly.</li>
+            <li>Natural speech with a clear beginning and end.</li>
+            <li>Focused on one moment or feeling.</li>
+          </ul>
+
+          <p><strong>❌ Bad Answers</strong></p>
+          <ul>
+            <li>Very long stories that go off topic.</li>
+            <li>Silence or only a few unclear words.</li>
+            <li>Reading the question instead of answering it.</li>
+            <li>Sharing personal details like full names or contact information.</li>
+          </ul>
+
+          <h3>3. Tips for Success</h3>
+          <ul>
+            <li>Think briefly about your answer before recording.</li>
+            <li>Focus on a single moment or experience.</li>
+            <li>Stop recording once you have answered the question.</li>
+            <li>If you make a mistake, you can re-record.</li>
+          </ul>
+
+          <p>
+            When you are satisfied with your recording, submit it and continue to the next task.
+            Thank you for sharing your voice.
+          </p>
+        </div>
+        `
+    };
+  },
+  mounted() {
+
+    window.top.postMessage({ type: "task-instructions", instructions: this.instructions }, "*");
+
+    this.recordPlugin = RecordPlugin.create();
+
+    this.wavesurfer = WaveSurfer.create({
+      container: "#waveform",
+      waveColor: "#ddd",
+      progressColor: "#0000FF",
+      cursorWidth: 0,
+      height: 100,
+      interact: false,
+      plugins: [this.recordPlugin],
+    });
+
+    this.recordPlugin.on("record-start", () => {
+      this.isRecording = true;
+      this.audioBlob = null;
+      this.audioUrl = "";
+    });
+
+    this.recordPlugin.on("record-end", (blob) => {
+      this.audioBlob = blob;
+      this.audioUrl = URL.createObjectURL(blob);
+      this.wavesurfer.load(this.audioUrl);
+      this.isRecording = false;
+    });
+
+  },
+  methods: {
+    checkSize(){
+      const file = new File([this.audioBlob], "recording.wav", { type: "audio/wav" });
+      const fileSize = (file.size / 1024).toFixed(2);
+
+      if (fileSize > 200){
+        this.fileTooBig = true
+      }
+      else
+        this.fileTooBig = false
+    },
+    async startRecording() {
+      try {
+        await this.recordPlugin.startRecording();
+      } catch (err) {
+        console.error("startRecording failed:", err);
+        this.isRecording = false;
+      }
+    },
+
+    stopRecording() {
+      try {
+        this.recordPlugin.stopRecording();
+      } catch (err) {
+        console.error("stopRecording failed:", err);
+      }
+    },
+
+    playRecorded() {
+      if (!this.audioUrl) return;
+      this.wavesurfer.playPause();
+    },
+
+    async uploadAndSubmit() {
+      this.btnLoading = true;
+      if (!this.audioBlob) {
+        this.notComplete = true;
+        this.btnLoading = false;
+        return;
+      }
+
+      this.checkSize()
+      if (this.fileTooBig) {
+        this.btnLoading = false;
+        return;
+      }
+
+      try{
+        const file = new File([this.audioBlob], "recording.wav", { type: "audio/wav" });
+        const formData = new FormData();
+        formData.append("path", file);
+
+        // Replace IPFS upload endpoint
+        const response = await fetch("https://" + this.ipfsHOST + "/api/v0/add?pin=true", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error("Upload failed");
+        const result = await response.json();
+        this.ipfsCID = result.Hash || result.cid || result.id;
+        parent.postMessage({
+          task: "submit",
+          values: {
+            taskTitle: this.title,
+            question: this.question,
+            recording: "https://" + this.ipfsHOST + "/ipfs/" + this.ipfsCID
+          }
+        }, "*");
+      } catch (err) {
+        console.error("Failed to upload", err);
+      } finally {
+        this.btnLoading = false;
+      }
+    }
+  }
+}).mount("#app");
+</script>
+
