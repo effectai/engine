@@ -11,7 +11,6 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <!-- optional quick actions -->
           <UBadge color="neutral" variant="subtle" size="xs">
             {{ userCapabilities.length }} total
           </UBadge>
@@ -33,91 +32,122 @@
       <div class="mt-3"></div>
     </div>
 
-    <!-- List -->
-    <ul v-else class="divide-y divide-gray-200 dark:divide-gray-800">
-      <li
-        v-for="capability in userCapabilities"
-        :key="capability.id"
-        class="group relative"
-      >
-        <div
-          class="flex items-start gap-3 p-4 transition-colors hover:bg-gray-50/80 dark:hover:bg-gray-900/40"
+    <div v-else>
+      <ul class="divide-y divide-gray-200 dark:divide-gray-800">
+        <li
+          v-for="capability in currentPageItems"
+          :key="capability.id"
+          class="group relative"
         >
-          <!-- Icon bubble -->
           <div
-            class="grid h-10 w-10 place-items-center rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
+            class="flex items-start gap-3 p-4 transition-colors hover:bg-gray-50/80 dark:hover:bg-gray-900/40"
           >
-            <UIcon
-              :name="capability.icon || 'i-heroicons-bolt-20-solid'"
-              class="h-5 w-5 text-gray-700 dark:text-gray-200"
-            />
-          </div>
-
-          <!-- Texts -->
-          <div class="flex min-w-0 flex-1 flex-col">
-            <div class="flex items-center gap-2">
-              <span class="truncate font-semibold">{{ capability.name }}</span>
-
-              <!-- Category pill -->
-              <UBadge color="neutral" variant="subtle" size="xs">
-                {{ capability.category || "general" }}
-              </UBadge>
-
-              <!-- Value chip (only if exists) -->
-              <UBadge
-                v-if="
-                  capability.value !== undefined && capability.value !== null
-                "
-                color="neutral"
-                size="xs"
-                variant="solid"
-                class="ml-1"
-              >
-                {{ capability.value }}
-              </UBadge>
-            </div>
-
             <div
-              class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400"
+              class="grid h-10 w-10 place-items-center rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
             >
-              <span class="inline-flex items-center gap-1">
-                <UIcon
-                  name="i-heroicons-check-badge-20-solid"
-                  class="h-4 w-4"
-                />
-                Acquired
-                <UTooltip :text="formatFullDate(capability.awardedAt)">
-                  <span class="underline decoration-dotted underline-offset-2">
-                    {{ formatRelative(capability.awardedAt) }}
-                  </span>
-                </UTooltip>
-              </span>
-              <UDivider orientation="vertical" class="!h-3" />
-              <span class="line-clamp-1" v-if="capability.description">{{
-                capability.description
-              }}</span>
+              <UIcon
+                :name="capability.icon || 'i-heroicons-bolt-20-solid'"
+                class="h-5 w-5 text-gray-700 dark:text-gray-200"
+              />
+            </div>
+
+            <div class="flex min-w-0 flex-1 flex-col">
+              <div class="flex items-center gap-2">
+                <span class="truncate font-semibold">{{ capability.name }}</span>
+
+                <UBadge color="neutral" variant="subtle" size="xs">
+                  {{ capability.category || "general" }}
+                </UBadge>
+
+                <UBadge
+                  v-if="
+                    capability.value !== undefined && capability.value !== null
+                  "
+                  color="neutral"
+                  size="xs"
+                  variant="solid"
+                  class="ml-1"
+                >
+                  {{ capability.value }}
+                </UBadge>
+              </div>
+
+              <div
+                class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400"
+              >
+                <span class="inline-flex items-center gap-1">
+                  <UIcon name="i-heroicons-check-badge-20-solid" class="h-4 w-4" />
+                  Acquired
+                  <UTooltip :text="formatFullDate(capability.awardedAt)">
+                    <span class="underline decoration-dotted underline-offset-2">
+                      {{ formatRelative(capability.awardedAt) }}
+                    </span>
+                  </UTooltip>
+                </span>
+                <UDivider orientation="vertical" class="!h-3" />
+
+                <div v-if="capability.description" class="w-full line-clamp-1">
+                  {{ capability.description }}
+                </div>
+              </div>
             </div>
           </div>
+        </li>
+      </ul>
 
-          <!-- Right actions (optional) -->
-          <div
-            class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
-          ></div>
-        </div>
-      </li>
-    </ul>
+      <div
+        v-if="pageCount > 1"
+        class="flex justify-center items-center gap-2 mt-4"
+      >
+        <button
+          @click="prevPage"
+          :disabled="currentPage === 0"
+          class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-800 disabled:opacity-50"
+        >
+          <UIcon name="i-heroicons-chevron-left-20-solid" />
+        </button>
+
+        <span class="text-sm">
+          Page {{ currentPage + 1 }} of {{ pageCount }}
+        </span>
+
+        <button
+          @click="nextPage"
+          :disabled="currentPage >= pageCount - 1"
+          class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-800 disabled:opacity-50"
+        >
+          <UIcon name="i-heroicons-chevron-right-20-solid" />
+        </button>
+      </div>
+    </div>
   </UCard>
 </template>
+
 <script setup lang="ts">
+import { ref, computed } from "vue";
+
 const { userCapabilities } = useCapabilities();
 
-function categoryColor(cat?: string) {
-  const key = (cat || "").toLowerCase();
-  if (["voice", "audio", "speech"].includes(key)) return "emerald";
-  if (["network", "bandwidth", "latency"].includes(key)) return "indigo";
-  if (["security", "auth", "identity"].includes(key)) return "amber";
-  if (["compute", "ai", "gpu"].includes(key)) return "violet";
-  return "gray";
+const currentPage = ref(0);
+const cardsPerPage = 3;
+
+const pageCount = computed(() =>
+  Math.ceil(userCapabilities.value.length / cardsPerPage)
+);
+
+const currentPageItems = computed(() =>
+  userCapabilities.value.slice(
+    currentPage.value * cardsPerPage,
+    currentPage.value * cardsPerPage + cardsPerPage
+  )
+);
+
+function nextPage() {
+  if (currentPage.value < pageCount.value - 1) currentPage.value++;
+}
+
+function prevPage() {
+  if (currentPage.value > 0) currentPage.value--;
 }
 
 function formatFullDate(dateLike: string | number | Date) {
