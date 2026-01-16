@@ -2,6 +2,7 @@
   <div class="">
     <OnboardModal />
     <AlphaSignupBanner />
+    <AlphaNoticeBanner />
     <NodeHeroCard />
 
     <div
