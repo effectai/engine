@@ -117,6 +117,9 @@ pub fn handler(
         PaymentErrors::Unauthorized
     );
 
+    let last_nonce = ctx.accounts.recipient_manager_data_account.nonce;
+    require!(min_nonce > last_nonce, PaymentErrors::InvalidPayment);
+
     // Unpack and verify proof
     let proof_a: G1 = <G1 as CanonicalDeserialize>::deserialize_uncompressed(
         &*[&change_endianness(&proof[0..64])[..], &[0u8][..]].concat(),
