@@ -902,6 +902,7 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Finished: ${doneSize}</li>
   <li>Failed: ${failedSize}</li>
   <li>Batch / Freq: ${f.batchSize} / ${f.frequency}</li>
+  <li>Time Limit: ${f.timeLimitSeconds}s</li>
 </ul>
 
 <section style="display: flex; gap: 1.0rem">
