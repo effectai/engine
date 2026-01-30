@@ -45,10 +45,14 @@ export const useTasks = () => {
     };
 
     onMounted(() => {
-      instance.value?.events.addEventListener("task:created", invalidateTasks);
+      instance.value?.events.addEventListener("task:created", handleTaskEvent);
       instance.value?.events.addEventListener("task:rejected", invalidateTasks);
       instance.value?.events.addEventListener(
         "task:completed",
+        invalidateTasks,
+      );
+      instance.value?.events.addEventListener(
+        "task:expired",
         invalidateTasks,
       );
     });
@@ -64,6 +68,10 @@ export const useTasks = () => {
       );
       instance.value?.events.removeEventListener(
         "task:completed",
+        invalidateTasks,
+      );
+      instance.value?.events.removeEventListener(
+        "task:expired",
         invalidateTasks,
       );
     });
@@ -94,13 +102,20 @@ export const useTasks = () => {
   const getTaskDeadline = (task: WorkerTaskRecord) => {
     const lastEvent = task.events[task.events.length - 1];
     const now = new Date().getTime() / 1000;
+    const timeLimitSeconds = Number(task.state.timeLimitSeconds ?? 600);
 
     if (lastEvent.type === "create") {
-      return { time: lastEvent.timestamp + 600 - now, type: "accept" };
+      return {
+        time: Math.max(lastEvent.timestamp + timeLimitSeconds - now, 0),
+        type: "accept",
+      };
     }
 
     if (lastEvent.type === "accept") {
-      return { time: lastEvent.timestamp + 600 - now, type: "complete" };
+      return {
+        time: Math.max(lastEvent.timestamp + timeLimitSeconds - now, 0),
+        type: "complete",
+      };
     }
 
     return { time: 0, type: "none" };
