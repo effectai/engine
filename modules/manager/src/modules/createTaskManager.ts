@@ -182,12 +182,21 @@ export function createTaskManager({
     taskRecord: ManagerTaskRecord,
     lastEvent: TaskAssignedEvent,
   ) => {
-    if (isExpired(lastEvent.timestamp, TASK_ACCEPTANCE_TIME)) {
+    const { timeLimitSeconds } = taskRecord.state;
+    const acceptanceWindow =
+      typeof timeLimitSeconds === "number" && timeLimitSeconds > 0
+        ? timeLimitSeconds
+        : TASK_ACCEPTANCE_TIME;
+
+    if (isExpired(lastEvent.timestamp, acceptanceWindow)) {
       await rejectAndReassignTask(taskRecord);
     }
   };
 
-  const rejectAndReassignTask = async (taskRecord: ManagerTaskRecord) => {
+  const rejectAndReassignTask = async (
+    taskRecord: ManagerTaskRecord,
+    reason = "Worker took too long to accept/reject task",
+  ) => {
     const latestAssignEvent = taskRecord.events.reduce(
       (latest: TaskAssignedEvent | null, current) => {
         if (current.type === "assign") {
@@ -207,7 +216,7 @@ export function createTaskManager({
     await taskStore.reject({
       entityId: taskRecord.state.id,
       peerIdStr: latestAssignEvent.assignedToPeer,
-      reason: "Worker took too long to accept/reject task",
+      reason,
     });
 
     workerManager.markTaskReleased(
@@ -228,8 +237,9 @@ export function createTaskManager({
     taskRecord: ManagerTaskRecord,
     lastEvent: TaskAcceptedEvent,
   ) => {
-    if (isExpired(lastEvent.timestamp, taskRecord.state.timeLimitSeconds)) {
-      await rejectAndReassignTask(taskRecord);
+    const { timeLimitSeconds } = taskRecord.state;
+    if (isExpired(lastEvent.timestamp, timeLimitSeconds)) {
+      await rejectAndReassignTask(taskRecord, "Worker took too long to submit task");
     }
   };
 
