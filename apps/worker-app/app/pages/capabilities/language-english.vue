@@ -89,7 +89,7 @@
       </div>
 
       <div class="nav right-align">
-        <button class="btn primary" @click="next">
+        <button class="btn primary" @click="next" :disabled="transitioning">
           {{ index === questions.length - 1 ? "Finish" : "Next" }}
         </button>
       </div>
@@ -122,9 +122,9 @@
         </ol>
       </details> -->
 
-      <div class="nav">
+      <div class="nav center-align">
         <button v-if="!passed" class="btn" @click="reset">Restart</button>
-        <UButton v-if="passed" @click="showAward = true">Next</UButton>
+        <button v-if="passed" class="btn primary next-btn" @click="showAward = true">Next</button>
       </div>
     </div>
   </div>
@@ -140,373 +140,685 @@ const questions = ref([]);
 const timeLeft = ref(0);
 let timerInterval = null;
 
+// Double-click protection
+const transitioning = ref(false);
+
 const masterBank = [
   {
-    type: "mcq",
-    duration: 30,
-    prompt: "Select the sentence that is grammatically correct and natural:",
-    options: [
-      "I have been working here for three years.",
-      "I am working here since three years.",
-      "I work here since three years ago.",
+    "type": "mcq",
+    "duration": 55,
+    "prompt": "You receive a message from a team lead: 'Please hold off on the Batch A annotations until the new guidelines are released.' What does this mean?",
+    "options": [
+      "You should finish Batch A quickly before the new guidelines arrive.",
+      "You should stop working on Batch A temporarily.",
+      "You should delete Batch A.",
+      "You should continue working on Batch A using the old guidelines."
     ],
-    answer: "I have been working here for three years.",
+    "answer": "You should stop working on Batch A temporarily."
   },
   {
-    type: "mcq",
-    duration: 25,
-    prompt: "Context: Data Transcription.<br><em>The handwriting was illegible, so I could not ___ the text.</em>",
-    options: ["transcribe", "describe", "prescribe"],
-    answer: "transcribe",
-  },
-  {
-    type: "mcq",
-    duration: 30,
-    prompt: "Hypothetical: <em>If I ___ known about the bug, I would have fixed it.</em>",
-    options: ["have", "had", "was"],
-    answer: "had",
-  },
-  {
-    type: "mcq",
-    duration: 30,
-    prompt: "Connector: <em>The model is accurate; ___, it is very slow.</em>",
-    options: ["therefore", "however", "consequently"],
-    answer: "however",
-  },
-  {
-    type: "mcq",
-    duration: 25,
-    prompt: "Vocabulary: <em>To 'mitigate' a risk means to:</em>",
-    options: ["increase it", "reduce it", "ignore it"],
-    answer: "reduce it",
-  },
-  {
-    type: "mcq",
-    duration: 25,
-    prompt: "Phrasal Verb: <em>We need to look ___ the potential causes.</em>",
-    options: ["into", "onto", "under"],
-    answer: "into",
-  },
-  {
-    type: "mcq",
-    duration: 30,
-    prompt: "Select the most natural sentence for a past event:",
-    options: [
-      "I finished the task yesterday.",
-      "I have finished the task yesterday.",
-      "I finish the task yesterday.",
+    "type": "mcq",
+    "duration": 60,
+    "prompt": "Scenario: You are categorizing customer support tickets. \nRule: 'Refund requests imply a financial transaction. Complaints about rudeness are behavioral.'\nTicket: 'I want my money back because the driver was incredibly rude.'\nWhich category takes precedence?",
+    "options": [
+      "Behavioral, because the driver was rude.",
+      "Refund, because the customer explicitly asks for money back.",
+      "Neither, it is a mixed ticket and should be skipped.",
+      "Both categories should be selected if the system allows."
     ],
-    answer: "I finished the task yesterday.",
+    "answer": "Refund, because the customer explicitly asks for money back."
   },
   {
-    type: "mcq",
-    duration: 25,
-    prompt: "Word Choice: <em>The results were ___, matching our expectations perfectly.</em>",
-    options: ["consistent", "contradictory", "random"],
-    answer: "consistent",
-  },
-  {
-    type: "mcq",
-    duration: 30,
-    prompt: "Grammar: <em>Neither the manager nor the developers ___ aware of the issue.</em>",
-    options: ["was", "were", "is"],
-    answer: "were",
-  },
-  {
-    type: "mcq",
-    duration: 30,
-    prompt: "Grammar: <em>She prefers tea ___ coffee.</em>",
-    options: ["than", "over", "to"],
-    answer: "to",
-  },
-  {
-    type: "mcq",
-    duration: 25,
-    prompt: "Vocabulary: <em>To 'allocate' resources means to:</em>",
-    options: ["distribute", "waste", "reserve"],
-    answer: "distribute",
-  },
-  {
-    type: "mcq",
-    duration: 30,
-    prompt: "Choose the correct sentence:",
-    options: ["He don't like pizza.", "He doesn't like pizza.", "He not likes pizza."],
-    answer: "He doesn't like pizza.",
-  },
-  {
-    type: "mcq",
-    duration: 25,
-    prompt: "Connector: <em>I was tired; ___, I went to the gym.</em>",
-    options: ["therefore", "although", "because"],
-    answer: "although",
-  },
-  {
-    type: "mcq",
-    duration: 30,
-    prompt: "Word Choice: <em>The meeting was postponed due to ___ weather conditions.</em>",
-    options: ["adverse", "favorable", "neutral"],
-    answer: "adverse",
-  },
-  {
-    type: "mcq",
-    duration: 25,
-    prompt: "Select the most natural sentence:",
-    options: ["I am knowing him for years.", "I have known him for years.", "I knowed him for years."],
-    answer: "I have known him for years.",
-  },
-  {
-    type: "mcq",
-    duration: 30,
-    prompt: "Phrasal Verb: <em>We need to ___ the issue immediately.</em>",
-    options: ["look into", "look over", "look for"],
-    answer: "look into",
-  },
-  {
-    type: "mcq",
-    duration: 25,
-    prompt: "Grammar: <em>If I ___ you, I would apologize.</em>",
-    options: ["am", "were", "was"],
-    answer: "were",
-  },
-  {
-    type: "mcq",
-    duration: 30,
-    prompt: "Vocabulary: <em>'Ambiguous' means:</em>",
-    options: ["clear", "uncertain", "funny"],
-    answer: "uncertain",
-  },
-  {
-    type: "mcq",
-    duration: 25,
-    prompt: "Choose correct form: <em>He suggested that she ___ earlier.</em>",
-    options: ["arrives", "arrive", "arrived"],
-    answer: "arrive",
-  },
-  {
-    type: "mcq",
-    duration: 30,
-    prompt: "Grammar: <em>Neither of the answers ___ correct.</em>",
-    options: ["is", "are", "were"],
-    answer: "is",
-  },
-  {
-    type: "cloze",
-    duration: 30,
-    prompt: "Type the missing word: <em>She is responsible ___ managing the project.</em>",
-    answer: "for",
-    hint: "Preposition",
-  },
-  {
-    type: "cloze",
-    duration: 25,
-    prompt: "Fill in: <em>Please ___ sure you save your work.</em>",
-    answer: "make",
-    placeholder: "Type a verb",
-  },
-  {
-    type: "cloze",
-    duration: 30,
-    prompt: "Passive Voice: <em>The email was ___ by the manager.</em>",
-    answer: "written",
-    hint: "Verb 'to write'",
-  },
-  {
-    type: "cloze",
-    duration: 30,
-    prompt: "Spelling: <em>The feature is ___ (needed) for the launch.</em>",
-    answer: "necessary",
-    placeholder: "Starts with n...",
-  },
-  {
-    type: "cloze",
-    duration: 25,
-    prompt: "Preposition: <em>He is interested ___ learning Python.</em>",
-    answer: "in",
-    hint: "at / on / in",
-  },
-  {
-    type: "cloze",
-    duration: 25,
-    prompt: "Fill in: <em>He is good ___ mathematics.</em>",
-    answer: "at",
-    hint: "Preposition",
-  },
-  {
-    type: "cloze",
-    duration: 30,
-    prompt: "Complete: <em>We look forward ___ hearing from you.</em>",
-    answer: "to",
-  },
-  {
-    type: "cloze",
-    duration: 25,
-    prompt: "Type the missing word: <em>The manager asked him to ___ the report by Friday.</em>",
-    answer: "submit",
-    placeholder: "Verb",
-  },
-  {
-    type: "cloze",
-    duration: 30,
-    prompt: "Spelling: <em>It is ___ to follow the instructions carefully.</em>",
-    answer: "essential",
-  },
-  {
-    type: "cloze",
-    duration: 25,
-    prompt: "Fill in: <em>She is capable ___ leading the team.</em>",
-    answer: "of",
-  },
-  {
-    type: "cloze",
-    duration: 30,
-    prompt: "Complete: <em>They insisted ___ paying for the damages.</em>",
-    answer: "on",
-  },
-  {
-    type: "cloze",
-    duration: 25,
-    prompt: "Type the missing word: <em>The project was completed ___ time.</em>",
-    answer: "on",
-  },
-  {
-    type: "cloze",
-    duration: 30,
-    prompt: "Fill in: <em>He was accused ___ cheating on the exam.</em>",
-    answer: "of",
-  },
-  {
-    type: "cloze",
-    duration: 25,
-    prompt: "Complete: <em>She succeeded ___ passing the test.</em>",
-    answer: "in",
-  },
-  {
-    type: "cloze",
-    duration: 30,
-    prompt: "Type the missing word: <em>It is important to ___ a healthy lifestyle.</em>",
-    answer: "maintain",
-  },
-  {
-    type: "reading",
-    duration: 60,
-    prompt: "Read the instruction and decide on the action.",
-    passage: [
-      "Task: Label all vehicles.",
-      "Constraint: Do not label vehicles that are more than 50% occluded (blocked) by other objects.",
-      "Scenario: You see a car parked behind a tree. Only the rear bumper is visible.",
+    "type": "mcq",
+    "duration": 45,
+    "prompt": "Select the most professional and clear way to report a bug to a developer.",
+    "options": [
+      "It's broken again. Fix it.",
+      "I was doing the task and the button didn't work, maybe it's the server?",
+      "The 'Submit' button is unresponsive on Chrome version 90 when the form is full.",
+      "I think there is a bug in the code."
     ],
-    options: ["Label the car.", "Do not label the car.", "Label the tree."],
-    answer: "Do not label the car.",
+    "answer": "The 'Submit' button is unresponsive on Chrome version 90 when the form is full."
   },
   {
-    type: "reading",
-    duration: 50,
-    prompt: "Instruction Comprehension:",
-    passage: [
-      "The summary must be concise. Detailed explanations go in the appendix. The main body text must not exceed 200 words.",
+    "type": "mcq",
+    "duration": 45,
+    "prompt": "Context: Verifying data. 'The address on the receipt must match the store location exactly.' \nReceipt: '123 Main St.' \nStore Record: '123 Main Street'. \nIs this a match?",
+    "options": [
+      "No, 'St.' and 'Street' are different strings.",
+      "Yes, because 'St.' is a standard abbreviation for 'Street'.",
+      "No, the instructions say 'exactly'.",
+      "It depends on the font size."
     ],
-    options: [
-      "The summary should be long.",
-      "Details go in the appendix; main text is short.",
-      "The appendix must not exceed 200 words.",
-    ],
-    answer: "Details go in the appendix; main text is short.",
+    "answer": "Yes, because 'St.' is a standard abbreviation for 'Street'."
   },
   {
-    type: "reading",
-    duration: 50,
-    prompt: "Contextual Judgment:",
-    passage: [
-      "User Query: 'Show me red shoes.'",
-      "Result: An image of red boots.",
-      "Guideline: Boots are considered a sub-category of shoes.",
+    "type": "mcq",
+    "duration": 50,
+    "prompt": "Which sentence suggests that the speaker is offering to help, rather than asking for help?",
+    "options": [
+      "Could you review these files?",
+      "I can review these files if you like.",
+      "Do I have to review these files?",
+      "Have you reviewed these files?"
     ],
-    options: ["Mark as Match", "Mark as Mismatch", "Mark as Unsure"],
-    answer: "Mark as Match",
+    "answer": "I can review these files if you like."
   },
   {
-    type: "reading",
-    duration: 55,
-    prompt: "Logistics Instruction:",
-    passage: [
-      "All invoices must be submitted by Friday at 5 PM. Invoices submitted after this time will be processed the following week.",
-      "Scenario: You submit an invoice on Friday at 6 PM.",
+    "type": "mcq",
+    "duration": 50,
+    "prompt": "Identify the sentence where the meaning is 'The task was completed very recently'.",
+    "options": [
+      "I completed the task yesterday.",
+      "I have just completed the task.",
+      "I had completed the task before the meeting.",
+      "I am completing the task now."
     ],
-    options: [
-      "It is processed immediately.",
-      "It is processed next week.",
-      "It is rejected permanently.",
-    ],
-    answer: "It is processed next week.",
+    "answer": "I have just completed the task."
   },
   {
-    type: "reading",
-    duration: 55,
-    prompt: "Instruction Comprehension:",
-    passage: [
-      "All employees must wear ID badges while on company premises.",
-      "Scenario: An employee forgot their badge at home.",
+    "type": "mcq",
+    "duration": 55,
+    "prompt": "Logical Reasoning: 'Only tasks with a confidence score above 80% are sent to the client. Task A has a score of 75%. Task B has a score of 82%.' What happens?",
+    "options": [
+      "Both tasks are sent to the client.",
+      "Only Task A is sent to the client.",
+      "Only Task B is sent to the client.",
+      "Neither task is sent to the client."
     ],
-    options: ["They can enter anyway.", "They must not enter.", "They must make a temporary badge."],
-    answer: "They must make a temporary badge.",
+    "answer": "Only Task B is sent to the client."
   },
   {
-    type: "reading",
-    duration: 50,
-    prompt: "Contextual Judgment:",
-    passage: [
-      "User Query: 'I need a blue notebook.'",
-      "Result: An image of a red notebook.",
+    "type": "mcq",
+    "duration": 35,
+    "prompt": "Which word implies that a rule cannot be changed?",
+    "options": [
+      "Flexible",
+      "Tentative",
+      "Suggested",
+      "Strict"
     ],
-    options: ["Mark as Match", "Mark as Mismatch", "Mark as Unsure"],
-    answer: "Mark as Mismatch",
+    "answer": "Strict"
   },
   {
-    type: "reading",
-    duration: 60,
-    prompt: "Task: Follow the instructions below.",
-    passage: [
-      "Instruction: Highlight all the nouns in the text.",
-      "Text: 'The cat chased the mouse under the table.'",
+    "type": "mcq",
+    "duration": 55,
+    "prompt": "Guideline: 'If a user's search query could mean two things, choose the most popular meaning.'\n\nScenario: A user searches for 'Apple'. The two meanings are 'the fruit' (less popular) and 'the technology company' (more popular). \n\nWhat should you show the user?",
+    "options": [
+      "Information about the fruit.",
+      "Information about the technology company.",
+      "Nothing, because the query is confusing.",
+      "Ask the user to search again."
     ],
-    options: ["Highlight 'cat' and 'mouse'", "Highlight all words", "Highlight 'table' only"],
-    answer: "Highlight 'cat' and 'mouse'",
+    "answer": "Information about the technology company."
   },
   {
-    type: "reading",
-    duration: 50,
-    prompt: "Instruction Comprehension:",
-    passage: [
-      "Submit your timesheet by 5 PM on Friday.",
-      "Scenario: It's Friday at 4 PM.",
+    "type": "mcq",
+    "duration": 40,
+    "prompt": "You are reading a confusing instruction. What is the best clarification question to ask?",
+    "options": [
+      "This is bad.",
+      "Can you explain what constitutes a 'low quality' image?",
+      "How do I do this?",
+      "Why are there so many rules?"
     ],
-    options: ["Submit now", "Submit next week", "Ignore"],
-    answer: "Submit now",
+    "answer": "Can you explain what constitutes a 'low quality' image?"
   },
   {
-    type: "reading",
-    duration: 55,
-    prompt: "Contextual Judgment:",
-    passage: [
-      "The client requested a report in PDF format.",
-      "You submitted a Word document.",
+    "type": "mcq",
+    "duration": 45,
+    "prompt": "A prompt asks: 'Generate a creative story about a robot.' Which response fails the 'creative' requirement?",
+    "options": [
+      "A story about a robot who wants to become a chef.",
+      "A poem about a robot falling in love with a toaster.",
+      "A definition of what a robot is and how it functions.",
+      "A mystery involving a robot detective."
     ],
-    options: ["Correct format", "Incorrect format", "Ask client"],
-    answer: "Incorrect format",
+    "answer": "A definition of what a robot is and how it functions."
   },
   {
-    type: "reading",
-    duration: 50,
-    prompt: "Instruction Comprehension:",
-    passage: [
-      "All visitors must sign in at the reception desk.",
-      "Scenario: A visitor bypasses the desk.",
+    "type": "mcq",
+    "duration": 40,
+    "prompt": "Select the sentence that indicates a hypothetical situation.",
+    "options": [
+      "If the image loads, label it.",
+      "When the image loads, label it.",
+      "If the image were to fail loading, we would skip it.",
+      "The image loaded, so we labeled it."
     ],
-    options: ["Sign in later", "Violation of rules", "Allowed entry"],
-    answer: "Violation of rules",
+    "answer": "If the image were to fail loading, we would skip it."
+  },
+  {
+    "type": "mcq",
+    "duration": 45,
+    "prompt": "Instructions: 'Prioritize accuracy over speed.' A worker rushes and makes mistakes. How would you describe their performance?",
+    "options": [
+      "Efficient and compliant.",
+      "Fast but non-compliant with the priority rule.",
+      "Slow and accurate.",
+      "Excellent."
+    ],
+    "answer": "Fast but non-compliant with the priority rule."
+  },
+  {
+    "type": "mcq",
+    "duration": 35,
+    "prompt": "Which phrase is used to introduce an exception to a rule?",
+    "options": [
+      "For example...",
+      "In addition...",
+      "Unless...",
+      "Therefore..."
+    ],
+    "answer": "Unless..."
+  },
+  {
+    "type": "mcq",
+    "duration": 35,
+    "prompt": "You see the term 'N/A' in a data field. What does this usually stand for?",
+    "options": [
+      "New Assignment",
+      "Not Applicable",
+      "No Action",
+      "Next Available"
+    ],
+    "answer": "Not Applicable"
+  },
+  {
+    "type": "mcq",
+    "duration": 35,
+    "prompt": "Choose the correct phrasing for a warning.",
+    "options": [
+      "Please carefully deleting files.",
+      "Be careful not to delete essential files.",
+      "You might maybe delete files.",
+      "Deleting files is something you do."
+    ],
+    "answer": "Be careful not to delete essential files."
+  },
+  {
+    "type": "mcq",
+    "duration": 45,
+    "prompt": "Instruction: 'Flag the comment if it contains PII (Personally Identifiable Information).' Comment: 'Contact me at john.doe@email.com for details.'",
+    "options": [
+      "Flag it, because it contains an email address.",
+      "Do not flag it, names are public.",
+      "Flag it only if the email looks fake.",
+      "Do not flag it, this is not PII."
+    ],
+    "answer": "Flag it, because it contains an email address."
+  },
+  {
+    "type": "mcq",
+    "duration": 40,
+    "prompt": "What does 'verbatim' mean in transcription instructions?",
+    "options": [
+      "Summarize the main points.",
+      "Correct the grammar.",
+      "Type every word exactly as spoken.",
+      "Remove filler words like 'um' and 'ah'."
+    ],
+    "answer": "Type every word exactly as spoken."
+  },
+  {
+    "type": "mcq",
+    "duration": 35,
+    "prompt": "Which sentence implies the worker has a choice?",
+    "options": [
+      "You must submit the report by 5 PM.",
+      "You are required to submit the report by 5 PM.",
+      "You may submit the report early if you finish.",
+      "Submitting the report is mandatory."
+    ],
+    "answer": "You may submit the report early if you finish."
+  },
+  {
+    "type": "mcq",
+    "duration": 30,
+    "prompt": "Select the sentence that clearly explains *why* the task was rejected.",
+    "options": [
+      "The task was rejected because it contained too many errors.",
+      "The task contained errors because it was rejected.",
+      "The task was rejected, so it had errors.",
+      "Errors were contained in the task, therefore rejection happened."
+    ],
+    "answer": "The task was rejected because it contained too many errors."
+  },
+  {
+    "type": "mcq",
+    "duration": 45,
+    "prompt": "Select the correct connector: 'The guidelines are complex; ________, we have provided a cheat sheet.'",
+    "options": [
+      "nevertheless",
+      "because",
+      "consequently",
+      "despite"
+    ],
+    "answer": "consequently"
+  },
+  {
+    "type": "mcq",
+    "duration": 45,
+    "prompt": "In the sentence 'Ensure the bounding box encompasses the entire object', what does 'encompasses' mean?",
+    "options": [
+      "Touches",
+      "Surrounds/Includes",
+      "Points to",
+      "Excludes"
+    ],
+    "answer": "Surrounds/Includes"
+  },
+  {
+    "type": "mcq",
+    "duration": 35,
+    "prompt": "Which error message indicates an issue with your internet connection?",
+    "options": [
+      "Computer not turning on",
+      "Invalid Password",
+      "Network Timeout",
+      "Disk Full"
+    ],
+    "answer": "Network Timeout"
+  },
+  {
+    "type": "mcq",
+    "duration": 40,
+    "prompt": "A client asks for 'high throughput' on a task. What do they want?",
+    "options": [
+      "Very detailed comments.",
+      "A large volume of tasks completed quickly.",
+      "High accuracy only.",
+      "Working only on weekends."
+    ],
+    "answer": "A large volume of tasks completed quickly."
+  },
+  {
+    "type": "mcq",
+    "duration": 25,
+    "prompt": "Choose the correct sentence.",
+    "options": [
+      "The data are processed every night.",
+      "The data's processed every night.",
+      "The data is processed every night.",
+      "Both B and C are acceptable in modern English."
+    ],
+    "answer": "The data is processed every night."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "You cannot access this file because you do not have the necessary ________.",
+    "accepted_answers": ["permissions", "authorization", "rights", "access", "clearance"],
+    "hint": "Technical term for having the right to access data."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "Please read the guidelines carefully to avoid ________ common mistakes.",
+    "accepted_answers": ["making", "repeating", "committing"],
+    "hint": "We 'make' mistakes, we don't 'do' them."
+  },
+  // fix
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "The system is currently ________ maintenance and will be available again in two hours.",
+    "accepted_answers": ["under", "undergoing"],
+    "hint": "Fixed phrase: '____ maintenance'."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "If you forget your password, click the link to ________ it.",
+    "accepted_answers": ["reset", "change", "recover", "update", "restore"],
+    "hint": "The standard term for changing a forgotten password."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "All workers are expected to comply ________ the safety regulations.",
+    "accepted_answers": ["with"],
+    "hint": "The verb 'comply' is always followed by this preposition."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "The project deadline has been extended; ________, you now have two extra days to finish.",
+    "accepted_answers": ["therefore", "consequently", "thus", "hence"],
+    "hint": "Logical connector showing a result or consequence."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "Please ________ the 'Submit' button only once to prevent duplicate entries.",
+    "accepted_answers": ["click", "press", "hit", "select", "tap"],
+    "hint": "The specific action used with a computer mouse."
+  },
+  // fix
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "Sharing user data with third parties is strictly ________.",
+    "accepted_answers": ["prohibited", "forbidden", "banned", "illegal", "restricted"],
+    "hint": "Formal word meaning 'forbidden' or 'banned'."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "To verify your identity, we sent a code to your mobile ________.",
+    "accepted_answers": ["device", "phone", "number", "cellphone"],
+    "hint": "The standard technical term for phones or tablets."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "The new software is not compatible ________ older operating systems.",
+    "accepted_answers": ["with"],
+    "hint": "Compatible ____."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "Before you can start working, you must agree to the terms and ________.",
+    "accepted_answers": ["conditions"],
+    "hint": "Fixed legal phrase: 'Terms and ____'."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "If the audio is too noisy, tag it as 'Unclear' ________ of guessing the words.",
+    "accepted_answers": ["instead"],
+    "hint": "Used with 'of' to suggest an alternative."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "Your account has been flagged for suspicious ________.",
+    "accepted_answers": ["activity", "behavior", "actions", "usage", "logins"],
+    "hint": "Standard phrase for unusual behavior on an account."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "Please pay close ________ to the details in the image.",
+    "accepted_answers": ["attention"],
+    "hint": "Fixed phrase: 'Pay ____'."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "The survey asks for your feedback ________ the quality of the training materials.",
+    "accepted_answers": ["regarding", "concerning", "about", "on"],
+    "hint": "Means 'about' or 'concerning'."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "This task is ________ on accuracy, not speed.",
+    "accepted_answers": ["focused", "centered", "concentrated", "based", "dependent"],
+    "hint": "Used with 'on' to show where attention is directed."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "When you are finished, please log ________ of your account for security.",
+    "accepted_answers": ["out", "off"],
+    "hint": "Opposite of 'log in'."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "If you disagree with a review, you may ________ a dispute.",
+    "accepted_answers": ["file", "raise", "submit", "open", "initiate", "start"],
+    "hint": "Standard administrative term: '____ a dispute/complaint'."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "The pay rate is subject ________ change based on market demand.",
+    "accepted_answers": ["to"],
+    "hint": "Fixed phrase: 'Subject ____'."
+  },
+  {
+    "type": "cloze",
+    "duration": 50,
+    "prompt": "Ensure that the bounding box ________ the object completely.",
+    "accepted_answers": ["covers", "surrounds", "encloses", "contains", "encircles", "includes"],
+    "hint": "Means to extend over or overlay."
+  },
+  {
+    "type": "mcq",
+    "duration": 45,
+    "prompt": "Instruction: 'Do not transcribe filler words.' \nAudio: 'Um, I think, uh, we should go.' \nWhat is the correct transcription?",
+    "options": [
+      "I think we should go.",
+      "Um, I think, uh, we should go.",
+      "I think, uh, we should go.",
+      "Um I think we should go."
+    ],
+    "answer": "I think we should go."
+  },
+  {
+    "type": "mcq",
+    "duration": 45,
+    "prompt": "What does the following sentence imply? 'I would have finished the task if the internet hadn't cut out.'",
+    "options": [
+      "I did not finish the task because the internet cut out.",
+      "I finished the task despite the internet cutting out.",
+      "I will finish the task when the internet comes back.",
+      "I finished the task before the internet cut out."
+    ],
+    "answer": "I did not finish the task because the internet cut out."
+  },
+  {
+    "type": "reading",
+    "duration": 60,
+    "passage": [
+      "Rule: If a user query is about 'Sports', categorize it as 'Entertainment'.",
+      "Exception: If the query is about 'Sports Injury Treatment', categorize it as 'Health'.",
+      "Query: 'Best exercises for recovering from a torn ACL (knee injury).'"
+    ],
+    "prompt": "How should you categorize this query?",
+    "options": [
+      "Health",
+      "Entertainment",
+      "Sports",
+      "Fitness"
+    ],
+    "answer": "Health"
+  },
+  {
+    "type": "reading",
+    "duration": 85,
+    "passage": [
+      "Hierarchy of Needs in Search:",
+      "1. Safety (Remove harmful content)",
+      "2. Utility (Answer the user's question)",
+      "3. Efficiency (Answer quickly)",
+      "Scenario: A user searches for 'How to make poison'. The result provides a quick and accurate recipe."
+    ],
+    "prompt": "Based on the hierarchy, should this result be kept? Justify your answer.",
+    "options": [
+      "Yes, because it meets the Utility need.",
+      "No, because Safety is the top priority and the content is harmful.",
+      "Yes, because it is efficient.",
+      "No, because the recipe might be inaccurate."
+    ],
+    "answer": "No, because Safety is the top priority and the content is harmful."
+  },
+  {
+    "type": "reading",
+    "duration": 85,
+    "passage": [
+      "Invoice Processing Guide:",
+      "If the invoice amount is under $500, approve it automatically. If it is between $500 and $1000, send it to the Manager. If it is over $1000, send it to the Director. EXCEPTION: All invoices from 'Vendor X' must go to the Director regardless of amount."
+    ],
+    "prompt": "You receive an invoice for $200 from Vendor X. What is the correct action?",
+    "options": [
+      "Approve automatically (Under $500).",
+      "Send to Manager (Vendor exception).",
+      "Send to Director (Vendor exception).",
+      "Reject the invoice."
+    ],
+    "answer": "Send to Director (Vendor exception)."
+  },
+  {
+    "type": "reading",
+    "duration": 85,
+    "passage": [
+      "Guidelines for 'Blurry' Tag:",
+      "Text A: 'Mark an image as blurry if the main subject is out of focus.'",
+      "Text B (Update): 'Do not mark an image as blurry if the blur is artistic (e.g., background bokeh). Only mark it if the subject itself is unrecognizable due to motion blur or poor focus.'"
+    ],
+    "prompt": "An image shows a sharp, clear portrait of a person with a very blurry background. Based on the *Update*, how should you tag it?",
+    "options": [
+      "Mark as Blurry because the background is out of focus.",
+      "Do not mark as Blurry because the subject is sharp.",
+      "Mark as Blurry because Text A says so.",
+      "Mark as Unrecognizable."
+    ],
+    "answer": "Do not mark as Blurry because the subject is sharp."
+  },
+  {
+    "type": "reading",
+    "duration": 85,
+    "passage": [
+      "Chatbot Persona: Helpful & Concise.",
+      "The bot should provide direct answers. It should avoid conversational filler (e.g., 'That is a great question!', 'I hope you are having a nice day'). It should simple bullet points for lists."
+    ],
+    "prompt": "User: 'What are the ingredients for a cake?' Select the best bot response.",
+    "options": [
+      "That is a yummy question! You need flour, sugar, and eggs.",
+      "- Flour\n- Sugar\n- Eggs\n- Butter",
+      "I hope you are hungry. To make a cake, you generally require flour, sugar...",
+      "Baking is a science. You need precision with flour and sugar."
+    ],
+    "answer": "- Flour\n- Sugar\n- Eggs\n- Butter"
+  },
+  {
+    "type": "reading",
+    "duration": 85,
+    "passage": [
+      "Escalation Policy:",
+      "Level 1 agents handle password resets. Level 2 agents handle billing disputes. Level 3 agents handle technical bugs. If a user has multiple issues, escalate to the highest level required."
+    ],
+    "prompt": "A user needs a password reset and has a billing dispute. Who handles this?",
+    "options": [
+      "Level 1 Agent",
+      "Level 2 Agent",
+      "Level 3 Agent",
+      "The user must call twice."
+    ],
+    "answer": "Level 2 Agent"
+  },
+  {
+    "type": "reading",
+    "duration": 85,
+    "passage": [
+      "Audio Transcription - Foreign Language:",
+      "If you hear a language other than English:",
+      "1. If it is the primary language of the clip, mark [Foreign].",
+      "2. If it is just a few words in an English sentence, transcribe the English and tag the foreign words as [Foreign_Speech].",
+      "3. Proper nouns (like 'Tokyo' or 'Burrito') are NOT considered foreign language."
+    ],
+    "prompt": "Audio: 'I loved the trip to Paris.' (The word 'Paris' is spoken with a French accent). What do you transcribe?",
+    "options": [
+      "I loved the trip to [Foreign_Speech].",
+      "I loved the trip to [Foreign].",
+      "I loved the trip to Paris.",
+      "[Foreign]"
+    ],
+    "answer": "I loved the trip to Paris."
+  },
+  {
+    "type": "reading",
+    "duration": 85,
+    "passage": [
+      "Map Annotation:",
+      "Draw a polygon around the building. Include the roof and any visible awnings. Do NOT include the shadow of the building. Do NOT include driveways."
+    ],
+    "prompt": "The worker drew a polygon that included the roof, the awning, and the shadow on the ground. Why is this incorrect?",
+    "options": [
+      "They missed the driveway.",
+      "They included the shadow.",
+      "They included the awning.",
+      "They drew a polygon instead of a box."
+    ],
+    "answer": "They included the shadow."
+  },
+  {
+    "type": "reading",
+    "duration": 85,
+    "passage": [
+      "Urgency Codes:",
+      "Code Red: System outage.",
+      "Code Orange: Feature malfunction affecting >50% users.",
+      "Code Yellow: Feature malfunction affecting <50% users.",
+      "Code Blue: Cosmetic issue (typos, colors)."
+    ],
+    "prompt": "A misspelling is found on the login page. What code is this?",
+    "options": [
+      "Code Red",
+      "Code Orange",
+      "Code Yellow",
+      "Code Blue"
+    ],
+    "answer": "Code Blue"
+  },
+  {
+    "type": "reading",
+    "duration": 85,
+    "passage": [
+      "Two-Step Verification:",
+      "Step 1: Check if the email address is valid.",
+      "Step 2: If valid, check if the domain is 'company.com'.",
+      "Instructions: If Step 1 fails, mark 'Invalid Email'. If Step 1 passes but Step 2 fails, mark 'External User'. If both pass, mark 'Internal User'."
+    ],
+    "prompt": "Email: 'john@gmail.com' (Valid email format). How do you mark it?",
+    "options": [
+      "Invalid Email",
+      "External User",
+      "Internal User",
+      "Company User"
+    ],
+    "answer": "External User"
+  },
+  {
+    "type": "reading",
+    "duration": 85,
+    "passage": [
+      "Summary Task:",
+      "Original Text: 'The battery life of the device is significantly lower than advertised, lasting only 4 hours instead of 10. Consequently, many users are returning the product.'",
+      "Task: Select the most accurate summary."
+    ],
+    "prompt": "Which option best summarizes the text?",
+    "options": [
+      "Users are returning the device because the battery life is much shorter than promised.",
+      "The device lasts 10 hours, which is great for users.",
+      "The battery life is advertised as 4 hours.",
+      "Users dislike the product due to its color."
+    ],
+    "answer": "Users are returning the device because the battery life is much shorter than promised."
+  },
+  {
+    "type": "reading",
+    "duration": 85,
+    "passage": [
+      "Content Moderation - Satire:",
+      "Satire (humor/exaggeration to criticize) is ALLOWED. Disinformation (false claims intended to deceive) is BANNED.",
+      "Post: A clearly photoshopped image of a cat running for President with the caption 'Mr. Whiskers promises free tuna for all!'"
+    ],
+    "prompt": "How should this post be moderated?",
+    "options": [
+      "Ban it as Disinformation (cats cannot be President).",
+      "Allow it as Satire.",
+      "Ban it as Political Content.",
+      "Allow it as News."
+    ],
+    "answer": "Allow it as Satire."
   }
-];
 
+];
 
 const current = computed(() => questions.value[index.value]);
 
@@ -540,6 +852,13 @@ function formatTime(seconds) {
 }
 
 function start() {
+  // Check if user has attempts remaining before starting
+  if (!hasAttemptsRemaining(capability?.id)) {
+    console.warn("No attempts remaining");
+    alert("You have no attempts remaining for this test.");
+    return;
+  }
+
   const mcqBank = masterBank.filter(q => q.type === "mcq");
   const clozeBank = masterBank.filter(q => q.type === "cloze");
   const readingBank = masterBank.filter(q => q.type === "reading");
@@ -553,27 +872,52 @@ function start() {
   answers.value = Array(questions.value.length).fill(null);
   phase.value = "quiz";
   index.value = 0;
+
+  // Increment attempt counter when test starts (not when it finishes)
+  // This prevents users from starting multiple times to see questions
+  incrementTestAttempt(capability?.id, false);
+
   startTimer();
 }
 
 
 function next() {
+  // Prevent double-clicks
+  if (transitioning.value) return;
+  transitioning.value = true;
+
   clearInterval(timerInterval);
-  
+
   if (index.value < questions.value.length - 1) {
     index.value++;
     startTimer();
+    // Re-enable button after short delay
+    setTimeout(() => { transitioning.value = false; }, 100);
   } else {
     phase.value = "result";
+
+    // Award capability immediately when reaching result
+    if (passed.value) {
+      awardCapability(capability?.id);
+      incrementTestAttempt(capability?.id, true);
+    }
   }
 }
 
 function reset() {
+  // Check if user has attempts remaining before allowing restart
+  if (!hasAttemptsRemaining(capability?.id)) {
+    console.warn("No attempts remaining");
+    alert("You have no attempts remaining for this test.");
+    return;
+  }
+
   clearInterval(timerInterval);
   phase.value = "intro";
   index.value = 0;
   answers.value = [];
   questions.value = [];
+  transitioning.value = false;
 }
 
 function normalize(a) {
@@ -585,7 +929,13 @@ const score = computed(() =>
   questions.value.reduce((sum, q, i) => {
     const user = answers.value[i];
     if (q.type === "cloze") {
-      return sum + (normalize(user) === normalize(q.answer) ? 1 : 0);
+      // Handle multiple acceptable answers
+      if (Array.isArray(q.answer)) {
+        const normalizedAnswers = q.answer.map(a => normalize(a));
+        return sum + (normalizedAnswers.includes(normalize(user)) ? 1 : 0);
+      } else {
+        return sum + (normalize(user) === normalize(q.answer) ? 1 : 0);
+      }
     } else {
       return sum + (user === q.answer ? 1 : 0);
     }
@@ -627,7 +977,14 @@ const level = computed(() => {
   };
 });
 
-const passed = computed(() => phase.value === "result" && score.value >= 8);
+// Minimum questions required to prevent skip exploit
+const MIN_QUESTIONS_TO_PASS = 15;
+// Require at least 72% (18/25) to pass
+const passed = computed(() =>
+  phase.value === "result" &&
+  questions.value.length >= MIN_QUESTIONS_TO_PASS &&
+  score.value >= Math.ceil(questions.value.length * 0.72)
+);
 const showAward = ref(false);
 
 function formatAns(a) {
@@ -638,7 +995,12 @@ onUnmounted(() => {
   clearInterval(timerInterval);
 });
 
-const { availableCapabilities } = useCapabilities();
+const {
+  availableCapabilities,
+  incrementTestAttempt,
+  hasAttemptsRemaining,
+  awardCapability,
+} = useCapabilities();
 
 const capability = availableCapabilities.find((c) =>
   c.id.startsWith("effectai/english-language"),
@@ -743,6 +1105,24 @@ const capability = availableCapabilities.find((c) =>
   .nav.right-align {
     justify-content: flex-end;
   }
+  .nav.center-align {
+    justify-content: center;
+  }
+  .next-btn {
+    background: linear-gradient(180deg, #ffffff, #f6f7ff);
+    border: 1px solid #c7d2fe;
+    color: #1f2937;
+    padding: 12px 24px;
+    font-weight: 600;
+    box-shadow: 0 8px 16px -10px rgba(99, 102, 241, 0.45);
+    transition: transform 0.15s ease;
+  }
+  .next-btn:hover {
+    transform: translateY(-1px);
+  }
+  .next-btn:active {
+    transform: translateY(0);
+  }
   .btn {
     border: 1px solid #e5e7eb;
     padding: 10px 14px;
@@ -750,6 +1130,10 @@ const capability = availableCapabilities.find((c) =>
     background: #fff;
     cursor: pointer;
     font-weight: 600;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
   .btn.primary {
     border-color: #c7d2fe;
