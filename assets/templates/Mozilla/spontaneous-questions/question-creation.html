@@ -1,0 +1,210 @@
+<meta charset="UTF-8">
+<div id="app" style="text-align: center">
+    <h1>Effect AI - Question Creator</h1>
+  
+    <hr />
+  
+    <div class="mx-auto" style="max-width: 80%">
+
+      <div class="container is-max-desktop">
+        <label class="label has-text-left">Question:</label>
+        <textarea
+          class="textarea"
+          placeholder="Enter your question here"
+          type="text" 
+          v-model="tmpQuestion"
+        >
+        </textarea>
+      </div>
+    
+    <p class="is-size-7 mb-2">By clicking this button, you accept that the question contributed here will be added to a publicly available cc-0 licensed dataset.</p>
+
+    <p style="color: red;"
+    :class="{'is-hidden mb-3': !tooLong}">
+      Question is too long - Question should be no longer than 15 words
+    </p>
+
+    <p style="color: red;"
+    :class="{'is-hidden mb-3': !tooShort}">
+      Question is too short - Question should be longer than 4 words
+    </p>
+
+    <p style="color: red;"
+    :class="{'is-hidden mb-3': !notComplete}">
+      Task incomplete - Please complete all sections of the task
+    </p>
+
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-success is-large"
+      :class="{'is-loading': btnLoading}"
+    >
+      Submit
+    </button>
+  </div>
+  
+  <!-- 📚 Load in resources: [Bulma, Effect Network Styling]  -->
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+  
+  <script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+  
+    createApp({
+      data() {
+        return {
+          title: "Effect AI Question Creator",
+          tmpQuestion: "",
+          btnLoading: false,
+          notComplete: false,
+          tooShort: false,
+          tooLong: false,
+          instructions: `
+          <div>
+            <h2>Create a Short Story Prompt</h2>
+            <p>
+              In this task, you will write short prompts that encourage people to record
+              brief personal stories. These stories should be natural, simple, and easy
+              to tell out loud in under 30 seconds.
+            </p>
+
+            <h3>1. Instructions</h3>
+            <p>
+              Your job is to write a single prompt that asks someone to share a short
+              personal experience or moment. The prompt should feel friendly and easy,
+              not deep or complicated.
+            </p>
+
+            <h4>Prompt Guidelines</h4>
+            <ul>
+              <li>Keep the prompt short and clear.</li>
+              <li>Ask about a small, everyday moment or feeling.</li>
+              <li>The story should be possible to tell in 30 seconds or less.</li>
+              <li>Use simple, conversational English.</li>
+              <li>Write as if you are speaking directly to one person.</li>
+            </ul>
+
+            <h4>What NOT to Include</h4>
+            <ul>
+              <li>Questions that require long explanations or life stories.</li>
+              <li>Multiple questions in one prompt.</li>
+              <li>Requests for names, locations, or identifying details.</li>
+              <li>Hypothetical or fictional scenarios.</li>
+              <li>Complex or abstract topics.</li>
+            </ul>
+
+            <h3>2. Examples</h3>
+            <p><strong>✅ Good Prompts</strong></p>
+            <ul>
+              <li>Tell a small moment today that made you smile.</li>
+              <li>Record how it felt to miss the bus this morning.</li>
+              <li>Describe a short conversation you remember from today.</li>
+              <li>Talk about something that briefly annoyed you today.</li>
+            </ul>
+
+            <p><strong>❌ Bad Prompts</strong></p>
+            <ul>
+              <li>Describe your childhood and how it shaped who you are. (too long)</li>
+              <li>What is your full daily routine from morning to night? (too broad)</li>
+              <li>Tell a fictional story about the future. (not personal)</li>
+              <li>Explain your opinion on modern society. (too abstract)</li>
+            </ul>
+
+            <h3>3. Tips for Success</h3>
+            <ul>
+              <li>Focus on moments, not summaries.</li>
+              <li>If the answer would take more than 30 seconds, simplify the prompt.</li>
+              <li>Imagine how someone would respond out loud.</li>
+              <li>Shorter and more specific prompts usually work best.</li>
+            </ul>
+
+            <h3>4. Example Prompt Themes</h3>
+            <ul>
+              <li>
+                <strong>Daily Moments</strong><br />
+                <em>Example:</em> “Share a small part of your morning routine.”
+              </li>
+
+              <li>
+                <strong>Emotions</strong><br />
+                <em>Example:</em> “Talk about something that made you feel calm today.”
+              </li>
+
+              <li>
+                <strong>Minor Challenges</strong><br />
+                <em>Example:</em> “Describe a small problem you dealt with today.”
+              </li>
+
+              <li>
+                <strong>Pleasant Surprises</strong><br />
+                <em>Example:</em> “Tell a quick story about something unexpectedly nice.”
+              </li>
+
+              <li>
+                <strong>Social Moments</strong><br />
+                <em>Example:</em> “Describe a brief interaction you had with someone today.”
+              </li>
+            </ul>
+          </div>
+        `
+        };
+      },
+      computed: {},
+      created() {},
+      mounted() {
+        window.top.postMessage(
+        {
+          type: 'task-instructions',
+          instructions: this.instructions
+        },
+        "*"
+      );
+      },
+      methods: {
+        sanitize(text) {
+          text = text
+          .replace(/\r\n/g, '\n')      // normalize Windows newlines
+          .replace(/[ \t]+$/gm, '')    // remove trailing spaces per line
+          .replace(/\n{2,}/g, '\n')    // collapse multiple blank lines
+          .trim();  
+
+          return text
+        },
+        async uploadAndSubmit() {
+          this.btnLoading = true;
+
+          const cleanQuestion = this.sanitize(this.tmpQuestion).trim();
+          const wordCount = cleanQuestion.split(/\s+/).length;
+
+          this.tooShort = false;
+          this.tooLong = false;
+
+          if(this.tmpQuestion == ""){
+            this.notComplete = true
+          } else if (wordCount < 5) {
+            this.tooShort = true;
+          } else if (wordCount > 15) {
+            this.tooLong = true;
+          } 
+          else
+            try {
+              parent.postMessage(
+                {
+                  task: "submit",
+                  values: {
+                    taskTitle: this.title,
+                    question: cleanQuestion,
+                  },
+                },
+                "*"
+              );
+            } catch (error) {
+              console.error("Failed to upload to IPFS", error);
+            }
+            this.btnLoading = false;
+          },
+        
+      },
+    }).mount("#app");
+  </script>

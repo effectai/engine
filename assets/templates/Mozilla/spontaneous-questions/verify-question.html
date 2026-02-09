@@ -1,0 +1,162 @@
+<meta charset="UTF-8">
+<div id="app" style="text-align: center">
+  <h1>Effect AI - Question Verification </h1>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
+
+  <p class="mb-5">Is this a valid question?</p>
+  <div class="box">
+    <p class="is-size-4 has-text-weight-semibold">{{question}}</p>
+  </div>
+
+  <div class="mb-5">
+    <button class="button is-medium"
+    :class="{ 'is-success': this.isValidated == 'Yes' }"
+    @click="this.isValidated='Yes'">Yes</button>
+
+    <button class="button is-medium mx-3"
+    :class="{ 'is-dark': this.isValidated == 'Skip' }"
+    @click="this.isValidated='Skip'">Skip</button>
+
+    <button class="button is-medium"
+    :class="{ 'is-danger': this.isValidated == 'No' }"
+    @click="this.isValidated='No'">No</button>
+  </div>
+
+  <p style="color: red;"
+  :class="{'is-hidden mb-3': !notComplete}">
+    Task incomplete - Please complete all sections of the task
+  </p>
+
+  <button
+    @click.prevent="uploadAndSubmit"
+    class="button is-success is-large"
+    :class="{'is-loading': btnLoading}"
+  >
+    Submit
+  </button>
+</div>
+
+<!-- 📚 Load in resources: [Bulma, Effect Network Styling]  -->
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+<link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+<script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
+<script type="module">
+  import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+  
+
+  createApp({
+    data() {
+      return {
+        title: "Effect AI Question Verifier",
+        btnLoading: false,
+        author: "${submissionByPeer}", 
+        // incoming result - {"timestamp": "", "submissionByPeer": "", "taskId": "", "result": "JSON_STRING"}
+        question: (JSON.parse("${result}")).values.question, 
+        isValidated: "",
+        loading: true,
+        notComplete: false,
+        instructions: `
+          <div>
+            <h2>Verify a Question - Common Voice</h2>
+            <p>
+              In this task, you will review short, simple questions written by other contributors.
+              Your goal is to decide whether each question is clear, natural, and suitable for collecting short spoken responses.
+            </p>
+
+            <h3>1. Instructions</h3>
+            <p>
+              Carefully read each question and decide whether it follows the guidelines below.
+              Mark <strong>“Yes”</strong> if the question is acceptable, <strong>“No”</strong> if it is not.
+              If you are unsure, you may <strong>Skip</strong> the question.
+            </p>
+
+            <h4>Question Verification Guidelines</h4>
+            <ul>
+              <li>The question should be clear and easy to understand.</li>
+              <li>It should be possible to answer naturally in a short spoken response.</li>
+              <li>The question must use correct grammar, spelling, and punctuation.</li>
+              <li>It should sound natural and conversational.</li>
+              <li>Casual English is fine, but phrasing should not be confusing.</li>
+            </ul>
+
+            <h4>Mark as INCORRECT if you see:</h4>
+            <ul>
+              <li>Grammar or spelling mistakes that make the question unclear.</li>
+              <li>Foreign words or non English text.</li>
+              <li>Overly complex, abstract, or technical language.</li>
+              <li>Personal or identifying information requests.</li>
+              <li>Questions that feel unnatural, incomplete, or hard to answer.</li>
+              <li>Statements or sentences that are not actually questions.</li>
+            </ul>
+
+            <h3>2. Examples</h3>
+            <p><strong>✅ Correct Questions</strong></p>
+            <ul>
+              <li>What is a small moment today that made you smile?</li>
+              <li>How did you feel when you woke up this morning?</li>
+              <li>Can you describe a short conversation you had today?</li>
+            </ul>
+
+            <p><strong>❌ Incorrect Questions</strong></p>
+            <ul>
+              <li>Tell me everything about your childhood. (too broad)</li>
+              <li>THIS question has RANDOM capitalization!!! (unnatural formatting)</li>
+              <li>The town has many people living there. (not a question)</li>
+              <li>Je vais au parc ce matin. (foreign language)</li>
+              <li>Why is existence meaningful in modern society? (too abstract)</li>
+            </ul>
+
+            <h3>3. Tips for Success</h3>
+            <ul>
+              <li>Read the question out loud and see if it sounds natural.</li>
+              <li>If the question feels awkward or confusing, mark it as incorrect.</li>
+              <li>If answering it would take a long time, it is probably not suitable.</li>
+              <li>Trust your instincts and do not overthink small details.</li>
+            </ul>
+          </div>
+          `
+      };
+    },
+    computed: {},
+    created() {},
+    mounted() {
+      window.top.postMessage(
+        {
+          type: 'task-instructions',
+          instructions: this.instructions
+        },
+        "*"
+      );
+    },
+    methods: {
+      async uploadAndSubmit() {
+        this.btnLoading = true;
+        if(this.isValidated == ""){
+            this.notComplete = true
+          }
+        else
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  taskTitle: this.title,
+                  author: this.author,
+                  question: this.question,
+                  isValidated: this.isValidated
+                },
+              },
+              "*"
+            );
+          } catch (error) {
+            console.error("Failed to upload to IPFS", error);
+          }
+        this.btnLoading = false;
+      },
+    },
+  }).mount("#app");
+</script>

@@ -1,5 +1,5 @@
 <div id="app" style="text-align: center">
-  <h1>Effect AI - Recording Verification</h1>
+  <h1>Effect AI - Sentence Recording Verification</h1>
 
   <hr />
 
@@ -65,7 +65,7 @@
   createApp({
     data() {
       return {
-        title: "Effect AI Recording Verifier",
+        title: "Effect AI Sentence Recording Verifier",
         btnLoading: false,
         author: "${submissionByPeer}",
         sentence: JSON.parse("${result}").values.sentence,
@@ -87,7 +87,7 @@
               <li>Check that the spoken words match the displayed sentence exactly.</li>
               <li>Make sure the pronunciation is understandable and there are no skipped or extra words.</li>
               <li>Minor accent differences are acceptable as long as the sentence is correct and clear.</li>
-              <li>If the audio is cut off, too noisy, or missing words, mark it as <strong>No</strong>.</li>
+              <li>**If the audio is cut off, too noisy, or missing words, mark it as <strong>No</strong>.**</li>
             </ul>
 
             <h3>2. Mark as <strong>Yes</strong> if:</h3>

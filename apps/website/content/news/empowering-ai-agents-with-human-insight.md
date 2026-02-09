@@ -33,4 +33,14 @@ Effect AI envisions a future where humans and machines collaborate to overcome c
 
 ---
 
-Explore further details about our innovative approach by visiting our documentation at [docs.effect.ai](http://docs.effect.ai). Join us if you are part of a Solana project looking to integrate your product with our dynamic ecosystem. Collaborate with us to drive the next generation of AI-powered solutions that truly serve human needs.
+## Get Involved
+
+Want to join the next phase of Effect AI?
+
+**Contributors:** [Sign Up](https://docs.google.com/forms/d/e/1FAIpQLSfLh2U4_wJEmqjO0cZGtag_SFhBD2i-9MMvh789kmsLLXcSVQ/viewform) to join the **next alpha phase** and start earning $EFFECT for real tasks.
+
+**Developers & Researchers:** Collaborate with us to build or validate high-quality datasets for your AI models and research initiatives.
+
+**Organizations:** Partner with Effect AI on responsible, mission-aligned data initiatives across a wide range of domains, from AI development to social impact.
+
+---
