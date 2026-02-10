@@ -1,16 +1,13 @@
-import { readFileSync } from "fs";
-import { createWorker, Task, type WorkerEntity } from "@effectai/protocol";
-import {
-  generateKeyPairFromSeed,
-  privateKeyFromRaw,
-} from "@libp2p/crypto/keys";
-import type { PrivateKey, Libp2p, Connection } from "@libp2p/interface";
 import { randomBytes } from "node:crypto";
-import { LevelDatastore } from "datastore-level";
+import { readFileSync } from "node:fs";
 import { multiaddr } from "@multiformats/multiaddr";
 import { Keypair } from "@solana/web3.js";
+import type { PrivateKey } from "@libp2p/interface";
+import { privateKeyFromRaw } from "@libp2p/crypto/keys";
+import { LevelDatastore } from "datastore-level";
+import { loadWorkerConfig } from "./config.js";
+import { type State, state } from "./state.js";
 import * as Worker from "./worker.js";
-import { state, type State } from "./state.js";
 
 const storePath = "/tmp/ai-worker";
 const p2pBoot =
@@ -32,7 +29,7 @@ const workerPubHex = Buffer.from(workerKp.publicKey.raw).toString("hex");
 console.log(`Loaded key 0x${workerPubHex}`);
 console.log("Connecting to manager...", p2pBoot);
 
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 // start
 console.log("Starting Worker! Wroom");
@@ -40,9 +37,11 @@ console.log("Starting Worker! Wroom");
 console.log("Started");
 
 const mainLoop = async () => {
+  const { capability } = loadWorkerConfig();
+
   while (!state.done) {
     switch (state.current) {
-      case "init_p2p":
+      case "init_p2p": {
 	console.log("Initializing p2p");
 
 	state.privateKey = workerKp;
@@ -52,23 +51,27 @@ const mainLoop = async () => {
 	await Worker.create();
 
 	console.log("Creating worker");
-	await state.worker!.start();
+	await state.worker?.start();
 
 	console.log("Starting worker with code");
 	const workerRecipient = Keypair.fromSecretKey(seed, {
 	  skipValidation: true,
 	});
-	await state.worker!.connect(
+	await state.worker?.connect(
 	  multiaddr(p2pBoot),
-	  {recipient: workerRecipient.publicKey.toBase58(),
+	  {
+	    recipient: workerRecipient.publicKey.toBase58(),
 	    nonce: 1n,
-	    accessCode: "7q4zp7yf"}
+	    accessCode: "7q4zp7yf",
+	    capabilities: [capability],
+	  }
 	);
 	console.log("Connected to network");
 
 	state.current = "init_llm";
 
 	break;
+      }
 
       case "init_llm":
 	console.log("Initializing LLM. Skip for now");
