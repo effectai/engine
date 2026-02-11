@@ -458,7 +458,6 @@ const masterBank = [
     "accepted_answers": ["making", "repeating", "committing"],
     "hint": "We 'make' mistakes, we don't 'do' them."
   },
-  // fix
   {
     "type": "cloze",
     "duration": 50,
