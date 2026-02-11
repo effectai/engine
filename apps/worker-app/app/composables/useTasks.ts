@@ -1,9 +1,13 @@
 import type { Task } from "@effectai/protobufs";
 import type { WorkerTaskRecord } from "@effectai/protocol-core";
+import { TASK_ACCEPTANCE_TIME } from "@effectai/protocol-core";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { storeToRefs } from "pinia";
 
 const activeTask = ref<WorkerTaskRecord | null>(null);
+
+// Convert TASK_ACCEPTANCE_TIME from milliseconds to seconds
+const TASK_ACCEPTANCE_TIME_SECONDS = TASK_ACCEPTANCE_TIME / 1000;
 
 export const useTasks = () => {
   const { instance } = storeToRefs(useWorkerStore());
@@ -102,16 +106,18 @@ export const useTasks = () => {
   const getTaskDeadline = (task: WorkerTaskRecord) => {
     const lastEvent = task.events[task.events.length - 1];
     const now = new Date().getTime() / 1000;
-    const timeLimitSeconds = Number(task.state.timeLimitSeconds ?? 600);
 
     if (lastEvent.type === "create") {
+      // Use TASK_ACCEPTANCE_TIME for accepting tasks
       return {
-        time: Math.max(lastEvent.timestamp + timeLimitSeconds - now, 0),
+        time: Math.max(lastEvent.timestamp + TASK_ACCEPTANCE_TIME_SECONDS - now, 0),
         type: "accept",
       };
     }
 
     if (lastEvent.type === "accept") {
+      // Use task-specific timeLimitSeconds for completing tasks
+      const timeLimitSeconds = Number(task.state.timeLimitSeconds ?? 600);
       return {
         time: Math.max(lastEvent.timestamp + timeLimitSeconds - now, 0),
         type: "complete",
