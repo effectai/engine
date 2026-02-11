@@ -7,6 +7,7 @@ import {
   type JobDefinition,
   type Vault,
   type DeploymentsApi,
+  type NosanaClient,
 } from "@nosana/kit";
 import { createKeyPairSignerFromBytes } from "@solana/kit";
 import { createConsoleLogger, type Logger } from "../logger.js";
@@ -65,6 +66,7 @@ const MIN_VAULT_SOL = 0.001;
 const MIN_VAULT_NOS = 0;
 const TOPUP_SOL_AMOUNT = 0.01;
 const TOPUP_NOS_AMOUNT = 5;
+const LAMPORTS_PER_SOL = 1_000_000_000;
 
 export const createNosanaBackend = async (): Promise<AutomationBackend> => {
   const logger = state.logger;
@@ -88,7 +90,10 @@ export const createNosanaBackend = async (): Promise<AutomationBackend> => {
 
       const deployments = client.api.deployments as DeploymentsApi;
 
-      const vault = await ensureVault({ deployments, logger });
+      const vault = await ensureVault({
+        client,
+        logger,
+      });
     },
     async execute(task: Task) {
       logger.warn("Nosana backend execute not wired", { taskId: task.id });
@@ -105,10 +110,11 @@ export const createNosanaBackend = async (): Promise<AutomationBackend> => {
  * Ensure a Nosana vault exists and has a healthy balance.
  * If no vault exists, one is created. If balance is below minimums, a fixed top-up is sent.
  */
-const ensureVault = async ({ deployments, logger }: {
-  deployments: DeploymentsApi;
+const ensureVault = async ({ client, logger }: {
+  client: NosanaClient;
   logger: Logger;
 }): Promise<Vault> => {
+  const deployments = client.api.deployments as DeploymentsApi;
   const existing = await deployments.vaults.list();
   const vault = existing[0] ?? (await deployments.vaults.create());
 
@@ -124,11 +130,29 @@ const ensureVault = async ({ deployments, logger }: {
 
   if (solShort || nosShort) {
     logger.warn("Vault requires top-up", { vault: vault.address, balance });
+
+    const walletSolLamports = await client.solana.getBalance();
+    const walletSol = walletSolLamports / LAMPORTS_PER_SOL;
+    const walletNos = await client.nos.getBalance();
+
+    if (walletSol < TOPUP_SOL_AMOUNT || walletNos < TOPUP_NOS_AMOUNT) {
+      logger.error("Insufficient wallet balance for vault top-up", {
+        vault: vault.address,
+        required: { SOL: TOPUP_SOL_AMOUNT, NOS: TOPUP_NOS_AMOUNT },
+        available: { SOL: walletSol, NOS: walletNos },
+      });
+      throw new Error("Insufficient wallet balance for vault top-up");
+    }
+
+    const topup: Record<string, number> = {};
+    if (solShort) topup.SOL = TOPUP_SOL_AMOUNT;
+    if (nosShort) topup.NOS = TOPUP_NOS_AMOUNT;
+
     try {
-      await vault.topup({ SOL: TOPUP_SOL_AMOUNT, NOS: TOPUP_NOS_AMOUNT });
+      await vault.topup(topup);
       logger.info("Triggered vault top-up", {
         vault: vault.address,
-        topup: { SOL: TOPUP_SOL_AMOUNT, NOS: TOPUP_NOS_AMOUNT },
+        topup,
       });
     } catch (error: unknown) {
       logger.error("Vault top-up failed", { vault: vault.address, error});
