@@ -7,6 +7,7 @@ import { privateKeyFromRaw } from "@libp2p/crypto/keys";
 import { LevelDatastore } from "datastore-level";
 import { loadWorkerConfig } from "./config.js";
 import { type State, state } from "./state.js";
+import { createKeyPairSignerFromBytes } from "@solana/kit";
 import * as Worker from "./worker.js";
 
 const storePath = "/tmp/ai-worker";
