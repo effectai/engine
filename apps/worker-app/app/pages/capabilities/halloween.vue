@@ -76,10 +76,8 @@
         </ol>
       </details>
 
-      <div class="flex justify-center">
-        <UButton @click="showAward = true" class="text-black cursor-pointer"
-          >Claim Capability</UButton
-        >
+      <div class="nav center-align">
+        <button class="btn primary next-btn" @click="showAward = true">Claim Capability</button>
       </div>
     </div>
   </div>
@@ -209,6 +207,8 @@ function next() {
     index.value++;
   } else {
     phase.value = "result";
+    // Award capability immediately when reaching result
+    awardCapability(capability?.id);
   }
 }
 
@@ -217,7 +217,7 @@ function prev() {
   if (index.value > 0) index.value--;
 }
 
-const { availableCapabilities } = useCapabilities();
+const { availableCapabilities, awardCapability } = useCapabilities();
 const capability = availableCapabilities.find((c) =>
   c.id.startsWith("effectai/halloween-spirit")
 );
@@ -300,6 +300,24 @@ const capability = availableCapabilities.find((c) =>
   justify-content: space-between;
   gap: 10px;
   margin-top: 14px;
+}
+.nav.center-align {
+  justify-content: center;
+}
+.next-btn {
+  background: linear-gradient(180deg, #ffffff, #fff7ed);
+  border: 1px solid #fed7aa;
+  color: #1f2937;
+  padding: 12px 24px;
+  font-weight: 600;
+  box-shadow: 0 8px 16px -10px rgba(249, 115, 22, 0.45);
+  transition: transform 0.15s ease;
+}
+.next-btn:hover {
+  transform: translateY(-1px);
+}
+.next-btn:active {
+  transform: translateY(0);
 }
 .btn {
   border: 1px solid #e5e7eb;
