@@ -9,8 +9,8 @@
       <br>
       <p>The test consists of <strong>25 questions</strong>:</p>
       <ul class="bullets">
-        <li><strong>- 12 Multiple Choice</strong></li>
-        <li><strong>- 8 Fill-in-the-Blank</strong></li>
+        <li><strong>- 15 Multiple Choice</strong></li>
+        <li><strong>- 5 Fill-in-the-Blank</strong></li>
         <li><strong>- 5 Reading Comprehension</strong></li>
       </ul>
       <p>Please note the following rules:</p>
@@ -159,14 +159,14 @@ const masterBank = [
   {
     "type": "mcq",
     "duration": 60,
-    "prompt": "Scenario: You are categorizing customer support tickets. \nRule: 'Refund requests imply a financial transaction. Complaints about rudeness are behavioral.'\nTicket: 'I want my money back because the driver was incredibly rude.'\nWhich category takes precedence?",
+    "prompt": "Read the customer message:\n\n'I ordered a blue shirt but received a red one. I'd like to exchange it for the correct color.'\n\nWhat does the customer want?",
     "options": [
-      "Behavioral, because the driver was rude.",
-      "Refund, because the customer explicitly asks for money back.",
-      "Neither, it is a mixed ticket and should be skipped.",
-      "Both categories should be selected if the system allows."
+      "A refund for the red shirt",
+      "To exchange the red shirt for a blue one",
+      "To keep both shirts",
+      "To cancel the order completely"
     ],
-    "answer": "Refund, because the customer explicitly asks for money back."
+    "answer": "To exchange the red shirt for a blue one"
   },
   {
     "type": "mcq",
@@ -183,7 +183,7 @@ const masterBank = [
   {
     "type": "mcq",
     "duration": 45,
-    "prompt": "Context: Verifying data. 'The address on the receipt must match the store location exactly.' \nReceipt: '123 Main St.' \nStore Record: '123 Main Street'. \nIs this a match?",
+    "prompt": "Context: Verifying data. 'The address on the receipt must match the store location.' \nReceipt: '123 Main St.' \nStore Record: '123 Main Street'. \nIs this a match?",
     "options": [
       "No, 'St.' and 'Street' are different strings.",
       "Yes, because 'St.' is a standard abbreviation for 'Street'.",
@@ -329,7 +329,7 @@ const masterBank = [
     "duration": 35,
     "prompt": "Choose the correct phrasing for a warning.",
     "options": [
-      "Please carefully deleting files.",
+      "Please carefully delete files.",
       "Be careful not to delete essential files.",
       "You might maybe delete files.",
       "Deleting files is something you do."
@@ -391,10 +391,10 @@ const masterBank = [
     "options": [
       "nevertheless",
       "because",
-      "consequently",
+      "therefore",
       "despite"
     ],
-    "answer": "consequently"
+    "answer": "therefore"
   },
   {
     "type": "mcq",
@@ -526,9 +526,9 @@ const masterBank = [
   {
     "type": "cloze",
     "duration": 50,
-    "prompt": "If the audio is too noisy, tag it as 'Unclear' ________ of guessing the words.",
+    "prompt": "Please complete the task according to the new guidelines ________ of the old ones.",
     "accepted_answers": ["instead"],
-    "hint": "Used with 'of' to suggest an alternative."
+    "hint": "Means 'as an alternative to' (used with 'of')."
   },
   {
     "type": "cloze",
@@ -577,7 +577,7 @@ const masterBank = [
     "duration": 50,
     "prompt": "The pay rate is subject ________ change based on market demand.",
     "accepted_answers": ["to"],
-    "hint": "Fixed phrase: 'Subject ____'."
+    "hint": "Fixed phrase: 'Subject ____ change'."
   },
   {
     "type": "cloze",
@@ -863,8 +863,8 @@ function start() {
   const clozeBank = masterBank.filter(q => q.type === "cloze");
   const readingBank = masterBank.filter(q => q.type === "reading");
 
-  const selectedMCQ = shuffleArray(mcqBank).slice(0, 12);
-  const selectedCloze = shuffleArray(clozeBank).slice(0, 8);
+  const selectedMCQ = shuffleArray(mcqBank).slice(0, 15);
+  const selectedCloze = shuffleArray(clozeBank).slice(0, 5);
   const selectedReading = shuffleArray(readingBank).slice(0, 5);
 
   questions.value = shuffleArray([...selectedMCQ, ...selectedCloze, ...selectedReading]);
