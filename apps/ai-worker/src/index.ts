@@ -47,15 +47,23 @@ const mainLoop = async () => {
 	const workerRecipient = Keypair.fromSecretKey(privBytes, {
 	  skipValidation: true,
 	});
-	await state.worker?.connect(
-	  multiaddr(p2pBoot),
-	  {
-	    recipient: workerRecipient.publicKey.toBase58(),
-	    nonce: 1n,
-	    accessCode,
-	    capabilities: [capability],
+	try {
+	  await state.worker?.connect(
+	    multiaddr(p2pBoot),
+	    {
+	      recipient: workerRecipient.publicKey.toBase58(),
+	      nonce: 1n,
+	      accessCode,
+	      capabilities: [capability],
+	    }
+	  );
+	} catch (e: Error) {
+	  if (e.message.toLowerCase().includes("access code")) {
+	    console.error("Access code rejected. Request a new one from https://worker.effect.ai/ and restart with --access-code <code>.");
+	    process.exit(1);
 	  }
-	);
+	  throw error;
+	}
 	console.log("Connected to network");
 
 	state.current = "init_llm";
