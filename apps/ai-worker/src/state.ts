@@ -3,7 +3,7 @@ import { type BaseDatastore } from "datastore-core";
 import type { PrivateKey } from "@libp2p/interface";
 import { createWorker } from "@effectai/protocol";
 import type { AutomationBackend } from "./backend/base.js";
-import type { Logger } from "./logger.js";
+import { createConsoleLogger, type Logger } from "./logger.js";
 
 export type State = {
   // global state
@@ -23,4 +23,5 @@ export type State = {
 export const state: State = {
   done: false,
   current: "init_p2p",
+  logger: createConsoleLogger("ai-worker"),
 };

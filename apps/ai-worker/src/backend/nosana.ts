@@ -150,7 +150,7 @@ const runInference = async ({
  * Create the Nosana backend, provisioning the deployment and wiring inference.
  */
 export const createNosanaBackend = async (): Promise<AutomationBackend> => {
-  const logger = state.logger ?? createConsoleLogger("nosana-backend");
+  const logger = state.logger;
   const secretKey = state.privateKey?.raw;
   if (!secretKey) {
     throw new Error("Private key not initialized in state");

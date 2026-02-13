@@ -17,22 +17,21 @@ const loadKey = (priv: Uint8Array): PrivateKey => privateKeyFromRaw(priv);
 const { capability, privateKey: privBytes, accessCode } = loadWorkerConfig();
 const workerKp = loadKey(privBytes);
 const workerPubHex = Buffer.from(workerKp.publicKey.raw).toString("hex");
+const logger = state.logger;
 
-console.log(`Loaded key 0x${workerPubHex}`);
-console.log("Connecting to manager...", p2pBoot);
+logger.info("Loaded key", { publicKey: `0x${workerPubHex}` });
+logger.info("Connecting to manager", { p2pBoot });
 
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 // start
-console.log("Starting Worker! Wroom");
-
-console.log("Started");
+logger.info("Starting worker");
 
 const mainLoop = async () => {
   while (!state.done) {
     switch (state.current) {
       case "init_p2p": {
-	console.log("Initializing p2p");
+	logger.info("Initializing p2p");
 
 	state.privateKey = workerKp;
 	state.datastore = new LevelDatastore(storePath);
@@ -40,10 +39,10 @@ const mainLoop = async () => {
 
 	await Worker.create();
 
-	console.log("Creating worker");
+	logger.info("Creating worker");
 	await state.worker?.start();
 
-	console.log("Starting worker with code");
+	logger.info("Starting worker with code");
 	const workerRecipient = Keypair.fromSecretKey(privBytes, {
 	  skipValidation: true,
 	});
@@ -57,14 +56,14 @@ const mainLoop = async () => {
 	      capabilities: [capability],
 	    }
 	  );
-	} catch (e: Error) {
-	  if (e.message.toLowerCase().includes("access code")) {
-	    console.error("Access code rejected. Request a new one from https://worker.effect.ai/ and restart with --access-code <code>.");
+	} catch (e: unknown) {
+	  if (e instanceof Error && e.message.toLowerCase().includes("access code")) {
+	    logger.error("Access code rejected. Request a new one from https://worker.effect.ai/ and restart with --access-code <code>.");
 	    process.exit(1);
 	  }
-	  throw error;
+	  throw e;
 	}
-	console.log("Connected to network");
+	logger.info("Connected to network");
 
 	state.current = "init_llm";
 
@@ -72,7 +71,7 @@ const mainLoop = async () => {
       }
 
       case "init_llm":
-	console.log("Initializing LLM. Skip for now");
+	logger.info("Initializing LLM. Skip for now");
 	state.current = "running";
 	break;
 
@@ -81,7 +80,7 @@ const mainLoop = async () => {
 	break;
 
       default:
-	console.log(`Unknown State ${state.current}`);
+	logger.warn(`Unknown State ${state.current}`);
 	state.done = true;
     }
 
@@ -94,10 +93,10 @@ const mainLoop = async () => {
 try {
   await mainLoop();
 } catch (e) {
-  console.log(`Main Loop error ${e}`);
+  logger.error("Main loop error", { error: e });
 }
 
 // cleanup
-console.log("Stopping Worker...");
+logger.info("Stopping worker");
 if (state.worker) await state.worker!.stop();
-console.log("Done");
+logger.info("Done");
