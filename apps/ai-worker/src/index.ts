@@ -14,7 +14,7 @@ const p2pBoot =
 
 const loadKey = (priv: Uint8Array): PrivateKey => privateKeyFromRaw(priv);
 
-const { capability, privateKey: privBytes } = loadWorkerConfig();
+const { capability, privateKey: privBytes, accessCode } = loadWorkerConfig();
 const workerKp = loadKey(privBytes);
 const workerPubHex = Buffer.from(workerKp.publicKey.raw).toString("hex");
 
@@ -52,7 +52,7 @@ const mainLoop = async () => {
 	  {
 	    recipient: workerRecipient.publicKey.toBase58(),
 	    nonce: 1n,
-	    accessCode: "7q4zp7yf",
+	    accessCode,
 	    capabilities: [capability],
 	  }
 	);

@@ -4,10 +4,12 @@ import { Command } from "commander";
 export const DEFAULT_CAPABILITY = "effectai/qwen3.2-ai-worker";
 export const CAPABILITY_ENV_VAR = "AI_WORKER_CAPABILITY";
 export const PRIVATE_KEY_PATH_ENV_VAR = "AI_WORKER_PRIVATE_KEY_PATH";
+export const ACCESS_CODE_ENV_VAR = "AI_WORKER_ACCESS_CODE";
 
 export type WorkerConfig = {
   capability: string;
   privateKey: Uint8Array;
+  accessCode?: string;
 };
 
 const DEFAULT_PRIVATE_KEY_PATH = "tst8sA9paoprGP987QKSuX9VoHY22AXtB8b3bMTckf4.json";
@@ -44,6 +46,7 @@ const loadPrivateKeyFromFile = (path: string): Uint8Array => {
 export const loadWorkerConfig = (): WorkerConfig => {
   const envCapability = process.env[CAPABILITY_ENV_VAR];
   const envPrivateKeyPath = process.env[PRIVATE_KEY_PATH_ENV_VAR];
+  const envAccessCode = process.env[ACCESS_CODE_ENV_VAR];
 
   const program = new Command()
     .allowUnknownOption()
@@ -54,10 +57,14 @@ export const loadWorkerConfig = (): WorkerConfig => {
     .option(
       "--private-key <path>",
       `Path to private key JSON (Uint8Array). You can also set ${PRIVATE_KEY_PATH_ENV_VAR}.`,
+    )
+    .option(
+      "--access-code <code>",
+      `Manager access code (optional). You can also set ${ACCESS_CODE_ENV_VAR}.`,
     );
 
   program.parse(process.argv);
-  const options = program.opts<{ capability?: string; privateKey?: string }>();
+  const options = program.opts<{ capability?: string; privateKey?: string; accessCode?: string }>();
 
   const rawCapability =
     typeof options.capability === "string"
@@ -76,5 +83,6 @@ export const loadWorkerConfig = (): WorkerConfig => {
   return {
     capability: ensureSingleCapability(rawCapability),
     privateKey: loadPrivateKeyFromFile(privateKeyPath),
+    accessCode: typeof options.accessCode === "string" ? options.accessCode : envAccessCode,
   };
 };
