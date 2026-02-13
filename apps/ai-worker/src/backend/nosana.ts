@@ -3,7 +3,6 @@ import {
   createNosanaClient,
   NosanaNetwork,
   type Deployment,
-  type DeploymentStrategy,
   type JobDefinition,
   type Vault,
   type DeploymentsApi,
@@ -15,7 +14,7 @@ import { createConsoleLogger, type Logger } from "../logger.js";
 import { state } from "../state.js";
 import type { AutomationBackend } from "./base.js";
 
-const DEFAULT_MARKET = "97G9NnvBDQ2WpKu6fasoMsAKmfj63C9rhysJnkeWodAf";
+const DEFAULT_MARKET = "6Xt8hgVLLL2PSHC9NtJP8E8oTdA5ZJc95hZEnHcdqKqb"; // 5090
 const DEFAULT_JOB: JobDefinition = {
   version: "0.1",
   type: "container",
@@ -63,20 +62,93 @@ const DEFAULT_JOB: JobDefinition = {
 };
 
 const DEFAULT_API_BACKEND_URL = "https://dashboard.k8s.prd.nos.ci";
-const MIN_VAULT_SOL = 0.001;
-const MIN_VAULT_NOS = 10;
+const MIN_VAULT_SOL = 0.01;
+const MIN_VAULT_NOS = 100;
 const TOPUP_SOL_AMOUNT = 0.01;
-const TOPUP_NOS_AMOUNT = 10;
+const TOPUP_NOS_AMOUNT = 100;
 const LAMPORTS_PER_SOL = 1_000_000_000;
 const DEPLOYMENT_NAME = "effectai-ai-worker";
 const DEPLOYMENT_TIMEOUT_MINUTES = 60;
-const DEPLOYMENT_ROTATION_TIME_MINUTES = 45;
 const DEPLOYMENT_REPLICAS = 1;
 const POLL_INTERVAL_MS = 5_000;
 const POLL_MAX_ATTEMPTS = 24;
+const INFERENCE_MAX_ATTEMPTS = 3;
+const SYSTEM_PROMPT = "You are the Effect Tasks AI worker. Process tasks promptly, be helpful, and follow instructions with clarity.";
+const HUMAN_PROMPT = "Hello how are you doing?";
+const CHAT_PATH = "/api/chat";
+const MODEL_NAME = "gpt-oss:20b";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Extract the message content from an Ollama response payload.
+ */
+const parseInferenceResponse = (data: unknown): string => {
+  if (typeof data !== "object" || !data) {
+    return "";
+  }
+
+  const payload = data as { message?: { content?: string }; response?: string };
+  return payload.message?.content ?? payload.response ?? "";
+};
+
+/**
+ * Call the Ollama chat endpoint and return the response text, retrying on failure.
+ */
+const runInference = async ({
+  endpointUrl,
+  logger,
+  context,
+}: {
+  endpointUrl: string;
+  logger: Logger;
+  context: string;
+}): Promise<string> => {
+  const url = `${endpointUrl}${CHAT_PATH}`;
+  const body = {
+    model: MODEL_NAME,
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: HUMAN_PROMPT },
+    ],
+    stream: false,
+  };
+
+  for (let attempt = 0; attempt < INFERENCE_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        logger.warn("Inference request failed", { context, status: res.status, attempt });
+        await delay(POLL_INTERVAL_MS);
+        continue;
+      }
+
+      const data = (await res.json()) as unknown;
+      const message = parseInferenceResponse(data);
+      if (!message) {
+        logger.warn("Inference response missing content", { context, attempt });
+        await delay(POLL_INTERVAL_MS);
+        continue;
+      }
+
+      return message;
+    } catch (error: unknown) {
+      logger.warn("Inference request error", { context, attempt, error });
+      await delay(POLL_INTERVAL_MS);
+    }
+  }
+
+  throw new Error("Inference did not succeed after retries");
+};
+
+/**
+ * Create the Nosana backend, provisioning the deployment and wiring inference.
+ */
 export const createNosanaBackend = async (): Promise<AutomationBackend> => {
   const logger = state.logger ?? createConsoleLogger("nosana-backend");
   const secretKey = state.privateKey?.raw;
@@ -92,6 +164,7 @@ export const createNosanaBackend = async (): Promise<AutomationBackend> => {
   });
 
   let ready = false;
+  let cachedEndpointUrl: string | undefined;
 
   const backend: AutomationBackend = {
     id: "nosana-ai-worker",
@@ -107,7 +180,20 @@ export const createNosanaBackend = async (): Promise<AutomationBackend> => {
       const deployments = client.api.deployments as DeploymentsApi;
 
       await clearDeployments({ deployments, logger });
-      const deployment = await ensureDeployment({ deployments, vault, logger });
+      const { deployment, endpointUrl } = await ensureDeployment({ deployments, vault, logger });
+      cachedEndpointUrl = endpointUrl;
+      state.deploymentEndpointUrl = endpointUrl;
+
+      try {
+        const response = await runInference({
+          endpointUrl,
+          logger,
+          context: "init",
+        });
+        logger.info("Inference completed", { deploymentId: deployment.id, response });
+      } catch (error: unknown) {
+        logger.error("Inference failed", { deploymentId: deployment.id, error });
+      }
 
       ready = true;
       logger.info("Nosana backend ready", {
@@ -116,8 +202,11 @@ export const createNosanaBackend = async (): Promise<AutomationBackend> => {
       });
     },
     async execute(task: Task) {
-      logger.warn("Nosana backend execute not wired", { taskId: task.id });
-      throw new Error("Nosana execute not implemented");
+      if (!cachedEndpointUrl) {
+        throw new Error("Deployment endpoint not ready for inference");
+      }
+
+      return runInference({ endpointUrl: cachedEndpointUrl, logger, context: `task:${task.id}` });
     },
   };
 
@@ -125,6 +214,19 @@ export const createNosanaBackend = async (): Promise<AutomationBackend> => {
 
   return backend;
 };
+
+/**
+ * Run a single inference against the active deployment endpoint.
+ */
+export const runNosanaInference = async ({
+  logger,
+  endpointUrl,
+  context,
+}: {
+  logger: Logger;
+  endpointUrl: string;
+  context: string;
+}): Promise<string> => runInference({ endpointUrl, logger, context });
 
 /**
  * Ensure a Nosana vault exists and has a healthy balance.
@@ -188,6 +290,9 @@ const ensureVault = async ({ client, logger }: {
   return vault;
 };
 
+/**
+ * Stop any running deployments before provisioning a new one.
+ */
 const clearDeployments = async ({ deployments, logger }: {
   deployments: DeploymentsApi;
   logger: Logger;
@@ -220,11 +325,14 @@ const clearDeployments = async ({ deployments, logger }: {
  * - Wait for RUNNING status, then poll the exposed Ollama endpoint (/api/tags) for HTTP 200
  *   before marking ready.
  */
+/**
+ * Create and start a deployment, waiting for RUNNING status and endpoint health.
+ */
 const ensureDeployment = async ({ deployments, vault, logger }: {
   deployments: DeploymentsApi;
   vault: Vault;
   logger: Logger;
-}): Promise<Deployment> => {
+}): Promise<{ deployment: Deployment; endpointUrl: string }> => {
   const deployment = await deployments.create({
     name: DEPLOYMENT_NAME,
     market: DEFAULT_MARKET,
@@ -245,14 +353,17 @@ const ensureDeployment = async ({ deployments, vault, logger }: {
     throw new Error("Deployment did not reach RUNNING state in time");
   }
 
-  const endpointHealthy = await waitForEndpointHealthy({ deployments, deploymentId: deployment.id, logger });
-  if (!endpointHealthy) {
+  const endpointUrl = await waitForEndpointHealthy({ deployments, deploymentId: deployment.id, logger });
+  if (!endpointUrl) {
     throw new Error("Deployment endpoint did not become healthy in time");
   }
 
-  return deployment;
+  return { deployment, endpointUrl };
 };
 
+/**
+ * Poll deployment status until it reaches the target state.
+ */
 const waitForStatus = async ({ deployments, deploymentId, target, logger }: {
   deployments: DeploymentsApi;
   deploymentId: string;
@@ -279,11 +390,14 @@ const waitForStatus = async ({ deployments, deploymentId, target, logger }: {
   return false;
 };
 
+/**
+ * Poll the deployment endpoint until the Ollama health check passes.
+ */
 const waitForEndpointHealthy = async ({ deployments, deploymentId, logger }: {
   deployments: DeploymentsApi;
   deploymentId: string;
   logger: Logger;
-}): Promise<boolean> => {
+}): Promise<string | null> => {
   for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt += 1) {
     const fresh = await deployments.get(deploymentId);
     const endpoint = fresh.endpoints?.[0];
@@ -299,7 +413,7 @@ const waitForEndpointHealthy = async ({ deployments, deploymentId, logger }: {
       const res = await fetch(url, { method: "GET", redirect: "manual" });
       if (res.status === 200) {
         logger.info("Endpoint healthy", { deploymentId, url, status: res.status });
-        return true;
+        return endpoint.url;
       }
       logger.warn("Endpoint not ready", { deploymentId, url, status: res.status });
     } catch (error: unknown) {
@@ -309,5 +423,5 @@ const waitForEndpointHealthy = async ({ deployments, deploymentId, logger }: {
     await delay(POLL_INTERVAL_MS);
   }
 
-  return false;
+  return null;
 };

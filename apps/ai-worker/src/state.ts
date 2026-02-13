@@ -13,6 +13,7 @@ export type State = {
   privateKey?: PrivateKey;
   backend?: AutomationBackend;
   logger?: Logger;
+  deploymentEndpointUrl?: string;
 
   // worker state
   activeTask?: Task;
