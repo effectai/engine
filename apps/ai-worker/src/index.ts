@@ -5,7 +5,6 @@ import { privateKeyFromRaw } from "@libp2p/crypto/keys";
 import { LevelDatastore } from "datastore-level";
 import { loadWorkerConfig } from "./config.js";
 import { type State, state } from "./state.js";
-import { createKeyPairSignerFromBytes } from "@solana/kit";
 import * as Worker from "./worker.js";
 
 const storePath = "/tmp/ai-worker";
@@ -45,7 +44,7 @@ const mainLoop = async () => {
 	await state.worker?.start();
 
 	console.log("Starting worker with code");
-	const workerRecipient = Keypair.fromSecretKey(seed, {
+	const workerRecipient = Keypair.fromSecretKey(privBytes, {
 	  skipValidation: true,
 	});
 	await state.worker?.connect(
