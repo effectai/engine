@@ -31,7 +31,7 @@ export const availableCapabilities: Capability[] = [
   },
   {
     icon: "i-lucide-book-open",
-    id: "effectai/english-language:0.0.2",
+    id: "effectai/english-language:0.0.3",
     href: "capabilities/language-english",
     name: "English Language",
     category: "Language",
@@ -39,7 +39,7 @@ export const availableCapabilities: Capability[] = [
     cost: 30,
     estimatedEarnings: 500,
     tags: ["Language", "English", "Communication"],
-    antiCapability: "effectai/english-language:0.0.2-disabled",
+    antiCapability: "effectai/english-language:0.0.3-disabled",
     hidden: false,
     attempts: 3,
     
