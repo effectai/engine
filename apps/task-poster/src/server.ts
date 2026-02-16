@@ -59,6 +59,9 @@ const addApiRoutes = (app: Express) => {
     const datasets = [];
 
     for (const ds of activeDatasets) {
+      // Skip hidden datasets (For private/secret datasets)
+      if (ds.hidden) continue;
+
       const fetchers = await getFetchers(ds.id);
       let dsQueued = 0;
       let dsActive = 0;
@@ -110,7 +113,7 @@ const addApiRoutes = (app: Express) => {
     }
 
     res.json({
-      activeDatasets: activeDatasets.length,
+      activeDatasets: datasets.length,
       tasksQueued: totalQueue,
       tasksActive: totalActive,
       tasksCompleted: totalDone,
