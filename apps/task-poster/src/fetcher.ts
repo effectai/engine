@@ -47,6 +47,7 @@ export type Fetcher = {
 
   dataSample?: any;
   status: "active" | "archived";
+  hidden?: boolean;
 
   // fields for csv fetchers
   delimiter?: "," | "\t" | ";";
@@ -218,6 +219,15 @@ export const fetcherForm = async (
     </section>
   </fieldset>
 
+  <fieldset>
+    <legend>visibility</legend>
+    <div class="checkbox">
+      <input type="checkbox" id="hidden" name="hidden" ${values.hidden ? "checked" : ""} />
+      <label for="hidden"><strong>Hide from workers</strong><br/>
+      <small>When enabled, this step will not be visible to workers on the frontend.</small></label>
+    </div>
+  </fieldset>
+
  <button type="submit">${f ? "Update" : "Create"}</button>
 
  ${f ?
@@ -358,6 +368,7 @@ export const createFetcher = async (
     batchSize: fields.batchSize,
 
     status: oldFetcher?.status ?? "active",
+    hidden: fields.hidden === "on" || fields.hidden === true,
   };
 
   // if we are updating an older fetcher, copy over any optional

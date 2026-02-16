@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from 'express';
 import express from "express";
 import { addAuthRoutes, hasAuth } from "./auth.js";
-import { addFetcherRoutes } from "./fetcher.js";
+import { addFetcherRoutes, getFetchers, countTasks } from "./fetcher.js";
 import {
   addDatasetRoutes,
   getActiveDatasets,
@@ -33,6 +33,90 @@ const campaignCard = (d: DatasetRecord) => {
 </a>`
 
   );
+};
+
+const addApiRoutes = (app: Express) => {
+  // CORS handler for API routes
+  const setCorsHeaders = (res: Response) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  };
+
+  app.options("/api/stats", (_req: Request, res: Response) => {
+    setCorsHeaders(res);
+    res.status(204).end();
+  });
+
+  app.get("/api/stats", async (_req: Request, res: Response) => {
+    setCorsHeaders(res);
+    const activeDatasets = await getActiveDatasets("active");
+
+    let totalQueue = 0;
+    let totalActive = 0;
+    let totalDone = 0;
+
+    const datasets = [];
+
+    for (const ds of activeDatasets) {
+      const fetchers = await getFetchers(ds.id);
+      let dsQueued = 0;
+      let dsActive = 0;
+      let dsCompleted = 0;
+      let timeLimitSeconds = 0;
+
+      const steps = [];
+
+      for (const f of fetchers) {
+        const stepQueued = countTasks(f, "queue");
+        const stepActive = countTasks(f, "active");
+        const stepCompleted = countTasks(f, "done");
+
+        dsQueued += stepQueued;
+        dsActive += stepActive;
+        dsCompleted += stepCompleted;
+
+        if (f.timeLimitSeconds > timeLimitSeconds) {
+          timeLimitSeconds = f.timeLimitSeconds;
+        }
+
+        // Only include non-hidden steps in the response
+        if (!f.hidden) {
+          steps.push({
+            index: f.index,
+            name: f.name,
+            type: f.type,
+            tasksQueued: stepQueued,
+            tasksActive: stepActive,
+            tasksCompleted: stepCompleted,
+            timeLimitSeconds: f.timeLimitSeconds,
+          });
+        }
+      }
+
+      totalQueue += dsQueued;
+      totalActive += dsActive;
+      totalDone += dsCompleted;
+
+      datasets.push({
+        id: ds.id,
+        name: ds.name,
+        tasksQueued: dsQueued,
+        tasksActive: dsActive,
+        tasksCompleted: dsCompleted,
+        timeLimitSeconds,
+        steps: steps.sort((a, b) => a.index - b.index),
+      });
+    }
+
+    res.json({
+      activeDatasets: activeDatasets.length,
+      tasksQueued: totalQueue,
+      tasksActive: totalActive,
+      tasksCompleted: totalDone,
+      datasets,
+    });
+  });
 };
 
 const addMainRoutes = (app: Express) => {
@@ -107,6 +191,7 @@ const main = async () => {
   if (liveReloadEnabled) await addLiveReload(app);
 
   console.log("Registering module routes");
+  addApiRoutes(app);
   addMainRoutes(app);
   addTemplateRoutes(app);
   addDatasetRoutes(app);
