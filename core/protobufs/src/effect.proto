@@ -43,6 +43,46 @@ message RequestToWorkResponse {
   string peer = 3;
 }
 
+message WorkerSyncRequest {
+  uint32 timestamp = 1;
+  string worker_id = 2;
+  optional uint64 cursor = 3;
+  repeated string scopes = 4;
+  optional uint32 limit = 5;
+}
+
+message WorkerSyncStatus {
+  string state = 1;
+  uint32 last_activity = 2;
+}
+
+message WorkerSyncTask {
+  string task_id = 1;
+  string status = 2;
+  uint32 last_event_at = 3;
+  Task task = 4;
+}
+
+message WorkerSyncPayment {
+  string payment_id = 1;
+  string status = 2;
+  string amount = 3;
+  optional string task_id = 4;
+  uint32 created_at = 5;
+  Payment payment = 6;
+}
+
+message WorkerSyncResponse {
+  uint32 server_time = 1;
+  string worker_id = 2;
+  uint64 cursor = 3;
+  string manager_peer_id = 4;
+  optional WorkerSyncStatus status = 5;
+  repeated string capabilities = 6;
+  repeated WorkerSyncTask tasks = 7;
+  repeated WorkerSyncPayment payments = 8;
+}
+
 message EffectProtocolMessage {
   oneof message {
     Task task = 1;
@@ -62,5 +102,7 @@ message EffectProtocolMessage {
     EffectIdentifyRequest identify_request = 15;
     EffectIdentifyResponse identify_response = 16;
     BulkProofRequest bulk_proof_request = 17;
+    WorkerSyncRequest worker_sync_request = 18;
+    WorkerSyncResponse worker_sync_response = 19;
   }
 }

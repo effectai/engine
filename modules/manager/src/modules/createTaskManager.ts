@@ -5,9 +5,7 @@ import type { createPaymentManager } from "./createPaymentManager.js";
 import type {
   ManagerTaskRecord,
   ManagerTaskStore,
-  TaskAcceptedEvent,
-  TaskAssignedEvent,
-  TaskSubmissionEvent,
+  TaskStatus,
 } from "../stores/managerTaskStore.js";
 
 import type { createWorkerManager } from "./createWorkerManager.js";
@@ -53,18 +51,17 @@ export function createTaskManager({
 
   managerSettings: ManagerSettings;
 }) {
-  const isExpired = (timestamp: number, value: number) =>
-    timestamp + value < Math.floor(Date.now() / 1000);
+  const isExpired = (deadlineSeconds?: number) =>
+    typeof deadlineSeconds === "number" &&
+    deadlineSeconds < Math.floor(Date.now() / 1000);
 
   const getTask = async ({
     taskId,
-    index = "active",
   }: {
     taskId: string;
-    index?: string;
   }): Promise<ManagerTaskRecord> => {
-    const taskRecord = await taskStore.get({
-      entityId: `${index}/${taskId}`,
+    const taskRecord = await taskStore.getTask({
+      entityId: taskId,
     });
 
     if (!taskRecord) {
@@ -116,6 +113,7 @@ export function createTaskManager({
     });
 
     await workerManager.incrementStateValue(workerPeerIdStr, "tasksAccepted");
+    await workerManager.setWorkerStatus(workerPeerIdStr, "accepted");
 
     events.safeDispatchEvent("task:accepted", {
       detail: taskRecord,
@@ -137,7 +135,7 @@ export function createTaskManager({
       reason,
     });
 
-    workerManager.markTaskReleased(workerPeerIdStr, taskId);
+    await workerManager.markTaskReleased(workerPeerIdStr, taskId);
 
     const taskRecord = await taskStore.getTask({
       entityId: taskId,
@@ -165,7 +163,7 @@ export function createTaskManager({
       peerIdStr: workerPeerIdStr,
     });
 
-    workerManager.markTaskReleased(workerPeerIdStr, taskId);
+    await workerManager.markTaskReleased(workerPeerIdStr, taskId);
 
     await workerManager.incrementStateValue(workerPeerIdStr, "tasksCompleted");
 
@@ -178,17 +176,8 @@ export function createTaskManager({
     await assignTask({ entityId: taskRecord.state.id });
   };
 
-  const handleAssignEvent = async (
-    taskRecord: ManagerTaskRecord,
-    lastEvent: TaskAssignedEvent,
-  ) => {
-    const { timeLimitSeconds } = taskRecord.state;
-    const acceptanceWindow =
-      typeof timeLimitSeconds === "number" && timeLimitSeconds > 0
-        ? timeLimitSeconds
-        : TASK_ACCEPTANCE_TIME;
-
-    if (isExpired(lastEvent.timestamp, acceptanceWindow)) {
+  const handleAssignEvent = async (taskRecord: ManagerTaskRecord) => {
+    if (isExpired(taskRecord.state.acceptanceDeadline)) {
       await rejectAndReassignTask(taskRecord);
     }
   };
@@ -197,35 +186,23 @@ export function createTaskManager({
     taskRecord: ManagerTaskRecord,
     reason = "Worker took too long to accept/reject task",
   ) => {
-    const latestAssignEvent = taskRecord.events.reduce(
-      (latest: TaskAssignedEvent | null, current) => {
-        if (current.type === "assign") {
-          if (!latest || current.timestamp > latest.timestamp) {
-            return current;
-          }
-        }
-        return latest;
-      },
-      null,
-    );
-
-    if (!latestAssignEvent) {
+    if (!taskRecord.state.assignedTo) {
       return;
     }
 
     await taskStore.reject({
       entityId: taskRecord.state.id,
-      peerIdStr: latestAssignEvent.assignedToPeer,
+      peerIdStr: taskRecord.state.assignedTo,
       reason,
     });
 
-    workerManager.markTaskReleased(
-      latestAssignEvent.assignedToPeer,
+    await workerManager.markTaskReleased(
+      taskRecord.state.assignedTo,
       taskRecord.state.id,
     );
 
     await workerManager.incrementStateValue(
-      latestAssignEvent.assignedToPeer,
+      taskRecord.state.assignedTo,
       "tasksRejected",
     );
 
@@ -233,29 +210,31 @@ export function createTaskManager({
     await assignTask({ entityId: taskRecord.state.id });
   };
 
-  const handleAcceptEvent = async (
-    taskRecord: ManagerTaskRecord,
-    lastEvent: TaskAcceptedEvent,
-  ) => {
-    const { timeLimitSeconds } = taskRecord.state;
-    if (isExpired(lastEvent.timestamp, timeLimitSeconds)) {
-      await rejectAndReassignTask(taskRecord, "Worker took too long to submit task");
+  const handleAcceptEvent = async (taskRecord: ManagerTaskRecord) => {
+    if (isExpired(taskRecord.state.completionDeadline)) {
+      await rejectAndReassignTask(
+        taskRecord,
+        "Worker took too long to submit task",
+      );
     }
   };
 
-  const handleSubmissionEvent = async (
-    taskRecord: ManagerTaskRecord,
-    event: TaskSubmissionEvent,
-  ) => {
+  const handleSubmissionEvent = async (taskRecord: ManagerTaskRecord) => {
     if (!managerSettings.paymentAccount) {
       throw new Error("Payment account not set, cannot process payout");
     }
 
+    const submissionPeer = taskRecord.state.submissionBy;
+    if (!submissionPeer) {
+      throw new Error("Submission peer not found for task");
+    }
+
     const payment = await paymentManager.generatePayment({
-      peerId: peerIdFromString(event.submissionByPeer),
-      amount: taskRecord.state.reward,
+      peerId: peerIdFromString(submissionPeer),
+      amount: taskRecord.state.task.reward,
       paymentAccount: new PublicKey(managerSettings.paymentAccount),
       label: `Payment for task: ${taskRecord.state.id}`,
+      taskId: taskRecord.state.id,
     });
 
     await taskStore.payout({
@@ -265,13 +244,14 @@ export function createTaskManager({
 
     //send the payment.
     const [ack, error] = await manager.sendMessage(
-      peerIdFromString(event.submissionByPeer),
+      peerIdFromString(submissionPeer),
       { payment },
     );
 
     //update state
-    await workerManager.updateWorkerState(event.submissionByPeer, (state) => ({
-      totalEarned: state.totalEarned + BigInt(taskRecord.state.reward),
+    await workerManager.updateWorkerState(submissionPeer, (state) => ({
+      totalEarned: state.totalEarned + BigInt(taskRecord.state.task.reward),
+      status: "idle",
     }));
 
     //sendout task completed event
@@ -289,29 +269,24 @@ export function createTaskManager({
   };
 
   const manageTask = async (taskRecord: ManagerTaskRecord) => {
-    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
-
-    if (!lastEvent) {
-      return;
-    }
-
-    switch (lastEvent.type) {
-      case "create":
+    switch (taskRecord.state.status) {
+      case "created":
         await handleCreateEvent(taskRecord);
         break;
-      case "assign":
-        await handleAssignEvent(taskRecord, lastEvent);
+      case "assigned":
+        await handleAssignEvent(taskRecord);
         break;
-      case "accept":
-        await handleAcceptEvent(taskRecord, lastEvent);
+      case "accepted":
+        await handleAcceptEvent(taskRecord);
         break;
-      case "reject":
+      case "rejected":
         await handleRejectEvent(taskRecord);
         break;
-      case "submission":
-        await handleSubmissionEvent(taskRecord, lastEvent);
+      case "submitted":
+        await handleSubmissionEvent(taskRecord);
         break;
-      case "payout":
+      case "payout_pending":
+      case "completed":
         // do nothing..
         break;
       default:
@@ -327,18 +302,16 @@ export function createTaskManager({
       return;
     }
 
-    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
-
-    if (lastEvent.type === "assign") {
+    if (taskRecord.state.status === "assigned") {
       throw new Error("Task is already assigned.");
     }
 
-    const originalWorkerId = taskRecord?.state.templateData
-    ? JSON.parse(taskRecord.state.templateData)?.submissionByPeer
-    : undefined;
+    const originalWorkerId = taskRecord?.state.task.templateData
+      ? JSON.parse(taskRecord.state.task.templateData)?.submissionByPeer
+      : undefined;
 
     const worker = await workerManager.selectWorker(
-      taskRecord.state.capability || undefined,
+      taskRecord.state.task.capability || undefined,
       originalWorkerId || undefined,
     );
 
@@ -351,24 +324,32 @@ export function createTaskManager({
       workerPeerIdStr: worker,
     });
 
-    workerManager.markTaskAssigned(worker, taskRecord.state.id);
+    await workerManager.markTaskAssigned(worker, taskRecord.state.id);
 
     await workerManager.incrementStateValue(worker, "totalTasks");
 
     await manager.sendMessage(peerIdFromString(worker), {
-      task: taskRecord.state,
+      task: taskRecord.state.task,
     });
   };
 
   const manageTasks = async () => {
     try {
-      const activeTasks = await taskStore.all({
-        prefix: "tasks/active",
-        limit: 50,
-      });
+      const statuses: TaskStatus[] = [
+        "created",
+        "assigned",
+        "accepted",
+        "submitted",
+      ];
 
-      for (const taskRecord of activeTasks) {
-        await manageTask(taskRecord);
+      for (const status of statuses) {
+        const tasks = await taskStore.listByStatus({
+          status,
+          limit: 50,
+        });
+        for (const taskRecord of tasks) {
+          await manageTask(taskRecord);
+        }
       }
     } catch (e) {
       console.error("System error:", e);
@@ -376,9 +357,11 @@ export function createTaskManager({
   };
 
   const getActiveTasks = async () => {
-    const tasks = await taskStore.all({
-      prefix: "tasks/active",
-    });
+    const statuses: TaskStatus[] = ["created", "assigned", "accepted", "submitted"];
+    const tasks = [] as ManagerTaskRecord[];
+    for (const status of statuses) {
+      tasks.push(...(await taskStore.listByStatus({ status })));
+    }
 
     return tasks;
   };
@@ -386,7 +369,7 @@ export function createTaskManager({
   const getCompletedTaskCount = async () => {
     let total = 0;
     for await (const _ of taskStore.datastore.queryKeys({
-      prefix: "/tasks/completed",
+      prefix: "/tasks/byStatus/completed",
     })) {
       total++;
     }
@@ -401,13 +384,12 @@ export function createTaskManager({
     offset: number;
     limit: number;
   }) => {
-    const tasks = await taskStore.all({
-      offset,
-      limit,
-      prefix: "tasks/completed",
+    const tasks = await taskStore.listByStatus({
+      status: "completed",
+      limit: offset + limit,
     });
 
-    return tasks;
+    return tasks.slice(offset, offset + limit);
   };
 
   const registerTemplate = async ({
