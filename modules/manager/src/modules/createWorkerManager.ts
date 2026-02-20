@@ -208,13 +208,20 @@ export const createWorkerManager = ({
         worker.state.capabilities.concat(worker.state.managerCapabilities || []);
 
       if (capability) {
-        const info = getCapabilityInfo(capability);
+        // TODO: When proto is updated to support `repeated string capabilities`,
+        // parse as array directly instead of splitting a comma-separated string.
+        // Supports multiple capabilities with AND logic (worker must have ALL).
+        const requiredCapabilities = capability.split(",").map(c => c.trim()).filter(Boolean);
 
-        const hasCapability = workerCapabilities.includes(capability);
-        const hasAntiCapability =
-          info?.antiCapability && workerCapabilities.includes(info.antiCapability);
+        const hasAllCapabilities = requiredCapabilities.every(requiredCapability => {
+          const info = getCapabilityInfo(requiredCapability);
+          const hasCapability = workerCapabilities.includes(requiredCapability);
+          const hasAntiCapability =
+            info?.antiCapability && workerCapabilities.includes(info.antiCapability);
+          return hasCapability && !hasAntiCapability;
+        });
 
-        if (!hasCapability || hasAntiCapability) continue;
+        if (!hasAllCapabilities) continue;
       }
 
       const busy = await isBusy(worker);

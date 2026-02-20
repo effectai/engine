@@ -210,7 +210,7 @@ export const fetcherForm = async (
       </section>
 
       <label for="capabilities"><strong>Capabilities</strong><br/>
-      <small>Comme separated list of capabilities required for tasks (note: only 1 capability is used at the moment).</small></label>
+      <small>Comma separated list of capabilities required for tasks. Workers must have ALL listed capabilities to receive the task.</small></label>
       <input
 	placeholder="effectai/common-voice-validator:1.0.0, effectai/admin:1.0.0"
 	id="capabilities"  ${addVal(values, "capabilities")}
@@ -472,7 +472,9 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	timeLimitSeconds: fetcher.timeLimitSeconds ?? 600,
 	templateId: fetcher.template,
 	templateData: JSON.stringify(d),
-	capability: fetcher.capabilities[0],
+	// TODO: When proto is updated to support `repeated string capabilities`,
+	// change this to pass an array instead of a comma-separated string.
+	capability: fetcher.capabilities.join(","),
       }) as Task,
   );
 
