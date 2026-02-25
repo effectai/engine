@@ -40,6 +40,7 @@ export type Fetcher = {
   frequency: number;
   batchSize: number;
   template: string;
+  timeLimitSeconds: number;
 
   taskIdx: number; // the last task processed
   totalTasks: number;
@@ -93,8 +94,9 @@ const formatDate = (ts: number) =>
   }).replace(',', '');
 
 // little shorthand to inject form field's value if it exists
-const addVal = (values: FormValues, key: string): string =>
-  `${values[key] ? `value="${values[key]}"` : ""}`;
+const addVal = (values: FormValues, key: string,  defaultVal: string = ""): string =>
+  `${values[key] ? `value="${values[key]}"` : defaultVal ? `value="${defaultVal}"` : ""}`;
+
 type FormValues = Record<string, any>;
 
 export const csvFetcherForm = async (dsId: number, values: FormValues) => `
@@ -185,12 +187,27 @@ export const fetcherForm = async (
   )}
       </select>
 
-      <label for="price"><strong>Price per task</strong></label>
-      <input
-	placeholder="$EFFECT"
-	type="number"
-	id="price"  ${addVal(values, "price")}
-	name="price"/>
+      <section class="columns gap">
+	<div class="column">
+	  <label for="price"><strong>Price per task</strong></label>
+<small>Reward in $EFFECT for each task.<br/>&nbsp;</small>
+	  <input
+	    placeholder="$EFFECT"
+	    type="number"
+	    id="price"  ${addVal(values, "price")}
+	    name="price"/>
+	</div>
+
+	<div class="column">
+	  <label for="timeLimitSeconds"><strong>Task timeout</strong></label>
+<small>Seconds workers have to complete each task.</small>
+	  <input
+	    placeholder="Seconds"
+	    type="number"
+	    id="timeLimitSeconds" ${addVal(values, "timeLimitSeconds", "600")}
+	    name="timeLimitSeconds"/>
+	</div>
+      </section>
 
       <label for="capabilities"><strong>Capabilities</strong><br/>
       <small>Comme separated list of capabilities required for tasks (note: only 1 capability is used at the moment).</small></label>
@@ -335,6 +352,7 @@ export const createFetcher = async (
     engine: fields.engine,
     price: fields.price,
     template: fields.template,
+    timeLimitSeconds: Number(fields.timeLimitSeconds) || 600,
 
     frequency: fields.frequency,
     batchSize: fields.batchSize,
@@ -451,7 +469,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	id: ulid(),
 	title: fetcher.name,
 	reward: BigInt(fetcher.price * 1000000),
-	timeLimitSeconds: 600,
+	timeLimitSeconds: fetcher.timeLimitSeconds ?? 600,
 	templateId: fetcher.template,
 	templateData: JSON.stringify(d),
 	capability: fetcher.capabilities[0],
@@ -786,11 +804,20 @@ const formValidations: ValidationMap = {
   },
 
   template: (v: string) => (!v || v.length === 0) && "Template is required",
+  timeLimitSeconds: (v: any) => {
+    const num = Number(v);
+    return (
+      (!v && "Task timeout is required") ||
+      (isNaN(num) && "Task timeout must be a number") ||
+      (num < 60 && "Task timeout must be at least 60 seconds") ||
+      (num > 86400 && "Task timeout must be less than a day")
+    );
+  },
 };
 
 const validateForm = async (
   values: FormValues,
-  validations: any = formValidations
+  validations: ValidationMap = formValidations
 ) => {
   const errors: Record<string, string> = {};
 
@@ -875,6 +902,7 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Finished: ${doneSize}</li>
   <li>Failed: ${failedSize}</li>
   <li>Batch / Freq: ${f.batchSize} / ${f.frequency}</li>
+  <li>Time Limit: ${f.timeLimitSeconds}s</li>
 </ul>
 
 <section style="display: flex; gap: 1.0rem">
