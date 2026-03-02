@@ -7,12 +7,13 @@
     <div v-if="phase === 'intro'" class="card">
       <p>This short test estimates your CEFR level (A1-C1).</p>
       <br>
-      <p>The test consists of <strong>25 questions</strong>:</p>
+      <p>The test consists of <strong>20 questions</strong>:</p>
       <ul class="bullets">
-        <li><strong>- 12 Multiple Choice</strong></li>
-        <li><strong>- 8 Fill-in-the-Blank</strong></li>
+        <li><strong>- 15 Multiple Choice</strong></li>
         <li><strong>- 5 Reading Comprehension</strong></li>
       </ul>
+      <p><strong>Passing Grade:</strong> You need at least <strong>75%</strong> (15/20 correct) to earn the capability.</p>
+      <br>
       <p>Please note the following rules:</p>
       <ul class="bullets">
         <li><strong>Timed Questions:</strong> Each question has a countdown timer. If time runs out, your current answer will be automatically submitted.</li>
@@ -56,20 +57,6 @@
           </label>
         </div>
 
-        <div v-else-if="current.type === 'cloze'">
-          <input
-            v-model.trim="answers[index]"
-            class="input"
-            :placeholder="current.placeholder || 'Type your answer'"
-            @keydown.enter.prevent="next"
-            @paste.prevent
-            @copy.prevent
-            @cut.prevent
-            autocomplete="off"
-          />
-          <p class="hint" v-if="current.hint">Hint: {{ current.hint }}</p>
-        </div>
-
         <div v-else-if="current.type === 'reading'">
           <div class="passage">
             <p v-for="(p, i) in current.passage" :key="i">{{ p }}</p>
@@ -104,23 +91,6 @@
         Estimated level: <span class="badge">{{ level.cefr }}</span>
       </p>
       <p class="desc">{{ level.description }}</p>
-
-      <!-- <details class="review">
-        <summary>Review answers</summary>
-        <ol>
-          <li v-for="(q, i) in questions" :key="i" class="review-item">
-            <div class="r-q" v-html="q.prompt"></div>
-            <div class="r-a">
-              <span :class="answers[i] === q.answer ? 'ok' : 'bad'">
-                Your answer: {{ formatAns(answers[i]) }}
-              </span>
-              <span v-if="answers[i] !== q.answer">
-                • Correct: <strong>{{ formatAns(q.answer) }}</strong>
-              </span>
-            </div>
-          </li>
-        </ol>
-      </details> -->
 
       <div class="nav center-align">
         <button v-if="!passed" class="btn" @click="reset">Restart</button>
@@ -159,14 +129,14 @@ const masterBank = [
   {
     "type": "mcq",
     "duration": 60,
-    "prompt": "Scenario: You are categorizing customer support tickets. \nRule: 'Refund requests imply a financial transaction. Complaints about rudeness are behavioral.'\nTicket: 'I want my money back because the driver was incredibly rude.'\nWhich category takes precedence?",
+    "prompt": "Read the customer message:\n\n'I ordered a blue shirt but received a red one. I'd like to exchange it for the correct color.'\n\nWhat does the customer want?",
     "options": [
-      "Behavioral, because the driver was rude.",
-      "Refund, because the customer explicitly asks for money back.",
-      "Neither, it is a mixed ticket and should be skipped.",
-      "Both categories should be selected if the system allows."
+      "A refund for the red shirt",
+      "To exchange the red shirt for a blue one",
+      "To keep both shirts",
+      "To cancel the order completely"
     ],
-    "answer": "Refund, because the customer explicitly asks for money back."
+    "answer": "To exchange the red shirt for a blue one"
   },
   {
     "type": "mcq",
@@ -183,7 +153,7 @@ const masterBank = [
   {
     "type": "mcq",
     "duration": 45,
-    "prompt": "Context: Verifying data. 'The address on the receipt must match the store location exactly.' \nReceipt: '123 Main St.' \nStore Record: '123 Main Street'. \nIs this a match?",
+    "prompt": "Context: Verifying data. 'The address on the receipt must match the store location.' \nReceipt: '123 Main St.' \nStore Record: '123 Main Street'. \nIs this a match?",
     "options": [
       "No, 'St.' and 'Street' are different strings.",
       "Yes, because 'St.' is a standard abbreviation for 'Street'.",
@@ -329,7 +299,7 @@ const masterBank = [
     "duration": 35,
     "prompt": "Choose the correct phrasing for a warning.",
     "options": [
-      "Please carefully deleting files.",
+      "Please carefully delete files.",
       "Be careful not to delete essential files.",
       "You might maybe delete files.",
       "Deleting files is something you do."
@@ -391,10 +361,10 @@ const masterBank = [
     "options": [
       "nevertheless",
       "because",
-      "consequently",
+      "therefore",
       "despite"
     ],
-    "answer": "consequently"
+    "answer": "therefore"
   },
   {
     "type": "mcq",
@@ -443,147 +413,6 @@ const masterBank = [
       "Both B and C are acceptable in modern English."
     ],
     "answer": "The data is processed every night."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "You cannot access this file because you do not have the necessary ________.",
-    "accepted_answers": ["permissions", "authorization", "rights", "access", "clearance"],
-    "hint": "Technical term for having the right to access data."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "Please read the guidelines carefully to avoid ________ common mistakes.",
-    "accepted_answers": ["making", "repeating", "committing"],
-    "hint": "We 'make' mistakes, we don't 'do' them."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "The system is currently ________ maintenance and will be available again in two hours.",
-    "accepted_answers": ["under", "undergoing"],
-    "hint": "Fixed phrase: '____ maintenance'."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "If you forget your password, click the link to ________ it.",
-    "accepted_answers": ["reset", "change", "recover", "update", "restore"],
-    "hint": "The standard term for changing a forgotten password."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "All workers are expected to comply ________ the safety regulations.",
-    "accepted_answers": ["with"],
-    "hint": "The verb 'comply' is always followed by this preposition."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "The project deadline has been extended; ________, you now have two extra days to finish.",
-    "accepted_answers": ["therefore", "consequently", "thus", "hence"],
-    "hint": "Logical connector showing a result or consequence."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "Please ________ the 'Submit' button only once to prevent duplicate entries.",
-    "accepted_answers": ["click", "press", "hit", "select", "tap"],
-    "hint": "The specific action used with a computer mouse."
-  },
-  // fix
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "Sharing user data with third parties is strictly ________.",
-    "accepted_answers": ["prohibited", "forbidden", "banned", "illegal", "restricted"],
-    "hint": "Formal word meaning 'forbidden' or 'banned'."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "To verify your identity, we sent a code to your mobile ________.",
-    "accepted_answers": ["device", "phone", "number", "cellphone"],
-    "hint": "The standard technical term for phones or tablets."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "The new software is not compatible ________ older operating systems.",
-    "accepted_answers": ["with"],
-    "hint": "Compatible ____."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "Before you can start working, you must agree to the terms and ________.",
-    "accepted_answers": ["conditions"],
-    "hint": "Fixed legal phrase: 'Terms and ____'."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "If the audio is too noisy, tag it as 'Unclear' ________ of guessing the words.",
-    "accepted_answers": ["instead"],
-    "hint": "Used with 'of' to suggest an alternative."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "Your account has been flagged for suspicious ________.",
-    "accepted_answers": ["activity", "behavior", "actions", "usage", "logins"],
-    "hint": "Standard phrase for unusual behavior on an account."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "Please pay close ________ to the details in the image.",
-    "accepted_answers": ["attention"],
-    "hint": "Fixed phrase: 'Pay ____'."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "The survey asks for your feedback ________ the quality of the training materials.",
-    "accepted_answers": ["regarding", "concerning", "about", "on"],
-    "hint": "Means 'about' or 'concerning'."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "This task is ________ on accuracy, not speed.",
-    "accepted_answers": ["focused", "centered", "concentrated", "based", "dependent"],
-    "hint": "Used with 'on' to show where attention is directed."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "When you are finished, please log ________ of your account for security.",
-    "accepted_answers": ["out", "off"],
-    "hint": "Opposite of 'log in'."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "If you disagree with a review, you may ________ a dispute.",
-    "accepted_answers": ["file", "raise", "submit", "open", "initiate", "start"],
-    "hint": "Standard administrative term: '____ a dispute/complaint'."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "The pay rate is subject ________ change based on market demand.",
-    "accepted_answers": ["to"],
-    "hint": "Fixed phrase: 'Subject ____'."
-  },
-  {
-    "type": "cloze",
-    "duration": 50,
-    "prompt": "Ensure that the bounding box ________ the object completely.",
-    "accepted_answers": ["covers", "surrounds", "encloses", "contains", "encircles", "includes"],
-    "hint": "Means to extend over or overlay."
   },
   {
     "type": "mcq",
@@ -859,14 +688,12 @@ function start() {
   }
 
   const mcqBank = masterBank.filter(q => q.type === "mcq");
-  const clozeBank = masterBank.filter(q => q.type === "cloze");
   const readingBank = masterBank.filter(q => q.type === "reading");
 
-  const selectedMCQ = shuffleArray(mcqBank).slice(0, 12);
-  const selectedCloze = shuffleArray(clozeBank).slice(0, 8);
+  const selectedMCQ = shuffleArray(mcqBank).slice(0, 15);
   const selectedReading = shuffleArray(readingBank).slice(0, 5);
 
-  questions.value = shuffleArray([...selectedMCQ, ...selectedCloze, ...selectedReading]);
+  questions.value = shuffleArray([...selectedMCQ, ...selectedReading]);
 
   answers.value = Array(questions.value.length).fill(null);
   phase.value = "quiz";
@@ -919,25 +746,10 @@ function reset() {
   transitioning.value = false;
 }
 
-function normalize(a) {
-  if (a == null) return "";
-  return String(a).trim().toLowerCase();
-}
-
 const score = computed(() =>
   questions.value.reduce((sum, q, i) => {
     const user = answers.value[i];
-    if (q.type === "cloze") {
-      // Handle multiple acceptable answers
-      if (Array.isArray(q.answer)) {
-        const normalizedAnswers = q.answer.map(a => normalize(a));
-        return sum + (normalizedAnswers.includes(normalize(user)) ? 1 : 0);
-      } else {
-        return sum + (normalize(user) === normalize(q.answer) ? 1 : 0);
-      }
-    } else {
-      return sum + (user === q.answer ? 1 : 0);
-    }
+    return sum + (user === q.answer ? 1 : 0);
   }, 0),
 );
 
@@ -957,7 +769,7 @@ const level = computed(() => {
       cefr: "A2",
       description: "Elementary: can communicate in simple, routine tasks.",
     };
-  if (pct < 70)
+  if (pct < 74)
     return {
       cefr: "B1",
       description:
@@ -978,17 +790,13 @@ const level = computed(() => {
 
 // Minimum questions required to prevent skip exploit
 const MIN_QUESTIONS_TO_PASS = 15;
-// Require at least 72% (18/25) to pass
+// Require at least 75% (15/20) to pass
 const passed = computed(() =>
   phase.value === "result" &&
   questions.value.length >= MIN_QUESTIONS_TO_PASS &&
-  score.value >= Math.ceil(questions.value.length * 0.72)
+  score.value >= Math.ceil(questions.value.length * 0.75)
 );
 const showAward = ref(false);
-
-function formatAns(a) {
-  return a == null || a === "" ? "— (Time expired)" : a;
-}
 
 onUnmounted(() => {
   clearInterval(timerInterval);
@@ -1084,18 +892,6 @@ const capability = availableCapabilities.find((c) =>
   .opt:hover {
     background: #f8fafc;
   }
-  .input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    font-size: 1rem;
-  }
-  .hint {
-    color: #64748b;
-    font-size: 0.9rem;
-    margin-top: 0.4rem;
-  }
   .nav {
     margin-top: 14px;
     display: flex;
@@ -1155,25 +951,6 @@ const capability = availableCapabilities.find((c) =>
     background: #eef2ff;
     color: #3730a3;
     font-weight: 700;
-  }
-  .review {
-    text-align: left;
-    margin-top: 12px;
-  }
-  .review-item {
-    margin: 0.4rem 0;
-  }
-  .r-q {
-    font-weight: 600;
-  }
-  .r-a {
-    color: #475569;
-  }
-  .ok {
-    color: #16a34a;
-  }
-  .bad {
-    color: #dc2626;
   }
   @keyframes pulse {
     0% { opacity: 1; }
