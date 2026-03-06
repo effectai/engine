@@ -161,6 +161,7 @@ const isTemplateReady = ref(false);
 const isOpen = computed(() => !!activeTask.value);
 const isOpenTaskInfoModal = ref(false);
 const currentTaskInstructions = ref("");
+const isSubmitting = ref(false);
 
 const taskState = computed(
   () => activeTask.value && useTaskState(activeTask.value),
@@ -262,7 +263,7 @@ watch(
   },
   (remaining, prevRemaining) => {
 
-    if (remaining <= 0 && prevRemaining > 0) {
+    if (remaining <= 0 && prevRemaining > 0 && !isSubmitting.value) {
       toast.clear();
       toast.add({
         title: 'Task Expired',
@@ -327,6 +328,7 @@ const handlerRejectTask = async () => {
 
 const reportAndSkipTask = async () => {
   if (!activeTask.value) return;
+  isSubmitting.value = true;
   await completeTask(activeTask.value.state.id, "<TASK REPORTED AND SKIPPED>");
   toast.clear();
   toast.add({
@@ -342,6 +344,7 @@ const reportAndSkipTask = async () => {
 
 const handlerSubmitTask = async (data: Record<unknown, string | number>) => {
   if (!activeTask.value) return;
+  isSubmitting.value = true;
   await completeTask(activeTask.value.state.id, JSON.stringify(data));
   toast.clear();
   toast.add({
