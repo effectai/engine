@@ -436,7 +436,14 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
       const iterator = db.iterate<boolean>(["fetcher", sId, sFId, "done", {}], undefined, true);
 
       // the high water mark
-      const regex = new RegExp(fetcher.pipelineFilterRegex as string);
+      let regex: RegExp | null = null;
+      if (fetcher.pipelineFilterRegex) {
+        try {
+          regex = new RegExp(fetcher.pipelineFilterRegex as string);
+        } catch (e) {
+          console.error("Invalid pipelineFilterRegex, skipping filter:", fetcher.pipelineFilterRegex);
+        }
+      }
 
       let dataQueue: any[] = [];
       for await (const taskId of iterator) {
@@ -450,7 +457,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	}
 
 	// regex filter
-	if (!task.result || regex.test(task.result) || task.result == "<TASK REPORTED AND SKIPPED>") {
+	if (!task.result || (regex && regex.test(task.result)) || task.result == "<TASK REPORTED AND SKIPPED>") {
 	  continue;
 	}
 
