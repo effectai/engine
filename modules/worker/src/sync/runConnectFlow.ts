@@ -1,6 +1,4 @@
-import type { EffectProtocolMessage } from "@effectai/protobufs";
-
-export const runConnectFlow = async ({
+export const runConnectFlow = async <TResponse>({
   autoSyncBeforeConnect,
   skipSync,
   syncWithManager,
@@ -9,9 +7,7 @@ export const runConnectFlow = async ({
   autoSyncBeforeConnect: boolean;
   skipSync?: boolean;
   syncWithManager: () => Promise<unknown>;
-  requestToWork: () => Promise<
-    readonly [EffectProtocolMessage | null, Error | null]
-  >;
+  requestToWork: () => Promise<readonly [TResponse | null, Error | null]>;
 }) => {
   if (autoSyncBeforeConnect && !skipSync) {
     await syncWithManager();

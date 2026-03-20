@@ -26,8 +26,10 @@ import { PingService } from "@libp2p/ping";
 
 import {
   EffectProtocolMessage,
+  type RequestToWorkResponse,
   type Payment,
   type Task,
+  type WorkerSyncResponse,
 } from "@effectai/protobufs";
 import { applyWorkerSyncResponse } from "./sync/applyWorkerSyncResponse.js";
 import { runConnectFlow } from "./sync/runConnectFlow.js";
@@ -186,11 +188,11 @@ export const createWorker = async ({
       },
     });
 
-    if (error || !response?.workerSyncResponse) {
+    if (error || !response) {
       throw new Error(`Failed to sync with manager: ${error}`);
     }
 
-    const sync = response.workerSyncResponse;
+    const sync: WorkerSyncResponse = response;
     await applyWorkerSyncResponse({
       sync,
       taskStore,
@@ -225,8 +227,10 @@ export const createWorker = async ({
         await syncWithManager(multiaddress, {
           scopes: ["status", "capabilities", "tasks", "payments"],
         }),
-      requestToWork: async () =>
-        await entity.sendMessage(multiaddress, {
+      requestToWork: async (): Promise<
+        readonly [RequestToWorkResponse | null, Error | null]
+      > => {
+        const [response, error] = await entity.sendMessage(multiaddress, {
           requestToWork: {
             timestamp: Math.floor(Date.now() / 1000),
             recipient,
@@ -234,7 +238,10 @@ export const createWorker = async ({
             capabilities: capabilities.join(","),
             accessCode,
           },
-        }),
+        });
+
+        return [response ?? null, error];
+      },
     });
 
     if (error) {
