@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Effect AI - Lyric Verification</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+
+  <style>
+    .lyrics-text {
+      font-size: 1.25rem;
+      line-height: 1.6;
+    }
+
+    textarea.lyrics-text {
+      resize: none;
+      overflow: hidden;
+      min-height: 3.5em;
+    }
+
+    .segment-card {
+      cursor: pointer;
+    }
+
+    .segment-card.is-active {
+      border: 2px solid #3273dc !important;
+    }
+
+    .segment-card.has-warnings {
+      border: 2px solid #f14668;
+      background-color: #feecf0;
+    }
+
+    .segment-card.has-gap-warning {
+      border: 2px solid #ffdd57;
+      background-color: #fffbeb;
+    }
+
+    .warning-tag {
+      font-size: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .time-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #363636;
+      margin-bottom: 0.25rem;
+    }
+
+    .segment-times input {
+      width: 70px;
+      font-size: 1rem;
+    }
+
+    .current-time {
+      font-family: monospace;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #3273dc;
+    }
+
+    .segment-controls {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .time-inputs-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .time-input-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .current-time-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .delete-btn {
+      min-width: 36px;
+      height: 36px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-left: auto;
+    }
+
+    .desktop-layout {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .mobile-layout {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .lyrics-text {
+        font-size: 1rem;
+      }
+
+      textarea.lyrics-text {
+        min-height: 6em;
+      }
+
+      .segment-times input {
+        width: 80px;
+        font-size: 0.95rem;
+      }
+
+      .current-time {
+        font-size: 0.95rem;
+      }
+
+      .desktop-layout {
+        display: none;
+      }
+
+      .mobile-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .mobile-timestamps {
+        display: flex;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .mobile-current-time {
+        width: 100%;
+      }
+
+      .mobile-delete {
+        width: 100%;
+      }
+
+      .button.is-small {
+        font-size: 0.75rem;
+      }
+
+      .warning-tag {
+        font-size: 0.65rem;
+      }
+
+      .delete-btn {
+        height: 40px;
+        font-size: 1.1rem;
+        width: 100%;
+        margin-left: 0;
+      }
+
+      .mobile-stack {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+      }
+
+      .mobile-full-width {
+        width: 100% !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div id="app" class="section">
+  <div class="container">
+
+    <h1 class="title is-4">{{ title }}</h1>
+
+    <!-- Loading -->
+    <div v-if="loading" class="box has-text-centered mb-3">
+      Loading audio…
+      <progress class="progress is-primary" max="100" :value="loadProgress"></progress>
+    </div>
+
+    <!-- Waveform -->
+    <div id="waveform" v-show="!loading" class="mb-4"></div>
+
+    <!-- Live lyrics panel -->
+    <div class="box mb-5" v-show="!loading">
+      <div class="columns is-mobile is-vcentered mb-3 mobile-stack">
+        <div class="column is-narrow mobile-full-width">
+          <button class="button is-link is-light mobile-full-width" @click="toggleLivePlay">
+            {{ isPlaying ? "⏸ Pause" : "▶ Play" }}
+          </button>
+        </div>
+
+        <div class="column is-narrow mobile-full-width">
+          <button
+            class="button is-primary is-light mobile-full-width"
+            :class="{ 'is-small': isMobile }"
+            @click="addSection"
+          >
+            ➕ Add Section
+          </button>
+        </div>
+
+        <div class="column is-narrow mobile-full-width" style="display: flex; gap: 8px;">
+          <button class="button is-light is-small" @click="prevSegment" style="flex: 1;">
+            ⟵ Prev
+          </button>
+          <button class="button is-light is-small" @click="nextSegment" style="flex: 1;">
+            Next ⟶
+          </button>
+        </div>
+
+        <div class="column mobile-full-width">
+          <span class="current-time">Current: {{ formatTime(currentTime) }}</span>
+        </div>
+      </div>
+
+      <div class="columns is-mobile mb-3">
+        <div class="column">
+          <div class="time-label">Start</div>
+          <input class="input" type="number" step="0.01" v-model.number="liveStart" />
+        </div>
+
+        <div class="column">
+          <div class="time-label">End</div>
+          <input class="input" type="number" step="0.01" v-model.number="liveEnd" />
+        </div>
+      </div>
+
+      <textarea
+        class="textarea lyrics-text"
+        rows="2"
+        v-model="liveLyrics"
+        placeholder="Edit current lyrics"
+        @input="autoResize($event)"
+      ></textarea>
+    </div>
+
+    <!-- Segment cards -->
+    <div
+      v-show="!loading"
+      v-for="(seg, i) in segments"
+      :key="i"
+      class="card mb-4 segment-card"
+      :class="{ 
+        'is-active': i === currentIndex, 
+        'has-warnings': seg.hasOverlap,
+        'has-gap-warning': seg.hasGap && !seg.hasOverlap
+      }"
+      @click="playSegmentDirect(i)"
+    >
+      <div class="card-content">
+
+        <!-- Warning tags -->
+        <div v-if="seg.warnings && seg.warnings.length > 0" class="mb-3">
+          <span 
+            v-for="(warning, wi) in seg.warnings" 
+            :key="wi" 
+            class="tag is-danger is-light warning-tag mr-2"
+          >
+            ⚠️ {{ warning }}
+          </span>
+        </div>
+
+        <!-- Desktop Layout -->
+        <div class="desktop-layout mb-2">
+          <!-- Play button -->
+          <button class="button is-small is-link" @click.stop="toggleSegmentPlay(i)">
+            {{ isPlaying && currentIndex === i ? "⏸" : "▶" }}
+          </button>
+
+          <!-- Time inputs group -->
+          <div class="time-inputs-group">
+            <div class="time-input-wrapper">
+              <div class="time-label">Start</div>
+              <input 
+                class="input is-small"
+                type="number" 
+                step="0.01" 
+                v-model.number="seg.start"
+                @input="onSegmentEdit"
+                style="width: 80px;"
+              />
+            </div>
+
+            <div class="time-input-wrapper">
+              <div class="time-label">End</div>
+              <input 
+                class="input is-small"
+                type="number" 
+                step="0.01" 
+                v-model.number="seg.end"
+                @input="onSegmentEdit"
+                style="width: 80px;"
+              />
+            </div>
+            
+            <div class="current-time-wrapper">
+              <div class="time-label">Current</div>
+              <span class="current-time">{{ formatTime(currentTime) }}</span>
+            </div>
+          </div>
+
+          <!-- Delete button -->
+          <button 
+            class="button is-small is-danger is-light delete-btn" 
+            @click.stop="deleteSegment(i)"
+            title="Delete this segment"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Mobile Layout -->
+        <div class="mobile-layout mb-2">
+          <!-- Play button -->
+          <button class="button is-small is-link" @click.stop="toggleSegmentPlay(i)" style="width: 100%;">
+            {{ isPlaying && currentIndex === i ? "⏸ Pause" : "▶ Play" }}
+          </button>
+
+          <!-- Start/End timestamps -->
+          <div class="mobile-timestamps">
+            <div class="time-input-wrapper" style="flex: 1;">
+              <div class="time-label">Start</div>
+              <input 
+                class="input is-small"
+                type="number" 
+                step="0.01" 
+                v-model.number="seg.start"
+                @input="onSegmentEdit"
+                style="width: 100%;"
+              />
+            </div>
+
+            <div class="time-input-wrapper" style="flex: 1;">
+              <div class="time-label">End</div>
+              <input 
+                class="input is-small"
+                type="number" 
+                step="0.01" 
+                v-model.number="seg.end"
+                @input="onSegmentEdit"
+                style="width: 100%;"
+              />
+            </div>
+          </div>
+
+          <!-- Current time -->
+          <div class="mobile-current-time">
+            <div class="time-label">Current</div>
+            <span class="current-time">{{ formatTime(currentTime) }}</span>
+          </div>
+        </div>
+
+        <textarea
+          class="textarea lyrics-text"
+          rows="2"
+          v-model="seg.lyrics"
+          @focus="currentIndex = i"
+          @input="autoResize($event); onSegmentEdit()"
+        ></textarea>
+
+        <!-- Mobile delete button (appears after textarea) -->
+        <div class="mobile-layout mt-2">
+          <button 
+            class="button is-small is-danger is-light delete-btn" 
+            @click.stop="deleteSegment(i)"
+            title="Delete this segment"
+          >
+            ✕ Delete Segment
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Submit Section -->
+    <div class="has-text-centered mt-5" v-show="!loading">
+      <p v-if="hasRedWarnings()" class="has-text-danger mb-3">
+        ⚠️ Please resolve all overlap warnings before submitting
+      </p>
+      
+      <div class="field mb-4">
+        <label class="checkbox" style="font-size: 1.1rem;">
+          <input type="checkbox" v-model="confirmationChecked" class="mr-2">
+          I confirm I have checked the whole song and validated all lyrics
+        </label>
+      </div>
+      
+      <button
+        @click.prevent="uploadAndSubmit"
+        class="button is-success is-large"
+        :class="{'is-loading': btnLoading}"
+        :disabled="!canSubmit()"
+      >
+        Submit Verified Lyrics
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js";
+
+createApp({
+  data() {
+    return {
+      title: "Effect AI - Lyric Verification",
+      songSource: "${song_url}",
+      rawSegments: "${segments}",
+      jobID: "${jobID}",
+
+      segments: [],
+      currentIndex: -1,
+      isPlaying: false,
+
+      wavesurfer: null,
+      regionsPlugin: null,
+      loading: true,
+      loadProgress: 0,
+      btnLoading: false,
+
+      liveStart: null,
+      liveEnd: null,
+      liveLyrics: "",
+      isMobile: window.innerWidth <= 768,
+      currentTime: 0,
+      gapThreshold: 0.5, // seconds - gaps larger than this will be flagged
+      confirmationChecked: false,
+      instructions: `
+        <div>
+        <h2>Verify and Correct Song Lyrics with Timestamps</h2>
+
+        <p>
+            In this task, you will listen to a full song and verify that the provided lyric segments are accurate,
+            complete, and correctly aligned with the audio. The lyrics and timestamps shown 
+            <strong>may contain errors, gaps, or misalignments</strong>. Your work ensures the final output matches 
+            the song as closely as possible.
+        </p>
+
+        <h3>1. Your Objective</h3>
+        <p>
+            Review each lyric segment by listening to the song and comparing it to what you hear. You must:
+        </p>
+        <ul>
+            <li>Correct any incorrect, misspelled, or missing lyrics</li>
+            <li>Adjust timestamps so they align with when lyrics are actually sung</li>
+            <li>Add new segments for any missing sections of the song</li>
+            <li>Remove segments that are incorrect or unnecessary</li>
+            <li>Resolve all warnings before submitting</li>
+        </ul>
+
+        <h3>2. How to Use the Interface</h3>
+
+        <h4>Playing and Navigating</h4>
+        <ul>
+            <li>Use the <strong>Play/Pause</strong> button in the top panel to control playback</li>
+            <li>Click on any segment card to jump to that section of the song</li>
+            <li>Use <strong>Prev/Next</strong> buttons to move between segments</li>
+            <li>The waveform shows visual markers for each segment (blue = good, yellow = gap, red = overlap)</li>
+            <li>The currently playing segment is highlighted with a <strong>blue border</strong></li>
+        </ul>
+
+        <h4>Editing Segments</h4>
+        <ul>
+            <li><strong>Start/End times:</strong> Adjust these numbers to match when the lyrics are sung. You can type directly or use the up/down arrows</li>
+            <li><strong>Lyrics text:</strong> Edit the text to match exactly what you hear in the song</li>
+            <li><strong>Current time:</strong> Shows where you are in the song playback - use this to help set accurate timestamps</li>
+            <li>The top panel shows the currently selected segment for quick editing</li>
+        </ul>
+
+        <h4>Adding New Segments</h4>
+        <ul>
+            <li>Click <strong>"+ Add Section"</strong> to create a new lyric segment at the current playback position</li>
+            <li>The new segment will automatically appear in the correct chronological position</li>
+            <li>Set the start/end times and enter the lyrics for that section</li>
+        </ul>
+
+        <h4>Deleting Segments</h4>
+        <ul>
+            <li>Click the <strong>✕</strong> button on any segment to remove it</li>
+            <li>Only delete segments that are clearly wrong or duplicate</li>
+        </ul>
+
+        <h3>3. Understanding Warnings</h3>
+
+        <h4>⚠️ Empty lyrics - please add text</h4>
+        <p>This segment has no lyrics entered. Either add the lyrics or delete the segment if it's not needed.</p>
+
+        <h4>⚠️ Gap of X.XXs before next segment (Yellow highlight)</h4>
+        <p>
+            There is a time gap between this segment and the next one. If lyrics are being sung during this gap, 
+            add a new segment. If the song is instrumental or silent during this time, you can ignore this warning.
+        </p>
+
+        <h4>⚠️ Overlaps with next/previous segment (Red highlight)</h4>
+        <p>
+            This segment's timestamps overlap with another segment. Adjust the start/end times so segments 
+            don't overlap - each moment in the song should belong to only one segment.
+        </p>
+
+        <h4>⚠️ End time must be after start time</h4>
+        <p>The end timestamp is before or equal to the start timestamp. Fix the timestamps so end comes after start.</p>
+
+        <h3>4. Lyric Guidelines</h3>
+
+        <h4>What to Include</h4>
+        <ul>
+            <li>Write exactly what you hear - don't guess or assume</li>
+            <li>Keep artistic pronunciation (e.g., "'cause" not "because" if that's what's sung)</li>
+            <li>Use proper spelling, grammar, and capitalization</li>
+            <li>Include repeated words/phrases if they're actually sung</li>
+        </ul>
+
+        <h4>Special Cases</h4>
+        <ul>
+            <li><strong>[inaudible]</strong> - Use this if lyrics are muffled or unclear and you can't make out the words</li>
+            <li><strong>[music]</strong> or leave empty - Use for instrumental sections with no vocals</li>
+            <li>Background vocals can be included in parentheses if clearly audible: "(oh yeah)"</li>
+        </ul>
+
+        <h4>What NOT to Do</h4>
+        <ul>
+            <li>Don't add words that aren't actually sung</li>
+            <li>Don't "correct" intentional stylistic choices in pronunciation</li>
+            <li>Don't include emojis, special characters, or personal information</li>
+            <li>Don't leave obvious spelling errors from the AI transcription</li>
+        </ul>
+
+        <h3>5. Quality Checklist Before Submitting</h3>
+        <ul>
+            <li>✓ I've listened to the entire song</li>
+            <li>✓ All lyrics accurately match what is sung</li>
+            <li>✓ Timestamps are reasonably aligned (within ~0.5 seconds)</li>
+            <li>✓ No large gaps in coverage unless the song is instrumental</li>
+            <li>✓ All warning messages are resolved or confirmed as acceptable</li>
+            <li>✓ No overlapping segments</li>
+            <li>✓ No empty lyric fields (unless intentionally marking instrumental sections)</li>
+        </ul>
+
+        <h3>6. Tips for Success</h3>
+        <ul>
+            <li>Listen to each segment multiple times if needed - accuracy matters more than speed</li>
+            <li>Use the visual waveform to spot gaps and overlaps quickly</li>
+            <li>Start from the beginning and work through systematically</li>
+            <li>Pay attention to the color coding: yellow = gaps to review, red = overlaps to fix</li>
+            <li>The current time display helps you set precise timestamps</li>
+        </ul>
+
+        <p>
+            <strong>Your careful work helps create high-quality lyric datasets.</strong> 
+            Take your time to ensure accuracy - it's okay if some sections have no vocals, 
+            but all sung lyrics should be captured and correctly timestamped.
+        </p>
+
+        <p>Thank you for your attention to detail!</p>
+        </div>
+        `
+    };
+  },
+
+  async mounted() {
+
+    window.top.postMessage(
+      {
+        type: 'task-instructions',
+        instructions: this.instructions
+      },
+    "*"
+    );
+
+    this.segments = JSON.parse(this.rawSegments).map(seg => ({
+      start: Number(seg.start),
+      end: Number(seg.end),
+      lyrics: seg.lyrics || "",
+      warnings: [],
+      hasOverlap: false,
+      hasGap: false
+    })) || [];
+
+    // Initialize live panel with first segment if available
+    if (this.segments.length > 0) {
+      this.currentIndex = 0;
+      const firstSeg = this.segments[0];
+      this.liveStart = firstSeg.start;
+      this.liveEnd = firstSeg.end;
+      this.liveLyrics = firstSeg.lyrics;
+    }
+
+    // Import RegionsPlugin
+    let RegionsPlugin = null;
+    try {
+      const module = await import("https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.esm.js");
+      RegionsPlugin = module.default;
+    } catch (e) {
+      console.warn("RegionsPlugin not available:", e);
+    }
+
+    this.regionsPlugin = RegionsPlugin ? RegionsPlugin.create() : null;
+
+    this.wavesurfer = WaveSurfer.create({
+      container: "#waveform",
+      waveColor: "#ddd",
+      progressColor: "#4f46e5",
+      height: 90,
+      url: this.songSource,
+      plugins: this.regionsPlugin ? [this.regionsPlugin] : []
+    });
+
+    this.wavesurfer.on("loading", p => this.loadProgress = p);
+
+    this.wavesurfer.on("ready", () => {
+      this.loading = false;
+      this.validateAllSegments();
+      this.refreshRegions();
+    });
+
+    this.wavesurfer.on("audioprocess", time => {
+      this.currentTime = time;
+      const idx = this.segments.findIndex(
+        s => time >= s.start && time < s.end
+      );
+      if (idx !== -1) this.currentIndex = idx;
+      this.isPlaying = this.wavesurfer.isPlaying();
+    });
+
+    this.wavesurfer.on("timeupdate", time => {
+      this.currentTime = time;
+    });
+
+    window.addEventListener("resize", () => {
+      this.isMobile = window.innerWidth <= 768;
+    });
+  },
+
+  methods: {
+    autoResize(e) {
+      e.target.style.height = "auto";
+      e.target.style.height = e.target.scrollHeight + "px";
+    },
+
+    formatTime(seconds) {
+      if (seconds === undefined || isNaN(seconds)) return "--.--";
+      return seconds.toFixed(2);
+    },
+
+    toggleLivePlay() {
+      if (this.wavesurfer.isPlaying()) {
+        this.wavesurfer.pause();
+        this.isPlaying = false;
+      } else {
+        if (this.currentIndex !== -1) {
+          this.wavesurfer.seekTo(
+            this.segments[this.currentIndex].start /
+            this.wavesurfer.getDuration()
+          );
+        }
+        this.wavesurfer.play();
+        this.isPlaying = true;
+      }
+    },
+
+    toggleSegmentPlay(index) {
+      if (this.currentIndex === index && this.wavesurfer.isPlaying()) {
+        this.wavesurfer.pause();
+        this.isPlaying = false;
+        return;
+      }
+      this.playSegmentDirect(index);
+    },
+
+    playSegmentDirect(index) {
+      const seg = this.segments[index];
+      this.wavesurfer.seekTo(seg.start / this.wavesurfer.getDuration());
+      this.wavesurfer.play();
+      this.currentIndex = index;
+      this.isPlaying = true;
+    },
+
+    prevSegment() {
+      if (this.currentIndex > 0) {
+        this.playSegmentDirect(this.currentIndex - 1);
+      }
+    },
+
+    nextSegment() {
+      if (this.currentIndex < this.segments.length - 1) {
+        this.playSegmentDirect(this.currentIndex + 1);
+      }
+    },
+
+    addSection() {
+      const t = this.wavesurfer.getCurrentTime();
+      const newSegment = { start: t, end: t + 2, lyrics: "", warnings: [], hasOverlap: false, hasGap: false };
+      
+      // Find the correct position to insert based on start time
+      let insertIndex = this.segments.findIndex(seg => seg.start > t);
+      
+      if (insertIndex === -1) {
+        // If no segment starts after current time, add to end
+        this.segments.push(newSegment);
+        insertIndex = this.segments.length - 1;
+      } else {
+        // Insert before the segment that starts after current time
+        this.segments.splice(insertIndex, 0, newSegment);
+        // Update currentIndex if needed
+        if (this.currentIndex >= insertIndex) {
+          this.currentIndex++;
+        }
+      }
+      
+      this.validateAllSegments();
+      this.refreshRegions();
+      
+      // Set the newly added segment as current
+      this.currentIndex = insertIndex;
+      
+      // Scroll to the newly added segment after DOM update
+      this.$nextTick(() => {
+        const cards = document.querySelectorAll('.segment-card');
+        if (cards[insertIndex]) {
+          cards[insertIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Focus on the textarea
+          const textarea = cards[insertIndex].querySelector('textarea');
+          if (textarea) {
+            setTimeout(() => textarea.focus(), 300);
+          }
+        }
+      });
+    },
+
+    deleteSegment(index) {
+      this.segments.splice(index, 1);
+      if (this.currentIndex === index) {
+        this.currentIndex = -1;
+      } else if (this.currentIndex > index) {
+        this.currentIndex--;
+      }
+      this.validateAllSegments();
+      this.refreshRegions();
+    },
+
+    validateAllSegments() {
+      // Clear all warnings first
+      this.segments.forEach(seg => {
+        seg.warnings = [];
+        seg.hasOverlap = false;
+        seg.hasGap = false;
+      });
+
+      // Sort segments by start time for validation
+      const sorted = [...this.segments].sort((a, b) => a.start - b.start);
+
+      sorted.forEach((seg, i) => {
+        const originalIndex = this.segments.indexOf(seg);
+
+        // Check for empty lyrics
+        if (!seg.lyrics || seg.lyrics.trim() === "") {
+          seg.warnings.push("Empty lyrics - please add text");
+        }
+
+        // Check for invalid time range
+        if (seg.end <= seg.start) {
+          seg.warnings.push("End time must be after start time");
+        }
+
+        // Check for overlap with next segment
+        if (i < sorted.length - 1) {
+          const nextSeg = sorted[i + 1];
+          const segEnd = Number(seg.end);
+          const nextStart = Number(nextSeg.start);
+          
+          if (!isNaN(segEnd) && !isNaN(nextStart) && segEnd > nextStart) {
+            seg.warnings.push("Overlaps with next segment");
+            seg.hasOverlap = true;
+            const nextOriginalIndex = this.segments.indexOf(nextSeg);
+            if (!nextSeg.warnings.includes("Overlaps with previous segment")) {
+              nextSeg.warnings.push("Overlaps with previous segment");
+              nextSeg.hasOverlap = true;
+            }
+          }
+
+          // Check for gaps between segments
+          const gap = Number(nextSeg.start) - Number(seg.end);
+          if (!isNaN(gap) && gap > this.gapThreshold) {
+            // seg.warnings.push(`Gap of ${gap.toFixed(2)}s before next segment`);
+            seg.warnings.push(`Gap before next segment`);
+            seg.hasGap = true;
+          }
+        }
+      });
+    },
+
+    refreshRegions() {
+      if (!this.regionsPlugin) return;
+
+      // Clear existing regions
+      this.regionsPlugin.clearRegions();
+
+      // Sort segments by start time
+      const sorted = [...this.segments].sort((a, b) => a.start - b.start);
+
+      sorted.forEach((seg, i) => {
+        // Determine color based on warnings
+        let color = 'rgba(50, 115, 220, 0.15)'; // blue - no warnings
+        if (seg.hasOverlap) {
+          color = 'rgba(241, 70, 104, 0.3)'; // red - overlap
+        } else if (seg.hasGap) {
+          color = 'rgba(255, 221, 87, 0.3)'; // yellow - gap
+        }
+
+        // Add region for the segment
+        this.regionsPlugin.addRegion({
+          id: `segment-${i}`,
+          start: seg.start,
+          end: seg.end,
+          color: color,
+          drag: false,
+          resize: false
+        });
+
+        // Add visual gap indicator if there's a gap to the next segment
+        if (i < sorted.length - 1) {
+          const nextSeg = sorted[i + 1];
+          const gap = nextSeg.start - seg.end;
+          
+          if (gap > this.gapThreshold) {
+            // Add yellow region for the gap
+            this.regionsPlugin.addRegion({
+              id: `gap-${i}`,
+              start: seg.end,
+              end: nextSeg.start,
+              color: 'rgba(255, 221, 87, 0.5)', // yellow for gap
+              drag: false,
+              resize: false
+            });
+          } else if (seg.end > nextSeg.start) {
+            // Add red region for overlap
+            this.regionsPlugin.addRegion({
+              id: `overlap-${i}`,
+              start: nextSeg.start,
+              end: seg.end,
+              color: 'rgba(241, 70, 104, 0.6)', // red for overlap
+              drag: false,
+              resize: false
+            });
+          }
+        }
+      });
+    },
+
+    onSegmentEdit() {
+      this.validateAllSegments();
+      this.refreshRegions();
+    },
+
+    hasAnyWarnings() {
+      return this.segments.some(seg => 
+        seg.warnings && seg.warnings.length > 0
+      );
+    },
+
+    hasRedWarnings() {
+      return this.segments.some(seg => seg.hasOverlap);
+    },
+
+    canSubmit() {
+      return this.confirmationChecked && !this.hasRedWarnings();
+    },
+
+    async uploadAndSubmit() {
+      if (!this.confirmationChecked) {
+        alert("Please confirm that you have checked the whole song and validated all lyrics.");
+        return;
+      }
+
+      if (this.hasRedWarnings()) {
+        alert("Please resolve all overlap warnings (red highlights) before submitting.");
+        return;
+      }
+
+      this.btnLoading = true;
+
+      try {
+        parent.postMessage({
+          task: "submit",
+          values: {
+            taskTitle: this.title,
+            answer: {
+              jobID: this.jobID,
+              song: this.songSource,
+              verifiedLyrics: this.segments.map(seg => ({
+                start: Number(seg.start.toFixed(2)),
+                end: Number(seg.end.toFixed(2)),
+                lyrics: (seg.lyrics || "").trim()
+              }))
+            }
+          }
+        }, "*");
+      } catch (error) {
+        console.error("Failed to submit:", error);
+        alert("Submission failed. Please try again.");
+      }
+
+      this.btnLoading = false;
+    }
+  },
+
+  watch: {
+    currentIndex(idx) {
+      if (idx === -1) return;
+      const seg = this.segments[idx];
+      this.liveStart = seg.start;
+      this.liveEnd = seg.end;
+      this.liveLyrics = seg.lyrics;
+    },
+
+    liveStart(v) {
+      if (this.currentIndex !== -1) {
+        this.segments[this.currentIndex].start = v;
+        this.onSegmentEdit();
+      }
+    },
+
+    liveEnd(v) {
+      if (this.currentIndex !== -1) {
+        this.segments[this.currentIndex].end = v;
+        this.onSegmentEdit();
+      }
+    },
+
+    liveLyrics(v) {
+      if (this.currentIndex !== -1) {
+        this.segments[this.currentIndex].lyrics = v;
+        this.onSegmentEdit();
+      }
+    }
+  }
+}).mount("#app");
+</script>
+</body>
+</html>

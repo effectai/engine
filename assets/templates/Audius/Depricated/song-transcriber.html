@@ -1,0 +1,398 @@
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css"/>
+<link href="https://app.effect.network/force-defaults.css" rel="stylesheet"/>
+
+<style> 
+  @media (max-width: 1080px) {
+    .mobile-card {
+      flex-direction: column-reverse !important;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .mobile-card2 {
+      flex-direction: column-reverse !important;
+    }
+  }
+
+  .insert-divider {
+    display: flex;
+    justify-content: center;
+    margin: 6px 0 12px;
+  }
+</style>
+
+<div id="app" style="text-align: center">
+  <h1 class="title is-3">Effect AI - Lyric Verification</h1>
+  <p class="subtitle is-6">Listen to the full song and verify all transcribed lyrics</p>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
+    <div class="box">
+      <div v-if="loading" class="has-text-centered mb-2">
+        Loading audio...
+        <progress class="progress is-primary" max="100" :value="loadProgress"></progress>
+      </div>
+      <div id="waveform" v-show="!loading"></div>
+    </div>
+
+    <div v-show="!loading" class="mt-4">
+
+      <template v-for="(seg, index) in parsedSegments" :key="index">
+
+        <div
+          class="p-3 mb-2 has-text-left box"
+          :class="{'has-background-link-light': isActiveSegment(seg)}"
+        >
+
+          <div class="mobile-card is-flex is-justify-content-space-between is-align-items-center mb-2" style="gap: 30px;">
+            <div class="mobile-card2 is-flex is-align-items-center" style="gap: 8px;">
+              <div>
+                <input
+                  type="number"
+                  step="0.01"
+                  class="input is-small"
+                  style="width: 95px"
+                  v-model.number="seg.start"
+                  @change="onTimestampChange(seg, index)"
+                  @dblclick="snapStart(seg)"
+                />
+
+                <span class="mx-1">→</span>
+
+                <input
+                  type="number"
+                  step="0.01"
+                  class="input is-small"
+                  style="width: 95px"
+                  v-model.number="seg.end"
+                  @change="onTimestampChange(seg, index)"
+                  @dblclick="snapEnd(seg)"
+                />
+              </div>
+
+              <span>
+                Current Playback:
+                {{ formatSecondsMs(
+                  seg.currentPlayTime !== undefined
+                    ? seg.currentPlayTime
+                    : (isActiveSegment(seg) ? currentTime : seg.start)
+                ) }}
+              </span>
+            </div>
+
+            <div class="mobile-card2 is-flex is-align-items-center" style="gap: 8px;">
+
+              <div v-if="isActiveSegment(seg)" class="tag is-link">Now Playing</div>
+
+              <button
+                v-if="isActiveSegment(seg)"
+                class="button is-small is-link is-light"
+                @click="playFull"
+              >
+                ▶ / ❚❚
+              </button>
+
+              <button
+                class="button is-small is-success is-light"
+                @click="playRegion(index)"
+              >
+                ▶ Play Region
+              </button>
+
+              <div>
+                <button @click="changePlaySpeed(0.5)" class="button is-small mx-1">0.5x</button>
+                <button @click="changePlaySpeed(1)" class="button is-small mx-1">1x</button>
+                <button @click="changePlaySpeed(2)" class="button is-small mx-1">2x</button>
+              </div>
+
+            </div>
+          </div>
+
+          <div v-if="seg.warnings && seg.warnings.length" class="mb-2">
+            <div v-for="(w, wi) in seg.warnings" :key="wi" class="notification is-warning is-light py-2">
+              {{ w }}
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div
+                style="flex:1; height:8px; background:#eee; border-radius:4px; position:relative; overflow:hidden; cursor:pointer"
+                @click="seekToSegmentPosition(index, $event)"
+              >
+                <div
+                  :style="{
+                    width: segmentProgress(seg) + '%',
+                    height: '100%',
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    background: 'rgba(79,70,229,0.65)'
+                  }"
+                ></div>
+              </div>
+
+              <div style="min-width:70px; text-align:right; font-size:0.9rem;">
+                {{ formatSecondsMs(
+                  seg.currentPlayTime !== undefined
+                    ? seg.currentPlayTime
+                    : (isActiveSegment(seg) ? currentTime : seg.start)
+                ) }}
+              </div>
+            </div>
+          </div>
+
+          <textarea
+            v-model="seg.lyrics"
+            class="textarea mt-2"
+            rows="2"
+            placeholder="Edit or confirm this lyric section..."
+          ></textarea>
+        </div>
+
+        <div
+          v-if="index < parsedSegments.length - 1"
+          class="insert-divider"
+        >
+          <button
+            class="button is-small is-light"
+            title="Insert lyric section here"
+            @click="insertSegmentAfter(index)"
+          >
+            ＋
+          </button>
+        </div>
+
+      </template>
+    </div>
+
+    <p style="color: red;" :class="{ 'is-hidden mb-3': !hasAnyWarnings() }">
+      Task incomplete - Please resolve all warnings before submitting.
+    </p>
+
+    <button
+      v-show="!loading"
+      @click.prevent="uploadAndSubmit"
+      class="button is-success is-large mt-4"
+      :class="{'is-loading': btnLoading}"
+    >
+      Submit Verified Lyrics
+    </button>
+  </div>
+
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+    import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js";
+    import RegionsPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.esm.js";
+
+    createApp({
+      data() {
+        return {
+          songSource: "${song_url}",
+          jobID: "${jobID}",
+          rawSegments: "${segments}",
+          title: "Effect AI - Lyric Verification",
+          parsedSegments: [],
+          wavesurfer: null,
+          regionsPlugin: null,
+          currentTime: 0,
+          currentSegment: null,
+          loadProgress: 0,
+          loading: true,
+          btnLoading: false,
+          playbackRate: 1,
+          playingIndex: null,
+          minSegmentDuration: 0.12
+        };
+      },
+
+      mounted() {
+        this.parsedSegments = JSON.parse(this.rawSegments).map(s => ({
+          ...s,
+          warnings: [],
+          currentPlayTime: undefined
+        }));
+
+        this.regionsPlugin = RegionsPlugin.create();
+
+        this.wavesurfer = WaveSurfer.create({
+          container: "#waveform",
+          waveColor: "#ddd",
+          progressColor: "#4f46e5",
+          height: 100,
+          url: this.songSource,
+          plugins: [this.regionsPlugin]
+        });
+
+        this.wavesurfer.on("loading", p => this.loadProgress = p);
+
+        this.wavesurfer.on("ready", () => {
+          this.loading = false;
+          this.refreshRegions();
+        });
+
+        this.wavesurfer.on("audioprocess", time => {
+          this.currentTime = time;
+
+          this.currentSegment =
+            this.parsedSegments.find(s => time >= s.start && time <= s.end) || null;
+
+          this.parsedSegments.forEach(seg => {
+            seg.currentPlayTime =
+              time >= seg.start && time <= seg.end ? time : undefined;
+          });
+
+          if (this.playingIndex !== null) {
+            const seg = this.parsedSegments[this.playingIndex];
+            if (seg && time >= seg.end) {
+              this.wavesurfer.pause();
+              this.playingIndex = null;
+            }
+          }
+        });
+      },
+
+      methods: {
+        insertSegmentAfter(index) {
+          const cur = this.parsedSegments[index];
+          const next = this.parsedSegments[index + 1];
+
+          let start;
+          if (next && next.start - cur.end >= this.minSegmentDuration * 2) {
+            start = (cur.end + next.start) / 2;
+          } else {
+            start = cur.end + 0.05;
+          }
+
+          const end = start + this.minSegmentDuration;
+
+          this.parsedSegments.splice(index + 1, 0, {
+            start: Number(start.toFixed(2)),
+            end: Number(end.toFixed(2)),
+            lyrics: "",
+            warnings: [],
+            currentPlayTime: undefined
+          });
+
+          this.checkOverlaps();
+          this.refreshRegions();
+        },
+
+        playFull() {
+          this.wavesurfer.playPause();
+        },
+
+        changePlaySpeed(rate) {
+          this.playbackRate = rate;
+          this.wavesurfer.setPlaybackRate(rate, true);
+        },
+
+        playRegion(index) {
+          const seg = this.parsedSegments[index];
+          const pct = seg.start / this.wavesurfer.getDuration();
+          this.wavesurfer.seekTo(pct);
+          this.playingIndex = index;
+          this.wavesurfer.play();
+        },
+
+        hasAnyWarnings() {
+          return this.parsedSegments.some(s => s.warnings.length);
+        },
+
+        refreshRegions() {
+          const regions = this.wavesurfer.getActivePlugins().regions;
+          regions.clearRegions();
+
+          this.parsedSegments.forEach((seg, i) => {
+            regions.addRegion({
+              id: "seg-" + i,
+              start: seg.start,
+              end: seg.end,
+              color: "rgba(79,70,229,0.12)",
+              drag: false,
+              resize: false
+            });
+          });
+        },
+
+        checkOverlaps() {
+          this.parsedSegments.forEach(s => {
+            s.warnings = s.warnings.filter(w => !w.includes("Overlap"));
+          });
+
+          for (let i = 0; i < this.parsedSegments.length - 1; i++) {
+            if (this.parsedSegments[i].end > this.parsedSegments[i + 1].start) {
+              this.parsedSegments[i].warnings.push("Overlap detected with next segment.");
+              this.parsedSegments[i + 1].warnings.push("Overlap detected with previous segment.");
+            }
+          }
+        },
+
+        segmentProgress(seg) {
+          const dur = Math.max(this.minSegmentDuration, seg.end - seg.start);
+          const t = seg.currentPlayTime ?? seg.start;
+          return ((Math.min(seg.end, Math.max(seg.start, t)) - seg.start) / dur) * 100;
+        },
+
+        seekToSegmentPosition(index, event) {
+          const seg = this.parsedSegments[index];
+          const rect = event.currentTarget.getBoundingClientRect();
+          const pct = (event.clientX - rect.left) / rect.width;
+          const target = seg.start + pct * (seg.end - seg.start);
+          this.wavesurfer.seekTo(target / this.wavesurfer.getDuration());
+          this.playingIndex = null;
+        },
+
+        onTimestampChange(seg) {
+          seg.warnings = [];
+          if (seg.end <= seg.start) seg.warnings.push("End time must be after start.");
+          this.checkOverlaps();
+          this.refreshRegions();
+        },
+
+        snapStart(seg) {
+          seg.start = Number(this.currentTime.toFixed(2));
+          if (seg.end <= seg.start) seg.end = seg.start + this.minSegmentDuration;
+          this.checkOverlaps();
+          this.refreshRegions();
+        },
+
+        snapEnd(seg) {
+          seg.end = Number(this.currentTime.toFixed(2));
+          if (seg.end <= seg.start) seg.end = seg.start + this.minSegmentDuration;
+          this.checkOverlaps();
+          this.refreshRegions();
+        },
+
+        formatSecondsMs(v) {
+          return v === undefined ? "--.--" : v.toFixed(2);
+        },
+
+        isActiveSegment(seg) {
+          return this.currentSegment === seg;
+        },
+
+        uploadAndSubmit() {
+          if (this.hasAnyWarnings()) return;
+
+          parent.postMessage({
+            task: "submit",
+            values: {
+              taskTitle: this.title,
+              answer: {
+                jobID: this.jobID,
+                song: this.songSource,
+                verifiedLyrics: this.parsedSegments.map(s => ({
+                  start: Number(s.start.toFixed(2)),
+                  end: Number(s.end.toFixed(2)),
+                  lyrics: (s.lyrics || "").trim()
+                }))
+              }
+            }
+          }, "*");
+        }
+      }
+    }).mount("#app");
+  </script>
+</div>

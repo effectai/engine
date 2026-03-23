@@ -1,0 +1,352 @@
+<div id="app" style="text-align: center">
+    <h1 class="title is-3">Effect AI - Music Transcriber</h1>
+    <p class="subtitle is-6">Listen carefully and correct the lyrics below</p>
+    
+    <hr />
+
+    <div class="mx-auto" style="max-width: 80%">
+        <div class="">
+            <div id="waveform" v-show="!loading" style="height:0; overflow:hidden;"></div>
+        </div>
+
+        <div class="flex items-center justify-between w-full">
+            <div class="flex justify-between mb-3">
+                <button 
+                    @click="playRegion" 
+                    :disabled="!canPlayRegion"
+                    class="button mx-2"
+                    :class="{'is-link': canPlayRegion, 'is-light': !canPlayRegion}"
+                >
+                    {{ canPlayRegion ? '▶ Play Region' : 'Loading...' }}
+                </button>
+            </div>
+
+            <div class="flex items-center">
+                <p class="mb-1">Playback Speed: </p>
+                <button @click="changePlaySpeed(0.25)" class="button mx-2">0.25x</button>
+                <button @click="changePlaySpeed(0.5)" class="button mx-2">0.5x</button>
+                <button @click="changePlaySpeed(0.75)" class="button mx-2">0.75x</button>
+                <button @click="changePlaySpeed(1)" class="button mx-2">1x</button>
+            </div>
+        </div>
+        
+        <hr />
+
+        <!-- <div>
+            <button @click="isOpen = !isOpen" class="button">
+                {{ isOpen ? 'Hide Advanced Controls' : 'Show Advanced Controls' }}
+            </button>
+
+            <div v-show="isOpen" class="mt-2 p-3 border rounded bg-gray-50">
+                <button @click="resetEQ()" class="button is-warning mb-1">Reset EQ</button>
+                <div id="eqSliders"></div>
+            </div>
+        </div> -->
+
+        <hr />
+
+        <div class="container">
+            <label class="label">Transcribed Lyrics</label>
+            <textarea
+                v-model="lyrics"
+                class="textarea"
+                rows="2"
+                placeholder="Edit the AI transcription here..."
+            ></textarea>
+        </div>
+
+        <button
+            @click.prevent="uploadAndSubmit"
+            class="button is-success is-large mt-4"
+            :class="{'is-loading': btnLoading}"
+        >
+            Submit
+        </button>
+    </div>
+
+    <!-- Hidden audio for early playback -->
+    <audio ref="preloadAudio" :src="songSource" preload="auto"></audio>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+<link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+<script type="module">
+import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js"
+import RegionsPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.esm.js"
+
+createApp({
+    data() {
+        return {
+            title: "Effect AI - Music Transcriber",
+            btnLoading: false,
+            isOpen: false,
+            songSource: "${song_url}",
+            lyrics: "${lyrics}",
+            allowedStart: parseFloat("${start}"),
+            allowedEnd: parseFloat("${end}"),
+            jobID: "${jobID}",
+            sliders: [],
+            filters: [],
+            replaySpeed: 1,
+            wavesurfer: null,
+            allowedRegion: null,
+            activeRegion: null,
+            loading: true,
+            loadProgress: 0,
+            isWaveformReady: false,
+            preloadAudio: null,
+            canPlayRegion: false, // controls if region button is enabled
+            instructions: `
+                <div>
+                    <h2>Validate Lyrics - Music Transcription</h2>
+                    <p>
+                        In this task, you'll be listening to a short music clip and reviewing an
+                        AI-generated rough transcription of its lyrics. Your job is to carefully
+                        compare what you hear with the provided text and correct any mistakes so
+                        that the final lyrics are accurate and easy to read.
+                    </p>
+
+                    <p>
+                        <strong>Note:</strong> 
+                        <ul>
+                            <li>
+                                If the lyrics are inaudible or muffled and you can't 
+                                make out what is being said for a part of or the entire region, please input 
+                                <strong>[inaudible]</strong> for that portion.
+                            </li>
+                            <li>
+                                If there is only music playing 
+                                with no sung or spoken words in a portion, please input <strong>[music]</strong> 
+                                for that portion.
+                            </li>
+                        </ul>
+                    </p>
+
+                    <h3>1. Instructions</h3>
+                    <p>
+                        Listen to the audio clip closely and check the transcription provided.
+                        Fix any errors in words, grammar, or phrasing so that the lyrics
+                        accurately reflect what is being sung. If the AI text is already correct,
+                        simply confirm it without changes.
+                    </p>
+
+                    <h4>Correction Guidelines</h4>
+                    <ul>
+                        <li>Write what you clearly hear in the audio, not what you assume.</li>
+                        <li>Keep spelling, grammar, and capitalization correct.</li>
+                        <li>Make sure the lyrics flow naturally as actual song lines.</li>
+                        <li>If the artist clearly pronounces a stylized word (e.g., "'cause" instead of "because"), keep it as is.</li>
+                        <li>Use plain English words only (no invented or nonsense text).</li>
+                        <li>If a word is unclear, mark it with <em>[inaudible]</em>.</li>
+                    </ul>
+
+                    <h4>What NOT to Include</h4>
+                    <ul>
+                        <li>Do not add extra words that aren't in the song.</li>
+                        <li>Do not “correct” artistic or stylistic choices in pronunciation.</li>
+                        <li>Do not change the meaning of the lyrics.</li>
+                        <li>Do not include numbers, emojis, or special characters.</li>
+                        <li>Do not include personal information (like names, emails, or addresses).</li>
+                    </ul>
+
+                    <h3>2. Examples</h3>
+                    <p><strong>✅ Corrected Lyrics</strong></p>
+                    <ul>
+                        <li>AI wrote: "I'm wal king in the rayn"<br/>
+                            Correction: "I'm walking in the rain"</li>
+                        <li>AI wrote: "Love is all wee need"<br/>
+                            Correction: "Love is all we need"</li>
+                        <li>AI wrote: "Because I love you"<br/>
+                            Artist sings: "'Cause I love you"<br/>
+                            Correction: "'Cause I love you"</li>
+                    </ul>
+
+                    <p><strong>❌ Incorrect Corrections</strong></p>
+                    <ul>
+                        <li>Changing words to make them rhyme if they weren't sung that way.</li>
+                        <li>“Correcting” stylized words like "'cause" → "because" when the audio clearly says "'cause."</li>
+                        <li>Adding guesses for missing words instead of marking <em>[inaudible]</em>.</li>
+                        <li>Leaving obvious spelling errors (e.g., "rayn").</li>
+                    </ul>
+
+                    <h3>3. Tips for Success</h3>
+                    <ul>
+                        <li>Play the audio more than once if you're unsure of a word.</li>
+                        <li>Trust your ears - don't rely only on the AI text.</li>
+                        <li>Keep corrections simple and focused on accuracy.</li>
+                    </ul>
+                </div>`
+        }
+    },
+    mounted() {
+
+        window.top.postMessage(
+            {
+            type: 'task-instructions',
+            instructions: this.instructions
+            },
+            "*"
+        );
+
+        this.preloadAudio = this.$refs.preloadAudio
+
+        this.preloadAudio.oncanplay = () => {
+            this.canPlayRegion = true // enable region button for preloaded audio
+        }
+
+        const eqBands = [125, 250, 500, 1000, 2000, 4000, 8000]
+        const regions = RegionsPlugin.create()
+
+        regions.on("region-clicked", (region, e) => {
+            e.stopPropagation()
+            this.playRegion()
+        })
+
+        this.wavesurfer = WaveSurfer.create({
+            container: "#waveform",
+            waveColor: "#ddd",
+            progressColor: "#4f46e5",
+            height: 80,
+            url: this.songSource,
+            plugins: [regions],
+        })
+
+        this.wavesurfer.on("loading", (percent) => {
+            this.loadProgress = percent
+        })
+
+        this.wavesurfer.on("ready", () => {
+            this.loading = false
+            this.isWaveformReady = true
+
+            // Stop any preloaded audio if still playing
+            if (!this.preloadAudio.paused) this.preloadAudio.pause()
+
+            const duration = this.wavesurfer.getDuration()
+            const regionStart = Math.max(0, this.allowedStart - 1)   // 1 second before
+            const regionEnd = Math.min(duration, this.allowedEnd + 1) // 1 second after
+
+            this.allowedRegion = this.wavesurfer.addRegion({
+                start: regionStart,
+                end: regionEnd,
+                color: "rgba(255, 0, 0, 0.3)",
+                drag: false,
+                resize: false,
+            })
+
+            this.canPlayRegion = true // now region button controls WaveSurfer
+        })
+
+        this.wavesurfer.on("audioprocess", () => {
+            if (this.activeRegion) {
+                const currentTime = this.wavesurfer.getCurrentTime()
+                if (currentTime >= this.activeRegion.end) {
+                    this.wavesurfer.pause()
+                    const position = this.activeRegion.start / this.wavesurfer.getDuration()
+                    this.wavesurfer.seekTo(position)
+                    this.activeRegion = null
+                }
+            }
+        })
+
+        const container = document.createElement('p')
+        this.sliders = eqBands.map(() => {
+            const slider = document.createElement('input')
+            slider.type = 'range'
+            slider.orient = 'vertical'
+            slider.style.appearance = 'slider-vertical'
+            slider.style.width = '8%'
+            slider.min = -40
+            slider.max = 20
+            slider.value = 0
+            slider.step = 0.1
+            container.appendChild(slider)
+            return slider
+        })
+        document.getElementById('eqSliders').appendChild(container)
+    },
+    methods: {
+        resetEQ() {
+            if (this.filters?.length && this.sliders?.length) {
+                this.filters.forEach(f => f.gain.value = 0)
+                this.sliders.forEach(s => s.value = 0)
+            }
+        },
+        changePlaySpeed(speed){
+            if (this.isWaveformReady) {
+                this.wavesurfer.setPlaybackRate(speed, true)
+            } else if (this.preloadAudio) {
+                this.preloadAudio.playbackRate = speed
+            }
+        },
+        playRegion() {
+            if (!this.canPlayRegion) return
+
+            // stop both sources first
+            if (!this.preloadAudio.paused) this.preloadAudio.pause()
+            if (this.isWaveformReady && this.wavesurfer.isPlaying()) this.wavesurfer.pause()
+
+            if (this.isWaveformReady && this.allowedRegion) {
+                this.activeRegion = this.allowedRegion
+                const position = this.allowedRegion.start / this.wavesurfer.getDuration()
+                this.wavesurfer.seekTo(position)
+                this.wavesurfer.play()
+            } else if (this.preloadAudio) {
+                this.preloadAudio.currentTime = this.allowedStart
+                this.preloadAudio.play()
+                const stopAt = this.allowedEnd
+                this.preloadAudio.ontimeupdate = () => {
+                    if (this.preloadAudio.currentTime >= stopAt) {
+                        this.preloadAudio.pause()
+                        this.preloadAudio.ontimeupdate = null
+                    }
+                }
+            }
+        },
+        playFull() {
+            if (this.isWaveformReady) {
+                if (!this.wavesurfer.isPlaying()) {
+                    if (!this.preloadAudio.paused) this.preloadAudio.pause()
+                    this.wavesurfer.play()
+                } else {
+                    this.wavesurfer.pause()
+                }
+            } else if (this.preloadAudio) {
+                if (this.preloadAudio.paused) {
+                    this.preloadAudio.play()
+                } else {
+                    this.preloadAudio.pause()
+                }
+            }
+        },
+        async uploadAndSubmit() {
+            this.btnLoading = true
+            if (!this.lyrics.trim()) {
+                this.btnLoading = false
+                return
+            }
+            try {
+                parent.postMessage({
+                    task: "submit",
+                    values: {
+                        taskTitle: this.title,
+                        answer: {
+                            jobID: this.jobID,
+                            song: this.songSource,
+                            allowedStart: this.allowedStart,
+                            allowedEnd: this.allowedEnd,
+                            aiLyrics: "${lyrics}",
+                            verifiedLyrics: this.lyrics,
+                        },
+                    },
+                }, "*")
+            } catch (error) {
+                console.error("Failed to upload", error)
+            }
+            this.btnLoading = false
+        },
+    },
+}).mount("#app")
+</script>
