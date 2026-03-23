@@ -73,11 +73,16 @@ const findTemplateFields = (html: string) => {
   const re = /\$\{([^}]+)\}/g;
   const matches: string[][] = [];
   let m;
-  do {
-    const m = re.exec(html);
-    if (m) matches.push(m.slice(0, 3));
-  } while (m);
-  return matches;
+  while ((m = re.exec(html))) {
+    matches.push(m.slice(0, 2));
+  }
+  // Deduplicate by field name
+  const seen = new Set<string>();
+  return matches.filter(([_, name]) => {
+    if (seen.has(name)) return false;
+    seen.add(name);
+    return true;
+  });
 };
 
 const form = (msg = "", values: Record<string, string> = {}): string => `
@@ -117,12 +122,11 @@ ${fields.map(
 <label for="f${name}">${name}</label>
 <input
   ${values[name] ? `value="${escapeHTML(values[name])}" ` : ""}
-  id="f${name}" name="${name}" type="text"></input>
+  id="f${name}" name="${name}" type="text">`,
+).join("")}
 <textarea style="display: none;" name="html">${escapeHTML(html)}</textarea>
 <button type="submit">Preview</button>
 </form>
-`,
-)}
 `;
 
 const templatePreviewFrame = async (
@@ -317,7 +321,7 @@ export const addTemplateRoutes = (app: Express): void => {
   width="100%"
   srcdoc="${escapeHTML(renderedTemplate)}"></iframe>
 
-${templateDataForm(escapeHTML(html), fields, req.body)}`);
+${templateDataForm(html, fields, req.body)}`);
   });
 
   app.post("/t/:id", requireAuth, async (req, res) => {
