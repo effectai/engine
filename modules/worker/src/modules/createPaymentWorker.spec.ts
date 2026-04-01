@@ -1,8 +1,10 @@
-import { beforeEach, describe, it, test, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPaymentWorker } from "./createPaymentWorker";
 import { createPaymentStore } from "@effectai/protocol-core";
 import { ulid } from "ulid";
 import { promises } from "node:fs";
+import { createDataStore } from "@effectai/test-utils";
+import type { Payment } from "@effectai/protobufs";
 
 describe("createPaymentWorker", async () => {
   let paymentWorker: ReturnType<typeof createPaymentWorker>;
@@ -34,13 +36,26 @@ describe("createPaymentWorker", async () => {
   it("tests worker payments", async () => {
     const n = 50;
     for (let i = 0; i < n; i++) {
-      console.log(i);
+      const payment: Payment = {
+        id: ulid(),
+        version: 1,
+        nonce: BigInt(i),
+        amount: 100n,
+        recipient: "recipient-test",
+        paymentAccount: "payment-account-test",
+        publicKey: "manager-public-key",
+        signature: {
+          R8: {
+            R8_1: "1",
+            R8_2: "2",
+          },
+          S: "3",
+        },
+      };
+
       await paymentWorker.createPayment({
         managerPeerId: "peer-testing-1",
-        payment: {
-          id: ulid(),
-          nonce: BigInt(i),
-        },
+        payment,
       });
     }
 
@@ -49,8 +64,6 @@ describe("createPaymentWorker", async () => {
       perPage: 10,
     });
 
-    result.items.map((item) => {
-      console.log(item.state);
-    });
+    expect(result.items.length).toBeGreaterThan(0);
   });
 });

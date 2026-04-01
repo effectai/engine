@@ -2,6 +2,7 @@ import { webRTC } from "@libp2p/webrtc";
 import { createPaymentWorker } from "./modules/createPaymentWorker.js";
 import { createTaskWorker } from "./modules/createTaskWorker.js";
 import { createWorkerTaskStore } from "./stores/workerTaskStore.js";
+import { createWorkerSyncStateStore } from "./stores/workerSyncStateStore.js";
 import { createTemplateWorker } from "./modules/createTemplateWorker.js";
 // import type { PingService } from "@libp2p/ping";
 
@@ -25,9 +26,13 @@ import { PingService } from "@libp2p/ping";
 
 import {
   EffectProtocolMessage,
+  type RequestToWorkResponse,
   type Payment,
   type Task,
+  type WorkerSyncResponse,
 } from "@effectai/protobufs";
+import { applyWorkerSyncResponse } from "./sync/applyWorkerSyncResponse.js";
+import { runConnectFlow } from "./sync/runConnectFlow.js";
 
 export interface WorkerEvents {
   "task:created": CustomEvent<Task>;
@@ -70,10 +75,12 @@ export const createWorker = async ({
   datastore,
   privateKey,
   autoExpire = true,
+  autoSyncBeforeConnect = true,
 }: {
   datastore: Datastore;
   privateKey: Uint8Array | PrivateKey;
   autoExpire: boolean;
+  autoSyncBeforeConnect?: boolean;
 }) => {
   const ed25519PrivateKey: PrivateKey =
     privateKey instanceof Uint8Array
@@ -90,6 +97,7 @@ export const createWorker = async ({
   const taskStore = createWorkerTaskStore({ datastore });
   const paymentStore = createPaymentStore({ datastore });
   const templateStore = createTemplateStore({ datastore });
+  const syncStateStore = createWorkerSyncStateStore({ datastore });
 
   // register worker modules
   const templateWorker = createTemplateWorker({ entity, templateStore });
@@ -158,6 +166,43 @@ export const createWorker = async ({
     return response;
   };
 
+  const syncWithManager = async (
+    manager: Multiaddr,
+    {
+      scopes,
+      cursor,
+      limit,
+    }: {
+      scopes?: string[];
+      cursor?: bigint;
+      limit?: number;
+    } = {},
+  ) => {
+    const [response, error] = await entity.sendMessage(manager, {
+      workerSyncRequest: {
+        timestamp: Math.floor(Date.now() / 1000),
+        workerId: entity.getPeerId().toString(),
+        scopes: scopes ?? [],
+        cursor,
+        limit,
+      },
+    });
+
+    if (error || !response) {
+      throw new Error(`Failed to sync with manager: ${error}`);
+    }
+
+    const sync: WorkerSyncResponse = response;
+    await applyWorkerSyncResponse({
+      sync,
+      taskStore,
+      paymentStore,
+      syncStateStore,
+    });
+
+    return sync;
+  };
+
   //connect to an identified manager
   const connect = async (
     multiaddress: Multiaddr,
@@ -166,20 +211,39 @@ export const createWorker = async ({
       nonce,
       capabilities,
       accessCode,
+      skipSync,
     }: {
       recipient: string;
       nonce: bigint;
       capabilities: string[];
       accessCode?: string;
+      skipSync?: boolean;
     },
   ) => {
-    const [response, error] = await entity.sendMessage(multiaddress, {
-      requestToWork: {
-        timestamp: Math.floor(Date.now() / 1000),
-        recipient,
-        nonce,
-        capabilities: capabilities.join(","),
-        accessCode,
+    const [response, error] = await runConnectFlow({
+      autoSyncBeforeConnect,
+      skipSync,
+      syncWithManager: async () =>
+        await syncWithManager(multiaddress, {
+          scopes: ["status", "capabilities", "tasks", "payments"],
+        }),
+      requestToWork: async (): Promise<
+        readonly [RequestToWorkResponse | null, Error | null]
+      > => {
+        const [connectResponse, connectError] = await entity.sendMessage(
+          multiaddress,
+          {
+            requestToWork: {
+              timestamp: Math.floor(Date.now() / 1000),
+              recipient,
+              nonce,
+              capabilities: capabilities.join(","),
+              accessCode,
+            },
+          },
+        );
+
+        return [connectResponse ?? null, connectError];
       },
     });
 
@@ -209,6 +273,7 @@ export const createWorker = async ({
     entity,
     events,
     taskStore,
+    syncStateStore,
 
     getTask,
     getTasks,
@@ -227,6 +292,7 @@ export const createWorker = async ({
     requestBulkProofs,
     identify,
     connect,
+    syncWithManager,
     disconnect,
     start,
     stop,

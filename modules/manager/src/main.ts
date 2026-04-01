@@ -250,6 +250,99 @@ export const createManager = async ({
         };
       },
     )
+    .onMessage("workerSyncRequest", async (syncRequest, { peerId }) => {
+      const workerId = syncRequest.workerId || peerId.toString();
+
+      if (workerId !== peerId.toString()) {
+        throw new Error("Worker ID mismatch");
+      }
+
+      const scopes =
+        syncRequest.scopes && syncRequest.scopes.length > 0
+          ? new Set(syncRequest.scopes)
+          : new Set(["status", "capabilities", "tasks", "payments"]);
+      const limit = syncRequest.limit ?? 200;
+      const cursor =
+        typeof syncRequest.cursor === "bigint"
+          ? Number(syncRequest.cursor)
+          : 0;
+      const now = Math.floor(Date.now() / 1000);
+      const worker = await workerManager.getWorker(workerId);
+
+      const response: EffectProtocolMessage = {
+        workerSyncResponse: {
+          serverTime: now,
+          workerId,
+          cursor: BigInt(now),
+          managerPeerId: entity.getPeerId().toString(),
+          status:
+            scopes.has("status") && worker
+              ? {
+                  state: workerManager.workerQueue.queue.includes(workerId)
+                    ? "connected"
+                    : "disconnected",
+                  lastActivity: worker.state.lastActivity,
+                }
+              : undefined,
+          capabilities:
+            scopes.has("capabilities") && worker
+              ? worker.state.capabilities.concat(
+                  worker.state.managerCapabilities || [],
+                )
+              : [],
+          tasks: [],
+          payments: [],
+        },
+      };
+
+      if (scopes.has("tasks")) {
+        const tasks = await taskStore.listByWorker({ workerId, limit });
+        for (const taskRecord of tasks) {
+          const lastEventAt =
+            taskRecord.events[taskRecord.events.length - 1]?.timestamp ?? 0;
+          if (cursor && lastEventAt <= cursor) {
+            continue;
+          }
+
+          response.workerSyncResponse?.tasks.push({
+            taskId: taskRecord.state.id,
+            status: taskRecord.syncStatus,
+            lastEventAt,
+            task: taskRecord.state,
+          });
+        }
+      }
+
+      if (scopes.has("payments")) {
+        const payments = await paymentStore.all({
+          prefix: `payments/${workerId}`,
+          limit,
+        });
+
+        for (const paymentRecord of payments) {
+          const lastEventAt =
+            paymentRecord.events[paymentRecord.events.length - 1]?.timestamp ??
+            0;
+          if (cursor && lastEventAt <= cursor) {
+            continue;
+          }
+
+          const createdAt =
+            paymentRecord.events.find((event) => event.type === "create")
+              ?.timestamp ?? lastEventAt;
+
+          response.workerSyncResponse?.payments.push({
+            paymentId: paymentRecord.state.id,
+            status: "created",
+            amount: paymentRecord.state.amount.toString(),
+            createdAt,
+            payment: paymentRecord.state,
+          });
+        }
+      }
+
+      return response;
+    })
     .onMessage("task", async (task, { peerId }) => {
       await taskManager.createTask({
         task,

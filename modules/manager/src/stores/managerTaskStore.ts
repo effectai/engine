@@ -60,6 +60,13 @@ export interface TaskCompletedEvent extends BaseTaskEvent {
 }
 
 export type ManagerTaskRecord = TaskRecord<ManagerTaskEvent>;
+export type ManagerTaskSyncStatus =
+  | "created"
+  | "assigned"
+  | "accepted"
+  | "submitted"
+  | "completed"
+  | "rejected";
 
 export const createManagerTaskStore = ({
   datastore,
@@ -300,6 +307,85 @@ export const createManagerTaskStore = ({
     await batch.commit();
   };
 
+  const getSyncStatus = (
+    taskRecord: ManagerTaskRecord,
+  ): ManagerTaskSyncStatus => {
+    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
+
+    switch (lastEvent?.type) {
+      case "assign":
+        return "assigned";
+      case "accept":
+        return "accepted";
+      case "submission":
+        return "submitted";
+      case "payout":
+        return "completed";
+      case "reject":
+        return "rejected";
+      case "create":
+      default:
+        return "created";
+    }
+  };
+
+  const hasWorkerEvent = (taskRecord: ManagerTaskRecord, workerId: string) => {
+    return taskRecord.events.some((event) => {
+      switch (event.type) {
+        case "assign":
+          return event.assignedToPeer === workerId;
+        case "accept":
+          return event.acceptedByPeer === workerId;
+        case "reject":
+          return event.rejectedByPeer === workerId;
+        case "submission":
+          return event.submissionByPeer === workerId;
+        default:
+          return false;
+      }
+    });
+  };
+
+  const listByWorker = async ({
+    workerId,
+    limit,
+  }: {
+    workerId: string;
+    limit?: number;
+  }): Promise<
+    Array<ManagerTaskRecord & { syncStatus: ManagerTaskSyncStatus }>
+  > => {
+    const tasks: Array<ManagerTaskRecord & { syncStatus: ManagerTaskSyncStatus }> =
+      [];
+
+    const pushRecord = (record: ManagerTaskRecord) => {
+      if (limit && tasks.length >= limit) {
+        return false;
+      }
+
+      if (!hasWorkerEvent(record, workerId)) {
+        return true;
+      }
+
+      tasks.push({
+        ...record,
+        syncStatus: getSyncStatus(record),
+      });
+      return !limit || tasks.length < limit;
+    };
+
+    for (const prefix of ["tasks/active", "tasks/completed"]) {
+      const records = await coreStore.all({ prefix });
+      for (const record of records) {
+        if (!pushRecord(record)) {
+          return tasks;
+        }
+      }
+    }
+
+    return tasks;
+  };
+
   const assign = async ({
     entityId,
     workerPeerIdStr,
@@ -351,6 +437,7 @@ export const createManagerTaskStore = ({
     payout,
     assign,
     getTask,
+    listByWorker,
   };
 };
 
