@@ -551,6 +551,8 @@ export interface WorkerSyncRequest {
   cursor?: bigint
   scopes: string[]
   limit?: number
+  tasksCursor?: string
+  paymentsCursor?: string
 }
 
 export namespace WorkerSyncRequest {
@@ -588,6 +590,16 @@ export namespace WorkerSyncRequest {
         if (obj.limit != null) {
           w.uint32(40)
           w.uint32(obj.limit)
+        }
+
+        if (obj.tasksCursor != null) {
+          w.uint32(50)
+          w.string(obj.tasksCursor)
+        }
+
+        if (obj.paymentsCursor != null) {
+          w.uint32(58)
+          w.string(obj.paymentsCursor)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -628,6 +640,14 @@ export namespace WorkerSyncRequest {
             }
             case 5: {
               obj.limit = reader.uint32()
+              break
+            }
+            case 6: {
+              obj.tasksCursor = reader.string()
+              break
+            }
+            case 7: {
+              obj.paymentsCursor = reader.string()
               break
             }
             default: {
@@ -942,6 +962,10 @@ export interface WorkerSyncResponse {
   capabilities: string[]
   tasks: WorkerSyncTask[]
   payments: WorkerSyncPayment[]
+  tasksCursor?: string
+  paymentsCursor?: string
+  tasksHasMore: boolean
+  paymentsHasMore: boolean
 }
 
 export namespace WorkerSyncResponse {
@@ -1000,6 +1024,26 @@ export namespace WorkerSyncResponse {
           }
         }
 
+        if (obj.tasksCursor != null) {
+          w.uint32(74)
+          w.string(obj.tasksCursor)
+        }
+
+        if (obj.paymentsCursor != null) {
+          w.uint32(82)
+          w.string(obj.paymentsCursor)
+        }
+
+        if ((obj.tasksHasMore != null && obj.tasksHasMore !== false)) {
+          w.uint32(88)
+          w.bool(obj.tasksHasMore)
+        }
+
+        if ((obj.paymentsHasMore != null && obj.paymentsHasMore !== false)) {
+          w.uint32(96)
+          w.bool(obj.paymentsHasMore)
+        }
+
         if (opts.lengthDelimited !== false) {
           w.ldelim()
         }
@@ -1011,7 +1055,9 @@ export namespace WorkerSyncResponse {
           managerPeerId: '',
           capabilities: [],
           tasks: [],
-          payments: []
+          payments: [],
+          tasksHasMore: false,
+          paymentsHasMore: false
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -1068,6 +1114,22 @@ export namespace WorkerSyncResponse {
               obj.payments.push(WorkerSyncPayment.codec().decode(reader, reader.uint32(), {
                 limits: opts.limits?.payments$
               }))
+              break
+            }
+            case 9: {
+              obj.tasksCursor = reader.string()
+              break
+            }
+            case 10: {
+              obj.paymentsCursor = reader.string()
+              break
+            }
+            case 11: {
+              obj.tasksHasMore = reader.bool()
+              break
+            }
+            case 12: {
+              obj.paymentsHasMore = reader.bool()
               break
             }
             default: {

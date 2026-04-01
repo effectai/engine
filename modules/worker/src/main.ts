@@ -33,6 +33,7 @@ import {
 } from "@effectai/protobufs";
 import { applyWorkerSyncResponse } from "./sync/applyWorkerSyncResponse.js";
 import { runConnectFlow } from "./sync/runConnectFlow.js";
+import { runCatchUpSync } from "./sync/runCatchUpSync.js";
 
 export interface WorkerEvents {
   "task:created": CustomEvent<Task>;
@@ -170,37 +171,79 @@ export const createWorker = async ({
     manager: Multiaddr,
     {
       scopes,
-      cursor,
+      tasksCursor,
+      paymentsCursor,
       limit,
     }: {
       scopes?: string[];
-      cursor?: bigint;
+      tasksCursor?: string;
+      paymentsCursor?: string;
       limit?: number;
     } = {},
   ) => {
-    const [response, error] = await entity.sendMessage(manager, {
-      workerSyncRequest: {
-        timestamp: Math.floor(Date.now() / 1000),
-        workerId: entity.getPeerId().toString(),
-        scopes: scopes ?? [],
-        cursor,
-        limit,
-      },
-    });
+    const existingSyncState = await syncStateStore.getCurrent();
+    const initialTasksCursor =
+      tasksCursor ?? existingSyncState?.state.tasksCursor;
+    const initialPaymentsCursor =
+      paymentsCursor ?? existingSyncState?.state.paymentsCursor;
 
-    if (error || !response) {
-      throw new Error(`Failed to sync with manager: ${error}`);
+    const syncPage = async ({
+      scopes: pageScopes,
+      tasksCursor: pageTasksCursor,
+      paymentsCursor: pagePaymentsCursor,
+      limit: pageLimit,
+    }: {
+      scopes: string[];
+      tasksCursor?: string;
+      paymentsCursor?: string;
+      limit?: number;
+    }) => {
+      const [response, error] = await entity.sendMessage(manager, {
+        workerSyncRequest: {
+          timestamp: Math.floor(Date.now() / 1000),
+          workerId: entity.getPeerId().toString(),
+          scopes: pageScopes,
+          limit: pageLimit,
+          tasksCursor: pageTasksCursor,
+          paymentsCursor: pagePaymentsCursor,
+        },
+      });
+
+      if (error || !response) {
+        throw new Error(`Failed to sync with manager: ${error}`);
+      }
+
+      const sync: WorkerSyncResponse = response;
+      await applyWorkerSyncResponse({
+        sync,
+        taskStore,
+        paymentStore,
+        syncStateStore,
+      });
+
+      return sync;
+    };
+
+    const requestedScopes = scopes ?? [];
+    if (
+      requestedScopes.includes("tasks") ||
+      requestedScopes.includes("payments")
+    ) {
+      return await runCatchUpSync({
+        scopes: requestedScopes,
+        limit,
+        tasksCursor: initialTasksCursor,
+        paymentsCursor: initialPaymentsCursor,
+        syncPage,
+      });
     }
 
-    const sync: WorkerSyncResponse = response;
-    await applyWorkerSyncResponse({
-      sync,
-      taskStore,
-      paymentStore,
-      syncStateStore,
+    return await syncPage({
+      scopes: requestedScopes,
+      tasksCursor: initialTasksCursor,
+      paymentsCursor: initialPaymentsCursor,
+      limit,
     });
-
-    return sync;
   };
 
   //connect to an identified manager

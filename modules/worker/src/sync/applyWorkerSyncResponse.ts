@@ -40,6 +40,8 @@ export const applyWorkerSyncResponse = async ({
     workerId: sync.workerId,
     managerPeerId: sync.managerPeerId,
     cursor: sync.cursor,
+    tasksCursor: sync.tasksCursor,
+    paymentsCursor: sync.paymentsCursor,
     serverTime: sync.serverTime,
     status: sync.status,
     capabilities: sync.capabilities ?? [],

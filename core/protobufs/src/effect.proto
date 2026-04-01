@@ -49,6 +49,8 @@ message WorkerSyncRequest {
   optional uint64 cursor = 3;
   repeated string scopes = 4;
   optional uint32 limit = 5;
+  optional string tasks_cursor = 6;
+  optional string payments_cursor = 7;
 }
 
 message WorkerSyncStatus {
@@ -81,6 +83,10 @@ message WorkerSyncResponse {
   repeated string capabilities = 6;
   repeated WorkerSyncTask tasks = 7;
   repeated WorkerSyncPayment payments = 8;
+  optional string tasks_cursor = 9;
+  optional string payments_cursor = 10;
+  bool tasks_has_more = 11;
+  bool payments_has_more = 12;
 }
 
 message EffectProtocolMessage {

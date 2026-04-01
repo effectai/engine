@@ -17,6 +17,8 @@ export interface WorkerSyncStateRecord {
     workerId: string;
     managerPeerId: string;
     cursor: bigint;
+    tasksCursor?: string;
+    paymentsCursor?: string;
     serverTime: number;
     status?: WorkerSyncStatus;
     capabilities: string[];
@@ -45,6 +47,8 @@ export const createWorkerSyncStateStore = ({
     workerId,
     managerPeerId,
     cursor,
+    tasksCursor,
+    paymentsCursor,
     serverTime,
     status,
     capabilities,
@@ -64,6 +68,8 @@ export const createWorkerSyncStateStore = ({
         workerId,
         managerPeerId,
         cursor,
+        tasksCursor,
+        paymentsCursor,
         serverTime,
         status,
         capabilities,
