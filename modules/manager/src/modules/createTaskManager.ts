@@ -1,5 +1,4 @@
 import { PublicKey } from "@solana/web3.js";
-import { TASK_ACCEPTANCE_TIME } from "../consts.js";
 import type { ManagerEntity, ManagerEvents, ManagerSettings } from "../main.js";
 import type { createPaymentManager } from "./createPaymentManager.js";
 import type {

@@ -10,7 +10,6 @@ import {
 import {
   type Datastore,
   EffectProtocolError,
-  Key,
   ProtocolError,
 } from "@effectai/protocol-core";
 import { createAccessCodeStore } from "../stores/managerAccessCodeStore.js";
@@ -75,7 +74,7 @@ export const createWorkerManager = ({
       const currentTime = Math.floor(Date.now() / 1000);
 
       // Retrieve existing worker or null if not found
-      const workerRecord = await workerStore.getSafe({ entityId: `state/${peerId}` });
+      const workerRecord = await workerStore.getSafe({ entityId: peerId });
 
       const isNewWorker = !workerRecord;
 
@@ -237,7 +236,7 @@ export const createWorkerManager = ({
     peerId: string,
     stateKey: keyof WorkerRecord["state"],
   ) => {
-    const worker = await workerStore.getSafe({ entityId: `state/${peerId}` });
+    const worker = await workerStore.getSafe({ entityId: peerId });
 
     if (!worker) {
       throw new Error("Worker not found");
@@ -264,20 +263,17 @@ export const createWorkerManager = ({
   const updateWorkerState = workerStore.updateWorker;
 
   const getWorkers = async (ids: string[]) => {
-    const workers = workerStore.getMany({
-      keys: ids.map((id) => new Key(`/workers/state/${id}`)),
-    });
-
-    return workers;
+    return await Promise.all(
+      ids.map(async (id) => await workerStore.getSafe({ entityId: id })),
+    );
   };
 
   const hydrateQueue = async () => {
-    for await (const key of datastore.queryKeys({
-      prefix: "/workers/byStatus/idle",
-    })) {
-      const workerId = key.toString().split("/").pop();
-      if (workerId) {
-        workerQueue.addPeer({ peerIdStr: workerId });
+    const workers = await workerStore.all();
+
+    for (const worker of workers) {
+      if (worker.state.status === "idle") {
+        workerQueue.addPeer({ peerIdStr: worker.state.peerId });
       }
     }
   };
