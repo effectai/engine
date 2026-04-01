@@ -1,5 +1,6 @@
 [toolchain]
 package_manager = "pnpm"
+anchor_version = "0.31.1"
 
 [features]
 resolution = true
@@ -17,3 +18,4 @@ members = ["modules/payment/program", "modules/migration/program", "modules/stak
 
 [scripts]
 test = "pnpm vitest"
+

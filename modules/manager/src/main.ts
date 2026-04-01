@@ -12,6 +12,7 @@ import type { Request, Response } from "express";
 import { createPaymentManager } from "./modules/createPaymentManager.js";
 import { createTaskManager } from "./modules/createTaskManager.js";
 import { createManagerTaskStore } from "./stores/managerTaskStore.js";
+import { createManagerPaymentStore } from "./stores/managerPaymentStore.js";
 
 import { buildEddsa } from "@effectai/payment";
 import { createWorkerManager } from "./modules/createWorkerManager.js";
@@ -25,8 +26,8 @@ import {
   type HttpHandler,
   Libp2pTransport,
   type TaskRecord,
+  peerIdFromString,
   createEffectEntity,
-  createPaymentStore,
   createTemplateStore,
 } from "@effectai/protocol-core";
 import { EffectProtocolMessage, type Payment } from "@effectai/protobufs";
@@ -72,6 +73,8 @@ export type ManagerSettings = {
   paymentAccount: string | null;
   withAdmin: boolean;
   maintenanceMode: boolean;
+  passivePayouts: boolean;
+  passivePayoutIntervalSeconds: number;
 };
 
 export const createManagerEntity = async ({
@@ -79,11 +82,13 @@ export const createManagerEntity = async ({
   privateKey,
   listen,
   announce,
+  port,
 }: {
   datastore: Datastore;
   privateKey: PrivateKey;
   listen: string[];
   announce: string[] | undefined;
+  port: number;
 }) => {
   return await createEffectEntity({
     protocol: {
@@ -92,7 +97,7 @@ export const createManagerEntity = async ({
       scheme: EffectProtocolMessage,
     },
     transports: [
-      new HttpTransport({ port: 8889 }),
+      new HttpTransport({ port }),
       new Libp2pTransport({
         autoStart: true,
         datastore,
@@ -125,13 +130,15 @@ export const createManager = async ({
   const managerSettings: ManagerSettings = {
     port: settings.port ?? 19955,
     autoManage: settings.autoManage ?? true,
-    listen: settings.listen ?? [`/ip4/0.0.0.0/tcp/${settings.port}/ws`],
+    listen: settings.listen ?? [`/ip4/0.0.0.0/tcp/${settings.port ?? 19955}/ws`],
     announce: settings.announce ?? [],
     paymentBatchSize: settings.paymentBatchSize ?? PAYMENT_BATCH_SIZE,
     requireAccessCodes: settings.requireAccessCodes ?? true,
     paymentAccount: settings.paymentAccount ?? null,
     withAdmin: settings.withAdmin ?? true,
     maintenanceMode: settings.maintenanceMode ?? false,
+    passivePayouts: settings.passivePayouts ?? false,
+    passivePayoutIntervalSeconds: settings.passivePayoutIntervalSeconds ?? 3600,
   };
 
   if (!managerSettings.paymentAccount) {
@@ -159,10 +166,11 @@ export const createManager = async ({
     privateKey,
     listen: managerSettings.listen,
     announce: managerSettings.announce,
+    port: managerSettings.port,
   });
 
   // initialize the stores
-  const paymentStore = createPaymentStore({ datastore });
+  const paymentStore = createManagerPaymentStore({ datastore });
   const templateStore = createTemplateStore({ datastore });
   const taskStore = createManagerTaskStore({ datastore });
 
@@ -174,6 +182,7 @@ export const createManager = async ({
     datastore,
     managerSettings,
   });
+  await workerManager.hydrateQueue();
 
   const paymentManager = await createPaymentManager({
     logger,
@@ -214,7 +223,7 @@ export const createManager = async ({
         identifyResponse: {
           peer: entity.node.peerId.publicKey.raw,
           pubkey: solanaPublicKey.toBase58(),
-          batchSize: PAYMENT_BATCH_SIZE,
+          batchSize: managerSettings.paymentBatchSize,
           taskTimeout: TASK_ACCEPTANCE_TIME,
           version: PROTOCOL_VERSION,
           requiresRegistration: managerSettings.requireAccessCodes,
@@ -321,6 +330,94 @@ export const createManager = async ({
         payment,
       };
     })
+    .onMessage("workerSyncRequest", async (syncRequest, { peerId }) => {
+      const workerId = syncRequest.workerId || peerId.toString();
+      if (workerId !== peerId.toString()) {
+        throw new Error("Worker ID mismatch");
+      }
+
+      const scopes =
+        syncRequest.scopes && syncRequest.scopes.length > 0
+          ? new Set(syncRequest.scopes)
+          : new Set(["status", "capabilities", "tasks", "payments"]);
+
+      const limit = syncRequest.limit ?? 200;
+      const cursor =
+        typeof syncRequest.cursor === "bigint"
+          ? Number(syncRequest.cursor)
+          : 0;
+
+      const now = Math.floor(Date.now() / 1000);
+
+      const worker = await workerManager.getWorker(workerId);
+
+      const response = {
+        workerSyncResponse: {
+          serverTime: now,
+          workerId,
+          cursor: BigInt(now),
+          managerPeerId: entity.getPeerId().toString(),
+          status: scopes.has("status") && worker
+            ? {
+                state: worker.state.status,
+                lastActivity: worker.state.lastActivity,
+              }
+            : undefined,
+          capabilities: scopes.has("capabilities") && worker
+            ? worker.state.capabilities.concat(
+                worker.state.managerCapabilities || [],
+              )
+            : [],
+          tasks: [] as any[],
+          payments: [] as any[],
+        },
+      };
+
+      if (scopes.has("tasks")) {
+        const tasks = await taskStore.listByWorker({ workerId, limit });
+        for (const taskRecord of tasks) {
+          const lastEvent =
+            taskRecord.events[taskRecord.events.length - 1]?.timestamp ?? 0;
+          if (cursor && lastEvent <= cursor) {
+            continue;
+          }
+
+          response.workerSyncResponse.tasks.push({
+            taskId: taskRecord.state.id,
+            status: taskRecord.state.status,
+            lastEventAt: lastEvent,
+            task: taskRecord.state.task,
+          });
+        }
+      }
+
+      if (scopes.has("payments")) {
+        const payments = await paymentStore.listByWorker({ workerId, limit });
+        for (const paymentRecord of payments) {
+          const lastEvent =
+            paymentRecord.events[paymentRecord.events.length - 1]?.timestamp ??
+            0;
+          if (cursor && lastEvent <= cursor) {
+            continue;
+          }
+
+          const createdAt = paymentRecord.events.find(
+            (event) => event.type === "create",
+          )?.timestamp ?? lastEvent;
+
+          response.workerSyncResponse.payments.push({
+            paymentId: paymentRecord.state.payment.id,
+            status: paymentRecord.state.status,
+            amount: paymentRecord.state.payment.amount.toString(),
+            taskId: paymentRecord.state.taskId,
+            createdAt,
+            payment: paymentRecord.state.payment,
+          });
+        }
+      }
+
+      return response;
+    })
     .onMessage("templateRequest", async (template) => {
       const record = await templateStore.get({ entityId: template.templateId });
 
@@ -385,7 +482,6 @@ export const createManager = async ({
       return await taskManager
         .getTask({
           taskId,
-          index: "completed",
         })
         .then(
           (a) =>
@@ -409,9 +505,9 @@ export const createManager = async ({
     res.json({
       peerId: entity.getPeerId().toString(),
       version: PROTOCOL_VERSION,
-      isStarted,
+      isStarted: getIsStarted(),
       startTime,
-      cycle,
+      cycle: getCycle(),
       requireAccessCodes: managerSettings.requireAccessCodes,
       announcedAddresses,
       publicKey: solanaPublicKey.toBase58(),
@@ -439,7 +535,7 @@ export const createManager = async ({
     }
   });
 
-  const { isStarted, pause, resume, getCycle, start, stop, cycle } =
+  const { getIsStarted, pause, resume, getCycle, start, stop } =
     createManagerControls({
       events,
       entity,
@@ -448,18 +544,62 @@ export const createManager = async ({
       managerSettings,
     });
 
-  const { tearDown } = await setupManagerDashboard({
-    context: {
-      taskManager,
-      entity,
-      workerManager,
-      getCycle,
-      pause,
-      resume,
-    },
+  const tearDown = managerSettings.withAdmin
+    ? (await setupManagerDashboard({
+        context: {
+          taskManager,
+          entity,
+          workerManager,
+          getCycle,
+          pause,
+          resume,
+        },
+      })).tearDown
+    : async () => {};
+
+  let passivePayoutInterval: ReturnType<typeof setInterval> | null = null;
+  const runPassivePayouts = async () => {
+    if (!managerSettings.paymentAccount) {
+      return;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    for (const workerId of workerManager.workerQueue.queue) {
+      try {
+        const worker = await workerManager.getWorker(workerId);
+        if (!worker) continue;
+
+        const secondsSinceLastPayout = now - worker.state.lastPayout;
+        if (secondsSinceLastPayout < managerSettings.passivePayoutIntervalSeconds) {
+          continue;
+        }
+
+        await paymentManager.processPayoutRequest({
+          peerId: peerIdFromString(workerId),
+        });
+      } catch (error) {
+        logger.log.warn(
+          { workerId, error },
+          "Passive payout failed for worker",
+        );
+      }
+    }
+  };
+
+  events.addEventListener("manager:start", async () => {
+    if (!managerSettings.passivePayouts) return;
+    if (passivePayoutInterval) return;
+
+    passivePayoutInterval = setInterval(async () => {
+      await runPassivePayouts();
+    }, Math.max(30, managerSettings.passivePayoutIntervalSeconds) * 1000);
   });
 
   events.addEventListener("manager:stop", async () => {
+    if (passivePayoutInterval) {
+      clearInterval(passivePayoutInterval);
+      passivePayoutInterval = null;
+    }
     await tearDown();
   });
 

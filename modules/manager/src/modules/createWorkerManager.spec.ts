@@ -1,12 +1,10 @@
-import { PeerId } from "@libp2p/interface";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createPaymentManager } from "./createPaymentManager.js";
 import { createWorkerManager } from "./createWorkerManager.js";
 
 import { promises } from "node:fs";
-// import { createDataStore } from "@effectai/test-utils";
-import { Key, type Datastore } from "@effectai/protocol-core";
+import { createDataStore } from "@effectai/test-utils";
+import { type Datastore } from "@effectai/protocol-core";
 
 describe("createWorkerManager", () => {
   let datastore: Datastore;
@@ -34,7 +32,7 @@ describe("createWorkerManager", () => {
         datastore,
         managerSettings: {
           requireAccessCodes: true,
-        },
+        } as any,
       });
     });
 
@@ -62,7 +60,7 @@ describe("createWorkerManager", () => {
       const [result] = await workerManager.getAccessCodes();
 
       expect(result.events.some((e) => e.type === "redeem")).toBe(true);
-      expect(result.state.code).to.equal(code);
+      expect(result.state.code).toBe(code);
     });
 
     it("should throw an InvalidAccessCode error if given a wrong access code", () => {});
@@ -76,7 +74,7 @@ describe("createWorkerManager", () => {
         datastore,
         managerSettings: {
           requireAccessCodes: false,
-        },
+        } as any,
       });
     });
 
@@ -103,7 +101,7 @@ describe("createWorkerManager", () => {
 
       //make worker 2 busy
       await workerManager.updateWorkerState("worker2", () => ({
-        totalTasks: 3,
+        assignments: ["task-1", "task-2", "task-3"],
       }));
 
       //expect worker 2 to be busy

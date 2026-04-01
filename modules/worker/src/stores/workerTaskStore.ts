@@ -88,6 +88,32 @@ export const createWorkerTaskStore = ({
     await coreStore.put({ entityId: `${index}/${entityId}`, record });
   };
 
+  const upsertFromSync = async ({
+    task,
+    status,
+    managerPeerId,
+  }: {
+    task: Task;
+    status: string;
+    managerPeerId?: string;
+  }) => {
+    const index = status === "completed" ? "completed" : "active";
+    const record: WorkerTaskRecord = {
+      events: managerPeerId
+        ? [
+            {
+              timestamp: Math.floor(Date.now() / 1000),
+              type: "create",
+              managerPeer: managerPeerId,
+            },
+          ]
+        : [],
+      state: task,
+    };
+
+    await saveTask({ entityId: task.id, record, index });
+  };
+
   const create = async ({
     task,
     managerPeerId,
@@ -251,6 +277,8 @@ export const createWorkerTaskStore = ({
     accept,
     reject,
     expire,
+    saveTask,
+    upsertFromSync,
   };
 };
 export type WorkerTaskStore = ReturnType<typeof createWorkerTaskStore>;

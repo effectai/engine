@@ -1,9 +1,7 @@
 import { Payment, type ProofRequest } from "@effectai/protobufs";
-import type { PaymentStore } from "@effectai/protocol-core";
-
 import type { PeerId, PrivateKey } from "@libp2p/interface";
 import { PublicKey } from "@solana/web3.js";
-import { ProofToProofResponseMessage, computePaymentId } from "../utils.js";
+import { ProofToProofResponseMessage } from "../utils.js";
 
 import {
   type Groth16Proof,
@@ -19,6 +17,7 @@ import { ulid } from "ulid";
 import type { createLogger } from "../logging.js";
 import type { ManagerSettings } from "../main.js";
 import type { createWorkerManager } from "./createWorkerManager";
+import type { ManagerPaymentStore } from "../stores/managerPaymentStore.js";
 
 export async function createPaymentManager({
   logger,
@@ -31,7 +30,7 @@ export async function createPaymentManager({
   logger: ReturnType<typeof createLogger>;
   privateKey: PrivateKey;
   publicKey: string;
-  paymentStore: PaymentStore;
+  paymentStore: ManagerPaymentStore;
   workerManager: ReturnType<typeof createWorkerManager>;
   managerSettings: ManagerSettings;
 }) {
@@ -68,17 +67,10 @@ export async function createPaymentManager({
     }));
 
     //insert payment into the store
-    await paymentStore.put({
-      entityId: computePaymentId(payment),
-      record: {
-        state: payment,
-        events: [
-          {
-            type: "payment:created",
-            timestamp: Date.now(),
-          },
-        ],
-      },
+    await paymentStore.putPayment({
+      payment,
+      workerId: peerId.toString(),
+      status: "created",
     });
 
     return payment;
@@ -214,12 +206,14 @@ export async function createPaymentManager({
     paymentAccount,
     version = 1,
     label,
+    taskId,
   }: {
     peerId: PeerId;
     version?: number;
     amount: bigint;
     paymentAccount: PublicKey | string;
     label?: string;
+    taskId?: string;
   }) => {
     const peer = await workerManager.getWorker(peerId.toString());
 
@@ -251,17 +245,11 @@ export async function createPaymentManager({
     }));
 
     //save payment in store.
-    await paymentStore.put({
-      entityId: computePaymentId(payment),
-      record: {
-        state: payment,
-        events: [
-          {
-            type: "payment:created",
-            timestamp: Math.floor(Date.now() / 1000),
-          },
-        ],
-      },
+    await paymentStore.putPayment({
+      payment,
+      workerId: peerId.toString(),
+      taskId,
+      status: "created",
     });
 
     return payment;
