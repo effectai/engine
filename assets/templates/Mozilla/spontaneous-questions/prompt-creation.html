@@ -1,32 +1,32 @@
 <meta charset="UTF-8">
 <div id="app" style="text-align: center">
-    <h1>Effect AI - Question Creator</h1>
+    <h1>Effect AI - Prompt Creator</h1>
   
     <hr />
   
     <div class="mx-auto" style="max-width: 80%">
 
       <div class="container is-max-desktop">
-        <label class="label has-text-left">Question:</label>
+        <label class="label has-text-left">Prompt:</label>
         <textarea
           class="textarea"
-          placeholder="Enter your question here"
+          placeholder="Enter your prompt here"
           type="text" 
-          v-model="tmpQuestion"
+          v-model="tmpPrompt"
         >
         </textarea>
       </div>
     
-    <p class="is-size-7 mb-2">By clicking this button, you accept that the question contributed here will be added to a publicly available cc-0 licensed dataset.</p>
+    <p class="is-size-7 mb-2">By clicking this button, you accept that the prompt contributed here will be added to a publicly available cc-0 licensed dataset.</p>
 
     <p style="color: red;"
     :class="{'is-hidden mb-3': !tooLong}">
-      Question is too long - Question should be no longer than 15 words
+      Prompt is too long - Prompt should be no longer than 15 words
     </p>
 
     <p style="color: red;"
     :class="{'is-hidden mb-3': !tooShort}">
-      Question is too short - Question should be longer than 4 words
+      Prompt is too short - Prompt should be longer than 4 words
     </p>
 
     <p style="color: red;"
@@ -54,8 +54,8 @@
     createApp({
       data() {
         return {
-          title: "Effect AI Question Creator",
-          tmpQuestion: "",
+          title: "Effect AI Prompt Creator",
+          tmpPrompt: "",
           btnLoading: false,
           notComplete: false,
           tooShort: false,
@@ -87,7 +87,7 @@
 
             <h4>What NOT to Include</h4>
             <ul>
-              <li>Questions that require long explanations or life stories.</li>
+              <li>Prompts that require long explanations or life stories.</li>
               <li>Multiple questions in one prompt.</li>
               <li>Requests for names, locations, or identifying details.</li>
               <li>Hypothetical or fictional scenarios.</li>
@@ -174,13 +174,13 @@
         async uploadAndSubmit() {
           this.btnLoading = true;
 
-          const cleanQuestion = this.sanitize(this.tmpQuestion).trim();
-          const wordCount = cleanQuestion.split(/\s+/).length;
+          const cleanPrompt = this.sanitize(this.tmpPrompt).trim();
+          const wordCount = cleanPrompt.split(/\s+/).length;
 
           this.tooShort = false;
           this.tooLong = false;
 
-          if(this.tmpQuestion == ""){
+          if(this.tmpPrompt == ""){
             this.notComplete = true
           } else if (wordCount < 5) {
             this.tooShort = true;
@@ -194,7 +194,7 @@
                   task: "submit",
                   values: {
                     taskTitle: this.title,
-                    question: cleanQuestion,
+                    prompt: cleanPrompt,
                   },
                 },
                 "*"
