@@ -137,7 +137,7 @@ Phase 5 is the next major step in this journey. We look forward to sharing even 
 
 Want to join the next phase of Effect AI?
 
-**Contributors:** [Sign Up](https://forms.gle/a2LHGNyPacvuox8W8) to join the **next alpha phase** and start earning $EFFECT for real tasks
+**Contributors:** [Sign Up](https://forms.gle/ovZXKQBvemXVn5Gy5) to join the **next alpha phase** and start earning $EFFECT for real tasks
 
 **Developers & Researchers:** Collaborate with us to build or validate high-quality datasets for your AI models and research initiatives
 

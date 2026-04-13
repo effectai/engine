@@ -30,6 +30,7 @@ export type DatasetRecord = {
   name: string;
   image?: string;
   description?: string;
+  hidden?: boolean;
 };
 
 export const getDataset = async (id: number) =>
@@ -98,6 +99,15 @@ const form = async (msg = "", values: FormValues = {}): Promise<string> =>
       type="text"
       id="image"  ${addVal(values, "image")}
       name="image"/>
+
+    <fieldset>
+      <legend>Visibility</legend>
+      <label>
+        <input type="checkbox" id="hidden" name="hidden" ${values.hidden ? "checked" : ""} />
+        <strong>Hide from workers</strong>
+        <br/><small>When enabled, this dataset will not be visible to workers on the frontend.</small>
+      </label>
+    </fieldset>
 
     <section>
       <button type="submit">Continue</button>
@@ -239,6 +249,7 @@ export const addDatasetRoutes = (app: Express): void => {
           id,
           activeFetcher: 0,
           status: "draft",
+          hidden: datasetFields.hidden === "on" || datasetFields.hidden === true,
         };
 
         await writeDataset(id, dataset);
@@ -334,6 +345,7 @@ export const addDatasetRoutes = (app: Express): void => {
 	dataset!.data.name = req.body.name;
 	dataset!.data.image = req.body.image;
 	dataset!.data.description = req.body.description;
+	dataset!.data.hidden = req.body.hidden === "on" || req.body.hidden === true;
 	await db.set<DatasetRecord>(dataset!.key, dataset!.data);
         msg = `<p>Success! Dataset ${id}</p>`;
       } else {

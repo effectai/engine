@@ -7,6 +7,7 @@ export default defineContentConfig({
       source: "news/**/*.md",
       schema: z.object({
         author: z.string(),
+        created: z.string(),
         lastUpdated: z.string(),
         image: z.object({
           src: z.string(),

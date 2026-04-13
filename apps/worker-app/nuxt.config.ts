@@ -17,6 +17,7 @@ export default defineNuxtConfig({
       EFFECT_SOLANA_RPC_WS_URL: process.env.EFFECT_SOLANA_RPC_WS_URL,
       PAYOUT_INTERVAL: process.env.PAYOUT_INTERVAL,
       PAYMENT_ACCOUNT: process.env.PAYMENT_ACCOUNT,
+      TASK_POSTER_URL: process.env.TASK_POSTER_URL,
       WEB3_AUTH_CLIENT_ID: process.env.WEB3AUTH_CLIENT_ID,
     },
   },

@@ -17,18 +17,17 @@
     </div>
     <div class="col-span-8 flex flex-col justify-between">
       <div
-        class="news-content flex flex-col h-full border-b py-4 border-gray-200 flex-grow"
+        class="news-content flex flex-col h-full border-b pb-4 border-gray-200 flex-grow"
       >
-        <div class="flex justify-between w-full text-primary text-xs mb-1">
-          <span>{{ news.created }}</span>
-        </div>
-
         <h2
-          class="title text-2xl md:text-3xl lg:text-4xl font-medium text-black mt-4 hover:text-black/50 my-3"
+          class="title text-2xl md:text-3xl lg:text-4xl font-medium text-black hover:text-black/50 mb-3"
         >
           {{ news.title }}
         </h2>
 
+        <div class="flex justify-between w-full text-primary text-xs mb-1">
+          <span>{{ news.created }}</span>
+        </div>
         <!-- Description grows and scrolls if needed -->
         <p class="text-black mt-2 flex-grow overflow-auto">
           {{ limitText(news.description, 190) }}
