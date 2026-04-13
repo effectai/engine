@@ -120,6 +120,21 @@
                     {{ step.timeLimitSeconds }}s
                   </span>
                 </div>
+                <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                  <UIcon name="i-lucide-shield-check" class="text-purple-400" size="12" />
+                  <template v-if="stepCapabilities(step).length > 0">
+                    <UBadge
+                      v-for="cap in stepCapabilities(step)"
+                      :key="cap"
+                      color="neutral"
+                      variant="subtle"
+                      size="xs"
+                    >
+                      {{ capabilityName(cap) }}
+                    </UBadge>
+                  </template>
+                  <span v-else class="text-xs text-zinc-500">No capability needed</span>
+                </div>
                 <div class="flex flex-wrap items-center gap-3 text-xs">
                   <div class="flex items-center gap-1">
                     <UIcon name="i-lucide-clock" class="text-amber-500" size="12" />
@@ -144,10 +159,21 @@
 </template>
 
 <script setup lang="ts">
+import { availableCapabilities } from '~/constants/capabilities';
+
+const capabilityName = (id: string): string => {
+  return availableCapabilities.find(c => c.id === id)?.name || id;
+};
+
+const stepCapabilities = (step: StepStats): string[] => {
+  return (step.capabilities || []).filter(c => c.length > 0);
+};
+
 interface StepStats {
   index: number;
   name: string;
   type: string;
+  capabilities: string[];
   tasksQueued: number;
   tasksActive: number;
   tasksCompleted: number;
