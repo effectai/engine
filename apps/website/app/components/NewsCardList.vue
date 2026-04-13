@@ -1,7 +1,7 @@
 <template>
   <div id="latest" class="">
     <!-- Flex column layout with wrapping -->
-    <div class="flex flex-col flex-wrap gap-4">
+    <div class="flex flex-col flex-wrap gap-10">
       <NewsCard
         class="new-card"
         v-for="news in paginatedNews"
