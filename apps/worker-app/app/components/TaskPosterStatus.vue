@@ -5,10 +5,10 @@
       <div class="flex items-center gap-2">
         <UBadge
           v-if="stats"
-          :color="hasAvailableTasks ? 'success' : 'neutral'"
+          :color="hasAvailableTasks ? 'success' : hasQueuedTasks ? 'warning' : 'neutral'"
           variant="subtle"
         >
-          {{ hasAvailableTasks ? "Tasks Available" : "No Tasks" }}
+          {{ hasAvailableTasks ? "Tasks Available" : hasQueuedTasks ? "Tasks Queued" : "No Tasks" }}
         </UBadge>
         <UButton
           color="neutral"
@@ -39,31 +39,6 @@
     </div>
 
     <template v-else-if="stats">
-      <!-- <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        <div class="text-center p-3 border border-zinc-700 rounded">
-          <div class="text-2xl font-bold">{{ stats.activeDatasets }}</div>
-          <div class="text-xs text-zinc-400">Active Datasets</div>
-        </div>
-        <div class="text-center p-3 border border-zinc-700 rounded">
-          <div class="text-2xl font-bold text-amber-500">
-            {{ stats.tasksQueued }}
-          </div>
-          <div class="text-xs text-zinc-400">Queued</div>
-        </div>
-        <div class="text-center p-3 border border-zinc-700 rounded">
-          <div class="text-2xl font-bold text-blue-500">
-            {{ stats.tasksActive }}
-          </div>
-          <div class="text-xs text-zinc-400">In Progress</div>
-        </div>
-        <div class="text-center p-3 border border-zinc-700 rounded">
-          <div class="text-2xl font-bold text-emerald-500">
-            {{ stats.tasksCompleted }}
-          </div>
-          <div class="text-xs text-zinc-400">Completed</div>
-        </div>
-      </div> -->
-
       <div v-if="stats.datasets && stats.datasets.length > 0">
         <h3 class="text-sm font-semibold text-zinc-400 mb-2">DATASETS</h3>
         <div class="space-y-2">
@@ -76,7 +51,7 @@
               <div class="flex items-center gap-2">
                 <span class="font-medium">{{ dataset.name }}</span>
                 <UBadge
-                  v-if="dataset.tasksQueued > 0 || dataset.tasksActive > 0"
+                  v-if="dataset.tasksActive > 0"
                   color="success"
                   variant="subtle"
                   size="xs"
@@ -215,7 +190,11 @@ const isLoading = ref(true);
 const error = ref(false);
 
 const hasAvailableTasks = computed(
-  () => stats.value && (stats.value.tasksQueued > 0 || stats.value.tasksActive > 0)
+  () => stats.value && stats.value.tasksActive > 0
+);
+
+const hasQueuedTasks = computed(
+  () => stats.value && stats.value.tasksQueued > 0
 );
 
 const fetchStats = async () => {
