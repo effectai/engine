@@ -89,6 +89,7 @@ const addApiRoutes = (app: Express) => {
             index: f.index,
             name: f.name,
             type: f.type,
+            capabilities: f.capabilities || [],
             tasksQueued: stepQueued,
             tasksActive: stepActive,
             tasksCompleted: stepCompleted,

@@ -10,6 +10,11 @@
           :instructions="currentTaskInstructions"
         />
 
+        <ReportTaskModal
+          v-model="isOpenReportModal"
+          @submit="handleReportSubmit"
+        />
+
         <UCard
           :ui="{
             ring: '',
@@ -121,7 +126,7 @@
               <UButton
                 variant="outline"
                 color="neutral"
-                @click.stop="reportAndSkipTask"
+                @click.stop="isOpenReportModal = true"
                 size="sm"
                 class="w-full sm:w-auto"
               >
@@ -160,6 +165,7 @@ const isTemplateReady = ref(false);
 
 const isOpen = computed(() => !!activeTask.value);
 const isOpenTaskInfoModal = ref(false);
+const isOpenReportModal = ref(false);
 const currentTaskInstructions = ref("");
 const isSubmitting = ref(false);
 
@@ -326,10 +332,14 @@ const handlerRejectTask = async () => {
   setActiveTask(null);
 };
 
-const reportAndSkipTask = async () => {
+const handleReportSubmit = async (payload: {
+  task: "report";
+  issue_type: string;
+  message: string;
+}) => {
   if (!activeTask.value) return;
   isSubmitting.value = true;
-  await completeTask(activeTask.value.state.id, "<TASK REPORTED AND SKIPPED>");
+  await completeTask(activeTask.value.state.id, JSON.stringify(payload));
   toast.clear();
   toast.add({
     title: "Task Reported",
