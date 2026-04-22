@@ -755,7 +755,8 @@ export const processFetcher = async (fetcher: Fetcher) => {
 }
 
 export const countTasks = (f: Fetcher, type: "active" | "queue" | "done" | "failed") => {
-  return db.count(["fetcher", f.datasetId, f.index, type, {}]);
+  if (f)
+    return db.count(["fetcher", f.datasetId, f.index, type, {}]);
 };
 
 /**
@@ -983,6 +984,7 @@ export const addFetcherRoutes = (app: Express): void => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
+    if (!f) return make404(res);
 
     res.send(page(await fetcherForm(id, f!, "", f)));
   });
@@ -991,6 +993,8 @@ export const addFetcherRoutes = (app: Express): void => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
+    if (!f) return make404(res);
+
     const dataset = (await db.get<DatasetRecord>(["dataset", id, "info"]))!.data;
 
     f!.status = req.query.action === "archive" ? "archived" : "active";
@@ -1013,9 +1017,11 @@ export const addFetcherRoutes = (app: Express): void => {
   app.get("/d/:id/f/:fid",
     validateNumericParams("id", "fid"),
     async (req, res) => {
-    const id = Number(req.params.id);
-    const fid = Number(req.params.fid);
-    const f = await getFetcher(id, fid);
+      const id = Number(req.params.id);
+      const fid = Number(req.params.fid);
+      const f = await getFetcher(id, fid);
+      if (!f) return make404(res);
+
 
     const queueSize = countTasks(f!, "queue");
     const activeSize = countTasks(f!, "active");
@@ -1110,6 +1116,7 @@ export const addFetcherRoutes = (app: Express): void => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
+    if (!f) return make404(res);
 
     res.send(page(await fetcherImportForm(f!, {
       filter: f?.pipelineFilterRegex,
@@ -1133,6 +1140,7 @@ export const addFetcherRoutes = (app: Express): void => {
       const id = Number(req.params.id);
       const fid = Number(req.params.fid);
       const f = await getFetcher(id, fid);
+      if (!f) return make404(res);
       res.send(f);
     });
 
@@ -1150,6 +1158,7 @@ export const addFetcherRoutes = (app: Express): void => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
+    if (!f) return make404(res);
 
     let { valid, errors } = await validateForm(req.body, importValidations(f!));
     let msg = Object.values(errors).join("<br/>- ");
@@ -1318,6 +1327,8 @@ ${Object.entries(peers)
       const id = Number(req.params.id);
       const fid = Number(req.params.fid);
       const f = await getFetcher(id, fid);
+      if (!f) return make404(res);
+
       const offset = Number(req.query.offset || "0");
 
       const tasks = await getPendingTasks(f!);
