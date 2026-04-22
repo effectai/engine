@@ -116,7 +116,7 @@ const formatDate = (ts: number) =>
 
 // little shorthand to inject form field's value if it exists
 const addVal = (values: FormValues, key: string,  defaultVal: string = ""): string =>
-  `${values[key] ? `value="${values[key]}"` : defaultVal ? `value="${defaultVal}"` : ""}`;
+  `${values[key] ? `value="${escapeHTML(values[key])}"` : defaultVal ? `value="${escapeHTML(defaultVal)}"` : ""}`;
 
 type FormValues = Record<string, any>;
 
