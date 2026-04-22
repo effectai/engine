@@ -757,6 +757,8 @@ export const processFetcher = async (fetcher: Fetcher) => {
 export const countTasks = (f: Fetcher, type: "active" | "queue" | "done" | "failed") => {
   if (f)
     return db.count(["fetcher", f.datasetId, f.index, type, {}]);
+  else
+    return 0;
 };
 
 /**
