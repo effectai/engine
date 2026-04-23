@@ -4,6 +4,7 @@ import type { ManagerSettings } from "../main.js";
 import {
   type WorkerRecord,
   createWorkerStore,
+  type WorkerStatus,
 } from "../stores/managerWorkerStore.js";
 
 import {
@@ -27,33 +28,6 @@ export const createWorkerManager = ({
   const workerStore = createWorkerStore({
     datastore,
   });
-  
-  const workerAssignments = new Map<string, Set<string>>();
-  const assignmentsFor = (workerId: string) => {
-    let assignments = workerAssignments.get(workerId);
-    if (!assignments) {
-      assignments = new Set<string>();
-      workerAssignments.set(workerId, assignments);
-    }
-    return assignments;
-  };
-  const getAssignmentCount = (workerId: string) =>
-    workerAssignments.get(workerId)?.size ?? 0;
-  const markTaskAssigned = (workerId: string, taskId: string) => {
-    assignmentsFor(workerId).add(taskId);
-  };
-  const markTaskReleased = (workerId: string, taskId: string) => {
-    const assignments = workerAssignments.get(workerId);
-    if (!assignments) {
-      return;
-    }
-
-    assignments.delete(taskId);
-
-    if (assignments.size === 0) {
-      workerAssignments.delete(workerId);
-    }
-  };
 
   const accessCodeStore = createAccessCodeStore({ datastore });
 
@@ -84,6 +58,7 @@ export const createWorkerManager = ({
 
     await workerStore.updateWorker(peerIdStr, () => ({
       lastActivity: Math.floor(Date.now() / 1000),
+      status: "disconnected",
     }));
 
     workerQueue.removePeer(peerIdStr);
@@ -100,7 +75,7 @@ export const createWorkerManager = ({
       const currentTime = Math.floor(Date.now() / 1000);
 
       // Retrieve existing worker or null if not found
-      const workerRecord = await workerStore.getSafe({ entityId: peerId });
+      const workerRecord = await workerStore.getSafe({ entityId: `state/${peerId}` });
 
       const isNewWorker = !workerRecord;
 
@@ -134,6 +109,7 @@ export const createWorkerManager = ({
           nonce,
           recipient,
           accessCodeRedeemed: accessCode,
+          status: managerSettings.maintenanceMode ? "maintenance_blocked" : "connected",
         });
       }
 
@@ -170,17 +146,20 @@ export const createWorkerManager = ({
         recipient,
         lastPayout: currentTime,
         lastActivity: currentTime,
+        status: managerSettings.maintenanceMode ? "maintenance_blocked" : "idle",
       }));
 
       // === Add to queue ===
-      workerQueue.addPeer({ peerIdStr: peerId });
+      if (!managerSettings.maintenanceMode) {
+        workerQueue.addPeer({ peerIdStr: peerId });
+      }
     } catch (err) {
       console.error("connectWorker error:", err);
       throw err;
     }
   };
   const getWorker = async (peerId: string): Promise<WorkerRecord | null> => {
-    const worker = await workerStore.getSafe({ entityId: peerId });
+    const worker = await workerStore.getWorkerState(peerId);
 
     if (!worker) {
       return null;
@@ -189,13 +168,13 @@ export const createWorkerManager = ({
     return worker;
   };
 
-    const getCapabilityInfo = (id: string) =>
-    availableCapabilities.find(capability => capability.id === id);
+  const getCapabilityInfo = (id: string) =>
+    availableCapabilities.find((capability) => capability.id === id);
 
 
   const selectWorker = async (
     capability?: string,
-    originalWorkerId?: string
+    originalWorkerId?: string,
   ): Promise<string | null> => {
     const queue = workerQueue.getQueue();
 
@@ -229,14 +208,36 @@ export const createWorkerManager = ({
   };
 
   const isBusy = async (workerRecord: WorkerRecord) => {
-    return getAssignmentCount(workerRecord.state.peerId) >= 3;
+    return workerRecord.state.assignments.length >= 3;
+  };
+
+  const setWorkerStatus = async (peerId: string, status: WorkerStatus) => {
+    await workerStore.updateWorker(peerId, () => ({
+      status,
+    }));
+  };
+
+  const markTaskAssigned = async (workerId: string, taskId: string) => {
+    await workerStore.updateWorker(workerId, (state) => ({
+      assignments: state.assignments.includes(taskId)
+        ? state.assignments
+        : [...state.assignments, taskId],
+      status: "assigned",
+    }));
+  };
+
+  const markTaskReleased = async (workerId: string, taskId: string) => {
+    await workerStore.updateWorker(workerId, (state) => ({
+      assignments: state.assignments.filter((id) => id !== taskId),
+      status: workerQueue.queue.includes(workerId) ? "idle" : "connected",
+    }));
   };
 
   const incrementStateValue = async (
     peerId: string,
     stateKey: keyof WorkerRecord["state"],
   ) => {
-    const worker = await workerStore.getSafe({ entityId: peerId });
+    const worker = await workerStore.getSafe({ entityId: `state/${peerId}` });
 
     if (!worker) {
       throw new Error("Worker not found");
@@ -264,10 +265,21 @@ export const createWorkerManager = ({
 
   const getWorkers = async (ids: string[]) => {
     const workers = workerStore.getMany({
-      keys: ids.map((id) => new Key(`/worker/${id}`)),
+      keys: ids.map((id) => new Key(`/workers/state/${id}`)),
     });
 
     return workers;
+  };
+
+  const hydrateQueue = async () => {
+    for await (const key of datastore.queryKeys({
+      prefix: "/workers/byStatus/idle",
+    })) {
+      const workerId = key.toString().split("/").pop();
+      if (workerId) {
+        workerQueue.addPeer({ peerIdStr: workerId });
+      }
+    }
   };
 
   const all = async () => {
@@ -281,10 +293,12 @@ export const createWorkerManager = ({
     selectWorker,
     getWorker,
     getWorkers,
+    hydrateQueue,
     connectWorker,
     disconnectWorker,
     markTaskAssigned,
     markTaskReleased,
+    setWorkerStatus,
     generateAccessCode,
     getAccessCodes,
     updateWorkerState,

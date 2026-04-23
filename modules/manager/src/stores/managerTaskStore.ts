@@ -2,7 +2,6 @@ import { TASK_ACCEPTANCE_TIME } from "../consts.js";
 import {
   type Datastore,
   type BaseTaskEvent,
-  type TaskRecord,
   Key,
   TaskValidationError,
   TaskExpiredError,
@@ -12,6 +11,15 @@ import {
   isValid,
 } from "@effectai/protocol-core";
 import type { Task, Payment } from "@effectai/protobufs";
+
+export type TaskStatus =
+  | "created"
+  | "assigned"
+  | "accepted"
+  | "submitted"
+  | "payout_pending"
+  | "completed"
+  | "rejected";
 
 export type ManagerTaskEvent =
   | TaskCreatedEvent
@@ -53,13 +61,24 @@ export interface TaskPaymentEvent extends BaseTaskEvent {
   payment: Payment;
 }
 
-export interface TaskCompletedEvent extends BaseTaskEvent {
-  type: "complete";
-  result: string;
-  completedByPeer: string;
+export interface ManagerTaskState {
+  id: string;
+  task: Task;
+  status: TaskStatus;
+  providerPeer: string;
+  assignedTo?: string;
+  acceptedBy?: string;
+  submissionBy?: string;
+  result?: string;
+  attempts: number;
+  acceptanceDeadline?: number;
+  completionDeadline?: number;
 }
 
-export type ManagerTaskRecord = TaskRecord<ManagerTaskEvent>;
+export interface ManagerTaskRecord {
+  events: ManagerTaskEvent[];
+  state: ManagerTaskState;
+}
 
 export const createManagerTaskStore = ({
   datastore,
@@ -73,16 +92,53 @@ export const createManagerTaskStore = ({
     parse: (data) => parseWithBigInt(data),
   });
 
+  const stateKey = (taskId: string) => new Key(`/tasks/state/${taskId}`);
+  const statusKey = (status: TaskStatus, taskId: string) =>
+    new Key(`/tasks/byStatus/${status}/${taskId}`);
+  const workerKey = (workerId: string, taskId: string) =>
+    new Key(`/tasks/byWorker/${workerId}/${taskId}`);
+
+  const writeRecord = async ({
+    record,
+    previousStatus,
+    nextStatus,
+    previousAssignedTo,
+    nextAssignedTo,
+  }: {
+    record: ManagerTaskRecord;
+    previousStatus?: TaskStatus;
+    nextStatus: TaskStatus;
+    previousAssignedTo?: string;
+    nextAssignedTo?: string;
+  }) => {
+    const batch = datastore.batch();
+
+    batch.put(stateKey(record.state.id), Buffer.from(stringifyWithBigInt(record)));
+
+    if (previousStatus && previousStatus !== nextStatus) {
+      batch.delete(statusKey(previousStatus, record.state.id));
+    }
+    batch.put(statusKey(nextStatus, record.state.id), new Uint8Array());
+
+    if (previousAssignedTo && previousAssignedTo !== nextAssignedTo) {
+      batch.delete(workerKey(previousAssignedTo, record.state.id));
+    }
+
+    if (nextAssignedTo) {
+      batch.put(workerKey(nextAssignedTo, record.state.id), new Uint8Array());
+    }
+
+    await batch.commit();
+  };
+
   const getTask = async ({
     entityId,
-    index = "active",
   }: {
     entityId: string;
-    index?: string;
-  }): Promise<ManagerTaskRecord | null> => {
+  }): Promise<ManagerTaskRecord> => {
     try {
       const taskRecord = await coreStore.get({
-        entityId: `${index}/${entityId}`,
+        entityId: `state/${entityId}`,
       });
 
       if (!taskRecord) {
@@ -117,60 +173,64 @@ export const createManagerTaskStore = ({
           providerPeer: providerPeerIdStr,
         },
       ],
-      state: task,
+      state: {
+        id: task.id,
+        task,
+        status: "created",
+        providerPeer: providerPeerIdStr,
+        attempts: 0,
+      },
     };
 
-    await coreStore.put({ entityId: `active/${task.id}`, record });
+    await writeRecord({
+      record,
+      nextStatus: "created",
+    });
 
     return record;
   };
 
-  const complete = async ({
+  const assign = async ({
     entityId,
-    result,
-    peerIdStr,
+    workerPeerIdStr,
   }: {
     entityId: string;
-    result: string;
-    peerIdStr: string;
+    workerPeerIdStr: string;
   }): Promise<ManagerTaskRecord> => {
     const taskRecord = await getTask({ entityId });
 
-    if (!taskRecord) {
-      throw new TaskValidationError("Task not found");
+    const { status } = taskRecord.state;
+    if (status !== "created" && status !== "rejected") {
+      throw new TaskValidationError("Task is not in a valid state to assign");
     }
 
-    if (taskRecord.events.some((e) => e.type === "submission")) {
-      throw new TaskValidationError("Task is already submitted");
-    }
+    const acceptanceWindow =
+      typeof taskRecord.state.task.timeLimitSeconds === "number" &&
+      taskRecord.state.task.timeLimitSeconds > 0
+        ? taskRecord.state.task.timeLimitSeconds
+        : TASK_ACCEPTANCE_TIME;
 
-    // only allowed to complete if last event is accept
-    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
-    if (lastEvent.type !== "accept" || lastEvent.acceptedByPeer !== peerIdStr) {
-      throw new TaskValidationError("Task was not accepted by this worker");
-    }
-
-    if (
-      Date.now() / 1000 - lastEvent.timestamp >=
-      taskRecord.state.timeLimitSeconds
-    ) {
-      throw new TaskExpiredError("Task has expired.");
-    }
+    const previousAssignedTo = taskRecord.state.assignedTo;
 
     taskRecord.events.push({
       timestamp: Math.floor(Date.now() / 1000),
-      type: "submission",
-      result,
-      submissionByPeer: peerIdStr,
+      type: "assign",
+      assignedToPeer: workerPeerIdStr,
     });
 
-    const batch = datastore.batch();
-    batch.put(
-      new Key(`/tasks/active/${taskRecord.state.id}`),
-      Buffer.from(stringifyWithBigInt(taskRecord)),
-    );
-    batch.delete(new Key(`/tasks/assign/${peerIdStr}/${entityId}`));
-    await batch.commit();
+    taskRecord.state.status = "assigned";
+    taskRecord.state.assignedTo = workerPeerIdStr;
+    taskRecord.state.acceptanceDeadline =
+      Math.floor(Date.now() / 1000) + acceptanceWindow;
+    taskRecord.state.attempts += 1;
+
+    await writeRecord({
+      record: taskRecord,
+      previousStatus: status,
+      nextStatus: "assigned",
+      previousAssignedTo,
+      nextAssignedTo: workerPeerIdStr,
+    });
 
     return taskRecord;
   };
@@ -184,20 +244,24 @@ export const createManagerTaskStore = ({
   }): Promise<ManagerTaskRecord> => {
     const taskRecord = await getTask({ entityId });
 
-    if (!taskRecord) {
-      throw new TaskValidationError("Task not found");
+    if (taskRecord.state.status !== "assigned") {
+      throw new TaskValidationError("Task is not assigned");
     }
 
-    // only allowed to accept if last event is assign
-    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
-
-    if (lastEvent.type !== "assign" || lastEvent.assignedToPeer !== peerIdStr) {
+    if (taskRecord.state.assignedTo !== peerIdStr) {
       throw new TaskValidationError("Task was not assigned to this worker");
     }
 
-    if (Date.now() / 1000 - lastEvent.timestamp >= TASK_ACCEPTANCE_TIME) {
+    const acceptanceDeadline = taskRecord.state.acceptanceDeadline;
+    if (acceptanceDeadline && Math.floor(Date.now() / 1000) > acceptanceDeadline) {
       throw new TaskExpiredError("Task has expired.");
     }
+
+    const completionWindow =
+      typeof taskRecord.state.task.timeLimitSeconds === "number" &&
+      taskRecord.state.task.timeLimitSeconds > 0
+        ? taskRecord.state.task.timeLimitSeconds
+        : TASK_ACCEPTANCE_TIME;
 
     taskRecord.events.push({
       timestamp: Math.floor(Date.now() / 1000),
@@ -205,7 +269,18 @@ export const createManagerTaskStore = ({
       acceptedByPeer: peerIdStr,
     });
 
-    await coreStore.put({ entityId: `active/${entityId}`, record: taskRecord });
+    taskRecord.state.status = "accepted";
+    taskRecord.state.acceptedBy = peerIdStr;
+    taskRecord.state.completionDeadline =
+      Math.floor(Date.now() / 1000) + completionWindow;
+
+    await writeRecord({
+      record: taskRecord,
+      previousStatus: "assigned",
+      nextStatus: "accepted",
+      previousAssignedTo: taskRecord.state.assignedTo,
+      nextAssignedTo: taskRecord.state.assignedTo,
+    });
 
     return taskRecord;
   };
@@ -218,26 +293,20 @@ export const createManagerTaskStore = ({
     entityId: string;
     peerIdStr: string;
     reason: string;
-  }): Promise<void> => {
+  }): Promise<ManagerTaskRecord> => {
     const taskRecord = await getTask({ entityId });
 
-    if (!taskRecord) {
-      throw new TaskValidationError("Task not found");
+    const status = taskRecord.state.status;
+    if (status !== "assigned" && status !== "accepted") {
+      throw new TaskValidationError("Task is not in a valid state to reject");
     }
 
-    const latestAssignEvent = taskRecord.events.reduce(
-      (latest: TaskAssignedEvent | null, current) => {
-        if (current.type === "assign") {
-          if (!latest || current.timestamp > latest.timestamp) {
-            return current;
-          }
-        }
-        return latest;
-      },
-      null,
-    );
+    const expectedPeer =
+      status === "assigned"
+        ? taskRecord.state.assignedTo
+        : taskRecord.state.acceptedBy;
 
-    if (!latestAssignEvent || latestAssignEvent.assignedToPeer !== peerIdStr) {
+    if (!expectedPeer || expectedPeer !== peerIdStr) {
       throw new TaskValidationError("Task was not assigned to this worker");
     }
 
@@ -248,18 +317,68 @@ export const createManagerTaskStore = ({
       rejectedByPeer: peerIdStr,
     });
 
-    const batch = datastore.batch();
+    const previousAssignedTo = taskRecord.state.assignedTo;
+    taskRecord.state.status = "rejected";
+    taskRecord.state.assignedTo = undefined;
+    taskRecord.state.acceptedBy = undefined;
+    taskRecord.state.submissionBy = undefined;
+    taskRecord.state.result = undefined;
 
-    batch.put(
-      new Key(`/tasks/active/${taskRecord.state.id}`),
-      Buffer.from(stringifyWithBigInt(taskRecord)),
-    );
+    await writeRecord({
+      record: taskRecord,
+      previousStatus: status,
+      nextStatus: "rejected",
+      previousAssignedTo,
+      nextAssignedTo: undefined,
+    });
 
-    batch.delete(
-      new Key(`/tasks/assign/${latestAssignEvent?.assignedToPeer}/${entityId}`),
-    );
+    return taskRecord;
+  };
 
-    await batch.commit();
+  const complete = async ({
+    entityId,
+    result,
+    peerIdStr,
+  }: {
+    entityId: string;
+    result: string;
+    peerIdStr: string;
+  }): Promise<ManagerTaskRecord> => {
+    const taskRecord = await getTask({ entityId });
+
+    if (taskRecord.state.status !== "accepted") {
+      throw new TaskValidationError("Task is not accepted");
+    }
+
+    if (taskRecord.state.acceptedBy !== peerIdStr) {
+      throw new TaskValidationError("Task was not accepted by this worker");
+    }
+
+    const completionDeadline = taskRecord.state.completionDeadline;
+    if (completionDeadline && Math.floor(Date.now() / 1000) > completionDeadline) {
+      throw new TaskExpiredError("Task has expired.");
+    }
+
+    taskRecord.events.push({
+      timestamp: Math.floor(Date.now() / 1000),
+      type: "submission",
+      result,
+      submissionByPeer: peerIdStr,
+    });
+
+    taskRecord.state.status = "submitted";
+    taskRecord.state.submissionBy = peerIdStr;
+    taskRecord.state.result = result;
+
+    await writeRecord({
+      record: taskRecord,
+      previousStatus: "accepted",
+      nextStatus: "submitted",
+      previousAssignedTo: taskRecord.state.assignedTo,
+      nextAssignedTo: taskRecord.state.assignedTo,
+    });
+
+    return taskRecord;
   };
 
   const payout = async ({
@@ -268,17 +387,10 @@ export const createManagerTaskStore = ({
   }: {
     entityId: string;
     payment: Payment;
-  }): Promise<void> => {
+  }): Promise<ManagerTaskRecord> => {
     const taskRecord = await getTask({ entityId });
 
-    if (!taskRecord) {
-      throw new TaskValidationError("Task not found");
-    }
-
-    // only allowed to payout if last event is complete
-    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
-
-    if (lastEvent.type !== "submission") {
+    if (taskRecord.state.status !== "submitted") {
       throw new TaskValidationError("Task is not submitted yet");
     }
 
@@ -288,58 +400,76 @@ export const createManagerTaskStore = ({
       payment,
     });
 
-    //delete from active tasks
-    const batch = datastore.batch();
+    const previousAssignedTo = taskRecord.state.assignedTo;
+    taskRecord.state.status = "completed";
+    taskRecord.state.assignedTo = undefined;
+    taskRecord.state.acceptedBy = undefined;
 
-    batch.put(
-      new Key(`/tasks/completed/${taskRecord.state.id}`),
-      Buffer.from(stringifyWithBigInt(taskRecord)),
-    );
-    batch.delete(new Key(`/tasks/active/${taskRecord.state.id}`));
-
-    await batch.commit();
-  };
-
-  const assign = async ({
-    entityId,
-    workerPeerIdStr,
-  }: {
-    entityId: string;
-    workerPeerIdStr: string;
-  }): Promise<void> => {
-    const taskRecord = await getTask({ entityId });
-
-    if (!taskRecord) {
-      throw new TaskValidationError("Task not found");
-    }
-
-    // only allowed to assign if last event is create or reject.
-    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
-
-    if (lastEvent.type !== "create" && lastEvent.type !== "reject") {
-      throw new TaskValidationError("Task is not in a valid state to assign");
-    }
-
-    taskRecord.events.push({
-      timestamp: Math.floor(Date.now() / 1000),
-      type: "assign",
-      assignedToPeer: workerPeerIdStr,
+    await writeRecord({
+      record: taskRecord,
+      previousStatus: "submitted",
+      nextStatus: "completed",
+      previousAssignedTo,
+      nextAssignedTo: taskRecord.state.submissionBy,
     });
 
-    const batch = datastore.batch();
+    return taskRecord;
+  };
 
-    batch.put(
-      new Key(`/tasks/active/${taskRecord.state.id}`),
-      Buffer.from(stringifyWithBigInt(taskRecord)),
-    );
+  const listByWorker = async ({
+    workerId,
+    limit,
+  }: {
+    workerId: string;
+    limit?: number;
+  }) => {
+    const tasks: ManagerTaskRecord[] = [];
+    let count = 0;
 
-    // add index
-    batch.put(
-      new Key(`/tasks/assign/${workerPeerIdStr}/${entityId}`),
-      new Uint8Array(),
-    );
+    for await (const key of datastore.queryKeys({
+      prefix: `/tasks/byWorker/${workerId}`,
+    })) {
+      if (limit && count >= limit) break;
 
-    await batch.commit();
+      const taskId = key.toString().split("/").pop();
+      if (!taskId) continue;
+
+      const record = await coreStore.get({ entityId: `state/${taskId}` });
+      if (record) {
+        tasks.push(record);
+        count += 1;
+      }
+    }
+
+    return tasks;
+  };
+
+  const listByStatus = async ({
+    status,
+    limit,
+  }: {
+    status: TaskStatus;
+    limit?: number;
+  }) => {
+    const tasks: ManagerTaskRecord[] = [];
+    let count = 0;
+
+    for await (const key of datastore.queryKeys({
+      prefix: `/tasks/byStatus/${status}`,
+    })) {
+      if (limit && count >= limit) break;
+
+      const taskId = key.toString().split("/").pop();
+      if (!taskId) continue;
+
+      const record = await coreStore.get({ entityId: `state/${taskId}` });
+      if (record) {
+        tasks.push(record);
+        count += 1;
+      }
+    }
+
+    return tasks;
   };
 
   return {
@@ -351,6 +481,8 @@ export const createManagerTaskStore = ({
     payout,
     assign,
     getTask,
+    listByStatus,
+    listByWorker,
   };
 };
 

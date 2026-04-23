@@ -19,6 +19,7 @@ export const createManagerControls = ({
   let isStarted = false;
   let isPaused = false;
   let cycle = 0;
+  let manageInterval: ReturnType<typeof setInterval> | null = null;
 
   const pause = () => {
     logger.log.info("Pausing manager...");
@@ -30,9 +31,8 @@ export const createManagerControls = ({
     isPaused = false;
   };
 
-  const getCycle = () => {
-    return cycle;
-  };
+  const getCycle = () => cycle;
+  const getIsStarted = () => isStarted;
 
   const start = async () => {
     if (isStarted) {
@@ -56,8 +56,8 @@ export const createManagerControls = ({
     if (managerSettings.autoManage) {
       let isManaging = false;
 
-      setInterval(async () => {
-        if (isPaused || isManaging) return;
+      manageInterval = setInterval(async () => {
+        if (!isStarted || isPaused || isManaging) return;
         isManaging = true;
         try {
           cycle++;
@@ -76,11 +76,17 @@ export const createManagerControls = ({
 
     isStarted = false;
 
+    if (manageInterval) {
+      clearInterval(manageInterval);
+      manageInterval = null;
+    }
+
     events.safeDispatchEvent("manager:stop");
   };
 
   return {
     getCycle,
+    getIsStarted,
     start,
     stop,
     pause,

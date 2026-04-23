@@ -8,18 +8,8 @@ const mockEventEmitter = {
   safeDispatchEvent: vi.fn(),
 };
 
-const createMockTaskRecord = (): Task => ({
-  id: mockTaskId,
-  title: "Test Task",
-  reward: 1000n,
-  templateId: "template-1",
-  templateData: '{"key": "value"}',
-  timeLimitSeconds: 60,
-});
-
 describe("createTaskManager", () => {
   let manager: any;
-  let workerQueue: any;
   let taskStore: any;
   let paymentManager: any;
   let workerManager: any;
@@ -32,14 +22,22 @@ describe("createTaskManager", () => {
 
     workerManager = {
       selectWorker: vi.fn(() => mockWorkerId),
+      markTaskAssigned: vi.fn(),
+      markTaskReleased: vi.fn(),
+      incrementStateValue: vi.fn(),
+      setWorkerStatus: vi.fn(),
+      updateWorkerState: vi.fn(),
     };
 
     taskStore = {
-      all: vi.fn(),
+      listByStatus: vi.fn(() => []),
       assign: vi.fn(),
       reject: vi.fn(),
       payout: vi.fn(),
       getTask: vi.fn(),
+      create: vi.fn(),
+      accept: vi.fn(),
+      complete: vi.fn(),
     };
 
     paymentManager = {
@@ -55,10 +53,16 @@ describe("createTaskManager", () => {
       taskStore,
       paymentManager,
       events: mockEventEmitter,
+      templateStore: { get: vi.fn(), create: vi.fn() },
+      managerSettings: {
+        paymentAccount: "account",
+      } as any,
     });
 
     vi.clearAllMocks();
   });
 
-  it("should create a task manager instance", () => {});
+  it("should create a task manager instance", () => {
+    expect(taskManager).toBeDefined();
+  });
 });
