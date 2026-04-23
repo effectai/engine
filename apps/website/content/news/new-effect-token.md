@@ -33,8 +33,8 @@ _In Summary_
 The snapshot has been taken on January 1st, and all $EFX on EOS and
 BSC should not be sold/bought and they carry no utility. Starting
 today, you can claim your EFFECT tokens via the official Claim Portal
-at <a href="https://portal.effect.ai/migrate"
-target="_blank">portal.effect.ai</a>. This is the only authorized
+at <a href="https://migrate.effect.ai/"
+target="_blank">migrate.effect.ai</a>. This is the only authorized
 portal for claiming your tokens—beware of imposter sites that try to
 scam users.
 
@@ -56,7 +56,7 @@ _Claiming process_
 
 The process is simple when using your EOS or BSC wallet:
 
-- Visit the official Claim Portal at <a href="https://portal.effect.ai/migrate" target="_blank">portal.effect.ai</a>
+- Visit the official Claim Portal at <a href="https://migrate.effect.ai/" target="_blank">migrate.effect.ai</a>
 - Connect your EOS or BSC wallet to the portal, connect the Solana wallet where you want to receive the $EFFECT tokens, and confirm the migration.
 - Be sure to double-check all wallet addresses before finalizing the transaction.
 

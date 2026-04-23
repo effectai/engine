@@ -1,9 +1,13 @@
 import type { Task } from "@effectai/protobufs";
 import type { WorkerTaskRecord } from "@effectai/protocol-core";
+import { TASK_ACCEPTANCE_TIME } from "@effectai/protocol-core";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { storeToRefs } from "pinia";
 
 const activeTask = ref<WorkerTaskRecord | null>(null);
+
+// Convert TASK_ACCEPTANCE_TIME from milliseconds to seconds
+const TASK_ACCEPTANCE_TIME_SECONDS = TASK_ACCEPTANCE_TIME / 1000;
 
 export const useTasks = () => {
   const { instance } = storeToRefs(useWorkerStore());
@@ -45,10 +49,14 @@ export const useTasks = () => {
     };
 
     onMounted(() => {
-      instance.value?.events.addEventListener("task:created", invalidateTasks);
+      instance.value?.events.addEventListener("task:created", handleTaskEvent);
       instance.value?.events.addEventListener("task:rejected", invalidateTasks);
       instance.value?.events.addEventListener(
         "task:completed",
+        invalidateTasks,
+      );
+      instance.value?.events.addEventListener(
+        "task:expired",
         invalidateTasks,
       );
     });
@@ -64,6 +72,10 @@ export const useTasks = () => {
       );
       instance.value?.events.removeEventListener(
         "task:completed",
+        invalidateTasks,
+      );
+      instance.value?.events.removeEventListener(
+        "task:expired",
         invalidateTasks,
       );
     });
@@ -96,11 +108,20 @@ export const useTasks = () => {
     const now = new Date().getTime() / 1000;
 
     if (lastEvent.type === "create") {
-      return { time: lastEvent.timestamp + 600 - now, type: "accept" };
+      // Use TASK_ACCEPTANCE_TIME for accepting tasks
+      return {
+        time: Math.max(lastEvent.timestamp + TASK_ACCEPTANCE_TIME_SECONDS - now, 0),
+        type: "accept",
+      };
     }
 
     if (lastEvent.type === "accept") {
-      return { time: lastEvent.timestamp + 600 - now, type: "complete" };
+      // Use task-specific timeLimitSeconds for completing tasks
+      const timeLimitSeconds = Number(task.state.timeLimitSeconds ?? 600);
+      return {
+        time: Math.max(lastEvent.timestamp + timeLimitSeconds - now, 0),
+        type: "complete",
+      };
     }
 
     return { time: 0, type: "none" };

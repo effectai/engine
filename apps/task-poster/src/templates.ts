@@ -35,12 +35,13 @@ const api = axios.create({
 });
 
 export const escapeHTML = (html: string): string =>
-  html
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  typeof myVar === 'string' &&
+    html
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;")
 
 export const getTemplates = async (status?: string) => {
   // TODO: support order by created at

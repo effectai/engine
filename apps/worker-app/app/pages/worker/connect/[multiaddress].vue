@@ -91,6 +91,7 @@
   </section>
   <div v-else-if="isActive">
     <NodeStatusCard class="my-5" />
+    <TaskPosterStatus class="my-5" />
     <ClaimPaymentsModal v-model="isOpenClaimModal" />
     <TaskModal />
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 my-5">

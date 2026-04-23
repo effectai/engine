@@ -15,6 +15,20 @@
             <p class="text-xs text-gray-500">{{ category }}</p>
           </div>
         </div>
+        <div class="flex items-center gap-1">
+          <span
+            v-if="!noAttemptsLeft"
+            class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full font-medium"
+          >
+            {{ remainingAttempts }}/{{ maxAttempts }}
+          </span>
+          <span
+            v-else
+            class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full font-medium"
+          >
+            No attempts
+          </span>
+        </div>
       </div>
       <p class="text-xs text-gray-600 mb-3 line-clamp-2">
         {{ description || "No description available." }}
@@ -31,11 +45,18 @@
             >{{ tag }}</span
           >
         </div>
-        <nuxt-link :to="`${href}`">
+        <nuxt-link :to="noAttemptsLeft ? '#' : `${href}`">
           <button
-            class="w-full mt-4 px-3 py-1.5 bg-black text-white rounded text-xs flex items-center justify-center"
+            :disabled="noAttemptsLeft"
+            :class="[
+              'w-full mt-4 px-3 py-1.5 rounded text-xs flex items-center justify-center transition-colors',
+              noAttemptsLeft
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-black text-white hover:bg-gray-800'
+            ]"
           >
-            Register Capability<svg
+            {{ noAttemptsLeft ? 'No Attempts Left' : 'Register Capability' }}<svg
+              v-if="!noAttemptsLeft"
               xmlns="http://www.w3.org/2000/svg"
               width="24"
               height="24"
@@ -57,8 +78,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+
 const props = defineProps<{
-  id: number;
+  id: string;
   name: string;
   value: string;
   category: string;
@@ -69,6 +92,16 @@ const props = defineProps<{
   tags: string[];
   icon: string;
 }>();
+
+const { getRemainingAttempts, getCapabilityMaxAttempts } = useCapabilities();
+
+const maxAttempts = computed(() => getCapabilityMaxAttempts(props.id));
+
+const remainingAttempts = computed(() =>
+  getRemainingAttempts(props.id)
+);
+
+const noAttemptsLeft = computed(() => remainingAttempts.value === 0);
 </script>
 
 <style scoped></style>
