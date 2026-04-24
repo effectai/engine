@@ -1015,7 +1015,7 @@ export const addFetcherRoutes = (app: Express): void => {
     } else {
       msg = '<h4 style="margin-top: 0;">Could not create dataset:</h4>' + msg;
       console.log(`Invalid form submission ${msg}`);
-      res.send(await fetcherForm(id, req.body, msg));
+      res.send(await fetcherForm(id, req.body, msg, f));
     }
   });
 
