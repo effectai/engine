@@ -147,6 +147,9 @@ export const fetcherForm = async (
 <div id="page">
 <form hx-post="/d/${dsId}/${f?.index ? `f/${f.index}/edit` : "fetcher-create"}">
   <fieldset>
+  <div id="messages">
+    ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
+  </div>
     <legend>step info</legend>
     <label for="name"><strong>Name</strong></label>
     <input
