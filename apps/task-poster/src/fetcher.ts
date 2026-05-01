@@ -146,6 +146,9 @@ export const fetcherForm = async (
   dsId: number, values: FormValues, msg = "", f: Fetcher | undefined = undefined) => `
 <div id="page">
 <form hx-post="/d/${dsId}/${f?.index ? `f/${f.index}/edit` : "fetcher-create"}">
+  <div id="messages">
+    ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
+  </div>
   <fieldset>
   <div id="messages">
     ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
@@ -213,13 +216,16 @@ export const fetcherForm = async (
 
       <section class="columns gap">
 	<div class="column">
-	  <label for="price"><strong>Price per task</strong></label>
-<small>Reward in $EFFECT for each task.<br/>&nbsp;</small>
-	  <input
-	    placeholder="$EFFECT"
-	    type="number"
-	    id="price"  ${addVal(values, "price")}
-	    name="price"/>
+          <label for="price"><strong>Price per task</strong><br/>
+          <small>Default price per task. Can be overwritten in the task data with
+     the "dataffect/price" property. To avoid mistakes, task property price is capped
+     at 10x the default price. <strong>Important:</strong> both values are in
+     "lamports", so for 1 EFFECT enter 1000000.</small></label></label>
+          <input
+            placeholder="$EFFECT"
+    	    type="number"
+    	    id="price"  ${addVal(values, "price")}
+            name="price"/>
 	</div>
 
 	<div class="column">
@@ -233,8 +239,9 @@ export const fetcherForm = async (
 	</div>
       </section>
 
+      <div class="mt"></div>
       <label for="capabilities"><strong>Capabilities</strong><br/>
-      <small>Comme separated list of capabilities required for tasks (note: only 1 capability is used at the moment).</small></label>
+      <small>Comma separated list of capabilities required for tasks (note: only 1 capability is used at the moment).</small></label>
       <input
 	placeholder="effectai/common-voice-validator:1.0.0, effectai/admin:1.0.0"
 	id="capabilities"  ${addVal(values, "capabilities")}
@@ -603,26 +610,35 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
       break;
   }
 
+  // we cap the maximum price of a task to 10* the default price, to
+  // avoid expensive mistakes.
+  const maxPrice = BigInt(fetcher.price) * BigInt(10);
+
   const tasks = data.map(
-    (d, _idx) =>
-      ({
+    (d, _idx) => {
+      const rawPrice = d["dataffect/reward"] ?
+	BigInt(d["dataffect/reward"] as string) : BigInt(fetcher.price);
+      const price = rawPrice > maxPrice ? maxPrice : rawPrice;
+
+      return {
 	id: ulid(),
 	title: fetcher.name,
-	reward: BigInt(fetcher.price * 1000000),
+	reward: price,
 	timeLimitSeconds: fetcher.timeLimitSeconds ?? 600,
 	templateId: fetcher.template,
 	templateData: JSON.stringify(d),
 	capability: fetcher.capabilities[0],
-      }) as Task,
+      } as Task;
+    },
   );
 
   return tasks;
 };
 
-export const getPendingTasks = async (f: Fetcher) => {
+export const getPendingTasks = async (f: Fetcher, queueName: string = "queue") => {
 
   const tasks = await db.listAll<boolean>(
-    ["fetcher", f.datasetId, f.index, "queue", {}], f.batchSize, false
+    ["fetcher", f.datasetId, f.index, queueName, {}], f.batchSize, false
   );
 
   return tasks.map(t => t.key[4]);
@@ -808,15 +824,19 @@ export const importTasks = async (f: Fetcher) => {
     await delay(400);
 
     const task = await db.get<Task>(["task", taskId]);
+    if (!task) {
+      console.error(`Queued task not found in db ${taskId}, skipping.`);
+      continue;
+    }
 
     try {
-      // TODO: actualize some of the data from the fetcher (like prize
-      // and templateId. these should probably not be stored to begin
-      // with, to avoid confusion.
+      // actualize some of the data from the fetcher (like the
+      // templateId). these should probably not be stored in the task
+      // to begin with, to avoid confusion.
       const serializedTask = {
 	...task!.data,
 	// convert bigint to string for serialization
-	reward: BigInt(f.price * 1000000).toString(),
+	reward: task!.data.reward.toString(),
 	templateId: f.template,
       };
 
@@ -948,7 +968,7 @@ const formValidations: ValidationMap = {
 	? "Must be a number"
 	: num <= 0
 	  ? "Price must be greater than 0"
-	  : num > 100 && "Price too large";
+	  : num > 100000000 && "Price too large";
   },
 
   template: (v: string) => (!v || v.length === 0) && "Template is required",
@@ -1366,7 +1386,8 @@ ${Object.entries(peers)
   id="templateFrame"
   height="450px"
   width="100%"
-  srcdoc="${escapeHTML(renderedTemplate)}"></iframe>`));
+  srcdoc="${escapeHTML(renderedTemplate)}"></iframe>
+<pre>${JSON.stringify(task, (_, v) => typeof v === 'bigint' ? v.toString() : v)}</pre>`));
     });
 
   app.get("/d/:id/pipeline-preview", async (req, res) => {
