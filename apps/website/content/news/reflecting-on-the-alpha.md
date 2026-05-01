@@ -125,7 +125,7 @@ In the next phase, we will:
 
 Want to join the next phase of Effect AI?
 
-**Contributors:** [Sign Up](https://forms.gle/a2LHGNyPacvuox8W8) to join the **next alpha phase** and start earning $EFFECT for real tasks
+**Contributors:** [Sign Up](https://docs.google.com/forms/d/e/1FAIpQLSfLh2U4_wJEmqjO0cZGtag_SFhBD2i-9MMvh789kmsLLXcSVQ/viewform) to join the **next alpha phase** and start earning $EFFECT for real tasks
 
 **Developers & Researchers:** Collaborate with us to build or validate high-quality datasets for your AI models and research initiatives
 

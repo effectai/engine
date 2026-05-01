@@ -1,9 +1,9 @@
+<meta charset="UTF-8">
 <div id="app" style="text-align: center">
     <h1>Effect AI - Sentence Creator</h1>
   
     <hr />
   
-    <!-- Wrap the image or canvas element with a block element (container) -->
     <div class="mx-auto" style="max-width: 80%">
 
       <div class="container is-max-desktop">
@@ -12,7 +12,8 @@
           class="textarea"
           placeholder="Enter your sentence here"
           type="text" 
-          v-model="tmpSentence"
+          v-model="sentence"
+          @keydown.enter.prevent
         >
         </textarea>
       </div>
@@ -20,8 +21,13 @@
     <p class="is-size-7 mb-2">By clicking this button, you accept that the sentence contributed here will be added to a publicly available cc-0 licensed dataset.</p>
 
     <p style="color: red;"
-    :class="{'is-hidden mb-3': !notComplete}">
-      Task incomplete - Please complete all sections of the task
+    :class="{'is-hidden mb-3': !tooLong}">
+      Sentence is too long - Sentence should be no longer than 15 words
+    </p>
+
+    <p style="color: red;"
+    :class="{'is-hidden mb-3': !tooShort}">
+      Sentence is too short - Sentence should be longer than 4 words
     </p>
 
     <button
@@ -45,9 +51,10 @@
       data() {
         return {
           title: "Effect AI Sentence Creator",
-          tmpSentence: "",
+          sentence: "",
           btnLoading: false,
-          notComplete: false,
+          tooShort: false,
+          tooLong: false,
           instructions: `
           <div>
             <h2>Create a sentence - Common Voice</h2>
@@ -116,47 +123,53 @@
 
             <ul>
               <li>
-                <strong>Food &amp; Drinks</strong> — meals, flavors, cooking, favorite snacks
-                (no name brands)<br />
-                <em>Example:</em> “I like fresh bread.”
+                <strong>Food &amp; Drinks</strong><br />
+                <em>Example:</em> “I enjoy warm bread with butter on quiet mornings.”
               </li>
+
               <li>
-                <strong>Weather &amp; Seasons</strong> — rain, sun, snow, temperature<br />
-                <em>Example:</em> “The sky is cloudy today.”
+                <strong>Weather &amp; Seasons</strong><br />
+                <em>Example:</em> “Dark clouds gathered as the air suddenly turned cooler.”
               </li>
+
               <li>
-                <strong>Animals &amp; Pets</strong> — dogs, birds, farm animals, wildlife<br />
-                <em>Example:</em> “My dog sleeps on the chair.”
+                <strong>Animals &amp; Pets</strong><br />
+                <em>Example:</em> “My dog waits by the door whenever I grab my jacket.”
               </li>
+
               <li>
-                <strong>Daily Routines</strong> — chores, habits, errands, morning or evening
-                activities<br />
-                <em>Example:</em> “I brush my teeth at night.”
+                <strong>Daily Routines</strong><br />
+                <em>Example:</em> “I check my calendar while drinking coffee every morning.”
               </li>
+
               <li>
-                <strong>Home &amp; Family</strong> — family members, house, rooms, common
-                activities<br />
-                <em>Example:</em> “My sister reads in the living room.”
+                <strong>Home &amp; Family</strong><br />
+                <em>Example:</em> “My brother cooks dinner while we talk about our day.”
               </li>
+
               <li>
-                <strong>Nature &amp; Outdoors</strong> — trees, flowers, parks, landscapes<br />
-                <em>Example:</em> “The forest is full of tall trees.”
+                <strong>Nature &amp; Outdoors</strong><br />
+                <em>Example:</em> “Leaves rustled softly as the wind moved through the park.”
               </li>
+
               <li>
-                <strong>Travel and Places</strong> — cities, transportation, landmarks, trips<br />
-                <em>Example:</em> “The bus stops near the library.”
+                <strong>Travel and Places</strong><br />
+                <em>Example:</em> “The train arrives early near the old stone bridge.”
               </li>
+
               <li>
-                <strong>School &amp; Learning</strong> — reading, writing, teachers, books<br />
-                <em>Example:</em> “The student writes in a notebook.”
+                <strong>School &amp; Learning</strong><br />
+                <em>Example:</em> “She studies quietly while taking notes from the textbook.”
               </li>
+
               <li>
-                <strong>Work &amp; Hobbies</strong> — jobs, crafts, games, sports<br />
-                <em>Example:</em> “I play guitar in the evening.”
+                <strong>Work &amp; Hobbies</strong><br />
+                <em>Example:</em> “I practice guitar chords after work to relax.”
               </li>
+
               <li>
-                <strong>Feelings &amp; Opinions</strong> — emotions, likes, dislikes<br />
-                <em>Example:</em> “I feel happy when I see my friends.”
+                <strong>Feelings &amp; Opinions</strong><br />
+                <em>Example:</em> “I feel proud when my hard work finally pays off.”
               </li>
             </ul>
           </div>
@@ -176,19 +189,39 @@
       );
       },
       methods: {
+        sanitize(text) {
+          text = text
+          .replace(/\r\n/g, '\n')      // normalize Windows newlines
+          .replace(/[ \t]+$/gm, '')    // remove trailing spaces per line
+          .replace(/\n{2,}/g, '\n')    // collapse multiple blank lines
+          .trim();  
+
+          return text
+        },
         async uploadAndSubmit() {
           this.btnLoading = true;
-          if(this.tmpSentence == ""){
-            this.notComplete = true
-          }
-          else
+
+          const cleanSentence = this.sanitize(this.sentence).trim();
+          const wordCount = cleanSentence.split(/\s+/).length;
+
+          this.tooShort = false;
+          this.tooLong = false;
+
+          if (cleanSentence === "") {
+            this.notComplete = true;
+          } else if (wordCount < 5) {
+            this.tooShort = true;
+          } else if (wordCount > 15) {
+            this.tooLong = true;
+          } 
+          else {
             try {
               parent.postMessage(
                 {
                   task: "submit",
                   values: {
                     taskTitle: this.title,
-                    answer: this.tmpSentence,
+                    answer: cleanSentence,
                   },
                 },
                 "*"
@@ -196,6 +229,8 @@
             } catch (error) {
               console.error("Failed to upload to IPFS", error);
             }
+          }
+
           this.btnLoading = false;
         },
       },

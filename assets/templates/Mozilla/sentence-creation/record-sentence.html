@@ -1,0 +1,237 @@
+<div id="app" style="text-align: center">
+  <h1>Effect AI - Sentence Reader</h1>
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
+    <p class="mb-5">Click <b>Record</b> then read the sentence aloud</p>
+
+    <div class="box">
+      <p class="is-size-4 has-text-weight-semibold" v-cloak>{{ sentence }}</p>
+    </div>
+
+    <!-- WaveSurfer container -->
+    <div id="waveform" class="mb-4"></div>
+
+    <div class="container mb-5">
+      <button v-if="!isRecording" @click.prevent="startRecording" class="button is-medium mx-2">Record</button>
+      <button v-else @click.prevent="stopRecording" class="button is-danger is-medium mx-2">Stop</button>
+      <button v-if="audioUrl" @click.prevent="playRecorded" class="button is-link is-medium mx-2">Replay</button>
+    </div>
+
+    <p class="is-size-7 mb-2">
+      By clicking this button, you accept that the sentence contributed here will be added to a publicly available cc-0 licensed dataset.
+    </p>
+
+    <p style="color: red;" :class="{'is-hidden mb-3': !notComplete}">
+      Task incomplete - Please complete all sections of the task
+    </p>
+
+    <p style="color: red;" :class="{'is-hidden mb-3': !fileTooBig}">
+      File size too large. Please stop recording once you've finished reading the sentence.
+    </p>
+
+    <button @click.prevent="uploadAndSubmit" class="button is-success is-large" :class="{'is-loading': btnLoading}">
+      Submit
+    </button>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+
+<script type="module">
+  
+import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js";
+import RecordPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/record.esm.js";
+
+createApp({
+  data() {
+    return {
+      title: "Effect AI Sentence Reader",
+      sentence: (JSON.parse("${result}")).values.sentence,
+      wavesurfer: null,
+      recordPlugin: null,
+      isRecording: false,
+      audioBlob: null,
+      audioUrl: "",
+      ipfsCID: "",
+      ipfsHOST: "ipfs.effect.ai",
+      notComplete: false,
+      btnLoading: false,
+      fileTooBig: false,
+      instructions: `
+        <div>
+          <h2>Record a Sentence</h2>
+          <p>
+            In this task, you will record yourself reading a single sentence shown on the screen.
+            The goal is to collect clear, natural speech that accurately reflects the written text
+            and can be used to train and evaluate speech models.
+          </p>
+
+          <h3>1. Instructions</h3>
+          <p>
+            Your job is to read the sentence out loud exactly as it appears. These recordings will
+            be used in a speech dataset, so accuracy, clarity, and consistency are important.
+          </p>
+
+          <h4>Recording Guidelines</h4>
+          <ul>
+            <li>Read the sentence exactly as written, word for word.</li>
+            <li><strong>DO NOT</strong> leave long pauses between the beginning and end of the sentence.</li>
+            <li><strong>DO NOT</strong> add, remove, or change any words.</li>
+            <li>Speak clearly at a natural, conversational pace.</li>
+            <li>Use normal intonation as if you were speaking to another person.</li>
+            <li>Record in a quiet environment when possible.</li>
+            <li>Keep the recording under 15 seconds. Most sentences should take under 10 seconds.</li>
+          </ul>
+
+          <h4>What NOT to Do</h4>
+          <ul>
+            <li>Do not paraphrase or correct the sentence.</li>
+            <li>Do not repeat the sentence unless asked to.</li>
+            <li>Do not add commentary, filler words, or extra sounds.</li>
+            <li>Do not whisper, shout, or speak unnaturally.</li>
+            <li>Do not record with loud background speech, music, or television.</li>
+          </ul>
+
+          <h3>2. Examples</h3>
+
+          <p><strong>✅ Good Recordings</strong></p>
+          <ul>
+            <li>Clear voice, steady pace, no background speech.</li>
+            <li>All words and letters spoken exactly as shown.</li>
+            <li>Natural pronunciation and rhythm.</li>
+          </ul>
+
+          <p><strong>❌ Bad Recordings</strong></p>
+          <ul>
+            <li>Skipping words or changing phrasing.</li>
+            <li>Reading abbreviations as a word instead of individual letters.</li>
+            <li>Audio that is too quiet, distorted, or clipped.</li>
+            <li>Background voices that interfere with the sentence.</li>
+          </ul>
+
+          <h3>3. Tips for Success</h3>
+          <ul>
+            <li>Read the sentence silently once before recording.</li>
+            <li>Take a short breath before you start speaking.</li>
+            <li>If you make a mistake, re record the sentence.</li>
+            <li>Focus on accuracy over speed.</li>
+          </ul>
+
+          <p>
+            When you are satisfied with your recording, submit it and move on to the next task.
+            Thank you for contributing to this speech dataset.
+          </p>
+        </div>`
+    };
+  },
+  mounted() {
+
+    window.top.postMessage({ type: "task-instructions", instructions: this.instructions }, "*");
+
+    this.recordPlugin = RecordPlugin.create();
+
+    this.wavesurfer = WaveSurfer.create({
+      container: "#waveform",
+      waveColor: "#ddd",
+      progressColor: "#0000FF",
+      cursorWidth: 0,
+      height: 100,
+      interact: false,
+      plugins: [this.recordPlugin],
+    });
+
+    this.recordPlugin.on("record-start", () => {
+      this.isRecording = true;
+      this.audioBlob = null;
+      this.audioUrl = "";
+    });
+
+    this.recordPlugin.on("record-end", (blob) => {
+      this.audioBlob = blob;
+      this.audioUrl = URL.createObjectURL(blob);
+      this.wavesurfer.load(this.audioUrl);
+      this.isRecording = false;
+    });
+
+  },
+  methods: {
+    checkSize(){
+      const file = new File([this.audioBlob], "recording.wav", { type: "audio/wav" });
+      const fileSize = (file.size / 1024).toFixed(2);
+
+      if (fileSize > 200){
+        this.fileTooBig = true
+      }
+      else
+        this.fileTooBig = false
+    },
+    async startRecording() {
+      try {
+        await this.recordPlugin.startRecording();
+      } catch (err) {
+        console.error("startRecording failed:", err);
+        this.isRecording = false;
+      }
+    },
+
+    stopRecording() {
+      try {
+        this.recordPlugin.stopRecording();
+      } catch (err) {
+        console.error("stopRecording failed:", err);
+      }
+    },
+
+    playRecorded() {
+      if (!this.audioUrl) return;
+      this.wavesurfer.playPause();
+    },
+
+    async uploadAndSubmit() {
+      this.btnLoading = true;
+      if (!this.audioBlob) {
+        this.notComplete = true;
+        this.btnLoading = false;
+        return;
+      }
+
+      this.checkSize()
+      if (this.fileTooBig) {
+        this.btnLoading = false;
+        return;
+      }
+
+      try{
+        const file = new File([this.audioBlob], "recording.wav", { type: "audio/wav" });
+        const formData = new FormData();
+        formData.append("path", file);
+
+        // Replace IPFS upload endpoint
+        const response = await fetch("https://" + this.ipfsHOST + "/api/v0/add?pin=true", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error("Upload failed");
+        const result = await response.json();
+        this.ipfsCID = result.Hash || result.cid || result.id;
+        parent.postMessage({
+          task: "submit",
+          values: {
+            taskTitle: this.title,
+            sentence: this.sentence,
+            recording: "https://" + this.ipfsHOST + "/ipfs/" + this.ipfsCID
+          }
+        }, "*");
+      } catch (err) {
+        console.error("Failed to upload", err);
+      } finally {
+        this.btnLoading = false;
+      }
+    }
+  }
+}).mount("#app");
+</script>
+

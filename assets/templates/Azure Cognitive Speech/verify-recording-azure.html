@@ -1,0 +1,275 @@
+<div id="app" style="text-align: center">
+  <h1>Azure Cognitive Speech - Recording Verification</h1>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
+    <div class="box">
+      <p class="is-size-4 has-text-weight-semibold">{{ sentence }}</p>
+    </div>
+
+    <div class="mb-4">
+      <audio :src="recordingUrl" controls controlslist="nodownload" style="width: 25%;"></audio>
+    </div>
+
+    <hr />
+
+    <div class="mx-auto" style="text-align: center; max-width: 50%">
+      <h2 class="is-size-4 has-text-weight-semibold mb-5">Recording Metadata</h2>
+
+      <div v-for="field in metadataFields" :key="field.label" class="field mb-6">
+        <label class="label">{{ field.label }}</label>
+        <div class="buttons is-centered">
+          <button
+            v-for="option in field.options"
+            :key="option.value"
+            class="button"
+            :class="{ 'is-primary': field.model === option.value }"
+            @click="setFieldValue(field, option.value)"
+          >
+            {{ option.text }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <p style="color: red;" v-if="isIncomplete">
+      Task incomplete - Please complete all sections of the task
+    </p>
+
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-success is-large"
+      :class="{ 'is-loading': btnLoading }"
+    >
+      Submit
+    </button>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+
+<script type="module">
+import { createApp, reactive } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+createApp({
+  data() {
+    const metadata = reactive({
+      voiceGender: "",
+      voiceClarity: "",
+      backgroundNoise: "",
+      speakingPace: "",
+      accent: "",
+      audioQuality: ""
+    });
+
+    return {
+      title: "Azure Cognitive Speech - Recording Metadata",
+      btnLoading: false,
+      author: "${submissionByPeer}",
+      sentence_type: JSON.parse("${result}").values.sentence_type,
+      language: JSON.parse("${result}").values.language,
+      sentence: JSON.parse("${result}").values.sentence,
+      recordingUrl: JSON.parse("${result}").values.recording,
+      isValidated: "",
+      metadata,
+      metadataFields: [
+        {
+          label: 'Does the recording clearly and correctly match the sentence?',
+          key: 'isValidated',
+          model: "",
+          options: [
+            { text: 'Yes', value: 'Yes' },
+            { text: 'No', value: 'No' }
+          ]
+        },
+        {
+          label: 'Perceived voice gender',
+          key: 'voiceGender',
+          model: "",
+          options: [
+            { text: 'Male', value: 'male' },
+            { text: 'Female', value: 'female' },
+            { text: 'Cannot determine', value: 'unknown' }
+          ]
+        },
+        {
+          label: 'Is the voice clear and intelligible?',
+          key: 'voiceClarity',
+          model: "",
+          options: [
+            { text: 'Clear', value: 'clear' },
+            { text: 'Mostly clear', value: 'mostly_clear' },
+            { text: 'Unclear', value: 'unclear' }
+          ]
+        },
+        {
+          label: 'Background noise level',
+          key: 'backgroundNoise',
+          model: "",
+          options: [
+            { text: 'None', value: 'none' },
+            { text: 'Low', value: 'low' },
+            { text: 'Moderate', value: 'moderate' },
+            { text: 'High', value: 'high' }
+          ]
+        },
+        {
+          label: 'Speaking pace',
+          key: 'speakingPace',
+          model: "",
+          options: [
+            { text: 'Slow', value: 'slow' },
+            { text: 'Normal', value: 'normal' },
+            { text: 'Fast', value: 'fast' }
+          ]
+        },
+        {
+          label: 'Noticeable accent',
+          key: 'accent',
+          model: "",
+          options: [
+            { text: 'None', value: 'none' },
+            { text: 'Mild', value: 'mild' },
+            { text: 'Strong', value: 'strong' }
+          ]
+        },
+        {
+          label: 'Overall audio quality',
+          key: 'audioQuality',
+          model: "",
+          options: [
+            { text: 'Good', value: 'good' },
+            { text: 'Acceptable', value: 'acceptable' },
+            { text: 'Poor', value: 'poor' }
+          ]
+        }
+      ],
+      instructions: `
+        <div>
+          <h2>Verify + Add Metadata to a Recording</h2>
+          <p>
+            In this task, you will listen to a recorded sentence and verify that it matches the text shown on the screen.
+            Your feedback ensures that the speech dataset remains accurate, clear, and high quality.
+          </p>
+
+          <h3>1. Instructions</h3>
+          <p>
+            Your job is to carefully listen to the recording and determine whether it accurately represents the written sentence.
+            You will also assess audio quality and other aspects of the recording.
+          </p>
+
+          <h4>Verification Guidelines</h4>
+          <ul>
+            <li>The recording should match the sentence exactly, word for word.</li>
+            <li>Abbreviations and letter sequences must be read as shown (e.g., “N Y C” should be spoken “N” “Y” “C”).</li>
+            <li>Check that the voice is clear and intelligible.</li>
+            <li>Ensure there is minimal background noise that interferes with understanding.</li>
+            <li>Confirm that the speaker's pace is natural and consistent.</li>
+          </ul>
+
+          <h4>What to Look For</h4>
+          <ul>
+            <li>Correct pronunciation of all words and letters.</li>
+            <li>No missing words, repetitions, or added words.</li>
+            <li>Audio is free from clipping, distortion, or excessive noise.</li>
+            <li>Speaker's accent should be noted if it makes the sentence difficult to understand.</li>
+          </ul>
+
+          <h4>What NOT to Do</h4>
+          <ul>
+            <li>Do not assume words are correct if they are mispronounced.</li>
+            <li>Do not ignore background noise or poor audio quality.</li>
+            <li>Do not provide subjective opinions unrelated to the recording quality.</li>
+          </ul>
+
+          <h3>2. Examples</h3>
+
+          <p><strong>✅ Good Recordings</strong></p>
+          <ul>
+            <li>Every word matches the sentence exactly.</li>
+            <li>Voice is clear, natural, and easy to understand.</li>
+            <li>Minimal background noise, good audio quality.</li>
+          </ul>
+
+          <p><strong>❌ Bad Recordings</strong></p>
+          <ul>
+            <li>Words are skipped, added, or changed.</li>
+            <li>Abbreviations read incorrectly.</li>
+            <li>Recording is noisy, distorted, or hard to understand.</li>
+            <li>Pace is too fast or unnatural.</li>
+          </ul>
+
+          <h3>3. Tips for Success</h3>
+          <ul>
+            <li>Listen to the full recording before making a decision.</li>
+            <li>Pay close attention to letter sequences and abbreviations.</li>
+            <li>Use headphones for better audio clarity when possible.</li>
+            <li>If unsure, “Report and Skip” the recording to avoid mistakes.</li>
+            <li>Check all required metadata fields before submitting.</li>
+          </ul>
+
+          <p>
+            Your verification helps ensure the dataset is high quality and useful for training accurate AI models.
+          </p>
+        </div>
+        `
+    };
+  },
+  computed: {
+    isIncomplete() {
+      return (
+        this.isValidated === "" ||
+        Object.values(this.metadata).some(value => value === "")
+      );
+    }
+  },
+  mounted() {
+      window.top.postMessage(
+        {
+          type: "task-instructions",
+          instructions: this.instructions,
+        },
+        "*"
+      );
+    },
+  methods: {
+    setFieldValue(field, value) {
+      if (field.key === "isValidated") {
+        this.isValidated = value;
+      } else {
+        this.metadata[field.key] = value;
+      }
+      field.model = value;
+    },
+    uploadAndSubmit() {
+      this.btnLoading = true;
+      if (this.isIncomplete) {
+        this.btnLoading = false;
+        return;
+      }
+      try {
+        parent.postMessage(
+          {
+            task: "submit",
+            values: {
+              taskTitle: this.title,
+              author: this.author,
+              sentence: this.sentence,
+              sentence_type: this.sentence_type,
+              language: this.language,
+              recording: this.recordingUrl,
+              metadata: { ...this.metadata },
+              isValidated: this.isValidated,
+            },
+          },
+          "*"
+        );
+      } catch (error) {
+        console.error("Failed to submit", error);
+      }
+      this.btnLoading = false;
+    }
+  }
+}).mount("#app");
+</script>

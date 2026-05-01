@@ -1,12 +1,11 @@
 <div id="app" style="text-align: center">
-  <h1>Effect AI - Sentence Reader</h1>
+  <h1>Effect AI - Prompt Answering</h1>
   <hr />
 
   <div class="mx-auto" style="max-width: 80%">
-    <p class="mb-5">Click <b>Record</b> then read the sentence aloud</p>
-
+    <p class="mb-5">Click <b>Record</b> then answer the prompt aloud</p>
     <div class="box">
-      <p class="is-size-4 has-text-weight-semibold" v-cloak>{{ sentence }}</p>
+      <p class="is-size-4 has-text-weight-semibold" v-cloak>{{ prompt }}</p>
     </div>
 
     <!-- WaveSurfer container -->
@@ -19,7 +18,7 @@
     </div>
 
     <p class="is-size-7 mb-2">
-      By clicking this button, you accept that the sentence contributed here will be added to a publicly available cc-0 licensed dataset.
+      By clicking this button, you accept that the recording contributed here will be added to a publicly available cc-0 licensed dataset.
     </p>
 
     <p style="color: red;" :class="{'is-hidden mb-3': !notComplete}">
@@ -27,7 +26,7 @@
     </p>
 
     <p style="color: red;" :class="{'is-hidden mb-3': !fileTooBig}">
-      File size too large. Please stop recording once you've finished reading the sentence.
+      File size too large. Please stop recording once you've finished answering the prompt.
     </p>
 
     <button @click.prevent="uploadAndSubmit" class="button is-success is-large" :class="{'is-loading': btnLoading}">
@@ -47,8 +46,8 @@ import RecordPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/record.
 createApp({
   data() {
     return {
-      title: "Effect AI Sentence Reader",
-      sentence: (JSON.parse("${result}")).values.sentence,
+      title: "Effect AI Prompt Answering",
+      prompt: (JSON.parse("${result}")).values.prompt,
       wavesurfer: null,
       recordPlugin: null,
       isRecording: false,
@@ -61,20 +60,68 @@ createApp({
       fileTooBig: false,
       instructions: `
         <div>
-          <p>Please follow these steps carefully to ensure your audio is useful and clear:</p>
-          <br>
-          <li><strong>Read the sentence exactly</strong> - Include every article and the correct plural form. Don't shorten or add words.</li>
-          <br>
-          <li><strong>Speak clearly and naturally</strong> - Don't trail off or adding extra phrases.</li>
-          <br>
-          <li><strong>Accent Forgiveness</strong> - Varied pronunciation is fine as long as the intended text is recognizable.</li>
-          <br>
-          <li><strong>Avoid too much background noise</strong> - Quiet ambient noise is OK, but distinct words from others interfere with accuracy.</li>
-          <br>
-          <li>If the recording is too quiet, noisy, or breaks up, please re-record until the full sentence is audible and matches the text.</li>
-          <br>
-          <li>Clip length should stay under ~15 seconds. Most sentences take under 10 seconds. Aim for brevity and clarity.</li>
-        </div>`
+          <h2>Answer a Prompt</h2>
+          <p>
+            In this task, you will record yourself answering a short prompt shown on the screen.
+            The goal is to collect natural spoken responses that are clear, personal, and brief.
+          </p>
+
+          <h3>1. Instructions</h3>
+          <p>
+            Your job is to answer the prompt out loud in your own words.
+            These recordings will be used in a speech dataset, so clarity and natural speech are important.
+          </p>
+
+          <h4>Recording Guidelines</h4>
+          <ul>
+            <li>Answer the prompt naturally, as if speaking to another person.</li>
+            <li>Keep your response short and focused.</li>
+            <li>Do not speak for too long. Try to stay under 30 seconds.</li>
+            <li>Speak clearly at a normal, conversational pace.</li>
+            <li>Use your own words. There is no single correct answer.</li>
+            <li>Record in a quiet environment when possible.</li>
+          </ul>
+
+          <h4>What NOT to Do</h4>
+          <ul>
+            <li>Do not read the prompt instead of answering it.</li>
+            <li>Do not give very long or detailed stories.</li>
+            <li>Do not include names, addresses, or other identifying information.</li>
+            <li>Do not add filler sounds for long periods.</li>
+            <li>Do not record with loud background noise, music, or voices.</li>
+          </ul>
+
+          <h3>2. Examples</h3>
+
+          <p><strong>✅ Good Answers</strong></p>
+          <ul>
+            <li>A short story that answers the prompt clearly.</li>
+            <li>Natural speech with a clear beginning and end.</li>
+            <li>Focused on one moment or feeling.</li>
+          </ul>
+
+          <p><strong>❌ Bad Answers</strong></p>
+          <ul>
+            <li>Very long stories that go off topic.</li>
+            <li>Silence or only a few unclear words.</li>
+            <li>Reading the prompt instead of answering it.</li>
+            <li>Sharing personal details like full names or contact information.</li>
+          </ul>
+
+          <h3>3. Tips for Success</h3>
+          <ul>
+            <li>Think briefly about your answer before recording.</li>
+            <li>Focus on a single moment or experience.</li>
+            <li>Stop recording once you have answered the prompt.</li>
+            <li>If you make a mistake, you can re-record.</li>
+          </ul>
+
+          <p>
+            When you are satisfied with your recording, submit it and continue to the next task.
+            Thank you for sharing your voice.
+          </p>
+        </div>
+        `
     };
   },
   mounted() {
@@ -172,7 +219,7 @@ createApp({
           task: "submit",
           values: {
             taskTitle: this.title,
-            sentence: this.sentence,
+            prompt: this.prompt,
             recording: "https://" + this.ipfsHOST + "/ipfs/" + this.ipfsCID
           }
         }, "*");

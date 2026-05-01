@@ -1,3 +1,4 @@
+<meta charset="UTF-8">
 <div id="app" style="text-align: center">
   <h1>Effect AI - Sentence Verification </h1>
 
@@ -54,84 +55,51 @@
         btnLoading: false,
         author: "${submissionByPeer}", 
         // incoming result - {"timestamp": "", "submissionByPeer": "", "taskId": "", "result": "JSON_STRING"}
-        sentence: (JSON.parse("${result}")).values.answer, 
+        sentence: "${sentence}",
         isValidated: "",
         loading: true,
         notComplete: false,
-        instructions: `
+instructions: `
           <div>
-            <h2>Verify a Sentence - Common Voice</h2>
+            <h2>Verify a Sentence</h2>
             <p>
-              In this task, you'll review short, simple, and natural sentences created by other contributors.
-              Your goal is to decide whether each sentence follows the project guidelines and can be used to train AI models effectively.
+              In this task, you'll review short sentences extracted from TV dialogue scripts.
+              Your goal is to decide whether each sentence is clear, readable, and suitable for use in training AI speech models.
             </p>
 
             <h3>1. Instructions</h3>
             <p>
-              Your job is to carefully read each sentence and decide whether it is clear, natural, and written in good English.
-              You should mark a sentence as <strong>“Yes”</strong> if it follows the rules below, or <strong>“No”</strong> if it does not. If 
+              Your job is to carefully read each sentence and decide whether it sounds like something a person would naturally say out loud.
+              You should mark a sentence as <strong>"Yes"</strong> if it follows the rules below, or <strong>"No"</strong> if it does not. If 
               you are unsure, you may <strong>Skip</strong> it.
             </p>
 
             <h4>Sentence Verification Guidelines</h4>
             <ul>
-              <li>The sentence should be short - fewer than 15 words.</li>
-              <li>It must have proper grammar, spelling, and punctuation.</li>
-              <li>It should sound natural and conversational, like everyday speech.</li>
-              <li>Casual English is fine, but avoid confusing slang or unclear phrasing.</li>
-              <li>The sentence should make complete sense on its own.</li>
+              <li>The sentence should be fewer than 15 words.</li>
+              <li>It must be a complete thought that makes sense on its own.</li>
+              <li>It should sound natural when read aloud, like real spoken English.</li>
+              <li>Casual or emotional language is fine, these are from dramatic dialogue.</li>
+              <li>Character names (e.g. "I love you, Ryan.") are acceptable.</li>
             </ul>
 
             <h4>Mark as INCORRECT if you see:</h4>
             <ul>
               <li>Numbers or special characters (e.g. $, %, @, #, 123).</li>
               <li>Foreign letters or words not in English.</li>
-              <li>Overly complex, unnatural, or technical language.</li>
-              <li>Personal information (like names, addresses, phone numbers, or emails).</li>
-              <li>Major spelling or grammar mistakes.</li>
-              <li>Sentences that are too short or don't sound like natural speech.</li>
+              <li>The sentence appears cut off, garbled, or incomplete (e.g. "I didn't come here to talk me?").</li>
+              <li>Stage directions or sound cues that were not properly removed (e.g. "(Music-plays)", "[Door slams]").</li>
+              <li>The sentence is too short or vague to make sense on its own (e.g. "That is." or "Yeah.").</li>
+              <li>Overly technical or unnatural language that doesn't sound like real speech.</li>
+              <li>Real-world personal information such as addresses, phone numbers, or emails.</li>
             </ul>
 
-            <h3>2. Examples</h3>
-            <p><strong>✅ Correct Sentences</strong></p>
-            <ul>
-              <li>The sky is blue with light clouds.</li>
-              <li>My dog likes to nap in the sun.</li>
-              <li>People enjoy walking through the park.</li>
-            </ul>
-
-            <p><strong>❌ Incorrect Sentences</strong></p>
-            <ul>
-              <li>Sky IS bLUE &amp; FULL OF $HINY CLOUDS!!! (wrong spelling, special characters)</li>
-              <li>The country has 331,449,281 people. (numbers not allowed)</li>
-              <li>The sun sets. The moon rises. (too short, not conversational)</li>
-              <li>Mi perro duerme en la silla. (foreign language)</li>
-            </ul>
-
-            <h3>3. Tips for Success</h3>
+            <h3>2. Tips for Success</h3>
             <ul>
               <li>Read the sentence out loud, it should sound natural and easy to say.</li>
-              <li>If you have to read it twice to understand it, it's probably incorrect.</li>
+              <li>If the sentence feels incomplete or confusing, mark it as incorrect.</li>
+              <li>Don't penalize sentences just because they sound dramatic or emotional. This is expected from this type of dialogue.</li>
               <li>Don't overthink it, use your common sense and trust your ear for natural English.</li>
-            </ul>
-
-            <h3>4. Common Sentence Topics You'll See</h3>
-            <p>
-              Sentences often describe simple, everyday topics. You don't need to judge the topic,
-              just check that the sentence follows the rules and sounds natural.
-            </p>
-
-            <ul>
-              <li><strong>Food &amp; Drinks</strong> - “I like fresh bread.”</li>
-              <li><strong>Weather &amp; Seasons</strong> - “The sky is cloudy today.”</li>
-              <li><strong>Animals &amp; Pets</strong> - “My dog sleeps on the chair.”</li>
-              <li><strong>Daily Routines</strong> - “I brush my teeth at night.”</li>
-              <li><strong>Home &amp; Family</strong> - “My sister reads in the living room.”</li>
-              <li><strong>Nature &amp; Outdoors</strong> - “The forest is full of tall trees.”</li>
-              <li><strong>Travel and Places</strong> - “The bus stops near the library.”</li>
-              <li><strong>School &amp; Learning</strong> - “The student writes in a notebook.”</li>
-              <li><strong>Work &amp; Hobbies</strong> - “I play guitar in the evening.”</li>
-              <li><strong>Feelings &amp; Opinions</strong> - “I feel happy when I see my friends.”</li>
             </ul>
           </div>
           `

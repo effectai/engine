@@ -71,6 +71,7 @@ const props = defineProps({
   icon: { type: String, default: "🛡" },
   successText: { type: String, default: "Capability granted!" },
   autoPlay: { type: Boolean, default: false }, // run animation on mount
+  autoNavigate: { type: Boolean, default: true }, // auto-navigate to dashboard on continue
 });
 
 const emit = defineEmits(["claimed", "continue"]);
@@ -129,7 +130,11 @@ function loop() {
 
 const router = useRouter();
 const continueHandler = () => {
-  router.push("/");
+  emit("continue");
+  // Only route to dashboard if autoNavigate is enabled
+  if (props.autoNavigate) {
+    router.push("/");
+  }
 };
 
 const { awardCapability } = useCapabilities();

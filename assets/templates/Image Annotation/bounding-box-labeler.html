@@ -1,0 +1,1050 @@
+<style>
+  .canvas-container {
+    position: relative;
+    display: inline-block;
+    cursor: crosshair;
+    user-select: none;
+    touch-action: none;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .canvas-container canvas {
+    display: block;
+  }
+  .bbox-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #dbdbdb;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+  }
+  .bbox-color-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+  }
+  .label-selector {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: #f5f5f5;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    justify-content: center;
+  }
+  .label-checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.25rem;
+    border-radius: 4px;
+  }
+  .label-checklist-item:active {
+    background: #f0f0f0;
+  }
+  .label-checklist-item .icon {
+    font-size: 1.1rem;
+  }
+  .canvas-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .size-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .size-control input[type="range"] {
+    width: 180px;
+  }
+  .quick-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+  @media (max-width: 768px) {
+    .label-selector {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .size-control input[type="range"] {
+      width: 120px;
+    }
+    .bbox-list-item {
+      font-size: 0.85rem;
+    }
+    .label-checklist-item {
+      padding: 0.5rem 0.25rem;
+      font-size: 0.95rem;
+    }
+  }
+</style>
+
+<div id="app" style="text-align: center">
+  <h1 class="title is-3">Effect AI - Bounding Box Labeler</h1>
+  <p class="subtitle is-6">Draw bounding boxes around objects in the image</p>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 95%">
+
+    <!-- Active label selector -->
+    <div class="label-selector">
+      <strong>Drawing label:</strong>
+      <div class="select">
+        <select v-model="activeLabel">
+          <option v-for="label in labels" :key="label" :value="label">{{ label }}</option>
+        </select>
+      </div>
+      <span class="bbox-color-dot" :style="{ background: labelColor(activeLabel) }"></span>
+    </div>
+
+    <p class="help mb-3" v-if="!isMobile">Select a label, then click and drag to draw. <strong>Shift+scroll</strong> to zoom. <strong>Ctrl+click</strong> a box to delete it.</p>
+    <p class="help mb-3" v-else>Select a label, then tap and drag to draw. <strong>Pinch</strong> to zoom, <strong>two fingers</strong> to pan.</p>
+
+    <!-- Canvas controls -->
+    <div class="canvas-controls" v-if="!loading && !loadError">
+      <div class="size-control">
+        <small>Zoom:</small>
+        <input type="range" min="100" max="500" step="10" v-model.number="zoomSlider" @input="onZoomSlider" />
+        <small>{{ zoomSlider }}%</small>
+      </div>
+      <label class="checkbox">
+        <input type="checkbox" v-model="hideBoxes" @change="redraw" />
+        Hide boxes
+      </label>
+      <button class="button is-small" @click="resetView" title="Reset zoom and pan">Reset view</button>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="quick-actions" v-if="!loading && !loadError && boxes.length > 0">
+      <button class="button is-small is-danger is-outlined" @click="undoLastBox">
+        Undo last box
+      </button>
+    </div>
+
+    <!-- Loading indicator -->
+    <div v-if="loading" class="mb-3">
+      <div class="is-size-5 mb-2">Loading image...</div>
+      <progress v-if="!loadTimedOut" class="progress is-small is-info" style="max-width: 300px; margin: 0 auto;"></progress>
+      <div v-if="loadTimedOut" class="notification is-warning" style="max-width: 500px; margin: 0 auto;">
+        <p class="mb-3">The image could not be loaded. You may skip this task.</p>
+        <button class="button is-warning" @click="skipTask">Skip Task</button>
+      </div>
+    </div>
+
+    <!-- Load error -->
+    <div v-if="loadError && !loading" class="notification is-danger" style="max-width: 500px; margin: 0 auto;">
+      <p class="mb-3">Failed to load image. You may skip this task.</p>
+      <button class="button is-danger is-outlined" @click="skipTask">Skip Task</button>
+    </div>
+
+    <!-- Canvas area -->
+    <div class="canvas-container"
+      v-show="!loading && !loadError"
+      @mousedown="onMouseDown"
+      @mousemove="onMouseMove"
+      @mouseup="onMouseUp"
+      @mouseleave="onMouseLeave"
+      @wheel="onWheel"
+      @touchstart.prevent="onTouchStart"
+      @touchmove.prevent="onTouchMove"
+      @touchend.prevent="onTouchEnd"
+      @touchcancel.prevent="cancelDraw"
+    >
+      <canvas ref="canvas"></canvas>
+    </div>
+
+    <hr />
+
+    <!-- Label checklist -->
+    <div class="mx-auto has-text-left" style="max-width: 600px">
+      <h2 class="title is-5">Labels Checklist</h2>
+      <div class="label-checklist-item" v-for="label in labels" :key="label"
+           @click="activeLabel = label" style="cursor: pointer;">
+        <span class="icon" v-if="boxCountFor(label) > 0" style="color: #48c774;">&#10003;</span>
+        <span class="icon" v-else style="color: #dbdbdb;">&#9675;</span>
+        <span class="bbox-color-dot" :style="{ background: labelColor(label) }"></span>
+        <span :class="{ 'has-text-weight-semibold': activeLabel === label }">{{ label }}</span>
+        <span class="tag is-light ml-1" v-if="boxCountFor(label) > 0">{{ boxCountFor(label) }} box<span v-if="boxCountFor(label) > 1">es</span></span>
+        <span class="tag is-info is-light ml-1" v-if="activeLabel === label">selected</span>
+        <button class="button is-small ml-auto"
+          :class="visibleLabels[label] === false ? 'is-light' : 'is-info is-outlined'"
+          @click.stop="toggleLabelVisibility(label)"
+          :title="visibleLabels[label] === false ? 'Show boxes for ' + label : 'Hide boxes for ' + label">
+          {{ visibleLabels[label] === false ? 'Show' : 'Hide' }}
+        </button>
+      </div>
+    </div>
+
+    <hr />
+
+    <!-- Bounding box list -->
+    <div class="mx-auto has-text-left" style="max-width: 600px" v-if="boxes.length > 0">
+      <h2 class="title is-5">Drawn Boxes ({{ boxes.length }})</h2>
+      <div class="bbox-list-item" v-for="(box, idx) in boxes" :key="idx">
+        <div style="display: flex; align-items: center;">
+          <span class="bbox-color-dot" :style="{ background: box.color }"></span>
+          <span class="has-text-weight-semibold">{{ box.label }}</span>
+        </div>
+        <button class="delete" @click="removeBox(idx)" title="Remove this box"></button>
+      </div>
+    </div>
+
+    <div v-if="boxes.length === 0" class="has-text-grey mt-3 mb-3">
+      No bounding boxes drawn yet. Select a label and draw on the image.
+    </div>
+
+    <hr />
+
+    <!-- Validation -->
+    <p style="color: red;" :class="{'is-hidden mb-3': !notComplete}">
+      Task incomplete &ndash; Every label must have at least one bounding box
+    </p>
+    <p style="color: red;" :class="{'is-hidden mb-3': missingLabels.length === 0 || !notComplete}">
+      Missing: {{ missingLabels.join(', ') }}
+    </p>
+
+    <!-- Submit -->
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-success is-large mt-4"
+      :class="{'is-loading': btnLoading}"
+    >
+      Submit
+    </button>
+  </div>
+
+  <!-- Resources -->
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    const BOX_COLORS = [
+      "#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4",
+      "#42d4f4", "#f032e6", "#bfef45", "#fabed4", "#469990",
+      "#dcbeff", "#9A6324", "#800000", "#aaffc3", "#808000",
+      "#000075", "#a9a9a9"
+    ];
+
+    const HANDLE_RADIUS = 8;
+
+    createApp({
+      data() {
+        return {
+          title: "Bounding Box Labeler",
+          imageUrl: "${url}",
+          rawLabels: "${labels}",
+          inputId: "${id}",
+          inputSource: "${source}",
+          inputWidth: "${width}",
+          inputHeight: "${height}",
+
+          btnLoading: false,
+          notComplete: false,
+          loading: true,
+          loadError: false,
+          loadTimedOut: false,
+          loadTimer: null,
+          isMobile: false,
+
+          // Labels
+          labels: [],
+          activeLabel: "",
+          labelColorMap: {},
+
+          // Boxes
+          boxes: [],
+
+          // Drawing state
+          isDrawing: false,
+          drawStartImg: null,
+          drawCurrentImg: null,
+
+          // Resizing state
+          isResizing: false,
+          resizeBoxIdx: -1,
+          resizeHandle: null, // "tl", "tr", "bl", "br"
+          selectedBoxIdx: -1,
+
+          // Viewport: image coordinates visible at canvas center
+          viewCenterX: 0,
+          viewCenterY: 0,
+          viewZoom: 1, // 1 = image fits canvas
+          baseScale: 1,
+
+          // Canvas
+          img: null,
+          canvasW: 0,
+          canvasH: 0,
+          hideBoxes: false,
+          zoomSlider: 100,
+          visibleLabels: {}, // label -> true/false for filter
+
+          // Touch tracking
+          lastTouchDist: 0,
+          lastTouchMid: null,
+          touchMode: null, // "draw", "pinch", null
+          pinchStartZoom: 1,
+          pinchStartCenter: null,
+          touchStartPos: null, // for tap vs drag detection
+
+          instructions: `<div>
+            <h2>Bounding Box Labeler</h2>
+            <p>In this task you will draw bounding boxes around specific objects in an image.</p>
+
+            <h3>1. Instructions</h3>
+            <ul>
+              <li>You are given a list of <strong>labels</strong> to find in the image.</li>
+              <li>Select a label from the dropdown (or tap a label in the checklist), then <strong>click/tap and drag</strong> on the image to draw a rectangle around that object.</li>
+              <li>You must draw <strong>at least one box for every label</strong> in the list.</li>
+              <li>You may draw <strong>multiple boxes</strong> for the same label if there are multiple instances.</li>
+              <li>Draw <strong>tight</strong> boxes that closely fit each object &mdash; avoid large empty margins.</li>
+              <li><strong>Zoom in</strong> for precision: use the slider, <strong>Shift+scroll</strong> (desktop), or pinch gesture (mobile).</li>
+              <li><strong>Pan</strong> when zoomed in: hold Shift+drag (desktop) or two-finger drag (mobile).</li>
+              <li>After drawing a box, you can <strong>tap/click it</strong> to select it, then <strong>drag its corner handles</strong> to resize.</li>
+              <li>Remove a box: click &times; in the box list, use <strong>Ctrl+click</strong> on it (desktop), or tap <strong>Undo last box</strong>.</li>
+              <li>Use <strong>Hide boxes</strong> to see the image clearly when it gets crowded.</li>
+              <li>If the image fails to load, click <strong>Skip Task</strong>.</li>
+            </ul>
+
+            <h3>2. Examples</h3>
+            <p><strong>Good annotations:</strong></p>
+            <ul>
+              <li>Box tightly fits the object with minimal background.</li>
+              <li>Every label has at least one bounding box.</li>
+            </ul>
+            <p><strong>Bad annotations:</strong></p>
+            <ul>
+              <li>Box much larger than the object.</li>
+              <li>Object partially cut off by the box.</li>
+              <li>Missing labels.</li>
+            </ul>
+
+            <h3>3. Tips</h3>
+            <ul>
+              <li><strong>Zoom in first</strong>, then draw &mdash; much more accurate on mobile.</li>
+              <li>Use <strong>Undo last box</strong> for quick corrections.</li>
+              <li>Drag corner handles to adjust a box after drawing it.</li>
+              <li>Check the Labels Checklist before submitting.</li>
+            </ul>
+          </div>`
+        };
+      },
+      computed: {
+        missingLabels() {
+          return this.labels.filter(l => this.boxCountFor(l) === 0);
+        }
+      },
+      mounted() {
+        this.isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+        this.labels = this.rawLabels.split("|").map(l => l.trim()).filter(l => l.length > 0);
+        this.labels.forEach((label, i) => {
+          this.labelColorMap[label] = BOX_COLORS[i % BOX_COLORS.length];
+        });
+        if (this.labels.length > 0) this.activeLabel = this.labels[0];
+
+        // All labels visible by default
+        this.labels.forEach(l => { this.visibleLabels[l] = true; });
+
+        // Listen for mouseup outside the canvas so dragging past edges still finishes the box
+        this._onDocMouseUp = (e) => {
+          if (this.isDrawing || this._isPanning || this.isResizing) {
+            this.onMouseUp(e);
+          }
+        };
+        document.addEventListener("mouseup", this._onDocMouseUp);
+
+        window.top.postMessage(
+          { type: "task-instructions", instructions: this.instructions },
+          "*"
+        );
+        this.loadImage();
+      },
+      beforeUnmount() {
+        if (this.loadTimer) clearTimeout(this.loadTimer);
+        document.removeEventListener("mouseup", this._onDocMouseUp);
+      },
+      methods: {
+        labelColor(label) {
+          return this.labelColorMap[label] || "#a9a9a9";
+        },
+        boxCountFor(label) {
+          return this.boxes.filter(b => b.label === label).length;
+        },
+
+        toggleLabelVisibility(label) {
+          this.visibleLabels[label] = this.visibleLabels[label] === false ? true : false;
+          this.redraw();
+        },
+
+        // ── Image loading ──
+        loadImage() {
+          this.img = new Image();
+          this.loadTimer = setTimeout(() => {
+            if (this.loading) this.loadTimedOut = true;
+          }, 12000);
+          this.img.onload = () => {
+            clearTimeout(this.loadTimer);
+            this.loading = false;
+            this.loadTimedOut = false;
+            this.initCanvas();
+          };
+          this.img.onerror = () => {
+            clearTimeout(this.loadTimer);
+            this.loading = false;
+            this.loadError = true;
+          };
+          this.img.src = this.imageUrl;
+        },
+        skipTask() {
+          try {
+            parent.postMessage({
+              task: "submit",
+              values: {
+                taskTitle: this.title,
+                answer: {
+                  id: this.inputId, source: this.inputSource,
+                  image_url: this.imageUrl, skipped: true, reason: "image_load_failed"
+                }
+              }
+            }, "*");
+          } catch (e) { console.error("Skip failed:", e); }
+        },
+
+        // ── Canvas / viewport ──
+        initCanvas() {
+          const canvas = this.$refs.canvas;
+          const container = canvas.parentElement.parentElement;
+          this.canvasW = container.clientWidth;
+          this.canvasH = Math.min(
+            Math.round(this.canvasW * (this.img.naturalHeight / this.img.naturalWidth)),
+            Math.round(window.innerHeight * 0.75)
+          );
+          canvas.width = this.canvasW;
+          canvas.height = this.canvasH;
+
+          // baseScale fits the full image into the canvas
+          this.baseScale = Math.min(
+            this.canvasW / this.img.naturalWidth,
+            this.canvasH / this.img.naturalHeight
+          );
+          this.viewZoom = 1;
+          this.viewCenterX = this.img.naturalWidth / 2;
+          this.viewCenterY = this.img.naturalHeight / 2;
+          this.zoomSlider = 100;
+          this.redraw();
+        },
+
+        // Convert image coords → canvas pixel coords
+        imgToCanvas(ix, iy) {
+          const s = this.baseScale * this.viewZoom;
+          return {
+            x: (ix - this.viewCenterX) * s + this.canvasW / 2,
+            y: (iy - this.viewCenterY) * s + this.canvasH / 2
+          };
+        },
+        // Convert canvas pixel coords → image coords
+        canvasToImg(cx, cy) {
+          const s = this.baseScale * this.viewZoom;
+          return {
+            x: (cx - this.canvasW / 2) / s + this.viewCenterX,
+            y: (cy - this.canvasH / 2) / s + this.viewCenterY
+          };
+        },
+
+        clampView() {
+          // Allow panning but keep at least some image visible
+          const imgW = this.img.naturalWidth;
+          const imgH = this.img.naturalHeight;
+          this.viewCenterX = Math.max(-imgW * 0.25, Math.min(imgW * 1.25, this.viewCenterX));
+          this.viewCenterY = Math.max(-imgH * 0.25, Math.min(imgH * 1.25, this.viewCenterY));
+          this.viewZoom = Math.max(1, Math.min(5, this.viewZoom));
+        },
+
+        resetView() {
+          this.viewZoom = 1;
+          this.viewCenterX = this.img.naturalWidth / 2;
+          this.viewCenterY = this.img.naturalHeight / 2;
+          this.zoomSlider = 100;
+          this.redraw();
+        },
+
+        onZoomSlider() {
+          this.viewZoom = this.zoomSlider / 100;
+          this.clampView();
+          this.redraw();
+        },
+
+        // ── Drawing ──
+        redraw() {
+          const canvas = this.$refs.canvas;
+          if (!canvas) return;
+          const ctx = canvas.getContext("2d");
+          const s = this.baseScale * this.viewZoom;
+
+          ctx.clearRect(0, 0, this.canvasW, this.canvasH);
+
+          // Draw image through viewport
+          const tl = this.imgToCanvas(0, 0);
+          ctx.drawImage(this.img, tl.x, tl.y,
+            this.img.naturalWidth * s, this.img.naturalHeight * s);
+
+          // Draw existing boxes (unless hidden)
+          if (!this.hideBoxes) {
+            for (let i = 0; i < this.boxes.length; i++) {
+              const box = this.boxes[i];
+              // Skip boxes whose label is filtered out
+              if (this.visibleLabels[box.label] === false) continue;
+              const p1 = this.imgToCanvas(box.x_min, box.y_min);
+              const p2 = this.imgToCanvas(box.x_max, box.y_max);
+              const w = p2.x - p1.x;
+              const h = p2.y - p1.y;
+              this.drawBox(ctx, p1.x, p1.y, w, h, box.color, box.label,
+                i === this.selectedBoxIdx);
+            }
+          }
+
+          // Always draw in-progress box (even when hiding existing boxes)
+          if (this.isDrawing && this.drawStartImg && this.drawCurrentImg) {
+            const p1 = this.imgToCanvas(
+              Math.min(this.drawStartImg.x, this.drawCurrentImg.x),
+              Math.min(this.drawStartImg.y, this.drawCurrentImg.y)
+            );
+            const p2 = this.imgToCanvas(
+              Math.max(this.drawStartImg.x, this.drawCurrentImg.x),
+              Math.max(this.drawStartImg.y, this.drawCurrentImg.y)
+            );
+            const color = this.labelColor(this.activeLabel);
+            this.drawBox(ctx, p1.x, p1.y, p2.x - p1.x, p2.y - p1.y, color, null, false);
+          }
+        },
+
+        drawBox(ctx, x, y, w, h, color, label, selected) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = selected ? 3 : 2;
+          ctx.strokeRect(x, y, w, h);
+
+          ctx.fillStyle = color + "22";
+          ctx.fillRect(x, y, w, h);
+
+          if (label) {
+            ctx.font = "bold 13px sans-serif";
+            const textW = ctx.measureText(label).width + 8;
+            const textH = 20;
+            const labelY = y > textH ? y - textH : y;
+            ctx.fillStyle = color;
+            ctx.fillRect(x, labelY, textW, textH);
+            ctx.fillStyle = "#ffffff";
+            ctx.fillText(label, x + 4, labelY + 14);
+          }
+
+          // Draw corner handles if selected
+          if (selected) {
+            const corners = [
+              { x: x, y: y },
+              { x: x + w, y: y },
+              { x: x, y: y + h },
+              { x: x + w, y: y + h }
+            ];
+            for (const c of corners) {
+              ctx.fillStyle = "#ffffff";
+              ctx.strokeStyle = color;
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(c.x, c.y, HANDLE_RADIUS, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.stroke();
+            }
+          }
+        },
+
+        // Clamp image coordinates to image bounds
+        clampToImage(imgPos) {
+          return {
+            x: Math.max(0, Math.min(this.img.naturalWidth, imgPos.x)),
+            y: Math.max(0, Math.min(this.img.naturalHeight, imgPos.y))
+          };
+        },
+
+        // ── Hit testing ──
+        getCanvasXY(event) {
+          const canvas = this.$refs.canvas;
+          const rect = canvas.getBoundingClientRect();
+          return {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top
+          };
+        },
+
+        findBoxAt(imgPos) {
+          for (let i = this.boxes.length - 1; i >= 0; i--) {
+            const b = this.boxes[i];
+            if (imgPos.x >= b.x_min && imgPos.x <= b.x_max &&
+                imgPos.y >= b.y_min && imgPos.y <= b.y_max) {
+              return i;
+            }
+          }
+          return -1;
+        },
+
+        // Check if canvas pos is near a corner handle of the selected box
+        findHandle(canvasPos) {
+          if (this.selectedBoxIdx < 0) return null;
+          const box = this.boxes[this.selectedBoxIdx];
+          if (!box) return null;
+
+          const corners = [
+            { handle: "tl", ix: box.x_min, iy: box.y_min },
+            { handle: "tr", ix: box.x_max, iy: box.y_min },
+            { handle: "bl", ix: box.x_min, iy: box.y_max },
+            { handle: "br", ix: box.x_max, iy: box.y_max }
+          ];
+
+          const hitR = HANDLE_RADIUS + 6; // generous hit target
+          for (const c of corners) {
+            const cp = this.imgToCanvas(c.ix, c.iy);
+            const dx = canvasPos.x - cp.x;
+            const dy = canvasPos.y - cp.y;
+            if (dx * dx + dy * dy <= hitR * hitR) return c.handle;
+          }
+          return null;
+        },
+
+        // ── Mouse events ──
+        onMouseDown(event) {
+          const canvasPos = this.getCanvasXY(event);
+          const imgPos = this.clampToImage(this.canvasToImg(canvasPos.x, canvasPos.y));
+          this._mouseDownPos = canvasPos;
+
+          // Ctrl+click to delete
+          if (event.ctrlKey || event.metaKey) {
+            const idx = this.findBoxAt(imgPos);
+            if (idx >= 0) { this.boxes.splice(idx, 1); this.selectedBoxIdx = -1; this.redraw(); }
+            return;
+          }
+
+          // Shift+drag to pan
+          if (event.shiftKey) {
+            this._panStart = canvasPos;
+            this._panStartCenter = { x: this.viewCenterX, y: this.viewCenterY };
+            this._isPanning = true;
+            return;
+          }
+
+          // Check for handle drag on selected box
+          const handle = this.findHandle(canvasPos);
+          if (handle) {
+            this.isResizing = true;
+            this.resizeHandle = handle;
+            this.resizeBoxIdx = this.selectedBoxIdx;
+            return;
+          }
+
+          // Always start drawing — selection only happens on click-release (no drag)
+          this.isDrawing = true;
+          this.drawStartImg = imgPos;
+          this.drawCurrentImg = imgPos;
+        },
+
+        onMouseMove(event) {
+          const canvasPos = this.getCanvasXY(event);
+          const imgPos = this.clampToImage(this.canvasToImg(canvasPos.x, canvasPos.y));
+
+          if (this._isPanning) {
+            const s = this.baseScale * this.viewZoom;
+            this.viewCenterX = this._panStartCenter.x - (canvasPos.x - this._panStart.x) / s;
+            this.viewCenterY = this._panStartCenter.y - (canvasPos.y - this._panStart.y) / s;
+            this.clampView();
+            this.redraw();
+            return;
+          }
+
+          if (this.isResizing) {
+            const clamped = imgPos;
+            const box = this.boxes[this.resizeBoxIdx];
+            if (!box) return;
+            if (this.resizeHandle === "tl") { box.x_min = +clamped.x.toFixed(4); box.y_min = +clamped.y.toFixed(4); }
+            else if (this.resizeHandle === "tr") { box.x_max = +clamped.x.toFixed(4); box.y_min = +clamped.y.toFixed(4); }
+            else if (this.resizeHandle === "bl") { box.x_min = +clamped.x.toFixed(4); box.y_max = +clamped.y.toFixed(4); }
+            else if (this.resizeHandle === "br") { box.x_max = +clamped.x.toFixed(4); box.y_max = +clamped.y.toFixed(4); }
+            this.redraw();
+            return;
+          }
+
+          if (this.isDrawing) {
+            this.drawCurrentImg = imgPos;
+            this.redraw();
+            return;
+          }
+
+          // Update cursor
+          const canvas = this.$refs.canvas;
+          const handle = this.findHandle(canvasPos);
+          if (handle) {
+            canvas.style.cursor = (handle === "tl" || handle === "br") ? "nwse-resize" : "nesw-resize";
+          } else if (event.shiftKey) {
+            canvas.style.cursor = "grab";
+          } else {
+            canvas.style.cursor = "crosshair";
+          }
+        },
+
+        onMouseUp(event) {
+          if (this._isPanning) {
+            this._isPanning = false;
+            return;
+          }
+
+          if (this.isResizing) {
+            const box = this.boxes[this.resizeBoxIdx];
+            if (box) this.normalizeBox(box);
+            this.isResizing = false;
+            this.resizeHandle = null;
+            this.redraw();
+            return;
+          }
+
+          if (this.isDrawing) {
+            const canvasPos = this.getCanvasXY(event);
+            const imgPos = this.clampToImage(this.canvasToImg(canvasPos.x, canvasPos.y));
+
+            // Detect click (no drag) — treat as box selection
+            const dx = canvasPos.x - (this._mouseDownPos?.x || 0);
+            const dy = canvasPos.y - (this._mouseDownPos?.y || 0);
+            if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
+              this.isDrawing = false;
+              this.drawStartImg = null;
+              this.drawCurrentImg = null;
+              const clickedIdx = this.findBoxAt(imgPos);
+              if (clickedIdx >= 0) {
+                this.selectedBoxIdx = clickedIdx;
+              } else {
+                this.selectedBoxIdx = -1;
+              }
+              this.redraw();
+              return;
+            }
+
+            this.finishBox(imgPos);
+          }
+        },
+
+        // ── Mouse wheel zoom (requires Shift key) ──
+        onWheel(event) {
+          if (!event.shiftKey) return; // allow normal page scroll
+          event.preventDefault();
+
+          const canvasPos = this.getCanvasXY(event);
+          const imgBefore = this.canvasToImg(canvasPos.x, canvasPos.y);
+
+          const factor = event.deltaY < 0 ? 1.15 : 1 / 1.15;
+          this.viewZoom = Math.max(1, Math.min(5, this.viewZoom * factor));
+
+          // Zoom toward cursor position
+          const imgAfter = this.canvasToImg(canvasPos.x, canvasPos.y);
+          this.viewCenterX += imgBefore.x - imgAfter.x;
+          this.viewCenterY += imgBefore.y - imgAfter.y;
+          this.clampView();
+          this.zoomSlider = Math.round(this.viewZoom * 100);
+          this.redraw();
+        },
+
+        // ── Touch events ──
+        onTouchStart(event) {
+          if (event.touches.length === 2) {
+            this.touchMode = "pinch";
+            this.isDrawing = false;
+            this.drawStartImg = null;
+            this.drawCurrentImg = null;
+
+            const t1 = event.touches[0], t2 = event.touches[1];
+            this.lastTouchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            this.lastTouchMid = {
+              x: (t1.clientX + t2.clientX) / 2,
+              y: (t1.clientY + t2.clientY) / 2
+            };
+            this.pinchStartZoom = this.viewZoom;
+            this.pinchStartCenter = { x: this.viewCenterX, y: this.viewCenterY };
+            return;
+          }
+
+          if (event.touches.length === 1) {
+            const canvasPos = this.getCanvasXY(event.touches[0]);
+            const imgPos = this.clampToImage(this.canvasToImg(canvasPos.x, canvasPos.y));
+
+            // Save start position for tap-vs-drag detection
+            this.touchStartPos = canvasPos;
+
+            // Check for handle drag on selected box
+            const handle = this.findHandle(canvasPos);
+            if (handle) {
+              this.touchMode = "resize";
+              this.isResizing = true;
+              this.resizeHandle = handle;
+              this.resizeBoxIdx = this.selectedBoxIdx;
+              return;
+            }
+
+            // Always start drawing — selection only happens on tap (no drag)
+            this.touchMode = "draw";
+            this.isDrawing = true;
+            this.drawStartImg = imgPos;
+            this.drawCurrentImg = imgPos;
+          }
+        },
+
+        onTouchMove(event) {
+          if (this.touchMode === "pinch" && event.touches.length === 2) {
+            const t1 = event.touches[0], t2 = event.touches[1];
+            const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            const mid = {
+              x: (t1.clientX + t2.clientX) / 2,
+              y: (t1.clientY + t2.clientY) / 2
+            };
+
+            const zoomFactor = dist / this.lastTouchDist;
+            this.viewZoom = Math.max(1, Math.min(5, this.pinchStartZoom * zoomFactor));
+
+            const canvas = this.$refs.canvas;
+            const rect = canvas.getBoundingClientRect();
+            const s = this.baseScale * this.viewZoom;
+            const midCanvas = { x: mid.x - rect.left, y: mid.y - rect.top };
+            const startMidCanvas = {
+              x: this.lastTouchMid.x - rect.left,
+              y: this.lastTouchMid.y - rect.top
+            };
+            this.viewCenterX = this.pinchStartCenter.x - (midCanvas.x - startMidCanvas.x) / s;
+            this.viewCenterY = this.pinchStartCenter.y - (midCanvas.y - startMidCanvas.y) / s;
+
+            this.clampView();
+            this.zoomSlider = Math.round(this.viewZoom * 100);
+            this.redraw();
+            return;
+          }
+
+          if (this.touchMode === "resize" && event.touches.length === 1) {
+            const canvasPos = this.getCanvasXY(event.touches[0]);
+            const imgPos = this.clampToImage(this.canvasToImg(canvasPos.x, canvasPos.y));
+            const box = this.boxes[this.resizeBoxIdx];
+            if (!box) return;
+            if (this.resizeHandle === "tl") { box.x_min = +imgPos.x.toFixed(4); box.y_min = +imgPos.y.toFixed(4); }
+            else if (this.resizeHandle === "tr") { box.x_max = +imgPos.x.toFixed(4); box.y_min = +imgPos.y.toFixed(4); }
+            else if (this.resizeHandle === "bl") { box.x_min = +imgPos.x.toFixed(4); box.y_max = +imgPos.y.toFixed(4); }
+            else if (this.resizeHandle === "br") { box.x_max = +imgPos.x.toFixed(4); box.y_max = +imgPos.y.toFixed(4); }
+            this.redraw();
+            return;
+          }
+
+          if (this.touchMode === "draw" && event.touches.length === 1) {
+            const canvasPos = this.getCanvasXY(event.touches[0]);
+            this.drawCurrentImg = this.clampToImage(this.canvasToImg(canvasPos.x, canvasPos.y));
+            this.redraw();
+            return;
+          }
+
+          // If a second finger arrives during draw, switch to pinch
+          if (this.touchMode === "draw" && event.touches.length === 2) {
+            this.isDrawing = false;
+            this.drawStartImg = null;
+            this.drawCurrentImg = null;
+            this.touchMode = "pinch";
+
+            const t1 = event.touches[0], t2 = event.touches[1];
+            this.lastTouchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            this.lastTouchMid = {
+              x: (t1.clientX + t2.clientX) / 2,
+              y: (t1.clientY + t2.clientY) / 2
+            };
+            this.pinchStartZoom = this.viewZoom;
+            this.pinchStartCenter = { x: this.viewCenterX, y: this.viewCenterY };
+            this.redraw();
+          }
+        },
+
+        onTouchEnd(event) {
+          if (this.touchMode === "resize") {
+            const box = this.boxes[this.resizeBoxIdx];
+            if (box) this.normalizeBox(box);
+            this.isResizing = false;
+            this.resizeHandle = null;
+            this.touchMode = null;
+            this.redraw();
+            return;
+          }
+
+          if (this.touchMode === "draw" && this.isDrawing) {
+            // Detect tap (no drag) — treat as box selection instead
+            if (this.touchStartPos && this.drawCurrentImg) {
+              const endCanvas = this.imgToCanvas(this.drawCurrentImg.x, this.drawCurrentImg.y);
+              const dx = endCanvas.x - this.touchStartPos.x;
+              const dy = endCanvas.y - this.touchStartPos.y;
+              if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                this.isDrawing = false;
+                this.drawStartImg = null;
+                this.drawCurrentImg = null;
+                const clickedIdx = this.findBoxAt(this.clampToImage(
+                  this.canvasToImg(this.touchStartPos.x, this.touchStartPos.y)));
+                if (clickedIdx >= 0) {
+                  this.selectedBoxIdx = clickedIdx;
+                } else {
+                  this.selectedBoxIdx = -1;
+                }
+                this.touchMode = null;
+                this.touchStartPos = null;
+                this.redraw();
+                return;
+              }
+            }
+
+            this.finishBox(this.drawCurrentImg);
+            this.touchMode = null;
+            this.touchStartPos = null;
+            return;
+          }
+
+          if (event.touches.length === 0) {
+            this.touchMode = null;
+            this.touchStartPos = null;
+          }
+        },
+
+        // Normalize a box so min < max after resize
+        normalizeBox(box) {
+          const xMin = Math.min(box.x_min, box.x_max);
+          const xMax = Math.max(box.x_min, box.x_max);
+          const yMin = Math.min(box.y_min, box.y_max);
+          const yMax = Math.max(box.y_min, box.y_max);
+          box.x_min = +xMin.toFixed(4); box.x_max = +xMax.toFixed(4);
+          box.y_min = +yMin.toFixed(4); box.y_max = +yMax.toFixed(4);
+        },
+
+        // ── Shared box creation ──
+        finishBox(imgEndPos) {
+          this.isDrawing = false;
+          if (!imgEndPos || !this.drawStartImg) {
+            this.drawStartImg = null;
+            this.drawCurrentImg = null;
+            this.redraw();
+            return;
+          }
+
+          // Clamp to image bounds
+          const start = this.clampToImage(this.drawStartImg);
+          const end = this.clampToImage(imgEndPos);
+
+          const x_min = Math.min(start.x, end.x);
+          const y_min = Math.min(start.y, end.y);
+          const x_max = Math.max(start.x, end.x);
+          const y_max = Math.max(start.y, end.y);
+
+          // Ignore tiny boxes (in image pixels)
+          if ((x_max - x_min) < 3 || (y_max - y_min) < 3) {
+            this.drawStartImg = null;
+            this.drawCurrentImg = null;
+            this.redraw();
+            return;
+          }
+
+          const color = this.labelColor(this.activeLabel);
+          this.boxes.push({
+            x_min: +x_min.toFixed(4), y_min: +y_min.toFixed(4),
+            x_max: +x_max.toFixed(4), y_max: +y_max.toFixed(4),
+            label: this.activeLabel, color
+          });
+
+          this.notComplete = false;
+          this.selectedBoxIdx = this.boxes.length - 1;
+          this.drawStartImg = null;
+          this.drawCurrentImg = null;
+          this.redraw();
+        },
+
+        onMouseLeave(event) {
+          // Don't cancel — let the user finish the box outside the canvas.
+          // Just update the drawing position clamped to image bounds.
+          if (this.isDrawing) {
+            const canvasPos = this.getCanvasXY(event);
+            this.drawCurrentImg = this.clampToImage(this.canvasToImg(canvasPos.x, canvasPos.y));
+            this.redraw();
+          }
+        },
+
+        cancelDraw() {
+          if (this.isDrawing) {
+            this.isDrawing = false;
+            this.drawStartImg = null;
+            this.drawCurrentImg = null;
+            this.redraw();
+          }
+        },
+
+        undoLastBox() {
+          if (this.boxes.length > 0) {
+            this.boxes.pop();
+            this.selectedBoxIdx = -1;
+            this.redraw();
+          }
+        },
+
+        removeBox(idx) {
+          this.boxes.splice(idx, 1);
+          if (this.selectedBoxIdx === idx) this.selectedBoxIdx = -1;
+          else if (this.selectedBoxIdx > idx) this.selectedBoxIdx--;
+          this.redraw();
+        },
+
+        // ── Submit ──
+        async uploadAndSubmit() {
+          this.btnLoading = true;
+
+          if (this.missingLabels.length > 0) {
+            this.notComplete = true;
+            this.btnLoading = false;
+            return;
+          }
+
+          const imgW = this.img.naturalWidth;
+          const imgH = this.img.naturalHeight;
+          const annotations = this.boxes.map(b => ({
+            label: b.label,
+            bbox: [b.x_min, b.y_min, b.x_max, b.y_max]
+          }));
+
+          try {
+            parent.postMessage({
+              task: "submit",
+              values: {
+                taskTitle: this.title,
+                answer: {
+                  id: this.inputId, source: this.inputSource,
+                  image_url: this.imageUrl,
+                  image_width: imgW, image_height: imgH,
+                  annotations
+                }
+              }
+            }, "*");
+          } catch (error) {
+            console.error("Submit failed:", error);
+          }
+          this.btnLoading = false;
+        }
+      }
+    }).mount("#app");
+  </script>
+</div>
