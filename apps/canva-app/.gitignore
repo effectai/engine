@@ -1,0 +1,10 @@
+.DS_Store
+.env
+.env.local
+.idea
+.ssl
+*.log*
+*.db
+**/*/db.json
+dist
+node_modules
