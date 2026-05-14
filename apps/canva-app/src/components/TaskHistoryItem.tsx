@@ -1,4 +1,3 @@
-/* eslint-disable formatjs/no-literal-string-in-jsx -- Phase 1 placeholder copy. Wrap strings in <FormattedMessage>/useIntl before submitting to Canva. */
 import {
   Badge,
   Box,
@@ -10,6 +9,8 @@ import {
   Title,
   TrashIcon,
 } from "@canva/app-ui-kit";
+import { useIntl } from "react-intl";
+import type { IntlShape } from "react-intl";
 import type { CheckType, TaskRecord, TaskStatus } from "../types";
 import { CHECK_TYPES } from "../types";
 
@@ -18,21 +19,9 @@ const STATUS_TONE: Record<TaskStatus, "info" | "positive"> = {
   complete: "positive",
 };
 
-const STATUS_LABEL: Record<TaskStatus, string> = {
-  pending: "Pending",
-  complete: "Complete",
-};
-
-function checkTypeLabel(type: CheckType): string {
-  return CHECK_TYPES.find((checkTypeOption) => checkTypeOption.id === type)?.name ?? type;
-}
-
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString();
-  } catch {
-    return iso;
-  }
+function checkTypeLabel(type: CheckType, intl: IntlShape): string {
+  const meta = CHECK_TYPES.find((checkTypeOption) => checkTypeOption.id === type);
+  return meta ? intl.formatMessage(meta.name) : type;
 }
 
 type Props = {
@@ -42,6 +31,13 @@ type Props = {
 };
 
 export const TaskHistoryItem = ({ task, onView, onDelete }: Props) => {
+  const intl = useIntl();
+
+  const statusLabel: Record<TaskStatus, string> = {
+    pending: intl.formatMessage({ defaultMessage: "Pending", description: "Task status badge - not yet complete" }),
+    complete: intl.formatMessage({ defaultMessage: "Complete", description: "Task status badge - finished" }),
+  };
+
   return (
     <Box
       background="neutralSubtle"
@@ -50,28 +46,37 @@ export const TaskHistoryItem = ({ task, onView, onDelete }: Props) => {
       padding="2u"
     >
       <Rows spacing="1u">
-        <Title size="small">{checkTypeLabel(task.checkType)}</Title>
+        <Title size="small">{checkTypeLabel(task.checkType, intl)}</Title>
         <Text size="small" tone="tertiary">
-          {task.taskId}
+          {intl.formatMessage(
+            { defaultMessage: "{count} workers", description: "Number of workers assigned to a task" },
+            { count: task.workerCount },
+          )}
         </Text>
         <Text size="small" tone="tertiary">
-          {formatDate(task.submittedAt)}
+          {intl.formatDate(task.submittedAt)}
         </Text>
         <Badge
-          text={STATUS_LABEL[task.status]}
+          text={statusLabel[task.status]}
           tone={STATUS_TONE[task.status]}
         />
         <Columns spacing="1u" alignY="center">
           <Column>
             <Button variant="secondary" onClick={onView} stretch>
-              View Results
+              {intl.formatMessage({
+                defaultMessage: "View results",
+                description: "Button to view task results",
+              })}
             </Button>
           </Column>
           <Column width="content">
             <Button
               variant="tertiary"
               icon={TrashIcon}
-              ariaLabel="Delete check"
+              ariaLabel={intl.formatMessage({
+                defaultMessage: "Delete check",
+                description: "Aria label for the delete task button",
+              })}
               onClick={onDelete}
             />
           </Column>

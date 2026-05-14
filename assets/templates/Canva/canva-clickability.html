@@ -1,0 +1,200 @@
+<div id="app" style="text-align: center">
+  <h1 class="title is-4">Effect AI - Clickability Check</h1>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 680px">
+
+    <!-- Context banner -->
+    <div class="notification is-light mb-4" v-if="purpose || audience || goal" style="text-align: left">
+      <p v-if="purpose"><strong>Purpose:</strong> {{ purpose }}</p>
+      <p v-if="audience"><strong>Audience:</strong> {{ audience }}</p>
+      <p v-if="goal"><strong>Goal:</strong> {{ goal }}</p>
+    </div>
+
+    <!-- Phase: waiting — reveal button -->
+    <div v-if="phase === 'waiting'" style="padding: 3rem 0">
+      <p class="mb-5" style="font-size: 1.1rem">
+        Click the button below. The design will be shown for <strong>{{ revealDuration }} second{{ revealDuration === 1 ? '' : 's' }}</strong>.<br />
+        Pay attention to your first impression, then answer whether you would stop or click.
+      </p>
+      <button class="button is-primary is-large" @click="startReveal">
+        👁 Reveal Design
+      </button>
+    </div>
+
+    <!-- Phase: revealing — image visible with countdown -->
+    <div v-if="phase === 'revealing'">
+      <div class="notification is-warning is-light mb-3" style="font-size: 1.1rem; font-weight: 600">
+        Memorise it! Hiding in {{ countdown }}s…
+      </div>
+      <img
+        :src="imageUrl"
+        style="max-width: 100%; height: auto; margin: 0 auto; display: block; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 1.5rem"
+      />
+    </div>
+
+    <!-- Phase: answering — questions visible, image hidden -->
+    <div v-if="phase === 'answering'">
+      <p class="label is-size-5 mb-3">Would you stop scrolling or click on this?</p>
+      <div class="columns is-mobile is-centered mb-4">
+        <div class="column is-narrow">
+          <button
+            class="button is-large"
+            :class="{ 'is-success': wouldClick === true }"
+            @click="setAnswer(true)"
+            title="Shortcut: Y"
+          >👍 Yes, I'd stop / click</button>
+        </div>
+        <div class="column is-narrow">
+          <button
+            class="button is-large"
+            :class="{ 'is-danger': wouldClick === false }"
+            @click="setAnswer(false)"
+            title="Shortcut: N"
+          >👎 No, I'd scroll past</button>
+        </div>
+      </div>
+
+      <div class="field mb-4" v-if="wouldClick !== null">
+        <label class="label">Why? <span class="has-text-grey">(optional)</span></label>
+        <div class="control">
+          <div class="select is-fullwidth">
+            <select v-model="insight">
+              <option value="">— Select a reason —</option>
+              <template v-if="wouldClick === true">
+                <option value="The visual immediately caught my eye">The visual immediately caught my eye</option>
+                <option value="The headline or text is compelling">The headline or text is compelling</option>
+                <option value="The offer or value is clear">The offer or value is clear</option>
+                <option value="The colors or design stood out">The colors or design stood out</option>
+                <option value="It looks relevant to me">It looks relevant to me</option>
+                <option value="Other">Other</option>
+              </template>
+              <template v-if="wouldClick === false">
+                <option value="Nothing stood out visually">Nothing stood out visually</option>
+                <option value="The text is too small or hard to read">The text is too small or hard to read</option>
+                <option value="The design feels cluttered or busy">The design feels cluttered or busy</option>
+                <option value="The offer or message isn't clear">The offer or message isn't clear</option>
+                <option value="It doesn't feel relevant to me">It doesn't feel relevant to me</option>
+                <option value="The colors or design blended in">The colors or design blended in</option>
+                <option value="Other">Other</option>
+              </template>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <p class="has-text-danger mb-3" v-if="notComplete">Please choose Yes or No before submitting.</p>
+
+      <button
+        class="button is-success is-large"
+        :class="{ 'is-loading': btnLoading }"
+        @click.prevent="submit"
+        title="Shortcut: Enter"
+      >Submit</button>
+    </div>
+
+  </div>
+
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    createApp({
+      data() {
+        return {
+          imageUrl: "${imageUrl}",
+          purpose: "${purpose}",
+          audience: "${audience}",
+          goal: "${goal}",
+          taskId: "${taskId}",
+          checkType: "${checkType}",
+          revealDuration: Number("${revealDuration}") || 3,
+          phase: "waiting",   // 'waiting' | 'revealing' | 'answering'
+          countdown: 0,
+          wouldClick: null,
+          insight: "",
+          btnLoading: false,
+          notComplete: false,
+          _timer: null,
+        };
+      },
+      mounted() {
+        window.top.postMessage(
+          {
+            type: "task-instructions",
+            instructions: `
+              <div>
+                <p>Click <strong>Reveal Design</strong> to see the design briefly.</p>
+                <ul>
+                  <li>Judge on <em>first impression</em> — not after careful study</li>
+                  <li>After it hides, answer whether you would stop scrolling or click</li>
+                </ul>
+                <hr>
+                <p><strong>Shortcuts:</strong> Y = Yes, N = No, Enter = Submit</p>
+              </div>
+            `,
+          },
+          "*",
+        );
+        window.addEventListener("keydown", this.handleKey);
+      },
+      beforeUnmount() {
+        window.removeEventListener("keydown", this.handleKey);
+        if (this._timer) clearInterval(this._timer);
+      },
+      methods: {
+        startReveal() {
+          this.countdown = this.revealDuration;
+          this.phase = "revealing";
+          this._timer = setInterval(() => {
+            this.countdown -= 1;
+            if (this.countdown <= 0) {
+              clearInterval(this._timer);
+              this._timer = null;
+              this.phase = "answering";
+            }
+          }, 1000);
+        },
+        setAnswer(value) {
+          if (this.wouldClick !== value) {
+            this.insight = "";
+          }
+          this.wouldClick = value;
+        },
+        handleKey(e) {
+          if (this.phase !== "answering") return;
+          if (e.key === "y" || e.key === "Y") this.setAnswer(true);
+          if (e.key === "n" || e.key === "N") this.setAnswer(false);
+          if (e.key === "Enter") this.submit();
+        },
+        submit() {
+          if (this.wouldClick === null) {
+            this.notComplete = true;
+            return;
+          }
+          this.notComplete = false;
+          this.btnLoading = true;
+          parent.postMessage(
+            {
+              task: "submit",
+              values: {
+                taskTitle: "Canva Clickability Check",
+                answer: {
+                  taskId: this.taskId,
+                  checkType: this.checkType,
+                  wouldClick: this.wouldClick,
+                  insight: this.insight,
+                },
+              },
+            },
+            "*",
+          );
+          this.btnLoading = false;
+        },
+      },
+    }).mount("#app");
+  </script>
+</div>

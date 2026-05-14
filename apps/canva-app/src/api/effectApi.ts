@@ -20,6 +20,13 @@ export interface TaskStatusResponse {
   results?: CheckResults;
 }
 
+export class TaskNotFoundError extends Error {
+  constructor(taskId: string) {
+    super(`Task ${taskId} not found`);
+    this.name = "TaskNotFoundError";
+  }
+}
+
 async function authHeaders(): Promise<Record<string, string>> {
   try {
     const token = await auth.getCanvaUserToken();
@@ -50,6 +57,9 @@ export async function getTaskStatus(
   const res = await fetch(`${BACKEND_HOST}/api/task/${taskId}`, {
     headers: await authHeaders(),
   });
+  if (res.status === 404) {
+    throw new TaskNotFoundError(taskId);
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as any).error ?? `HTTP ${res.status}`);

@@ -1,50 +1,21 @@
-/* eslint-disable formatjs/no-literal-string-in-jsx -- Phase 1 placeholder copy. Wrap strings in <FormattedMessage>/useIntl before submitting to Canva. */
 import {
-  Button,
   FormField,
+  NumberInput,
   Rows,
   Select,
-  Text,
   TextInput,
-  Title,
 } from "@canva/app-ui-kit";
 import { useState } from "react";
-import * as styles from "styles/components.css";
+import { useIntl } from "react-intl";
 import type { TaskContext } from "../types";
+import {
+  DESIGN_PURPOSE_OPTIONS,
+  MAIN_GOAL_OPTIONS,
+  TARGET_AUDIENCE_OPTIONS,
+} from "../types";
 
 const MIN_WORKERS = 1;
 const MAX_WORKERS = 20;
-
-const DESIGN_PURPOSE_OPTIONS = [
-  "Facebook / Instagram ad",
-  "Event flyer",
-  "Product landing page",
-  "Email newsletter",
-  "Presentation",
-  "Poster",
-  "Social media post",
-  "Business card",
-];
-
-const TARGET_AUDIENCE_OPTIONS = [
-  "Small business owners",
-  "Fitness enthusiasts",
-  "Young adults (18-25)",
-  "Professionals / B2B",
-  "Parents",
-  "Students",
-  "General public",
-];
-
-const MAIN_GOAL_OPTIONS = [
-  "Drive sales",
-  "Generate leads",
-  "Build brand awareness",
-  "Promote an event",
-  "Drive website traffic",
-  "Increase engagement",
-  "Educate / inform",
-];
 
 export type ContextErrors = Partial<
   Record<keyof TaskContext | "workerCount", string>
@@ -65,20 +36,28 @@ export const ContextForm = ({
   onContextChange,
   onWorkerCountChange,
 }: Props) => {
+  const intl = useIntl();
+
   const [isOtherPurpose, setIsOtherPurpose] = useState(
     () =>
       context.designPurpose !== "" &&
-      !DESIGN_PURPOSE_OPTIONS.includes(context.designPurpose),
+      !DESIGN_PURPOSE_OPTIONS.some((option) => option.id === context.designPurpose),
   );
   const [isOtherAudience, setIsOtherAudience] = useState(
     () =>
       context.targetAudience !== "" &&
-      !TARGET_AUDIENCE_OPTIONS.includes(context.targetAudience),
+      !TARGET_AUDIENCE_OPTIONS.some((option) => option.id === context.targetAudience),
   );
   const [isOtherGoal, setIsOtherGoal] = useState(
     () =>
-      context.mainGoal !== "" && !MAIN_GOAL_OPTIONS.includes(context.mainGoal),
+      context.mainGoal !== "" &&
+      !MAIN_GOAL_OPTIONS.some((option) => option.id === context.mainGoal),
   );
+
+  const otherLabel = intl.formatMessage({
+    defaultMessage: "Other",
+    description: "Other option in a dropdown, allows free-text entry",
+  });
 
   const makeSelectHandler = (
     field: keyof typeof context,
@@ -102,19 +81,25 @@ export const ContextForm = ({
     <Rows spacing="2u">
       <Rows spacing="1u">
         <FormField<string>
-          label="What is this design for?"
+          label={intl.formatMessage({
+            defaultMessage: "What is this design for?",
+            description: "Label for the design purpose dropdown",
+          })}
           value={isOtherPurpose ? "other" : context.designPurpose}
           error={isOtherPurpose ? undefined : errors.designPurpose}
           control={(props) => (
             <Select<string>
               {...props}
-              placeholder="Select a format"
+              placeholder={intl.formatMessage({
+                defaultMessage: "Select a format",
+                description: "Placeholder for the design purpose dropdown",
+              })}
               options={[
-                ...DESIGN_PURPOSE_OPTIONS.map((label) => ({
-                  label,
-                  value: label,
+                ...DESIGN_PURPOSE_OPTIONS.map((option) => ({
+                  label: intl.formatMessage(option.label),
+                  value: option.id,
                 })),
-                { label: "Other", value: "other" },
+                { label: otherLabel, value: "other" },
               ]}
               onChange={handlePurposeSelect}
               stretch
@@ -123,13 +108,19 @@ export const ContextForm = ({
         />
         {isOtherPurpose && (
           <FormField<string>
-            label=""
+            label={intl.formatMessage({
+              defaultMessage: "Describe the design format",
+              description: "Label for the free-text design purpose input",
+            })}
             value={context.designPurpose}
             error={errors.designPurpose}
             control={(props) => (
               <TextInput
                 {...props}
-                placeholder="Describe the design format"
+                placeholder={intl.formatMessage({
+                  defaultMessage: "Describe the design format",
+                  description: "Placeholder for the free-text design purpose input",
+                })}
                 onChange={(value) =>
                   onContextChange({ ...context, designPurpose: value })
                 }
@@ -140,19 +131,25 @@ export const ContextForm = ({
       </Rows>
       <Rows spacing="1u">
         <FormField<string>
-          label="Who is the target audience?"
+          label={intl.formatMessage({
+            defaultMessage: "Who is the target audience?",
+            description: "Label for the target audience dropdown",
+          })}
           value={isOtherAudience ? "other" : context.targetAudience}
           error={isOtherAudience ? undefined : errors.targetAudience}
           control={(props) => (
             <Select<string>
               {...props}
-              placeholder="Select an audience"
+              placeholder={intl.formatMessage({
+                defaultMessage: "Select an audience",
+                description: "Placeholder for the target audience dropdown",
+              })}
               options={[
-                ...TARGET_AUDIENCE_OPTIONS.map((label) => ({
-                  label,
-                  value: label,
+                ...TARGET_AUDIENCE_OPTIONS.map((option) => ({
+                  label: intl.formatMessage(option.label),
+                  value: option.id,
                 })),
-                { label: "Other", value: "other" },
+                { label: otherLabel, value: "other" },
               ]}
               onChange={handleAudienceSelect}
               stretch
@@ -161,13 +158,19 @@ export const ContextForm = ({
         />
         {isOtherAudience && (
           <FormField<string>
-            label=""
+            label={intl.formatMessage({
+              defaultMessage: "Describe the target audience",
+              description: "Label for the free-text target audience input",
+            })}
             value={context.targetAudience}
             error={errors.targetAudience}
             control={(props) => (
               <TextInput
                 {...props}
-                placeholder="Describe the target audience"
+                placeholder={intl.formatMessage({
+                  defaultMessage: "Describe the target audience",
+                  description: "Placeholder for the free-text target audience input",
+                })}
                 onChange={(value) =>
                   onContextChange({ ...context, targetAudience: value })
                 }
@@ -178,19 +181,25 @@ export const ContextForm = ({
       </Rows>
       <Rows spacing="1u">
         <FormField<string>
-          label="What is the main goal?"
+          label={intl.formatMessage({
+            defaultMessage: "What is the main goal?",
+            description: "Label for the main goal dropdown",
+          })}
           value={isOtherGoal ? "other" : context.mainGoal}
           error={isOtherGoal ? undefined : errors.mainGoal}
           control={(props) => (
             <Select<string>
               {...props}
-              placeholder="Select a goal"
+              placeholder={intl.formatMessage({
+                defaultMessage: "Select a goal",
+                description: "Placeholder for the main goal dropdown",
+              })}
               options={[
-                ...MAIN_GOAL_OPTIONS.map((label) => ({
-                  label,
-                  value: label,
+                ...MAIN_GOAL_OPTIONS.map((option) => ({
+                  label: intl.formatMessage(option.label),
+                  value: option.id,
                 })),
-                { label: "Other", value: "other" },
+                { label: otherLabel, value: "other" },
               ]}
               onChange={handleGoalSelect}
               stretch
@@ -199,13 +208,19 @@ export const ContextForm = ({
         />
         {isOtherGoal && (
           <FormField<string>
-            label=""
+            label={intl.formatMessage({
+              defaultMessage: "Describe your goal",
+              description: "Label for the free-text main goal input",
+            })}
             value={context.mainGoal}
             error={errors.mainGoal}
             control={(props) => (
               <TextInput
                 {...props}
-                placeholder="Describe your goal"
+                placeholder={intl.formatMessage({
+                  defaultMessage: "Describe your goal",
+                  description: "Placeholder for the free-text main goal input",
+                })}
                 onChange={(value) =>
                   onContextChange({ ...context, mainGoal: value })
                 }
@@ -214,52 +229,39 @@ export const ContextForm = ({
           />
         )}
       </Rows>
-      <Rows spacing="0.5u">
-        <Title size="small">Number of workers</Title>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Button
-            variant="secondary"
-            onClick={() => onWorkerCountChange(Math.max(MIN_WORKERS, workerCount - 1))}
-            disabled={workerCount <= MIN_WORKERS}
-          >
-            −
-          </Button>
-          <input
-            type="number"
+      <FormField<number>
+        label={intl.formatMessage({
+          defaultMessage: "Number of workers",
+          description: "Label for the worker count input",
+        })}
+        value={workerCount}
+        error={errors.workerCount}
+        control={(props) => (
+          <NumberInput
+            {...props}
             min={MIN_WORKERS}
             max={MAX_WORKERS}
-            value={workerCount}
-            className={styles.workerCountInput}
-            onChange={(e) => {
-              const parsed = parseInt(e.target.value, 10);
-              if (!isNaN(parsed)) {
-                onWorkerCountChange(Math.min(MAX_WORKERS, Math.max(MIN_WORKERS, parsed)));
+            step={1}
+            hasSpinButtons
+            decrementAriaLabel={intl.formatMessage({
+              defaultMessage: "Decrease worker count",
+              description: "Aria label for the decrement button on the worker count input",
+            })}
+            incrementAriaLabel={intl.formatMessage({
+              defaultMessage: "Increase worker count",
+              description: "Aria label for the increment button on the worker count input",
+            })}
+            onChange={(valueAsNumber) => {
+              if (typeof valueAsNumber !== "number" || isNaN(valueAsNumber)) {
+                return;
               }
-            }}
-            style={{
-              width: "64px",
-              textAlign: "center",
-              fontSize: "1.25rem",
-              fontWeight: 600,
-              border: "1px solid var(--ui-kit-color-border)",
-              borderRadius: "4px",
-              padding: "6px 0",
+              onWorkerCountChange(
+                Math.min(MAX_WORKERS, Math.max(MIN_WORKERS, valueAsNumber)),
+              );
             }}
           />
-          <Button
-            variant="secondary"
-            onClick={() => onWorkerCountChange(Math.min(MAX_WORKERS, workerCount + 1))}
-            disabled={workerCount >= MAX_WORKERS}
-          >
-            +
-          </Button>
-        </div>
-        {errors.workerCount ? (
-          <Text size="small" tone="critical">
-            {errors.workerCount}
-          </Text>
-        ) : null}
-      </Rows>
+        )}
+      />
     </Rows>
   );
 };

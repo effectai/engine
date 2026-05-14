@@ -1,7 +1,11 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { config } from "dotenv";
 import Papa from "papaparse";
 import { KV } from "@cross/kv";
+import { randomUUID } from "crypto";
+import jwt from "jsonwebtoken";
+import jwksClient from "jwks-rsa";
 import type { TaskRecord, CheckType, CheckResults } from "../src/types";
 
 config();
@@ -18,11 +22,30 @@ const EFFECT_POLL_INTERVAL_MS = parseInt(
   process.env.EFFECT_POLL_INTERVAL_MS ?? "60000",
   10,
 );
+const CANVA_APP_ID = process.env.CANVA_APP_ID ?? "";
+const CANVA_JWKS_URL =
+  process.env.CANVA_JWKS_URL ??
+  (CANVA_APP_ID
+    ? `https://api.canva.com/rest/v1/apps/${CANVA_APP_ID}/jwks`
+    : "");
+const ALLOW_UNVERIFIED_TOKENS =
+  process.env.ALLOW_UNVERIFIED_TOKENS === "true";
 
 console.log("[config] EFFECT_URL:", EFFECT_URL || "(not set)");
 console.log("[config] EFFECT_DATASET_ID:", EFFECT_DATASET_ID || "(not set)");
 console.log("[config] EFFECT_FETCHER_INDICES:", JSON.stringify(EFFECT_FETCHER_INDICES));
 console.log("[config] EFFECT_AUTH_KEY:", EFFECT_AUTH_KEY ? "(set)" : "(not set)");
+console.log("[config] CANVA_APP_ID:", CANVA_APP_ID || "(not set)");
+console.log("[config] CANVA_JWKS_URL:", CANVA_JWKS_URL || "(not set)");
+if (ALLOW_UNVERIFIED_TOKENS) {
+  console.warn(
+    "[config] ALLOW_UNVERIFIED_TOKENS=true - JWT signatures are NOT verified. Local dev only.",
+  );
+}
+
+const FETCH_TIMEOUT_MS = 10_000;
+const MIN_WORKERS = 1;
+const MAX_WORKERS = 20;
 
 function fetcherIndex(checkType: string): string {
   return EFFECT_FETCHER_INDICES[checkType] ?? "";
@@ -36,15 +59,101 @@ function effectCookie(): string {
   return `auth_token=${EFFECT_AUTH_KEY}`;
 }
 
-function getCanvaId(req: express.Request): string | null {
+const jwks = CANVA_JWKS_URL
+  ? jwksClient({
+      jwksUri: CANVA_JWKS_URL,
+      cache: true,
+      cacheMaxEntries: 5,
+      cacheMaxAge: 10 * 60 * 1000,
+      rateLimit: true,
+      jwksRequestsPerMinute: 10,
+    })
+  : null;
+
+function getSigningKey(
+  header: jwt.JwtHeader,
+  callback: (err: Error | null, key?: string) => void,
+): void {
+  if (!jwks || !header.kid) {
+    callback(new Error("JWKS client not configured"));
+    return;
+  }
+  jwks.getSigningKey(header.kid, (err, key) => {
+    if (err || !key) {
+      callback(err ?? new Error("Signing key not found"));
+      return;
+    }
+    callback(null, key.getPublicKey());
+  });
+}
+
+async function verifyCanvaToken(token: string): Promise<string | null> {
+  if (ALLOW_UNVERIFIED_TOKENS) {
+    try {
+      const payload = JSON.parse(
+        Buffer.from(token.split(".")[1]!, "base64url").toString(),
+      );
+      return payload.sub ?? payload.userId ?? null;
+    } catch {
+      return null;
+    }
+  }
+  if (!jwks || !CANVA_APP_ID) return null;
+  return new Promise((resolve) => {
+    jwt.verify(
+      token,
+      getSigningKey,
+      { audience: CANVA_APP_ID, algorithms: ["RS256"], clockTolerance: 30 },
+      (err, decoded) => {
+        if (err || !decoded || typeof decoded === "string") {
+          if (err) {
+            console.warn("[auth] JWT verification failed:", err.message);
+          }
+          resolve(null);
+          return;
+        }
+        const payload = decoded as jwt.JwtPayload;
+        resolve(
+          (payload.sub as string | undefined) ??
+            (payload as any).userId ??
+            null,
+        );
+      },
+    );
+  });
+}
+
+async function getCanvaId(req: express.Request): Promise<string | null> {
   const token = req.headers["x-canva-user-token"];
   if (typeof token !== "string") return null;
-  try {
-    const payload = JSON.parse(Buffer.from(token.split(".")[1]!, "base64url").toString());
-    return payload.sub ?? payload.userId ?? null;
-  } catch {
-    return null;
+  return verifyCanvaToken(token);
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      canvaId?: string;
+    }
   }
+}
+
+function requireCanvaId(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+): void {
+  getCanvaId(req)
+    .then((id) => {
+      if (!id) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      req.canvaId = id;
+      next();
+    })
+    .catch(() => {
+      res.status(401).json({ error: "Unauthorized" });
+    });
 }
 
 function parseCsv(text: string): Record<string, string>[] {
@@ -113,14 +222,24 @@ async function updatePendingTasksFromCache(): Promise<void> {
   }
 }
 
+let refreshInFlight = false;
+
 async function refreshCsvCache(): Promise<void> {
   if (!isConfigured()) return;
+  if (refreshInFlight) {
+    console.log("[cache] refresh skipped - previous run still in flight");
+    return;
+  }
+  refreshInFlight = true;
   try {
     const fetchers = Object.values(EFFECT_FETCHER_INDICES).filter(Boolean);
     const csvTexts = await Promise.all(
       fetchers.map(async (indexId) => {
         const url = `${EFFECT_URL}/d/${EFFECT_DATASET_ID}/f/${indexId}/download`;
-        const r = await fetch(url, { headers: { Cookie: effectCookie() } });
+        const r = await fetch(url, {
+          headers: { Cookie: effectCookie() },
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
         return r.ok ? r.text() : "";
       }),
     );
@@ -134,11 +253,13 @@ async function refreshCsvCache(): Promise<void> {
     }
     const text = headerLine ? [headerLine, ...dataLines].join("\n") : "";
     cachedRows = text.trim() ? parseCsv(text) : [];
-    console.log(`[cache] refreshed — ${cachedRows.length} rows at ${new Date().toISOString()}`);
+    console.log(`[cache] refreshed - ${cachedRows.length} rows at ${new Date().toISOString()}`);
 
     await updatePendingTasksFromCache();
   } catch (err: any) {
     console.error("[cache] refresh failed:", err?.message ?? err);
+  } finally {
+    refreshInFlight = false;
   }
 }
 
@@ -146,16 +267,32 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use((_req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+const CANVA_ORIGIN_REGEX = /^https:\/\/([a-z0-9-]+\.)*(canva\.com|canva-apps\.com)$/i;
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (typeof origin === "string" && CANVA_ORIGIN_REGEX.test(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Canva-User-Token");
   next();
 });
 app.options("*", (_req, res) => res.sendStatus(204));
 
-// POST /api/task — import one task row into the Effect AI fetcher and record it in the DB
-app.post("/api/task", async (req, res) => {
+const taskRateLimit = rateLimit({
+  windowMs: 60_000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.canvaId ?? req.ip ?? "unknown",
+});
+
+// POST /api/task - import one task row into the Effect AI fetcher and record it in the DB
+app.post("/api/task", requireCanvaId, taskRateLimit, async (req, res) => {
+  const canvaId = req.canvaId!;
+
   console.log("[POST /api/task] received body:", JSON.stringify(req.body));
 
   const {
@@ -170,10 +307,13 @@ app.post("/api/task", async (req, res) => {
     revealDuration,
   } = req.body;
 
-  const taskId = `T-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const taskId = `T-${randomUUID()}`;
   console.log(`[POST /api/task] generated taskId=${taskId} checkType=${checkType} workerCount=${workerCount}`);
 
-  const count = Number(workerCount) || 5;
+  const count = Math.min(
+    MAX_WORKERS,
+    Math.max(MIN_WORKERS, Number(workerCount) || 5),
+  );
   const row = {
     taskId,
     checkType,
@@ -201,6 +341,7 @@ app.post("/api/task", async (req, res) => {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({ csv, delimiter: "," }).toString(),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
     console.log(`[POST /api/task] task-poster responded: HTTP ${importRes.status}`);
@@ -213,7 +354,7 @@ app.post("/api/task", async (req, res) => {
 
     const record: TaskRecord = {
       taskId,
-      canvaId: getCanvaId(req) ?? undefined,
+      canvaId,
       checkType,
       status: "pending",
       submittedAt: new Date().toISOString(),
@@ -227,7 +368,7 @@ app.post("/api/task", async (req, res) => {
       revealDuration,
     };
     await db.set<TaskRecord>(["canva-task", taskId], record);
-    console.log(`[POST /api/task] success — taskId=${taskId}`);
+    console.log(`[POST /api/task] success - taskId=${taskId}`);
     return res.json({ taskId });
   } catch (err: any) {
     console.error("[POST /api/task] fetch threw:", err?.message ?? err);
@@ -235,14 +376,14 @@ app.post("/api/task", async (req, res) => {
   }
 });
 
-// GET /api/tasks — return task records for the requesting Canva user
-app.get("/api/tasks", async (req, res) => {
-  const canvaId = getCanvaId(req);
+// GET /api/tasks - return task records for the requesting Canva user
+app.get("/api/tasks", requireCanvaId, async (req, res) => {
+  const canvaId = req.canvaId!;
   try {
     const entries = await db.listAll<TaskRecord>(["canva-task", {}]);
     const tasks = entries
       .map((entry) => entry.data)
-      .filter((task) => !canvaId || task.canvaId === canvaId)
+      .filter((task) => task.canvaId === canvaId)
       .sort(
         (taskA, taskB) =>
           new Date(taskB.submittedAt).getTime() -
@@ -255,14 +396,14 @@ app.get("/api/tasks", async (req, res) => {
   }
 });
 
-// GET /api/task/:taskId — return a single task record from the DB
-app.get("/api/task/:taskId", async (req, res) => {
-  const { taskId } = req.params;
-  const canvaId = getCanvaId(req);
+// GET /api/task/:taskId - return a single task record from the DB
+app.get("/api/task/:taskId", requireCanvaId, async (req, res) => {
+  const taskId = req.params["taskId"]!;
+  const canvaId = req.canvaId!;
   try {
     const entry = await db.get<TaskRecord>(["canva-task", taskId]);
-    if (!entry || (canvaId && entry.data.canvaId !== canvaId)) {
-      return res.json({ status: "pending", completions: 0, workerCount: 0 });
+    if (!entry || entry.data.canvaId !== canvaId) {
+      return res.status(404).json({ error: "Task not found" });
     }
     const task = entry.data;
     if (task.status !== "complete") {
@@ -276,13 +417,13 @@ app.get("/api/task/:taskId", async (req, res) => {
   }
 });
 
-// DELETE /api/task/:taskId — remove a task record owned by the requesting Canva user
-app.delete("/api/task/:taskId", async (req, res) => {
-  const { taskId } = req.params;
-  const canvaId = getCanvaId(req);
+// DELETE /api/task/:taskId - remove a task record owned by the requesting Canva user
+app.delete("/api/task/:taskId", requireCanvaId, async (req, res) => {
+  const taskId = req.params["taskId"]!;
+  const canvaId = req.canvaId!;
   try {
     const entry = await db.get<TaskRecord>(["canva-task", taskId]);
-    if (!entry || (canvaId && entry.data.canvaId !== canvaId)) {
+    if (!entry || entry.data.canvaId !== canvaId) {
       return res.status(404).json({ error: "Task not found" });
     }
     await db.delete(["canva-task", taskId]);
@@ -304,7 +445,7 @@ const main = async () => {
 
   const port = parseInt(process.env.CANVA_BACKEND_PORT ?? "3002", 10);
   app.listen(port, () =>
-    console.log(`Canva backend on :${port} — Effect AI: ${EFFECT_URL || "not configured"}`),
+    console.log(`Canva backend on :${port} - Effect AI: ${EFFECT_URL || "not configured"}`),
   );
 };
 

@@ -6,6 +6,7 @@
   padding-top: var(--ui-kit-space-200);
   padding-right: var(--ui-kit-space-200);
   padding-bottom: var(--ui-kit-space-200);
+  padding-left: var(--ui-kit-space-200);
 
   /* for firefox */
   scrollbar-width: thin;
@@ -35,17 +36,5 @@
 .scrollContainer:focus::-webkit-scrollbar-thumb,
 .scrollContainer:focus-within::-webkit-scrollbar-thumb {
   visibility: visible;
-}
-
-/* Hide native number-input spinner arrows so the worker counter stays centred */
-.workerCountInput::-webkit-outer-spin-button,
-.workerCountInput::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.workerCountInput {
-  -moz-appearance: textfield;
-  appearance: textfield;
 }
 

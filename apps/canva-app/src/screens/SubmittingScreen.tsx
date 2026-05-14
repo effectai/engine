@@ -1,4 +1,3 @@
-/* eslint-disable formatjs/no-literal-string-in-jsx -- Phase 1 placeholder copy. Wrap strings in <FormattedMessage>/useIntl before submitting to Canva. */
 import {
   Alert,
   Button,
@@ -8,6 +7,7 @@ import {
   Title,
 } from "@canva/app-ui-kit";
 import { useEffect, useRef, useState } from "react";
+import { useIntl } from "react-intl";
 import * as styles from "styles/components.css";
 import { submitTask } from "../api/effectApi";
 import type { TaskDraft, TaskRecord } from "../types";
@@ -20,6 +20,7 @@ type Props = {
 };
 
 export const SubmittingScreen = ({ drafts, onComplete, onBack }: Props) => {
+  const intl = useIntl();
   const hasStartedRef = useRef(false);
   const [error, setError] = useState<string | undefined>();
   const [attempt, setAttempt] = useState(0);
@@ -72,7 +73,10 @@ export const SubmittingScreen = ({ drafts, onComplete, onBack }: Props) => {
       } catch (err) {
         if (cancelled) return;
         const message =
-          err instanceof Error ? err.message : "Could not submit your design.";
+          err instanceof Error ? err.message : intl.formatMessage({
+            defaultMessage: "Could not submit your design.",
+            description: "Generic error message when submission fails",
+          });
         setError(message);
       }
     };
@@ -96,14 +100,25 @@ export const SubmittingScreen = ({ drafts, onComplete, onBack }: Props) => {
     return (
       <div className={styles.scrollContainer}>
         <Rows spacing="2u">
-          <Title size="medium">Submission failed</Title>
+          <Title size="medium">
+            {intl.formatMessage({
+              defaultMessage: "Submission failed",
+              description: "Heading shown when task submission fails",
+            })}
+          </Title>
           <Alert tone="critical">{error}</Alert>
           <Rows spacing="1u">
             <Button variant="primary" onClick={handleRetry} stretch>
-              Try again
+              {intl.formatMessage({
+                defaultMessage: "Try again",
+                description: "Button to retry a failed submission",
+              })}
             </Button>
             <Button variant="secondary" onClick={onBack} stretch>
-              Back
+              {intl.formatMessage({
+                defaultMessage: "Back",
+                description: "Button to go back from the failed submission screen",
+              })}
             </Button>
           </Rows>
         </Rows>
@@ -115,12 +130,20 @@ export const SubmittingScreen = ({ drafts, onComplete, onBack }: Props) => {
     <div className={styles.scrollContainer}>
       <Rows spacing="2u" align="center">
         <LoadingIndicator size="medium" />
-        <Title size="medium">Submitting your design...</Title>
+        <Title size="medium">
+          {intl.formatMessage({
+            defaultMessage: "Submitting your design…",
+            description: "Heading shown while a design is being submitted",
+          })}
+        </Title>
         <Text alignment="center" size="small">
-          We are sending your design to Effect AI workers.
+          {intl.formatMessage({
+            defaultMessage: "Sending your design to Effect AI workers.",
+            description: "Body text shown while a design is being submitted",
+          })}
         </Text>
         <Text alignment="center" size="small" tone="tertiary">
-          {estimatedWaitTime(firstDraft.workerCount)}
+          {estimatedWaitTime(firstDraft.workerCount, intl)}
         </Text>
       </Rows>
     </div>

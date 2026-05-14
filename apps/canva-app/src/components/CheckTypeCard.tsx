@@ -1,5 +1,5 @@
-/* eslint-disable formatjs/no-literal-string-in-jsx -- Phase 1 placeholder copy. Wrap strings in <FormattedMessage>/useIntl before submitting to Canva. */
 import { Box, Button, Rows, Text, Title } from "@canva/app-ui-kit";
+import { useIntl } from "react-intl";
 import type { CheckTypeMeta } from "../types";
 
 type Props = {
@@ -8,6 +8,7 @@ type Props = {
 };
 
 export const CheckTypeCard = ({ meta, onSelect }: Props) => {
+  const intl = useIntl();
   return (
     <Box
       background="neutralSubtle"
@@ -16,12 +17,15 @@ export const CheckTypeCard = ({ meta, onSelect }: Props) => {
       padding="2u"
     >
       <Rows spacing="1u">
-        <Title size="small">{meta.name}</Title>
+        <Title size="small">{intl.formatMessage(meta.name)}</Title>
         <Text size="small" tone="tertiary">
-          {meta.description}
+          {intl.formatMessage(meta.description)}
         </Text>
         <Button variant="primary" onClick={onSelect} stretch>
-          Select
+          {intl.formatMessage({
+            defaultMessage: "Select",
+            description: "Button to select a check type",
+          })}
         </Button>
       </Rows>
     </Box>

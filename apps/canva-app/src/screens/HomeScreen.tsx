@@ -1,5 +1,5 @@
-/* eslint-disable formatjs/no-literal-string-in-jsx -- Phase 1 placeholder copy. Wrap strings in <FormattedMessage>/useIntl before submitting to Canva. */
 import { LinkButton, Rows, Text, Title } from "@canva/app-ui-kit";
+import { useIntl } from "react-intl";
 import * as styles from "styles/components.css";
 import { CheckTypeCard } from "../components/CheckTypeCard";
 import type { CheckType } from "../types";
@@ -11,13 +11,22 @@ type Props = {
 };
 
 export const HomeScreen = ({ onSelectCheckType, onViewHistory }: Props) => {
+  const intl = useIntl();
   return (
     <div className={styles.scrollContainer}>
       <Rows spacing="2u">
         <Rows spacing="0.5u">
-          <Title size="medium">Design Feedback</Title>
+          <Title size="medium">
+            {intl.formatMessage({
+              defaultMessage: "Design Feedback",
+              description: "Heading on the home screen",
+            })}
+          </Title>
           <Text size="small" tone="tertiary">
-            Powered by Effect AI
+            {intl.formatMessage({
+              defaultMessage: "Powered by Effect AI",
+              description: "Subtitle on the home screen",
+            })}
           </Text>
         </Rows>
         <Rows spacing="1.5u">
@@ -30,7 +39,12 @@ export const HomeScreen = ({ onSelectCheckType, onViewHistory }: Props) => {
           ))}
         </Rows>
         <Text alignment="center" size="small">
-          <LinkButton onClick={onViewHistory}>View History</LinkButton>
+          <LinkButton onClick={onViewHistory}>
+            {intl.formatMessage({
+              defaultMessage: "View history",
+              description: "Link to the task history screen",
+            })}
+          </LinkButton>
         </Text>
       </Rows>
     </div>

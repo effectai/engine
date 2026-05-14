@@ -6,10 +6,6 @@
       {
         "name": "canva:design:content:read",
         "type": "mandatory"
-      },
-      {
-        "name": "canva:design:content:write",
-        "type": "mandatory"
       }
     ]
   },
