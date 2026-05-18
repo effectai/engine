@@ -80,6 +80,9 @@ export type Fetcher = {
 
   // posting schedule: whitelist of days/time windows when tasks can be posted
   schedule?: Schedule;
+
+  // unique workers: each worker can only complete one task from this fetcher
+  uniqueWorkers?: boolean;
 };
 
 const api = axios.create({
@@ -186,8 +189,10 @@ export const fetcherForm = async (
 
       <label for="type"><strong>Data source</strong><br/>
       <small>How new tasks will be fetched.</small></label>
-      <select name="type" id="type">${["csv", "pipeline", "constant"].map(a =>
-	`<option value="${a}" ${values.type == a ? "selected" : ""}>${a}</option>`).join("")}
+      <select name="type" id="type"
+        onchange="uniqueWorkers.disabled=this.value!=='csv';if(uniqueWorkers.disabled)uniqueWorkers.checked=false">
+        ${["csv", "pipeline", "constant"].map(a =>
+	        `<option value="${a}" ${values.type == a ? "selected" : ""}>${a}</option>`).join("")}
       </select>
 
   </fieldset>
@@ -238,6 +243,14 @@ export const fetcherForm = async (
 	    name="timeLimitSeconds"/>
 	</div>
       </section>
+
+      <div class="mt">
+        <label for="uniqueWorkers"><strong>Unique workers</strong><br/>
+        <small>Each worker can only complete one task per import batch. Only applies to CSV data sources.</small></label>
+        <input type="checkbox" id="uniqueWorkers" name="uniqueWorkers"
+          ${values.uniqueWorkers ? "checked" : ""}
+          ${(values.type ?? 'csv') !== 'csv' ? "disabled" : ""} />
+      </div>
 
       <div class="mt"></div>
       <label for="capabilities"><strong>Capabilities</strong><br/>
@@ -490,6 +503,7 @@ export const createFetcher = async (
 
     status: oldFetcher?.status ?? "active",
     hidden: fields.hidden === "on" || fields.hidden === true,
+    uniqueWorkers: fields.uniqueWorkers === "on" || fields.uniqueWorkers === true,
 
     schedule: (() => {
       try {
@@ -586,7 +600,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	}
 
 	// regex filter
-	if (!task.result || (regex && regex.test(task.result)) || task.result == "<TASK REPORTED AND SKIPPED>") {
+	if (!task.result || (regex && regex.test(task.result)) || task.type === "report" || task.result == "<TASK REPORTED AND SKIPPED>") {
 	  continue;
 	}
 
@@ -614,6 +628,8 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
   // avoid expensive mistakes.
   const maxPrice = BigInt(fetcher.price) * BigInt(10);
 
+  const batchRunId = ulid();
+
   const tasks = data.map(
     (d, _idx) => {
       const rawPrice = d["dataffect/reward"] ?
@@ -628,6 +644,8 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	templateId: fetcher.template,
 	templateData: JSON.stringify(d),
 	capability: fetcher.capabilities[0],
+	batchId: `${fetcher.datasetId}-${fetcher.index}-${batchRunId}`,
+	uniqueWorkers: fetcher.uniqueWorkers ?? false,
       } as Task;
     },
   );
@@ -886,7 +904,7 @@ export const processResults = async (f: Fetcher, batchSize: number) => {
 
     let importCount = 0;
     for (const d of data as any) {
-      if (d.type !== "submission")
+      if (d.type !== "submission" && d.type !== "report")
 	continue;
       db.beginTransaction();
       await db.delete([...keyBase, "active", d.taskId]);
@@ -972,6 +990,7 @@ const formValidations: ValidationMap = {
   },
 
   template: (v: string) => (!v || v.length === 0) && "Template is required",
+  uniqueWorkers: (_v: any) => false,
   timeLimitSeconds: (v: any) => {
     const num = Number(v);
     return (
@@ -1075,10 +1094,11 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Finished: ${doneSize}</li>
   <li>Failed: ${failedSize}</li>
   <li>Batch / Freq: ${f.batchSize} / ${f.frequency}</li>
+  ${f.uniqueWorkers ? '<li>Unique workers: enabled</li>' : ''}
   <li>Time Limit: ${f.timeLimitSeconds}s</li>
   <li>Schedule: ${f.schedule && Object.keys(f.schedule).length > 0
     ? Object.entries(f.schedule).map(([day, slots]) =>
-        `${day}: ${(slots as TimeSlot[]).map(s => s.from && s.to ? `${s.from}-${s.to}` : 'all day').join(', ')}`
+        `${day}: ${Array.isArray(slots) ? (slots as TimeSlot[]).map(s => s.from && s.to ? `${s.from}-${s.to}` : 'all day').join(', ') : 'all day'}`
       ).join('; ')
     : 'continuous (no restrictions)'}
     

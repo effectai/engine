@@ -27,6 +27,31 @@ export const createWorkerManager = ({
   const workerStore = createWorkerStore({
     datastore,
   });
+
+  const hasCompletedBatch = (batchId: string, workerId: string) =>
+    datastore.has(new Key(`/tasks/batch/${batchId}/completed/${workerId}`));
+
+  const hasActiveBatchAssignment = (batchId: string, workerId: string) =>
+    datastore.has(new Key(`/tasks/batch/${batchId}/assigned/${workerId}`));
+
+  // In-memory reservation map - prevents same-session races between concurrent assignTask calls.
+  // The datastore-based checks below serve as fallback after a manager restart.
+  const activeBatchWorkers = new Map<string, Set<string>>();
+
+  const tryReserveBatchWorker = (batchId: string, workerId: string): boolean => {
+    const existing = activeBatchWorkers.get(batchId);
+    if (existing?.has(workerId)) return false;
+    if (existing) existing.add(workerId);
+    else activeBatchWorkers.set(batchId, new Set([workerId]));
+    return true;
+  };
+
+  const releaseBatchWorker = (batchId: string, workerId: string): void => {
+    const set = activeBatchWorkers.get(batchId);
+    if (!set) return;
+    set.delete(workerId);
+    if (set.size === 0) activeBatchWorkers.delete(batchId);
+  };
   
   const workerAssignments = new Map<string, Set<string>>();
   const assignmentsFor = (workerId: string) => {
@@ -42,17 +67,14 @@ export const createWorkerManager = ({
   const markTaskAssigned = (workerId: string, taskId: string) => {
     assignmentsFor(workerId).add(taskId);
   };
-  const markTaskReleased = (workerId: string, taskId: string) => {
+  const markTaskReleased = (workerId: string, taskId: string, batchId?: string) => {
     const assignments = workerAssignments.get(workerId);
-    if (!assignments) {
-      return;
+    if (assignments) {
+      assignments.delete(taskId);
+      if (assignments.size === 0) workerAssignments.delete(workerId);
     }
 
-    assignments.delete(taskId);
-
-    if (assignments.size === 0) {
-      workerAssignments.delete(workerId);
-    }
+    if (batchId) releaseBatchWorker(batchId, workerId);
   };
 
   const accessCodeStore = createAccessCodeStore({ datastore });
@@ -195,36 +217,59 @@ export const createWorkerManager = ({
 
   const selectWorker = async (
     capability?: string,
-    originalWorkerId?: string
+    originalWorkerId?: string,
+    batchId?: string,
+    uniqueWorkers?: boolean,
   ): Promise<string | null> => {
     const queue = workerQueue.getQueue();
 
-    //TODO:: optimize this..
-    for (const workerId of queue) {
+    const isEligible = async (workerId: string): Promise<boolean> => {
       const worker = await getWorker(workerId);
-      if (!worker || originalWorkerId === workerId) continue;
+      if (!worker || originalWorkerId === workerId) return false;
 
       const workerCapabilities =
         worker.state.capabilities.concat(worker.state.managerCapabilities || []);
 
       if (capability) {
-        const info = getCapabilityInfo(capability);
-
+        const capabilityInfo = getCapabilityInfo(capability);
         const hasCapability = workerCapabilities.includes(capability);
         const hasAntiCapability =
-          info?.antiCapability && workerCapabilities.includes(info.antiCapability);
-
-        if (!hasCapability || hasAntiCapability) continue;
+          capabilityInfo?.antiCapability &&
+          workerCapabilities.includes(capabilityInfo.antiCapability);
+        if (!hasCapability || hasAntiCapability) return false;
       }
 
-      const busy = await isBusy(worker);
-      if (!busy) {
-        workerQueue.dequeuePeer(workerId);
-        return workerId;
+      if (await isBusy(worker)) return false;
+
+      // Datastore fallback - covers tasks assigned before a manager restart,
+      // since the in-memory reservation is lost on restart.
+      if (uniqueWorkers && batchId) {
+        if (await hasActiveBatchAssignment(batchId, workerId)) return false;
+        if (await hasCompletedBatch(batchId, workerId)) return false;
       }
+
+      return true;
+    };
+
+    //TODO:: optimize this..
+    for (const workerId of queue) {
+      // Synchronous reservation must happen before any await so two concurrent
+      // assignTask calls can't both claim the same worker for the same batch.
+      let batchReserved = false;
+      if (uniqueWorkers && batchId) {
+        if (!tryReserveBatchWorker(batchId, workerId)) continue;
+        batchReserved = true;
+      }
+
+      if (!(await isEligible(workerId))) {
+        if (batchReserved && batchId) releaseBatchWorker(batchId, workerId);
+        continue;
+      }
+
+      workerQueue.dequeuePeer(workerId);
+      return workerId;
     }
 
-    // No available worker found
     return null;
   };
 

@@ -18,6 +18,7 @@ export type ManagerTaskEvent =
   | TaskAssignedEvent
   | TaskSubmissionEvent
   | TaskRejectedEvent
+  | TaskReportedEvent
   | TaskAcceptedEvent
   | TaskPaymentEvent;
 
@@ -40,6 +41,12 @@ export interface TaskRejectedEvent extends BaseTaskEvent {
   type: "reject";
   reason: string;
   rejectedByPeer: string;
+}
+
+export interface TaskReportedEvent extends BaseTaskEvent {
+  type: "report";
+  result: string;
+  reportedByPeer: string;
 }
 
 export interface TaskSubmissionEvent extends BaseTaskEvent {
@@ -170,6 +177,17 @@ export const createManagerTaskStore = ({
       Buffer.from(stringifyWithBigInt(taskRecord)),
     );
     batch.delete(new Key(`/tasks/assign/${peerIdStr}/${entityId}`));
+
+    if (taskRecord.state.batchId && taskRecord.state.uniqueWorkers) {
+      batch.put(
+        new Key(`/tasks/batch/${taskRecord.state.batchId}/completed/${peerIdStr}`),
+        new Uint8Array(),
+      );
+      batch.delete(
+        new Key(`/tasks/batch/${taskRecord.state.batchId}/assigned/${peerIdStr}`),
+      );
+    }
+
     await batch.commit();
 
     return taskRecord;
@@ -259,7 +277,60 @@ export const createManagerTaskStore = ({
       new Key(`/tasks/assign/${latestAssignEvent?.assignedToPeer}/${entityId}`),
     );
 
+    if (taskRecord.state.batchId && taskRecord.state.uniqueWorkers) {
+      batch.delete(
+        new Key(`/tasks/batch/${taskRecord.state.batchId}/assigned/${latestAssignEvent.assignedToPeer}`),
+      );
+    }
+
     await batch.commit();
+  };
+
+  const report = async ({
+    entityId,
+    result,
+    peerIdStr,
+  }: {
+    entityId: string;
+    result: string;
+    peerIdStr: string;
+  }): Promise<ManagerTaskRecord> => {
+    const taskRecord = await getTask({ entityId });
+
+    if (!taskRecord) {
+      throw new TaskValidationError("Task not found");
+    }
+
+    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
+    if (lastEvent.type !== "accept" || lastEvent.acceptedByPeer !== peerIdStr) {
+      throw new TaskValidationError("Task was not accepted by this worker");
+    }
+
+    taskRecord.events.push({
+      timestamp: Math.floor(Date.now() / 1000),
+      type: "report",
+      result,
+      reportedByPeer: peerIdStr,
+    });
+
+    const batch = datastore.batch();
+
+    batch.put(
+      new Key(`/tasks/completed/${taskRecord.state.id}`),
+      Buffer.from(stringifyWithBigInt(taskRecord)),
+    );
+    batch.delete(new Key(`/tasks/active/${taskRecord.state.id}`));
+    batch.delete(new Key(`/tasks/assign/${peerIdStr}/${entityId}`));
+
+    if (taskRecord.state.batchId && taskRecord.state.uniqueWorkers) {
+      batch.delete(
+        new Key(`/tasks/batch/${taskRecord.state.batchId}/assigned/${peerIdStr}`),
+      );
+    }
+
+    await batch.commit();
+
+    return taskRecord;
   };
 
   const payout = async ({
@@ -339,6 +410,13 @@ export const createManagerTaskStore = ({
       new Uint8Array(),
     );
 
+    if (taskRecord.state.batchId && taskRecord.state.uniqueWorkers) {
+      batch.put(
+        new Key(`/tasks/batch/${taskRecord.state.batchId}/assigned/${workerPeerIdStr}`),
+        new Uint8Array(),
+      );
+    }
+
     await batch.commit();
   };
 
@@ -348,6 +426,7 @@ export const createManagerTaskStore = ({
     complete,
     accept,
     reject,
+    report,
     payout,
     assign,
     getTask,
