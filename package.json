@@ -13,7 +13,7 @@
   "scripts": {
     "purge": "rm -rf node_modules pnpm-lock.yaml && pnpm recursive exec -- rm -rf node_modules dist",
     "dev": "pnpm turbo dev",
-    "build": "turbo run build",
+    "build": "pnpm --filter @effectai/* build",
     "cli": "node apps/cli/dist/index.js",
     "task-terminal:start": "cd apps/task-poster && node --import=tsx src/server.ts",
     "packages:build": "pnpm turbo build --filter @effectai/*",
