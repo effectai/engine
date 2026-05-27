@@ -12,7 +12,7 @@
     "bundle:browser": "tsup clients/js/browser.ts --config ../../tsup.config.browser.ts",
     "build:node": "tsc -p tsconfig.build.json",
     "compile:ts": "pnpm run build:node && pnpm run bundle:browser",
-    "fix:generated": "node --experimental-strip-types scripts/fix-generated-imports.ts",
+    "fix:generated": "node --experimental-strip-types ../../tools/scripts/solana/fix-generated-imports.ts payment",
     "generate:clients": "node --experimental-strip-types ../../tools/scripts/solana/generate-clients.ts payment && pnpm run fix:generated",
     "clean": "rm -rf dist"
   },

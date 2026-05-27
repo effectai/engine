@@ -3,10 +3,16 @@
  * import/export specifier has an explicit `.js` extension (or
  * `/index.js` for folder imports).
  *
- * This is required because we compile with `"module": "NodeNext"`,
+ * This is required because modules compile with `"module": "NodeNext"`,
  * which enforces Node ESM resolution rules at runtime: extensionless
  * relative specifiers are not allowed. Codama emits them anyway, so
  * we rewrite them here, in place, before tsc runs.
+ *
+ * Usage:
+ *   node --experimental-strip-types fix-generated-imports.ts <module-name>
+ *
+ * Where <module-name> is the folder under `modules/` whose
+ * `clients/js/@generated` tree should be rewritten.
  *
  * Idempotent: running this twice is a no-op.
  */
@@ -15,12 +21,23 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const GENERATED_DIR = path.resolve(__dirname, "../clients/js/@generated");
+
+const moduleName = process.argv[2];
+if (!moduleName) {
+  console.error(
+    "fix-generated-imports: missing <module-name> argument (e.g. 'payment')",
+  );
+  process.exit(1);
+}
+
+const GENERATED_DIR = path.resolve(
+  __dirname,
+  `../../../modules/${moduleName}/clients/js/@generated`,
+);
 
 // Matches: from '...' | from "..." in both `import` and `export` statements,
 // capturing the quote style and the specifier.
-const SPEC_RE =
-  /(\bfrom\s+)(['"])(\.{1,2}\/[^'"]+?)\2/g;
+const SPEC_RE = /(\bfrom\s+)(['"])(\.{1,2}\/[^'"]+?)\2/g;
 
 const walk = (dir: string): string[] => {
   const out: string[] = [];
@@ -80,5 +97,5 @@ for (const file of walk(GENERATED_DIR)) {
 }
 
 console.log(
-  `fix-generated-imports: rewrote ${rewrites} specifier(s) across ${touched} file(s) in ${path.relative(process.cwd(), GENERATED_DIR)}`,
+  `fix-generated-imports(${moduleName}): rewrote ${rewrites} specifier(s) across ${touched} file(s)`,
 );
