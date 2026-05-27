@@ -2,17 +2,22 @@
   "name": "@effectai/protocol-core",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     }
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsup --config ../../tsup.config.package.ts --platform neutral",
-    "dev": "tsup --config ../../tsup.config.package.ts --platform neutral --watch",
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "clean": "rm -rf dist",
     "protons-build": "protons ./messages/effect.proto --out-dir ./@generated/effect.protons.ts"
   },
   "keywords": [],
