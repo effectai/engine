@@ -1,4 +1,4 @@
-import { Connection, Keypair } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import { PublicKey } from "@solana/web3.js";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -6,21 +6,13 @@ import path from "node:path";
 import yaml from "yaml";
 import {
   createKeyPairSignerFromBytes,
-  createSignerFromKeyPair,
   getAddressEncoder,
   getProgramDerivedAddress,
   createSolanaRpc,
   sendAndConfirmTransactionFactory,
   type Address,
   createSolanaRpcSubscriptions,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  appendTransactionMessageInstructions,
-  pipe,
-  createTransactionMessage,
   KeyPairSigner,
-  Instruction,
-  signTransactionMessageWithSigners,
   createKeyPairSignerFromPrivateKeyBytes,
 } from "@solana/kit";
 
@@ -297,5 +289,5 @@ export const useDeriveStakeAccounts = ({
   };
 };
 
-export * from "./instructions";
-export * from "./transactions";
+export * from "./instructions.js";
+export * from "./transactions.js";
