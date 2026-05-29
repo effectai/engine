@@ -41,7 +41,7 @@ export const createWorkerEntity = async ({
   datastore,
   privateKey,
 }: {
-  datastore: Datastore;
+  datastore?: Datastore;
   privateKey: PrivateKey;
 }) => {
   const transports = [webSockets(), circuitRelayTransport()];

@@ -8,17 +8,14 @@ export const startCommand = new Command();
 startCommand
   .name("start")
   .option("--payment-account <address>", "Payment account address")
-  .requiredOption(
-    "-k, --private-key <path>",
-    "Path to manager private key file",
-  )
   .option("--announce <multiaddr>", "Libp2p announce address")
   .option("--maintenance", "Run in maintenance mode", false)
   .option("--port <port>", "Libp2p port", "11995")
   .option("--data <path>", "Path to datastore", "./data/manager")
-  .action(async (options) => {
+  .action(async (options, cmd) => {
     try {
-      const privateKey = readFileSync(options.privateKey, "utf-8");
+      const opts = cmd.optsWithGlobals();
+      const privateKey = readFileSync(opts.keypair, "utf-8");
       const secretKey = Uint8Array.from(JSON.parse(privateKey));
       const keypair = await generateKeyPairFromSeed(
         "Ed25519",
