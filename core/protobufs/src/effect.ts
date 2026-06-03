@@ -2766,6 +2766,8 @@ export interface Task {
   templateId: string
   templateData: string
   capability?: string
+  batchId?: string
+  uniqueWorkers?: boolean
 }
 
 export namespace Task {
@@ -2813,6 +2815,16 @@ export namespace Task {
           w.string(obj.capability)
         }
 
+        if (obj.batchId != null) {
+          w.uint32(66)
+          w.string(obj.batchId)
+        }
+
+        if (obj.uniqueWorkers != null) {
+          w.uint32(72)
+          w.bool(obj.uniqueWorkers)
+        }
+
         if (opts.lengthDelimited !== false) {
           w.ldelim()
         }
@@ -2858,6 +2870,14 @@ export namespace Task {
             }
             case 7: {
               obj.capability = reader.string()
+              break
+            }
+            case 8: {
+              obj.batchId = reader.string()
+              break
+            }
+            case 9: {
+              obj.uniqueWorkers = reader.bool()
               break
             }
             default: {

@@ -1,11 +1,11 @@
 <div id="app" style="text-align: center">
-  <h1>Effect AI - Question Answering</h1>
+  <h1>Effect AI - Prompt Answering</h1>
   <hr />
 
   <div class="mx-auto" style="max-width: 80%">
-    <p class="mb-5">Click <b>Record</b> then answer the question aloud</p>
+    <p class="mb-5">Click <b>Record</b> then answer the prompt aloud</p>
     <div class="box">
-      <p class="is-size-4 has-text-weight-semibold" v-cloak>{{ question }}</p>
+      <p class="is-size-4 has-text-weight-semibold" v-cloak>{{ prompt }}</p>
     </div>
 
     <!-- WaveSurfer container -->
@@ -18,7 +18,7 @@
     </div>
 
     <p class="is-size-7 mb-2">
-      By clicking this button, you accept that the question contributed here will be added to a publicly available cc-0 licensed dataset.
+      By clicking this button, you accept that the recording contributed here will be added to a publicly available cc-0 licensed dataset.
     </p>
 
     <p style="color: red;" :class="{'is-hidden mb-3': !notComplete}">
@@ -26,7 +26,7 @@
     </p>
 
     <p style="color: red;" :class="{'is-hidden mb-3': !fileTooBig}">
-      File size too large. Please stop recording once you've finished answering the question.
+      File size too large. Please stop recording once you've finished answering the prompt.
     </p>
 
     <button @click.prevent="uploadAndSubmit" class="button is-success is-large" :class="{'is-loading': btnLoading}">
@@ -46,8 +46,8 @@ import RecordPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/record.
 createApp({
   data() {
     return {
-      title: "Effect AI Question Answering",
-      question: (JSON.parse("${result}")).values.question,
+      title: "Effect AI Prompt Answering",
+      prompt: (JSON.parse("${result}")).values.prompt,
       wavesurfer: null,
       recordPlugin: null,
       isRecording: false,
@@ -60,21 +60,21 @@ createApp({
       fileTooBig: false,
       instructions: `
         <div>
-          <h2>Answer a Question</h2>
+          <h2>Answer a Prompt</h2>
           <p>
-            In this task, you will record yourself answering a short question shown on the screen.
+            In this task, you will record yourself answering a short prompt shown on the screen.
             The goal is to collect natural spoken responses that are clear, personal, and brief.
           </p>
 
           <h3>1. Instructions</h3>
           <p>
-            Your job is to answer the question out loud in your own words.
+            Your job is to answer the prompt out loud in your own words.
             These recordings will be used in a speech dataset, so clarity and natural speech are important.
           </p>
 
           <h4>Recording Guidelines</h4>
           <ul>
-            <li>Answer the question naturally, as if speaking to another person.</li>
+            <li>Answer the prompt naturally, as if speaking to another person.</li>
             <li>Keep your response short and focused.</li>
             <li>Do not speak for too long. Try to stay under 30 seconds.</li>
             <li>Speak clearly at a normal, conversational pace.</li>
@@ -84,7 +84,7 @@ createApp({
 
           <h4>What NOT to Do</h4>
           <ul>
-            <li>Do not read the question instead of answering it.</li>
+            <li>Do not read the prompt instead of answering it.</li>
             <li>Do not give very long or detailed stories.</li>
             <li>Do not include names, addresses, or other identifying information.</li>
             <li>Do not add filler sounds for long periods.</li>
@@ -95,7 +95,7 @@ createApp({
 
           <p><strong>✅ Good Answers</strong></p>
           <ul>
-            <li>A short story that answers the question clearly.</li>
+            <li>A short story that answers the prompt clearly.</li>
             <li>Natural speech with a clear beginning and end.</li>
             <li>Focused on one moment or feeling.</li>
           </ul>
@@ -104,7 +104,7 @@ createApp({
           <ul>
             <li>Very long stories that go off topic.</li>
             <li>Silence or only a few unclear words.</li>
-            <li>Reading the question instead of answering it.</li>
+            <li>Reading the prompt instead of answering it.</li>
             <li>Sharing personal details like full names or contact information.</li>
           </ul>
 
@@ -112,7 +112,7 @@ createApp({
           <ul>
             <li>Think briefly about your answer before recording.</li>
             <li>Focus on a single moment or experience.</li>
-            <li>Stop recording once you have answered the question.</li>
+            <li>Stop recording once you have answered the prompt.</li>
             <li>If you make a mistake, you can re-record.</li>
           </ul>
 
@@ -219,7 +219,7 @@ createApp({
           task: "submit",
           values: {
             taskTitle: this.title,
-            question: this.question,
+            prompt: this.prompt,
             recording: "https://" + this.ipfsHOST + "/ipfs/" + this.ipfsCID
           }
         }, "*");

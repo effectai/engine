@@ -16,6 +16,8 @@ message Task {
   string template_id = 5;
   string template_data = 6;
   optional string capability = 7;
+  optional string batch_id = 8;
+  optional bool unique_workers = 9;
 }
 
 message TaskAssignment {

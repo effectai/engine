@@ -1,14 +1,14 @@
 <meta charset="UTF-8">
 <div id="app" style="text-align: center">
-  <h1>Effect AI - Question Verification </h1>
+  <h1>Effect AI - Prompt Verification </h1>
 
   <hr />
 
   <div class="mx-auto" style="max-width: 80%">
 
-  <p class="mb-5">Is this a valid question?</p>
+  <p class="mb-5">Is this a valid prompt?</p>
   <div class="box">
-    <p class="is-size-4 has-text-weight-semibold">{{question}}</p>
+    <p class="is-size-4 has-text-weight-semibold">{{prompt}}</p>
   </div>
 
   <div class="mb-5">
@@ -51,69 +51,69 @@
   createApp({
     data() {
       return {
-        title: "Effect AI Question Verifier",
+        title: "Effect AI Prompt Verifier",
         btnLoading: false,
         author: "${submissionByPeer}", 
         // incoming result - {"timestamp": "", "submissionByPeer": "", "taskId": "", "result": "JSON_STRING"}
-        question: (JSON.parse("${result}")).values.question, 
+        prompt: (JSON.parse("${result}")).values.prompt, 
         isValidated: "",
         loading: true,
         notComplete: false,
         instructions: `
           <div>
-            <h2>Verify a Question - Common Voice</h2>
+            <h2>Verify a Prompt</h2>
             <p>
-              In this task, you will review short, simple questions written by other contributors.
-              Your goal is to decide whether each question is clear, natural, and suitable for collecting short spoken responses.
+              In this task, you will review short, simple prompts written by other contributors.
+              Your goal is to decide whether each prompt is clear, natural, and suitable for collecting short spoken responses.
             </p>
 
             <h3>1. Instructions</h3>
             <p>
-              Carefully read each question and decide whether it follows the guidelines below.
-              Mark <strong>“Yes”</strong> if the question is acceptable, <strong>“No”</strong> if it is not.
-              If you are unsure, you may <strong>Skip</strong> the question.
+              Carefully read each prompt and decide whether it follows the guidelines below.
+              Mark <strong>“Yes”</strong> if the prompt is acceptable, <strong>“No”</strong> if it is not.
+              If you are unsure, you may <strong>Skip</strong> the prompt.
             </p>
 
-            <h4>Question Verification Guidelines</h4>
+            <h4>Prompt Verification Guidelines</h4>
             <ul>
-              <li>The question should be clear and easy to understand.</li>
+              <li>The prompt should be clear and easy to understand.</li>
               <li>It should be possible to answer naturally in a short spoken response.</li>
-              <li>The question must use correct grammar, spelling, and punctuation.</li>
+              <li>The prompt must use correct grammar, spelling, and punctuation.</li>
               <li>It should sound natural and conversational.</li>
               <li>Casual English is fine, but phrasing should not be confusing.</li>
             </ul>
 
             <h4>Mark as INCORRECT if you see:</h4>
             <ul>
-              <li>Grammar or spelling mistakes that make the question unclear.</li>
+              <li>Grammar or spelling mistakes that make the prompt unclear.</li>
               <li>Foreign words or non English text.</li>
               <li>Overly complex, abstract, or technical language.</li>
               <li>Personal or identifying information requests.</li>
-              <li>Questions that feel unnatural, incomplete, or hard to answer.</li>
-              <li>Statements or sentences that are not actually questions.</li>
+              <li>Prompts that feel unnatural, incomplete, or hard to answer.</li>
+              <li>Statements or sentences that are not actually prompts.</li>
             </ul>
 
             <h3>2. Examples</h3>
-            <p><strong>✅ Correct Questions</strong></p>
+            <p><strong>✅ Correct Prompts</strong></p>
             <ul>
-              <li>What is a small moment today that made you smile?</li>
+              <li>Tell a small moment today that made you smile.</li>
               <li>How did you feel when you woke up this morning?</li>
               <li>Can you describe a short conversation you had today?</li>
             </ul>
 
-            <p><strong>❌ Incorrect Questions</strong></p>
+            <p><strong>❌ Incorrect Prompts</strong></p>
             <ul>
               <li>Tell me everything about your childhood. (too broad)</li>
-              <li>THIS question has RANDOM capitalization!!! (unnatural formatting)</li>
-              <li>The town has many people living there. (not a question)</li>
+              <li>THIS prompt has RANDOM capitalization!!! (unnatural formatting)</li>
+              <li>The town has many people living there. (this is a statement)</li>
               <li>Je vais au parc ce matin. (foreign language)</li>
               <li>Why is existence meaningful in modern society? (too abstract)</li>
             </ul>
 
             <h3>3. Tips for Success</h3>
             <ul>
-              <li>Read the question out loud and see if it sounds natural.</li>
-              <li>If the question feels awkward or confusing, mark it as incorrect.</li>
+              <li>Read the prompt out loud and see if it sounds natural.</li>
+              <li>If the prompt feels awkward or confusing, mark it as incorrect.</li>
               <li>If answering it would take a long time, it is probably not suitable.</li>
               <li>Trust your instincts and do not overthink small details.</li>
             </ul>
@@ -146,7 +146,7 @@
                 values: {
                   taskTitle: this.title,
                   author: this.author,
-                  question: this.question,
+                  prompt: this.prompt,
                   isValidated: this.isValidated
                 },
               },
