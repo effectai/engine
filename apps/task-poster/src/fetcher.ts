@@ -81,8 +81,9 @@ export type Fetcher = {
   // posting schedule: whitelist of days/time windows when tasks can be posted
   schedule?: Schedule;
 
-  // unique workers: each worker can only complete one task from this fetcher
-  uniqueWorkers?: boolean;
+  // repetitions: how many tasks a single worker may complete from each import
+  // 0 means no limit, 1 means each worker may do one task.
+  repetitions?: number;
 };
 
 const api = axios.create({
@@ -190,7 +191,7 @@ export const fetcherForm = async (
       <label for="type"><strong>Data source</strong><br/>
       <small>How new tasks will be fetched.</small></label>
       <select name="type" id="type"
-        onchange="uniqueWorkers.disabled=this.value!=='csv';if(uniqueWorkers.disabled)uniqueWorkers.checked=false">
+        onchange="repetitions.disabled=this.value!=='csv';if(repetitions.disabled)repetitions.value=0">
         ${["csv", "pipeline", "constant"].map(a =>
 	        `<option value="${a}" ${values.type == a ? "selected" : ""}>${a}</option>`).join("")}
       </select>
@@ -245,10 +246,11 @@ export const fetcherForm = async (
       </section>
 
       <div class="mt">
-        <label for="uniqueWorkers"><strong>Unique workers</strong><br/>
-        <small>Each worker can only complete one task per import batch. Only applies to CSV data sources.</small></label>
-        <input type="checkbox" id="uniqueWorkers" name="uniqueWorkers"
-          ${values.uniqueWorkers ? "checked" : ""}
+        <label for="repetitions"><strong>Repetitions per worker</strong><br/>
+        <small>How many tasks a single worker may complete per import batch.
+        0 = no limit, 1 = each worker may do one task. Only applies to CSV data sources.</small></label>
+        <input type="number" id="repetitions" name="repetitions" min="0" step="1"
+          value="${values.repetitions ?? 0}"
           ${(values.type ?? 'csv') !== 'csv' ? "disabled" : ""} />
       </div>
 
@@ -503,7 +505,7 @@ export const createFetcher = async (
 
     status: oldFetcher?.status ?? "active",
     hidden: fields.hidden === "on" || fields.hidden === true,
-    uniqueWorkers: fields.uniqueWorkers === "on" || fields.uniqueWorkers === true,
+    repetitions: Number(fields.repetitions) || 0,
 
     schedule: (() => {
       try {
@@ -645,7 +647,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	templateData: JSON.stringify(d),
 	capability: fetcher.capabilities[0],
 	batchId: `${fetcher.datasetId}-${fetcher.index}-${batchRunId}`,
-	uniqueWorkers: fetcher.uniqueWorkers ?? false,
+	repetitions: fetcher.repetitions ?? 0,
       } as Task;
     },
   );
@@ -990,7 +992,15 @@ const formValidations: ValidationMap = {
   },
 
   template: (v: string) => (!v || v.length === 0) && "Template is required",
-  uniqueWorkers: (_v: any) => false,
+  repetitions: (v: any) => {
+    if (v === undefined || v === "") return false;
+    const repetitions = Number(v);
+    return (
+      (isNaN(repetitions) && "Repetitions must be a number") ||
+      (!Number.isInteger(repetitions) && "Repetitions must be a whole number") ||
+      (repetitions < 0 && "Repetitions cannot be negative")
+    );
+  },
   timeLimitSeconds: (v: any) => {
     const num = Number(v);
     return (
@@ -1094,7 +1104,7 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Finished: ${doneSize}</li>
   <li>Failed: ${failedSize}</li>
   <li>Batch / Freq: ${f.batchSize} / ${f.frequency}</li>
-  ${f.uniqueWorkers ? '<li>Unique workers: enabled</li>' : ''}
+  ${f.repetitions ? `<li>Repetitions per worker: ${f.repetitions}</li>` : ''}
   <li>Time Limit: ${f.timeLimitSeconds}s</li>
   <li>Schedule: ${f.schedule && Object.keys(f.schedule).length > 0
     ? Object.entries(f.schedule).map(([day, slots]) =>

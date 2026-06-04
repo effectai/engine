@@ -28,29 +28,47 @@ export const createWorkerManager = ({
     datastore,
   });
 
-  const hasCompletedBatch = (batchId: string, workerId: string) =>
-    datastore.has(new Key(`/tasks/batch/${batchId}/completed/${workerId}`));
-
-  const hasActiveBatchAssignment = (batchId: string, workerId: string) =>
-    datastore.has(new Key(`/tasks/batch/${batchId}/assigned/${workerId}`));
-
-  // In-memory reservation map - prevents same-session races between concurrent assignTask calls.
-  // The datastore-based checks below serve as fallback after a manager restart.
-  const activeBatchWorkers = new Map<string, Set<string>>();
-
-  const tryReserveBatchWorker = (batchId: string, workerId: string): boolean => {
-    const existing = activeBatchWorkers.get(batchId);
-    if (existing?.has(workerId)) return false;
-    if (existing) existing.add(workerId);
-    else activeBatchWorkers.set(batchId, new Set([workerId]));
-    return true;
+  const countBatchKeys = async (prefix: string): Promise<number> => {
+    let count = 0;
+    for await (const _key of datastore.queryKeys({ prefix })) {
+      count++;
+    }
+    return count;
   };
 
-  const releaseBatchWorker = (batchId: string, workerId: string): void => {
-    const set = activeBatchWorkers.get(batchId);
-    if (!set) return;
-    set.delete(workerId);
-    if (set.size === 0) activeBatchWorkers.delete(batchId);
+  const countCompletedInBatch = (batchId: string, workerId: string) =>
+    countBatchKeys(`/tasks/batch/${batchId}/completed/${workerId}/`);
+
+  // How many tasks of this batch are currently assigned to the worker.
+  const countActiveAssignmentsInBatch = (batchId: string, workerId: string) =>
+    countBatchKeys(`/tasks/batch/${batchId}/assigned/${workerId}/`);
+
+  const reservedBatchSlots = new Map<string, Map<string, number>>();
+
+  const getReservedBatchSlots = (batchId: string, workerId: string): number =>
+    reservedBatchSlots.get(batchId)?.get(workerId) ?? 0;
+
+  const reserveBatchSlot = (batchId: string, workerId: string): void => {
+    let workerSlots = reservedBatchSlots.get(batchId);
+    if (!workerSlots) {
+      workerSlots = new Map<string, number>();
+      reservedBatchSlots.set(batchId, workerSlots);
+    }
+    workerSlots.set(workerId, (workerSlots.get(workerId) ?? 0) + 1);
+  };
+
+  const releaseBatchSlot = (batchId: string, workerId: string): void => {
+    const workerSlots = reservedBatchSlots.get(batchId);
+    if (!workerSlots) return;
+
+    const currentSlots = workerSlots.get(workerId) ?? 0;
+    if (currentSlots <= 1) {
+      workerSlots.delete(workerId);
+    } else {
+      workerSlots.set(workerId, currentSlots - 1);
+    }
+
+    if (workerSlots.size === 0) reservedBatchSlots.delete(batchId);
   };
   
   const workerAssignments = new Map<string, Set<string>>();
@@ -74,7 +92,7 @@ export const createWorkerManager = ({
       if (assignments.size === 0) workerAssignments.delete(workerId);
     }
 
-    if (batchId) releaseBatchWorker(batchId, workerId);
+    if (batchId) releaseBatchSlot(batchId, workerId);
   };
 
   const accessCodeStore = createAccessCodeStore({ datastore });
@@ -219,9 +237,14 @@ export const createWorkerManager = ({
     capability?: string,
     originalWorkerId?: string,
     batchId?: string,
-    uniqueWorkers?: boolean,
+    repetitions?: number,
   ): Promise<string | null> => {
     const queue = workerQueue.getQueue();
+
+    // 0 repetitions means no per-worker limit for this batch.
+    const maxTasksPerWorker = repetitions ?? 0;
+    const limitWorkersInBatch =
+      maxTasksPerWorker > 0 && batchId !== undefined;
 
     const isEligible = async (workerId: string): Promise<boolean> => {
       const worker = await getWorker(workerId);
@@ -241,11 +264,16 @@ export const createWorkerManager = ({
 
       if (await isBusy(worker)) return false;
 
-      // Datastore fallback - covers tasks assigned before a manager restart,
-      // since the in-memory reservation is lost on restart.
-      if (uniqueWorkers && batchId) {
-        if (await hasActiveBatchAssignment(batchId, workerId)) return false;
-        if (await hasCompletedBatch(batchId, workerId)) return false;
+      if (limitWorkersInBatch && batchId) {
+        const completedCount = await countCompletedInBatch(batchId, workerId);
+        const assignedInDatastore = await countActiveAssignmentsInBatch(
+          batchId,
+          workerId,
+        );
+        const reservedInMemory = getReservedBatchSlots(batchId, workerId);
+        const activeCount = Math.max(reservedInMemory, assignedInDatastore);
+
+        if (completedCount + activeCount > maxTasksPerWorker) return false;
       }
 
       return true;
@@ -254,15 +282,13 @@ export const createWorkerManager = ({
     //TODO:: optimize this..
     for (const workerId of queue) {
       // Synchronous reservation must happen before any await so two concurrent
-      // assignTask calls can't both claim the same worker for the same batch.
-      let batchReserved = false;
-      if (uniqueWorkers && batchId) {
-        if (!tryReserveBatchWorker(batchId, workerId)) continue;
-        batchReserved = true;
+      // assignTask calls can't both claim the same slot for the same batch.
+      if (limitWorkersInBatch && batchId) {
+        reserveBatchSlot(batchId, workerId);
       }
 
       if (!(await isEligible(workerId))) {
-        if (batchReserved && batchId) releaseBatchWorker(batchId, workerId);
+        if (limitWorkersInBatch && batchId) releaseBatchSlot(batchId, workerId);
         continue;
       }
 

@@ -178,13 +178,17 @@ export const createManagerTaskStore = ({
     );
     batch.delete(new Key(`/tasks/assign/${peerIdStr}/${entityId}`));
 
-    if (taskRecord.state.batchId && taskRecord.state.uniqueWorkers) {
+    if (taskRecord.state.batchId && taskRecord.state.repetitions > 0) {
       batch.put(
-        new Key(`/tasks/batch/${taskRecord.state.batchId}/completed/${peerIdStr}`),
+        new Key(
+          `/tasks/batch/${taskRecord.state.batchId}/completed/${peerIdStr}/${entityId}`,
+        ),
         new Uint8Array(),
       );
       batch.delete(
-        new Key(`/tasks/batch/${taskRecord.state.batchId}/assigned/${peerIdStr}`),
+        new Key(
+          `/tasks/batch/${taskRecord.state.batchId}/assigned/${peerIdStr}/${entityId}`,
+        ),
       );
     }
 
@@ -277,9 +281,11 @@ export const createManagerTaskStore = ({
       new Key(`/tasks/assign/${latestAssignEvent?.assignedToPeer}/${entityId}`),
     );
 
-    if (taskRecord.state.batchId && taskRecord.state.uniqueWorkers) {
+    if (taskRecord.state.batchId && taskRecord.state.repetitions > 0) {
       batch.delete(
-        new Key(`/tasks/batch/${taskRecord.state.batchId}/assigned/${latestAssignEvent.assignedToPeer}`),
+        new Key(
+          `/tasks/batch/${taskRecord.state.batchId}/assigned/${latestAssignEvent.assignedToPeer}/${entityId}`,
+        ),
       );
     }
 
@@ -322,9 +328,11 @@ export const createManagerTaskStore = ({
     batch.delete(new Key(`/tasks/active/${taskRecord.state.id}`));
     batch.delete(new Key(`/tasks/assign/${peerIdStr}/${entityId}`));
 
-    if (taskRecord.state.batchId && taskRecord.state.uniqueWorkers) {
+    if (taskRecord.state.batchId && taskRecord.state.repetitions > 0) {
       batch.delete(
-        new Key(`/tasks/batch/${taskRecord.state.batchId}/assigned/${peerIdStr}`),
+        new Key(
+          `/tasks/batch/${taskRecord.state.batchId}/assigned/${peerIdStr}/${entityId}`,
+        ),
       );
     }
 
@@ -410,9 +418,11 @@ export const createManagerTaskStore = ({
       new Uint8Array(),
     );
 
-    if (taskRecord.state.batchId && taskRecord.state.uniqueWorkers) {
+    if (taskRecord.state.batchId && taskRecord.state.repetitions > 0) {
       batch.put(
-        new Key(`/tasks/batch/${taskRecord.state.batchId}/assigned/${workerPeerIdStr}`),
+        new Key(
+          `/tasks/batch/${taskRecord.state.batchId}/assigned/${workerPeerIdStr}/${entityId}`,
+        ),
         new Uint8Array(),
       );
     }
