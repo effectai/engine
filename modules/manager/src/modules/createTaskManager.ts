@@ -368,11 +368,11 @@ export function createTaskManager({
       throw new Error("Task is already assigned.");
     }
 
-    // In a unique-workers batch, the most recent rejector of this task must
+    // In a repetition-limited batch, the most recent rejector of this task must
     // be excluded from the re-assignment - otherwise Task 1 bounces straight
     // back to them and consumes the batch slot they need for Task 2.
     let lastRejector: string | undefined;
-    if (taskRecord.state.uniqueWorkers) {
+    if (taskRecord.state.repetitions > 0) {
       for (let index = taskRecord.events.length - 1; index >= 0; index--) {
         const event = taskRecord.events[index];
         if (event.type === "reject") {
@@ -392,7 +392,7 @@ export function createTaskManager({
       taskRecord.state.capability || undefined,
       originalWorkerId || undefined,
       taskRecord.state.batchId || undefined,
-      taskRecord.state.uniqueWorkers || false,
+      taskRecord.state.repetitions,
     );
 
     if (!worker) {

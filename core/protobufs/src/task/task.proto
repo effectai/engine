@@ -17,7 +17,7 @@ message Task {
   string template_data = 6;
   optional string capability = 7;
   optional string batch_id = 8;
-  optional bool unique_workers = 9;
+  uint32 repetitions = 9;
 }
 
 message TaskAssignment {
