@@ -44,11 +44,75 @@ if (ALLOW_UNVERIFIED_TOKENS) {
 }
 
 const FETCH_TIMEOUT_MS = 10_000;
+// A healthy download/pin finishes in well under a second; this is just a
+// ceiling so a stalled socket fails fast enough to leave room for a retry.
+const IPFS_TIMEOUT_MS = 15_000;
+const IPFS_HOST = process.env.IPFS_HOST;
 const MIN_WORKERS = 1;
 const MAX_WORKERS = 20;
 
 function fetcherIndex(checkType: string): string {
   return EFFECT_FETCHER_INDICES[checkType] ?? "";
+}
+
+// One download + pin attempt. Logs timing per step so we can see which leg
+// stalls if the abort fires.
+async function uploadToIpfsOnce(sourceUrl: string): Promise<string> {
+  const downloadStart = Date.now();
+  const sourceRes = await fetch(sourceUrl, {
+    signal: AbortSignal.timeout(IPFS_TIMEOUT_MS),
+  });
+  if (!sourceRes.ok) {
+    throw new Error(`download failed: HTTP ${sourceRes.status}`);
+  }
+  const contentType = sourceRes.headers.get("content-type") ?? "image/png";
+  const extension = contentType.split("/")[1]?.split(";")[0] ?? "png";
+  const imageBlob = await sourceRes.blob();
+  console.log(
+    `[ipfs] downloaded ${imageBlob.size} bytes in ${Date.now() - downloadStart}ms`,
+  );
+
+  const formData = new FormData();
+  formData.append("path", imageBlob, `canva-export.${extension}`);
+
+  const addStart = Date.now();
+  const ipfsRes = await fetch(`https://${IPFS_HOST}/api/v0/add?pin=true`, {
+    method: "POST",
+    body: formData,
+    signal: AbortSignal.timeout(IPFS_TIMEOUT_MS),
+  });
+  if (!ipfsRes.ok) {
+    throw new Error(`IPFS add failed: HTTP ${ipfsRes.status}`);
+  }
+  const result = await ipfsRes.json();
+  const cid = result.Hash || result.cid || result.id;
+  if (!cid) throw new Error("IPFS response missing CID");
+  console.log(`[ipfs] pinned in ${Date.now() - addStart}ms`);
+
+  return `https://${IPFS_HOST}/ipfs/${cid}`;
+}
+
+async function rehostImageOnIpfs(sourceUrl: string): Promise<string> {
+  if (!sourceUrl) return sourceUrl;
+  const maxAttempts = 2;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const hostedUrl = await uploadToIpfsOnce(sourceUrl);
+      console.log(`[ipfs] re-hosted image -> ${hostedUrl}`);
+      return hostedUrl;
+    } catch (err: any) {
+      const message = err?.message ?? err;
+      if (attempt < maxAttempts) {
+        console.warn(`[ipfs] attempt ${attempt} failed (${message}), retrying`);
+      } else {
+        console.error(
+          `[ipfs] re-host failed after ${maxAttempts} attempts, falling back to source URL:`,
+          message,
+        );
+      }
+    }
+  }
+  return sourceUrl;
 }
 
 function isConfigured(): boolean {
@@ -314,12 +378,19 @@ app.post("/api/task", requireCanvaId, taskRateLimit, async (req, res) => {
     MAX_WORKERS,
     Math.max(MIN_WORKERS, Number(workerCount) || 5),
   );
+
+  const [hostedImageUrl, hostedImageUrlA, hostedImageUrlB] = await Promise.all([
+    rehostImageOnIpfs(imageUrl || ""),
+    rehostImageOnIpfs(imageUrlA || ""),
+    rehostImageOnIpfs(imageUrlB || ""),
+  ]);
+
   const row = {
     taskId,
     checkType,
-    imageUrl: imageUrl || imageUrlA || "",
-    imageUrlA: imageUrlA || "",
-    imageUrlB: imageUrlB || "",
+    imageUrl: hostedImageUrl || hostedImageUrlA || "",
+    imageUrlA: hostedImageUrlA || "",
+    imageUrlB: hostedImageUrlB || "",
     labelA: versionLabelA || "A",
     labelB: versionLabelB || "B",
     purpose: context?.designPurpose || "",
