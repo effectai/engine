@@ -1,0 +1,245 @@
+<style>
+  .step-card { text-align: left; }
+  .screenshot {
+    max-width: 520px;
+    width: 100%;
+    height: auto;
+    margin: 0.75rem auto 0;
+    display: block;
+    border: 1px solid #dbdbdb;
+    border-radius: 6px;
+  }
+  .reward-banner {
+    background: linear-gradient(135deg, #008fd1 0%, #2beae4 100%);
+    color: #fff;
+    border-radius: 10px;
+    padding: 1.25rem 1rem;
+  }
+  .reward-banner .amount { font-size: 2.25rem; font-weight: 800; line-height: 1.1; }
+  .addr-input { font-family: monospace; }
+  [v-cloak] { display: none; }
+</style>
+
+<div id="app" style="text-align: center" v-cloak>
+  <h1 class="title is-3">Effect AI - MEXC EFFECT Deposit</h1>
+  <p class="subtitle is-6">Deposit 3,000+ EFFECT on MEXC and earn a flat reward</p>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 800px">
+
+    <!-- ── REWARD SUMMARY ── -->
+    <div class="reward-banner mb-5">
+      <p class="is-size-6 mb-1">Reward for completing this task</p>
+      <p class="amount">1,500 EFFECT</p>
+      <p class="is-size-7 mt-1">
+        Flat reward - paid no matter how much you deposit, as long as you deposit at least
+        <strong>3,000 EFFECT</strong>. Paid to your MEXC deposit address after we verify your deposit.
+      </p>
+    </div>
+
+    <!-- ── STEP 1: CREATE ACCOUNT ── -->
+    <div class="box step-card">
+      <h2 class="title is-5">Step 1 - Create a MEXC account</h2>
+      <p>Already have a MEXC account? Skip to Step 2.</p>
+      <p class="mt-2">
+        If you don't have one yet, create a free account here:
+        <a :href="registerUrl" target="_blank" rel="noopener">Sign up on MEXC</a>.
+      </p>
+      <p class="mt-2">
+        Need a walkthrough? See the official guide:
+        <a :href="createAccountDocUrl" target="_blank" rel="noopener">How to register a MEXC account</a>.
+      </p>
+    </div>
+
+    <!-- ── STEP 2: DEPOSIT EFFECT ── -->
+    <div class="box step-card">
+      <h2 class="title is-5">Step 2 - Deposit at least 3,000 EFFECT</h2>
+      <p>Send <strong>3,000 EFFECT or more</strong> to your MEXC EFFECT deposit address.</p>
+      <ol class="mt-3" style="margin-left: 1.25rem">
+        <li>Log in to MEXC, open <strong>Deposit▾</strong> and click <strong>On-Chain Deposit</strong> (see screenshots below).</li>
+        <li>Search for and select <strong>EFFECT</strong>.</li>
+        <li>Choose the <strong>Solana (SPL)</strong> network.</li>
+        <li>Copy your unique <strong>EFFECT deposit address</strong> (you'll need it in Step 3).</li>
+        <li>Send 3,000+ EFFECT to that address from your wallet and wait for it to confirm.</li>
+      </ol>
+
+      <img src="https://ipfs.effect.ai/ipfs/QmRZuqKETPomKGYD2kfR8Hf5FzVT8y9qAW1WS7bczS4SNx"
+           class="screenshot" alt="MEXC deposit step 1" />
+      <img src="https://ipfs.effect.ai/ipfs/QmRs3McTBvS3LLriu599T9LgLBd33ZcmgbEituoPqmnSTr"
+           class="screenshot" alt="MEXC deposit step 2" />
+      <img src="https://ipfs.effect.ai/ipfs/QmSDE6oMq2CtTnwxGQMppYv1MYjxizhyJp8eo6JwPvPfim"
+           class="screenshot" alt="MEXC deposit step 3" />
+
+      <p class="help mt-3">
+        ⚠️ Make sure you select the <strong>Solana (SPL)</strong> network. Sending on the wrong
+        network can result in lost funds.
+      </p>
+    </div>
+
+    <!-- ── STEP 3: SUBMIT DEPOSIT ADDRESS ── -->
+    <div class="box step-card">
+      <h2 class="title is-5">Step 3 - Submit your MEXC EFFECT deposit address</h2>
+      <p>
+        Paste the EFFECT deposit address from Step 2 below. We use it to verify your deposit
+        on-chain, and your <strong>1,500 EFFECT reward will be sent to this same address</strong>
+        once verified.
+      </p>
+
+      <img :src="depositAddressScreenshot" class="screenshot mb-4"
+           alt="Where to find your EFFECT deposit address on MEXC" />
+
+      <div class="field mt-4">
+        <label class="label">Your MEXC EFFECT deposit address (Solana)</label>
+        <div class="control">
+          <input
+            class="input addr-input"
+            type="text"
+            placeholder="e.g. 7xKXtg2CW...your MEXC EFFECT deposit address"
+            v-model.trim="depositAddress"
+          />
+        </div>
+      </div>
+
+      <div class="field mt-3">
+        <label class="checkbox">
+          <input type="checkbox" v-model="confirmDeposited" />
+          I confirm I have deposited at least 3,000 EFFECT to the MEXC deposit address above.
+        </label>
+      </div>
+    </div>
+
+    <!-- Validation errors -->
+    <p style="color: red;" class="mb-2" :class="{'is-hidden': !addressInvalid}">
+      Please enter a valid MEXC EFFECT (Solana) deposit address.
+    </p>
+    <p style="color: red;" class="mb-2" :class="{'is-hidden': !notComplete}">
+      Task incomplete – please enter your deposit address and tick the confirmation box.
+    </p>
+
+    <!-- Submit -->
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-success is-large mt-3"
+      :class="{'is-loading': btnLoading}"
+    >
+      Submit deposit for verification
+    </button>
+
+  </div>
+
+  <!-- ── RESOURCES ── -->
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    createApp({
+      data() {
+        return {
+          title: "MEXC EFFECT Deposit",
+
+          // --- Static links (verify/replace with your preferred MEXC URLs) ---
+          registerUrl: "https://www.mexc.com/register",
+          createAccountDocUrl: "https://www.mexc.com/learn/article/mexc-account-sign-up-web/1",
+
+          // --- Screenshots ---
+          depositAddressScreenshot: "https://ipfs.effect.ai/ipfs/QmZ7DixDQ7AgVdFbTG7x38ZK51nJ2H17JvmvbXHQ6gM3MD",
+
+          // --- Worker response ---
+          depositAddress: "",
+          confirmDeposited: false,
+
+          // --- UI state ---
+          btnLoading: false,
+          notComplete: false,
+          addressInvalid: false,
+
+          instructions: `
+            <div>
+              <h2>MEXC EFFECT Deposit</h2>
+              <p>Deposit at least <strong>3,000 EFFECT</strong> into your MEXC account and submit
+              your MEXC EFFECT deposit address. Once we verify the deposit on-chain, you receive a
+              flat <strong>1,500 EFFECT</strong> reward - regardless of how much you deposited
+              (as long as it's 3,000+). The reward is sent to the same deposit address you submit.</p>
+
+              <h3>1. Instructions</h3>
+              <ul>
+                <li>Create a MEXC account (or use an existing one).</li>
+                <li>Go to <strong>Wallets → Deposit</strong>, select <strong>EFFECT</strong>, and
+                choose the <strong>Solana (SPL)</strong> network.</li>
+                <li>Copy your unique EFFECT deposit address and send <strong>3,000+ EFFECT</strong> to it.</li>
+                <li>Wait for the deposit to confirm, then paste that deposit address into the form.</li>
+                <li><strong>DO NOT</strong> submit an address you haven't deposited to as deposits are
+                verified on-chain before any reward is paid.</li>
+                <li><strong>DO NOT</strong> use the wrong network. Only Solana (SPL) EFFECT is supported.</li>
+              </ul>
+
+              <h3>2. Examples</h3>
+              <p><strong>✅ Good</strong></p>
+              <ul><li>You deposited 3,500 EFFECT and submitted the exact MEXC Solana deposit address it went to.</li></ul>
+              <p><strong>❌ Bad</strong></p>
+              <ul>
+                <li>Submitting a deposit address with no deposit, or one below 3,000 EFFECT (this fails verification).</li>
+                <li>Pasting your personal wallet address instead of your MEXC deposit address.</li>
+              </ul>
+
+              <h3>3. Tips for Success</h3>
+              <ul>
+                <li>Triple-check the deposit address. Your reward is paid to it.</li>
+                <li>Keep your deposit confirmation screen handy in case we need to follow up.</li>
+              </ul>
+            </div>`
+        };
+      },
+      mounted() {
+        window.top.postMessage(
+          { type: "task-instructions", instructions: this.instructions },
+          "*"
+        );
+      },
+      methods: {
+        uploadAndSubmit() {
+          this.btnLoading = true;
+          this.addressInvalid = false;
+          this.notComplete = false;
+
+          // Basic Solana base58 address sanity check (32-44 chars, base58 alphabet)
+          const address = (this.depositAddress || "").trim();
+          const looksLikeSolana = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
+
+          if (!address || !this.confirmDeposited) {
+            this.notComplete = true;
+            this.btnLoading = false;
+            return;
+          }
+          if (!looksLikeSolana) {
+            this.addressInvalid = true;
+            this.btnLoading = false;
+            return;
+          }
+
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  taskTitle: this.title,
+                  answer: {
+                    mexcDepositAddress: address,
+                    confirmed: true
+                  }
+                }
+              },
+              "*"
+            );
+          } catch (error) {
+            console.error("Submit failed:", error);
+          }
+          this.btnLoading = false;
+        }
+      }
+    }).mount("#app");
+  </script>
+</div>
