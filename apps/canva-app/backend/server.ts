@@ -256,33 +256,39 @@ function aggregateResults(answers: any[]): CheckResults | undefined {
 
 export const db = new KV({ autoSync: true });
 
-// In-memory cache of merged CSV rows, refreshed on a schedule.
-let cachedRows: Record<string, string>[] = [];
+// Canva user IDs can contain characters @cross/kv rejects in key strings (it
+// only permits letters, numbers, '@', '-', '_'). base64url-encode the id into a
+// valid, collision-free key element. Must be used everywhere canvaId is a key
+function userKeyPart(canvaId: string): string {
+  return Buffer.from(canvaId).toString("base64url");
+}
+
+let answersByTaskId = new Map<string, any[]>();
+const pendingTasks = new Map<string, number>();
+let lastCsvRowCount = -1;
 
 async function updatePendingTasksFromCache(): Promise<void> {
-  const entries = await db.listAll<TaskRecord>(["canva-task", {}]);
-  for (const entry of entries) {
-    const task = entry.data;
-    if (task.status === "complete") continue;
+  // Iterate only pending tasks (bounded) instead of scanning the whole DB.
+  for (const [taskId, workerCount] of pendingTasks) {
+    const answers = answersByTaskId.get(taskId);
+    if (!answers || answers.length < workerCount) continue;
 
-    const rows = cachedRows.filter((row) => {
-      try {
-        return JSON.parse(row["result"] ?? "")?.values?.answer?.taskId === task.taskId;
-      } catch {
-        return false;
-      }
-    });
-    if (!rows.length) continue;
-
-    const answers = rows
-      .map((row) => { try { return JSON.parse(row["result"] ?? "")?.values?.answer; } catch { return null; } })
-      .filter(Boolean);
-
-    if (answers.length < task.workerCount) continue;
+    const entry = await db.get<TaskRecord>(["canva-task", taskId]);
+    if (!entry) {
+      pendingTasks.delete(taskId);
+      continue;
+    }
 
     const results = aggregateResults(answers);
-    await db.set<TaskRecord>(entry.key, { ...task, status: "complete", results });
-    console.log(`[cache] task ${task.taskId} marked complete (${answers.length} completions)`);
+    await db.set<TaskRecord>(entry.key, {
+      ...entry.data,
+      status: "complete",
+      results,
+    });
+    pendingTasks.delete(taskId);
+    console.log(
+      `[cache] task ${taskId} marked complete (${answers.length} completions)`,
+    );
   }
 }
 
@@ -300,11 +306,11 @@ async function refreshCsvCache(): Promise<void> {
     const csvTexts = await Promise.all(
       fetchers.map(async (indexId) => {
         const url = `${EFFECT_URL}/d/${EFFECT_DATASET_ID}/f/${indexId}/download`;
-        const r = await fetch(url, {
+        const response = await fetch(url, {
           headers: { Cookie: effectCookie() },
           signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         });
-        return r.ok ? r.text() : "";
+        return response.ok ? response.text() : "";
       }),
     );
     let headerLine = "";
@@ -315,11 +321,39 @@ async function refreshCsvCache(): Promise<void> {
       if (!headerLine) headerLine = lines[0]!;
       dataLines.push(...lines.slice(1));
     }
+
+    if (dataLines.length === lastCsvRowCount) {
+      console.log(
+        `[cache] unchanged - ${dataLines.length} rows, skipping reconcile`,
+      );
+      return;
+    }
+
     const text = headerLine ? [headerLine, ...dataLines].join("\n") : "";
-    cachedRows = text.trim() ? parseCsv(text) : [];
-    console.log(`[cache] refreshed - ${cachedRows.length} rows at ${new Date().toISOString()}`);
+    const rows = text.trim() ? parseCsv(text) : [];
+
+    // Group answers by taskId in a single pass (parse each row exactly once),
+    const grouped = new Map<string, any[]>();
+    for (const row of rows) {
+      let answer: any;
+      try {
+        answer = JSON.parse(row["result"] ?? "")?.values?.answer;
+      } catch {
+        continue;
+      }
+      const taskId = answer?.taskId;
+      if (!taskId) continue;
+      const bucket = grouped.get(taskId);
+      if (bucket) bucket.push(answer);
+      else grouped.set(taskId, [answer]);
+    }
+    answersByTaskId = grouped;
+    console.log(
+      `[cache] refreshed - ${rows.length} rows across ${grouped.size} tasks at ${new Date().toISOString()}`,
+    );
 
     await updatePendingTasksFromCache();
+    lastCsvRowCount = dataLines.length;
   } catch (err: any) {
     console.error("[cache] refresh failed:", err?.message ?? err);
   } finally {
@@ -399,8 +433,8 @@ app.post("/api/task", requireCanvaId, taskRateLimit, async (req, res) => {
     workerCount: count,
     revealDuration: revealDuration || 3,
   };
-  const csv = Papa.unparse(Array.from({ length: count }, () => row));
 
+  const csv = Papa.unparse(Array.from({ length: count }, () => row));
   const importUrl = `${EFFECT_URL}/d/${EFFECT_DATASET_ID}/f/${fetcherIndex(checkType)}/import`;
   console.log(`[POST /api/task] POSTing CSV to ${importUrl}`);
 
@@ -439,6 +473,9 @@ app.post("/api/task", requireCanvaId, taskRateLimit, async (req, res) => {
       revealDuration,
     };
     await db.set<TaskRecord>(["canva-task", taskId], record);
+    await db.set(["canva-user-task", userKeyPart(canvaId), taskId], { taskId });
+
+    pendingTasks.set(taskId, count);
     console.log(`[POST /api/task] success - taskId=${taskId}`);
     return res.json({ taskId });
   } catch (err: any) {
@@ -451,15 +488,27 @@ app.post("/api/task", requireCanvaId, taskRateLimit, async (req, res) => {
 app.get("/api/tasks", requireCanvaId, async (req, res) => {
   const canvaId = req.canvaId!;
   try {
-    const entries = await db.listAll<TaskRecord>(["canva-task", {}]);
-    const tasks = entries
-      .map((entry) => entry.data)
-      .filter((task) => task.canvaId === canvaId)
+    const indexEntries = await db.listAll<{ taskId: string }>([
+      "canva-user-task",
+      userKeyPart(canvaId),
+      {},
+    ]);
+    const records = await Promise.all(
+      indexEntries.map((indexEntry) =>
+        db.get<TaskRecord>(["canva-task", indexEntry.data.taskId]),
+      ),
+    );
+    const tasks = records
+      .map((entry) => entry?.data)
+      .filter((task): task is TaskRecord => Boolean(task))
       .sort(
         (taskA, taskB) =>
           new Date(taskB.submittedAt).getTime() -
           new Date(taskA.submittedAt).getTime(),
       );
+    console.log(
+      `[GET /api/tasks] user ${canvaId} - ${tasks.length} tasks via index`,
+    );
     return res.json(tasks);
   } catch (err: any) {
     console.error("[GET /api/tasks] error:", err?.message ?? err);
@@ -498,6 +547,8 @@ app.delete("/api/task/:taskId", requireCanvaId, async (req, res) => {
       return res.status(404).json({ error: "Task not found" });
     }
     await db.delete(["canva-task", taskId]);
+    await db.delete(["canva-user-task", userKeyPart(canvaId), taskId]);
+    pendingTasks.delete(taskId);
     console.log(`[DELETE /api/task/${taskId}] deleted`);
     return res.sendStatus(204);
   } catch (err: any) {
@@ -510,6 +561,22 @@ const main = async () => {
   const dbFile = process.env.DB_FILE || "mydatabase.db";
   console.log(`Opening database at ${dbFile}`);
   await db.open(dbFile);
+
+  const allTasks = await db.listAll<TaskRecord>(["canva-task", {}]);
+  for (const entry of allTasks) {
+    const task = entry.data;
+    if (task.canvaId) {
+      await db.set(["canva-user-task", userKeyPart(task.canvaId), task.taskId], {
+        taskId: task.taskId,
+      });
+    }
+    if (task.status !== "complete") {
+      pendingTasks.set(task.taskId, task.workerCount);
+    }
+  }
+  console.log(
+    `[startup] indexed ${allTasks.length} tasks, ${pendingTasks.size} pending`,
+  );
 
   refreshCsvCache();
   setInterval(refreshCsvCache, EFFECT_POLL_INTERVAL_MS);
