@@ -26,7 +26,19 @@ export type TemplateRecord = {
   templateId: string;
   data: string;
   status: "draft" | "active" | "archived";
+  // Requestor-API fields (absent on legacy/team templates):
+  ownerId?: string; // undefined = team/default template (public catalog)
+  approved?: boolean; // trust badge; team templates are implicitly approved
+  approvalRequested?: boolean; // queued for team review
 };
+
+// A template is "trusted" if the team approved it, or it's a team template
+// (no owner). Content-addressing means an approval verdict is tied to the
+// exact HTML, so it can safely be shared across requestors using it.
+export const isTemplateApproved = (tpl: TemplateRecord): boolean =>
+  tpl.approved === true || !tpl.ownerId;
+
+export const isPublicTemplate = (tpl: TemplateRecord): boolean => !tpl.ownerId;
 
 const api = axios.create({
   timeout: 5000,
@@ -85,6 +97,102 @@ const findTemplateFields = (html: string) => {
     seen.add(name);
     return true;
   });
+};
+
+// Field names referenced by a template's ${...} placeholders.
+export const getTemplateFields = (html: string): string[] =>
+  findTemplateFields(html).map(([, name]) => name);
+
+/**
+ * Computes the template id, (best-effort) registers it with the manager so
+ * workers can fetch it, and upserts the local record. Shared by the team UI
+ * and the Requestor API. Approval is sticky: once this exact HTML is approved
+ * it stays approved.
+ */
+export const registerTemplate = async (input: {
+  name: string;
+  html: string;
+  ownerId?: string;
+  approved: boolean;
+  approvalRequested?: boolean;
+}): Promise<TemplateRecord> => {
+  const templateId = computeTemplateId(managerId, input.html);
+  const existing = (await getTemplate(templateId))?.data;
+
+  const template: Template = {
+    templateId,
+    data: input.html,
+    createdAt: existing?.createdAt ?? Date.now(),
+  };
+
+  // Register with the manager so workers can fetch it. Best-effort: the local
+  // record is still saved if the manager is unreachable (matches prior team
+  // behaviour); the worker just can't fetch it until re-registered.
+  try {
+    await api.post<APIResponse>("/template/register", {
+      template,
+      providerPeerIdStr: managerId,
+    });
+  } catch (e) {
+    console.warn("Template manager registration failed (saved locally):", e);
+  }
+
+  const record: TemplateRecord = {
+    ...template,
+    name: existing?.name ?? input.name,
+    status: "active",
+    ownerId: existing?.ownerId ?? input.ownerId,
+    approved: existing?.approved || input.approved,
+    approvalRequested:
+      existing?.approvalRequested || input.approvalRequested || false,
+  };
+  await db.set<TemplateRecord>(["templates", templateId], record);
+  return record;
+};
+
+// Per-account visibility index, so a content-addressed template can be listed
+// for every requestor that submitted it (without clobbering ownership).
+export const addAccountTemplate = (accountId: string, templateId: string) =>
+  db.set<boolean>(["account-template", accountId, templateId], true);
+
+export const getAccountTemplateIds = async (
+  accountId: string,
+): Promise<string[]> =>
+  (await db.listAll<boolean>(["account-template", accountId, {}])).map(
+    (record) => record.key[2] as string,
+  );
+
+export const getPublicApprovedTemplates = async (): Promise<TemplateRecord[]> =>
+  (await getTemplates("active"))
+    .map((record) => record.data)
+    .filter((tpl) => isPublicTemplate(tpl) && isTemplateApproved(tpl));
+
+export const getPendingApprovalTemplates = async (): Promise<TemplateRecord[]> =>
+  (await getTemplates())
+    .map((record) => record.data)
+    .filter((tpl) => tpl.approvalRequested && !tpl.approved);
+
+export const setTemplateApproval = async (
+  templateId: string,
+  approved: boolean,
+): Promise<TemplateRecord | null> => {
+  const record = await getTemplate(templateId);
+  if (!record) return null;
+  record.data.approved = approved;
+  if (approved) record.data.approvalRequested = false;
+  await db.set<TemplateRecord>(["templates", templateId], record.data);
+  return record.data;
+};
+
+export const rejectTemplateApproval = async (
+  templateId: string,
+): Promise<TemplateRecord | null> => {
+  const record = await getTemplate(templateId);
+  if (!record) return null;
+  record.data.approved = false;
+  record.data.approvalRequested = false;
+  await db.set<TemplateRecord>(["templates", templateId], record.data);
+  return record.data;
 };
 
 const form = (msg = "", values: Record<string, string> = {}): string => `
@@ -237,33 +345,19 @@ export const addTemplateRoutes = (app: Express): void => {
     }
 
     if (valid && req.query.action === "publish") {
-      const templateId = computeTemplateId(managerId, req.body.html);
-      console.log(`Publishing new template ${templateId}...`);
-
-      const template: Template = {
-        templateId,
-        data: req.body.html,
-        createdAt: Date.now(),
-      };
-
       try {
-        const { data } = await api.post<APIResponse>("/template/register", {
-          template,
-          providerPeerIdStr: managerId,
+        const record = await registerTemplate({
+          name: req.body.name,
+          html: req.body.html,
+          approved: true, // team templates are trusted by default
         });
-        msg = `<p>Success! ${data.status}:</p><p>${data.id}</p>`;
+        console.log(`Published template ${record.templateId}`);
+        msg = `<p>Success! ${record.templateId}</p>`;
       } catch (e) {
         console.log(`Errors during registration`, e);
         msg = "Error during template registration.";
         valid = false;
       }
-
-      const templateEntry: TemplateRecord = {
-        ...template,
-        name: req.body.name,
-        status: "active",
-      };
-      await db.set<TemplateRecord>(["templates", templateId], templateEntry);
     }
     if (req.query.action === "edit") {
       res.send(form(undefined, req.body));

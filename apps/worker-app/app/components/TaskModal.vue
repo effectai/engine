@@ -17,8 +17,10 @@
 
         <UCard
           :ui="{
-            ring: '',
-            divide: 'divide-y divide-gray-100 dark:divide-gray-800',
+            root: 'h-full flex flex-col rounded-none divide-y divide-gray-100 dark:divide-gray-800',
+            header: 'flex-shrink-0',
+            body: 'flex-1 min-h-0 overflow-y-auto',
+            footer: 'flex-shrink-0',
           }"
         >
           <template #header>
@@ -108,10 +110,11 @@
 
           <template #default>
             <div
-              class="p-3 sm:p-4 overflow-y-auto"
+              class="p-3 sm:p-4"
               :class="{ 'opacity-30': taskState === 'create' }"
               v-if="activeTask"
             >
+              <TaskTrustBadge :approved="templateApproved" class="mb-2" />
               <TaskTemplate
                 ref="template"
                 @submit="handlerSubmitTask"
@@ -164,6 +167,18 @@ const template = ref<TemplateComponent | null>(null);
 const isTemplateReady = ref(false);
 
 const isOpen = computed(() => !!activeTask.value);
+
+// Whether this task's template was approved by the Effect team. The poster bakes
+// a reserved `__effectApproved` flag into the task data; absent (team/legacy
+// tasks) defaults to safe.
+const templateApproved = computed<boolean>(() => {
+  try {
+    const data = JSON.parse(activeTask.value?.state.templateData ?? "{}");
+    return data?.__effectApproved !== false;
+  } catch {
+    return true;
+  }
+});
 const isOpenTaskInfoModal = ref(false);
 const isOpenReportModal = ref(false);
 const currentTaskInstructions = ref("");

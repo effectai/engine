@@ -15,6 +15,11 @@ import * as state from "./state.js";
 import {
   addTemplateRoutes,
 } from "./templates.js";
+import { addRequestorApiRoutes } from "./api/api.js";
+import { addAdminRoutes } from "./api/admin.js";
+import { addJobApiRoutes } from "./api/jobs.js";
+import { rateLimitApi } from "./api/accounts.js";
+import { apiNotFound } from "./api/api-util.js";
 
 const formatDate = (ts: number) =>
   new Date(ts).toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -125,7 +130,8 @@ const addApiRoutes = (app: Express) => {
 
 const addMainRoutes = (app: Express) => {
   app.get("/", async (req: Request, res: Response) => {
-    const datasets = await getActiveDatasets("active");
+    // hidden datasets (incl. Requestor-API jobs) stay off the public homepage
+    const datasets = (await getActiveDatasets("active")).filter((d) => !d.hidden);
 
     const dsList = datasets.map((d) => campaignCard(d));
 
@@ -196,6 +202,11 @@ const main = async () => {
 
   console.log("Registering module routes");
   addApiRoutes(app);
+  app.use("/api/v1", rateLimitApi); // per-key rate limit for the Requestor API
+  addRequestorApiRoutes(app);
+  addJobApiRoutes(app);
+  app.use("/api/v1", apiNotFound); // JSON 404 for unmatched /api/v1/* routes
+  addAdminRoutes(app);
   addMainRoutes(app);
   addTemplateRoutes(app);
   addDatasetRoutes(app);

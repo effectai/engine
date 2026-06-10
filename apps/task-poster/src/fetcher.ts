@@ -10,7 +10,7 @@ import { db, managerId, publishProgress } from "./state.js";
 import * as state from "./state.js";
 import { validateNumericParams } from "./util.js";
 import { KVKey, KVQuery, KVTransactionResult } from "@cross/kv";
-import { getTemplate, getTemplates, renderTemplate, escapeHTML } from "./templates.js";
+import { getTemplate, getTemplates, renderTemplate, escapeHTML, isTemplateApproved } from "./templates.js";
 
 export type TimeSlot = { from: string; to: string };
 export type DayName = 'mon'|'tue'|'wed'|'thu'|'fri'|'sat'|'sun';
@@ -88,7 +88,7 @@ const api = axios.create({
   baseURL: state.managerUrl,
 });
 
-const parseCsv = (csv: string, delimiter = ","): Promise<any[]> => {
+export const parseCsv = (csv: string, delimiter = ","): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     const data: any[] = [];
 
@@ -614,6 +614,13 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
   // avoid expensive mistakes.
   const maxPrice = BigInt(fetcher.price) * BigInt(10);
 
+  // Trust signal for the worker: whether this task's template is approved.
+  // Baked into each task's data (reserved __effectApproved key) so the worker
+  // can show a safety badge without a protocol/schema change. Defaults to safe
+  // for team/legacy templates.
+  const approvalTpl = await getTemplate(fetcher.template);
+  const templateApproved = approvalTpl ? isTemplateApproved(approvalTpl.data) : true;
+
   const tasks = data.map(
     (d, _idx) => {
       const rawPrice = d["dataffect/reward"] ?
@@ -626,7 +633,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	reward: price,
 	timeLimitSeconds: fetcher.timeLimitSeconds ?? 600,
 	templateId: fetcher.template,
-	templateData: JSON.stringify(d),
+	templateData: JSON.stringify({ ...d, __effectApproved: templateApproved }),
 	capability: fetcher.capabilities[0],
       } as Task;
     },
@@ -645,7 +652,7 @@ export const getPendingTasks = async (f: Fetcher, queueName: string = "queue") =
 };
 
 // fetch new tasks and add the to the fetcher queue
-const importFetcherData = async (fetcher: Fetcher, csv: string = "") => {
+export const importFetcherData = async (fetcher: Fetcher, csv: string = "") => {
   let tasks = await getTasks(fetcher, csv);
   console.log(`trace: Importing ${tasks.length} new tasks for fetcher`);
   for (const t of tasks) {
@@ -655,6 +662,21 @@ const importFetcherData = async (fetcher: Fetcher, csv: string = "") => {
     );
   }
   return tasks;
+};
+
+// Imports a CSV string into a fetcher's queue and bumps its totalTasks.
+// Used by the Requestor API to populate a job's tasks at creation time.
+export const importCsvIntoFetcher = async (
+  fetcher: Fetcher,
+  csv: string,
+): Promise<number> => {
+  const tasks = await importFetcherData(fetcher, csv);
+  const entry = (await db.get<Fetcher>(
+    ["fetcher", fetcher.datasetId, fetcher.index, "info"],
+  ))!;
+  entry.data.totalTasks += tasks.length;
+  await db.set<Fetcher>(entry.key, entry.data);
+  return tasks.length;
 };
 
 // form submission handler for fetcher import

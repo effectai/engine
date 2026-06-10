@@ -37,6 +37,7 @@ export const page = (body: string, bodyClass = "container"): string => `
     </div>
     <nav style="display: flex; gap: 1.0rem;">
       <a href="/templates"><button>Templates</button></a>
+      <a href="/admin/accounts"><button>API Accounts</button></a>
       <a href="/auth"><button class="filled">Login</button></a>
     </nav>
   </header>

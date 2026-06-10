@@ -58,6 +58,7 @@ const loggedInPage = (msg = "") => `
     </form>
     <a href="/"><button type="button">Datasets</button></a>
     <a href="/templates"><button type="button">Templates</button></a>
+    <a href="/admin/accounts"><button type="button">API Accounts</button></a>
   </section>
 </div>
 `;

@@ -31,6 +31,7 @@ export type DatasetRecord = {
   image?: string;
   description?: string;
   hidden?: boolean;
+  ownerId?: string; // set for datasets created via the Requestor API (a "job")
 };
 
 export const getDataset = async (id: number) =>

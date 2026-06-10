@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Effect AI — API Console</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --line:#272b34; --fg:#e6e6e6; --muted:#9aa0ac; --accent:#8ec07c; --warn:#e6a153; --danger:#e06c75; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.55 system-ui,sans-serif; background:var(--bg); color:var(--fg); }
+  header { position:sticky; top:0; background:#12141a; border-bottom:1px solid var(--line); padding:.75rem 1rem; display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; z-index:5; }
+  header h1 { font-size:1rem; margin:0 1rem 0 0; }
+  main { max-width:980px; margin:1.25rem auto; padding:0 1rem; display:grid; grid-template-columns:minmax(0,1fr); gap:1.25rem; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:1rem 1.15rem; }
+  .card h2 { margin:.1rem 0 .8rem; font-size:1.02rem; }
+  label { display:block; font-size:.82rem; color:var(--muted); margin:.6rem 0 .2rem; }
+  input, textarea, select { width:100%; background:#0e1014; color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:.5rem .6rem; font:inherit; }
+  textarea { font-family:ui-monospace,monospace; font-size:.86rem; resize:vertical; }
+  button { background:var(--accent); color:#0e1014; border:0; border-radius:8px; padding:.5rem .85rem; font:inherit; font-weight:600; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--fg); border:1px solid var(--line); font-weight:500; }
+  button.danger { background:transparent; color:var(--danger); border:1px solid var(--danger); font-weight:500; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .row { display:flex; gap:.6rem; flex-wrap:wrap; align-items:center; }
+  .row > * { flex:0 0 auto; }
+  .grow { flex:1 1 auto; min-width:0; }
+  table { width:100%; border-collapse:collapse; font-size:.86rem; }
+  th, td { text-align:left; padding:.4rem .5rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  code, .mono { font-family:ui-monospace,monospace; font-size:.82rem; }
+  .pill { display:inline-block; padding:.05rem .45rem; border-radius:999px; font-size:.72rem; font-weight:600; }
+  .pill.ok { background:rgba(142,192,124,.18); color:var(--accent); }
+  .pill.warn { background:rgba(230,161,83,.18); color:var(--warn); }
+  .muted { color:var(--muted); }
+  .msg { margin-top:.6rem; padding:.5rem .7rem; border-radius:8px; font-size:.86rem; white-space:pre-wrap; }
+  .msg.err { background:rgba(224,108,117,.14); color:var(--danger); }
+  .msg.ok { background:rgba(142,192,124,.14); color:var(--accent); }
+  pre { background:#0e1014; border:1px solid var(--line); border-radius:8px; padding:.7rem; overflow:auto; font-size:.8rem; max-height:340px; }
+  a { color:var(--accent); }
+  .hide { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Effect AI · API Console</h1>
+  <input id="key" class="grow" type="password" placeholder="Paste your API key (eff_live_…)" style="min-width:220px" />
+  <button id="connect">Connect</button>
+  <span id="who" class="muted">not connected</span>
+  <a href="/api/docs" target="_blank" style="margin-left:auto">API docs ↗</a>
+</header>
+
+<main id="app" class="hide">
+  <!-- Templates -->
+  <section class="card">
+    <h2>Templates</h2>
+    <div id="tpl-list" class="muted">…</div>
+    <details style="margin-top:.8rem">
+      <summary>Submit a custom template</summary>
+      <label>Name</label>
+      <input id="tpl-name" placeholder="My template" />
+      <label>HTML (use <code>${field}</code> placeholders; each needs a CSV column)</label>
+      <textarea id="tpl-html" rows="6" placeholder="&lt;h1&gt;Rate ${product}&lt;/h1&gt;&lt;p&gt;${question}&lt;/p&gt;"></textarea>
+      <label class="row" style="gap:.4rem"><input id="tpl-approve" type="checkbox" style="width:auto" /> Request team approval (otherwise it runs unapproved + sandboxed)</label>
+      <div class="row" style="margin-top:.5rem"><button id="tpl-submit">Submit template</button></div>
+      <div id="tpl-msg"></div>
+    </details>
+  </section>
+
+  <!-- New job -->
+  <section class="card">
+    <h2>New job</h2>
+    <div class="row">
+      <div><label>Type</label>
+        <select id="job-type">
+          <option value="csv">CSV — 1 row = 1 task</option>
+          <option value="constant">Constant — survey (same data to N workers)</option>
+        </select></div>
+      <div class="grow"><label>Template</label><select id="job-tpl"></select></div>
+      <div><label>Reward / task (EFFECT)</label><input id="job-reward" style="width:9rem" value="0.5" /></div>
+      <div class="grow"><label>Job name</label><input id="job-name" placeholder="My job" /></div>
+    </div>
+
+    <!-- CSV mode: one task per row -->
+    <div id="job-csv-mode">
+      <label>CSV — first row is the header; one row = one task <span id="job-fields" class="muted"></span></label>
+      <textarea id="job-csv" rows="7" placeholder="product,question&#10;Widget,Good?&#10;Gadget,Good?"></textarea>
+    </div>
+
+    <!-- Constant mode: the same data sent to up to "max tasks" workers -->
+    <div id="job-constant-mode" class="hide">
+      <div class="row">
+        <div class="grow"><label>Data — a JSON object whose keys match the template fields <span id="job-fields-const" class="muted"></span></label>
+          <textarea id="job-data" rows="5" placeholder='{"product":"Widget","question":"Good?"}'></textarea></div>
+        <div><label>Workers (max tasks)</label><input id="job-maxtasks" style="width:9rem" value="100" /></div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:.6rem">
+      <button id="job-estimate" class="ghost">Estimate cost</button>
+      <button id="job-create">Create job</button>
+      <span id="job-est" class="muted"></span>
+    </div>
+    <div id="job-msg"></div>
+  </section>
+
+  <!-- Jobs -->
+  <section class="card">
+    <h2>My jobs <button id="jobs-refresh" class="ghost" style="float:right;padding:.2rem .6rem">Refresh</button></h2>
+    <div id="jobs-list" class="muted">…</div>
+    <div id="results" class="hide" style="margin-top:1rem">
+      <div class="row"><strong id="results-title" class="grow"></strong>
+        <button id="results-csv" class="ghost">Download CSV</button>
+        <button id="results-close" class="ghost">Close</button></div>
+      <pre id="results-body"></pre>
+    </div>
+  </section>
+</main>
+
+<script>
+const KEY_STORE = "effect_api_key";
+let apiKey = localStorage.getItem(KEY_STORE) || "";
+let templates = [];
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>]/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
+const short = (s) => (s || "").slice(0, 10) + "…";
+
+function showMsg(el, text, kind) { el.innerHTML = `<div class="msg ${kind}">${esc(text)}</div>`; }
+
+async function api(path, { method = "GET", body } = {}) {
+  const res = await fetch("/api/v1" + path, {
+    method,
+    headers: { Authorization: "Bearer " + apiKey, ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const text = await res.text();
+  let data; try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  if (!res.ok) throw new Error((data && data.error && data.error.message) || res.status + " " + res.statusText);
+  return data;
+}
+
+async function connect() {
+  apiKey = $("key").value.trim();
+  localStorage.setItem(KEY_STORE, apiKey);
+  if (!apiKey) return;
+  try {
+    const acct = await api("/account");
+    $("who").innerHTML = `<span class="pill ok">${esc(acct.name)}</span> · ${esc(acct.credits.balance / 1e6)} EFFECT`;
+    $("app").classList.remove("hide");
+    await Promise.all([loadTemplates(), loadJobs()]);
+  } catch (e) {
+    $("who").innerHTML = `<span class="pill warn">${esc(e.message)}</span>`;
+    $("app").classList.add("hide");
+  }
+}
+
+async function loadTemplates() {
+  const { templates: list } = await api("/templates");
+  templates = list;
+  $("tpl-list").innerHTML = list.length
+    ? `<table><tr><th>Name</th><th>Fields</th><th>Trust</th><th>ID</th></tr>` +
+      list.map((t) => `<tr><td>${esc(t.name)}</td><td class="mono">${esc((t.fields||[]).join(", ")||"—")}</td>
+        <td>${t.approved ? '<span class="pill ok">approved</span>' : '<span class="pill warn">unapproved</span>'}</td>
+        <td class="mono muted">${short(t.templateId)}</td></tr>`).join("") + `</table>`
+    : `<span class="muted">No templates yet — submit one below.</span>`;
+  $("job-tpl").innerHTML = list.map((t) => `<option value="${t.templateId}">${esc(t.name)} ${t.approved ? "✓" : "⚠"}</option>`).join("");
+  showFields();
+}
+
+function showFields() {
+  const template = templates.find((entry) => entry.templateId === $("job-tpl").value);
+  const fieldList = template && template.fields.length ? template.fields.join(", ") : "";
+  $("job-fields").textContent = fieldList ? `— needs columns: ${fieldList}` : "";
+  $("job-fields-const").textContent = fieldList ? `— keys: ${fieldList}` : "";
+}
+
+function onTypeChange() {
+  const isConstant = $("job-type").value === "constant";
+  $("job-csv-mode").classList.toggle("hide", isConstant);
+  $("job-constant-mode").classList.toggle("hide", !isConstant);
+  $("job-est").textContent = "";
+}
+
+async function submitTemplate() {
+  try {
+    await api("/templates", { method: "POST", body: { name: $("tpl-name").value, html: $("tpl-html").value, requestApproval: $("tpl-approve").checked } });
+    showMsg($("tpl-msg"), "Template submitted.", "ok");
+    $("tpl-name").value = ""; $("tpl-html").value = "";
+    await loadTemplates();
+  } catch (e) { showMsg($("tpl-msg"), e.message, "err"); }
+}
+
+function parseConstantData() {
+  const raw = $("job-data").value.trim();
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error('Data must be a valid JSON object, e.g. {"question":"Good?"}');
+  }
+}
+
+function jobBody() {
+  const type = $("job-type").value;
+  const base = { type, name: $("job-name").value || "Untitled job", templateId: $("job-tpl").value, reward: $("job-reward").value };
+  if (type === "constant") {
+    return { ...base, data: parseConstantData(), maxTasks: Number($("job-maxtasks").value) };
+  }
+  return { ...base, csv: $("job-csv").value };
+}
+
+async function estimate() {
+  try {
+    const e = await api("/jobs/estimate", { method: "POST", body: jobBody() });
+    $("job-est").innerHTML = `${e.taskCount} tasks · cost <strong>${esc(e.cost)} EFFECT</strong> · ` +
+      (e.sufficient ? `<span class="pill ok">enough credit</span>` : `<span class="pill warn">need more credit</span>`);
+    $("job-msg").innerHTML = "";
+  } catch (e) { $("job-est").textContent = ""; showMsg($("job-msg"), e.message, "err"); }
+}
+
+async function createJob() {
+  try {
+    const job = await api("/jobs", { method: "POST", body: jobBody() });
+    showMsg($("job-msg"), `Created job ${job.id} (${job.taskCount} tasks, reserved ${job.credits.reserved} EFFECT).`, "ok");
+    await Promise.all([connect(), loadJobs()]);
+  } catch (e) { showMsg($("job-msg"), e.message, "err"); }
+}
+
+async function loadJobs() {
+  const { jobs } = await api("/jobs");
+  $("jobs-list").innerHTML = jobs.length
+    ? `<table><tr><th>Name</th><th>Status</th><th>Tasks (q/a/done)</th><th>Credit (used/left)</th><th></th></tr>` +
+      jobs.map((j) => {
+        const outstanding = j.tasks.queued + j.tasks.active;
+        // The API only reports `active`/`cancelled`; treat an active job with no
+        // queued or in-flight tasks as done (its work is finished).
+        const statusPill = j.status !== "active"
+          ? '<span class="pill warn">'+esc(j.status)+'</span>'
+          : outstanding === 0
+            ? '<span class="pill ok">done</span>'
+            : '<span class="pill ok">active</span>';
+        // Cancel only stops queued tasks + refunds them — pointless once nothing is outstanding.
+        const canCancel = j.status === "active" && outstanding > 0;
+        return `<tr>
+        <td>${esc(j.name)}</td>
+        <td>${statusPill}</td>
+        <td class="mono">${j.tasks.queued}/${j.tasks.active}/${j.tasks.completed}</td>
+        <td class="mono">${esc(j.credits.consumed)} / ${esc(j.credits.remaining)}</td>
+        <td class="row">
+          <button class="ghost" data-results="${j.id}" data-name="${esc(j.name)}" style="padding:.2rem .5rem">Results</button>
+          ${canCancel ? `<button class="danger" data-cancel="${j.id}" style="padding:.2rem .5rem">Cancel</button>` : ""}
+        </td></tr>`;
+      }).join("") + `</table>`
+    : `<span class="muted">No jobs yet — create one above.</span>`;
+}
+
+async function viewResults(id, name) {
+  $("results").classList.remove("hide");
+  $("results-title").textContent = "Results · " + name;
+  $("results-csv").dataset.id = id;
+  $("results-body").textContent = "Loading…";
+  try {
+    const r = await api(`/jobs/${id}/results?limit=200`);
+    $("results-body").textContent = r.count ? JSON.stringify(r.results, null, 2) : "No results yet (workers haven't completed any tasks).";
+  } catch (e) { $("results-body").textContent = e.message; }
+}
+
+async function downloadCsv(id) {
+  const res = await fetch(`/api/v1/jobs/${id}/results?format=csv`, { headers: { Authorization: "Bearer " + apiKey } });
+  const blob = await res.blob();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = `job-${id}-results.csv`; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function cancelJob(id) {
+  if (!confirm("Cancel this job? Unfinished tasks are refunded.")) return;
+  try { await api(`/jobs/${id}/cancel`, { method: "POST" }); await Promise.all([connect(), loadJobs()]); }
+  catch (e) { alert(e.message); }
+}
+
+// wiring
+$("connect").onclick = connect;
+$("key").addEventListener("keydown", (e) => { if (e.key === "Enter") connect(); });
+$("tpl-submit").onclick = submitTemplate;
+$("job-tpl").onchange = showFields;
+$("job-type").onchange = onTypeChange;
+$("job-estimate").onclick = estimate;
+$("job-create").onclick = createJob;
+$("jobs-refresh").onclick = loadJobs;
+$("results-close").onclick = () => $("results").classList.add("hide");
+$("results-csv").onclick = (e) => downloadCsv(e.target.dataset.id);
+$("jobs-list").addEventListener("click", (e) => {
+  if (e.target.dataset.results) viewResults(e.target.dataset.results, e.target.dataset.name);
+  if (e.target.dataset.cancel) cancelJob(e.target.dataset.cancel);
+});
+
+if (apiKey) { $("key").value = apiKey; connect(); }
+</script>
+</body>
+</html>
