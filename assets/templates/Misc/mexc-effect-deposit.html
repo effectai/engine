@@ -131,7 +131,7 @@
     createApp({
       data() {
         return {
-          title: "MEXC EFFECT Deposit",
+          title: "MEXC Deposit Reward",
           registerUrl: "https://www.mexc.com/register",
           createAccountDocUrl: "https://www.mexc.com/learn/article/mexc-account-sign-up-web/1",
           depositAddressScreenshot: "https://ipfs.effect.ai/ipfs/QmZ7DixDQ7AgVdFbTG7x38ZK51nJ2H17JvmvbXHQ6gM3MD",
@@ -142,7 +142,7 @@
           addressInvalid: false,
           instructions: `
             <div>
-              <h2>MEXC EFFECT Deposit</h2>
+              <h2>MEXC Reward Instructions</h2>
               <p>Deposit at least <strong>3,000 EFFECT</strong> into your MEXC account and submit
               your MEXC EFFECT deposit address. Once we verify the deposit on-chain, you receive a
               flat <strong>1,500 EFFECT</strong> reward - regardless of how much you deposited
@@ -212,7 +212,6 @@
                   taskTitle: this.title,
                   answer: {
                     mexcDepositAddress: address,
-                    confirmed: true
                   }
                 }
               },
