@@ -27,6 +27,49 @@ export const createWorkerManager = ({
   const workerStore = createWorkerStore({
     datastore,
   });
+
+  const countBatchKeys = async (prefix: string): Promise<number> => {
+    let count = 0;
+    for await (const _key of datastore.queryKeys({ prefix })) {
+      count++;
+    }
+    return count;
+  };
+
+  const countCompletedInBatch = (batchId: string, workerId: string) =>
+    countBatchKeys(`/tasks/batch/${batchId}/completed/${workerId}/`);
+
+  // How many tasks of this batch are currently assigned to the worker.
+  const countActiveAssignmentsInBatch = (batchId: string, workerId: string) =>
+    countBatchKeys(`/tasks/batch/${batchId}/assigned/${workerId}/`);
+
+  const reservedBatchSlots = new Map<string, Map<string, number>>();
+
+  const getReservedBatchSlots = (batchId: string, workerId: string): number =>
+    reservedBatchSlots.get(batchId)?.get(workerId) ?? 0;
+
+  const reserveBatchSlot = (batchId: string, workerId: string): void => {
+    let workerSlots = reservedBatchSlots.get(batchId);
+    if (!workerSlots) {
+      workerSlots = new Map<string, number>();
+      reservedBatchSlots.set(batchId, workerSlots);
+    }
+    workerSlots.set(workerId, (workerSlots.get(workerId) ?? 0) + 1);
+  };
+
+  const releaseBatchSlot = (batchId: string, workerId: string): void => {
+    const workerSlots = reservedBatchSlots.get(batchId);
+    if (!workerSlots) return;
+
+    const currentSlots = workerSlots.get(workerId) ?? 0;
+    if (currentSlots <= 1) {
+      workerSlots.delete(workerId);
+    } else {
+      workerSlots.set(workerId, currentSlots - 1);
+    }
+
+    if (workerSlots.size === 0) reservedBatchSlots.delete(batchId);
+  };
   
   const workerAssignments = new Map<string, Set<string>>();
   const assignmentsFor = (workerId: string) => {
@@ -42,17 +85,14 @@ export const createWorkerManager = ({
   const markTaskAssigned = (workerId: string, taskId: string) => {
     assignmentsFor(workerId).add(taskId);
   };
-  const markTaskReleased = (workerId: string, taskId: string) => {
+  const markTaskReleased = (workerId: string, taskId: string, batchId?: string) => {
     const assignments = workerAssignments.get(workerId);
-    if (!assignments) {
-      return;
+    if (assignments) {
+      assignments.delete(taskId);
+      if (assignments.size === 0) workerAssignments.delete(workerId);
     }
 
-    assignments.delete(taskId);
-
-    if (assignments.size === 0) {
-      workerAssignments.delete(workerId);
-    }
+    if (batchId) releaseBatchSlot(batchId, workerId);
   };
 
   const accessCodeStore = createAccessCodeStore({ datastore });
@@ -195,36 +235,67 @@ export const createWorkerManager = ({
 
   const selectWorker = async (
     capability?: string,
-    originalWorkerId?: string
+    originalWorkerId?: string,
+    batchId?: string,
+    repetitions?: number,
   ): Promise<string | null> => {
     const queue = workerQueue.getQueue();
 
-    //TODO:: optimize this..
-    for (const workerId of queue) {
+    // 0 repetitions means no per-worker limit for this batch.
+    const maxTasksPerWorker = repetitions ?? 0;
+    const limitWorkersInBatch =
+      maxTasksPerWorker > 0 && batchId !== undefined;
+
+    const isEligible = async (workerId: string): Promise<boolean> => {
       const worker = await getWorker(workerId);
-      if (!worker || originalWorkerId === workerId) continue;
+      if (!worker || originalWorkerId === workerId) return false;
 
       const workerCapabilities =
         worker.state.capabilities.concat(worker.state.managerCapabilities || []);
 
       if (capability) {
-        const info = getCapabilityInfo(capability);
-
+        const capabilityInfo = getCapabilityInfo(capability);
         const hasCapability = workerCapabilities.includes(capability);
         const hasAntiCapability =
-          info?.antiCapability && workerCapabilities.includes(info.antiCapability);
-
-        if (!hasCapability || hasAntiCapability) continue;
+          capabilityInfo?.antiCapability &&
+          workerCapabilities.includes(capabilityInfo.antiCapability);
+        if (!hasCapability || hasAntiCapability) return false;
       }
 
-      const busy = await isBusy(worker);
-      if (!busy) {
-        workerQueue.dequeuePeer(workerId);
-        return workerId;
+      if (await isBusy(worker)) return false;
+
+      if (limitWorkersInBatch && batchId) {
+        const completedCount = await countCompletedInBatch(batchId, workerId);
+        const assignedInDatastore = await countActiveAssignmentsInBatch(
+          batchId,
+          workerId,
+        );
+        const reservedInMemory = getReservedBatchSlots(batchId, workerId);
+        const activeCount = Math.max(reservedInMemory, assignedInDatastore);
+
+        if (completedCount + activeCount > maxTasksPerWorker) return false;
       }
+
+      return true;
+    };
+
+    //TODO:: optimize this..
+    for (const workerId of queue) {
+      // Synchronous reservation must happen before any await so two concurrent
+      // assignTask calls can't both claim the same slot for the same batch.
+      if (limitWorkersInBatch && batchId) {
+        reserveBatchSlot(batchId, workerId);
+      }
+
+      if (!(await isEligible(workerId))) {
+        if (limitWorkersInBatch && batchId) releaseBatchSlot(batchId, workerId);
+        continue;
+      }
+
+      workerQueue.dequeuePeer(workerId);
+      return workerId;
     }
 
-    // No available worker found
     return null;
   };
 
