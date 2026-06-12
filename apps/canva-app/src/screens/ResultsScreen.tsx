@@ -3,6 +3,8 @@ import {
   Badge,
   Box,
   Button,
+  Column,
+  Columns,
   ImageCard,
   Rows,
   SurfaceHeader,
@@ -77,6 +79,32 @@ export const ResultsScreen = ({ task, onBack, onNewCheck }: Props) => {
     };
   }, [displayTask.taskId, displayTask.status]);
 
+  // Compare jobs pit two versions against each other - preview both, not just A.
+  const compareImages =
+    displayTask.checkType === "compare" &&
+    displayTask.imageUrlA &&
+    displayTask.imageUrlB
+      ? [
+          {
+            url: displayTask.imageUrlA,
+            label:
+              displayTask.versionLabelA ||
+              intl.formatMessage({
+                defaultMessage: "Version A",
+                description: "Default label for version A in a compare preview",
+              }),
+          },
+          {
+            url: displayTask.imageUrlB,
+            label:
+              displayTask.versionLabelB ||
+              intl.formatMessage({
+                defaultMessage: "Version B",
+                description: "Default label for version B in a compare preview",
+              }),
+          },
+        ]
+      : null;
   const thumbnailUrl = displayTask.imageUrl ?? displayTask.imageUrlA;
 
   return (
@@ -95,7 +123,30 @@ export const ResultsScreen = ({ task, onBack, onNewCheck }: Props) => {
             onClick: onBack,
           }}
         />
-        {thumbnailUrl ? (
+        {compareImages ? (
+          <Columns spacing="1u">
+            {compareImages.map((image) => (
+              <Column key={image.label}>
+                <Rows spacing="0.5u">
+                  <Text size="small" tone="tertiary" alignment="center">
+                    {image.label}
+                  </Text>
+                  <ImageCard
+                    alt={intl.formatMessage(
+                      {
+                        defaultMessage: "Version {label} preview",
+                        description:
+                          "Alt text for one of the two compared design versions",
+                      },
+                      { label: image.label },
+                    )}
+                    thumbnailUrl={image.url}
+                  />
+                </Rows>
+              </Column>
+            ))}
+          </Columns>
+        ) : thumbnailUrl ? (
           <Box width="full">
             <ImageCard
               alt={intl.formatMessage({
