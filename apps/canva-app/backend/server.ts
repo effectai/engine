@@ -30,6 +30,16 @@ const CANVA_JWKS_URL =
     : "");
 const ALLOW_UNVERIFIED_TOKENS =
   process.env.ALLOW_UNVERIFIED_TOKENS === "true";
+// REVIEW_MODE lets a Canva reviewer see the full submit -> pending -> complete
+// flow in seconds without real Effect workers: submissions still rehost images
+// on IPFS, but skip the task-poster import and auto-complete with synthetic
+// results after a short delay. MUST be off once the app is public - it
+// fabricates results.
+const REVIEW_MODE = process.env.REVIEW_MODE === "true";
+const REVIEW_COMPLETE_DELAY_MS = parseInt(
+  process.env.REVIEW_COMPLETE_DELAY_MS ?? "10000",
+  10,
+);
 
 console.log("[config] EFFECT_URL:", EFFECT_URL || "(not set)");
 console.log("[config] EFFECT_DATASET_ID:", EFFECT_DATASET_ID || "(not set)");
@@ -40,6 +50,11 @@ console.log("[config] CANVA_JWKS_URL:", CANVA_JWKS_URL || "(not set)");
 if (ALLOW_UNVERIFIED_TOKENS) {
   console.warn(
     "[config] ALLOW_UNVERIFIED_TOKENS=true - JWT signatures are NOT verified. Local dev only.",
+  );
+}
+if (REVIEW_MODE) {
+  console.warn(
+    `[config] REVIEW_MODE=true - submissions skip the task-poster and auto-complete with FAKE results in ${REVIEW_COMPLETE_DELAY_MS}ms (IPFS rehost still runs). Canva review only; never enable in production.`,
   );
 }
 
@@ -254,7 +269,65 @@ function aggregateResults(answers: any[]): CheckResults | undefined {
   return undefined;
 }
 
+// Canned insights for REVIEW_MODE synthetic answers so the results screen looks
+// realistic to a reviewer (not just bare scores).
+const REVIEW_INSIGHTS = [
+  "Strong focal point, but the headline could be a touch larger.",
+  "Clear call to action - I knew exactly what to do.",
+  "Colors work well together and the contrast is good.",
+  "A little busy in the center; some more whitespace would help.",
+  "The value proposition reads instantly.",
+];
+
+// Build `count` plausible answers for REVIEW_MODE, shaped exactly like the real
+// worker answers aggregateResults expects per check type.
+function synthesizeAnswers(checkType: CheckType, count: number): any[] {
+  const answers: any[] = [];
+  for (let index = 0; index < count; index++) {
+    const insight = REVIEW_INSIGHTS[index % REVIEW_INSIGHTS.length];
+    if (checkType === "clarity") {
+      answers.push({ checkType, score: 7 + (index % 4), insight }); // 7..10
+    } else if (checkType === "clickability") {
+      answers.push({ checkType, wouldClick: index % 3 !== 0, insight }); // ~2/3 yes
+    } else {
+      answers.push({ checkType, winner: index % 3 === 0 ? "B" : "A", insight }); // mostly A
+    }
+  }
+  return answers;
+}
+
 export const db = new KV({ autoSync: true });
+
+// REVIEW_MODE only: after a short delay, flip a faked task to complete with
+// synthetic aggregated results. No-ops if the reviewer deleted it or it already
+// completed (e.g. a duplicate timer after a restart-time reschedule).
+function scheduleReviewCompletion(
+  taskId: string,
+  checkType: CheckType,
+  count: number,
+): void {
+  setTimeout(async () => {
+    try {
+      const entry = await db.get<TaskRecord>(["canva-task", taskId]);
+      if (!entry || entry.data.status === "complete") return;
+      const results = aggregateResults(synthesizeAnswers(checkType, count));
+      await db.set<TaskRecord>(["canva-task", taskId], {
+        ...entry.data,
+        status: "complete",
+        results,
+      });
+      pendingTasks.delete(taskId);
+      console.log(
+        `[review] task ${taskId} auto-completed (${count} synthetic answers)`,
+      );
+    } catch (err: any) {
+      console.error(
+        `[review] auto-complete failed for ${taskId}:`,
+        err?.message ?? err,
+      );
+    }
+  }, REVIEW_COMPLETE_DELAY_MS);
+}
 
 // Canva user IDs can contain characters @cross/kv rejects in key strings (it
 // only permits letters, numbers, '@', '-', '_'). base64url-encode the id into a
@@ -419,6 +492,34 @@ app.post("/api/task", requireCanvaId, taskRateLimit, async (req, res) => {
     rehostImageOnIpfs(imageUrlB || ""),
   ]);
 
+  // REVIEW_MODE: IPFS rehost above still ran, but skip the task-poster import and
+  // real-worker wait - store the record as pending and auto-complete it shortly
+  // so a Canva reviewer sees the whole flow without live workers.
+  if (REVIEW_MODE) {
+    const record: TaskRecord = {
+      taskId,
+      canvaId,
+      checkType,
+      status: "pending",
+      submittedAt: new Date().toISOString(),
+      workerCount: count,
+      context: context ?? { designPurpose: "", targetAudience: "", mainGoal: "" },
+      imageUrl,
+      imageUrlA,
+      imageUrlB,
+      versionLabelA,
+      versionLabelB,
+      revealDuration,
+    };
+    await db.set<TaskRecord>(["canva-task", taskId], record);
+    await db.set(["canva-user-task", userKeyPart(canvaId), taskId], { taskId });
+    scheduleReviewCompletion(taskId, checkType, count);
+    console.log(
+      `[review] task ${taskId} created - synthetic completion in ${REVIEW_COMPLETE_DELAY_MS}ms`,
+    );
+    return res.json({ taskId });
+  }
+
   const row = {
     taskId,
     checkType,
@@ -572,6 +673,11 @@ const main = async () => {
     }
     if (task.status !== "complete") {
       pendingTasks.set(task.taskId, task.workerCount);
+      // In REVIEW_MODE the reconcile loop never sees Effect answers for these
+      // faked tasks, so re-arm their synthetic completion across restarts.
+      if (REVIEW_MODE) {
+        scheduleReviewCompletion(task.taskId, task.checkType, task.workerCount);
+      }
     }
   }
   console.log(
