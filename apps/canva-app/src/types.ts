@@ -121,6 +121,16 @@ export const CHECK_TYPES: CheckTypeMeta[] = [
   },
 ];
 
+export const COMPARE_VERSION_TONES = {
+  A: "info",
+  B: "warn",
+} as const;
+
+export const CLICKABILITY_TONES = {
+  yes: "positive",
+  no: "critical",
+} as const;
+
 export const REVEAL_DURATION_OPTIONS = [2, 3, 5, 7] as const;
 
 export interface SelectOption {

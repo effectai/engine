@@ -138,7 +138,7 @@ export const SubmittingScreen = ({ drafts, onComplete, onBack }: Props) => {
         </Title>
         <Text alignment="center" size="small">
           {intl.formatMessage({
-            defaultMessage: "Sending your design to Effect AI workers.",
+            defaultMessage: "Sending your design to Effect AI testers.",
             description: "Body text shown while a design is being submitted",
           })}
         </Text>

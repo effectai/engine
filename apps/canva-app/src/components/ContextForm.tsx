@@ -231,8 +231,8 @@ export const ContextForm = ({
       </Rows>
       <FormField<number>
         label={intl.formatMessage({
-          defaultMessage: "Number of workers",
-          description: "Label for the worker count input",
+          defaultMessage: "Number of testers",
+          description: "Label for the tester count input",
         })}
         value={workerCount}
         error={errors.workerCount}
@@ -244,12 +244,12 @@ export const ContextForm = ({
             step={1}
             hasSpinButtons
             decrementAriaLabel={intl.formatMessage({
-              defaultMessage: "Decrease worker count",
-              description: "Aria label for the decrement button on the worker count input",
+              defaultMessage: "Decrease tester count",
+              description: "Aria label for the decrement button on the tester count input",
             })}
             incrementAriaLabel={intl.formatMessage({
-              defaultMessage: "Increase worker count",
-              description: "Aria label for the increment button on the worker count input",
+              defaultMessage: "Increase tester count",
+              description: "Aria label for the increment button on the tester count input",
             })}
             onChange={(valueAsNumber) => {
               if (typeof valueAsNumber !== "number" || isNaN(valueAsNumber)) {

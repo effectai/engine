@@ -17,7 +17,7 @@ import * as styles from "styles/components.css";
 import { getTaskStatus, TaskNotFoundError } from "../api/effectApi";
 import { ResultsSummary } from "../components/ResultsSummary";
 import type { CheckType, TaskRecord } from "../types";
-import { CHECK_TYPES } from "../types";
+import { CHECK_TYPES, COMPARE_VERSION_TONES } from "../types";
 
 const POLL_INTERVAL_MS = 20_000;
 
@@ -87,6 +87,7 @@ export const ResultsScreen = ({ task, onBack, onNewCheck }: Props) => {
       ? [
           {
             url: displayTask.imageUrlA,
+            tone: COMPARE_VERSION_TONES.A,
             label:
               displayTask.versionLabelA ||
               intl.formatMessage({
@@ -96,6 +97,7 @@ export const ResultsScreen = ({ task, onBack, onNewCheck }: Props) => {
           },
           {
             url: displayTask.imageUrlB,
+            tone: COMPARE_VERSION_TONES.B,
             label:
               displayTask.versionLabelB ||
               intl.formatMessage({
@@ -127,21 +129,21 @@ export const ResultsScreen = ({ task, onBack, onNewCheck }: Props) => {
           <Columns spacing="1u">
             {compareImages.map((image) => (
               <Column key={image.label}>
-                <Rows spacing="0.5u">
-                  <Text size="small" tone="tertiary" alignment="center">
-                    {image.label}
-                  </Text>
-                  <ImageCard
-                    alt={intl.formatMessage(
-                      {
-                        defaultMessage: "Version {label} preview",
-                        description:
-                          "Alt text for one of the two compared design versions",
-                      },
-                      { label: image.label },
-                    )}
-                    thumbnailUrl={image.url}
-                  />
+                <Rows spacing="0.5u" align="center">
+                  <Badge text={image.label} tone={image.tone} />
+                  <Box width="full">
+                    <ImageCard
+                      alt={intl.formatMessage(
+                        {
+                          defaultMessage: "Version {label} preview",
+                          description:
+                            "Alt text for one of the two compared design versions",
+                        },
+                        { label: image.label },
+                      )}
+                      thumbnailUrl={image.url}
+                    />
+                  </Box>
                 </Rows>
               </Column>
             ))}
@@ -162,7 +164,7 @@ export const ResultsScreen = ({ task, onBack, onNewCheck }: Props) => {
           <Badge text={checkTypeLabel(displayTask.checkType, intl)} tone="assist" />
           <Text size="small" tone="tertiary">
             {intl.formatMessage(
-              { defaultMessage: "{count} workers • {date}", description: "Worker count and submission date shown below check type badge" },
+              { defaultMessage: "{count} testers • {date}", description: "Tester count and submission date shown below check type badge" },
               { count: displayTask.workerCount, date: intl.formatDate(displayTask.submittedAt) },
             )}
           </Text>

@@ -77,6 +77,14 @@
           </select>
         </div>
       </div>
+      <div class="control mt-2" v-if="insight === 'Other'">
+        <textarea
+          class="textarea"
+          v-model="otherText"
+          placeholder="Please tell us more…"
+          rows="2"
+        ></textarea>
+      </div>
     </div>
 
     <p class="has-text-danger mb-3" v-if="notComplete">Please pick a version before submitting.</p>
@@ -110,6 +118,7 @@
           checkType: "${checkType}",
           winner: null,
           insight: "",
+          otherText: "",
           btnLoading: false,
           notComplete: false,
         };
@@ -138,7 +147,10 @@
       methods: {
         onLoad() {},
         setWinner(value) {
-          if (this.winner !== value) this.insight = "";
+          if (this.winner !== value) {
+            this.insight = "";
+            this.otherText = "";
+          }
           this.winner = value;
         },
         handleKey(e) {
@@ -162,7 +174,7 @@
                   taskId: this.taskId,
                   checkType: this.checkType,
                   winner: this.winner,
-                  insight: this.insight.trim(),
+                  insight: this.insight === "Other" ? this.otherText.trim() : this.insight,
                 },
               },
             },

@@ -49,7 +49,7 @@ export const TaskHistoryItem = ({ task, onView, onDelete }: Props) => {
         <Title size="small">{checkTypeLabel(task.checkType, intl)}</Title>
         <Text size="small" tone="tertiary">
           {intl.formatMessage(
-            { defaultMessage: "{count} workers", description: "Number of workers assigned to a task" },
+            { defaultMessage: "{count} testers", description: "Number of testers assigned to a task" },
             { count: task.workerCount },
           )}
         </Text>

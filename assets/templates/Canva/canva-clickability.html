@@ -82,6 +82,14 @@
             </select>
           </div>
         </div>
+        <div class="control mt-2" v-if="insight === 'Other'">
+          <textarea
+            class="textarea"
+            v-model="otherText"
+            placeholder="Please tell us more…"
+            rows="2"
+          ></textarea>
+        </div>
       </div>
 
       <p class="has-text-danger mb-3" v-if="notComplete">Please choose Yes or No before submitting.</p>
@@ -116,6 +124,7 @@
           countdown: 0,
           wouldClick: null,
           insight: "",
+          otherText: "",
           btnLoading: false,
           notComplete: false,
           _timer: null,
@@ -129,7 +138,7 @@
               <div>
                 <p>Click <strong>Reveal Design</strong> to see the design briefly.</p>
                 <ul>
-                  <li>Judge on <em>first impression</em> — not after careful study</li>
+                  <li>Judge on <em>first impression</em> - not after careful study</li>
                   <li>After it hides, answer whether you would stop scrolling or click</li>
                 </ul>
                 <hr>
@@ -161,6 +170,7 @@
         setAnswer(value) {
           if (this.wouldClick !== value) {
             this.insight = "";
+            this.otherText = "";
           }
           this.wouldClick = value;
         },
@@ -186,7 +196,7 @@
                   taskId: this.taskId,
                   checkType: this.checkType,
                   wouldClick: this.wouldClick,
-                  insight: this.insight,
+                  insight: this.insight === "Other" ? this.otherText.trim() : this.insight,
                 },
               },
             },

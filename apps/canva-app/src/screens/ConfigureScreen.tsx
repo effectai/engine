@@ -364,7 +364,7 @@ export const ConfigureScreen = ({ checkType, onBack, onSubmit }: Props) => {
         >
           {intl.formatMessage({
             defaultMessage: "Submit for feedback",
-            description: "Button to submit the design for worker feedback",
+            description: "Button to submit the design for tester feedback",
           })}
         </Button>
       </Rows>
