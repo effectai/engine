@@ -80,6 +80,10 @@ export type Fetcher = {
 
   // posting schedule: whitelist of days/time windows when tasks can be posted
   schedule?: Schedule;
+
+  // repetitions: how many tasks a single worker may complete from each import
+  // 0 means no limit, 1 means each worker may do one task.
+  repetitions?: number;
 };
 
 const api = axios.create({
@@ -186,8 +190,10 @@ export const fetcherForm = async (
 
       <label for="type"><strong>Data source</strong><br/>
       <small>How new tasks will be fetched.</small></label>
-      <select name="type" id="type">${["csv", "pipeline", "constant"].map(a =>
-	`<option value="${a}" ${values.type == a ? "selected" : ""}>${a}</option>`).join("")}
+      <select name="type" id="type"
+        onchange="repetitions.disabled=this.value!=='csv';if(repetitions.disabled)repetitions.value=0">
+        ${["csv", "pipeline", "constant"].map(a =>
+	        `<option value="${a}" ${values.type == a ? "selected" : ""}>${a}</option>`).join("")}
       </select>
 
   </fieldset>
@@ -238,6 +244,15 @@ export const fetcherForm = async (
 	    name="timeLimitSeconds"/>
 	</div>
       </section>
+
+      <div class="mt">
+        <label for="repetitions"><strong>Repetitions per worker</strong><br/>
+        <small>How many tasks a single worker may complete per import batch.
+        0 = no limit, 1 = each worker may do one task. Only applies to CSV data sources.</small></label>
+        <input type="number" id="repetitions" name="repetitions" min="0" step="1"
+          value="${values.repetitions ?? 0}"
+          ${(values.type ?? 'csv') !== 'csv' ? "disabled" : ""} />
+      </div>
 
       <div class="mt"></div>
       <label for="capabilities"><strong>Capabilities</strong><br/>
@@ -490,6 +505,7 @@ export const createFetcher = async (
 
     status: oldFetcher?.status ?? "active",
     hidden: fields.hidden === "on" || fields.hidden === true,
+    repetitions: Number(fields.repetitions) || 0,
 
     schedule: (() => {
       try {
@@ -586,7 +602,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	}
 
 	// regex filter
-	if (!task.result || (regex && regex.test(task.result)) || task.result == "<TASK REPORTED AND SKIPPED>") {
+	if (!task.result || (regex && regex.test(task.result)) || task.type === "report" || task.result == "<TASK REPORTED AND SKIPPED>") {
 	  continue;
 	}
 
@@ -614,12 +630,16 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
   // avoid expensive mistakes.
   const maxPrice = BigInt(fetcher.price) * BigInt(10);
 
+<<<<<<< HEAD
   // Trust signal for the worker: whether this task's template is approved.
   // Baked into each task's data (reserved __effectApproved key) so the worker
   // can show a safety badge without a protocol/schema change. Defaults to safe
   // for team/legacy templates.
   const approvalTpl = await getTemplate(fetcher.template);
   const templateApproved = approvalTpl ? isTemplateApproved(approvalTpl.data) : true;
+=======
+  const batchRunId = ulid();
+>>>>>>> 574e805168422c9d1f9ebeae5d232633ad7bab95
 
   const tasks = data.map(
     (d, _idx) => {
@@ -635,6 +655,8 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	templateId: fetcher.template,
 	templateData: JSON.stringify({ ...d, __effectApproved: templateApproved }),
 	capability: fetcher.capabilities[0],
+	batchId: `${fetcher.datasetId}-${fetcher.index}-${batchRunId}`,
+	repetitions: fetcher.repetitions ?? 0,
       } as Task;
     },
   );
@@ -908,7 +930,7 @@ export const processResults = async (f: Fetcher, batchSize: number) => {
 
     let importCount = 0;
     for (const d of data as any) {
-      if (d.type !== "submission")
+      if (d.type !== "submission" && d.type !== "report")
 	continue;
       db.beginTransaction();
       await db.delete([...keyBase, "active", d.taskId]);
@@ -990,10 +1012,19 @@ const formValidations: ValidationMap = {
 	? "Must be a number"
 	: num <= 0
 	  ? "Price must be greater than 0"
-	  : num > 100000000 && "Price too large";
+	  : num > 3000000000 && "Price too large";
   },
 
   template: (v: string) => (!v || v.length === 0) && "Template is required",
+  repetitions: (v: any) => {
+    if (v === undefined || v === "") return false;
+    const repetitions = Number(v);
+    return (
+      (isNaN(repetitions) && "Repetitions must be a number") ||
+      (!Number.isInteger(repetitions) && "Repetitions must be a whole number") ||
+      (repetitions < 0 && "Repetitions cannot be negative")
+    );
+  },
   timeLimitSeconds: (v: any) => {
     const num = Number(v);
     return (
@@ -1097,10 +1128,11 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Finished: ${doneSize}</li>
   <li>Failed: ${failedSize}</li>
   <li>Batch / Freq: ${f.batchSize} / ${f.frequency}</li>
+  ${f.repetitions ? `<li>Repetitions per worker: ${f.repetitions}</li>` : ''}
   <li>Time Limit: ${f.timeLimitSeconds}s</li>
   <li>Schedule: ${f.schedule && Object.keys(f.schedule).length > 0
     ? Object.entries(f.schedule).map(([day, slots]) =>
-        `${day}: ${(slots as TimeSlot[]).map(s => s.from && s.to ? `${s.from}-${s.to}` : 'all day').join(', ')}`
+        `${day}: ${Array.isArray(slots) ? (slots as TimeSlot[]).map(s => s.from && s.to ? `${s.from}-${s.to}` : 'all day').join(', ') : 'all day'}`
       ).join('; ')
     : 'continuous (no restrictions)'}
     
