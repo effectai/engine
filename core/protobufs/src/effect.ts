@@ -2766,6 +2766,8 @@ export interface Task {
   templateId: string
   templateData: string
   capability?: string
+  batchId?: string
+  repetitions: number
 }
 
 export namespace Task {
@@ -2813,6 +2815,16 @@ export namespace Task {
           w.string(obj.capability)
         }
 
+        if (obj.batchId != null) {
+          w.uint32(66)
+          w.string(obj.batchId)
+        }
+
+        if ((obj.repetitions != null && obj.repetitions !== 0)) {
+          w.uint32(72)
+          w.uint32(obj.repetitions)
+        }
+
         if (opts.lengthDelimited !== false) {
           w.ldelim()
         }
@@ -2823,7 +2835,8 @@ export namespace Task {
           reward: 0n,
           timeLimitSeconds: 0,
           templateId: '',
-          templateData: ''
+          templateData: '',
+          repetitions: 0
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -2858,6 +2871,14 @@ export namespace Task {
             }
             case 7: {
               obj.capability = reader.string()
+              break
+            }
+            case 8: {
+              obj.batchId = reader.string()
+              break
+            }
+            case 9: {
+              obj.repetitions = reader.uint32()
               break
             }
             default: {

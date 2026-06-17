@@ -29,6 +29,11 @@ taskCommand
   .option("--data <json>", "Template data as JSON string", "{}")
   .option("--id <taskId>", "Custom task ID")
   .option("--capability <string>", "capability string to match workers")
+  .option(
+    "--repetitions <count>",
+    "Max tasks a single worker may complete per batch (0 = no limit)",
+    "0",
+  )
   .action(async (options) => {
     try {
       const task: Task = {
@@ -39,6 +44,7 @@ taskCommand
         templateId: options.templateId,
         templateData: options.data || {},
         capability: options.capability || "",
+        repetitions: Number.parseInt(options.repetitions),
       };
 
       const { data } = await api.post<APIResponse>(`${options.url}/task`, task);

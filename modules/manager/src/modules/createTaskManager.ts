@@ -7,6 +7,7 @@ import type {
   ManagerTaskStore,
   TaskAcceptedEvent,
   TaskAssignedEvent,
+  TaskRejectedEvent,
   TaskSubmissionEvent,
 } from "../stores/managerTaskStore.js";
 
@@ -55,6 +56,14 @@ export function createTaskManager({
 }) {
   const isExpired = (timestamp: number, value: number) =>
     timestamp + value < Math.floor(Date.now() / 1000);
+
+  const isReportPayload = (result: string): boolean => {
+    try {
+      return JSON.parse(result)?.task === "report";
+    } catch {
+      return false;
+    }
+  };
 
   const getTask = async ({
     taskId,
@@ -137,11 +146,11 @@ export function createTaskManager({
       reason,
     });
 
-    workerManager.markTaskReleased(workerPeerIdStr, taskId);
-
     const taskRecord = await taskStore.getTask({
       entityId: taskId,
     });
+
+    workerManager.markTaskReleased(workerPeerIdStr, taskId, taskRecord?.state.batchId);
 
     await workerManager.incrementStateValue(workerPeerIdStr, "tasksRejected");
 
@@ -159,17 +168,46 @@ export function createTaskManager({
     result: string;
     workerPeerIdStr: string;
   }) => {
+    if (isReportPayload(result)) {
+      await processTaskReport({ taskId, result, workerPeerIdStr });
+      return;
+    }
+
     const taskRecord = await taskStore.complete({
       entityId: taskId,
       result,
       peerIdStr: workerPeerIdStr,
     });
 
-    workerManager.markTaskReleased(workerPeerIdStr, taskId);
+    workerManager.markTaskReleased(workerPeerIdStr, taskId, taskRecord.state.batchId);
 
     await workerManager.incrementStateValue(workerPeerIdStr, "tasksCompleted");
 
     events.safeDispatchEvent("task:submission", {
+      detail: taskRecord,
+    });
+  };
+
+  const processTaskReport = async ({
+    taskId,
+    result,
+    workerPeerIdStr,
+  }: {
+    taskId: string;
+    result: string;
+    workerPeerIdStr: string;
+  }) => {
+    const taskRecord = await taskStore.report({
+      entityId: taskId,
+      result,
+      peerIdStr: workerPeerIdStr,
+    });
+
+    workerManager.markTaskReleased(workerPeerIdStr, taskId, taskRecord.state.batchId);
+
+    await workerManager.incrementStateValue(workerPeerIdStr, "tasksRejected");
+
+    events.safeDispatchEvent("task:rejected", {
       detail: taskRecord,
     });
   };
@@ -187,7 +225,10 @@ export function createTaskManager({
     }
   };
 
-  const rejectAndReassignTask = async (taskRecord: ManagerTaskRecord) => {
+  const rejectAndReassignTask = async (
+    taskRecord: ManagerTaskRecord,
+    reason = "Worker took too long to accept/reject task",
+  ) => {
     const latestAssignEvent = taskRecord.events.reduce(
       (latest: TaskAssignedEvent | null, current) => {
         if (current.type === "assign") {
@@ -207,12 +248,13 @@ export function createTaskManager({
     await taskStore.reject({
       entityId: taskRecord.state.id,
       peerIdStr: latestAssignEvent.assignedToPeer,
-      reason: "Worker took too long to accept/reject task",
+      reason,
     });
 
     workerManager.markTaskReleased(
       latestAssignEvent.assignedToPeer,
       taskRecord.state.id,
+      taskRecord.state.batchId,
     );
 
     await workerManager.incrementStateValue(
@@ -228,8 +270,9 @@ export function createTaskManager({
     taskRecord: ManagerTaskRecord,
     lastEvent: TaskAcceptedEvent,
   ) => {
-    if (isExpired(lastEvent.timestamp, taskRecord.state.timeLimitSeconds)) {
-      await rejectAndReassignTask(taskRecord);
+    const { timeLimitSeconds } = taskRecord.state;
+    if (isExpired(lastEvent.timestamp, timeLimitSeconds)) {
+      await rejectAndReassignTask(taskRecord, "Worker took too long to submit task");
     }
   };
 
@@ -301,6 +344,8 @@ export function createTaskManager({
       case "submission":
         await handleSubmissionEvent(taskRecord, lastEvent);
         break;
+      case "report":
+        break;
       case "payout":
         // do nothing..
         break;
@@ -323,13 +368,31 @@ export function createTaskManager({
       throw new Error("Task is already assigned.");
     }
 
-    const originalWorkerId = taskRecord?.state.templateData
-    ? JSON.parse(taskRecord.state.templateData)?.submissionByPeer
-    : undefined;
+    // In a repetition-limited batch, the most recent rejector of this task must
+    // be excluded from the re-assignment - otherwise Task 1 bounces straight
+    // back to them and consumes the batch slot they need for Task 2.
+    let lastRejector: string | undefined;
+    if (taskRecord.state.repetitions > 0) {
+      for (let index = taskRecord.events.length - 1; index >= 0; index--) {
+        const event = taskRecord.events[index];
+        if (event.type === "reject") {
+          lastRejector = (event as TaskRejectedEvent).rejectedByPeer;
+          break;
+        }
+      }
+    }
+
+    const originalWorkerId =
+      lastRejector ??
+      (taskRecord?.state.templateData
+        ? JSON.parse(taskRecord.state.templateData)?.submissionByPeer
+        : undefined);
 
     const worker = await workerManager.selectWorker(
       taskRecord.state.capability || undefined,
       originalWorkerId || undefined,
+      taskRecord.state.batchId || undefined,
+      taskRecord.state.repetitions,
     );
 
     if (!worker) {

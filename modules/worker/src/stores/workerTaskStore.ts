@@ -176,7 +176,8 @@ export const createWorkerTaskStore = ({
       throw new Error("Task not created.");
     }
 
-    if (Date.now() / 1000 - created.timestamp >= TASK_ACCEPTANCE_TIME) {
+    // Convert TASK_ACCEPTANCE_TIME from ms to s for comparison
+    if (Date.now() / 1000 - created.timestamp >= TASK_ACCEPTANCE_TIME / 1000) {
       throw new TaskExpiredError("Task has expired.");
     }
 

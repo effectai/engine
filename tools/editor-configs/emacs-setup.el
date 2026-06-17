@@ -30,6 +30,14 @@
     (vterm-send-string "pnpm dev")
     (vterm-send-return)
 
+    (split-window-below)
+    (vterm (format "*vterm- ai worker"))
+    (vterm-send-string "guix shell -m tools/guix/manifest.scm -L tools/guix/extra  --container --network --emulate-fhs python jq curl")
+    (vterm-send-return)
+    (vterm-send-string "cd apps/ai-worker")
+    (vterm-send-return)
+    (vterm-send-string "node --watch dist/index.js")
+
     (balance-windows)))
 
 (defun effect/setup-vterms ()

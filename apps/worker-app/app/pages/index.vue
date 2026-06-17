@@ -43,6 +43,7 @@
             <CapabilitiesListItem
               v-for="item in currentPageItems"
               :key="item.id"
+              :id="item.id"
               :name="item.name"
               :href="item.href"
               :cost="0"

@@ -256,16 +256,17 @@ export function createTaskWorker({
     //or if it has been accepted and not completed in task.state.taskTime
     const expiredTasks = tasks.filter((task) => {
       const lastTaskEvent = task.events[task.events.length - 1];
+      const timeLimitSeconds = Number(task.state.timeLimitSeconds ?? 600);
 
       if (lastTaskEvent.type === "accept") {
         const acceptedAt = lastTaskEvent.timestamp;
-        return now - acceptedAt > task.state.timeLimitSeconds;
+        return now - acceptedAt > timeLimitSeconds;
       }
 
       if (lastTaskEvent.type === "create") {
         const createdAt = lastTaskEvent.timestamp;
         //TODO:: fetch this from manager connection state
-        return now - createdAt > 600;
+        return now - createdAt > timeLimitSeconds;
       }
 
       return false;
@@ -273,7 +274,7 @@ export function createTaskWorker({
 
     for (const task of expiredTasks) {
       await taskStore.expire({ entityId: task.state.id });
-      events.safeDispatchEvent("task:expired", { detail: task });
+      events.safeDispatchEvent("task:expired", { detail: task.state });
     }
   };
 

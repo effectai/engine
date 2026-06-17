@@ -1,9 +1,13 @@
 import type { Task } from "@effectai/protobufs";
 import type { WorkerTaskRecord } from "@effectai/protocol-core";
+import { TASK_ACCEPTANCE_TIME } from "@effectai/protocol-core";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { storeToRefs } from "pinia";
 
 const activeTask = ref<WorkerTaskRecord | null>(null);
+
+// Convert TASK_ACCEPTANCE_TIME from milliseconds to seconds
+const TASK_ACCEPTANCE_TIME_SECONDS = TASK_ACCEPTANCE_TIME / 1000;
 
 export const useTasks = () => {
   const { instance } = storeToRefs(useWorkerStore());
@@ -33,39 +37,28 @@ export const useTasks = () => {
 
   const useGetActiveTasks = (index: Ref<number | string>) => {
     const queryClient = useQueryClient();
-
-    const handleTaskEvent = (event: CustomEvent<Task>) => {
-      queryClient.setQueryData<Task[]>(["tasks", index], (old) =>
-        old ? [...old, event.detail] : [event.detail],
-      );
-    };
+    const { account } = useAuth();
 
     const invalidateTasks = () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", index] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", index, account] });
     };
 
-    onMounted(() => {
-      instance.value?.events.addEventListener("task:created", invalidateTasks);
-      instance.value?.events.addEventListener("task:rejected", invalidateTasks);
-      instance.value?.events.addEventListener(
-        "task:completed",
-        invalidateTasks,
-      );
-    });
+    // Register listeners as soon as instance is available, not just on mount.
+    watchEffect((onCleanup) => {
+      const events = instance.value?.events;
+      if (!events) return;
 
-    onUnmounted(() => {
-      instance.value?.events.removeEventListener(
-        "task:created",
-        handleTaskEvent,
-      );
-      instance.value?.events.removeEventListener(
-        "task:rejected",
-        invalidateTasks,
-      );
-      instance.value?.events.removeEventListener(
-        "task:completed",
-        invalidateTasks,
-      );
+      events.addEventListener("task:created", invalidateTasks);
+      events.addEventListener("task:rejected", invalidateTasks);
+      events.addEventListener("task:completed", invalidateTasks);
+      events.addEventListener("task:expired", invalidateTasks);
+
+      onCleanup(() => {
+        events.removeEventListener("task:created", invalidateTasks);
+        events.removeEventListener("task:rejected", invalidateTasks);
+        events.removeEventListener("task:completed", invalidateTasks);
+        events.removeEventListener("task:expired", invalidateTasks);
+      });
     });
 
     return useGetTasks(index);
@@ -96,11 +89,20 @@ export const useTasks = () => {
     const now = new Date().getTime() / 1000;
 
     if (lastEvent.type === "create") {
-      return { time: lastEvent.timestamp + 600 - now, type: "accept" };
+      // Use TASK_ACCEPTANCE_TIME for accepting tasks
+      return {
+        time: Math.max(lastEvent.timestamp + TASK_ACCEPTANCE_TIME_SECONDS - now, 0),
+        type: "accept",
+      };
     }
 
     if (lastEvent.type === "accept") {
-      return { time: lastEvent.timestamp + 600 - now, type: "complete" };
+      // Use task-specific timeLimitSeconds for completing tasks
+      const timeLimitSeconds = Number(task.state.timeLimitSeconds ?? 600);
+      return {
+        time: Math.max(lastEvent.timestamp + timeLimitSeconds - now, 0),
+        type: "complete",
+      };
     }
 
     return { time: 0, type: "none" };
