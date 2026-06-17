@@ -20,7 +20,9 @@ const STATUS_TONE: Record<TaskStatus, "info" | "positive"> = {
 };
 
 function checkTypeLabel(type: CheckType, intl: IntlShape): string {
-  const meta = CHECK_TYPES.find((checkTypeOption) => checkTypeOption.id === type);
+  const meta = CHECK_TYPES.find(
+    (checkTypeOption) => checkTypeOption.id === type,
+  );
   return meta ? intl.formatMessage(meta.name) : type;
 }
 
@@ -34,8 +36,14 @@ export const TaskHistoryItem = ({ task, onView, onDelete }: Props) => {
   const intl = useIntl();
 
   const statusLabel: Record<TaskStatus, string> = {
-    pending: intl.formatMessage({ defaultMessage: "Pending", description: "Task status badge - not yet complete" }),
-    complete: intl.formatMessage({ defaultMessage: "Complete", description: "Task status badge - finished" }),
+    pending: intl.formatMessage({
+      defaultMessage: "Pending",
+      description: "Task status badge - not yet complete",
+    }),
+    complete: intl.formatMessage({
+      defaultMessage: "Complete",
+      description: "Task status badge - finished",
+    }),
   };
 
   return (
@@ -49,7 +57,10 @@ export const TaskHistoryItem = ({ task, onView, onDelete }: Props) => {
         <Title size="small">{checkTypeLabel(task.checkType, intl)}</Title>
         <Text size="small" tone="tertiary">
           {intl.formatMessage(
-            { defaultMessage: "{count} testers", description: "Number of testers assigned to a task" },
+            {
+              defaultMessage: "{count} testers",
+              description: "Number of testers assigned to a task",
+            },
             { count: task.workerCount },
           )}
         </Text>

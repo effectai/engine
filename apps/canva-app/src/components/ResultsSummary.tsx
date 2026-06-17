@@ -33,14 +33,24 @@ function resolvedFeedback(
           : DEFAULT_RATING_TONE;
       return { rating: fb.rating, insight: fb.insight, tone };
     }
-    const versionALabel = intl.formatMessage({ defaultMessage: "Version A", description: "Default label for version A in compare results" });
-    const versionBLabel = intl.formatMessage({ defaultMessage: "Version B", description: "Default label for version B in compare results" });
+    const versionALabel = intl.formatMessage({
+      defaultMessage: "Version A",
+      description: "Default label for version A in compare results",
+    });
+    const versionBLabel = intl.formatMessage({
+      defaultMessage: "Version B",
+      description: "Default label for version B in compare results",
+    });
     const version = fb.rating === "A" ? "A" : "B";
     const label =
       version === "A"
         ? task.versionLabelA || versionALabel
         : task.versionLabelB || versionBLabel;
-    return { rating: label, insight: fb.insight, tone: COMPARE_VERSION_TONES[version] };
+    return {
+      rating: label,
+      insight: fb.insight,
+      tone: COMPARE_VERSION_TONES[version],
+    };
   });
 }
 
@@ -58,10 +68,16 @@ export const ResultsSummary = ({ task }: Props) => {
     setPage(0);
   }, [task.taskId]);
 
-  const totalPages = Math.max(1, Math.ceil(feedback.length / RESPONSES_PER_PAGE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(feedback.length / RESPONSES_PER_PAGE),
+  );
   const safePage = Math.min(page, totalPages - 1);
   const pageStart = safePage * RESPONSES_PER_PAGE;
-  const visibleFeedback = feedback.slice(pageStart, pageStart + RESPONSES_PER_PAGE);
+  const visibleFeedback = feedback.slice(
+    pageStart,
+    pageStart + RESPONSES_PER_PAGE,
+  );
 
   function headlineFor(t: TaskRecord): string {
     const results = t.results;
@@ -84,13 +100,24 @@ export const ResultsSummary = ({ task }: Props) => {
       return intl.formatMessage(
         {
           defaultMessage: "{percent}% of testers would stop scrolling",
-          description: "Clickability check headline showing the stop-scroll percentage",
+          description:
+            "Clickability check headline showing the stop-scroll percentage",
         },
         { percent: results.stopScrollPercent },
       );
     }
-    const labelA = t.versionLabelA || intl.formatMessage({ defaultMessage: "Version A", description: "Default label for version A in a compare check" });
-    const labelB = t.versionLabelB || intl.formatMessage({ defaultMessage: "Version B", description: "Default label for version B in a compare check" });
+    const labelA =
+      t.versionLabelA ||
+      intl.formatMessage({
+        defaultMessage: "Version A",
+        description: "Default label for version A in a compare check",
+      });
+    const labelB =
+      t.versionLabelB ||
+      intl.formatMessage({
+        defaultMessage: "Version B",
+        description: "Default label for version B in a compare check",
+      });
     const winner = results.winner === "A" ? labelA : labelB;
     return intl.formatMessage(
       {
@@ -109,8 +136,10 @@ export const ResultsSummary = ({ task }: Props) => {
           <Text size="small" tone="tertiary">
             {intl.formatMessage(
               {
-                defaultMessage: "{count, plural, one {# tester response} other {# tester responses}}",
-                description: "Heading above the list of individual tester responses",
+                defaultMessage:
+                  "{count, plural, one {# tester response} other {# tester responses}}",
+                description:
+                  "Heading above the list of individual tester responses",
               },
               { count: feedback.length },
             )}
@@ -146,7 +175,8 @@ export const ResultsSummary = ({ task }: Props) => {
                 >
                   {intl.formatMessage({
                     defaultMessage: "Previous",
-                    description: "Button to show the previous page of tester responses",
+                    description:
+                      "Button to show the previous page of tester responses",
                   })}
                 </Button>
               </Column>
@@ -155,7 +185,8 @@ export const ResultsSummary = ({ task }: Props) => {
                   {intl.formatMessage(
                     {
                       defaultMessage: "Page {page} of {total}",
-                      description: "Indicator showing the current page of tester responses",
+                      description:
+                        "Indicator showing the current page of tester responses",
                     },
                     { page: safePage + 1, total: totalPages },
                   )}
@@ -169,7 +200,8 @@ export const ResultsSummary = ({ task }: Props) => {
                 >
                   {intl.formatMessage({
                     defaultMessage: "Next",
-                    description: "Button to show the next page of tester responses",
+                    description:
+                      "Button to show the next page of tester responses",
                   })}
                 </Button>
               </Column>

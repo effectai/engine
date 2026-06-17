@@ -139,32 +139,164 @@ export interface SelectOption {
 }
 
 export const DESIGN_PURPOSE_OPTIONS: SelectOption[] = [
-  { id: "Facebook / Instagram ad", label: defineMessage({ defaultMessage: "Facebook / Instagram ad", description: "Design purpose option" }) },
-  { id: "Event flyer", label: defineMessage({ defaultMessage: "Event flyer", description: "Design purpose option" }) },
-  { id: "Product landing page", label: defineMessage({ defaultMessage: "Product landing page", description: "Design purpose option" }) },
-  { id: "Email newsletter", label: defineMessage({ defaultMessage: "Email newsletter", description: "Design purpose option" }) },
-  { id: "Presentation", label: defineMessage({ defaultMessage: "Presentation", description: "Design purpose option" }) },
-  { id: "Poster", label: defineMessage({ defaultMessage: "Poster", description: "Design purpose option" }) },
-  { id: "Social media post", label: defineMessage({ defaultMessage: "Social media post", description: "Design purpose option" }) },
-  { id: "Business card", label: defineMessage({ defaultMessage: "Business card", description: "Design purpose option" }) },
+  {
+    id: "Facebook / Instagram ad",
+    label: defineMessage({
+      defaultMessage: "Facebook / Instagram ad",
+      description: "Design purpose option",
+    }),
+  },
+  {
+    id: "Event flyer",
+    label: defineMessage({
+      defaultMessage: "Event flyer",
+      description: "Design purpose option",
+    }),
+  },
+  {
+    id: "Product landing page",
+    label: defineMessage({
+      defaultMessage: "Product landing page",
+      description: "Design purpose option",
+    }),
+  },
+  {
+    id: "Email newsletter",
+    label: defineMessage({
+      defaultMessage: "Email newsletter",
+      description: "Design purpose option",
+    }),
+  },
+  {
+    id: "Presentation",
+    label: defineMessage({
+      defaultMessage: "Presentation",
+      description: "Design purpose option",
+    }),
+  },
+  {
+    id: "Poster",
+    label: defineMessage({
+      defaultMessage: "Poster",
+      description: "Design purpose option",
+    }),
+  },
+  {
+    id: "Social media post",
+    label: defineMessage({
+      defaultMessage: "Social media post",
+      description: "Design purpose option",
+    }),
+  },
+  {
+    id: "Business card",
+    label: defineMessage({
+      defaultMessage: "Business card",
+      description: "Design purpose option",
+    }),
+  },
 ];
 
 export const TARGET_AUDIENCE_OPTIONS: SelectOption[] = [
-  { id: "Small business owners", label: defineMessage({ defaultMessage: "Small business owners", description: "Target audience option" }) },
-  { id: "Fitness enthusiasts", label: defineMessage({ defaultMessage: "Fitness enthusiasts", description: "Target audience option" }) },
-  { id: "Young adults (18-25)", label: defineMessage({ defaultMessage: "Young adults (18–25)", description: "Target audience option" }) },
-  { id: "Professionals / B2B", label: defineMessage({ defaultMessage: "Professionals / B2B", description: "Target audience option" }) },
-  { id: "Parents", label: defineMessage({ defaultMessage: "Parents", description: "Target audience option" }) },
-  { id: "Students", label: defineMessage({ defaultMessage: "Students", description: "Target audience option" }) },
-  { id: "General public", label: defineMessage({ defaultMessage: "General public", description: "Target audience option" }) },
+  {
+    id: "Small business owners",
+    label: defineMessage({
+      defaultMessage: "Small business owners",
+      description: "Target audience option",
+    }),
+  },
+  {
+    id: "Fitness enthusiasts",
+    label: defineMessage({
+      defaultMessage: "Fitness enthusiasts",
+      description: "Target audience option",
+    }),
+  },
+  {
+    id: "Young adults (18-25)",
+    label: defineMessage({
+      defaultMessage: "Young adults (18–25)",
+      description: "Target audience option",
+    }),
+  },
+  {
+    id: "Professionals / B2B",
+    label: defineMessage({
+      defaultMessage: "Professionals / B2B",
+      description: "Target audience option",
+    }),
+  },
+  {
+    id: "Parents",
+    label: defineMessage({
+      defaultMessage: "Parents",
+      description: "Target audience option",
+    }),
+  },
+  {
+    id: "Students",
+    label: defineMessage({
+      defaultMessage: "Students",
+      description: "Target audience option",
+    }),
+  },
+  {
+    id: "General public",
+    label: defineMessage({
+      defaultMessage: "General public",
+      description: "Target audience option",
+    }),
+  },
 ];
 
 export const MAIN_GOAL_OPTIONS: SelectOption[] = [
-  { id: "Drive sales", label: defineMessage({ defaultMessage: "Drive sales", description: "Main goal option" }) },
-  { id: "Generate leads", label: defineMessage({ defaultMessage: "Generate leads", description: "Main goal option" }) },
-  { id: "Build brand awareness", label: defineMessage({ defaultMessage: "Build brand awareness", description: "Main goal option" }) },
-  { id: "Promote an event", label: defineMessage({ defaultMessage: "Promote an event", description: "Main goal option" }) },
-  { id: "Drive website traffic", label: defineMessage({ defaultMessage: "Drive website traffic", description: "Main goal option" }) },
-  { id: "Increase engagement", label: defineMessage({ defaultMessage: "Increase engagement", description: "Main goal option" }) },
-  { id: "Educate / inform", label: defineMessage({ defaultMessage: "Educate / inform", description: "Main goal option" }) },
+  {
+    id: "Drive sales",
+    label: defineMessage({
+      defaultMessage: "Drive sales",
+      description: "Main goal option",
+    }),
+  },
+  {
+    id: "Generate leads",
+    label: defineMessage({
+      defaultMessage: "Generate leads",
+      description: "Main goal option",
+    }),
+  },
+  {
+    id: "Build brand awareness",
+    label: defineMessage({
+      defaultMessage: "Build brand awareness",
+      description: "Main goal option",
+    }),
+  },
+  {
+    id: "Promote an event",
+    label: defineMessage({
+      defaultMessage: "Promote an event",
+      description: "Main goal option",
+    }),
+  },
+  {
+    id: "Drive website traffic",
+    label: defineMessage({
+      defaultMessage: "Drive website traffic",
+      description: "Main goal option",
+    }),
+  },
+  {
+    id: "Increase engagement",
+    label: defineMessage({
+      defaultMessage: "Increase engagement",
+      description: "Main goal option",
+    }),
+  },
+  {
+    id: "Educate / inform",
+    label: defineMessage({
+      defaultMessage: "Educate / inform",
+      description: "Main goal option",
+    }),
+  },
 ];

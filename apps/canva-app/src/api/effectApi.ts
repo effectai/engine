@@ -1,5 +1,10 @@
 import { auth } from "@canva/user";
-import type { CheckResults, CheckType, TaskContext, TaskRecord } from "../types";
+import type {
+  CheckResults,
+  CheckType,
+  TaskContext,
+  TaskRecord,
+} from "../types";
 
 export interface TaskPayload {
   checkType: CheckType;

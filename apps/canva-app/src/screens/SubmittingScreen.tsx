@@ -73,10 +73,12 @@ export const SubmittingScreen = ({ drafts, onComplete, onBack }: Props) => {
       } catch (err) {
         if (cancelled) return;
         const message =
-          err instanceof Error ? err.message : intl.formatMessage({
-            defaultMessage: "Could not submit your design.",
-            description: "Generic error message when submission fails",
-          });
+          err instanceof Error
+            ? err.message
+            : intl.formatMessage({
+                defaultMessage: "Could not submit your design.",
+                description: "Generic error message when submission fails",
+              });
         setError(message);
       }
     };
@@ -117,7 +119,8 @@ export const SubmittingScreen = ({ drafts, onComplete, onBack }: Props) => {
             <Button variant="secondary" onClick={onBack} stretch>
               {intl.formatMessage({
                 defaultMessage: "Back",
-                description: "Button to go back from the failed submission screen",
+                description:
+                  "Button to go back from the failed submission screen",
               })}
             </Button>
           </Rows>

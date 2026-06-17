@@ -1,6 +1,9 @@
 import type { IntlShape } from "react-intl";
 
-export function estimatedWaitTime(workerCount: number, intl: IntlShape): string {
+export function estimatedWaitTime(
+  workerCount: number,
+  intl: IntlShape,
+): string {
   const mins = Math.round(workerCount * 3);
   return intl.formatMessage(
     {

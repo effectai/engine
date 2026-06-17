@@ -28,7 +28,9 @@ type Props = {
 };
 
 function checkTypeLabel(type: CheckType, intl: IntlShape): string {
-  const meta = CHECK_TYPES.find((checkTypeOption) => checkTypeOption.id === type);
+  const meta = CHECK_TYPES.find(
+    (checkTypeOption) => checkTypeOption.id === type,
+  );
   return meta ? intl.formatMessage(meta.name) : type;
 }
 
@@ -120,7 +122,8 @@ export const ResultsScreen = ({ task, onBack, onNewCheck }: Props) => {
           start={{
             ariaLabel: intl.formatMessage({
               defaultMessage: "Go back",
-              description: "Aria label for the back button on the results screen",
+              description:
+                "Aria label for the back button on the results screen",
             }),
             onClick: onBack,
           }}
@@ -153,7 +156,8 @@ export const ResultsScreen = ({ task, onBack, onNewCheck }: Props) => {
             <ImageCard
               alt={intl.formatMessage({
                 defaultMessage: "Submitted design preview",
-                description: "Alt text for the thumbnail of the submitted design",
+                description:
+                  "Alt text for the thumbnail of the submitted design",
               })}
               thumbnailUrl={thumbnailUrl}
             />
@@ -161,11 +165,21 @@ export const ResultsScreen = ({ task, onBack, onNewCheck }: Props) => {
         ) : null}
 
         <Rows spacing="1u">
-          <Badge text={checkTypeLabel(displayTask.checkType, intl)} tone="assist" />
+          <Badge
+            text={checkTypeLabel(displayTask.checkType, intl)}
+            tone="assist"
+          />
           <Text size="small" tone="tertiary">
             {intl.formatMessage(
-              { defaultMessage: "{count} testers • {date}", description: "Tester count and submission date shown below check type badge" },
-              { count: displayTask.workerCount, date: intl.formatDate(displayTask.submittedAt) },
+              {
+                defaultMessage: "{count} testers • {date}",
+                description:
+                  "Tester count and submission date shown below check type badge",
+              },
+              {
+                count: displayTask.workerCount,
+                date: intl.formatDate(displayTask.submittedAt),
+              },
             )}
           </Text>
         </Rows>
@@ -173,7 +187,8 @@ export const ResultsScreen = ({ task, onBack, onNewCheck }: Props) => {
         {notFound ? (
           <Alert tone="critical">
             {intl.formatMessage({
-              defaultMessage: "This task no longer exists. It may have been deleted.",
+              defaultMessage:
+                "This task no longer exists. It may have been deleted.",
               description: "Error shown when the task cannot be found",
             })}
           </Alert>

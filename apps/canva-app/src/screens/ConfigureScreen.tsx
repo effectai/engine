@@ -16,10 +16,7 @@ import * as styles from "styles/components.css";
 import { ContextForm } from "../components/ContextForm";
 import type { ContextErrors } from "../components/ContextForm";
 import type { CheckType, TaskContext, TaskDraft } from "../types";
-import {
-  CHECK_TYPES,
-  REVEAL_DURATION_OPTIONS,
-} from "../types";
+import { CHECK_TYPES, REVEAL_DURATION_OPTIONS } from "../types";
 
 type Props = {
   checkType: CheckType;
@@ -34,7 +31,9 @@ const EMPTY_CONTEXT: TaskContext = {
 };
 
 function checkTypeLabel(type: CheckType, intl: IntlShape): string {
-  const meta = CHECK_TYPES.find((checkTypeOption) => checkTypeOption.id === type);
+  const meta = CHECK_TYPES.find(
+    (checkTypeOption) => checkTypeOption.id === type,
+  );
   return meta ? intl.formatMessage(meta.name) : type;
 }
 
@@ -69,7 +68,10 @@ export const ConfigureScreen = ({ checkType, onBack, onSubmit }: Props) => {
 
   const PAGE_OPTIONS = Array.from({ length: pageCount }, (_, i) => ({
     label: intl.formatMessage(
-      { defaultMessage: "Page {num}", description: "Page number option in the page selector" },
+      {
+        defaultMessage: "Page {num}",
+        description: "Page number option in the page selector",
+      },
       { num: i + 1 },
     ),
     value: i + 1,
@@ -140,8 +142,10 @@ export const ConfigureScreen = ({ checkType, onBack, onSubmit }: Props) => {
         if (blobs.length < 2) {
           setSubmitError(
             intl.formatMessage({
-              defaultMessage: "Compare Versions requires at least 2 pages in your design. Add a second page and try again.",
-              description: "Error when a compare check is attempted on a single-page design",
+              defaultMessage:
+                "Compare Versions requires at least 2 pages in your design. Add a second page and try again.",
+              description:
+                "Error when a compare check is attempted on a single-page design",
             }),
           );
           setSubmitting(false);
@@ -154,8 +158,10 @@ export const ConfigureScreen = ({ checkType, onBack, onSubmit }: Props) => {
           setSubmitError(
             intl.formatMessage(
               {
-                defaultMessage: "Your design has {count, plural, one {# page} other {# pages}}, but page {page} was selected. Please update your page selection.",
-                description: "Error when the selected page is out of range for the exported design",
+                defaultMessage:
+                  "Your design has {count, plural, one {# page} other {# pages}}, but page {page} was selected. Please update your page selection.",
+                description:
+                  "Error when the selected page is out of range for the exported design",
               },
               { count: blobs.length, page: outOfRange },
             ),
@@ -168,8 +174,18 @@ export const ConfigureScreen = ({ checkType, onBack, onSubmit }: Props) => {
             ...baseDraft,
             imageUrlA: blobA.url,
             imageUrlB: blobB.url,
-            versionLabelA: versionLabelA.trim() || intl.formatMessage({ defaultMessage: "Version A", description: "Default label for version A" }),
-            versionLabelB: versionLabelB.trim() || intl.formatMessage({ defaultMessage: "Version B", description: "Default label for version B" }),
+            versionLabelA:
+              versionLabelA.trim() ||
+              intl.formatMessage({
+                defaultMessage: "Version A",
+                description: "Default label for version A",
+              }),
+            versionLabelB:
+              versionLabelB.trim() ||
+              intl.formatMessage({
+                defaultMessage: "Version B",
+                description: "Default label for version B",
+              }),
             pageA,
             pageB,
           },
@@ -180,8 +196,10 @@ export const ConfigureScreen = ({ checkType, onBack, onSubmit }: Props) => {
           setSubmitError(
             intl.formatMessage(
               {
-                defaultMessage: "Your design has {count, plural, one {# page} other {# pages}}, but page {page} was selected. Please update your page selection.",
-                description: "Error when the selected page is out of range for the exported design",
+                defaultMessage:
+                  "Your design has {count, plural, one {# page} other {# pages}}, but page {page} was selected. Please update your page selection.",
+                description:
+                  "Error when the selected page is out of range for the exported design",
               },
               { count: blobs.length, page },
             ),
@@ -205,7 +223,8 @@ export const ConfigureScreen = ({ checkType, onBack, onSubmit }: Props) => {
           ? err.message
           : intl.formatMessage({
               defaultMessage: "Unknown error during export.",
-              description: "Generic error message when the export fails unexpectedly",
+              description:
+                "Generic error message when the export fails unexpectedly",
             });
       setSubmitError(message);
       setSubmitting(false);
@@ -220,7 +239,8 @@ export const ConfigureScreen = ({ checkType, onBack, onSubmit }: Props) => {
           start={{
             ariaLabel: intl.formatMessage({
               defaultMessage: "Go back",
-              description: "Aria label for the back button on the configure screen",
+              description:
+                "Aria label for the back button on the configure screen",
             }),
             onClick: onBack,
           }}
@@ -238,7 +258,8 @@ export const ConfigureScreen = ({ checkType, onBack, onSubmit }: Props) => {
             <Title size="small">
               {intl.formatMessage({
                 defaultMessage: "Page to check",
-                description: "Label for the page selector on the configure screen",
+                description:
+                  "Label for the page selector on the configure screen",
               })}
             </Title>
             <Select<number>
@@ -262,7 +283,10 @@ export const ConfigureScreen = ({ checkType, onBack, onSubmit }: Props) => {
               value={revealDuration}
               options={REVEAL_DURATION_OPTIONS.map((s) => ({
                 label: intl.formatMessage(
-                  { defaultMessage: "{seconds} seconds", description: "Reveal duration option in seconds" },
+                  {
+                    defaultMessage: "{seconds} seconds",
+                    description: "Reveal duration option in seconds",
+                  },
                   { seconds: s },
                 ),
                 value: s,
@@ -278,8 +302,10 @@ export const ConfigureScreen = ({ checkType, onBack, onSubmit }: Props) => {
             {pageCount < 2 ? (
               <Alert tone="warn">
                 {intl.formatMessage({
-                  defaultMessage: "Your design only has 1 page. Add a second page to use Compare Versions.",
-                  description: "Warning shown when a single-page design is used with Compare Versions",
+                  defaultMessage:
+                    "Your design only has 1 page. Add a second page to use Compare Versions.",
+                  description:
+                    "Warning shown when a single-page design is used with Compare Versions",
                 })}
               </Alert>
             ) : null}

@@ -41,12 +41,16 @@ export const ContextForm = ({
   const [isOtherPurpose, setIsOtherPurpose] = useState(
     () =>
       context.designPurpose !== "" &&
-      !DESIGN_PURPOSE_OPTIONS.some((option) => option.id === context.designPurpose),
+      !DESIGN_PURPOSE_OPTIONS.some(
+        (option) => option.id === context.designPurpose,
+      ),
   );
   const [isOtherAudience, setIsOtherAudience] = useState(
     () =>
       context.targetAudience !== "" &&
-      !TARGET_AUDIENCE_OPTIONS.some((option) => option.id === context.targetAudience),
+      !TARGET_AUDIENCE_OPTIONS.some(
+        (option) => option.id === context.targetAudience,
+      ),
   );
   const [isOtherGoal, setIsOtherGoal] = useState(
     () =>
@@ -59,10 +63,8 @@ export const ContextForm = ({
     description: "Other option in a dropdown, allows free-text entry",
   });
 
-  const makeSelectHandler = (
-    field: keyof typeof context,
-    setIsOther: (v: boolean) => void,
-  ) =>
+  const makeSelectHandler =
+    (field: keyof typeof context, setIsOther: (v: boolean) => void) =>
     (value: string) => {
       if (value === "other") {
         setIsOther(true);
@@ -73,8 +75,14 @@ export const ContextForm = ({
       }
     };
 
-  const handlePurposeSelect = makeSelectHandler("designPurpose", setIsOtherPurpose);
-  const handleAudienceSelect = makeSelectHandler("targetAudience", setIsOtherAudience);
+  const handlePurposeSelect = makeSelectHandler(
+    "designPurpose",
+    setIsOtherPurpose,
+  );
+  const handleAudienceSelect = makeSelectHandler(
+    "targetAudience",
+    setIsOtherAudience,
+  );
   const handleGoalSelect = makeSelectHandler("mainGoal", setIsOtherGoal);
 
   return (
@@ -119,7 +127,8 @@ export const ContextForm = ({
                 {...props}
                 placeholder={intl.formatMessage({
                   defaultMessage: "Describe the design format",
-                  description: "Placeholder for the free-text design purpose input",
+                  description:
+                    "Placeholder for the free-text design purpose input",
                 })}
                 onChange={(value) =>
                   onContextChange({ ...context, designPurpose: value })
@@ -169,7 +178,8 @@ export const ContextForm = ({
                 {...props}
                 placeholder={intl.formatMessage({
                   defaultMessage: "Describe the target audience",
-                  description: "Placeholder for the free-text target audience input",
+                  description:
+                    "Placeholder for the free-text target audience input",
                 })}
                 onChange={(value) =>
                   onContextChange({ ...context, targetAudience: value })
@@ -245,11 +255,13 @@ export const ContextForm = ({
             hasSpinButtons
             decrementAriaLabel={intl.formatMessage({
               defaultMessage: "Decrease tester count",
-              description: "Aria label for the decrement button on the tester count input",
+              description:
+                "Aria label for the decrement button on the tester count input",
             })}
             incrementAriaLabel={intl.formatMessage({
               defaultMessage: "Increase tester count",
-              description: "Aria label for the increment button on the tester count input",
+              description:
+                "Aria label for the increment button on the tester count input",
             })}
             onChange={(valueAsNumber) => {
               if (typeof valueAsNumber !== "number" || isNaN(valueAsNumber)) {

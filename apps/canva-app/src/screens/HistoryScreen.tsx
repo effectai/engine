@@ -41,7 +41,9 @@ export const HistoryScreen = ({ onBack, onViewTask }: Props) => {
       });
 
     const intervalId = setInterval(() => {
-      getTasks().then(setTasks).catch(() => {});
+      getTasks()
+        .then(setTasks)
+        .catch(() => {});
     }, POLL_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
@@ -73,7 +75,8 @@ export const HistoryScreen = ({ onBack, onViewTask }: Props) => {
           start={{
             ariaLabel: intl.formatMessage({
               defaultMessage: "Go back",
-              description: "Aria label for the back button on the history screen",
+              description:
+                "Aria label for the back button on the history screen",
             }),
             onClick: onBack,
           }}
@@ -83,7 +86,8 @@ export const HistoryScreen = ({ onBack, onViewTask }: Props) => {
         ) : tasks.length === 0 ? (
           <Text alignment="center" size="small" tone="tertiary">
             {intl.formatMessage({
-              defaultMessage: "No checks yet. Run your first check to see it here.",
+              defaultMessage:
+                "No checks yet. Run your first check to see it here.",
               description: "Empty state message on the history screen",
             })}
           </Text>
@@ -105,7 +109,8 @@ export const HistoryScreen = ({ onBack, onViewTask }: Props) => {
                     icon={ChevronLeftIcon}
                     ariaLabel={intl.formatMessage({
                       defaultMessage: "Previous page",
-                      description: "Aria label for the previous page button in history",
+                      description:
+                        "Aria label for the previous page button in history",
                     })}
                     disabled={currentPage === 0}
                     onClick={() => setPage(currentPage - 1)}
@@ -116,7 +121,8 @@ export const HistoryScreen = ({ onBack, onViewTask }: Props) => {
                     {intl.formatMessage(
                       {
                         defaultMessage: "Page {current} of {total}",
-                        description: "Pagination indicator in the history screen",
+                        description:
+                          "Pagination indicator in the history screen",
                       },
                       { current: currentPage + 1, total: pageCount },
                     )}
@@ -128,7 +134,8 @@ export const HistoryScreen = ({ onBack, onViewTask }: Props) => {
                     icon={ChevronRightIcon}
                     ariaLabel={intl.formatMessage({
                       defaultMessage: "Next page",
-                      description: "Aria label for the next page button in history",
+                      description:
+                        "Aria label for the next page button in history",
                     })}
                     disabled={currentPage >= pageCount - 1}
                     onClick={() => setPage(currentPage + 1)}
