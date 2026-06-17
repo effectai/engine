@@ -1,49 +1,38 @@
-import { readFileSync } from "fs";
-import { createWorker, Task, type WorkerEntity } from "@effectai/protocol";
-import {
-  generateKeyPairFromSeed,
-  privateKeyFromRaw,
-} from "@libp2p/crypto/keys";
-import type { PrivateKey, Libp2p, Connection } from "@libp2p/interface";
-import { randomBytes } from "node:crypto";
-import { LevelDatastore } from "datastore-level";
 import { multiaddr } from "@multiformats/multiaddr";
 import { Keypair } from "@solana/web3.js";
+import type { PrivateKey } from "@libp2p/interface";
+import { privateKeyFromRaw } from "@libp2p/crypto/keys";
+import { LevelDatastore } from "datastore-level";
+import { loadWorkerConfig } from "./config.js";
+import { type State, state } from "./state.js";
+import { createNosanaBackend } from "./backend/nosana.js";
 import * as Worker from "./worker.js";
-import { state, type State } from "./state.js";
 
 const storePath = "/tmp/ai-worker";
 const p2pBoot =
       "/ip4/127.0.0.1/tcp/11995/ws/p2p/12D3KooWAQH4SQHt12N2eGnAUR4iixS8TAfKxRqfd17sDurZ1v5R"
   // "/dns4/mgr1.alpha.effect.net/tcp/443/wss/p2p/12D3KooWAawwqMDxDSkZhNTDes5VH6yPQJ6G5ToePhxezJyr5SpC";
 
-const seed = Uint8Array.from(
-  JSON.parse(
-    readFileSync("tst8sA9paoprGP987QKSuX9VoHY22AXtB8b3bMTckf4.json", "utf-8"),
-  ),
-);
-
 const loadKey = (priv: Uint8Array): PrivateKey => privateKeyFromRaw(priv);
-const generateKey = (): PrivateKey => loadKey(randomBytes(64));
 
-const workerKp = loadKey(seed);
+const { capability, privateKey: privBytes, accessCode } = loadWorkerConfig();
+const workerKp = loadKey(privBytes);
 const workerPubHex = Buffer.from(workerKp.publicKey.raw).toString("hex");
+const logger = state.logger;
 
-console.log(`Loaded key 0x${workerPubHex}`);
-console.log("Connecting to manager...", p2pBoot);
+logger.info("Loaded key", { publicKey: `0x${workerPubHex}` });
+logger.info("Connecting to manager", { p2pBoot });
 
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 // start
-console.log("Starting Worker! Wroom");
-
-console.log("Started");
+logger.info("Starting worker");
 
 const mainLoop = async () => {
   while (!state.done) {
     switch (state.current) {
-      case "init_p2p":
-	console.log("Initializing p2p");
+      case "init_p2p": {
+	logger.info("Initializing p2p");
 
 	state.privateKey = workerKp;
 	state.datastore = new LevelDatastore(storePath);
@@ -51,36 +40,55 @@ const mainLoop = async () => {
 
 	await Worker.create();
 
-	console.log("Creating worker");
-	await state.worker!.start();
+	logger.info("Creating worker");
+	await state.worker?.start();
 
-	console.log("Starting worker with code");
-	const workerRecipient = Keypair.fromSecretKey(seed, {
+	logger.info("Starting worker with code");
+	const workerRecipient = Keypair.fromSecretKey(privBytes, {
 	  skipValidation: true,
 	});
-	await state.worker!.connect(
-	  multiaddr(p2pBoot),
-	  {recipient: workerRecipient.publicKey.toBase58(),
-	    nonce: 1n,
-	    accessCode: "7q4zp7yf"}
-	);
-	console.log("Connected to network");
+	try {
+	  await state.worker?.connect(
+	    multiaddr(p2pBoot),
+	    {
+	      recipient: workerRecipient.publicKey.toBase58(),
+	      nonce: 1n,
+	      accessCode,
+	      capabilities: [capability],
+	    }
+	  );
+	} catch (e: unknown) {
+	  if (e instanceof Error && e.message.toLowerCase().includes("access code")) {
+	    logger.error("Access code rejected. Request a new one from https://worker.effect.ai/ and restart with --access-code <code>.");
+	    process.exit(1);
+	  }
+	  throw e;
+	}
+	logger.info("Connected to network");
 
 	state.current = "init_llm";
 
 	break;
+      }
 
-      case "init_llm":
-	console.log("Initializing LLM. Skip for now");
-	state.current = "running";
+      case "init_llm": {
+	logger.info("Initializing LLM");
+	if (!state.backend) {
+	  state.backend = await createNosanaBackend();
+	  await state.backend.init();
+	}
+	if (state.backend?.isReady()) {
+	  state.current = "running";
+	}
 	break;
+      }
 
       case "running":
 	await delay(5000);
 	break;
 
       default:
-	console.log(`Unknown State ${state.current}`);
+	logger.warn(`Unknown State ${state.current}`);
 	state.done = true;
     }
 
@@ -93,10 +101,10 @@ const mainLoop = async () => {
 try {
   await mainLoop();
 } catch (e) {
-  console.log(`Main Loop error ${e}`);
+  logger.error("Main loop error", { error: e });
 }
 
 // cleanup
-console.log("Stopping Worker...");
+logger.info("Stopping worker");
 if (state.worker) await state.worker!.stop();
-console.log("Done");
+logger.info("Done");

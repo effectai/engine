@@ -1,18 +1,20 @@
-import { createWorker, Task, type WorkerEntity } from "@effectai/protocol";
-import { Keypair } from "@solana/web3.js";
-import type { PrivateKey, Libp2p, Connection } from "@libp2p/interface";
-import { BaseDatastore } from "datastore-core";
+import { createWorker, Task } from "@effectai/protocol";
+import type { Connection } from "@libp2p/interface";
 
-import { state, type State } from "./state.js";
+import { state } from "./state.js";
 
 // TODO: move to utils or something
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
+/**
+ * Execute a task via the configured backend and submit the result.
+ */
 const processTask = async (t: Task): Promise<boolean> => {
   try {
+    const result = await state.backend?.execute(t);
     await state.worker.completeTask({
       taskId: t.id,
-      result: `Completed ${t.id}`,
+      result: String(result ?? ""),
     });
   } catch (e) {
     console.error(`Error completing task ${t.id}: ${e}`);
@@ -48,7 +50,7 @@ ${pendingTasks.length} pending
 };
 
 export const create = async (): ReturnType<typeof createWorker> => {
-  const { datastore, privateKey, activeTask } = state;
+  const { datastore, privateKey } = state;
   const w = await createWorker({ datastore, privateKey, autoExpire: false });
   state.worker = w;
 
@@ -65,18 +67,26 @@ export const create = async (): ReturnType<typeof createWorker> => {
   w.events.addEventListener("task:created", async ({ detail }) => {
     if (state.activeTask) {
       console.log("Skipping task, already have one", state.activeTask.title);
-    } else {
-      state.activeTask = detail;
-      await state.worker.acceptTask({ taskId: detail.id });
-      console.log("Accepted Task", detail.id);
-
-      await delay(Math.floor(Math.random() * 1000 * 5));
-      await processTask(state.activeTask);
-
-      console.log(`Completed task ${detail.id}`);
-
-      state.activeTask = undefined;
+      return;
     }
+
+    if (!state.backend?.isReady()) {
+      console.log("Skipping task, backend not ready", detail.id);
+      state.activeTask = undefined;
+      return;
+    }
+
+    state.activeTask = detail;
+
+    await state.worker.acceptTask({ taskId: detail.id });
+    console.log("Accepted Task", detail.id);
+
+    await delay(Math.floor(Math.random() * 1000 * 5));
+    await processTask(detail);
+
+    console.log(`Completed task ${detail.id}`);
+
+    state.activeTask = undefined;
   });
 
   return w;
