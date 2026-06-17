@@ -5,6 +5,7 @@ import { privateKeyFromRaw } from "@libp2p/crypto/keys";
 import { LevelDatastore } from "datastore-level";
 import { loadWorkerConfig } from "./config.js";
 import { type State, state } from "./state.js";
+import { createNosanaBackend } from "./backend/nosana.js";
 import * as Worker from "./worker.js";
 
 const storePath = "/tmp/ai-worker";
@@ -70,10 +71,17 @@ const mainLoop = async () => {
 	break;
       }
 
-      case "init_llm":
-	logger.info("Initializing LLM. Skip for now");
-	state.current = "running";
+      case "init_llm": {
+	logger.info("Initializing LLM");
+	if (!state.backend) {
+	  state.backend = await createNosanaBackend();
+	  await state.backend.init();
+	}
+	if (state.backend?.isReady()) {
+	  state.current = "running";
+	}
 	break;
+      }
 
       case "running":
 	await delay(5000);

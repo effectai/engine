@@ -43,6 +43,9 @@ const loadPrivateKeyFromFile = (path: string): Uint8Array => {
   return Uint8Array.from(parsed as number[]);
 };
 
+/**
+ * Load worker configuration from CLI flags and environment variables.
+ */
 export const loadWorkerConfig = (): WorkerConfig => {
   const envCapability = process.env[CAPABILITY_ENV_VAR];
   const envPrivateKeyPath = process.env[PRIVATE_KEY_PATH_ENV_VAR];

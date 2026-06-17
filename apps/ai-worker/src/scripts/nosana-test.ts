@@ -21,6 +21,7 @@ try {
       logger: state.logger,
       endpointUrl,
       context: "nosana-test",
+      prompt: "Hello how are you doing?",
     });
     console.log("Inference response:");
     console.log(response);

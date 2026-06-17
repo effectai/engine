@@ -63,18 +63,17 @@ const DEFAULT_JOB: JobDefinition = {
 
 const DEFAULT_API_BACKEND_URL = "https://dashboard.k8s.prd.nos.ci";
 const MIN_VAULT_SOL = 0.01;
-const MIN_VAULT_NOS = 100;
+const MIN_VAULT_NOS = 30;
 const TOPUP_SOL_AMOUNT = 0.01;
-const TOPUP_NOS_AMOUNT = 100;
+const TOPUP_NOS_AMOUNT = 30;
 const LAMPORTS_PER_SOL = 1_000_000_000;
 const DEPLOYMENT_NAME = "effectai-ai-worker";
 const DEPLOYMENT_TIMEOUT_MINUTES = 60;
 const DEPLOYMENT_REPLICAS = 1;
 const POLL_INTERVAL_MS = 5_000;
-const POLL_MAX_ATTEMPTS = 24;
+const POLL_MAX_ATTEMPTS = 36;
 const INFERENCE_MAX_ATTEMPTS = 3;
 const SYSTEM_PROMPT = "You are the Effect Tasks AI worker. Process tasks promptly, be helpful, and follow instructions with clarity.";
-const HUMAN_PROMPT = "Hello how are you doing?";
 const CHAT_PATH = "/api/chat";
 const MODEL_NAME = "gpt-oss:20b";
 
@@ -94,22 +93,25 @@ const parseInferenceResponse = (data: unknown): string => {
 
 /**
  * Call the Ollama chat endpoint and return the response text, retrying on failure.
+ * Uses the provided prompt as the user message in the chat request.
  */
 const runInference = async ({
   endpointUrl,
   logger,
   context,
+  prompt,
 }: {
   endpointUrl: string;
   logger: Logger;
   context: string;
+  prompt: string;
 }): Promise<string> => {
   const url = `${endpointUrl}${CHAT_PATH}`;
   const body = {
     model: MODEL_NAME,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: HUMAN_PROMPT },
+      { role: "user", content: prompt },
     ],
     stream: false,
   };
@@ -148,6 +150,7 @@ const runInference = async ({
 
 /**
  * Create the Nosana backend, provisioning the deployment and wiring inference.
+ * Tasks are executed by sending their prompt to the deployment endpoint.
  */
 export const createNosanaBackend = async (): Promise<AutomationBackend> => {
   const logger = state.logger;
@@ -184,17 +187,6 @@ export const createNosanaBackend = async (): Promise<AutomationBackend> => {
       cachedEndpointUrl = endpointUrl;
       state.deploymentEndpointUrl = endpointUrl;
 
-      try {
-        const response = await runInference({
-          endpointUrl,
-          logger,
-          context: "init",
-        });
-        logger.info("Inference completed", { deploymentId: deployment.id, response });
-      } catch (error: unknown) {
-        logger.error("Inference failed", { deploymentId: deployment.id, error });
-      }
-
       ready = true;
       logger.info("Nosana backend ready", {
         deploymentId: deployment.id,
@@ -206,27 +198,29 @@ export const createNosanaBackend = async (): Promise<AutomationBackend> => {
         throw new Error("Deployment endpoint not ready for inference");
       }
 
-      return runInference({ endpointUrl: cachedEndpointUrl, logger, context: `task:${task.id}` });
+      const prompt = [task.title, task.templateData].filter(Boolean).join("\n");
+      return runInference({ endpointUrl: cachedEndpointUrl, logger, context: `task:${task.id}`, prompt });
     },
   };
-
-  state.backend = backend;
 
   return backend;
 };
 
 /**
  * Run a single inference against the active deployment endpoint.
+ * Provide the prompt to send to the model.
  */
 export const runNosanaInference = async ({
   logger,
   endpointUrl,
   context,
+  prompt,
 }: {
   logger: Logger;
   endpointUrl: string;
   context: string;
-}): Promise<string> => runInference({ endpointUrl, logger, context });
+  prompt: string;
+}): Promise<string> => runInference({ endpointUrl, logger, context, prompt });
 
 /**
  * Ensure a Nosana vault exists and has a healthy balance.
