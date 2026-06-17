@@ -58,9 +58,9 @@
         <h2>5. Acceptable Use</h2>
         <p>You agree not to:</p>
         <ul>
-          <li>attempt to reverse-engineer, decompile, or tamper with the App or its backend;</li>
-          <li>use automated means to submit tasks or abuse the review service;</li>
-          <li>circumvent any rate limits, authentication, or access controls.</li>
+          <li>attempt to reverse-engineer, decompile, or tamper with the App or its backend</li>
+          <li>use automated means to submit tasks or abuse the review service</li>
+          <li>circumvent any rate limits, authentication, or access controls</li>
         </ul>
 
         <h2>6. Availability</h2>
@@ -101,13 +101,7 @@
           of the App after changes constitutes acceptance of the updated Terms.
         </p>
 
-        <h2>11. Governing Law</h2>
-        <p>
-          These Terms are governed by and construed in accordance with the laws of the Netherlands,
-          without regard to conflict-of-law principles.
-        </p>
-
-        <h2>12. Contact</h2>
+        <h2>11. Contact</h2>
         <p>
           If you have questions about these Terms, please contact us at
           <a href="mailto:hello@effect.ai">hello@effect.ai</a>.

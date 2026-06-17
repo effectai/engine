@@ -57,10 +57,10 @@
         <h2>3. How We Use Your Information</h2>
         <p>We use the information we collect to:</p>
         <ul>
-          <li>operate and deliver the design review service;</li>
-          <li>associate tasks with the correct Canva user and return results to you;</li>
-          <li>detect and prevent abuse, fraud, or security incidents;</li>
-          <li>improve the App and the underlying Effect AI platform.</li>
+          <li>operate and deliver the design review service</li>
+          <li>associate tasks with the correct Canva user and return results to you</li>
+          <li>detect and prevent abuse, fraud, or security incidents</li>
+          <li>improve the App and the underlying Effect AI platform</li>
         </ul>
 
         <h2>4. Sharing Your Information</h2>
