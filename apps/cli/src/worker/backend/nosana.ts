@@ -25,8 +25,8 @@ export type NosanaBackendConfig = {
 
 type NosanaKit = typeof import("@nosana/kit");
 
-const MIN_VAULT_SOL = 0.01;
-const MIN_VAULT_NOS = 30;
+const MIN_VAULT_SOL = 0.008;
+const MIN_VAULT_NOS = 20;
 const TOPUP_SOL_AMOUNT = 0.01;
 const TOPUP_NOS_AMOUNT = 30;
 const LAMPORTS_PER_SOL = 1_000_000_000;
