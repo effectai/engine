@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { managerProgram } from "./manager/index.js";
 import { programsProgram } from "./programs/index.js";
 import { statusProgram } from "./status.js";
+import { workerProgram } from "./worker/index.js";
 
 export const effectCLI = new Command();
 
@@ -16,5 +17,6 @@ effectCLI
 effectCLI.addCommand(statusProgram);
 effectCLI.addCommand(managerProgram);
 effectCLI.addCommand(programsProgram);
+effectCLI.addCommand(workerProgram);
 
 effectCLI.parse(process.argv);

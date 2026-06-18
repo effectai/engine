@@ -26,6 +26,10 @@ const format = (
   message: string,
   metadata?: Record<string, unknown>,
 ): string => {
-  const meta = metadata ? ` ${JSON.stringify(metadata)}` : "";
+  const meta = metadata
+    ? ` ${JSON.stringify(metadata, (_key, value) =>
+        typeof value === "bigint" ? value.toString() : value,
+      )}`
+    : "";
   return `[${level}] [${scope}] ${message}${meta}`;
 };

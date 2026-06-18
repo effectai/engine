@@ -1,29 +1,64 @@
 import type { Task } from "@effectai/protocol";
-import {
-  createNosanaClient,
-  NosanaNetwork,
-  type Deployment,
-  type JobDefinition,
-  type Vault,
-  type DeploymentsApi,
-  type NosanaClient,
-  DeploymentStatus,
+import type {
+  Deployment,
+  DeploymentsApi,
+  JobDefinition,
+  NosanaClient,
+  Vault,
 } from "@nosana/kit";
-import { createKeyPairSignerFromBytes } from "@solana/kit";
-import { createConsoleLogger, type Logger } from "../logger.js";
+import type { Logger } from "../logger.js";
 import { state } from "../state.js";
 import type { AutomationBackend } from "./base.js";
 
-const DEFAULT_MARKET = "6Xt8hgVLLL2PSHC9NtJP8E8oTdA5ZJc95hZEnHcdqKqb"; // 5090
-const DEFAULT_JOB: JobDefinition = {
+export type NosanaBackendConfig = {
+  apiBackendUrl: string;
+  market: string;
+  model: string;
+  image: string;
+  deploymentName: string;
+  replicas: number;
+  timeoutMinutes: number;
+  endpointTimeoutSeconds: number;
+  clearDeployments: boolean;
+  listDeploymentsOnly: boolean;
+};
+
+type NosanaKit = typeof import("@nosana/kit");
+
+const MIN_VAULT_SOL = 0.01;
+const MIN_VAULT_NOS = 30;
+const TOPUP_SOL_AMOUNT = 0.01;
+const TOPUP_NOS_AMOUNT = 30;
+const LAMPORTS_PER_SOL = 1_000_000_000;
+const POLL_INTERVAL_MS = 5_000;
+const DEPLOYMENT_STATUS_MAX_ATTEMPTS = 36;
+const INFERENCE_MAX_ATTEMPTS = 3;
+const SYSTEM_PROMPT = `You are the Effect Tasks AI worker.
+Process tasks promptly, and follow instructions precisely.`;
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const loadNosanaKit = async (): Promise<NosanaKit> => {
+  try {
+    return await import("@nosana/kit");
+  } catch (error) {
+    throw new Error(
+      'The Nosana worker backend requires optional dependency @nosana/kit. ' +
+	'Install optional dependencies before running `worker start nosana`.' +
+	`Cause: ${error}`,
+    );
+  }
+};
+
+const buildJobDefinition = ({ model, image }: NosanaBackendConfig): JobDefinition => ({
   version: "0.1",
   type: "container",
   ops: [
     {
       type: "container/run",
-      id: "gpt-oss:20b",
+      id: model,
       args: {
-        image: "docker.io/ollama/ollama:0.15.4",
+        image,
         expose: [
           {
             port: 11434,
@@ -56,32 +91,11 @@ const DEFAULT_JOB: JobDefinition = {
   },
   global: {
     variables: {
-      MODEL: "gpt-oss:20b",
+      MODEL: model,
     },
   },
-};
+});
 
-const DEFAULT_API_BACKEND_URL = "https://dashboard.k8s.prd.nos.ci";
-const MIN_VAULT_SOL = 0.01;
-const MIN_VAULT_NOS = 30;
-const TOPUP_SOL_AMOUNT = 0.01;
-const TOPUP_NOS_AMOUNT = 30;
-const LAMPORTS_PER_SOL = 1_000_000_000;
-const DEPLOYMENT_NAME = "effectai-ai-worker";
-const DEPLOYMENT_TIMEOUT_MINUTES = 60;
-const DEPLOYMENT_REPLICAS = 1;
-const POLL_INTERVAL_MS = 5_000;
-const POLL_MAX_ATTEMPTS = 36;
-const INFERENCE_MAX_ATTEMPTS = 3;
-const SYSTEM_PROMPT = "You are the Effect Tasks AI worker. Process tasks promptly, be helpful, and follow instructions with clarity.";
-const CHAT_PATH = "/api/chat";
-const MODEL_NAME = "gpt-oss:20b";
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * Extract the message content from an Ollama response payload.
- */
 const parseInferenceResponse = (data: unknown): string => {
   if (typeof data !== "object" || !data) {
     return "";
@@ -91,24 +105,22 @@ const parseInferenceResponse = (data: unknown): string => {
   return payload.message?.content ?? payload.response ?? "";
 };
 
-/**
- * Call the Ollama chat endpoint and return the response text, retrying on failure.
- * Uses the provided prompt as the user message in the chat request.
- */
 const runInference = async ({
   endpointUrl,
   logger,
   context,
   prompt,
+  model,
 }: {
   endpointUrl: string;
   logger: Logger;
   context: string;
   prompt: string;
+  model: string;
 }): Promise<string> => {
-  const url = `${endpointUrl}${CHAT_PATH}`;
+  const url = `${endpointUrl}/api/chat`;
   const body = {
-    model: MODEL_NAME,
+    model,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: prompt },
@@ -148,22 +160,25 @@ const runInference = async ({
   throw new Error("Inference did not succeed after retries");
 };
 
-/**
- * Create the Nosana backend, provisioning the deployment and wiring inference.
- * Tasks are executed by sending their prompt to the deployment endpoint.
- */
-export const createNosanaBackend = async (): Promise<AutomationBackend> => {
+export const createNosanaBackend = async (config: NosanaBackendConfig)
+  : Promise<AutomationBackend> => {
   const logger = state.logger;
-  const secretKey = state.privateKey?.raw;
+  const secretKey = state.solanaSecretKey;
   if (!secretKey) {
-    throw new Error("Private key not initialized in state");
+    throw new Error("Solana secret key not initialized in state");
   }
 
-  const wallet = await createKeyPairSignerFromBytes(secretKey);
+  const {
+    createNosanaClient,
+    NosanaNetwork,
+    DeploymentStatus,
+    createWalletFromBytes,
+  } = await loadNosanaKit();
+  const wallet = await createWalletFromBytes(secretKey);
 
   const client = createNosanaClient(NosanaNetwork.MAINNET, {
     wallet,
-    api: { backend_url: DEFAULT_API_BACKEND_URL },
+    api: { backend_url: config.apiBackendUrl },
   });
 
   let ready = false;
@@ -175,15 +190,33 @@ export const createNosanaBackend = async (): Promise<AutomationBackend> => {
     async init() {
       logger.info("Initializing Nosana backend");
 
-      const vault = await ensureVault({
-        client,
-        logger,
-      });
-
       const deployments = client.api.deployments as DeploymentsApi;
 
-      await clearDeployments({ deployments, logger });
-      const { deployment, endpointUrl } = await ensureDeployment({ deployments, vault, logger });
+      if (config.listDeploymentsOnly) {
+        await listRunningDeployments({ deployments, logger });
+        ready = true;
+        state.done = true;
+        return;
+      }
+
+      if (config.clearDeployments) {
+        await clearDeployments({ deployments, logger, DeploymentStatus });
+        ready = true;
+        logger.info("Cleared existing deployments; exiting.");
+        state.done = true;
+        return;
+      }
+
+      const vault = await ensureVault({ client, logger });
+      await clearDeployments({ deployments, logger, DeploymentStatus });
+
+      const { deployment, endpointUrl } = await ensureDeployment({
+        deployments,
+        vault,
+        logger,
+        config,
+        DeploymentStatus,
+      });
       cachedEndpointUrl = endpointUrl;
       state.deploymentEndpointUrl = endpointUrl;
 
@@ -199,37 +232,19 @@ export const createNosanaBackend = async (): Promise<AutomationBackend> => {
       }
 
       const prompt = [task.title, task.templateData].filter(Boolean).join("\n");
-      return runInference({ endpointUrl: cachedEndpointUrl, logger, context: `task:${task.id}`, prompt });
+      return runInference({
+        endpointUrl: cachedEndpointUrl,
+        logger,
+        context: `task:${task.id}`,
+        prompt,
+        model: config.model,
+      });
     },
   };
 
   return backend;
 };
 
-/**
- * Run a single inference against the active deployment endpoint.
- * Provide the prompt to send to the model.
- */
-export const runNosanaInference = async ({
-  logger,
-  endpointUrl,
-  context,
-  prompt,
-}: {
-  logger: Logger;
-  endpointUrl: string;
-  context: string;
-  prompt: string;
-}): Promise<string> => runInference({ endpointUrl, logger, context, prompt });
-
-/**
- * Ensure a Nosana vault exists and has a healthy balance.
- * - Reuse the first existing vault to avoid multiple vaults per signer.
- * - Create one if none exist.
- * - If balance is below thresholds, attempt a fixed top-up, but only if the wallet
- *   has enough SOL/NOS; otherwise, skip and continue (no throw), so callers can
- *   decide how to proceed.
- */
 const ensureVault = async ({ client, logger }: {
   client: NosanaClient;
   logger: Logger;
@@ -239,7 +254,10 @@ const ensureVault = async ({ client, logger }: {
   const vault = existing[0] ?? (await deployments.vaults.create());
 
   if (existing.length > 0) {
-    logger.info("Using existing Nosana vault", { vault: vault.address, totalVaults: existing.length });
+    logger.info(
+      "Using existing Nosana vault",
+      { vault: vault.address, totalVaults: existing.length }
+    );
   } else {
     logger.info("Created new Nosana vault", { vault: vault.address });
   }
@@ -252,7 +270,7 @@ const ensureVault = async ({ client, logger }: {
     logger.warn("Vault requires top-up", { vault: vault.address, balance });
 
     const walletSolLamports = await client.solana.getBalance();
-    const walletSol = walletSolLamports / LAMPORTS_PER_SOL;
+    const walletSol = Number(walletSolLamports) / LAMPORTS_PER_SOL;
     const walletNos = await client.nos.getBalance();
 
     if (walletSol < TOPUP_SOL_AMOUNT || walletNos < TOPUP_NOS_AMOUNT) {
@@ -261,7 +279,17 @@ const ensureVault = async ({ client, logger }: {
         required: { SOL: TOPUP_SOL_AMOUNT, NOS: TOPUP_NOS_AMOUNT },
         available: { SOL: walletSol, NOS: walletNos },
       });
-      return vault;
+      throw new Error(
+        [
+          "Nosana vault needs funding before the worker can start.",
+          `Vault: ${vault.address}`,
+          `Vault balance: ${balance.SOL} SOL, ${balance.NOS} NOS`,
+          'Required wallet balance for top-up: ' +
+	    `${TOPUP_SOL_AMOUNT} SOL, ${TOPUP_NOS_AMOUNT} NOS`,
+          `Available wallet balance: ${walletSol} SOL, ${walletNos} NOS`,
+          "Top up the worker wallet or vault and try again.",
+        ].join("\n"),
+      );
     }
 
     const topup: Record<string, number> = {};
@@ -270,12 +298,9 @@ const ensureVault = async ({ client, logger }: {
 
     try {
       await vault.topup(topup);
-      logger.info("Triggered vault top-up", {
-        vault: vault.address,
-        topup,
-      });
+      logger.info("Triggered vault top-up", { vault: vault.address, topup });
     } catch (error: unknown) {
-      logger.error("Vault top-up failed", { vault: vault.address, error});
+      logger.error("Vault top-up failed", { vault: vault.address, error });
     }
   } else {
     logger.info("Vault balance healthy", { vault: vault.address, balance });
@@ -284,14 +309,34 @@ const ensureVault = async ({ client, logger }: {
   return vault;
 };
 
-/**
- * Stop any running deployments before provisioning a new one.
- */
-const clearDeployments = async ({ deployments, logger }: {
+const listRunningDeployments = async ({ deployments, logger }: {
   deployments: DeploymentsApi;
   logger: Logger;
 }): Promise<void> => {
-  const all = await deployments.list();
+  const { deployments: all } = await deployments.list();
+  const running = all.filter((deployment) => deployment.status === "RUNNING");
+
+  logger.info("Running Nosana deployments", { count: running.length });
+  for (const deployment of running) {
+    console.log(JSON.stringify({
+      id: deployment.id,
+      name: deployment.name,
+      status: deployment.status,
+      vault: deployment.vault?.address,
+      market: deployment.market,
+      endpoints: deployment.endpoints,
+      created_at: deployment.created_at,
+      updated_at: deployment.updated_at,
+    }, null, 2));
+  }
+};
+
+const clearDeployments = async ({ deployments, logger, DeploymentStatus }: {
+  deployments: DeploymentsApi;
+  logger: Logger;
+  DeploymentStatus: NosanaKit["DeploymentStatus"];
+}): Promise<void> => {
+  const { deployments: all } = await deployments.list();
   if (all.length === 0) {
     logger.info("No existing deployments to stop");
     return;
@@ -303,7 +348,13 @@ const clearDeployments = async ({ deployments, logger }: {
       try {
         await d.stop();
         logger.info("Stop requested", { deploymentId: d.id });
-        await waitForStatus({ deployments, deploymentId: d.id, target: DeploymentStatus.STOPPED, logger });
+        await waitForStatus({
+	  deployments,
+	  deploymentId: d.id,
+	  target: DeploymentStatus.STOPPED,
+	  logger,
+	  DeploymentStatus
+	});
       } catch (error: unknown) {
         logger.error("Failed to stop deployment", { deploymentId: d.id, error });
       }
@@ -313,41 +364,48 @@ const clearDeployments = async ({ deployments, logger }: {
   }
 };
 
-/**
- * Create a fresh deployment using the configured vault and job definition.
- * - Always create new (cleanup logic only stops RUNNING ones elsewhere).
- * - Wait for RUNNING status, then poll the exposed Ollama endpoint (/api/tags) for HTTP 200
- *   before marking ready.
- */
-/**
- * Create and start a deployment, waiting for RUNNING status and endpoint health.
- */
-const ensureDeployment = async ({ deployments, vault, logger }: {
+const ensureDeployment = async ({ deployments, vault, logger, config, DeploymentStatus }: {
   deployments: DeploymentsApi;
   vault: Vault;
   logger: Logger;
+  config: NosanaBackendConfig;
+  DeploymentStatus: NosanaKit["DeploymentStatus"];
 }): Promise<{ deployment: Deployment; endpointUrl: string }> => {
   const deployment = await deployments.create({
-    name: DEPLOYMENT_NAME,
-    market: DEFAULT_MARKET,
-    replicas: DEPLOYMENT_REPLICAS,
-    timeout: DEPLOYMENT_TIMEOUT_MINUTES,
+    name: config.deploymentName,
+    market: config.market,
+    replicas: config.replicas,
+    timeout: config.timeoutMinutes,
     strategy: "INFINITE",
     vault: vault.address,
-    job_definition: DEFAULT_JOB,
+    job_definition: buildJobDefinition(config),
   });
 
-  logger.info("Created deployment", { deploymentId: deployment.id, status: deployment.status });
+  logger.info(
+    "Created deployment",
+    { deploymentId: deployment.id, status: deployment.status }
+  );
 
   await deployment.start();
   logger.info("Start requested", { deploymentId: deployment.id });
 
-  const healthy = await waitForStatus({ deployments, deploymentId: deployment.id, target: DeploymentStatus.RUNNING, logger });
+  const healthy = await waitForStatus({
+    deployments,
+    deploymentId: deployment.id,
+    target: DeploymentStatus.RUNNING,
+    logger,
+    DeploymentStatus
+  });
   if (!healthy) {
     throw new Error("Deployment did not reach RUNNING state in time");
   }
 
-  const endpointUrl = await waitForEndpointHealthy({ deployments, deploymentId: deployment.id, logger });
+  const endpointUrl = await waitForEndpointHealthy({
+    deployments,
+    deploymentId: deployment.id,
+    logger,
+    timeoutSeconds: config.endpointTimeoutSeconds,
+  });
   if (!endpointUrl) {
     throw new Error("Deployment endpoint did not become healthy in time");
   }
@@ -355,26 +413,34 @@ const ensureDeployment = async ({ deployments, vault, logger }: {
   return { deployment, endpointUrl };
 };
 
-/**
- * Poll deployment status until it reaches the target state.
- */
-const waitForStatus = async ({ deployments, deploymentId, target, logger }: {
+const waitForStatus = async ({
+  deployments,
+  deploymentId,
+  target,
+  logger,
+  DeploymentStatus
+}: {
   deployments: DeploymentsApi;
   deploymentId: string;
-  target: DeploymentStatus;
+  target: string;
   logger: Logger;
+  DeploymentStatus: NosanaKit["DeploymentStatus"];
 }): Promise<boolean> => {
-  for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt += 1) {
+  for (let attempt = 0; attempt < DEPLOYMENT_STATUS_MAX_ATTEMPTS; attempt += 1) {
     const fresh = await deployments.get(deploymentId);
 
-    logger.info("Deployment status", { deploymentId: deploymentId, status: fresh.status, attempt });
+    logger.info("Deployment status", { deploymentId, status: fresh.status, attempt });
 
     if (fresh.status === target) {
       return true;
     }
 
-    if (fresh.status === DeploymentStatus.ERROR || fresh.status === DeploymentStatus.INSUFFICIENT_FUNDS) {
-      logger.error("Deployment entered error state", { deploymentId: deploymentId, status: fresh.status });
+    if (fresh.status === DeploymentStatus.ERROR ||
+      fresh.status === DeploymentStatus.INSUFFICIENT_FUNDS) {
+      logger.error(
+	"Deployment entered error state",
+	{ deploymentId, status: fresh.status }
+      );
       return false;
     }
 
@@ -384,15 +450,19 @@ const waitForStatus = async ({ deployments, deploymentId, target, logger }: {
   return false;
 };
 
-/**
- * Poll the deployment endpoint until the Ollama health check passes.
- */
-const waitForEndpointHealthy = async ({ deployments, deploymentId, logger }: {
+const waitForEndpointHealthy = async ({
+  deployments,
+  deploymentId,
+  logger,
+  timeoutSeconds
+}: {
   deployments: DeploymentsApi;
   deploymentId: string;
   logger: Logger;
+  timeoutSeconds: number;
 }): Promise<string | null> => {
-  for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt += 1) {
+  const maxAttempts = Math.max(1, Math.ceil((timeoutSeconds * 1000) / POLL_INTERVAL_MS));
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const fresh = await deployments.get(deploymentId);
     const endpoint = fresh.endpoints?.[0];
 
