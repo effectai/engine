@@ -71,6 +71,25 @@ startCommand
       process.exit(1);
     }
 
+    let shuttingDown = false;
+
+    process.on("SIGINT", () => {
+      if (shuttingDown) {
+        process.exit(0);
+      }
+      shuttingDown = true;
+      state.logger.info("Shutting down...");
+      state.done = true;
+      state.backend?.cleanup?.()?.catch(() => {});
+    });
+    process.on("SIGTERM", () => {
+      if (shuttingDown) return;
+      shuttingDown = true;
+      state.logger.info("Shutting down...");
+      state.done = true;
+      state.backend?.cleanup?.()?.catch(() => {});
+    });
+
     try {
       const secretKey = loadSecretKey(opts.keypair);
       state.solanaSecretKey = secretKey;

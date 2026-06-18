@@ -183,6 +183,8 @@ export const createNosanaBackend = async (config: NosanaBackendConfig)
 
   let ready = false;
   let cachedEndpointUrl: string | undefined;
+  let deployments: DeploymentsApi | undefined;
+  let createdDeploymentId: string | undefined;
 
   const backend: AutomationBackend = {
     id: "nosana-ai-worker",
@@ -190,7 +192,7 @@ export const createNosanaBackend = async (config: NosanaBackendConfig)
     async init() {
       logger.info("Initializing Nosana backend");
 
-      const deployments = client.api.deployments as DeploymentsApi;
+      deployments = client.api.deployments as DeploymentsApi;
 
       if (config.listDeploymentsOnly) {
         await listRunningDeployments({ deployments, logger });
@@ -219,6 +221,7 @@ export const createNosanaBackend = async (config: NosanaBackendConfig)
       });
       cachedEndpointUrl = endpointUrl;
       state.deploymentEndpointUrl = endpointUrl;
+      createdDeploymentId = deployment.id;
 
       ready = true;
       logger.info("Nosana backend ready", {
@@ -241,6 +244,18 @@ export const createNosanaBackend = async (config: NosanaBackendConfig)
         prompt,
         model: config.model,
       });
+    },
+    async cleanup() {
+      if (!deployments || !createdDeploymentId) return;
+
+      logger.info("Stopping deployment", { deploymentId: createdDeploymentId });
+      try {
+        const d = await deployments.get(createdDeploymentId);
+        await d.stop();
+        logger.info("Deployment stopped", { deploymentId: createdDeploymentId });
+      } catch (error: unknown) {
+        logger.error("Failed to stop deployment", { deploymentId: createdDeploymentId, error });
+      }
     },
   };
 
@@ -361,7 +376,7 @@ const clearDeployments = async ({ deployments, logger, DeploymentStatus }: {
         logger.error("Failed to stop deployment", { deploymentId: d.id, error });
       }
     } else {
-      logger.info("Skipping deployment (not running)", { deploymentId: d.id, status: d.status });
+      logger.debug("Skipping deployment (not running)", { deploymentId: d.id, status: d.status });
     }
   }
 };
@@ -431,7 +446,7 @@ const waitForStatus = async ({
   for (let attempt = 0; attempt < DEPLOYMENT_STATUS_MAX_ATTEMPTS; attempt += 1) {
     const fresh = await deployments.get(deploymentId);
 
-    logger.info("Deployment status", { deploymentId, status: fresh.status, attempt });
+    logger.debug("Deployment status", { deploymentId, status: fresh.status, attempt });
 
     if (fresh.status === target) {
       return true;
@@ -464,30 +479,35 @@ const waitForEndpointHealthy = async ({
   timeoutSeconds: number;
 }): Promise<string | null> => {
   const maxAttempts = Math.max(1, Math.ceil((timeoutSeconds * 1000) / POLL_INTERVAL_MS));
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const fresh = await deployments.get(deploymentId);
-    const endpoint = fresh.endpoints?.[0];
+  let endpointUrl: string | undefined;
 
-    if (!endpoint?.url) {
-      logger.warn("No endpoint yet", { deploymentId, attempt });
-      await delay(POLL_INTERVAL_MS);
-      continue;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (!endpointUrl) {
+      const fresh = await deployments.get(deploymentId);
+      endpointUrl = fresh.endpoints?.[0]?.url;
+      if (!endpointUrl) {
+        await delay(POLL_INTERVAL_MS);
+        continue;
+      }
+      logger.info(`Waiting for endpoint ${endpointUrl}`);
     }
 
-    const url = `${endpoint.url}/api/tags`;
+    const url = `${endpointUrl}/api/tags`;
     try {
       const res = await fetch(url, { method: "GET", redirect: "manual" });
       if (res.status === 200) {
-        logger.info("Endpoint healthy", { deploymentId, url, status: res.status });
-        return endpoint.url;
+        process.stdout.write("\n");
+        logger.info("Endpoint healthy");
+        return endpointUrl;
       }
-      logger.warn("Endpoint not ready", { deploymentId, url, status: res.status });
-    } catch (error: unknown) {
-      logger.warn("Endpoint check failed", { deploymentId, url, error });
+    } catch {
+      // ignore
     }
 
+    process.stdout.write(".");
     await delay(POLL_INTERVAL_MS);
   }
 
+  logger.error("Endpoint did not become healthy", { deploymentId, url: endpointUrl });
   return null;
 };

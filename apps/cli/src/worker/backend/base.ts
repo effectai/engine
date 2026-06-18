@@ -8,4 +8,5 @@ export interface AutomationBackend {
   isReady(): boolean;
   init(): Promise<void>;
   execute(task: Task, template?: string): Promise<TaskResult>;
+  cleanup?(): Promise<void>;
 }
