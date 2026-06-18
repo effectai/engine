@@ -320,7 +320,7 @@ const ensureVault = async ({ client, logger }: {
       logger.error("Vault top-up failed", { vault: vault.address, error });
     }
   } else {
-    logger.info("Vault balance healthy", { vault: vault.address, balance });
+    logger.info(`Vault balance healthy: ${balance.SOL} SOL, ${balance.NOS} NOS`);
   }
 
   return vault;
