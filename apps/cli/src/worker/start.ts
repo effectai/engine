@@ -5,6 +5,7 @@ import { generateKeyPairFromSeed } from "@effectai/protocol";
 import { createNosanaBackend } from "./backend/nosana.js";
 import { startWorker, stopWorker } from "./runtime.js";
 import { state } from "./state.js";
+import { createConsoleLogger } from "./logger.js";
 
 const DEFAULT_MANAGER = "/ip4/127.0.0.1/tcp/11995/ws/p2p/12D3KooWAQH4SQHt12N2eGnAUR4iixS8TAfKxRqfd17sDurZ1v5R";
 const DEFAULT_CAPABILITY = "effectai/qwen3.2-ai-worker";
@@ -72,6 +73,10 @@ startCommand
     }
 
     let shuttingDown = false;
+
+    if (opts.verbose) {
+      state.logger = createConsoleLogger("worker", "debug");
+    }
 
     process.on("SIGINT", () => {
       if (shuttingDown) {

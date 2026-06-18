@@ -12,7 +12,8 @@ effectCLI
   .version("0.1.0")
   .option("-k, --keypair <path>", "Path to JSON key file.")
   .option("-s, --solana-rpc <url>", "Solana RPC node.",
-    "https://api.mainnet.solana.com");
+    "https://api.mainnet.solana.com")
+  .option("-v, --verbose", "Enable debug logging", false);
 
 effectCLI.addCommand(statusProgram);
 effectCLI.addCommand(managerProgram);
