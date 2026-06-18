@@ -13,7 +13,17 @@ const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 const processTask = async (task: Task): Promise<boolean> => {
   try {
-    const result = await state.backend?.execute(task);
+    let template: string | undefined;
+    try {
+      const taskRecord = await state.worker?.getTask({ taskId: task.id });
+      if (taskRecord) {
+        template = await state.worker?.renderTask({ taskRecord });
+      }
+    } catch {
+      // template fetch is optional; proceed without it
+    }
+
+    const result = await state.backend?.execute(task, template);
     await state.worker?.completeTask({
       taskId: task.id,
       result: String(result ?? ""),

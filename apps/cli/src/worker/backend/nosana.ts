@@ -226,12 +226,14 @@ export const createNosanaBackend = async (config: NosanaBackendConfig)
         status: deployment.status,
       });
     },
-    async execute(task: Task) {
+    async execute(task: Task, template?: string) {
       if (!cachedEndpointUrl) {
         throw new Error("Deployment endpoint not ready for inference");
       }
 
-      const prompt = [task.title, task.templateData].filter(Boolean).join("\n");
+      const prompt = [task.title, task.templateData, template]
+        .filter(Boolean)
+        .join("\n");
       return runInference({
         endpointUrl: cachedEndpointUrl,
         logger,

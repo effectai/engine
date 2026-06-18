@@ -7,5 +7,5 @@ export interface AutomationBackend {
   id: string;
   isReady(): boolean;
   init(): Promise<void>;
-  execute(task: Task): Promise<TaskResult>;
+  execute(task: Task, template?: string): Promise<TaskResult>;
 }
