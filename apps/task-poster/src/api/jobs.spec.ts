@@ -15,6 +15,7 @@ const baseJob = (overrides: Partial<Job> = {}): Job => ({
   consumedLamports: "0",
   refundedLamports: "0",
   status: "active",
+  uniqueWorker: false,
   createdAt: 0,
   ...overrides,
 });

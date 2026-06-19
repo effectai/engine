@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Effect AI — API Console</title>
+<title>Effect AI · API Console</title>
 <style>
   :root { --bg:#0f1115; --card:#171a21; --line:#272b34; --fg:#e6e6e6; --muted:#9aa0ac; --accent:#8ec07c; --warn:#e6a153; --danger:#e06c75; }
   * { box-sizing: border-box; }
@@ -37,6 +37,9 @@
   pre { background:#0e1014; border:1px solid var(--line); border-radius:8px; padding:.7rem; overflow:auto; font-size:.8rem; max-height:340px; }
   a { color:var(--accent); }
   .hide { display:none; }
+  /* Overlay layout lives here (not inline) so the .hide class can override it;
+     an inline display would beat the class and the overlay could never hide. */
+  #tpl-preview:not(.hide) { display:flex; }
 </style>
 </head>
 <body>
@@ -47,6 +50,44 @@
   <span id="who" class="muted">not connected</span>
   <a href="/api/docs" target="_blank" style="margin-left:auto">API docs ↗</a>
 </header>
+
+<section id="signup-section" style="max-width:980px;margin:1.25rem auto 0;padding:0 1rem">
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.9rem">
+      <div style="width:2.2rem;height:2.2rem;border-radius:8px;background:rgba(142,192,124,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem">🔑</div>
+      <div>
+        <div style="font-weight:600">Don't have an API key yet?</div>
+        <div style="font-size:.83rem;color:var(--muted)">Sign up below and your key is shown instantly. Join our Discord to request credits.</div>
+      </div>
+    </div>
+
+    <!-- Signup form (shown by default) -->
+    <div id="signup-form">
+      <div class="row" style="gap:.5rem">
+        <input id="signup-name" placeholder="Your name or project" class="grow" style="margin:0" />
+        <input id="signup-email" placeholder="Email (optional)" class="grow" style="margin:0" />
+        <button id="signup-btn" style="flex-shrink:0">Get API Key</button>
+      </div>
+      <div id="signup-msg" style="margin-top:.5rem"></div>
+    </div>
+
+    <!-- Key reveal (hidden until signup succeeds) -->
+    <div id="signup-reveal" class="hide">
+      <div style="margin-bottom:.5rem;font-size:.85rem;color:var(--warn)">⚠ Copy your key now; it won't be shown again.</div>
+      <div class="row" style="gap:.5rem">
+        <code id="signup-key" class="grow" style="background:#0e1014;border:1px solid var(--line);border-radius:8px;padding:.5rem .7rem;word-break:break-all;font-size:.82rem;display:block"></code>
+        <button id="signup-copy" class="ghost" style="flex-shrink:0">Copy</button>
+      </div>
+      <div style="margin-top:.75rem;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+        <span style="font-size:.85rem;color:var(--muted)">Paste the key in the header above to connect, then join Discord to top up your credits:</span>
+        <a href="https://discord.gg/PLACEHOLDER" target="_blank" rel="noopener"
+           style="background:var(--accent);color:#0e1014;border-radius:8px;padding:.4rem .8rem;font-weight:600;text-decoration:none;font-size:.85rem;white-space:nowrap">
+          Join Discord ↗
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
 
 <main id="app" class="hide">
   <!-- Templates -->
@@ -71,8 +112,8 @@
     <div class="row">
       <div><label>Type</label>
         <select id="job-type">
-          <option value="csv">CSV — 1 row = 1 task</option>
-          <option value="constant">Constant — survey (same data to N workers)</option>
+          <option value="csv">CSV: 1 row = 1 task</option>
+          <option value="constant">Constant: survey (same data to N workers)</option>
         </select></div>
       <div class="grow"><label>Template</label><select id="job-tpl"></select></div>
       <div><label>Reward / task (EFFECT)</label><input id="job-reward" style="width:9rem" value="0.5" /></div>
@@ -81,18 +122,19 @@
 
     <!-- CSV mode: one task per row -->
     <div id="job-csv-mode">
-      <label>CSV — first row is the header; one row = one task <span id="job-fields" class="muted"></span></label>
+      <label>CSV: first row is the header; one row = one task <span id="job-fields" class="muted"></span></label>
       <textarea id="job-csv" rows="7" placeholder="product,question&#10;Widget,Good?&#10;Gadget,Good?"></textarea>
     </div>
 
     <!-- Constant mode: the same data sent to up to "max tasks" workers -->
     <div id="job-constant-mode" class="hide">
       <div class="row">
-        <div class="grow"><label>Data — a JSON object whose keys match the template fields <span id="job-fields-const" class="muted"></span></label>
+        <div class="grow"><label>Data: a JSON object whose keys match the template fields <span id="job-fields-const" class="muted"></span></label>
           <textarea id="job-data" rows="5" placeholder='{"product":"Widget","question":"Good?"}'></textarea></div>
         <div><label>Workers (max tasks)</label><input id="job-maxtasks" style="width:9rem" value="100" /></div>
       </div>
     </div>
+    <label class="row" style="gap:.4rem;margin-top:.6rem"><input id="job-unique" type="checkbox" style="width:auto" /> Each worker may complete at most one task in this job (no repeats)</label>
     <div class="row" style="margin-top:.6rem">
       <button id="job-estimate" class="ghost">Estimate cost</button>
       <button id="job-create">Create job</button>
@@ -113,6 +155,23 @@
     </div>
   </section>
 </main>
+
+<!-- Full-page template preview. Templates may be untrusted, so the iframe runs
+     scripts in a hardened sandbox WITHOUT allow-same-origin (matches the admin
+     review page): the frame gets an opaque origin and can't reach this page. -->
+<div id="tpl-preview" class="hide" style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.72);flex-direction:column">
+  <div style="background:#12141a;border-bottom:1px solid var(--line);padding:.6rem 1rem;display:flex;gap:.6rem;align-items:center">
+    <strong id="tpl-preview-title" class="grow">Template preview</strong>
+    <span id="tpl-preview-trust"></span>
+    <button id="tpl-preview-close" class="ghost">Close</button>
+  </div>
+  <div id="tpl-preview-note" class="hide" style="background:rgba(230,161,83,.14);color:var(--warn);padding:.45rem 1rem;font-size:.83rem">
+    ⚠ Unapproved template. Scripts run in a hardened sandbox; review it carefully before posting a job.
+  </div>
+  <iframe id="tpl-preview-frame" title="Template preview"
+    sandbox="allow-scripts allow-modals allow-forms allow-popups allow-pointer-lock"
+    style="flex:1 1 auto;width:100%;border:0;background:#fff"></iframe>
+</div>
 
 <script>
 const KEY_STORE = "effect_api_key";
@@ -145,6 +204,7 @@ async function connect() {
     const acct = await api("/account");
     $("who").innerHTML = `<span class="pill ok">${esc(acct.name)}</span> · ${esc(acct.credits.balance / 1e6)} EFFECT`;
     $("app").classList.remove("hide");
+    $("signup-section").classList.add("hide");
     await Promise.all([loadTemplates(), loadJobs()]);
   } catch (e) {
     $("who").innerHTML = `<span class="pill warn">${esc(e.message)}</span>`;
@@ -152,15 +212,38 @@ async function connect() {
   }
 }
 
+async function signup() {
+  const name = $("signup-name").value.trim();
+  if (!name) { showMsg($("signup-msg"), "Name is required.", "err"); return; }
+  $("signup-btn").disabled = true;
+  try {
+    const res = await fetch("/api/v1/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email: $("signup-email").value.trim() || undefined }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error((data.error && data.error.message) || res.statusText);
+    $("signup-key").textContent = data.key;
+    $("key").value = data.key;
+    $("signup-form").classList.add("hide");
+    $("signup-reveal").classList.remove("hide");
+  } catch (e) {
+    showMsg($("signup-msg"), e.message, "err");
+    $("signup-btn").disabled = false;
+  }
+}
+
 async function loadTemplates() {
   const { templates: list } = await api("/templates");
   templates = list;
   $("tpl-list").innerHTML = list.length
-    ? `<table><tr><th>Name</th><th>Fields</th><th>Trust</th><th>ID</th></tr>` +
-      list.map((t) => `<tr><td>${esc(t.name)}</td><td class="mono">${esc((t.fields||[]).join(", ")||"—")}</td>
-        <td>${t.approved ? '<span class="pill ok">approved</span>' : '<span class="pill warn">unapproved</span>'}</td>
-        <td class="mono muted">${short(t.templateId)}</td></tr>`).join("") + `</table>`
-    : `<span class="muted">No templates yet — submit one below.</span>`;
+    ? `<table><tr><th>Name</th><th>Fields</th><th>Trust</th><th>ID</th><th></th></tr>` +
+      list.map((template) => `<tr><td>${esc(template.name)}</td><td class="mono">${esc((template.fields||[]).join(", ")||"none")}</td>
+        <td>${template.approved ? '<span class="pill ok">approved</span>' : '<span class="pill warn">unapproved</span>'}</td>
+        <td class="mono muted">${short(template.templateId)}</td>
+        <td><button class="ghost" data-preview="${esc(template.templateId)}" style="padding:.2rem .5rem">Preview</button></td></tr>`).join("") + `</table>`
+    : `<span class="muted">No templates yet. Submit one below.</span>`;
   $("job-tpl").innerHTML = list.map((t) => `<option value="${t.templateId}">${esc(t.name)} ${t.approved ? "✓" : "⚠"}</option>`).join("");
   showFields();
 }
@@ -168,8 +251,8 @@ async function loadTemplates() {
 function showFields() {
   const template = templates.find((entry) => entry.templateId === $("job-tpl").value);
   const fieldList = template && template.fields.length ? template.fields.join(", ") : "";
-  $("job-fields").textContent = fieldList ? `— needs columns: ${fieldList}` : "";
-  $("job-fields-const").textContent = fieldList ? `— keys: ${fieldList}` : "";
+  $("job-fields").textContent = fieldList ? `(needs columns: ${fieldList})` : "";
+  $("job-fields-const").textContent = fieldList ? `(keys: ${fieldList})` : "";
 }
 
 function onTypeChange() {
@@ -200,7 +283,7 @@ function parseConstantData() {
 
 function jobBody() {
   const type = $("job-type").value;
-  const base = { type, name: $("job-name").value || "Untitled job", templateId: $("job-tpl").value, reward: $("job-reward").value };
+  const base = { type, name: $("job-name").value || "Untitled job", templateId: $("job-tpl").value, reward: $("job-reward").value, uniqueWorker: $("job-unique").checked };
   if (type === "constant") {
     return { ...base, data: parseConstantData(), maxTasks: Number($("job-maxtasks").value) };
   }
@@ -237,7 +320,7 @@ async function loadJobs() {
           : outstanding === 0
             ? '<span class="pill ok">done</span>'
             : '<span class="pill ok">active</span>';
-        // Cancel only stops queued tasks + refunds them — pointless once nothing is outstanding.
+        // Cancel only stops queued tasks and refunds them, so it is pointless once nothing is outstanding.
         const canCancel = j.status === "active" && outstanding > 0;
         return `<tr>
         <td>${esc(j.name)}</td>
@@ -249,7 +332,35 @@ async function loadJobs() {
           ${canCancel ? `<button class="danger" data-cancel="${j.id}" style="padding:.2rem .5rem">Cancel</button>` : ""}
         </td></tr>`;
       }).join("") + `</table>`
-    : `<span class="muted">No jobs yet — create one above.</span>`;
+    : `<span class="muted">No jobs yet. Create one above.</span>`;
+}
+
+// Full-page template preview, rendered in a sandboxed iframe via the API
+// (the only way to send the Bearer key; a new tab could not authenticate).
+async function previewTemplate(templateId) {
+  const frame = $("tpl-preview-frame");
+  $("tpl-preview").classList.remove("hide");
+  $("tpl-preview-title").textContent = "Loading preview…";
+  $("tpl-preview-trust").innerHTML = "";
+  $("tpl-preview-note").classList.add("hide");
+  frame.srcdoc = "";
+  try {
+    const preview = await api(`/templates/${templateId}/preview`);
+    $("tpl-preview-title").textContent = preview.name || "Template preview";
+    $("tpl-preview-trust").innerHTML = preview.approved
+      ? `<span class="pill ok">approved</span>`
+      : `<span class="pill warn">unapproved</span>`;
+    $("tpl-preview-note").classList.toggle("hide", preview.approved);
+    frame.srcdoc = preview.html;
+  } catch (err) {
+    $("tpl-preview-title").textContent = "Preview failed";
+    frame.srcdoc = `<p style="font:14px/1.5 system-ui,sans-serif;padding:1rem;color:#b00020">${esc(err.message)}</p>`;
+  }
+}
+
+function closePreview() {
+  $("tpl-preview").classList.add("hide");
+  $("tpl-preview-frame").srcdoc = "";
 }
 
 async function viewResults(id, name) {
@@ -280,6 +391,14 @@ async function cancelJob(id) {
 // wiring
 $("connect").onclick = connect;
 $("key").addEventListener("keydown", (e) => { if (e.key === "Enter") connect(); });
+$("signup-btn").onclick = signup;
+$("signup-name").addEventListener("keydown", (e) => { if (e.key === "Enter") signup(); });
+$("signup-copy").onclick = () => {
+  navigator.clipboard.writeText($("signup-key").textContent).then(() => {
+    $("signup-copy").textContent = "Copied!";
+    setTimeout(() => { $("signup-copy").textContent = "Copy"; }, 2000);
+  });
+};
 $("tpl-submit").onclick = submitTemplate;
 $("job-tpl").onchange = showFields;
 $("job-type").onchange = onTypeChange;
@@ -292,8 +411,15 @@ $("jobs-list").addEventListener("click", (e) => {
   if (e.target.dataset.results) viewResults(e.target.dataset.results, e.target.dataset.name);
   if (e.target.dataset.cancel) cancelJob(e.target.dataset.cancel);
 });
+$("tpl-list").addEventListener("click", (event) => {
+  if (event.target.dataset.preview) previewTemplate(event.target.dataset.preview);
+});
+$("tpl-preview-close").onclick = closePreview;
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !$("tpl-preview").classList.contains("hide")) closePreview();
+});
 
-if (apiKey) { $("key").value = apiKey; connect(); }
+if (apiKey) { $("key").value = apiKey; $("signup-section").classList.add("hide"); connect(); }
 </script>
 </body>
 </html>

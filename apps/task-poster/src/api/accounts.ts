@@ -17,6 +17,7 @@ export type AccountStatus = "active" | "suspended";
 export type Account = {
   id: string;
   name: string;
+  email?: string;
   status: AccountStatus;
   createdAt: number;
 };
@@ -46,15 +47,45 @@ const displayPrefix = (rawKey: string): string =>
 
 // ---------------------------------------------------------------- accounts
 
-export const createAccount = async (name: string): Promise<Account> => {
+export const createAccount = async (
+  name: string,
+  email?: string,
+): Promise<Account> => {
   const account: Account = {
     id: ulid(),
     name: name.trim(),
+    email: email?.trim() || undefined,
     status: "active",
     createdAt: Date.now(),
   };
   await db.set<Account>(["account", account.id], account);
   return account;
+};
+
+/** Creates an account and issues its first key in one step (used by self-service signup). */
+export const createAccountWithKey = async (
+  name: string,
+  email?: string,
+): Promise<{ account: Account; key: string }> => {
+  const account = await createAccount(name, email);
+  const { key } = await issueApiKey(account.id);
+  return { account, key };
+};
+
+// Tight rate limit for the public signup endpoint: 3 accounts per IP per 24 h.
+const SIGNUP_RATE_MAX = 3;
+const SIGNUP_RATE_WINDOW_MS = 86_400_000;
+const signupBuckets = new Map<string, { count: number; resetAt: number }>();
+
+export const checkSignupRateLimit = (ip: string): boolean => {
+  const now = Date.now();
+  let bucket = signupBuckets.get(ip);
+  if (!bucket || bucket.resetAt <= now) {
+    bucket = { count: 0, resetAt: now + SIGNUP_RATE_WINDOW_MS };
+    signupBuckets.set(ip, bucket);
+  }
+  bucket.count += 1;
+  return bucket.count <= SIGNUP_RATE_MAX;
 };
 
 export const getAccount = async (id: string): Promise<Account | null> => {

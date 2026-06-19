@@ -26,7 +26,7 @@ import {
 } from "../templates.js";
 
 /**
- * Team-only admin UI for the Requestor API (cookie auth, HTMX — matches the
+ * Team-only admin UI for the Requestor API (cookie auth, HTMX, matching the
  * rest of the task-poster). Lets the team create accounts, issue API keys,
  * and manually top up credit balances until on-chain buying exists.
  */
@@ -62,7 +62,7 @@ const accountCard = (
         hx-confirm="Delete account &quot;${escapeHTML(account.name)}&quot;? This permanently removes its API keys, credit balance and jobs (any running tasks are stopped). This cannot be undone.">Delete</button>
     </span>
   </div>
-  <small style="opacity:0.7">${account.id}</small>
+  <small style="opacity:0.7">${account.id}${account.email ? ` · ${escapeHTML(account.email)}` : ""}</small>
 
   <p style="margin:0.5rem 0"><strong>${lamportsToEffect(balance)} EFFECT</strong>
     <small>(${balance.toString()} lamports)</small></p>
@@ -204,7 +204,7 @@ const formatTimestamp = (ts: number): string =>
     timeStyle: "short",
   });
 
-// List card — metadata only, no inline preview. The actual (untrusted) template
+// List card: metadata only, no inline preview. The actual (untrusted) template
 // is rendered on its own full-screen review page, reached via "Review".
 const pendingTemplateCard = async (tpl: TemplateRecord): Promise<string> => {
   const owner = tpl.ownerId ? await getAccount(tpl.ownerId) : null;
@@ -298,7 +298,7 @@ ${templatePagerScript}`;
 
 // Full-screen review of a single template, rendered the way a worker sees it.
 // These templates are UNTRUSTED, so the iframe runs scripts in a hardened
-// sandbox WITHOUT `allow-same-origin` — the frame gets an opaque origin and
+// sandbox WITHOUT `allow-same-origin`: the frame gets an opaque origin and
 // cannot read the admin's cookies/session or touch the parent document (the
 // worker platform isolates the same content on a cross-origin proxy iframe,
 // see apps/worker-app/app/components/TaskTemplate.vue).
@@ -335,7 +335,7 @@ const renderTemplateReviewPage = async (
   }</small></p>
 
   <div style="margin:0.5rem 0;background:rgba(230,161,83,0.12);border:1px solid #e6a153;border-radius:8px;padding:0.5rem 0.75rem">
-    <small>⚠ Untrusted template — scripts run in a hardened sandbox (no same-origin access). Review the layout and behaviour carefully before approving.</small>
+    <small>⚠ Untrusted template. Scripts run in a hardened sandbox (no same-origin access). Review the layout and behaviour carefully before approving.</small>
   </div>
 
   <iframe sandbox="allow-scripts allow-modals allow-forms allow-popups allow-pointer-lock"
@@ -393,10 +393,10 @@ export const addAdminRoutes = (app: Express): void => {
     if (!account) return make404(res);
 
     const { key } = await issueApiKey(account.id);
-    // Shown ONCE — there is no way to recover it later.
+    // Shown ONCE; there is no way to recover it later.
     res.send(`
 <div class="box" style="border:1px solid var(--accent);margin-top:0.5rem">
-  <strong>New API key — copy it now, it won't be shown again:</strong>
+  <strong>New API key. Copy it now, it won't be shown again:</strong>
   <p><code style="word-break:break-all">${escapeHTML(key)}</code></p>
 </div>`);
   });

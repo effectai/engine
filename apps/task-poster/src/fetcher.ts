@@ -84,6 +84,12 @@ export type Fetcher = {
   // repetitions: how many tasks a single worker may complete from each import
   // 0 means no limit, 1 means each worker may do one task.
   repetitions?: number;
+
+  // Stable batch id override. Normally each import gets a fresh batch id, so the
+  // per-worker `repetitions` cap resets per import. Setting this pins one batch
+  // id across every import of this fetcher, making the cap apply for the whole
+  // run (used by unique-worker jobs, where a survey is filled in many batches).
+  batchId?: string;
 };
 
 const api = axios.create({
@@ -630,16 +636,15 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
   // avoid expensive mistakes.
   const maxPrice = BigInt(fetcher.price) * BigInt(10);
 
-<<<<<<< HEAD
   // Trust signal for the worker: whether this task's template is approved.
   // Baked into each task's data (reserved __effectApproved key) so the worker
   // can show a safety badge without a protocol/schema change. Defaults to safe
   // for team/legacy templates.
   const approvalTpl = await getTemplate(fetcher.template);
   const templateApproved = approvalTpl ? isTemplateApproved(approvalTpl.data) : true;
-=======
-  const batchRunId = ulid();
->>>>>>> 574e805168422c9d1f9ebeae5d232633ad7bab95
+  // A pinned batchId keeps the per-worker repetition cap stable across imports
+  // (see Fetcher.batchId); otherwise each import is its own batch.
+  const batchRunId = fetcher.batchId ?? ulid();
 
   const tasks = data.map(
     (d, _idx) => {

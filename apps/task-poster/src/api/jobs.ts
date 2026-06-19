@@ -64,6 +64,10 @@ export type Job = {
   consumedLamports: string;
   refundedLamports: string;
   status: JobStatus;
+  // When true, each worker may complete at most one task in this job (no
+  // repeats). Enforced by the manager via a per-worker, per-batch cap; the
+  // job pins a stable batch id so the cap spans the whole job.
+  uniqueWorker: boolean;
   createdAt: number;
 };
 
@@ -177,6 +181,7 @@ type JobAnalysis =
       templateId: string;
       capability: string;
       timeLimitSeconds: number;
+      uniqueWorker: boolean;
       rewardLamports: bigint;
       taskCount: number;
       cost: bigint;
@@ -201,6 +206,8 @@ const analyzeJob = async (
   const capability = String(body.capability ?? "");
   const timeLimitSeconds =
     Number(body.timeLimitSeconds) || DEFAULT_TIME_LIMIT_SECONDS;
+  const uniqueWorker =
+    body.uniqueWorker === true || body.uniqueWorker === "true";
 
   if (!templateId)
     return fail(400, "invalid_request", "'templateId' is required.");
@@ -313,6 +320,7 @@ const analyzeJob = async (
     templateId,
     capability,
     timeLimitSeconds,
+    uniqueWorker,
     rewardLamports,
     taskCount,
     cost,
@@ -365,6 +373,7 @@ const jobView = (job: Job, counts: TaskCounts) => {
     templateId: job.templateId,
     reward: lamportsToEffect(BigInt(job.rewardLamports)),
     taskCount: job.taskCount,
+    uniqueWorker: job.uniqueWorker,
     createdAt: job.createdAt,
     tasks: counts,
     credits: {
@@ -452,7 +461,17 @@ export const addJobApiRoutes = (app: Express): void => {
           frequency: DEFAULT_FREQUENCY_SECONDS,
           batchSize: DEFAULT_BATCH_SIZE,
           hidden: false,
+          // 1 = each worker may complete one task; 0 = no limit.
+          repetitions: analysis.uniqueWorker ? 1 : 0,
         });
+
+        // Pin a stable batch id so the per-worker cap spans the whole job.
+        // Without this, constant jobs (which import in several batches) would
+        // reset the cap each batch, letting one worker answer many times.
+        if (analysis.uniqueWorker) {
+          fetcher.batchId = jobId;
+          await writeFetcher(fetcher);
+        }
 
         if (analysis.type === "csv") {
           await importCsvIntoFetcher(fetcher, analysis.csv);
@@ -480,6 +499,7 @@ export const addJobApiRoutes = (app: Express): void => {
           consumedLamports: "0",
           refundedLamports: "0",
           status: "active",
+          uniqueWorker: analysis.uniqueWorker,
           createdAt: Date.now(),
         };
         await writeJob(job);
