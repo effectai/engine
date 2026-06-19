@@ -7,13 +7,16 @@ import { startWorker, stopWorker } from "./runtime.js";
 import { state } from "./state.js";
 import { createConsoleLogger } from "./logger.js";
 
-const DEFAULT_MANAGER = "/ip4/127.0.0.1/tcp/11995/ws/p2p/12D3KooWAQH4SQHt12N2eGnAUR4iixS8TAfKxRqfd17sDurZ1v5R";
-const DEFAULT_CAPABILITY = "effectai/qwen3.2-ai-worker";
+const DEFAULT_MANAGER =
+  "/ip4/127.0.0.1/tcp/11995/ws/p2p/12D3KooWAQH4SQHt12N2eGnAUR4iixS8TAfKxRqfd17sDurZ1v5R";
+const collect = (val: string, prev: string[]) => [...prev, val];
+
+const DEFAULT_CAPABILITY = "effectai/is-ai";
 const DEFAULT_DATA_PATH = "/tmp/ai-worker";
 const DEFAULT_NOSANA_API = "https://dashboard.k8s.prd.nos.ci";
 const DEFAULT_MARKET = "6Xt8hgVLLL2PSHC9NtJP8E8oTdA5ZJc95hZEnHcdqKqb";
 const DEFAULT_MODEL = "gpt-oss:20b";
-const DEFAULT_IMAGE = "docker.io/ollama/ollama:0.15.4";
+const DEFAULT_IMAGE = "docker.io/ollama/ollama:0.20.";
 const DEFAULT_DEPLOYMENT_NAME = "effectai-ai-worker";
 const DEFAULT_ENDPOINT_TIMEOUT_SECONDS = 300;
 
@@ -43,7 +46,11 @@ startCommand
   .description("Start a Nosana-backed worker")
   .option("--manager <multiaddr>", "Manager libp2p multiaddr", DEFAULT_MANAGER)
   .option("--data <path>", "Path to worker datastore", DEFAULT_DATA_PATH)
-  .option("--capability <capability>", "Capability identifier to advertise", DEFAULT_CAPABILITY)
+  .option(
+    "--capability <value>", "Capability identifier to advertise (repeatable)",
+    collect,
+    [DEFAULT_CAPABILITY]
+  )
   .option("--access-code <code>", "Manager access code")
   .option("--nosana-api <url>", "Nosana API backend URL", DEFAULT_NOSANA_API)
   .option("--market <address>", "Nosana market address", DEFAULT_MARKET)

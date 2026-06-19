@@ -5,7 +5,7 @@ import { state } from "./state.js";
 
 export type WorkerRuntimeConfig = {
   manager: string;
-  capability: string;
+  capability: string[];
   accessCode?: string;
 };
 
@@ -108,7 +108,7 @@ export const startWorker = async ({
       recipient: workerRecipient.publicKey.toBase58(),
       nonce: 1n,
       accessCode,
-      capabilities: [capability],
+      capabilities: capability,
     });
   } catch (e: unknown) {
     if (e instanceof Error && e.message.toLowerCase().includes("access code")) {
