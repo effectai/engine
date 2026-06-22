@@ -8,6 +8,9 @@ node_modules
 dist
 .turbo
 
+*.db
+*.sqlite
+
 out
 
 test-ledger/

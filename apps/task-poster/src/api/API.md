@@ -45,7 +45,8 @@ one task per row; you poll for results.
 > A live, rendered copy of this page is served by the app at **`/api/docs`**.
 > Prefer a UI? The **API console** at **`/api-console.html`** drives all of the
 > above (paste your key, submit templates, preview templates, create jobs from a
-> CSV, view results) with no curl needed.
+> CSV, view results) with no curl needed. Your key is **never stored** — you
+> will need to paste it again each time you open the console.
 
 ## Authentication
 
@@ -136,22 +137,127 @@ Your account details and credit balance.
 curl https://HOST/api/v1/account -H "Authorization: Bearer $KEY"
 ```
 ```json
-{ "id": "01J…", "name": "Acme Corp", "status": "active", "createdAt": 1700000000000,
+{ "id": "01J…", "name": "Acme Corp", "email": "you@acme.com", "status": "active",
+  "createdAt": 1700000000000,
   "credits": { "balance": "12500000", "currency": "EFFECT", "lamportsPerEffect": 1000000 } }
 ```
+
+`credits.balance` is in **lamports** (divide by `lamportsPerEffect` for EFFECT).
+`email` is `null` if none is set.
+
+### `PATCH /api/v1/account`
+
+Update your contact fields. Partial update — send only the fields you want to
+change. Passing `"email": ""` clears the stored email. Returns the same object
+as `GET /account`.
+
+```bash
+curl -X PATCH https://HOST/api/v1/account -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" -d '{ "name": "Acme Inc", "email": "ops@acme.com" }'
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `name` | no | If present, must be non-empty and ≤ 100 characters |
+| `email` | no | If present, replaces the stored email; `""` clears it |
+
+At least one of `name` / `email` must be provided.
+
+---
+
+### `GET /api/v1/keys`
+
+List the API keys on your account. The raw key is **never** returned here — only
+its display `prefix`, `status`, and `hash` (the id you pass to `DELETE`).
+
+```bash
+curl https://HOST/api/v1/keys -H "Authorization: Bearer $KEY"
+```
+```json
+{ "keys": [
+  { "hash": "9f86d0…", "prefix": "eff_live_ab12cd…", "status": "active", "createdAt": 1700000000000 }
+], "total": 1 }
+```
+
+### `POST /api/v1/keys`
+
+Issue an additional key for your account (for rotation, or a per-service key).
+The raw `key` is returned **once** — store it now.
+
+```bash
+curl -X POST https://HOST/api/v1/keys -H "Authorization: Bearer $KEY"
+```
+```json
+{ "key": "eff_live_xxxxxxxxxxxxxxxxxxxx", "hash": "9f86d0…",
+  "prefix": "eff_live_xxxxxx…", "status": "active", "createdAt": 1700000000000 }
+```
+
+> **Currently limited to one active key per account.** Multiple keys are not yet
+> available: if you already have an active key this returns `403 forbidden`.
+> Revoke your existing key before issuing a new one.
+
+### `DELETE /api/v1/keys/:hash`
+
+Revoke one of your keys by its `hash`. Idempotent — revoking an already-revoked
+key returns `200`. You can only revoke keys on your own account.
+
+```bash
+curl -X DELETE "https://HOST/api/v1/keys/9f86d0…" -H "Authorization: Bearer $KEY"
+```
+
+> **Revoking your last active key** locks you out of the API (you need a valid
+> key to issue a new one). This is allowed, but you must confirm by adding
+> `?confirm=DELETE`; without it the request returns `400 invalid_request`.
+> While accounts are limited to one active key, rotation means revoking the old
+> key (with `?confirm=DELETE`) and then issuing a fresh one via `POST /keys`.
+
+---
+
+### `GET /api/v1/credits/transactions`
+
+Your credit ledger — top-ups, job debits, and refunds — newest first, so you can
+reconcile spend. Amounts are in **lamports** (strings), matching `GET /account`.
+
+| Param | Default | Max | Notes |
+|---|---|---|---|
+| `?limit=` | 100 | 1000 | Entries per page |
+| `?offset=` | 0 | — | For pagination |
+
+```bash
+curl "https://HOST/api/v1/credits/transactions?limit=50" -H "Authorization: Bearer $KEY"
+```
+```json
+{ "transactions": [
+  { "id": "01K…", "type": "debit", "amount": "1000000", "balanceAfter": "11500000",
+    "jobId": "01J…", "note": "job 01J… (2 tasks)", "timestamp": 1700000000000 }
+], "total": 12, "limit": 50, "offset": 0,
+  "currency": "EFFECT", "lamportsPerEffect": 1000000 }
+```
+
+| Field | Meaning |
+|---|---|
+| `type` | `topup` (team top-up), `debit` (job created), or `refund` (cancel / failed create) |
+| `amount` | Lamports moved (always positive) |
+| `balanceAfter` | Balance in lamports immediately after this entry |
+| `jobId` | The job this entry relates to, if any |
 
 ---
 
 ### `GET /api/v1/templates`
 
 Templates you can use: the team's approved default catalog plus any you have
-registered yourself.
+registered yourself. Archived templates are excluded. Newest first, paginated.
+
+| Param | Default | Max | Notes |
+|---|---|---|---|
+| `?limit=` | 100 | 1000 | Templates per page |
+| `?offset=` | 0 | — | For pagination |
 
 ```json
 { "templates": [
   { "templateId": "478b…", "name": "Sentiment",
     "fields": ["product", "question"], "approved": true, "owned": false }
-] }
+], "total": 1, "limit": 100, "offset": 0 }
 ```
 
 | Field | Meaning |
@@ -208,6 +314,33 @@ curl "https://HOST/api/v1/templates/478b…/preview" -H "Authorization: Bearer $
 
 The API console uses this endpoint to display a live preview inside a sandboxed
 iframe — the template HTML is never trusted even if it is approved.
+
+### `GET /api/v1/templates/:id`
+
+A single template's metadata (no raw HTML — use `/preview` to render it). Same
+access rule as preview: it must be approved (public catalog) or owned by you.
+
+```json
+{ "templateId": "478b…", "name": "Sentiment", "fields": ["product", "question"],
+  "approved": true, "owned": true, "status": "active",
+  "approvalRequested": false, "createdAt": 1700000000000 }
+```
+
+### `DELETE /api/v1/templates/:id`
+
+Retire a template you own (soft archive). It disappears from `GET /templates`
+and can no longer back **new** jobs; jobs already running on it are unaffected.
+Because IDs are content-addressed, re-submitting the identical HTML revives it.
+Returns the archived template (`status: "archived"`).
+
+```bash
+curl -X DELETE "https://HOST/api/v1/templates/478b…" -H "Authorization: Bearer $KEY"
+```
+
+Only the template's **owner** (the account that first registered it) can delete
+it; public-catalog templates and ones merely re-registered by another account
+return `403`. A logged-in Effect team admin may archive **any** template via the
+same endpoint, authenticating with their task-poster session instead of a key.
 
 ---
 
@@ -302,10 +435,16 @@ platform).
 
 ### `GET /api/v1/jobs`
 
-List all your jobs, newest first.
+List your jobs, newest first.
+
+| Param | Default | Max | Notes |
+|---|---|---|---|
+| `?limit=` | 100 | 1000 | Jobs per page |
+| `?offset=` | 0 | — | For pagination |
 
 ```json
-{ "jobs": [ { "id": "01J…", "name": "Label images", "type": "csv", … } ] }
+{ "jobs": [ { "id": "01J…", "name": "Label images", "type": "csv", … } ],
+  "total": 1, "limit": 100, "offset": 0 }
 ```
 
 ### `GET /api/v1/jobs/:id`
@@ -348,7 +487,7 @@ Completed results for your job, newest first.
 | `?format=csv` | — | — | Download as CSV instead of JSON |
 
 ```json
-{ "jobId": "01J…", "count": 1, "limit": 100, "offset": 0, "results": [
+{ "jobId": "01J…", "count": 1, "total": 42, "limit": 100, "offset": 0, "results": [
   { "taskId": "01K…", "submittedAt": 1759534321,
     "worker": "12D3Koo…",
     "input": { "product": "Widget", "question": "Good?" },
@@ -356,7 +495,9 @@ Completed results for your job, newest first.
 ] }
 ```
 
-`result` is a JSON string — whatever the worker's template posted via
+`count` is the number of rows in this page; `total` is the total completed
+results across all pages (use it to drive a pagination UI). `result` is a JSON
+string — whatever the worker's template posted via
 `window.parent.postMessage({ task: 'submit', values: … }, '*')`.
 
 ---
@@ -443,7 +584,9 @@ team dashboard (cookie auth) at:
 - `/admin/accounts` — manage accounts, issue/revoke API keys, top up balances
 - `/admin/templates/pending` — review and approve/reject submitted templates
 
-These are not part of the public API.
+These are not part of the public API. A logged-in admin may additionally
+retire any template by calling `DELETE /api/v1/templates/:id` with their
+task-poster session cookie (no API key required).
 
 ---
 
@@ -453,10 +596,12 @@ These are not part of the public API.
 
 | File | Purpose |
 |---|---|
-| `src/api/api.ts` | Account, signup, and template routes |
+| `src/server.ts` | Express app entry point — mounts CORS middleware, rate limiter, all route groups |
+| `src/api/api.ts` | Account (`GET`/`PATCH`), signup, self-service key management, credit history, and template routes |
 | `src/api/jobs.ts` | Job routes and credit reconciliation (`computeJobCredits`) |
-| `src/api/accounts.ts` | Account model, API key issuance, `requireApiKey` middleware, signup rate-limiting |
-| `src/api/ledger.ts` | Credit balance (debit / refund / getBalance) |
+| `src/api/accounts.ts` | Account model, API key issuance/revocation, `requireApiKey` + `getAccountFromRequest`, signup rate-limiting |
+| `src/api/api-util.ts` | Shared helpers: `apiError`, `apiJson`, `asyncHandler`, `parsePagination`, `effectToLamports` / `lamportsToEffect` |
+| `src/api/ledger.ts` | Credit balance + audit log (`debit` / `refund` / `getBalance` / `listLedgerEntries`) |
 | `src/api/admin.ts` | Admin UI (HTMX, cookie auth) |
 | `src/templates.ts` | Template storage, content-addressing, rendering, approval |
 | `src/fetcher.ts` | Dataset/Fetcher model — the underlying task machinery that jobs use |
@@ -509,6 +654,23 @@ decide whether to display a sandbox warning. The `/results` endpoint strips
 `__effectApproved` before returning data to the requestor so it does not leak
 into results.
 
+### Template lifecycle (archival)
+
+`archiveTemplate(id)` in `templates.ts` flips a template's `status` to
+`"archived"`. Archived templates are filtered out of `GET /templates`,
+`getPublicApprovedTemplates()`, and `resolveUsableTemplate()` (so they can't
+back new jobs); already-running jobs are untouched because their tasks are
+already imported and the manager resolves template HTML by content-addressed
+ID. Archival is **reversible**: `registerTemplate()` always writes
+`status: "active"`, so re-submitting identical HTML revives the template.
+
+`DELETE /api/v1/templates/:id` does not use the `requireApiKey` middleware;
+instead it resolves credentials inside the handler via `getAccountFromRequest()`
+(API key) and `hasAuth()` (admin cookie). It authorizes the template's
+`ownerId` **or** a logged-in team admin — the admin may archive any template,
+the owner only their own. Public-catalog templates (no `ownerId`) are therefore
+owner-unreachable and admin-only.
+
 ### `uniqueWorker` enforcement
 
 When `uniqueWorker: true` is set on a job:
@@ -540,6 +702,34 @@ per IP per 24 hours, keyed by the raw request IP. The bucket resets
 automatically at the stored `resetAt` timestamp. This is the primary abuse
 guard alongside the zero starting credit balance (new accounts cannot post tasks
 until topped up).
+
+### Pagination
+
+`parsePagination(query, { defaultLimit, maxLimit })` in `api-util.ts` is the
+single place limit/offset are parsed and clamped (`limit ∈ [1, maxLimit]`,
+`offset ≥ 0`). All list endpoints (`/jobs`, `/templates`, `/results`,
+`/credits/transactions`) use it and return a `total` alongside the page.
+`@cross/kv`'s `db.count(prefix)` supplies the total cheaply where the full list
+isn't already in memory (`/results`, `/credits/transactions`); `/jobs` and
+`/templates` derive it from the in-memory list length. KV has no native offset,
+so the page is taken by over-fetching `offset + limit` then slicing.
+
+### Self-service key management & last-key guard
+
+`GET/POST/DELETE /api/v1/keys` wire up the existing `listApiKeys` /
+`issueApiKey` / `revokeApiKey`, scoped to the caller's account (`DELETE` 404s on
+a hash that isn't theirs, so key hashes never leak across accounts). The raw key
+is returned only by `POST`. Revoking the **last** active key would lock the
+account out (a valid key is needed to issue a new one), so when
+`countActiveApiKeys(account.id) <= 1` the handler requires `confirm=DELETE`
+(query or body) and otherwise returns `400`.
+
+**Temporary single-key cap.** `POST /api/v1/keys` is intentionally gated to one
+active key per account for now: if `countActiveApiKeys(account.id) >= 1` it
+returns `403 forbidden`. The underlying machinery is fully multi-key
+(issue/list/revoke all work unchanged), so lifting the limit is a one-line
+change — delete the guard marked `TEMPORARY` at the top of the
+`POST /api/v1/keys` handler. No data migration is needed when it's unlocked.
 
 ### Adding fields to `Job`
 

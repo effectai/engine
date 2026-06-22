@@ -154,6 +154,32 @@
       <pre id="results-body"></pre>
     </div>
   </section>
+
+  <!-- Account -->
+  <section class="card">
+    <h2>Account</h2>
+    <div class="row">
+      <div class="grow"><label>Name</label><input id="acct-name" /></div>
+      <div class="grow"><label>Email (optional)</label><input id="acct-email" placeholder="(none)" /></div>
+      <div style="align-self:flex-end"><button id="acct-save">Save</button></div>
+    </div>
+    <div id="acct-msg"></div>
+    <details id="tx-details" style="margin-top:.8rem">
+      <summary>Credit transactions</summary>
+      <div id="tx-list" class="muted" style="margin-top:.6rem">…</div>
+      <div class="row" style="margin-top:.5rem"><button id="tx-refresh" class="ghost" style="padding:.2rem .6rem">Refresh</button></div>
+    </details>
+  </section>
+
+  <!-- API keys -->
+  <section class="card">
+    <h2>API keys</h2>
+    <p class="muted" style="margin:.1rem 0 .6rem;font-size:.84rem">Rotate by issuing a new key, then revoking the old one. The raw key is shown only once, at creation.</p>
+    <div id="keys-list" class="muted">…</div>
+    <div class="row" style="margin-top:.6rem"><button id="keys-new">Issue new key</button></div>
+    <div id="keys-reveal"></div>
+    <div id="keys-msg"></div>
+  </section>
 </main>
 
 <!-- Full-page template preview. Templates may be untrusted, so the iframe runs
@@ -174,8 +200,7 @@
 </div>
 
 <script>
-const KEY_STORE = "effect_api_key";
-let apiKey = localStorage.getItem(KEY_STORE) || "";
+let apiKey = "";
 let templates = [];
 
 const $ = (id) => document.getElementById(id);
@@ -197,19 +222,107 @@ async function api(path, { method = "GET", body } = {}) {
 }
 
 async function connect() {
-  apiKey = $("key").value.trim();
-  localStorage.setItem(KEY_STORE, apiKey);
-  if (!apiKey) return;
+  // Use the freshly typed key; fall back to the in-memory key so the post-action
+  // refreshes (createJob / cancelJob) still work after the field is cleared on a
+  // successful connect. The key is never persisted, so a reload returns to signup.
+  const typed = $("key").value.trim();
+  if (typed) apiKey = typed;
+  if (!apiKey) { $("signup-section").classList.remove("hide"); return; }
   try {
-    const acct = await api("/account");
-    $("who").innerHTML = `<span class="pill ok">${esc(acct.name)}</span> · ${esc(acct.credits.balance / 1e6)} EFFECT`;
+    await loadAccount();
     $("app").classList.remove("hide");
     $("signup-section").classList.add("hide");
-    await Promise.all([loadTemplates(), loadJobs()]);
+    $("key").value = "";
+    await Promise.all([loadTemplates(), loadJobs(), loadKeys()]);
   } catch (e) {
     $("who").innerHTML = `<span class="pill warn">${esc(e.message)}</span>`;
     $("app").classList.add("hide");
+    // Not connected: the signup card must stay available.
+    $("signup-section").classList.remove("hide");
   }
+}
+
+// Loads the account and reflects it in the header + the editable Account card.
+// Also used as the lightweight balance refresh after creating/cancelling a job.
+async function loadAccount() {
+  const acct = await api("/account");
+  $("who").innerHTML = `<span class="pill ok">${esc(acct.name)}</span> · ${esc(acct.credits.balance / 1e6)} EFFECT`;
+  $("acct-name").value = acct.name || "";
+  $("acct-email").value = acct.email || "";
+  return acct;
+}
+
+async function saveAccount() {
+  try {
+    // Send both fields; an empty email clears it server-side. Empty name is
+    // rejected by the API (every account keeps a name).
+    await api("/account", { method: "PATCH", body: { name: $("acct-name").value.trim(), email: $("acct-email").value.trim() } });
+    showMsg($("acct-msg"), "Saved.", "ok");
+    await loadAccount();
+  } catch (e) { showMsg($("acct-msg"), e.message, "err"); }
+}
+
+async function loadTransactions() {
+  $("tx-list").innerHTML = "Loading…";
+  try {
+    const { transactions, total } = await api("/credits/transactions?limit=50");
+    const effect = (lamports) => Number(lamports) / 1e6;
+    $("tx-list").innerHTML = transactions.length
+      ? `<table><tr><th>When</th><th>Type</th><th>Amount (EFFECT)</th><th>Balance after</th><th>Note</th></tr>` +
+        transactions.map((tx) => `<tr>
+          <td class="muted">${esc(new Date(tx.timestamp).toLocaleString())}</td>
+          <td>${esc(tx.type)}</td>
+          <td class="mono">${esc(effect(tx.amount))}</td>
+          <td class="mono">${esc(effect(tx.balanceAfter))}</td>
+          <td>${esc(tx.note || "")}</td></tr>`).join("") + `</table>` +
+        (total > transactions.length ? `<div class="muted" style="margin-top:.4rem">Showing ${transactions.length} of ${total}.</div>` : "")
+      : `<span class="muted">No transactions yet. Ask the team to top up your credits.</span>`;
+  } catch (e) { $("tx-list").innerHTML = `<span class="msg err">${esc(e.message)}</span>`; }
+}
+
+async function loadKeys() {
+  $("keys-list").innerHTML = "Loading…";
+  try {
+    const { keys } = await api("/keys");
+    const activeCount = keys.filter((key) => key.status === "active").length;
+    $("keys-list").innerHTML = keys.length
+      ? `<table><tr><th>Key</th><th>Status</th><th>Created</th><th></th></tr>` +
+        keys.map((key) => `<tr>
+          <td class="mono">${esc(key.prefix)}</td>
+          <td>${key.status === "active" ? '<span class="pill ok">active</span>' : '<span class="pill warn">revoked</span>'}</td>
+          <td class="muted">${esc(new Date(key.createdAt).toLocaleDateString())}</td>
+          <td>${key.status === "active"
+            ? `<button class="danger" data-revoke="${esc(key.hash)}" data-prefix="${esc(key.prefix)}" data-last="${activeCount <= 1 ? "1" : ""}" style="padding:.2rem .5rem">Revoke</button>`
+            : ""}</td></tr>`).join("") + `</table>`
+      : `<span class="muted">No keys.</span>`;
+  } catch (e) { $("keys-list").innerHTML = `<span class="msg err">${esc(e.message)}</span>`; }
+}
+
+async function issueKey() {
+  $("keys-new").disabled = true;
+  try {
+    const created = await api("/keys", { method: "POST" });
+    $("keys-reveal").innerHTML = `<div class="msg ok">New key — copy it now, it won't be shown again:<br><code style="word-break:break-all">${esc(created.key)}</code></div>`;
+    $("keys-msg").innerHTML = "";
+    await loadKeys();
+  } catch (e) { showMsg($("keys-msg"), e.message, "err"); }
+  finally { $("keys-new").disabled = false; }
+}
+
+// Type-to-confirm revoke. Revoking the last active key locks the account out of
+// the API, so we warn harder and still require typing DELETE either way.
+async function revokeKey(hash, prefix, isLast) {
+  const warning = isLast
+    ? `⚠ This is your LAST active key.\n\nRevoking it locks this account out of the API — you would have to sign up again or ask the team to issue a new key.\n\nType DELETE to revoke ${prefix}:`
+    : `Revoke key ${prefix}? Anything using it stops working immediately.\n\nType DELETE to confirm:`;
+  const typed = prompt(warning);
+  if (typed === null) return; // cancelled
+  if (typed !== "DELETE") { showMsg($("keys-msg"), "Cancelled — you must type DELETE exactly to revoke.", "err"); return; }
+  try {
+    await api(`/keys/${hash}?confirm=DELETE`, { method: "DELETE" });
+    showMsg($("keys-msg"), "Key revoked.", "ok");
+    await loadKeys();
+  } catch (e) { showMsg($("keys-msg"), e.message, "err"); }
 }
 
 async function signup() {
@@ -225,7 +338,6 @@ async function signup() {
     const data = await res.json();
     if (!res.ok) throw new Error((data.error && data.error.message) || res.statusText);
     $("signup-key").textContent = data.key;
-    $("key").value = data.key;
     $("signup-form").classList.add("hide");
     $("signup-reveal").classList.remove("hide");
   } catch (e) {
@@ -242,7 +354,8 @@ async function loadTemplates() {
       list.map((template) => `<tr><td>${esc(template.name)}</td><td class="mono">${esc((template.fields||[]).join(", ")||"none")}</td>
         <td>${template.approved ? '<span class="pill ok">approved</span>' : '<span class="pill warn">unapproved</span>'}</td>
         <td class="mono muted">${short(template.templateId)}</td>
-        <td><button class="ghost" data-preview="${esc(template.templateId)}" style="padding:.2rem .5rem">Preview</button></td></tr>`).join("") + `</table>`
+        <td class="row"><button class="ghost" data-preview="${esc(template.templateId)}" style="padding:.2rem .5rem">Preview</button>
+          ${template.owned ? `<button class="danger" data-delete="${esc(template.templateId)}" data-name="${esc(template.name)}" style="padding:.2rem .5rem">Delete</button>` : ""}</td></tr>`).join("") + `</table>`
     : `<span class="muted">No templates yet. Submit one below.</span>`;
   $("job-tpl").innerHTML = list.map((t) => `<option value="${t.templateId}">${esc(t.name)} ${t.approved ? "✓" : "⚠"}</option>`).join("");
   showFields();
@@ -267,6 +380,17 @@ async function submitTemplate() {
     await api("/templates", { method: "POST", body: { name: $("tpl-name").value, html: $("tpl-html").value, requestApproval: $("tpl-approve").checked } });
     showMsg($("tpl-msg"), "Template submitted.", "ok");
     $("tpl-name").value = ""; $("tpl-html").value = "";
+    await loadTemplates();
+  } catch (e) { showMsg($("tpl-msg"), e.message, "err"); }
+}
+
+// Retire a template you own (soft archive). The API allows this only for the
+// owner; the button is shown only on owned rows.
+async function deleteTemplate(templateId, name) {
+  if (!confirm(`Delete template "${name}"?\n\nIt will be retired: hidden from your list and unusable for new jobs. Jobs already running on it keep working. You can revive it by re-submitting the identical HTML.`)) return;
+  try {
+    await api(`/templates/${templateId}`, { method: "DELETE" });
+    showMsg($("tpl-msg"), `Template "${name}" retired.`, "ok");
     await loadTemplates();
   } catch (e) { showMsg($("tpl-msg"), e.message, "err"); }
 }
@@ -303,7 +427,7 @@ async function createJob() {
   try {
     const job = await api("/jobs", { method: "POST", body: jobBody() });
     showMsg($("job-msg"), `Created job ${job.id} (${job.taskCount} tasks, reserved ${job.credits.reserved} EFFECT).`, "ok");
-    await Promise.all([connect(), loadJobs()]);
+    await Promise.all([loadAccount(), loadJobs()]);
   } catch (e) { showMsg($("job-msg"), e.message, "err"); }
 }
 
@@ -384,7 +508,7 @@ async function downloadCsv(id) {
 
 async function cancelJob(id) {
   if (!confirm("Cancel this job? Unfinished tasks are refunded.")) return;
-  try { await api(`/jobs/${id}/cancel`, { method: "POST" }); await Promise.all([connect(), loadJobs()]); }
+  try { await api(`/jobs/${id}/cancel`, { method: "POST" }); await Promise.all([loadAccount(), loadJobs()]); }
   catch (e) { alert(e.message); }
 }
 
@@ -400,6 +524,15 @@ $("signup-copy").onclick = () => {
   });
 };
 $("tpl-submit").onclick = submitTemplate;
+$("acct-save").onclick = saveAccount;
+$("tx-refresh").onclick = loadTransactions;
+// Lazy-load transactions the first time the section is expanded (and on reopen).
+$("tx-details").addEventListener("toggle", (event) => { if (event.target.open) loadTransactions(); });
+$("keys-new").onclick = issueKey;
+$("keys-list").addEventListener("click", (event) => {
+  if (event.target.dataset.revoke)
+    revokeKey(event.target.dataset.revoke, event.target.dataset.prefix, event.target.dataset.last === "1");
+});
 $("job-tpl").onchange = showFields;
 $("job-type").onchange = onTypeChange;
 $("job-estimate").onclick = estimate;
@@ -413,13 +546,15 @@ $("jobs-list").addEventListener("click", (e) => {
 });
 $("tpl-list").addEventListener("click", (event) => {
   if (event.target.dataset.preview) previewTemplate(event.target.dataset.preview);
+  if (event.target.dataset.delete) deleteTemplate(event.target.dataset.delete, event.target.dataset.name);
 });
 $("tpl-preview-close").onclick = closePreview;
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !$("tpl-preview").classList.contains("hide")) closePreview();
 });
 
-if (apiKey) { $("key").value = apiKey; $("signup-section").classList.add("hide"); connect(); }
+// No session persistence: the page always loads showing the signup card with an
+// empty key field. The user connects by pasting their key each visit.
 </script>
 </body>
 </html>

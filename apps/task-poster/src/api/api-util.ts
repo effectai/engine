@@ -8,6 +8,20 @@ import type { Request, Response } from "express";
  *   error   → `{ error: { code, message } }`
  */
 
+/**
+ * Parses `?limit=` / `?offset=` query params into a clamped, safe pair. Shared
+ * by every paginated list endpoint (`/jobs`, `/templates`, `/results`,
+ * `/credits/transactions`) so they behave identically: `limit` is clamped to
+ * `[1, maxLimit]` (defaulting to `defaultLimit`), `offset` to `>= 0`.
+ */
+export const parsePagination = (
+  query: Record<string, unknown>,
+  { defaultLimit = 100, maxLimit = 1000 }: { defaultLimit?: number; maxLimit?: number } = {},
+): { limit: number; offset: number } => ({
+  limit: Math.min(Math.max(Number(query.limit) || defaultLimit, 1), maxLimit),
+  offset: Math.max(Number(query.offset) || 0, 0),
+});
+
 export type ApiErrorCode =
   | "unauthorized"
   | "forbidden"

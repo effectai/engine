@@ -109,6 +109,24 @@ export const setAccountStatus = async (
   return account;
 };
 
+/**
+ * Partial update of an account's contact fields (used by `PATCH /account`).
+ * Only the keys present in `changes` are touched; passing `email: ""` clears
+ * the stored email. `name`/`email` are trimmed by the caller-facing route.
+ */
+export const updateAccount = async (
+  id: string,
+  changes: { name?: string; email?: string },
+): Promise<Account> => {
+  const account = await getAccount(id);
+  if (!account) throw new Error("Account not found");
+  if (changes.name !== undefined) account.name = changes.name.trim();
+  if (changes.email !== undefined)
+    account.email = changes.email.trim() || undefined;
+  await db.set<Account>(["account", id], account);
+  return account;
+};
+
 // ---------------------------------------------------------------- api keys
 
 /** Issues a new key. Returns the raw key ONCE; only the hash is persisted. */
@@ -140,6 +158,16 @@ export const listApiKeys = async (
     ? records.filter((record) => record.accountId === accountId)
     : records;
 };
+
+export const getApiKey = async (hash: string): Promise<ApiKeyRecord | null> => {
+  const record = await db.get<ApiKeyRecord>(["apikey", hash]);
+  return record?.data ?? null;
+};
+
+/** Number of still-active keys for an account (used to guard last-key revoke). */
+export const countActiveApiKeys = async (accountId: string): Promise<number> =>
+  (await listApiKeys(accountId)).filter((key) => key.status === "active")
+    .length;
 
 export const revokeApiKey = async (hash: string): Promise<void> => {
   const record = await db.get<ApiKeyRecord>(["apikey", hash]);
@@ -177,6 +205,17 @@ const extractKey = (req: Request): string | null => {
     return apiKeyHeader;
 
   return null;
+};
+
+/** 
+ * Resolves the account from an API key, or null
+ * lets routes also accept an admin cookie session (e.g. template archiving). 
+ */
+export const getAccountFromRequest = async (
+  req: Request,
+): Promise<Account | null> => {
+  const key = extractKey(req);
+  return key ? getAccountByApiKey(key) : null;
 };
 
 // ------------------------------------------------------- rate limiting

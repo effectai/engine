@@ -60,14 +60,22 @@ export const getBalance = async (accountId: string): Promise<bigint> => {
 export const listLedgerEntries = async (
   accountId: string,
   limit = 50,
+  offset = 0,
 ): Promise<LedgerEntry[]> => {
+  // KV `listAll` has no offset, so over-fetch the first `offset + limit`
+  // newest-first entries and drop the offset prefix (same pattern as
+  // `/jobs/:id/results`). Fine for the modest page sizes the API allows.
   const records = await db.listAll<LedgerEntry>(
     ["ledger-entry", accountId, {}],
-    limit,
+    offset + limit,
     true,
   );
-  return records.map((record) => record.data);
+  return records.slice(offset).map((record) => record.data);
 };
+
+/** Total number of ledger entries for an account (for pagination metadata). */
+export const countLedgerEntries = (accountId: string): number =>
+  db.count(["ledger-entry", accountId, {}]);
 
 // applies a signed change under the lock; throws if it would go negative
 const apply = (

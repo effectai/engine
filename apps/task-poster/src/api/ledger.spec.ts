@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   InsufficientCreditsError,
+  countLedgerEntries,
   credit,
   debit,
   getBalance,
@@ -47,6 +48,17 @@ describe("credit ledger", () => {
       "topup",
     ]); // newest first
     expect(entries[0]?.balanceAfter).toBe("700000");
+  });
+
+  it("paginates with limit/offset and reports a total", async () => {
+    // The account has exactly three entries from the test above (newest first).
+    expect(countLedgerEntries(account)).toBe(3);
+
+    const firstPage = await listLedgerEntries(account, 2, 0);
+    expect(firstPage.map((entry) => entry.type)).toEqual(["refund", "debit"]);
+
+    const secondPage = await listLedgerEntries(account, 2, 2);
+    expect(secondPage.map((entry) => entry.type)).toEqual(["topup"]);
   });
 
   it("rejects overdraw and leaves the balance intact", async () => {

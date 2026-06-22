@@ -195,6 +195,23 @@ export const rejectTemplateApproval = async (
   return record.data;
 };
 
+/**
+ * Retires a template by flipping its status to "archived": it drops out of the
+ * requestor's `/templates` list, the public catalog, and can no longer back new
+ * jobs (existing jobs keep their already-imported tasks). Reversible — because
+ * IDs are content-addressed, re-submitting the identical HTML revives it
+ * (`registerTemplate` always writes status "active"). Returns null if unknown.
+ */
+export const archiveTemplate = async (
+  templateId: string,
+): Promise<TemplateRecord | null> => {
+  const record = await getTemplate(templateId);
+  if (!record) return null;
+  record.data.status = "archived";
+  await db.set<TemplateRecord>(["templates", templateId], record.data);
+  return record.data;
+};
+
 const form = (msg = "", values: Record<string, string> = {}): string => `
 <form id="main-form" hx-post="/t/create" hx-swap="outerHTML">
   ${msg ? `<p><blockquote>${msg}</blockquote></p>` : ""}

@@ -13,6 +13,7 @@ import {
   asyncHandler,
   effectToLamports,
   lamportsToEffect,
+  parsePagination,
 } from "./api-util.js";
 import { type DatasetRecord, getDataset, writeDataset } from "../dataset.js";
 import {
@@ -78,6 +79,19 @@ const MAX_JOB_COST_LAMPORTS = 1_000_000_000_000n; // 1,000,000 EFFECT per job
 const DEFAULT_BATCH_SIZE = 100;
 const DEFAULT_FREQUENCY_SECONDS = 2;
 const DEFAULT_TIME_LIMIT_SECONDS = 600;
+
+// Monotonic dataset-id generator. A millisecond timestamp stays well inside
+// JS's safe-integer range (~1.7e12 « 2^53) and remains exactly representable —
+// unlike `process.hrtime.bigint()` nanoseconds (~1.8e18 » 2^53), which round to
+// the nearest multiple of 256 and so collide for jobs created microseconds
+// apart. The counter guarantees strictly increasing ids within a millisecond;
+// the wall clock advancing across restarts keeps them unique over time.
+let lastDatasetId = 0;
+const nextDatasetId = (): number => {
+  const id = Math.max(Date.now(), lastDatasetId + 1);
+  lastDatasetId = id;
+  return id;
+};
 
 // ------------------------------------------------------------- job storage
 
@@ -162,6 +176,7 @@ const resolveUsableTemplate = async (
 ): Promise<TemplateRecord | null> => {
   const record = await getTemplate(templateId);
   if (!record) return null;
+  if (record.data.status === "archived") return null; // retired — no new jobs
   if (isTemplateApproved(record.data)) return record.data;
   const owned = (await getAccountTemplateIds(accountId)).includes(templateId);
   return owned ? record.data : null;
@@ -386,8 +401,15 @@ const jobView = (job: Job, counts: TaskCounts) => {
   };
 };
 
-const csvCell = (value: unknown): string =>
-  `"${String(value ?? "").replace(/"/g, '""')}"`;
+// Results come from untrusted workers, so neutralize CSV formula injection: a
+// cell starting with = + - @ (or tab/CR, which Excel strips back to those) is
+// treated as a formula by Excel/Sheets. Prefix those with a single quote so the
+// value is shown literally, then quote/escape as normal.
+const csvCell = (value: unknown): string => {
+  let cell = String(value ?? "");
+  if (/^[=+\-@\t\r]/.test(cell)) cell = `'${cell}`;
+  return `"${cell.replace(/"/g, '""')}"`;
+};
 
 // ------------------------------------------------------------------ routes
 
@@ -440,7 +462,7 @@ export const addJobApiRoutes = (app: Express): void => {
       }
 
       try {
-        const datasetId = Number(process.hrtime.bigint());
+        const datasetId = nextDatasetId();
         const dataset: DatasetRecord = {
           id: datasetId,
           name: analysis.name,
@@ -539,13 +561,16 @@ export const addJobApiRoutes = (app: Express): void => {
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
-      const jobs = await listJobs(account.id);
+      const { limit, offset } = parsePagination(req.query);
+      const jobs = (await listJobs(account.id)).sort(
+        (first, second) => second.createdAt - first.createdAt,
+      );
       const views = await Promise.all(
         jobs
-          .sort((first, second) => second.createdAt - first.createdAt)
+          .slice(offset, offset + limit)
           .map(async (job) => jobView(job, await countsFor(job))),
       );
-      return apiJson(res, { jobs: views });
+      return apiJson(res, { jobs: views, total: jobs.length, limit, offset });
     }),
   );
 
@@ -569,8 +594,7 @@ export const addJobApiRoutes = (app: Express): void => {
       const job = await getJob(account.id, req.params.id);
       if (!job) return apiError(res, 404, "not_found", "Job not found.");
 
-      const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 1000);
-      const offset = Math.max(Number(req.query.offset) || 0, 0);
+      const { limit, offset } = parsePagination(req.query);
 
       const doneKeys = (
         await db.listAll<boolean>(
@@ -634,7 +658,8 @@ export const addJobApiRoutes = (app: Express): void => {
 
       return apiJson(res, {
         jobId: job.id,
-        count: results.length,
+        count: results.length, // rows in this page
+        total: db.count(["fetcher", job.datasetId, job.fetcherIndex, "done", {}]), // all completed results
         limit,
         offset,
         results,
