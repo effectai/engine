@@ -63,6 +63,14 @@ export const ResultsSummary = ({ task }: Props) => {
   const feedback = resolvedFeedback(task.results, task, intl);
   const [page, setPage] = useState(0);
 
+  // Keeps every response row the same height when a tester rated without
+  // leaving a written note, instead of a lone badge floating in an empty box.
+  const noComment = intl.formatMessage({
+    defaultMessage: "—",
+    description:
+      "Muted placeholder shown in a tester response row when the tester left no written comment",
+  });
+
   // Start back at the first page whenever we switch to a different task.
   useEffect(() => {
     setPage(0);
@@ -156,11 +164,15 @@ export const ResultsSummary = ({ task }: Props) => {
                   <Column width="content">
                     <Badge text={rating} tone={tone} />
                   </Column>
-                  {insight ? (
-                    <Column>
+                  <Column>
+                    {insight ? (
                       <Text size="small">{insight}</Text>
-                    </Column>
-                  ) : null}
+                    ) : (
+                      <Text size="small" tone="tertiary" alignment="center">
+                        {noComment}
+                      </Text>
+                    )}
+                  </Column>
                 </Columns>
               </Box>
             ))}

@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { useIntl } from "react-intl";
 import type { IntlShape } from "react-intl";
 import * as styles from "styles/components.css";
+import { apiErrorMessage } from "../api/apiErrorMessage";
 import { ContextForm } from "../components/ContextForm";
 import type { ContextErrors } from "../components/ContextForm";
 import type { CheckType, TaskContext, TaskDraft } from "../types";
@@ -218,15 +219,7 @@ export const ConfigureScreen = ({ checkType, onBack, onSubmit }: Props) => {
 
       onSubmit(drafts);
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : intl.formatMessage({
-              defaultMessage: "Unknown error during export.",
-              description:
-                "Generic error message when the export fails unexpectedly",
-            });
-      setSubmitError(message);
+      setSubmitError(apiErrorMessage(err, intl));
       setSubmitting(false);
     }
   };

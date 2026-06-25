@@ -9,6 +9,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import * as styles from "styles/components.css";
+import { apiErrorMessage } from "../api/apiErrorMessage";
 import { submitTask } from "../api/effectApi";
 import type { TaskDraft, TaskRecord } from "../types";
 import { estimatedWaitTime } from "../utils/estimatedWaitTime";
@@ -72,14 +73,7 @@ export const SubmittingScreen = ({ drafts, onComplete, onBack }: Props) => {
         }
       } catch (err) {
         if (cancelled) return;
-        const message =
-          err instanceof Error
-            ? err.message
-            : intl.formatMessage({
-                defaultMessage: "Could not submit your design.",
-                description: "Generic error message when submission fails",
-              });
-        setError(message);
+        setError(apiErrorMessage(err, intl));
       }
     };
 

@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -28,21 +29,27 @@ export const HistoryScreen = ({ onBack, onViewTask }: Props) => {
   const intl = useIntl();
   const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
   const [page, setPage] = useState<number>(0);
 
   useEffect(() => {
     getTasks()
-      .then((t) => {
-        setTasks(t);
+      .then((fetched) => {
+        setTasks(fetched);
         setLoading(false);
       })
       .catch(() => {
+        setLoadError(true);
         setLoading(false);
       });
 
     const intervalId = setInterval(() => {
       getTasks()
-        .then(setTasks)
+        .then((fetched) => {
+          setTasks(fetched);
+          setLoadError(false);
+        })
         .catch(() => {});
     }, POLL_INTERVAL_MS);
 
@@ -55,12 +62,17 @@ export const HistoryScreen = ({ onBack, onViewTask }: Props) => {
   const visibleTasks = tasks.slice(start, start + PAGE_SIZE);
 
   const handleDelete = async (taskId: string) => {
-    await deleteTask(taskId).catch(() => {});
-    const next = tasks.filter((task) => task.taskId !== taskId);
-    setTasks(next);
-    const nextPageCount = Math.max(1, Math.ceil(next.length / PAGE_SIZE));
-    if (currentPage > nextPageCount - 1) {
-      setPage(nextPageCount - 1);
+    setDeleteError(false);
+    try {
+      await deleteTask(taskId);
+      const next = tasks.filter((task) => task.taskId !== taskId);
+      setTasks(next);
+      const nextPageCount = Math.max(1, Math.ceil(next.length / PAGE_SIZE));
+      if (currentPage > nextPageCount - 1) {
+        setPage(nextPageCount - 1);
+      }
+    } catch {
+      setDeleteError(true);
     }
   };
 
@@ -81,8 +93,24 @@ export const HistoryScreen = ({ onBack, onViewTask }: Props) => {
             onClick: onBack,
           }}
         />
+        {deleteError ? (
+          <Alert tone="critical">
+            {intl.formatMessage({
+              defaultMessage: "Could not delete the check. Please try again.",
+              description: "Error shown when deleting a task fails",
+            })}
+          </Alert>
+        ) : null}
         {loading ? (
           <LoadingIndicator size="medium" />
+        ) : loadError ? (
+          <Alert tone="critical">
+            {intl.formatMessage({
+              defaultMessage:
+                "Could not load your past checks. Check your connection and try again.",
+              description: "Error shown when the history list fails to load",
+            })}
+          </Alert>
         ) : tasks.length === 0 ? (
           <Text alignment="center" size="small" tone="tertiary">
             {intl.formatMessage({

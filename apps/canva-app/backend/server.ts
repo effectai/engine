@@ -224,14 +224,14 @@ function requireCanvaId(
   getCanvaId(req)
     .then((id) => {
       if (!id) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: "Unauthorized", code: "unauthorized" });
         return;
       }
       req.canvaId = id;
       next();
     })
     .catch(() => {
-      res.status(401).json({ error: "Unauthorized" });
+      res.status(401).json({ error: "Unauthorized", code: "unauthorized" });
     });
 }
 
@@ -284,7 +284,14 @@ const REVIEW_INSIGHTS = [
 function synthesizeAnswers(checkType: CheckType, count: number): any[] {
   const answers: any[] = [];
   for (let index = 0; index < count; index++) {
-    const insight = REVIEW_INSIGHTS[index % REVIEW_INSIGHTS.length];
+    // Leave roughly one in three answers (indices 1, 4, 7, ...) without a note
+    // so reviewers see how the results screen renders a mix of commented and
+    // comment-less responses. Index 0 always keeps its note so a single-tester
+    // demo still shows real feedback rather than only a dash.
+    const insight =
+      index % 3 === 1
+        ? undefined
+        : REVIEW_INSIGHTS[index % REVIEW_INSIGHTS.length];
     if (checkType === "clarity") {
       answers.push({ checkType, score: 7 + (index % 4), insight }); // 7..10
     } else if (checkType === "clickability") {
@@ -458,6 +465,11 @@ const taskRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => req.canvaId ?? req.ip ?? "unknown",
+  handler: (_req, res) => {
+    res
+      .status(429)
+      .json({ error: "Too many requests", code: "rate_limited" });
+  },
 });
 
 // POST /api/task - import one task row into the Effect AI fetcher and record it in the DB
@@ -555,7 +567,9 @@ app.post("/api/task", requireCanvaId, taskRateLimit, async (req, res) => {
     if (!importRes.ok) {
       const detail = await importRes.text();
       console.error("[POST /api/task] import failed:", detail);
-      return res.status(500).json({ error: "Import failed", detail });
+      return res
+        .status(500)
+        .json({ error: "Import failed", code: "server_error", detail });
     }
 
     const record: TaskRecord = {
@@ -581,7 +595,9 @@ app.post("/api/task", requireCanvaId, taskRateLimit, async (req, res) => {
     return res.json({ taskId });
   } catch (err: any) {
     console.error("[POST /api/task] fetch threw:", err?.message ?? err);
-    return res.status(500).json({ error: err?.message ?? "Failed to submit task" });
+    return res
+      .status(500)
+      .json({ error: err?.message ?? "Failed to submit task", code: "server_error" });
   }
 });
 
@@ -613,7 +629,9 @@ app.get("/api/tasks", requireCanvaId, async (req, res) => {
     return res.json(tasks);
   } catch (err: any) {
     console.error("[GET /api/tasks] error:", err?.message ?? err);
-    return res.status(500).json({ error: err?.message ?? "Failed to fetch tasks" });
+    return res
+      .status(500)
+      .json({ error: err?.message ?? "Failed to fetch tasks", code: "server_error" });
   }
 });
 
@@ -624,7 +642,7 @@ app.get("/api/task/:taskId", requireCanvaId, async (req, res) => {
   try {
     const entry = await db.get<TaskRecord>(["canva-task", taskId]);
     if (!entry || entry.data.canvaId !== canvaId) {
-      return res.status(404).json({ error: "Task not found" });
+      return res.status(404).json({ error: "Task not found", code: "not_found" });
     }
     const task = entry.data;
     if (task.status !== "complete") {
@@ -634,7 +652,9 @@ app.get("/api/task/:taskId", requireCanvaId, async (req, res) => {
     return res.json({ status: "complete", completions, workerCount: task.workerCount, results: task.results });
   } catch (err: any) {
     console.error(`[GET /api/task/${taskId}] error:`, err?.message ?? err);
-    return res.status(500).json({ error: err?.message ?? "Failed to fetch task" });
+    return res
+      .status(500)
+      .json({ error: err?.message ?? "Failed to fetch task", code: "server_error" });
   }
 });
 
@@ -645,7 +665,7 @@ app.delete("/api/task/:taskId", requireCanvaId, async (req, res) => {
   try {
     const entry = await db.get<TaskRecord>(["canva-task", taskId]);
     if (!entry || entry.data.canvaId !== canvaId) {
-      return res.status(404).json({ error: "Task not found" });
+      return res.status(404).json({ error: "Task not found", code: "not_found" });
     }
     await db.delete(["canva-task", taskId]);
     await db.delete(["canva-user-task", userKeyPart(canvaId), taskId]);
@@ -654,7 +674,9 @@ app.delete("/api/task/:taskId", requireCanvaId, async (req, res) => {
     return res.sendStatus(204);
   } catch (err: any) {
     console.error(`[DELETE /api/task/${taskId}] error:`, err?.message ?? err);
-    return res.status(500).json({ error: err?.message ?? "Failed to delete task" });
+    return res
+      .status(500)
+      .json({ error: err?.message ?? "Failed to delete task", code: "server_error" });
   }
 });
 
