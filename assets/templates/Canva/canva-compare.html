@@ -1,0 +1,188 @@
+<div id="app" style="text-align: center">
+  <h1 class="title is-4">Effect AI — Compare Versions</h1>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 900px">
+
+    <!-- Context banner -->
+    <div class="notification is-light mb-4" v-if="purpose || audience || goal" style="text-align: left">
+      <p v-if="purpose"><strong>Purpose:</strong> {{ purpose }}</p>
+      <p v-if="audience"><strong>Audience:</strong> {{ audience }}</p>
+      <p v-if="goal"><strong>Goal:</strong> {{ goal }}</p>
+    </div>
+
+    <!-- Side-by-side images -->
+    <div class="columns is-mobile is-vcentered mb-4">
+      <div class="column">
+        <p class="label mb-2">{{ labelA }}</p>
+        <img
+          @load="onLoad"
+          :src="imageUrlA"
+          style="max-width: 100%; height: auto; border: 3px solid transparent; border-radius: 6px; cursor: pointer; transition: border-color 0.15s"
+          :style="winner === 'A' ? { borderColor: '#48c78e' } : {}"
+          @click="setWinner('A')"
+          title="Click to pick this version"
+        />
+        <div class="mt-2">
+          <button
+            class="button is-medium"
+            :class="{ 'is-success': winner === 'A' }"
+            @click="setWinner('A')"
+            title="Shortcut: A"
+          >Pick {{ labelA }}</button>
+        </div>
+      </div>
+
+      <div class="column is-narrow" style="font-size: 1.5rem; font-weight: bold; padding: 0 0.5rem">VS</div>
+
+      <div class="column">
+        <p class="label mb-2">{{ labelB }}</p>
+        <img
+          @load="onLoad"
+          :src="imageUrlB"
+          style="max-width: 100%; height: auto; border: 3px solid transparent; border-radius: 6px; cursor: pointer; transition: border-color 0.15s"
+          :style="winner === 'B' ? { borderColor: '#48c78e' } : {}"
+          @click="setWinner('B')"
+          title="Click to pick this version"
+        />
+        <div class="mt-2">
+          <button
+            class="button is-medium"
+            :class="{ 'is-success': winner === 'B' }"
+            @click="setWinner('B')"
+            title="Shortcut: B"
+          >Pick {{ labelB }}</button>
+        </div>
+      </div>
+    </div>
+
+    <hr />
+
+    <!-- Insight -->
+    <div class="field mb-4" v-if="winner !== null">
+      <label class="label">Why did you choose that version? <span class="has-text-grey">(optional)</span></label>
+      <div class="control">
+        <div class="select is-fullwidth">
+          <select v-model="insight">
+            <option value="">— Select a reason —</option>
+            <option value="Stronger or clearer headline">Stronger or clearer headline</option>
+            <option value="Better color contrast or palette">Better color contrast or palette</option>
+            <option value="More visually appealing layout">More visually appealing layout</option>
+            <option value="Clearer call to action">Clearer call to action</option>
+            <option value="Better image or visual">Better image or visual</option>
+            <option value="Easier to read">Easier to read</option>
+            <option value="More relevant to the audience">More relevant to the audience</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="control mt-2" v-if="insight === 'Other'">
+        <textarea
+          class="textarea"
+          v-model="otherText"
+          placeholder="Please tell us more…"
+          rows="2"
+        ></textarea>
+      </div>
+    </div>
+
+    <p class="has-text-danger mb-3" v-if="notComplete">Please pick a version before submitting.</p>
+
+    <button
+      class="button is-success is-large"
+      :class="{ 'is-loading': btnLoading }"
+      @click.prevent="submit"
+      title="Shortcut: Enter"
+    >Submit</button>
+
+  </div>
+
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    createApp({
+      data() {
+        return {
+          imageUrlA: "${imageUrlA}",
+          imageUrlB: "${imageUrlB}",
+          labelA: "${labelA}",
+          labelB: "${labelB}",
+          purpose: "${purpose}",
+          audience: "${audience}",
+          goal: "${goal}",
+          taskId: "${taskId}",
+          checkType: "${checkType}",
+          winner: null,
+          insight: "",
+          otherText: "",
+          btnLoading: false,
+          notComplete: false,
+        };
+      },
+      mounted() {
+        window.top.postMessage(
+          {
+            type: "task-instructions",
+            instructions: `
+              <div>
+                <p>Compare the two design versions side by side and pick the one that works better for the stated purpose and audience.</p>
+                <ul>
+                  <li>Focus on <strong>overall effectiveness</strong>, not personal taste</li>
+                  <li>Consider clarity, visual appeal, and how well it communicates</li>
+                  <li>Click on the image or use the Pick button to select</li>
+                </ul>
+                <hr>
+                <p><strong>Shortcuts:</strong> A = pick left version, B = pick right version, Enter = Submit</p>
+              </div>
+            `,
+          },
+          "*",
+        );
+        window.addEventListener("keydown", this.handleKey);
+      },
+      methods: {
+        onLoad() {},
+        setWinner(value) {
+          if (this.winner !== value) {
+            this.insight = "";
+            this.otherText = "";
+          }
+          this.winner = value;
+        },
+        handleKey(e) {
+          if (e.key === "a" || e.key === "A") this.setWinner("A");
+          if (e.key === "b" || e.key === "B") this.setWinner("B");
+          if (e.key === "Enter") this.submit();
+        },
+        submit() {
+          if (!this.winner) {
+            this.notComplete = true;
+            return;
+          }
+          this.notComplete = false;
+          this.btnLoading = true;
+          parent.postMessage(
+            {
+              task: "submit",
+              values: {
+                taskTitle: "Canva Compare Versions",
+                answer: {
+                  taskId: this.taskId,
+                  checkType: this.checkType,
+                  winner: this.winner,
+                  insight: this.insight === "Other" ? this.otherText.trim() : this.insight,
+                },
+              },
+            },
+            "*",
+          );
+          this.btnLoading = false;
+        },
+      },
+    }).mount("#app");
+  </script>
+</div>

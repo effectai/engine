@@ -1,0 +1,139 @@
+<div id="app" style="text-align: center">
+  <h1 class="title is-4">Effect AI — Clarity Check</h1>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 680px">
+
+    <!-- Image -->
+    <div class="mb-4">
+      <p class="is-size-6 mb-2" v-if="loading">Loading image…</p>
+      <img
+        @load="loading = false"
+        :src="imageUrl"
+        style="max-width: 100%; height: auto; margin: 0 auto; display: block; border: 1px solid #ddd; border-radius: 4px"
+      />
+    </div>
+
+    <!-- Intent banner -->
+    <div class="notification is-info is-light mb-5" style="text-align: left">
+      <p class="mb-1" style="text-align: center">Designer intentions:</p>
+      <p>This design is for: <strong>{{ purpose }}</strong></p>
+      <p>It's targeted at: <strong>{{ audience }}</strong></p>
+      <p>Its goal is: <strong>{{ goal }}</strong></p>
+    </div>
+
+    <!-- Rating -->
+    <p class="label mb-2">How clearly does this design communicate that intent? <strong>(1 = not at all, 10 = perfectly)</strong></p>
+    <div class="columns is-mobile is-multiline is-centered mb-3">
+      <div class="column is-narrow" v-for="n in 10" :key="n">
+        <button
+          class="button is-medium"
+          :class="{ 'is-primary': score === n }"
+          @click="score = n"
+          :title="'Score ' + n"
+        >{{ n }}</button>
+      </div>
+    </div>
+
+    <!-- Insight -->
+    <div class="field mb-4">
+      <label class="label">What would make it clearer? <span class="has-text-grey">(optional)</span></label>
+      <div class="control">
+        <textarea
+          class="textarea"
+          v-model="insight"
+          placeholder="e.g. The headline doesn't reflect the goal, the audience isn't obvious from the visuals…"
+          rows="3"
+        ></textarea>
+      </div>
+    </div>
+
+    <p class="has-text-danger mb-3" v-if="notComplete">Please select a score before submitting.</p>
+
+    <button
+      class="button is-success is-large"
+      :class="{ 'is-loading': btnLoading }"
+      @click.prevent="submit"
+      title="Shortcut: Enter"
+    >Submit</button>
+
+  </div>
+
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    createApp({
+      data() {
+        return {
+          imageUrl: "${imageUrl}",
+          purpose: "${purpose}",
+          audience: "${audience}",
+          goal: "${goal}",
+          taskId: "${taskId}",
+          checkType: "${checkType}",
+          score: null,
+          insight: "",
+          loading: true,
+          btnLoading: false,
+          notComplete: false,
+        };
+      },
+      mounted() {
+        window.top.postMessage(
+          {
+            type: "task-instructions",
+            instructions: `
+              <div>
+                <p>You'll see a design along with the designer's stated intent. Rate how clearly the design communicates that intent.</p>
+                <ul>
+                  <li><strong>1-3</strong>: The design doesn't communicate the intent at all</li>
+                  <li><strong>4-6</strong>: Partially clear - some elements work but something is off</li>
+                  <li><strong>7-9</strong>: Mostly clear - communicates well with minor issues</li>
+                  <li><strong>10</strong>: Perfectly clear - the intent is immediately obvious</li>
+                </ul>
+                <p>Optionally suggest what would make it clearer.</p>
+                <hr>
+                <p><strong>Shortcut:</strong> Enter to submit</p>
+              </div>
+            `,
+          },
+          "*",
+        );
+        window.addEventListener("keydown", this.handleKey);
+      },
+      methods: {
+        handleKey(e) {
+          if (e.key === "Enter") this.submit();
+        },
+        submit() {
+          if (this.score === null) {
+            this.notComplete = true;
+            return;
+          }
+          this.notComplete = false;
+          this.btnLoading = true;
+          parent.postMessage(
+            {
+              task: "submit",
+              values: {
+                taskTitle: "Canva Clarity Check",
+                answer: {
+                  taskId: this.taskId,
+                  checkType: this.checkType,
+                  score: this.score,
+                  insight: this.insight.trim(),
+                },
+              },
+            },
+            "*",
+          );
+          this.btnLoading = false;
+        },
+      },
+    }).mount("#app");
+  </script>
+</div>
