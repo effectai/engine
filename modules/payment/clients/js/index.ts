@@ -1,4 +1,4 @@
-export * from "./@generated";
+export * from "./@generated/index.js";
 export * from "./consts.js";
 export * from "./utils.js";
 

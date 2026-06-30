@@ -1,4 +1,4 @@
-import { availableCapabilities } from "@capabilities";
+import { availableCapabilities } from "../consts.js";
 
 import type { ManagerSettings } from "../main.js";
 import {

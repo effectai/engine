@@ -8,7 +8,7 @@ import {
 import {
   EFFECT_VESTING_PROGRAM_ADDRESS,
   VESTING_ACCOUNT_DISCRIMINATOR,
-} from "./@generated";
+} from "./@generated/index.js";
 
 export const getActiveVestingAccountsForTokenAccount = async ({
   rpc,
