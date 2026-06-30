@@ -1,0 +1,252 @@
+# API Reference
+
+The Effect AI Requestor API lets you post microtask jobs to the Effect AI network and retrieve completed results — without needing the Effect team involved after initial setup.
+
+Bring a CSV of inputs and an HTML template. Workers on the network complete one task per row. You poll for results.
+
+## Base URL
+
+```
+https://api.effect.ai/api/v1
+```
+
+All endpoints are prefixed with `/api/v1`.
+
+## Authentication
+
+All endpoints except `POST /signup` require an API key passed as a Bearer token:
+
+```bash
+-H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+Alternatively, use the `X-API-Key` header:
+
+```bash
+-H "X-API-Key: eff_live_YOUR_KEY"
+```
+
+API keys are prefixed `eff_live_` and are shown **exactly once** at issuance. Store yours securely — it cannot be recovered if lost. You can revoke and issue a new one via [API Keys](/api/keys).
+
+## Credits
+
+All jobs are paid for with **EFFECT** credits, debited upfront when a job is created. New accounts start with a zero balance. Contact the Effect team to top up your account. Every balance change is recorded in the [credit ledger](/api/credits).
+
+| Unit | Value |
+|---|---|
+| 1 EFFECT | 1,000,000 lamports |
+| Min reward | 0.001 EFFECT per task |
+| Max reward | 100 EFFECT per task |
+| Max job cost | 1,000,000 EFFECT |
+
+## Rate limits
+
+| Scope | Limit |
+|---|---|
+| API requests | 120 per minute per key |
+| Signups | 3 per IP per day |
+
+Rate limit headers are returned on every response:
+
+```
+X-RateLimit-Limit: 120
+X-RateLimit-Remaining: 119
+```
+
+## Error responses
+
+All errors return a consistent JSON envelope:
+
+```json
+{
+  "error": {
+    "code": "insufficient_credits",
+    "message": "account balance too low to cover job cost"
+  }
+}
+```
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `unauthorized` | 401 | Missing or invalid API key |
+| `forbidden` | 403 | Key is valid but you don't own this resource |
+| `not_found` | 404 | Resource does not exist |
+| `invalid_request` | 400 | Bad input — missing field, bad CSV, validation failure |
+| `insufficient_credits` | 402 | Not enough credit balance |
+| `rate_limited` | 429 | Over the rate limit |
+| `internal` | 500 | Server error (credits auto-refunded if job creation fails mid-way) |
+
+## Quick start
+
+### 1. Sign up
+
+:::code-group
+
+```bash [curl]
+curl -s -X POST "https://api.effect.ai/api/v1/signup" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Acme Corp", "email": "you@acme.com"}'
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/signup', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ name: 'Acme Corp', email: 'you@acme.com' })
+})
+const { key } = await res.json()
+// Store `key` — it is shown only once
+```
+
+```python [Python]
+import requests
+
+res = requests.post(
+    'https://api.effect.ai/api/v1/signup',
+    json={'name': 'Acme Corp', 'email': 'you@acme.com'}
+)
+key = res.json()['key']  # Store this — shown only once
+```
+
+:::
+
+### 2. Check your balance
+
+:::code-group
+
+```bash [curl]
+curl -s "https://api.effect.ai/api/v1/account" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/account', {
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const account = await res.json()
+console.log(account.credits.balance) // in lamports
+```
+
+```python [Python]
+import requests
+
+res = requests.get(
+    'https://api.effect.ai/api/v1/account',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
+)
+print(res.json()['credits']['balance'])  # in lamports
+```
+
+:::
+
+### 3. Browse templates
+
+:::code-group
+
+```bash [curl]
+curl -s "https://api.effect.ai/api/v1/templates" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/templates', {
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const { templates } = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.get(
+    'https://api.effect.ai/api/v1/templates',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
+)
+templates = res.json()['templates']
+```
+
+:::
+
+### 4. Post a job
+
+:::code-group
+
+```bash [curl]
+curl -s -X POST "https://api.effect.ai/api/v1/jobs" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "csv",
+    "name": "My first job",
+    "templateId": "TEMPLATE_ID",
+    "reward": "0.5",
+    "csv": "product,question\nWidget,Is this good?"
+  }'
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/jobs', {
+  method: 'POST',
+  headers: {
+    Authorization: 'Bearer eff_live_YOUR_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    type: 'csv',
+    name: 'My first job',
+    templateId: 'TEMPLATE_ID',
+    reward: '0.5',
+    csv: 'product,question\nWidget,Is this good?'
+  })
+})
+const job = await res.json()
+console.log(job.id) // save this to poll for results
+```
+
+```python [Python]
+import requests
+
+res = requests.post(
+    'https://api.effect.ai/api/v1/jobs',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    json={
+        'type': 'csv',
+        'name': 'My first job',
+        'templateId': 'TEMPLATE_ID',
+        'reward': '0.5',
+        'csv': 'product,question\nWidget,Is this good?'
+    }
+)
+job_id = res.json()['id']  # save this to poll for results
+```
+
+:::
+
+### 5. Poll for results
+
+:::code-group
+
+```bash [curl]
+curl -s "https://api.effect.ai/api/v1/jobs/JOB_ID/results" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/jobs/JOB_ID/results', {
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const { results, total } = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.get(
+    'https://api.effect.ai/api/v1/jobs/JOB_ID/results',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
+)
+data = res.json()
+print(data['total'], 'completed results')
+```
+
+:::

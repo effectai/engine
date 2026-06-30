@@ -1,0 +1,611 @@
+# Jobs
+
+A job is a batch of tasks posted to the Effect AI worker network. Workers complete tasks and submit answers; you poll for results.
+
+Credits are **debited upfront** at job creation (`reward × taskCount`). If a job fails to create after the debit, credits are automatically refunded.
+
+## Job types
+
+| Type | How it works | Best for |
+|---|---|---|
+| `csv` | One task per CSV row, each row seen by one worker | Labelling, classification, transcription |
+| `constant` | Same data sent to up to `maxTasks` different workers | Surveys, repeated annotation, consensus tasks |
+
+---
+
+## Estimate cost
+
+`POST /api/v1/jobs/estimate`
+
+Validates a job and returns the cost without charging your account.
+
+### CSV estimate
+
+:::code-group
+
+```bash [curl]
+curl -s -X POST "https://api.effect.ai/api/v1/jobs/estimate" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "csv",
+    "templateId": "TEMPLATE_ID",
+    "reward": "0.5",
+    "csv": "product,question\nWidget A,Is this good?\nGadget B,Is this good?"
+  }'
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/jobs/estimate', {
+  method: 'POST',
+  headers: {
+    Authorization: 'Bearer eff_live_YOUR_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    type: 'csv',
+    templateId: 'TEMPLATE_ID',
+    reward: '0.5',
+    csv: 'product,question\nWidget A,Is this good?\nGadget B,Is this good?'
+  })
+})
+const estimate = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.post(
+    'https://api.effect.ai/api/v1/jobs/estimate',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    json={
+        'type': 'csv',
+        'templateId': 'TEMPLATE_ID',
+        'reward': '0.5',
+        'csv': 'product,question\nWidget A,Is this good?\nGadget B,Is this good?'
+    }
+)
+estimate = res.json()
+```
+
+:::
+
+### Constant estimate
+
+:::code-group
+
+```bash [curl]
+curl -s -X POST "https://api.effect.ai/api/v1/jobs/estimate" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "constant",
+    "templateId": "TEMPLATE_ID",
+    "reward": "0.2",
+    "maxTasks": 50,
+    "data": {"product": "Widget A", "question": "Is this good?"}
+  }'
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/jobs/estimate', {
+  method: 'POST',
+  headers: {
+    Authorization: 'Bearer eff_live_YOUR_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    type: 'constant',
+    templateId: 'TEMPLATE_ID',
+    reward: '0.2',
+    maxTasks: 50,
+    data: { product: 'Widget A', question: 'Is this good?' }
+  })
+})
+const estimate = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.post(
+    'https://api.effect.ai/api/v1/jobs/estimate',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    json={
+        'type': 'constant',
+        'templateId': 'TEMPLATE_ID',
+        'reward': '0.2',
+        'maxTasks': 50,
+        'data': {'product': 'Widget A', 'question': 'Is this good?'}
+    }
+)
+estimate = res.json()
+```
+
+:::
+
+**Response `200`**
+
+```json
+{
+  "type": "csv",
+  "taskCount": 2,
+  "rewardPerTask": "0.5",
+  "cost": "1",
+  "currency": "EFFECT",
+  "balance": "25",
+  "sufficient": true
+}
+```
+
+---
+
+## Create a job
+
+`POST /api/v1/jobs`
+
+Creates a job, debits your credits, and immediately begins posting tasks to workers.
+
+### CSV job
+
+:::code-group
+
+```bash [curl]
+curl -s -X POST "https://api.effect.ai/api/v1/jobs" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "csv",
+    "name": "Sentiment Labelling",
+    "templateId": "TEMPLATE_ID",
+    "reward": "0.5",
+    "csv": "product,question\nWidget A,Is this good?\nGadget B,Is this good?",
+    "uniqueWorker": false,
+    "timeLimitSeconds": 600
+  }'
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/jobs', {
+  method: 'POST',
+  headers: {
+    Authorization: 'Bearer eff_live_YOUR_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    type: 'csv',
+    name: 'Sentiment Labelling',
+    templateId: 'TEMPLATE_ID',
+    reward: '0.5',
+    csv: 'product,question\nWidget A,Is this good?\nGadget B,Is this good?',
+    uniqueWorker: false,
+    timeLimitSeconds: 600
+  })
+})
+const job = await res.json()
+console.log(job.id) // use this to poll for status and results
+```
+
+```python [Python]
+import requests
+
+res = requests.post(
+    'https://api.effect.ai/api/v1/jobs',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    json={
+        'type': 'csv',
+        'name': 'Sentiment Labelling',
+        'templateId': 'TEMPLATE_ID',
+        'reward': '0.5',
+        'csv': 'product,question\nWidget A,Is this good?\nGadget B,Is this good?',
+        'uniqueWorker': False,
+        'timeLimitSeconds': 600
+    }
+)
+job = res.json()
+job_id = job['id']  # use this to poll for status and results
+```
+
+:::
+
+**CSV job fields**
+
+| Field | Required | Description |
+|---|---|---|
+| `type` | Yes | `"csv"` |
+| `name` | Yes | Display name for the job |
+| `templateId` | Yes | ID of the template to use |
+| `reward` | Yes | EFFECT reward per completed task (0.001–100) |
+| `csv` | Yes | CSV string — first row is header, max 10,000 rows |
+| `uniqueWorker` | No | `true` prevents the same worker completing multiple tasks |
+| `timeLimitSeconds` | No | Seconds a worker has to complete a task before re-queue |
+| `capability` | No | Filter to workers with a specific capability tag |
+
+### Constant job
+
+:::code-group
+
+```bash [curl]
+curl -s -X POST "https://api.effect.ai/api/v1/jobs" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "constant",
+    "name": "Widget Survey",
+    "templateId": "TEMPLATE_ID",
+    "reward": "0.2",
+    "maxTasks": 25,
+    "data": {"product": "Widget A", "question": "Is this good?"},
+    "uniqueWorker": true
+  }'
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/jobs', {
+  method: 'POST',
+  headers: {
+    Authorization: 'Bearer eff_live_YOUR_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    type: 'constant',
+    name: 'Widget Survey',
+    templateId: 'TEMPLATE_ID',
+    reward: '0.2',
+    maxTasks: 25,
+    data: { product: 'Widget A', question: 'Is this good?' },
+    uniqueWorker: true
+  })
+})
+const job = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.post(
+    'https://api.effect.ai/api/v1/jobs',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    json={
+        'type': 'constant',
+        'name': 'Widget Survey',
+        'templateId': 'TEMPLATE_ID',
+        'reward': '0.2',
+        'maxTasks': 25,
+        'data': {'product': 'Widget A', 'question': 'Is this good?'},
+        'uniqueWorker': True
+    }
+)
+job = res.json()
+```
+
+:::
+
+**Constant job fields**
+
+| Field | Required | Description |
+|---|---|---|
+| `type` | Yes | `"constant"` |
+| `name` | Yes | Display name |
+| `templateId` | Yes | Template ID |
+| `reward` | Yes | EFFECT reward per completed task |
+| `maxTasks` | Yes | How many workers should answer (cost = reward × maxTasks) |
+| `data` | Yes | Object with a key for each template field |
+| `uniqueWorker` | No | `true` ensures each worker answers only once (recommended for surveys) |
+| `timeLimitSeconds` | No | Seconds per task before re-queue |
+| `capability` | No | Capability filter |
+
+**Response `201`** (same shape for both types)
+
+```json
+{
+  "id": "01JQKX3Z8VFNWRB2TGHM4Y5P6B",
+  "name": "Sentiment Labelling",
+  "type": "csv",
+  "status": "active",
+  "templateId": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "reward": "0.5",
+  "taskCount": 2,
+  "uniqueWorker": false,
+  "createdAt": 1750000100000,
+  "tasks": {
+    "queued": 2,
+    "active": 0,
+    "completed": 0,
+    "failed": 0
+  },
+  "credits": {
+    "currency": "EFFECT",
+    "reserved": "1",
+    "consumed": "0",
+    "refunded": "0",
+    "remaining": "1"
+  }
+}
+```
+
+---
+
+## List jobs
+
+`GET /api/v1/jobs`
+
+Returns all your jobs, newest first.
+
+:::code-group
+
+```bash [curl]
+curl -s "https://api.effect.ai/api/v1/jobs?limit=10&offset=0" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/jobs?limit=10&offset=0', {
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const { jobs, total } = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.get(
+    'https://api.effect.ai/api/v1/jobs',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    params={'limit': 10, 'offset': 0}
+)
+data = res.json()
+```
+
+:::
+
+---
+
+## Get job status
+
+`GET /api/v1/jobs/:id`
+
+Returns live task counts and credit breakdown. Poll this to monitor progress.
+
+A job is fully complete when `tasks.queued + tasks.active === 0`.
+
+:::code-group
+
+```bash [curl]
+curl -s "https://api.effect.ai/api/v1/jobs/JOB_ID" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/jobs/JOB_ID', {
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const job = await res.json()
+const isDone = job.tasks.queued + job.tasks.active === 0
+```
+
+```python [Python]
+import requests
+
+res = requests.get(
+    'https://api.effect.ai/api/v1/jobs/JOB_ID',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
+)
+job = res.json()
+is_done = job['tasks']['queued'] + job['tasks']['active'] == 0
+```
+
+:::
+
+**Response `200`**
+
+```json
+{
+  "id": "01JQKX3Z8VFNWRB2TGHM4Y5P6B",
+  "name": "Sentiment Labelling",
+  "type": "csv",
+  "status": "active",
+  "templateId": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "reward": "0.5",
+  "taskCount": 2,
+  "uniqueWorker": false,
+  "createdAt": 1750000100000,
+  "tasks": {
+    "queued": 0,
+    "active": 1,
+    "completed": 1,
+    "failed": 0
+  },
+  "credits": {
+    "currency": "EFFECT",
+    "reserved": "1",
+    "consumed": "0.5",
+    "refunded": "0",
+    "remaining": "0.5"
+  }
+}
+```
+
+---
+
+## Get results
+
+`GET /api/v1/jobs/:id/results`
+
+Returns completed task results, newest first. Available as JSON (default) or CSV download.
+
+### JSON results
+
+:::code-group
+
+```bash [curl]
+curl -s "https://api.effect.ai/api/v1/jobs/JOB_ID/results?limit=10&offset=0" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch(
+  'https://api.effect.ai/api/v1/jobs/JOB_ID/results?limit=10&offset=0',
+  { headers: { Authorization: 'Bearer eff_live_YOUR_KEY' } }
+)
+const { results, total } = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.get(
+    'https://api.effect.ai/api/v1/jobs/JOB_ID/results',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    params={'limit': 10, 'offset': 0}
+)
+data = res.json()
+```
+
+:::
+
+**Response `200`**
+
+```json
+{
+  "jobId": "01JQKX3Z8VFNWRB2TGHM4Y5P6B",
+  "count": 2,
+  "total": 2,
+  "limit": 100,
+  "offset": 0,
+  "results": [
+    {
+      "taskId": "01JQKX3Z8VFNWRB2TGHM4Y5P6D",
+      "submittedAt": 1750000300000,
+      "worker": "12D3KooWHYeaXgA4Rv8sqFGrLnh6sLNAS2jxaw1KhaSsYGT3PQab",
+      "input": {
+        "product": "Gadget B",
+        "question": "Is this good?"
+      },
+      "result": "{\"answer\":\"yes\",\"confidence\":0.9}"
+    },
+    {
+      "taskId": "01JQKX3Z8VFNWRB2TGHM4Y5P6C",
+      "submittedAt": 1750000200000,
+      "worker": "12D3KooWRv8sqFGrHYeaXgA4Lnh6sLNAS2jxaw1KhaSsYGT3PQcd",
+      "input": {
+        "product": "Widget A",
+        "question": "Is this good?"
+      },
+      "result": "{\"answer\":\"no\",\"confidence\":0.7}"
+    }
+  ]
+}
+```
+
+| Field | Description |
+|---|---|
+| `worker` | Worker's peer ID on the network |
+| `input` | The CSV row data shown to the worker |
+| `result` | JSON string — the values the worker submitted via `postMessage` |
+
+### CSV download
+
+:::code-group
+
+```bash [curl]
+curl -s "https://api.effect.ai/api/v1/jobs/JOB_ID/results?format=csv" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY" \
+  -o results.csv
+```
+
+```js [JavaScript]
+const res = await fetch(
+  'https://api.effect.ai/api/v1/jobs/JOB_ID/results?format=csv',
+  { headers: { Authorization: 'Bearer eff_live_YOUR_KEY' } }
+)
+const csv = await res.text()
+// or save to file in Node.js:
+// fs.writeFileSync('results.csv', csv)
+```
+
+```python [Python]
+import requests
+
+res = requests.get(
+    'https://api.effect.ai/api/v1/jobs/JOB_ID/results',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    params={'format': 'csv'}
+)
+with open('results.csv', 'w') as f:
+    f.write(res.text)
+```
+
+:::
+
+CSV columns: `taskId`, `submittedAt`, `worker`, `input`, `result`
+
+---
+
+## Cancel a job
+
+`POST /api/v1/jobs/:id/cancel`
+
+Stops posting new tasks to workers. Tasks already in progress continue to completion. Credits for tasks never sent to a worker are refunded.
+
+Idempotent — cancelling an already-cancelled job returns `200`.
+
+:::code-group
+
+```bash [curl]
+curl -s -X POST "https://api.effect.ai/api/v1/jobs/JOB_ID/cancel" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/jobs/JOB_ID/cancel', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const job = await res.json()
+console.log(job.credits.refunded) // EFFECT refunded
+```
+
+```python [Python]
+import requests
+
+res = requests.post(
+    'https://api.effect.ai/api/v1/jobs/JOB_ID/cancel',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
+)
+job = res.json()
+print(job['credits']['refunded'])  # EFFECT refunded
+```
+
+:::
+
+**Response `200`**
+
+```json
+{
+  "id": "01JQKX3Z8VFNWRB2TGHM4Y5P6B",
+  "name": "Sentiment Labelling",
+  "type": "csv",
+  "status": "cancelled",
+  "templateId": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "reward": "0.5",
+  "taskCount": 2,
+  "uniqueWorker": false,
+  "createdAt": 1750000100000,
+  "tasks": {
+    "queued": 0,
+    "active": 0,
+    "completed": 1,
+    "failed": 0
+  },
+  "credits": {
+    "currency": "EFFECT",
+    "reserved": "1",
+    "consumed": "0.5",
+    "refunded": "0.5",
+    "remaining": "0"
+  }
+}
+```
+
+1 task completed (0.5 EFFECT consumed), 1 task never sent to a worker (0.5 EFFECT refunded). `remaining` reaches zero — the account is fully settled.

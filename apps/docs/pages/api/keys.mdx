@@ -1,0 +1,203 @@
+# API Keys
+
+List, issue, and revoke your API keys without needing Effect team involvement.
+
+Keys are prefixed `eff_live_` and stored as SHA-256 hashes — the raw key is shown exactly once at issuance and can never be recovered. If you lose your key, revoke it and issue a new one.
+
+:::note
+Accounts are currently limited to **one active key at a time**. Issue a new key only after revoking the old one.
+:::
+
+---
+
+## List keys
+
+`GET /api/v1/keys`
+
+Returns all keys for your account. Raw keys are never returned — only the prefix and hash.
+
+:::code-group
+
+```bash [curl]
+curl -s "https://api.effect.ai/api/v1/keys" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/keys', {
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const { keys } = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.get(
+    'https://api.effect.ai/api/v1/keys',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
+)
+keys = res.json()['keys']
+```
+
+:::
+
+**Response `200`**
+
+```json
+{
+  "keys": [
+    {
+      "hash": "a3f8d2c1e4b5a9f0d7c6e3b2a1f8d5c4e9b0a7f6d3c2e1b4a5f8d9c0e3b2a1f",
+      "prefix": "eff_live_dGhp",
+      "status": "active",
+      "createdAt": 1750000000000
+    }
+  ],
+  "total": 1
+}
+```
+
+| Field | Description |
+|---|---|
+| `hash` | SHA-256 hash of the key — use this to revoke |
+| `prefix` | First few characters of the raw key for identification |
+| `status` | `"active"` or `"revoked"` |
+
+---
+
+## Issue a new key
+
+`POST /api/v1/keys`
+
+Issues a new API key. The raw key is returned **once** — copy it immediately.
+
+Returns `403 forbidden` if you already have an active key. Revoke your existing key first.
+
+:::code-group
+
+```bash [curl]
+curl -s -X POST "https://api.effect.ai/api/v1/keys" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/keys', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const data = await res.json()
+// data.key is shown only once — store it securely
+```
+
+```python [Python]
+import requests
+
+res = requests.post(
+    'https://api.effect.ai/api/v1/keys',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
+)
+data = res.json()
+# data['key'] is shown only once — store it securely
+```
+
+:::
+
+**Response `201`**
+
+```json
+{
+  "key": "eff_live_bmV3a2V5Zm9yZG9jdW1lbnRhdGlvbmV4YW1wbGU",
+  "hash": "b4e9c3f2a1d8e5b0c7f4a3e2d1b8c5f4a9e0b7c4f3a2e1d0b5c8f7a4e3d2c1b",
+  "prefix": "eff_live_bmV3",
+  "status": "active",
+  "createdAt": 1750000100000
+}
+```
+
+| Field | Description |
+|---|---|
+| `key` | Raw API key — this is the only time it will be shown |
+| `hash` | SHA-256 hash — save this if you need to revoke later |
+
+---
+
+## Revoke a key
+
+`DELETE /api/v1/keys/:hash`
+
+Revokes a key by its SHA-256 hash. Idempotent — revoking an already-revoked key returns `200`.
+
+Returns `404` if the hash doesn't belong to your account.
+
+:::code-group
+
+```bash [curl]
+curl -s -X DELETE "https://api.effect.ai/api/v1/keys/KEY_HASH" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/keys/KEY_HASH', {
+  method: 'DELETE',
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const data = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.delete(
+    'https://api.effect.ai/api/v1/keys/KEY_HASH',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
+)
+data = res.json()
+```
+
+:::
+
+**Response `200`**
+
+```json
+{
+  "hash": "a3f8d2c1e4b5a9f0d7c6e3b2a1f8d5c4e9b0a7f6d3c2e1b4a5f8d9c0e3b2a1f",
+  "prefix": "eff_live_dGhp",
+  "status": "revoked",
+  "createdAt": 1750000000000
+}
+```
+
+### Revoking your last active key
+
+Revoking the only active key requires an explicit confirmation query parameter to prevent accidental lockout:
+
+:::code-group
+
+```bash [curl]
+curl -s -X DELETE "https://api.effect.ai/api/v1/keys/KEY_HASH?confirm=DELETE" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/keys/KEY_HASH?confirm=DELETE', {
+  method: 'DELETE',
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const data = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.delete(
+    'https://api.effect.ai/api/v1/keys/KEY_HASH',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    params={'confirm': 'DELETE'}
+)
+data = res.json()
+```
+
+:::
+
+Without `?confirm=DELETE`, the request returns `400 invalid_request` with a message explaining that this is your last active key.

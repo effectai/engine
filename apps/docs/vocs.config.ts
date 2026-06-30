@@ -94,6 +94,35 @@ export default defineConfig({
       ],
     },
     {
+      text: "API Reference",
+      items: [
+        {
+          text: "Getting Started",
+          link: "/api",
+        },
+        {
+          text: "Account",
+          link: "/api/account",
+        },
+        {
+          text: "API Keys",
+          link: "/api/keys",
+        },
+        {
+          text: "Credits",
+          link: "/api/credits",
+        },
+        {
+          text: "Templates",
+          link: "/api/templates",
+        },
+        {
+          text: "Jobs",
+          link: "/api/jobs",
+        },
+      ],
+    },
+    {
       text: "Community",
       items: [
         {

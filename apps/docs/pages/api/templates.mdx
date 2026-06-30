@@ -1,0 +1,383 @@
+# Templates
+
+Templates are the HTML pages workers see when completing tasks. Fields like `${product}` are filled from your CSV columns at task-serve time.
+
+Templates are **content-addressed** — the template ID is a hash of the HTML, so submitting the same HTML always produces the same ID regardless of submission order.
+
+## Trust levels
+
+| Badge | Meaning |
+|---|---|
+| Verified | Approved by the Effect team — full trust |
+| Unverified | Submitted by a requestor — workers see a caution warning |
+
+You can request team approval when creating a template. Unapproved templates are usable immediately.
+
+---
+
+## List templates
+
+`GET /api/v1/templates`
+
+Returns the public approved catalog plus your own templates. Archived templates are excluded.
+
+:::code-group
+
+```bash [curl]
+curl -s "https://api.effect.ai/api/v1/templates" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/templates', {
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const { templates, total } = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.get(
+    'https://api.effect.ai/api/v1/templates',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
+)
+templates = res.json()['templates']
+```
+
+:::
+
+### With pagination
+
+:::code-group
+
+```bash [curl]
+curl -s "https://api.effect.ai/api/v1/templates?limit=20&offset=0" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch(
+  'https://api.effect.ai/api/v1/templates?limit=20&offset=0',
+  { headers: { Authorization: 'Bearer eff_live_YOUR_KEY' } }
+)
+const { templates, total } = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.get(
+    'https://api.effect.ai/api/v1/templates',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    params={'limit': 20, 'offset': 0}
+)
+templates = res.json()['templates']
+```
+
+:::
+
+**Response `200`**
+
+```json
+{
+  "templates": [
+    {
+      "templateId": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+      "name": "Sentiment Analysis",
+      "fields": ["product", "question"],
+      "approved": true,
+      "owned": false
+    },
+    {
+      "templateId": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+      "name": "My Custom Labeller",
+      "fields": ["image_url", "label_options"],
+      "approved": false,
+      "owned": true
+    }
+  ],
+  "total": 2,
+  "limit": 100,
+  "offset": 0
+}
+```
+
+---
+
+## Get a template
+
+`GET /api/v1/templates/:id`
+
+Returns metadata for a single template. You can only access templates that are approved or owned by your account.
+
+:::code-group
+
+```bash [curl]
+curl -s "https://api.effect.ai/api/v1/templates/TEMPLATE_ID" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/templates/TEMPLATE_ID', {
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const template = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.get(
+    'https://api.effect.ai/api/v1/templates/TEMPLATE_ID',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
+)
+template = res.json()
+```
+
+:::
+
+**Response `200`**
+
+```json
+{
+  "templateId": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "name": "Sentiment Analysis",
+  "fields": ["product", "question"],
+  "approved": true,
+  "owned": false,
+  "status": "active",
+  "approvalRequested": false,
+  "createdAt": 1750000000000
+}
+```
+
+---
+
+## Preview a template
+
+`GET /api/v1/templates/:id/preview`
+
+Returns the template's rendered HTML with each field filled in using its own name as a sample value (e.g. `${product}` becomes `product`). Useful for inspecting layout before using it in a job.
+
+:::code-group
+
+```bash [curl]
+curl -s "https://api.effect.ai/api/v1/templates/TEMPLATE_ID/preview" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/templates/TEMPLATE_ID/preview', {
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const { html, fields } = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.get(
+    'https://api.effect.ai/api/v1/templates/TEMPLATE_ID/preview',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
+)
+data = res.json()
+```
+
+:::
+
+**Response `200`**
+
+```json
+{
+  "templateId": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "name": "Sentiment Analysis",
+  "fields": ["product", "question"],
+  "approved": true,
+  "html": "<h1>product</h1><p>question</p><button>Yes</button><button>No</button>"
+}
+```
+
+---
+
+## Create a template
+
+`POST /api/v1/templates`
+
+Registers a new HTML template. Templates are usable immediately (with an unverified badge shown to workers). Optionally request team approval to get a verified badge.
+
+Workers submit answers by posting a message to the parent window:
+
+```js
+window.parent.postMessage({ task: 'submit', values: { label: 'yes' } }, '*')
+```
+
+### Without approval request
+
+:::code-group
+
+```bash [curl]
+curl -s -X POST "https://api.effect.ai/api/v1/templates" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Sentiment Analysis",
+    "html": "<h1>${product}</h1><p>${question}</p><button onclick=\"window.parent.postMessage({task:'\''submit'\'',values:{answer:'\''yes'\''}},'\''*'\'')\">Yes</button>"
+  }'
+```
+
+```js [JavaScript]
+const html = `
+  <h1>\${product}</h1>
+  <p>\${question}</p>
+  <button onclick="window.parent.postMessage({task:'submit',values:{answer:'yes'}},'*')">Yes</button>
+`
+
+const res = await fetch('https://api.effect.ai/api/v1/templates', {
+  method: 'POST',
+  headers: {
+    Authorization: 'Bearer eff_live_YOUR_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ name: 'Sentiment Analysis', html })
+})
+const template = await res.json()
+```
+
+```python [Python]
+import requests
+
+html = """
+  <h1>${product}</h1>
+  <p>${question}</p>
+  <button onclick="window.parent.postMessage({task:'submit',values:{answer:'yes'}},'*')">Yes</button>
+"""
+
+res = requests.post(
+    'https://api.effect.ai/api/v1/templates',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    json={'name': 'Sentiment Analysis', 'html': html}
+)
+template = res.json()
+```
+
+:::
+
+### With approval request
+
+:::code-group
+
+```bash [curl]
+curl -s -X POST "https://api.effect.ai/api/v1/templates" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Sentiment Analysis",
+    "html": "<h1>${product}</h1>...",
+    "requestApproval": true
+  }'
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/templates', {
+  method: 'POST',
+  headers: {
+    Authorization: 'Bearer eff_live_YOUR_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'Sentiment Analysis',
+    html: '<h1>${product}</h1>...',
+    requestApproval: true
+  })
+})
+const template = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.post(
+    'https://api.effect.ai/api/v1/templates',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    json={
+        'name': 'Sentiment Analysis',
+        'html': '<h1>${product}</h1>...',
+        'requestApproval': True
+    }
+)
+template = res.json()
+```
+
+:::
+
+**Response `201`**
+
+```json
+{
+  "templateId": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+  "name": "Sentiment Analysis",
+  "fields": ["product", "question"],
+  "approved": false,
+  "owned": true,
+  "approvalRequested": true
+}
+```
+
+:::note
+Submitting identical HTML always returns the same `templateId` and does not reset the approval status. To get a new ID, change the HTML.
+:::
+
+---
+
+## Delete a template
+
+`DELETE /api/v1/templates/:id`
+
+Soft-archives your template. It disappears from listings and cannot be used in new jobs. Existing running jobs are not affected.
+
+The archive is reversible — resubmitting the same HTML via `POST /templates` revives the template with its previous approval status intact.
+
+:::code-group
+
+```bash [curl]
+curl -s -X DELETE "https://api.effect.ai/api/v1/templates/TEMPLATE_ID" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/templates/TEMPLATE_ID', {
+  method: 'DELETE',
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const template = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.delete(
+    'https://api.effect.ai/api/v1/templates/TEMPLATE_ID',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
+)
+template = res.json()
+```
+
+:::
+
+**Response `200`**
+
+```json
+{
+  "templateId": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+  "name": "Sentiment Analysis",
+  "fields": ["product", "question"],
+  "approved": false,
+  "owned": true,
+  "status": "archived",
+  "approvalRequested": false,
+  "createdAt": 1750000000000
+}
+```
+
+Returns `403 forbidden` if you attempt to delete a template you don't own.

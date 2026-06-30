@@ -1,0 +1,262 @@
+# Account
+
+Manage your account profile and credit balance.
+
+## Sign up
+
+`POST /api/v1/signup` — **No authentication required**
+
+Creates a new account and issues your first API key. The raw key is shown **once** in the response and cannot be recovered — copy it immediately.
+
+Rate-limited to 3 signups per IP per day.
+
+:::code-group
+
+```bash [curl]
+curl -s -X POST "https://api.effect.ai/api/v1/signup" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Corp",
+    "email": "you@acme.com"
+  }'
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/signup', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ name: 'Acme Corp', email: 'you@acme.com' })
+})
+const data = await res.json()
+// data.key is shown only once — store it securely
+```
+
+```python [Python]
+import requests
+
+res = requests.post(
+    'https://api.effect.ai/api/v1/signup',
+    json={'name': 'Acme Corp', 'email': 'you@acme.com'}
+)
+data = res.json()
+# data['key'] is shown only once — store it securely
+```
+
+:::
+
+**Response `201`**
+
+```json
+{
+  "key": "eff_live_dGhpcyBpcyBhIHRlc3Qga2V5IGZvciBkb2Nz",
+  "accountId": "01JQKX3Z8VFNWRB2TGHM4Y5P6A",
+  "name": "Acme Corp"
+}
+```
+
+| Field | Description |
+|---|---|
+| `key` | Your API key — store this securely, shown once only |
+| `accountId` | Unique account identifier |
+| `name` | Account display name |
+
+:::note
+`email` is optional. New accounts start with a zero EFFECT balance. Contact the Effect team to top up your account before posting jobs.
+:::
+
+---
+
+## Get account
+
+`GET /api/v1/account`
+
+Returns your account details and current credit balance.
+
+:::code-group
+
+```bash [curl]
+curl -s "https://api.effect.ai/api/v1/account" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY"
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/account', {
+  headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
+})
+const account = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.get(
+    'https://api.effect.ai/api/v1/account',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
+)
+account = res.json()
+```
+
+:::
+
+**Response `200`**
+
+```json
+{
+  "id": "01JQKX3Z8VFNWRB2TGHM4Y5P6A",
+  "name": "Acme Corp",
+  "email": "you@acme.com",
+  "status": "active",
+  "createdAt": 1750000000000,
+  "credits": {
+    "balance": "25000000",
+    "currency": "EFFECT",
+    "lamportsPerEffect": 1000000
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `credits.balance` | Current balance in lamports (divide by `lamportsPerEffect` to get EFFECT) |
+| `credits.currency` | Always `"EFFECT"` |
+| `credits.lamportsPerEffect` | Conversion rate — 1 EFFECT = 1,000,000 lamports |
+
+The balance above (`"25000000"`) equals **25 EFFECT**.
+
+---
+
+## Update account
+
+`PATCH /api/v1/account`
+
+Updates your account name and/or email. Only fields present in the body are changed.
+
+### Update name
+
+:::code-group
+
+```bash [curl]
+curl -s -X PATCH "https://api.effect.ai/api/v1/account" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Acme Corp (updated)"}'
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/account', {
+  method: 'PATCH',
+  headers: {
+    Authorization: 'Bearer eff_live_YOUR_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ name: 'Acme Corp (updated)' })
+})
+const account = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.patch(
+    'https://api.effect.ai/api/v1/account',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    json={'name': 'Acme Corp (updated)'}
+)
+account = res.json()
+```
+
+:::
+
+### Update email
+
+:::code-group
+
+```bash [curl]
+curl -s -X PATCH "https://api.effect.ai/api/v1/account" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "new@acme.com"}'
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/account', {
+  method: 'PATCH',
+  headers: {
+    Authorization: 'Bearer eff_live_YOUR_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ email: 'new@acme.com' })
+})
+const account = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.patch(
+    'https://api.effect.ai/api/v1/account',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    json={'email': 'new@acme.com'}
+)
+account = res.json()
+```
+
+:::
+
+### Clear email
+
+:::code-group
+
+```bash [curl]
+curl -s -X PATCH "https://api.effect.ai/api/v1/account" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email": ""}'
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/account', {
+  method: 'PATCH',
+  headers: {
+    Authorization: 'Bearer eff_live_YOUR_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ email: '' })
+})
+const account = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.patch(
+    'https://api.effect.ai/api/v1/account',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    json={'email': ''}
+)
+account = res.json()
+```
+
+:::
+
+**Response `200`**
+
+```json
+{
+  "id": "01JQKX3Z8VFNWRB2TGHM4Y5P6A",
+  "name": "Acme Corp (updated)",
+  "email": "new@acme.com",
+  "status": "active",
+  "createdAt": 1750000000000,
+  "credits": {
+    "balance": "25000000",
+    "currency": "EFFECT",
+    "lamportsPerEffect": 1000000
+  }
+}
+```
+
+| Field | Constraints |
+|---|---|
+| `name` | Max 100 characters |
+| `email` | Must be a valid email, or `""` to clear it |
