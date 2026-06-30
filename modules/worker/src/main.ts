@@ -226,6 +226,7 @@ export const createWorker = async ({
     completeTask,
     renderTask,
     getMaxNonce,
+    cleanup,
 
     getPayments,
     getPaymentsFromNonce,

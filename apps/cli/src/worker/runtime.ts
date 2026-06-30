@@ -55,33 +55,50 @@ const createProtocolWorker = async (): ReturnType<typeof createWorker> => {
   });
 
   worker.events.addEventListener("task:created", async ({ detail }) => {
-    if (state.activeTask) {
-      state.logger.info("Skipping task, already have one", {
-        title: state.activeTask.title,
-      });
-      return;
+    state.logger.debug("Received and queued new task ", { taskId: detail.id });
+
+    // if we are not processing a task, optimistically trigger
+    // processing so we don't have to wait for the cron trigger.
+    if (!state.activeTask) {
+      await processNextTask();
     }
-
-    if (!state.backend?.isReady()) {
-      state.logger.info("Skipping task, backend not ready", { taskId: detail.id });
-      state.activeTask = undefined;
-      return;
-    }
-
-    state.activeTask = detail;
-
-    await worker.acceptTask({ taskId: detail.id });
-    state.logger.info("Accepted task", { taskId: detail.id });
-
-    await delay(Math.floor(Math.random() * 1000 * 5));
-    await processTask(detail);
-
-    state.logger.info("Completed task", { taskId: detail.id });
-
-    state.activeTask = undefined;
   });
 
   return worker;
+};
+
+export const processNextTask = async() => {
+  if (state.activeTask) {
+    state.logger.debug("Ignoring next task, already have one", {
+      title: state.activeTask.title,
+    });
+    return;
+  }
+
+  if (!state.backend?.isReady()) {
+    state.logger.debug("Backend not ready");
+    return;
+  }
+
+  // cleanup (from the worker module) removes any expired tasks from
+  // the database
+  if (!state.worker) return;
+  await state.worker.cleanup();
+  const tasks = await state.worker.getTasks({});
+  const task = tasks?.[0].state;
+  if (!task) return;
+
+  state.activeTask = task;
+
+  await state.worker.acceptTask({ taskId: task.id });
+  state.logger.info("Accepted task", { taskId: task.id });
+
+  // await delay(Math.floor(Math.random() * 1000 * 5));
+  // await processTask(detail);
+
+  // state.logger.info("Completed task", { taskId: detail.id });
+
+  // state.activeTask = undefined;  
 };
 
 export const startWorker = async ({
@@ -89,14 +106,14 @@ export const startWorker = async ({
   capability,
   accessCode,
 }: WorkerRuntimeConfig): Promise<void> => {
-  state.logger.info("Initializing p2p");
-  const worker = await createProtocolWorker();
-  await worker.start();
-
   const secretKey = state.solanaSecretKey;
   if (!secretKey) {
     throw new Error("Solana secret key must be initialized");
   }
+
+  state.logger.info("Initializing p2p");
+  const worker = await createProtocolWorker();
+  await worker.start();
 
   state.logger.info("Connecting to manager", { manager });
   const workerRecipient = Keypair.fromSecretKey(secretKey, {
@@ -112,7 +129,8 @@ export const startWorker = async ({
     });
   } catch (e: unknown) {
     if (e instanceof Error && e.message.toLowerCase().includes("access code")) {
-      throw new Error("Access code rejected. Request a new one from https://worker.effect.ai/ and restart with --access-code <code>.");
+      throw new Error("Access code rejected. Request a new one from " +
+	"https://worker.effect.ai/ and restart with --access-code <code>.");
     }
     throw e;
   }
@@ -124,6 +142,7 @@ export const startWorker = async ({
 
   while (!state.done) {
     await delay(5_000);
+    await processNextTask();
   }
 };
 

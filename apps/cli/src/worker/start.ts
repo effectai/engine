@@ -16,7 +16,7 @@ const DEFAULT_DATA_PATH = "/tmp/ai-worker";
 const DEFAULT_NOSANA_API = "https://dashboard.k8s.prd.nos.ci";
 const DEFAULT_MARKET = "6Xt8hgVLLL2PSHC9NtJP8E8oTdA5ZJc95hZEnHcdqKqb";
 const DEFAULT_MODEL = "gpt-oss:20b";
-const DEFAULT_IMAGE = "docker.io/ollama/ollama:0.20.";
+const DEFAULT_IMAGE = "docker.io/ollama/ollama:0.20.0";
 const DEFAULT_DEPLOYMENT_NAME = "effectai-ai-worker";
 const DEFAULT_ENDPOINT_TIMEOUT_SECONDS = 300;
 
