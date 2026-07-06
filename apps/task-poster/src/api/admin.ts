@@ -105,7 +105,7 @@ const renderAccountsPage = async (): Promise<string> => {
     <h2>API Accounts</h2>
     <nav style="display:flex;gap:0.5rem">
       <a href="/api-console.html" target="_blank"><button>API console</button></a>
-      <a href="/api/docs" target="_blank"><button>API docs</button></a>
+      <a href="https://docs.effect.ai" target="_blank"><button>API docs</button></a>
       <a href="/admin/templates/pending"><button>Template approvals</button></a>
     </nav>
   </div>

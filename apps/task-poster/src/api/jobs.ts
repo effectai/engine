@@ -40,14 +40,6 @@ import {
   type TemplateRecord,
 } from "../templates.js";
 
-/**
- * Jobs — the external "post a batch of tasks" abstraction. A job maps onto an
- * owned (hidden) Dataset + one Fetcher, reusing the existing posting/polling
- * machinery. Two types:
- *   csv      — 1 row = 1 task (cost = reward × rows)
- *   constant — survey mode: same data to up to `maxTasks` workers
- */
-
 export type JobType = "csv" | "constant";
 export type JobStatus = "active" | "cancelled";
 
@@ -80,12 +72,6 @@ const DEFAULT_BATCH_SIZE = 100;
 const DEFAULT_FREQUENCY_SECONDS = 2;
 const DEFAULT_TIME_LIMIT_SECONDS = 600;
 
-// Monotonic dataset-id generator. A millisecond timestamp stays well inside
-// JS's safe-integer range (~1.7e12 « 2^53) and remains exactly representable —
-// unlike `process.hrtime.bigint()` nanoseconds (~1.8e18 » 2^53), which round to
-// the nearest multiple of 256 and so collide for jobs created microseconds
-// apart. The counter guarantees strictly increasing ids within a millisecond;
-// the wall clock advancing across restarts keeps them unique over time.
 let lastDatasetId = 0;
 const nextDatasetId = (): number => {
   const id = Math.max(Date.now(), lastDatasetId + 1);
@@ -125,7 +111,7 @@ export const getJobByDataset = async (
  * delete action. Jobs' fetchers/datasets are archived first so the poster stops
  * posting their queued tasks to workers (deleting the account record alone would
  * orphan still-running fetchers). The off-chain credit balance is discarded with
- * the account — there's nowhere to refund it to.
+ * the account, there's nowhere to refund it to.
  */
 export const deleteAccountAndData = async (
   accountId: string,
@@ -176,7 +162,7 @@ const resolveUsableTemplate = async (
 ): Promise<TemplateRecord | null> => {
   const record = await getTemplate(templateId);
   if (!record) return null;
-  if (record.data.status === "archived") return null; // retired — no new jobs
+  if (record.data.status === "archived") return null;
   if (isTemplateApproved(record.data)) return record.data;
   const owned = (await getAccountTemplateIds(accountId)).includes(templateId);
   return owned ? record.data : null;
@@ -361,9 +347,6 @@ const countsFor = async (job: Job): Promise<TaskCounts> => {
   };
 };
 
-// Each completed task consumes exactly one reward (per-row overrides are
-// rejected), so `consumed` is derived live from the done count — no need to
-// mutate state inside the polling loop. Returns lamport bigints.
 export const computeJobCredits = (job: Job, completedCount: number) => {
   const reward = BigInt(job.rewardLamports);
   const reserved = BigInt(job.reservedLamports);
@@ -414,7 +397,6 @@ const csvCell = (value: unknown): string => {
 // ------------------------------------------------------------------ routes
 
 export const addJobApiRoutes = (app: Express): void => {
-  // Cost preview — validates and prices a job without charging.
   app.post(
     "/api/v1/jobs/estimate",
     requireApiKey,
@@ -698,7 +680,7 @@ export const addJobApiRoutes = (app: Express): void => {
         if (remaining > 0n) {
           await refund(account.id, remaining, {
             jobId: job.id,
-            note: `job ${job.id} cancelled — ${counts.queued + counts.active} unfinished tasks`,
+            note: `job ${job.id} cancelled - ${counts.queued + counts.active} unfinished tasks`,
           });
           job.consumedLamports = consumed.toString();
           job.refundedLamports = (

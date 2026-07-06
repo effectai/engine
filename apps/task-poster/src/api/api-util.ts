@@ -1,19 +1,5 @@
 import type { Request, Response } from "express";
 
-/**
- * Shared helpers for the external Requestor API (`/api/v1/*`).
- *
- * Every API response uses a consistent JSON envelope:
- *   success → the resource (or `{ data, ... }`)
- *   error   → `{ error: { code, message } }`
- */
-
-/**
- * Parses `?limit=` / `?offset=` query params into a clamped, safe pair. Shared
- * by every paginated list endpoint (`/jobs`, `/templates`, `/results`,
- * `/credits/transactions`) so they behave identically: `limit` is clamped to
- * `[1, maxLimit]` (defaulting to `defaultLimit`), `offset` to `>= 0`.
- */
 export const parsePagination = (
   query: Record<string, unknown>,
   { defaultLimit = 100, maxLimit = 1000 }: { defaultLimit?: number; maxLimit?: number } = {},
@@ -58,6 +44,13 @@ export const apiNotFound = (req: Request, res: Response): void => {
     `No such endpoint: ${req.method} ${req.originalUrl}`,
   );
 };
+
+/**
+ * Light email shape check (something@something.tld, no whitespace). Not RFC
+ * exhaustive just enough to reject obvious garbage before storing it.
+ */
+export const isValidEmail = (email: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 export const LAMPORTS_PER_EFFECT = 1_000_000n;
 

@@ -3,558 +3,383 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Effect AI · API Console</title>
-<style>
-  :root { --bg:#0f1115; --card:#171a21; --line:#272b34; --fg:#e6e6e6; --muted:#9aa0ac; --accent:#8ec07c; --warn:#e6a153; --danger:#e06c75; }
-  * { box-sizing: border-box; }
-  body { margin:0; font:15px/1.55 system-ui,sans-serif; background:var(--bg); color:var(--fg); }
-  header { position:sticky; top:0; background:#12141a; border-bottom:1px solid var(--line); padding:.75rem 1rem; display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; z-index:5; }
-  header h1 { font-size:1rem; margin:0 1rem 0 0; }
-  main { max-width:980px; margin:1.25rem auto; padding:0 1rem; display:grid; grid-template-columns:minmax(0,1fr); gap:1.25rem; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:1rem 1.15rem; }
-  .card h2 { margin:.1rem 0 .8rem; font-size:1.02rem; }
-  label { display:block; font-size:.82rem; color:var(--muted); margin:.6rem 0 .2rem; }
-  input, textarea, select { width:100%; background:#0e1014; color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:.5rem .6rem; font:inherit; }
-  textarea { font-family:ui-monospace,monospace; font-size:.86rem; resize:vertical; }
-  button { background:var(--accent); color:#0e1014; border:0; border-radius:8px; padding:.5rem .85rem; font:inherit; font-weight:600; cursor:pointer; }
-  button.ghost { background:transparent; color:var(--fg); border:1px solid var(--line); font-weight:500; }
-  button.danger { background:transparent; color:var(--danger); border:1px solid var(--danger); font-weight:500; }
-  button:disabled { opacity:.5; cursor:not-allowed; }
-  .row { display:flex; gap:.6rem; flex-wrap:wrap; align-items:center; }
-  .row > * { flex:0 0 auto; }
-  .grow { flex:1 1 auto; min-width:0; }
-  table { width:100%; border-collapse:collapse; font-size:.86rem; }
-  th, td { text-align:left; padding:.4rem .5rem; border-bottom:1px solid var(--line); vertical-align:top; }
-  th { color:var(--muted); font-weight:600; }
-  code, .mono { font-family:ui-monospace,monospace; font-size:.82rem; }
-  .pill { display:inline-block; padding:.05rem .45rem; border-radius:999px; font-size:.72rem; font-weight:600; }
-  .pill.ok { background:rgba(142,192,124,.18); color:var(--accent); }
-  .pill.warn { background:rgba(230,161,83,.18); color:var(--warn); }
-  .muted { color:var(--muted); }
-  .msg { margin-top:.6rem; padding:.5rem .7rem; border-radius:8px; font-size:.86rem; white-space:pre-wrap; }
-  .msg.err { background:rgba(224,108,117,.14); color:var(--danger); }
-  .msg.ok { background:rgba(142,192,124,.14); color:var(--accent); }
-  pre { background:#0e1014; border:1px solid var(--line); border-radius:8px; padding:.7rem; overflow:auto; font-size:.8rem; max-height:340px; }
-  a { color:var(--accent); }
-  .hide { display:none; }
-  /* Overlay layout lives here (not inline) so the .hide class can override it;
-     an inline display would beat the class and the overlay could never hide. */
-  #tpl-preview:not(.hide) { display:flex; }
-</style>
+<title>Effect AI · Requestor Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- Inter matches the other Effect apps (worker-app loads it the same way).
+     Space Mono is used for keys/ids. Both fall back to system fonts offline. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="api-console/app.css" />
 </head>
 <body>
+
 <header>
-  <h1>Effect AI · API Console</h1>
-  <input id="key" class="grow" type="password" placeholder="Paste your API key (eff_live_…)" style="min-width:220px" />
-  <button id="connect">Connect</button>
-  <span id="who" class="muted">not connected</span>
-  <a href="/api/docs" target="_blank" style="margin-left:auto">API docs ↗</a>
+  <div class="brand">
+    <span class="mark">⬡</span><span class="name">Effect AI</span>
+    <span class="sep">/</span><span class="sub">Requestor Console</span>
+  </div>
+  <div class="grow"></div>
+
+  <!-- Not-connected: paste + connect. Connected: masked prefix + status. -->
+  <div id="connect-wrap" class="connect-box">
+    <input id="key" type="password" placeholder="Paste your API key (eff_live_…)" autocomplete="off" />
+    <button id="connect" class="btn-primary btn-sm" style="border-radius:0">Connect</button>
+  </div>
+  <span id="status-connected" class="status-connected hide">
+    <span class="status-dot" style="background:var(--ok-fg)"></span>
+    <span id="status-text">Connected</span>
+  </span>
+  <button id="disconnect" class="btn-ghost btn-sm hide">Disconnect</button>
+
+  <button id="theme-toggle" class="icon-btn" title="Toggle light / dark" aria-label="Toggle theme">
+    <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    <svg id="icon-moon" class="hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+  </button>
+  <a href="https://docs.effect.ai" target="_blank" rel="noopener">Docs ↗</a>
 </header>
 
-<section id="signup-section" style="max-width:980px;margin:1.25rem auto 0;padding:0 1rem">
-  <div class="card">
-    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.9rem">
-      <div style="width:2.2rem;height:2.2rem;border-radius:8px;background:rgba(142,192,124,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem">🔑</div>
-      <div>
-        <div style="font-weight:600">Don't have an API key yet?</div>
-        <div style="font-size:.83rem;color:var(--muted)">Sign up below and your key is shown instantly. Join our Discord to request credits.</div>
-      </div>
-    </div>
+<nav class="tabs" id="tabs">
+  <button class="tab" data-tab="overview" disabled>Overview</button>
+  <button class="tab" data-tab="templates" disabled>Templates</button>
+  <button class="tab" data-tab="create" disabled>Create Job</button>
+  <button class="tab" data-tab="jobs" disabled>Jobs</button>
+  <button class="tab" data-tab="account" disabled>Account</button>
+  <button class="tab" data-tab="keys" disabled>API Keys</button>
+</nav>
 
-    <!-- Signup form (shown by default) -->
-    <div id="signup-form">
-      <div class="row" style="gap:.5rem">
-        <input id="signup-name" placeholder="Your name or project" class="grow" style="margin:0" />
-        <input id="signup-email" placeholder="Email (optional)" class="grow" style="margin:0" />
-        <button id="signup-btn" style="flex-shrink:0">Get API Key</button>
-      </div>
-      <div id="signup-msg" style="margin-top:.5rem"></div>
-    </div>
+<main>
+  <!-- ================= SIGNUP / UNAUTHENTICATED ================= -->
+  <section id="signup-view">
+    <div class="card" style="max-width:400px;margin:2rem auto;text-align:center">
+      <div style="width:48px;height:48px;border:2px dashed var(--border-strong);border-radius:12px;margin:.2rem auto 1rem;display:flex;align-items:center;justify-content:center;font-size:1.3rem">🔑</div>
+      <h2 style="justify-content:center">No API key connected</h2>
+      <p class="muted" style="margin:-.4rem 0 1.3rem">Create an account for instant access to the Effect AI task network.</p>
 
-    <!-- Key reveal (hidden until signup succeeds) -->
-    <div id="signup-reveal" class="hide">
-      <div style="margin-bottom:.5rem;font-size:.85rem;color:var(--warn)">⚠ Copy your key now; it won't be shown again.</div>
-      <div class="row" style="gap:.5rem">
-        <code id="signup-key" class="grow" style="background:#0e1014;border:1px solid var(--line);border-radius:8px;padding:.5rem .7rem;word-break:break-all;font-size:.82rem;display:block"></code>
-        <button id="signup-copy" class="ghost" style="flex-shrink:0">Copy</button>
+      <div id="signup-form" style="text-align:left">
+        <div class="field">
+          <label class="field-label">Name or project <span class="req">*</span></label>
+          <input id="signup-name" placeholder="e.g. My Research Project" />
+        </div>
+        <div class="field">
+          <label class="field-label">Email <span class="muted">(optional)</span></label>
+          <input id="signup-email" placeholder="you@example.com" />
+        </div>
+        <button id="signup-btn" class="btn-primary" style="width:100%">Get API Key →</button>
+        <div id="signup-msg"></div>
+        <div class="row" style="margin:1.1rem 0 .3rem;gap:.6rem">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span class="muted" style="font-size:.8rem">or</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+        <p class="muted" style="text-align:center;font-size:.83rem;margin:.4rem 0 0">Paste an existing key in the top bar and click <b>Connect</b>.</p>
       </div>
-      <div style="margin-top:.75rem;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
-        <span style="font-size:.85rem;color:var(--muted)">Paste the key in the header above to connect, then join Discord to top up your credits:</span>
-        <a href="https://discord.gg/PLACEHOLDER" target="_blank" rel="noopener"
-           style="background:var(--accent);color:#0e1014;border-radius:8px;padding:.4rem .8rem;font-weight:600;text-decoration:none;font-size:.85rem;white-space:nowrap">
-          Join Discord ↗
-        </a>
+
+      <!-- Key reveal (hidden until signup succeeds) -->
+      <div id="signup-reveal" class="hide" style="text-align:left">
+        <div class="banner banner-warn" style="margin-bottom:.7rem">⚠ Copy your key now; it will not be shown again.</div>
+        <div class="row" style="gap:.5rem">
+          <code id="signup-key" class="mono grow" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;word-break:break-all;font-size:.78rem"></code>
+          <button id="signup-copy" class="btn-ghost btn-sm" style="flex-shrink:0">Copy</button>
+        </div>
+        <div class="banner banner-info" style="margin-top:.8rem">
+          Paste the key above to connect, then top up credits on
+          <a href="https://discord.gg/effectai" target="_blank" rel="noopener">Discord</a>.
+        </div>
       </div>
     </div>
+  </section>
+
+  <!-- ================= APP (authenticated) ================= -->
+  <div id="app-view" class="hide">
+
+    <!-- ---------- OVERVIEW ---------- -->
+    <section id="panel-overview" class="tab-panel">
+      <div class="metric-grid" style="margin-bottom:1.1rem">
+        <div class="metric">
+          <div class="k">Credit balance</div>
+          <div class="v" id="ov-balance">—</div>
+          <div class="u">EFFECT</div>
+          <a class="cta" href="https://discord.gg/effectai" target="_blank" rel="noopener">+ Top up ↗</a>
+        </div>
+        <div class="metric">
+          <div class="k">Active jobs</div>
+          <div class="v" id="ov-active">—</div>
+          <div class="u">in progress</div>
+          <span class="cta" data-goto="jobs">View all →</span>
+        </div>
+        <div class="metric">
+          <div class="k">Pending tasks</div>
+          <div class="v" id="ov-pending">—</div>
+          <div class="u">across all jobs</div>
+        </div>
+        <div class="metric">
+          <div class="k">Templates</div>
+          <div class="v" id="ov-templates">—</div>
+          <div class="u" id="ov-templates-sub">available</div>
+          <span class="cta" data-goto="templates">Manage →</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Quick actions</div>
+        <div class="row">
+          <button class="btn-ghost" data-goto="templates" data-open-submit="1">+ New template</button>
+          <button class="btn-primary" data-goto="create">+ New job</button>
+          <button class="btn-ghost" data-goto="jobs">View all jobs</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Recent activity</div>
+        <div id="ov-activity" class="muted">…</div>
+      </div>
+    </section>
+
+    <!-- ---------- TEMPLATES ---------- -->
+    <section id="panel-templates" class="tab-panel hide">
+      <div class="toolbar">
+        <input id="tpl-search" class="grow" placeholder="Search templates…" />
+        <select id="tpl-filter" style="width:auto">
+          <option value="all">All status</option>
+          <option value="approved">Approved</option>
+          <option value="unapproved">Unapproved</option>
+        </select>
+        <button id="tpl-open-submit" class="btn-primary">+ Submit template</button>
+      </div>
+
+      <div class="section-label">Public catalog</div>
+      <div id="tpl-catalog" class="table-wrap" style="margin-bottom:1.2rem"><div class="muted" style="padding:.8rem">…</div></div>
+
+      <div class="section-label">My templates</div>
+      <div id="tpl-owned" class="table-wrap" style="margin-bottom:1.2rem"><div class="muted" style="padding:.8rem">…</div></div>
+
+      <!-- Submit form -->
+      <div id="tpl-submit-card" class="card hide">
+        <div class="row" style="justify-content:space-between">
+          <strong>Submit custom template</strong>
+          <button id="tpl-collapse" class="btn-ghost btn-sm">Collapse</button>
+        </div>
+        <div class="field" style="margin-top:.8rem">
+          <label class="field-label">Template name <span class="req">*</span></label>
+          <input id="tpl-name" placeholder="My custom template" />
+        </div>
+        <div class="field">
+          <label class="field-label">HTML code <span class="req">*</span> <span class="muted">(use ${field} placeholders; each needs a CSV column)</span></label>
+          <textarea id="tpl-html" rows="6" placeholder="&lt;h1&gt;Rate ${product}&lt;/h1&gt;&lt;p&gt;${question}&lt;/p&gt;"></textarea>
+        </div>
+        <label class="checkbox" style="margin-bottom:.8rem"><input id="tpl-approve" type="checkbox" /> Request team approval <span class="muted">(otherwise it runs unapproved and sandboxed)</span></label>
+        <button id="tpl-submit" class="btn-primary">Submit template</button>
+        <div id="tpl-msg"></div>
+      </div>
+    </section>
+
+    <!-- ---------- CREATE JOB ---------- -->
+    <section id="panel-create" class="tab-panel hide">
+      <div class="card">
+        <div class="section-label">Job type</div>
+        <div class="radio-set">
+          <label class="radio selected" id="radio-csv">
+            <input type="radio" name="job-type" value="csv" checked />
+            <div><div class="t">CSV mode</div><div class="d">Each row = one task</div></div>
+          </label>
+          <label class="radio" id="radio-constant">
+            <input type="radio" name="job-type" value="constant" />
+            <div><div class="t">Constant / survey</div><div class="d">Same data, N workers</div></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Job configuration</div>
+        <div class="field">
+          <label class="field-label">Template <span class="req">*</span></label>
+          <select id="job-tpl"></select>
+          <div id="job-fields" class="muted" style="font-size:.8rem;margin-top:.3rem"></div>
+        </div>
+        <div class="row" style="align-items:flex-start">
+          <div class="grow" style="flex-basis:140px">
+            <label class="field-label">Reward per task (EFFECT) <span class="req">*</span></label>
+            <input id="job-reward" value="0.5" />
+          </div>
+          <div class="grow" style="flex-basis:200px">
+            <label class="field-label">Job name <span class="muted">(optional)</span></label>
+            <input id="job-name" placeholder="My job" />
+          </div>
+        </div>
+        <label class="checkbox" style="margin-top:.7rem"><input id="job-unique" type="checkbox" /> Restrict each worker to one task in this job (no repeats)</label>
+      </div>
+
+      <!-- CSV data -->
+      <div class="card" id="job-csv-mode">
+        <div class="section-label">CSV data input</div>
+        <div class="field-label">Required columns (from template) <span id="job-csv-fields"></span></div>
+        <div class="field-label" style="margin-top:.6rem">Paste CSV rows <span class="muted">(first row is the header)</span></div>
+        <textarea id="job-csv" rows="6" placeholder="product,question&#10;Widget,Good?&#10;Gadget,Good?"></textarea>
+        <button id="job-csv-template" class="btn-ghost btn-sm" style="margin-top:.6rem">↓ Download CSV template</button>
+      </div>
+
+      <!-- Constant data -->
+      <div class="card hide" id="job-constant-mode">
+        <div class="section-label">Survey data</div>
+        <div class="field">
+          <label class="field-label">Number of workers (max tasks) <span class="req">*</span></label>
+          <input id="job-maxtasks" value="100" style="max-width:160px" />
+        </div>
+        <div class="field">
+          <label class="field-label">JSON task data <span class="req">*</span> <span id="job-const-fields" class="muted"></span></label>
+          <textarea id="job-data" rows="5" placeholder='{"product":"Widget","question":"Good?"}'></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Cost estimate</div>
+        <div class="estimate-grid" style="margin-bottom:.8rem">
+          <div><div class="n" id="est-tasks">—</div><div class="l">Tasks</div></div>
+          <div><div class="n" id="est-rate">—</div><div class="l">EFFECT / task</div></div>
+          <div><div class="n" id="est-total">—</div><div class="l">EFFECT total</div></div>
+        </div>
+        <div id="est-banner" class="hide" style="margin-bottom:.8rem"></div>
+        <div class="row">
+          <button id="job-estimate" class="btn-ghost">Estimate cost</button>
+          <button id="job-create" class="btn-primary">Create job</button>
+        </div>
+        <div id="job-msg"></div>
+      </div>
+    </section>
+
+    <!-- ---------- JOBS ---------- -->
+    <section id="panel-jobs" class="tab-panel hide">
+      <div class="toolbar">
+        <input id="jobs-search" class="grow" placeholder="Search jobs…" />
+        <select id="jobs-filter" style="width:auto">
+          <option value="all">All status</option>
+          <option value="active">Active</option>
+          <option value="done">Done</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <button id="jobs-refresh" class="btn-ghost">Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name / ID</th><th>Status</th><th>Tasks Q / A / D</th><th>Credits</th><th></th></tr></thead>
+          <tbody id="jobs-body"><tr><td colspan="5" class="muted">…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---------- ACCOUNT ---------- -->
+    <section id="panel-account" class="tab-panel hide">
+      <div class="section-label">Profile</div>
+      <div class="card">
+        <div class="row" style="align-items:flex-start">
+          <div class="grow"><label class="field-label">Name</label><input id="acct-name" /></div>
+          <div class="grow"><label class="field-label">Email <span class="muted">(optional)</span></label><input id="acct-email" placeholder="(none)" /></div>
+        </div>
+        <div class="row" style="justify-content:space-between;margin-top:.8rem">
+          <span class="status-connected"><span class="status-dot" style="background:var(--ok-fg)"></span>Account active</span>
+          <button id="acct-save" class="btn-primary">Save changes</button>
+        </div>
+        <div id="acct-msg"></div>
+      </div>
+
+      <div class="section-label" style="margin-top:1.2rem">Credits</div>
+      <div class="card">
+        <div class="row" style="align-items:flex-end;gap:.8rem">
+          <div><div style="font-size:2rem;font-weight:700;line-height:1" id="acct-balance">—</div><div class="muted" style="font-size:.82rem">EFFECT tokens</div></div>
+          <div class="muted" style="font-size:.82rem;padding-bottom:.15rem" id="acct-lamports"></div>
+        </div>
+        <div class="banner banner-info" style="margin:.9rem 0">To top up credits, reach out on <a href="https://discord.gg/effectai" target="_blank" rel="noopener"><b>Discord</b></a>. Credits are managed by the Effect team.</div>
+        <div class="section-label">Transaction history</div>
+        <div id="tx-list" class="muted">…</div>
+      </div>
+
+      <div class="section-label" style="margin-top:1.2rem">API key</div>
+      <div class="card">
+        <div id="acct-key-mini" class="muted">…</div>
+        <div class="row" style="margin-top:.8rem">
+          <button class="btn-ghost btn-sm" data-goto="keys">Manage keys →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- API KEYS ---------- -->
+    <section id="panel-keys" class="tab-panel hide">
+      <div class="banner banner-warn" style="margin-bottom:1rem">⚠ Rotate keys safely: issue a new key first, then revoke the old one so nothing using it breaks. The raw key is shown only once, at creation.</div>
+      <div id="keys-list" class="table-wrap" style="margin-bottom:1rem"><div class="muted" style="padding:.8rem">…</div></div>
+      <button id="keys-new" class="btn-ghost">+ Issue new key</button>
+      <div id="keys-reveal"></div>
+      <div id="keys-msg"></div>
+
+      <div class="card" style="margin-top:1.2rem">
+        <strong>Security best practices</strong>
+        <div class="stack" style="margin-top:.6rem;font-size:.86rem;color:var(--text-2)">
+          <div>✓ Never commit keys to version control; use <span class="mono">.env</span> files.</div>
+          <div>✓ Use separate keys for development and production.</div>
+          <div>✓ Revoke immediately if a key is compromised or leaked.</div>
+        </div>
+      </div>
+    </section>
   </div>
-</section>
-
-<main id="app" class="hide">
-  <!-- Templates -->
-  <section class="card">
-    <h2>Templates</h2>
-    <div id="tpl-list" class="muted">…</div>
-    <details style="margin-top:.8rem">
-      <summary>Submit a custom template</summary>
-      <label>Name</label>
-      <input id="tpl-name" placeholder="My template" />
-      <label>HTML (use <code>${field}</code> placeholders; each needs a CSV column)</label>
-      <textarea id="tpl-html" rows="6" placeholder="&lt;h1&gt;Rate ${product}&lt;/h1&gt;&lt;p&gt;${question}&lt;/p&gt;"></textarea>
-      <label class="row" style="gap:.4rem"><input id="tpl-approve" type="checkbox" style="width:auto" /> Request team approval (otherwise it runs unapproved + sandboxed)</label>
-      <div class="row" style="margin-top:.5rem"><button id="tpl-submit">Submit template</button></div>
-      <div id="tpl-msg"></div>
-    </details>
-  </section>
-
-  <!-- New job -->
-  <section class="card">
-    <h2>New job</h2>
-    <div class="row">
-      <div><label>Type</label>
-        <select id="job-type">
-          <option value="csv">CSV: 1 row = 1 task</option>
-          <option value="constant">Constant: survey (same data to N workers)</option>
-        </select></div>
-      <div class="grow"><label>Template</label><select id="job-tpl"></select></div>
-      <div><label>Reward / task (EFFECT)</label><input id="job-reward" style="width:9rem" value="0.5" /></div>
-      <div class="grow"><label>Job name</label><input id="job-name" placeholder="My job" /></div>
-    </div>
-
-    <!-- CSV mode: one task per row -->
-    <div id="job-csv-mode">
-      <label>CSV: first row is the header; one row = one task <span id="job-fields" class="muted"></span></label>
-      <textarea id="job-csv" rows="7" placeholder="product,question&#10;Widget,Good?&#10;Gadget,Good?"></textarea>
-    </div>
-
-    <!-- Constant mode: the same data sent to up to "max tasks" workers -->
-    <div id="job-constant-mode" class="hide">
-      <div class="row">
-        <div class="grow"><label>Data: a JSON object whose keys match the template fields <span id="job-fields-const" class="muted"></span></label>
-          <textarea id="job-data" rows="5" placeholder='{"product":"Widget","question":"Good?"}'></textarea></div>
-        <div><label>Workers (max tasks)</label><input id="job-maxtasks" style="width:9rem" value="100" /></div>
-      </div>
-    </div>
-    <label class="row" style="gap:.4rem;margin-top:.6rem"><input id="job-unique" type="checkbox" style="width:auto" /> Each worker may complete at most one task in this job (no repeats)</label>
-    <div class="row" style="margin-top:.6rem">
-      <button id="job-estimate" class="ghost">Estimate cost</button>
-      <button id="job-create">Create job</button>
-      <span id="job-est" class="muted"></span>
-    </div>
-    <div id="job-msg"></div>
-  </section>
-
-  <!-- Jobs -->
-  <section class="card">
-    <h2>My jobs <button id="jobs-refresh" class="ghost" style="float:right;padding:.2rem .6rem">Refresh</button></h2>
-    <div id="jobs-list" class="muted">…</div>
-    <div id="results" class="hide" style="margin-top:1rem">
-      <div class="row"><strong id="results-title" class="grow"></strong>
-        <button id="results-csv" class="ghost">Download CSV</button>
-        <button id="results-close" class="ghost">Close</button></div>
-      <pre id="results-body"></pre>
-    </div>
-  </section>
-
-  <!-- Account -->
-  <section class="card">
-    <h2>Account</h2>
-    <div class="row">
-      <div class="grow"><label>Name</label><input id="acct-name" /></div>
-      <div class="grow"><label>Email (optional)</label><input id="acct-email" placeholder="(none)" /></div>
-      <div style="align-self:flex-end"><button id="acct-save">Save</button></div>
-    </div>
-    <div id="acct-msg"></div>
-    <details id="tx-details" style="margin-top:.8rem">
-      <summary>Credit transactions</summary>
-      <div id="tx-list" class="muted" style="margin-top:.6rem">…</div>
-      <div class="row" style="margin-top:.5rem"><button id="tx-refresh" class="ghost" style="padding:.2rem .6rem">Refresh</button></div>
-    </details>
-  </section>
-
-  <!-- API keys -->
-  <section class="card">
-    <h2>API keys</h2>
-    <p class="muted" style="margin:.1rem 0 .6rem;font-size:.84rem">Rotate by issuing a new key, then revoking the old one. The raw key is shown only once, at creation.</p>
-    <div id="keys-list" class="muted">…</div>
-    <div class="row" style="margin-top:.6rem"><button id="keys-new">Issue new key</button></div>
-    <div id="keys-reveal"></div>
-    <div id="keys-msg"></div>
-  </section>
 </main>
 
-<!-- Full-page template preview. Templates may be untrusted, so the iframe runs
-     scripts in a hardened sandbox WITHOUT allow-same-origin (matches the admin
-     review page): the frame gets an opaque origin and can't reach this page. -->
-<div id="tpl-preview" class="hide" style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.72);flex-direction:column">
-  <div style="background:#12141a;border-bottom:1px solid var(--line);padding:.6rem 1rem;display:flex;gap:.6rem;align-items:center">
-    <strong id="tpl-preview-title" class="grow">Template preview</strong>
-    <span id="tpl-preview-trust"></span>
-    <button id="tpl-preview-close" class="ghost">Close</button>
+<!-- ================= TEMPLATE PREVIEW MODAL ================= -->
+<!-- Templates may be untrusted, so the iframe runs scripts in a hardened
+     sandbox WITHOUT allow-same-origin (matches the admin review page): the
+     frame gets an opaque origin and cannot reach this page. -->
+<div id="tpl-preview" class="modal-overlay hide">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="row" style="gap:.6rem">
+        <div>
+          <strong id="tpl-preview-title">Template preview</strong>
+          <div id="tpl-preview-id" class="mono muted" style="font-size:.72rem"></div>
+        </div>
+        <span id="tpl-preview-trust"></span>
+      </div>
+      <button class="close-x" id="tpl-preview-close" aria-label="Close">×</button>
+    </div>
+    <div id="tpl-preview-note" class="banner banner-warn hide" style="border-radius:0">⚠ Unapproved template. Scripts run in a hardened sandbox; review it carefully before posting a job.</div>
+    <!-- Sample data: one input per ${field}, re-rendered server-side on apply.
+         Populated by main.js; hidden for templates without fields. -->
+    <div id="tpl-preview-data" class="sample-bar hide"></div>
+    <div class="frame-chrome">
+      <div class="frame-dots"><span style="background:#f5a3a3"></span><span style="background:#f5d98a"></span><span style="background:#a7dcae"></span></div>
+      <div class="frame-url" id="tpl-preview-url">sandbox://preview</div>
+      <span class="chip">sandboxed</span>
+    </div>
+    <iframe id="tpl-preview-frame" title="Template preview"
+      sandbox="allow-scripts allow-modals allow-forms allow-popups allow-pointer-lock"></iframe>
+    <div class="modal-foot">
+      <span class="muted" style="font-size:.82rem">sandboxed · no external requests allowed</span>
+    </div>
   </div>
-  <div id="tpl-preview-note" class="hide" style="background:rgba(230,161,83,.14);color:var(--warn);padding:.45rem 1rem;font-size:.83rem">
-    ⚠ Unapproved template. Scripts run in a hardened sandbox; review it carefully before posting a job.
-  </div>
-  <iframe id="tpl-preview-frame" title="Template preview"
-    sandbox="allow-scripts allow-modals allow-forms allow-popups allow-pointer-lock"
-    style="flex:1 1 auto;width:100%;border:0;background:#fff"></iframe>
 </div>
 
-<script>
-let apiKey = "";
-let templates = [];
+<!-- ================= RESULTS DRAWER ================= -->
+<div id="results-drawer" class="drawer-overlay hide">
+  <div class="drawer">
+    <div class="drawer-head">
+      <div>
+        <strong id="drawer-title">Results</strong>
+        <div id="drawer-sub" class="muted" style="font-size:.8rem"></div>
+      </div>
+      <button class="close-x" id="drawer-close" aria-label="Close">×</button>
+    </div>
+    <div class="drawer-tabs">
+      <button class="drawer-tab active" data-view="json">JSON view</button>
+      <button class="drawer-tab" data-view="table">Table view</button>
+    </div>
+    <div class="drawer-body">
+      <pre id="drawer-json" class="hide"></pre>
+      <div id="drawer-table"></div>
+    </div>
+    <div class="drawer-foot">
+      <button id="drawer-csv" class="btn-primary btn-sm">↓ Download CSV</button>
+      <span id="drawer-count" class="muted" style="font-size:.82rem"></span>
+    </div>
+  </div>
+</div>
 
-const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? "").replace(/[&<>]/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
-const short = (s) => (s || "").slice(0, 10) + "…";
-
-function showMsg(el, text, kind) { el.innerHTML = `<div class="msg ${kind}">${esc(text)}</div>`; }
-
-async function api(path, { method = "GET", body } = {}) {
-  const res = await fetch("/api/v1" + path, {
-    method,
-    headers: { Authorization: "Bearer " + apiKey, ...(body ? { "Content-Type": "application/json" } : {}) },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const text = await res.text();
-  let data; try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-  if (!res.ok) throw new Error((data && data.error && data.error.message) || res.status + " " + res.statusText);
-  return data;
-}
-
-async function connect() {
-  // Use the freshly typed key; fall back to the in-memory key so the post-action
-  // refreshes (createJob / cancelJob) still work after the field is cleared on a
-  // successful connect. The key is never persisted, so a reload returns to signup.
-  const typed = $("key").value.trim();
-  if (typed) apiKey = typed;
-  if (!apiKey) { $("signup-section").classList.remove("hide"); return; }
-  try {
-    await loadAccount();
-    $("app").classList.remove("hide");
-    $("signup-section").classList.add("hide");
-    $("key").value = "";
-    await Promise.all([loadTemplates(), loadJobs(), loadKeys()]);
-  } catch (e) {
-    $("who").innerHTML = `<span class="pill warn">${esc(e.message)}</span>`;
-    $("app").classList.add("hide");
-    // Not connected: the signup card must stay available.
-    $("signup-section").classList.remove("hide");
-  }
-}
-
-// Loads the account and reflects it in the header + the editable Account card.
-// Also used as the lightweight balance refresh after creating/cancelling a job.
-async function loadAccount() {
-  const acct = await api("/account");
-  $("who").innerHTML = `<span class="pill ok">${esc(acct.name)}</span> · ${esc(acct.credits.balance / 1e6)} EFFECT`;
-  $("acct-name").value = acct.name || "";
-  $("acct-email").value = acct.email || "";
-  return acct;
-}
-
-async function saveAccount() {
-  try {
-    // Send both fields; an empty email clears it server-side. Empty name is
-    // rejected by the API (every account keeps a name).
-    await api("/account", { method: "PATCH", body: { name: $("acct-name").value.trim(), email: $("acct-email").value.trim() } });
-    showMsg($("acct-msg"), "Saved.", "ok");
-    await loadAccount();
-  } catch (e) { showMsg($("acct-msg"), e.message, "err"); }
-}
-
-async function loadTransactions() {
-  $("tx-list").innerHTML = "Loading…";
-  try {
-    const { transactions, total } = await api("/credits/transactions?limit=50");
-    const effect = (lamports) => Number(lamports) / 1e6;
-    $("tx-list").innerHTML = transactions.length
-      ? `<table><tr><th>When</th><th>Type</th><th>Amount (EFFECT)</th><th>Balance after</th><th>Note</th></tr>` +
-        transactions.map((tx) => `<tr>
-          <td class="muted">${esc(new Date(tx.timestamp).toLocaleString())}</td>
-          <td>${esc(tx.type)}</td>
-          <td class="mono">${esc(effect(tx.amount))}</td>
-          <td class="mono">${esc(effect(tx.balanceAfter))}</td>
-          <td>${esc(tx.note || "")}</td></tr>`).join("") + `</table>` +
-        (total > transactions.length ? `<div class="muted" style="margin-top:.4rem">Showing ${transactions.length} of ${total}.</div>` : "")
-      : `<span class="muted">No transactions yet. Ask the team to top up your credits.</span>`;
-  } catch (e) { $("tx-list").innerHTML = `<span class="msg err">${esc(e.message)}</span>`; }
-}
-
-async function loadKeys() {
-  $("keys-list").innerHTML = "Loading…";
-  try {
-    const { keys } = await api("/keys");
-    const activeCount = keys.filter((key) => key.status === "active").length;
-    $("keys-list").innerHTML = keys.length
-      ? `<table><tr><th>Key</th><th>Status</th><th>Created</th><th></th></tr>` +
-        keys.map((key) => `<tr>
-          <td class="mono">${esc(key.prefix)}</td>
-          <td>${key.status === "active" ? '<span class="pill ok">active</span>' : '<span class="pill warn">revoked</span>'}</td>
-          <td class="muted">${esc(new Date(key.createdAt).toLocaleDateString())}</td>
-          <td>${key.status === "active"
-            ? `<button class="danger" data-revoke="${esc(key.hash)}" data-prefix="${esc(key.prefix)}" data-last="${activeCount <= 1 ? "1" : ""}" style="padding:.2rem .5rem">Revoke</button>`
-            : ""}</td></tr>`).join("") + `</table>`
-      : `<span class="muted">No keys.</span>`;
-  } catch (e) { $("keys-list").innerHTML = `<span class="msg err">${esc(e.message)}</span>`; }
-}
-
-async function issueKey() {
-  $("keys-new").disabled = true;
-  try {
-    const created = await api("/keys", { method: "POST" });
-    $("keys-reveal").innerHTML = `<div class="msg ok">New key — copy it now, it won't be shown again:<br><code style="word-break:break-all">${esc(created.key)}</code></div>`;
-    $("keys-msg").innerHTML = "";
-    await loadKeys();
-  } catch (e) { showMsg($("keys-msg"), e.message, "err"); }
-  finally { $("keys-new").disabled = false; }
-}
-
-// Type-to-confirm revoke. Revoking the last active key locks the account out of
-// the API, so we warn harder and still require typing DELETE either way.
-async function revokeKey(hash, prefix, isLast) {
-  const warning = isLast
-    ? `⚠ This is your LAST active key.\n\nRevoking it locks this account out of the API — you would have to sign up again or ask the team to issue a new key.\n\nType DELETE to revoke ${prefix}:`
-    : `Revoke key ${prefix}? Anything using it stops working immediately.\n\nType DELETE to confirm:`;
-  const typed = prompt(warning);
-  if (typed === null) return; // cancelled
-  if (typed !== "DELETE") { showMsg($("keys-msg"), "Cancelled — you must type DELETE exactly to revoke.", "err"); return; }
-  try {
-    await api(`/keys/${hash}?confirm=DELETE`, { method: "DELETE" });
-    showMsg($("keys-msg"), "Key revoked.", "ok");
-    await loadKeys();
-  } catch (e) { showMsg($("keys-msg"), e.message, "err"); }
-}
-
-async function signup() {
-  const name = $("signup-name").value.trim();
-  if (!name) { showMsg($("signup-msg"), "Name is required.", "err"); return; }
-  $("signup-btn").disabled = true;
-  try {
-    const res = await fetch("/api/v1/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email: $("signup-email").value.trim() || undefined }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error((data.error && data.error.message) || res.statusText);
-    $("signup-key").textContent = data.key;
-    $("signup-form").classList.add("hide");
-    $("signup-reveal").classList.remove("hide");
-  } catch (e) {
-    showMsg($("signup-msg"), e.message, "err");
-    $("signup-btn").disabled = false;
-  }
-}
-
-async function loadTemplates() {
-  const { templates: list } = await api("/templates");
-  templates = list;
-  $("tpl-list").innerHTML = list.length
-    ? `<table><tr><th>Name</th><th>Fields</th><th>Trust</th><th>ID</th><th></th></tr>` +
-      list.map((template) => `<tr><td>${esc(template.name)}</td><td class="mono">${esc((template.fields||[]).join(", ")||"none")}</td>
-        <td>${template.approved ? '<span class="pill ok">approved</span>' : '<span class="pill warn">unapproved</span>'}</td>
-        <td class="mono muted">${short(template.templateId)}</td>
-        <td class="row"><button class="ghost" data-preview="${esc(template.templateId)}" style="padding:.2rem .5rem">Preview</button>
-          ${template.owned ? `<button class="danger" data-delete="${esc(template.templateId)}" data-name="${esc(template.name)}" style="padding:.2rem .5rem">Delete</button>` : ""}</td></tr>`).join("") + `</table>`
-    : `<span class="muted">No templates yet. Submit one below.</span>`;
-  $("job-tpl").innerHTML = list.map((t) => `<option value="${t.templateId}">${esc(t.name)} ${t.approved ? "✓" : "⚠"}</option>`).join("");
-  showFields();
-}
-
-function showFields() {
-  const template = templates.find((entry) => entry.templateId === $("job-tpl").value);
-  const fieldList = template && template.fields.length ? template.fields.join(", ") : "";
-  $("job-fields").textContent = fieldList ? `(needs columns: ${fieldList})` : "";
-  $("job-fields-const").textContent = fieldList ? `(keys: ${fieldList})` : "";
-}
-
-function onTypeChange() {
-  const isConstant = $("job-type").value === "constant";
-  $("job-csv-mode").classList.toggle("hide", isConstant);
-  $("job-constant-mode").classList.toggle("hide", !isConstant);
-  $("job-est").textContent = "";
-}
-
-async function submitTemplate() {
-  try {
-    await api("/templates", { method: "POST", body: { name: $("tpl-name").value, html: $("tpl-html").value, requestApproval: $("tpl-approve").checked } });
-    showMsg($("tpl-msg"), "Template submitted.", "ok");
-    $("tpl-name").value = ""; $("tpl-html").value = "";
-    await loadTemplates();
-  } catch (e) { showMsg($("tpl-msg"), e.message, "err"); }
-}
-
-// Retire a template you own (soft archive). The API allows this only for the
-// owner; the button is shown only on owned rows.
-async function deleteTemplate(templateId, name) {
-  if (!confirm(`Delete template "${name}"?\n\nIt will be retired: hidden from your list and unusable for new jobs. Jobs already running on it keep working. You can revive it by re-submitting the identical HTML.`)) return;
-  try {
-    await api(`/templates/${templateId}`, { method: "DELETE" });
-    showMsg($("tpl-msg"), `Template "${name}" retired.`, "ok");
-    await loadTemplates();
-  } catch (e) { showMsg($("tpl-msg"), e.message, "err"); }
-}
-
-function parseConstantData() {
-  const raw = $("job-data").value.trim();
-  if (!raw) return {};
-  try {
-    return JSON.parse(raw);
-  } catch {
-    throw new Error('Data must be a valid JSON object, e.g. {"question":"Good?"}');
-  }
-}
-
-function jobBody() {
-  const type = $("job-type").value;
-  const base = { type, name: $("job-name").value || "Untitled job", templateId: $("job-tpl").value, reward: $("job-reward").value, uniqueWorker: $("job-unique").checked };
-  if (type === "constant") {
-    return { ...base, data: parseConstantData(), maxTasks: Number($("job-maxtasks").value) };
-  }
-  return { ...base, csv: $("job-csv").value };
-}
-
-async function estimate() {
-  try {
-    const e = await api("/jobs/estimate", { method: "POST", body: jobBody() });
-    $("job-est").innerHTML = `${e.taskCount} tasks · cost <strong>${esc(e.cost)} EFFECT</strong> · ` +
-      (e.sufficient ? `<span class="pill ok">enough credit</span>` : `<span class="pill warn">need more credit</span>`);
-    $("job-msg").innerHTML = "";
-  } catch (e) { $("job-est").textContent = ""; showMsg($("job-msg"), e.message, "err"); }
-}
-
-async function createJob() {
-  try {
-    const job = await api("/jobs", { method: "POST", body: jobBody() });
-    showMsg($("job-msg"), `Created job ${job.id} (${job.taskCount} tasks, reserved ${job.credits.reserved} EFFECT).`, "ok");
-    await Promise.all([loadAccount(), loadJobs()]);
-  } catch (e) { showMsg($("job-msg"), e.message, "err"); }
-}
-
-async function loadJobs() {
-  const { jobs } = await api("/jobs");
-  $("jobs-list").innerHTML = jobs.length
-    ? `<table><tr><th>Name</th><th>Status</th><th>Tasks (q/a/done)</th><th>Credit (used/left)</th><th></th></tr>` +
-      jobs.map((j) => {
-        const outstanding = j.tasks.queued + j.tasks.active;
-        // The API only reports `active`/`cancelled`; treat an active job with no
-        // queued or in-flight tasks as done (its work is finished).
-        const statusPill = j.status !== "active"
-          ? '<span class="pill warn">'+esc(j.status)+'</span>'
-          : outstanding === 0
-            ? '<span class="pill ok">done</span>'
-            : '<span class="pill ok">active</span>';
-        // Cancel only stops queued tasks and refunds them, so it is pointless once nothing is outstanding.
-        const canCancel = j.status === "active" && outstanding > 0;
-        return `<tr>
-        <td>${esc(j.name)}</td>
-        <td>${statusPill}</td>
-        <td class="mono">${j.tasks.queued}/${j.tasks.active}/${j.tasks.completed}</td>
-        <td class="mono">${esc(j.credits.consumed)} / ${esc(j.credits.remaining)}</td>
-        <td class="row">
-          <button class="ghost" data-results="${j.id}" data-name="${esc(j.name)}" style="padding:.2rem .5rem">Results</button>
-          ${canCancel ? `<button class="danger" data-cancel="${j.id}" style="padding:.2rem .5rem">Cancel</button>` : ""}
-        </td></tr>`;
-      }).join("") + `</table>`
-    : `<span class="muted">No jobs yet. Create one above.</span>`;
-}
-
-// Full-page template preview, rendered in a sandboxed iframe via the API
-// (the only way to send the Bearer key; a new tab could not authenticate).
-async function previewTemplate(templateId) {
-  const frame = $("tpl-preview-frame");
-  $("tpl-preview").classList.remove("hide");
-  $("tpl-preview-title").textContent = "Loading preview…";
-  $("tpl-preview-trust").innerHTML = "";
-  $("tpl-preview-note").classList.add("hide");
-  frame.srcdoc = "";
-  try {
-    const preview = await api(`/templates/${templateId}/preview`);
-    $("tpl-preview-title").textContent = preview.name || "Template preview";
-    $("tpl-preview-trust").innerHTML = preview.approved
-      ? `<span class="pill ok">approved</span>`
-      : `<span class="pill warn">unapproved</span>`;
-    $("tpl-preview-note").classList.toggle("hide", preview.approved);
-    frame.srcdoc = preview.html;
-  } catch (err) {
-    $("tpl-preview-title").textContent = "Preview failed";
-    frame.srcdoc = `<p style="font:14px/1.5 system-ui,sans-serif;padding:1rem;color:#b00020">${esc(err.message)}</p>`;
-  }
-}
-
-function closePreview() {
-  $("tpl-preview").classList.add("hide");
-  $("tpl-preview-frame").srcdoc = "";
-}
-
-async function viewResults(id, name) {
-  $("results").classList.remove("hide");
-  $("results-title").textContent = "Results · " + name;
-  $("results-csv").dataset.id = id;
-  $("results-body").textContent = "Loading…";
-  try {
-    const r = await api(`/jobs/${id}/results?limit=200`);
-    $("results-body").textContent = r.count ? JSON.stringify(r.results, null, 2) : "No results yet (workers haven't completed any tasks).";
-  } catch (e) { $("results-body").textContent = e.message; }
-}
-
-async function downloadCsv(id) {
-  const res = await fetch(`/api/v1/jobs/${id}/results?format=csv`, { headers: { Authorization: "Bearer " + apiKey } });
-  const blob = await res.blob();
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = `job-${id}-results.csv`; a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-async function cancelJob(id) {
-  if (!confirm("Cancel this job? Unfinished tasks are refunded.")) return;
-  try { await api(`/jobs/${id}/cancel`, { method: "POST" }); await Promise.all([loadAccount(), loadJobs()]); }
-  catch (e) { alert(e.message); }
-}
-
-// wiring
-$("connect").onclick = connect;
-$("key").addEventListener("keydown", (e) => { if (e.key === "Enter") connect(); });
-$("signup-btn").onclick = signup;
-$("signup-name").addEventListener("keydown", (e) => { if (e.key === "Enter") signup(); });
-$("signup-copy").onclick = () => {
-  navigator.clipboard.writeText($("signup-key").textContent).then(() => {
-    $("signup-copy").textContent = "Copied!";
-    setTimeout(() => { $("signup-copy").textContent = "Copy"; }, 2000);
-  });
-};
-$("tpl-submit").onclick = submitTemplate;
-$("acct-save").onclick = saveAccount;
-$("tx-refresh").onclick = loadTransactions;
-// Lazy-load transactions the first time the section is expanded (and on reopen).
-$("tx-details").addEventListener("toggle", (event) => { if (event.target.open) loadTransactions(); });
-$("keys-new").onclick = issueKey;
-$("keys-list").addEventListener("click", (event) => {
-  if (event.target.dataset.revoke)
-    revokeKey(event.target.dataset.revoke, event.target.dataset.prefix, event.target.dataset.last === "1");
-});
-$("job-tpl").onchange = showFields;
-$("job-type").onchange = onTypeChange;
-$("job-estimate").onclick = estimate;
-$("job-create").onclick = createJob;
-$("jobs-refresh").onclick = loadJobs;
-$("results-close").onclick = () => $("results").classList.add("hide");
-$("results-csv").onclick = (e) => downloadCsv(e.target.dataset.id);
-$("jobs-list").addEventListener("click", (e) => {
-  if (e.target.dataset.results) viewResults(e.target.dataset.results, e.target.dataset.name);
-  if (e.target.dataset.cancel) cancelJob(e.target.dataset.cancel);
-});
-$("tpl-list").addEventListener("click", (event) => {
-  if (event.target.dataset.preview) previewTemplate(event.target.dataset.preview);
-  if (event.target.dataset.delete) deleteTemplate(event.target.dataset.delete, event.target.dataset.name);
-});
-$("tpl-preview-close").onclick = closePreview;
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !$("tpl-preview").classList.contains("hide")) closePreview();
-});
-
-// No session persistence: the page always loads showing the signup card with an
-// empty key field. The user connects by pasting their key each visit.
-</script>
+<script type="module" src="api-console/js/main.js"></script>
 </body>
 </html>

@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 import type { Express } from "express";
 import {
   type Account,
@@ -16,7 +14,13 @@ import {
   revokeApiKey,
   updateAccount,
 } from "./accounts.js";
-import { apiError, apiJson, asyncHandler, parsePagination } from "./api-util.js";
+import {
+  apiError,
+  apiJson,
+  asyncHandler,
+  isValidEmail,
+  parsePagination,
+} from "./api-util.js";
 import { countLedgerEntries, getBalance, listLedgerEntries } from "./ledger.js";
 import { hasAuth } from "../auth.js";
 import {
@@ -32,17 +36,8 @@ import {
   type TemplateRecord,
 } from "../templates.js";
 
-/**
- * External Requestor API, mounted under `/api/v1`. All routes are guarded by
- * `requireApiKey`, which attaches the resolved account to the request.
- *
- * Grows across phases:
- *   Phase 0 — GET /account
- *   Phase 2 — templates
- *   Phase 3 — jobs
- */
 export const addRequestorApiRoutes = (app: Express): void => {
-  // Public self-service signup — creates an account + issues the first key.
+  // Public self-service signup: creates an account + issues the first key.
   // Rate-limited by IP (3/24 h); the credit gate (0 balance by default) is the
   // real protection against abuse.
   app.post(
@@ -70,43 +65,16 @@ export const addRequestorApiRoutes = (app: Express): void => {
           "invalid_request",
           "'name' must be 100 characters or fewer.",
         );
+      if (email !== undefined && !isValidEmail(email))
+        return apiError(
+          res,
+          400,
+          "invalid_request",
+          "'email' must be a valid email address.",
+        );
 
       const { account, key } = await createAccountWithKey(name, email);
       return apiJson(res, { key, accountId: account.id, name: account.name }, 201);
-    }),
-  );
-
-  // Public, rendered copy of API.md (client-side markdown via CDN). Embedded
-  // chars are escaped so template/HTML examples can't break out of the script.
-  app.get(
-    "/api/docs",
-    asyncHandler(async (_req, res) => {
-      let markdown = "# Requestor API\n\nDocs file not found.";
-      try {
-        markdown = await readFile(
-          fileURLToPath(new URL("./API.md", import.meta.url)),
-          "utf8",
-        );
-      } catch {
-        // fall back to the placeholder
-      }
-      const safe = JSON.stringify(markdown)
-        .replace(/</g, "\\u003c")
-        .replace(/>/g, "\\u003e");
-      res.type("html").send(
-        `<!doctype html><html><head><meta charset="utf-8">
-<title>Effect AI Requestor API</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>body{max-width:820px;margin:2rem auto;padding:0 1rem;font:16px/1.6 system-ui,sans-serif;color:#222}
-pre{background:#f5f5f5;padding:1rem;overflow:auto;border-radius:8px}
-code{background:#f5f5f5;padding:.1rem .35rem;border-radius:4px}
-pre code{padding:0;background:none}table{border-collapse:collapse}
-td,th{border:1px solid #ddd;padding:.3rem .6rem}a{color:#2563eb}</style>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script></head>
-<body><div id="content">Loading…</div>
-<script>document.getElementById("content").innerHTML=marked.parse(${safe});</script>
-</body></html>`,
-      );
     }),
   );
 
@@ -154,7 +122,18 @@ td,th{border:1px solid #ddd;padding:.3rem .6rem}a{color:#2563eb}</style>
           );
         changes.name = name;
       }
-      if (req.body?.email !== undefined) changes.email = String(req.body.email);
+      if (req.body?.email !== undefined) {
+        const email = String(req.body.email).trim();
+        // "" is allowed: it clears the stored email.
+        if (email && !isValidEmail(email))
+          return apiError(
+            res,
+            400,
+            "invalid_request",
+            "'email' must be a valid email address (or \"\" to clear it).",
+          );
+        changes.email = email;
+      }
 
       if (changes.name === undefined && changes.email === undefined)
         return apiError(
@@ -363,47 +342,81 @@ td,th{border:1px solid #ddd;padding:.3rem .6rem}a{color:#2563eb}</style>
     }),
   );
 
-  // Rendered preview of a usable template. Each ${field} is filled with its own
-  // name (same sample approach as the admin review page) so the requestor can
-  // see the layout before posting a job. Returns the rendered HTML, which the
-  // console drops into a sandboxed iframe; the template itself may be untrusted.
-  app.get(
-    "/api/v1/templates/:id/preview",
-    requireApiKey,
-    asyncHandler(async (req, res) => {
-      const { account } = req as AuthedRequest;
-      const record = await getTemplate(req.params.id);
-      if (!record)
-        return apiError(res, 404, "not_found", "Template not found.");
+  // Rendered preview of a usable template. By default each ${field} is filled
+  // with its own name (same sample approach as the admin review page); POST
+  // additionally accepts `data` with caller-supplied sample values, so
+  // templates that expect real shapes (image URLs, JSON strings) can be
+  // previewed working. Provided values merge over the defaults; unknown fields
+  // are ignored. Returns the rendered HTML, which the console drops into a
+  // sandboxed iframe; the template itself may be untrusted.
+  const handleTemplatePreview = asyncHandler(async (req, res) => {
+    const { account } = req as AuthedRequest;
+    const record = await getTemplate(req.params.id);
+    if (!record) return apiError(res, 404, "not_found", "Template not found.");
 
-      // Same access rule as job creation: approved (public catalog) or owned.
-      const approved = isTemplateApproved(record.data);
-      const owned = (await getAccountTemplateIds(account.id)).includes(
-        record.data.templateId,
+    // Same access rule as job creation: approved (public catalog) or owned.
+    const approved = isTemplateApproved(record.data);
+    const owned = (await getAccountTemplateIds(account.id)).includes(
+      record.data.templateId,
+    );
+    if (!approved && !owned)
+      return apiError(
+        res,
+        403,
+        "forbidden",
+        "Template not found or not accessible to this account.",
       );
-      if (!approved && !owned)
+
+    const fields = getTemplateFields(record.data.data);
+    const sampleData: Record<string, string | number | boolean> =
+      Object.fromEntries(fields.map((field) => [field, field]));
+
+    const provided = req.body?.data;
+    if (provided !== undefined) {
+      if (
+        typeof provided !== "object" ||
+        provided === null ||
+        Array.isArray(provided)
+      )
         return apiError(
           res,
-          403,
-          "forbidden",
-          "Template not found or not accessible to this account.",
+          400,
+          "invalid_request",
+          "'data' must be an object mapping field names to sample values.",
         );
+      for (const [field, value] of Object.entries(provided)) {
+        if (!fields.includes(field)) continue;
+        const valueType = typeof value;
+        if (
+          valueType !== "string" &&
+          valueType !== "number" &&
+          valueType !== "boolean"
+        )
+          return apiError(
+            res,
+            400,
+            "invalid_request",
+            `Sample value for '${field}' must be a string, number, or boolean.`,
+          );
+        sampleData[field] = value as string | number | boolean;
+      }
+    }
 
-      const fields = getTemplateFields(record.data.data);
-      const sampleData = Object.fromEntries(
-        fields.map((field) => [field, field]),
-      );
-      const html = await renderTemplate(record.data.data, sampleData);
+    const html = await renderTemplate(record.data.data, sampleData);
 
-      return apiJson(res, {
-        templateId: record.data.templateId,
-        name: record.data.name,
-        fields,
-        approved,
-        html,
-      });
-    }),
-  );
+    return apiJson(res, {
+      templateId: record.data.templateId,
+      name: record.data.name,
+      fields,
+      approved,
+      // Echo the values actually rendered so clients can prefill their form.
+      sampleData,
+      html,
+    });
+  });
+
+  app.get("/api/v1/templates/:id/preview", requireApiKey, handleTemplatePreview);
+  app.post("/api/v1/templates/:id/preview", requireApiKey, handleTemplatePreview);
 
   // Single template (metadata only — no raw HTML). Access: approved (public
   // catalog) or owned, matching `/preview` and job creation.

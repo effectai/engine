@@ -118,7 +118,6 @@ data = res.json()
       "type": "topup",
       "amount": "25000000",
       "balanceAfter": "25000000",
-      "jobId": null,
       "note": "manual top-up",
       "timestamp": 1750000000000
     }
@@ -136,8 +135,8 @@ data = res.json()
 | `type` | `"topup"`, `"debit"`, or `"refund"` |
 | `amount` | Amount in lamports (string). Divide by `lamportsPerEffect` to get EFFECT |
 | `balanceAfter` | Account balance immediately after this entry, in lamports |
-| `jobId` | The job this entry relates to, or `null` for top-ups |
-| `note` | Human-readable description of why the change occurred |
+| `jobId` | The job this entry relates to; omitted for top-ups |
+| `note` | Human-readable description of why the change occurred (optional) |
 | `timestamp` | Unix timestamp in milliseconds |
 
 ### Reading the example above

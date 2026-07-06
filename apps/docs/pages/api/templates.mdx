@@ -160,6 +160,8 @@ template = res.json()
 
 Returns the template's rendered HTML with each field filled in using its own name as a sample value (e.g. `${product}` becomes `product`). Useful for inspecting layout before using it in a job.
 
+To preview with realistic values instead of field names, use the `POST` variant below.
+
 :::code-group
 
 ```bash [curl]
@@ -194,7 +196,68 @@ data = res.json()
   "name": "Sentiment Analysis",
   "fields": ["product", "question"],
   "approved": true,
+  "sampleData": { "product": "product", "question": "question" },
   "html": "<h1>product</h1><p>question</p><button>Yes</button><button>No</button>"
+}
+```
+
+`sampleData` echoes the values that were actually rendered into `html`.
+
+### Preview with sample data
+
+`POST /api/v1/templates/:id/preview`
+
+Same as the `GET` variant, but accepts a `data` object with your own sample values, so templates that expect real shapes (image URLs, JSON strings) can be previewed working. Provided values merge over the field-name defaults; unknown fields are ignored. Values must be strings, numbers, or booleans.
+
+:::code-group
+
+```bash [curl]
+curl -s -X POST "https://api.effect.ai/api/v1/templates/TEMPLATE_ID/preview" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"data": {"product": "Solar-powered lamp", "question": "Would you buy this?"}}'
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/api/v1/templates/TEMPLATE_ID/preview', {
+  method: 'POST',
+  headers: {
+    Authorization: 'Bearer eff_live_YOUR_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    data: { product: 'Solar-powered lamp', question: 'Would you buy this?' }
+  })
+})
+const { html, sampleData } = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.post(
+    'https://api.effect.ai/api/v1/templates/TEMPLATE_ID/preview',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    json={'data': {'product': 'Solar-powered lamp', 'question': 'Would you buy this?'}}
+)
+data = res.json()
+```
+
+:::
+
+**Response `200`**
+
+```json
+{
+  "templateId": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "name": "Sentiment Analysis",
+  "fields": ["product", "question"],
+  "approved": true,
+  "sampleData": {
+    "product": "Solar-powered lamp",
+    "question": "Would you buy this?"
+  },
+  "html": "<h1>Solar-powered lamp</h1><p>Would you buy this?</p><button>Yes</button><button>No</button>"
 }
 ```
 

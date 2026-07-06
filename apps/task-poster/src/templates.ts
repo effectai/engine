@@ -198,7 +198,7 @@ export const rejectTemplateApproval = async (
 /**
  * Retires a template by flipping its status to "archived": it drops out of the
  * requestor's `/templates` list, the public catalog, and can no longer back new
- * jobs (existing jobs keep their already-imported tasks). Reversible — because
+ * jobs (existing jobs keep their already-imported tasks). Reversible because
  * IDs are content-addressed, re-submitting the identical HTML revives it
  * (`registerTemplate` always writes status "active"). Returns null if unknown.
  */

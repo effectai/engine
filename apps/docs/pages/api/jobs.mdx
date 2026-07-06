@@ -213,13 +213,17 @@ job_id = job['id']  # use this to poll for status and results
 | Field | Required | Description |
 |---|---|---|
 | `type` | Yes | `"csv"` |
-| `name` | Yes | Display name for the job |
+| `name` | No | Display name for the job (defaults to `"Untitled job"`) |
 | `templateId` | Yes | ID of the template to use |
 | `reward` | Yes | EFFECT reward per completed task (0.001–100) |
 | `csv` | Yes | CSV string — first row is header, max 10,000 rows |
 | `uniqueWorker` | No | `true` prevents the same worker completing multiple tasks |
-| `timeLimitSeconds` | No | Seconds a worker has to complete a task before re-queue |
+| `timeLimitSeconds` | No | Seconds a worker has to complete a task before re-queue (default 600) |
 | `capability` | No | Filter to workers with a specific capability tag |
+
+:::note
+The CSV must contain a column for every field the template uses; missing columns are rejected with `400 invalid_request`. The column name `dataffect/reward` and any column starting with `__effect` are reserved and rejected.
+:::
 
 ### Constant job
 
@@ -286,13 +290,13 @@ job = res.json()
 | Field | Required | Description |
 |---|---|---|
 | `type` | Yes | `"constant"` |
-| `name` | Yes | Display name |
+| `name` | No | Display name (defaults to `"Untitled job"`) |
 | `templateId` | Yes | Template ID |
 | `reward` | Yes | EFFECT reward per completed task |
-| `maxTasks` | Yes | How many workers should answer (cost = reward × maxTasks) |
+| `maxTasks` | Yes | How many workers should answer (cost = reward × maxTasks, max 10,000) |
 | `data` | Yes | Object with a key for each template field |
 | `uniqueWorker` | No | `true` ensures each worker answers only once (recommended for surveys) |
-| `timeLimitSeconds` | No | Seconds per task before re-queue |
+| `timeLimitSeconds` | No | Seconds per task before re-queue (default 600) |
 | `capability` | No | Capability filter |
 
 **Response `201`** (same shape for both types)
@@ -324,13 +328,17 @@ job = res.json()
 }
 ```
 
+:::note
+`status` is either `"active"` or `"cancelled"`. There is no `"completed"` status: a job is done when `tasks.queued + tasks.active === 0`.
+:::
+
 ---
 
 ## List jobs
 
 `GET /api/v1/jobs`
 
-Returns all your jobs, newest first.
+Returns all your jobs, newest first. Supports `limit` / `offset` pagination.
 
 :::code-group
 
@@ -358,6 +366,37 @@ data = res.json()
 ```
 
 :::
+
+**Response `200`**
+
+```json
+{
+  "jobs": [
+    {
+      "id": "01JQKX3Z8VFNWRB2TGHM4Y5P6B",
+      "name": "Sentiment Labelling",
+      "type": "csv",
+      "status": "active",
+      "templateId": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+      "reward": "0.5",
+      "taskCount": 2,
+      "uniqueWorker": false,
+      "createdAt": 1750000100000,
+      "tasks": { "queued": 0, "active": 1, "completed": 1, "failed": 0 },
+      "credits": {
+        "currency": "EFFECT",
+        "reserved": "1",
+        "consumed": "0.5",
+        "refunded": "0",
+        "remaining": "0.5"
+      }
+    }
+  ],
+  "total": 1,
+  "limit": 10,
+  "offset": 0
+}
+```
 
 ---
 
@@ -540,13 +579,17 @@ with open('results.csv', 'w') as f:
 
 CSV columns: `taskId`, `submittedAt`, `worker`, `input`, `result`
 
+:::note
+Worker submissions are untrusted, so cells starting with `=`, `+`, `-`, or `@` are prefixed with a single quote (`'`) in the CSV download. This prevents spreadsheet formula injection when the file is opened in Excel or Google Sheets.
+:::
+
 ---
 
 ## Cancel a job
 
 `POST /api/v1/jobs/:id/cancel`
 
-Stops posting new tasks to workers. Tasks already in progress continue to completion. Credits for tasks never sent to a worker are refunded.
+Stops the job immediately: no further tasks are posted to workers, and tasks currently in progress are not collected. Credits are refunded for **every task without a completed submission** at the moment of cancellation, both queued and in-progress. You only pay for tasks that were already completed.
 
 Idempotent — cancelling an already-cancelled job returns `200`.
 
@@ -608,4 +651,4 @@ print(job['credits']['refunded'])  # EFFECT refunded
 }
 ```
 
-1 task completed (0.5 EFFECT consumed), 1 task never sent to a worker (0.5 EFFECT refunded). `remaining` reaches zero — the account is fully settled.
+1 task completed (0.5 EFFECT consumed), 1 task unfinished at cancellation (0.5 EFFECT refunded). `remaining` reaches zero — the account is fully settled.

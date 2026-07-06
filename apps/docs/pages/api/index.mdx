@@ -12,6 +12,10 @@ https://api.effect.ai/api/v1
 
 All endpoints are prefixed with `/api/v1`.
 
+## Try it in the browser
+
+Prefer not to use curl? The [API console](https://api.effect.ai/api-console.html) is an interactive browser client for the full API: sign up, manage keys, submit templates, post jobs, and download results. Your API key is kept in memory only and never stored.
+
 ## Authentication
 
 All endpoints except `POST /signup` require an API key passed as a Bearer token:
@@ -28,6 +32,8 @@ Alternatively, use the `X-API-Key` header:
 
 API keys are prefixed `eff_live_` and are shown **exactly once** at issuance. Store yours securely — it cannot be recovered if lost. You can revoke and issue a new one via [API Keys](/api/keys).
 
+Requests with a missing, invalid, or revoked key return `401 unauthorized`. Keys belonging to a suspended account also return `401`.
+
 ## Credits
 
 All jobs are paid for with **EFFECT** credits, debited upfront when a job is created. New accounts start with a zero balance. Contact the Effect team to top up your account. Every balance change is recorded in the [credit ledger](/api/credits).
@@ -37,7 +43,18 @@ All jobs are paid for with **EFFECT** credits, debited upfront when a job is cre
 | 1 EFFECT | 1,000,000 lamports |
 | Min reward | 0.001 EFFECT per task |
 | Max reward | 100 EFFECT per task |
+| Max tasks per job | 10,000 (CSV rows or `maxTasks`) |
 | Max job cost | 1,000,000 EFFECT |
+| Max request body | 20 MB |
+
+## Pagination
+
+Every list endpoint (`/jobs`, `/jobs/:id/results`, `/templates`, `/credits/transactions`) accepts the same query parameters and echoes them back in the response alongside a `total` count:
+
+| Parameter | Default | Max | Description |
+|---|---|---|---|
+| `limit` | 100 | 1000 | Number of items to return |
+| `offset` | 0 | — | Number of items to skip |
 
 ## Rate limits
 

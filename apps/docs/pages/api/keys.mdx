@@ -49,7 +49,7 @@ keys = res.json()['keys']
   "keys": [
     {
       "hash": "a3f8d2c1e4b5a9f0d7c6e3b2a1f8d5c4e9b0a7f6d3c2e1b4a5f8d9c0e3b2a1f",
-      "prefix": "eff_live_dGhp",
+      "prefix": "eff_live_dGhpcy…",
       "status": "active",
       "createdAt": 1750000000000
     }
@@ -61,7 +61,7 @@ keys = res.json()['keys']
 | Field | Description |
 |---|---|
 | `hash` | SHA-256 hash of the key — use this to revoke |
-| `prefix` | First few characters of the raw key for identification |
+| `prefix` | First 15 characters of the raw key (plus `…`) for identification |
 | `status` | `"active"` or `"revoked"` |
 
 ---
@@ -109,7 +109,7 @@ data = res.json()
 {
   "key": "eff_live_bmV3a2V5Zm9yZG9jdW1lbnRhdGlvbmV4YW1wbGU",
   "hash": "b4e9c3f2a1d8e5b0c7f4a3e2d1b8c5f4a9e0b7c4f3a2e1d0b5c8f7a4e3d2c1b",
-  "prefix": "eff_live_bmV3",
+  "prefix": "eff_live_bmV3a2…",
   "status": "active",
   "createdAt": 1750000100000
 }
@@ -162,7 +162,7 @@ data = res.json()
 ```json
 {
   "hash": "a3f8d2c1e4b5a9f0d7c6e3b2a1f8d5c4e9b0a7f6d3c2e1b4a5f8d9c0e3b2a1f",
-  "prefix": "eff_live_dGhp",
+  "prefix": "eff_live_dGhpcy…",
   "status": "revoked",
   "createdAt": 1750000000000
 }
@@ -200,4 +200,4 @@ data = res.json()
 
 :::
 
-Without `?confirm=DELETE`, the request returns `400 invalid_request` with a message explaining that this is your last active key.
+Without `?confirm=DELETE`, the request returns `400 invalid_request` with a message explaining that this is your last active key. The confirmation is also accepted in the request body as `{"confirm": "DELETE"}`.
