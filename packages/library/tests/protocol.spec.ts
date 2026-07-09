@@ -31,7 +31,10 @@ import { promises } from "node:fs";
 
 import { Keypair } from "@solana/web3.js";
 
-describe("Complete Task Lifecycle", () => {
+const runIntegrationTests = process.env.RUN_INTEGRATION_TESTS === "1";
+const describeIntegration = runIntegrationTests ? describe : describe.skip;
+
+describeIntegration("Complete Task Lifecycle", () => {
   let manager: Awaited<ReturnType<typeof createManager>>;
   let worker: Awaited<ReturnType<typeof createWorker>>;
   const providerPeerId = peerIdFromString(
@@ -104,12 +107,20 @@ describe("Complete Task Lifecycle", () => {
   });
 
   afterEach(async () => {
-    await manager.stop();
-    await worker.stop();
+    if (manager) {
+      await manager.stop();
+    }
+    if (worker) {
+      await worker.stop();
+    }
 
     //close the datastores
-    await managerDatastore.close();
-    await workerDatastore.close();
+    if (managerDatastore) {
+      await managerDatastore.close();
+    }
+    if (workerDatastore) {
+      await workerDatastore.close();
+    }
   });
 
   it(

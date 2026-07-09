@@ -6,6 +6,23 @@ import { createDataStore } from "@effectai/test-utils";
 import type { Payment } from "@effectai/protobufs";
 import { ulid } from "ulid";
 
+const createMockPayment = (nonce: bigint, amount = 100n): Payment => ({
+  id: ulid(),
+  version: 1,
+  nonce,
+  amount,
+  recipient: "recipient-1",
+  paymentAccount: "payment-account-1",
+  publicKey: "manager-public-key-1",
+  signature: {
+    R8: {
+      R8_1: "1",
+      R8_2: "2",
+    },
+    S: "3",
+  },
+});
+
 describe("createPaymentStore", () => {
   let datastore: Datastore;
   let paymentStore: ReturnType<typeof createPaymentStore>;
@@ -24,11 +41,7 @@ describe("createPaymentStore", () => {
 
   describe("create", () => {
     it("should create a payment record", async () => {
-      const payment: Payment = {
-        id: ulid(),
-        nonce: 1n,
-        amount: 100n,
-      };
+      const payment: Payment = createMockPayment(1n);
 
       const result = await paymentStore.create({
         peerId: "peer1",
@@ -46,12 +59,7 @@ describe("createPaymentStore", () => {
     });
 
     it("should store payment under correct key", async () => {
-      const payment: Payment = {
-        id: ulid(),
-        nonce: 2n,
-        amount: 200n,
-        // ... other payment fields
-      };
+      const payment: Payment = createMockPayment(2n, 200n);
 
       await paymentStore.create({
         peerId: "peer1",
@@ -64,6 +72,8 @@ describe("createPaymentStore", () => {
     it("should return undefined when no payments exist", async () => {
       const highestNonce = await paymentStore.getHighestNonce({
         peerId: "peer1",
+        managerPublicKey: "manager-public-key-1",
+        recipient: "recipient-1",
       });
       expect(highestNonce).toBe(0n);
     });
@@ -71,35 +81,33 @@ describe("createPaymentStore", () => {
     it("should return the highest nonce for a peer", async () => {
       // Create multiple payments for peer1
       await paymentStore.create({
-        id: ulid(),
         peerId: "peer1",
-        payment: { id: ulid(), nonce: 3n, amount: 100n },
+        payment: createMockPayment(3n, 100n),
       });
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       await paymentStore.create({
-        id: ulid(),
         peerId: "peer1",
-        payment: { id: ulid(), nonce: 7n, amount: 300n },
+        payment: createMockPayment(7n, 300n),
       });
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       await paymentStore.create({
-        id: ulid(),
         peerId: "peer1",
-        payment: { id: ulid(), nonce: 2n, amount: 200n },
+        payment: createMockPayment(2n, 200n),
       });
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       await paymentStore.create({
-        id: ulid(),
         peerId: "peer1",
-        payment: { id: ulid(), nonce: 16n, amount: 200n },
+        payment: createMockPayment(16n, 200n),
       });
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       const highestNonce = await paymentStore.getHighestNonce({
         peerId: "peer1",
+        managerPublicKey: "manager-public-key-1",
+        recipient: "recipient-1",
       });
 
       expect(highestNonce).toBe(16n);
@@ -110,13 +118,15 @@ describe("createPaymentStore", () => {
         for (let i = 0; i < 25; i += 4) {
           await paymentStore.create({
             peerId: "peer1",
-            payment: { id: ulid(), nonce: BigInt(i), amount: BigInt(i) },
+            payment: createMockPayment(BigInt(i), BigInt(i)),
           });
           await new Promise((resolve) => setTimeout(resolve, 10));
         }
 
         const payments = await paymentStore.getFrom({
           peerId: "peer1",
+          publicKey: "manager-public-key-1",
+          recipient: "recipient-1",
           nonce: 13,
         });
 
@@ -130,7 +140,7 @@ describe("createPaymentStore", () => {
           for (let i = 0; i < n; i++) {
             await paymentStore.create({
               peerId: "peer1",
-              payment: { id: ulid(), nonce: i, amount: BigInt(i) },
+              payment: createMockPayment(BigInt(i), BigInt(i)),
             });
 
             await new Promise((resolve) => setTimeout(resolve, 10));

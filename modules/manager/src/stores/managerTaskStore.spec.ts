@@ -10,6 +10,7 @@ import {
   TaskExpiredError,
   stringifyWithBigInt,
 } from "@effectai/protocol-core";
+import { ulid } from "ulid";
 
 const mockDatastore = {
   has: vi.fn(),
@@ -31,7 +32,7 @@ const mockPeerId = {
 } as PeerId;
 
 const mockTask: Task = {
-  id: "task123",
+  id: ulid(),
   title: "Test Task",
   reward: 100n,
   timeLimitSeconds: 3600,
@@ -69,7 +70,7 @@ describe("ManagerTaskStore", () => {
     it("should create a new task record", async () => {
       const result = await taskStore.create({
         task: mockTask,
-        providerPeerId: mockPeerId,
+        providerPeerIdStr: mockPeerId.toString(),
       });
 
       expect(result.state).toEqual(mockTask);
