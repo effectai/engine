@@ -4,14 +4,6 @@ import { ulid } from "ulid";
 import { apiError } from "./api-util.js";
 import { db } from "../state.js";
 
-/**
- * Requestor accounts + API keys for the external API.
- *
- * Identity is off-chain for v1: an account is just a record, and access is
- * granted by API keys. Only the sha256 *hash* of a key is ever stored; the
- * raw key is shown once at issuance.
- */
-
 export type AccountStatus = "active" | "suspended";
 
 export type Account = {
@@ -37,8 +29,6 @@ const KEY_PREFIX = "eff_live_";
 export const hashApiKey = (rawKey: string): string =>
   createHash("sha256").update(rawKey).digest("hex");
 
-// Opaque random key. base64url keeps it header/URL-safe and dependency-free
-// (bs58 isn't a task-poster dependency); the prefix makes leaked keys greppable.
 const generateRawKey = (): string =>
   KEY_PREFIX + randomBytes(32).toString("base64url");
 
@@ -62,32 +52,6 @@ export const createAccount = async (
   return account;
 };
 
-/** Creates an account and issues its first key in one step (used by self-service signup). */
-export const createAccountWithKey = async (
-  name: string,
-  email?: string,
-): Promise<{ account: Account; key: string }> => {
-  const account = await createAccount(name, email);
-  const { key } = await issueApiKey(account.id);
-  return { account, key };
-};
-
-// Tight rate limit for the public signup endpoint: 3 accounts per IP per 24 h.
-const SIGNUP_RATE_MAX = 3;
-const SIGNUP_RATE_WINDOW_MS = 86_400_000;
-const signupBuckets = new Map<string, { count: number; resetAt: number }>();
-
-export const checkSignupRateLimit = (ip: string): boolean => {
-  const now = Date.now();
-  let bucket = signupBuckets.get(ip);
-  if (!bucket || bucket.resetAt <= now) {
-    bucket = { count: 0, resetAt: now + SIGNUP_RATE_WINDOW_MS };
-    signupBuckets.set(ip, bucket);
-  }
-  bucket.count += 1;
-  return bucket.count <= SIGNUP_RATE_MAX;
-};
-
 export const getAccount = async (id: string): Promise<Account | null> => {
   const record = await db.get<Account>(["account", id]);
   return record?.data ?? null;
@@ -109,11 +73,6 @@ export const setAccountStatus = async (
   return account;
 };
 
-/**
- * Partial update of an account's contact fields (used by `PATCH /account`).
- * Only the keys present in `changes` are touched; passing `email: ""` clears
- * the stored email. `name`/`email` are trimmed by the caller-facing route.
- */
 export const updateAccount = async (
   id: string,
   changes: { name?: string; email?: string },
@@ -129,7 +88,6 @@ export const updateAccount = async (
 
 // ---------------------------------------------------------------- api keys
 
-/** Issues a new key. Returns the raw key ONCE; only the hash is persisted. */
 export const issueApiKey = async (
   accountId: string,
 ): Promise<{ key: string; record: ApiKeyRecord }> => {
@@ -149,22 +107,17 @@ export const issueApiKey = async (
 };
 
 export const listApiKeys = async (
-  accountId?: string,
-): Promise<ApiKeyRecord[]> => {
-  const records = (await db.listAll<ApiKeyRecord>(["apikey", {}])).map(
-    (record) => record.data,
-  );
-  return accountId
-    ? records.filter((record) => record.accountId === accountId)
-    : records;
-};
+  accountId: string,
+): Promise<ApiKeyRecord[]> =>
+  (await db.listAll<ApiKeyRecord>(["apikey", {}]))
+    .map((record) => record.data)
+    .filter((record) => record.accountId === accountId);
 
 export const getApiKey = async (hash: string): Promise<ApiKeyRecord | null> => {
   const record = await db.get<ApiKeyRecord>(["apikey", hash]);
   return record?.data ?? null;
 };
 
-/** Number of still-active keys for an account (used to guard last-key revoke). */
 export const countActiveApiKeys = async (accountId: string): Promise<number> =>
   (await listApiKeys(accountId)).filter((key) => key.status === "active")
     .length;
@@ -176,7 +129,6 @@ export const revokeApiKey = async (hash: string): Promise<void> => {
   await db.set<ApiKeyRecord>(["apikey", hash], record.data);
 };
 
-/** Resolves a raw key to its (active) account, or null if invalid/revoked. */
 export const getAccountByApiKey = async (
   rawKey: string,
 ): Promise<Account | null> => {
@@ -190,7 +142,6 @@ export const getAccountByApiKey = async (
 
 // -------------------------------------------------------------- middleware
 
-/** A request that has passed `requireApiKey` and carries the resolved account. */
 export interface AuthedRequest extends Request {
   account: Account;
 }
@@ -207,13 +158,11 @@ const extractKey = (req: Request): string | null => {
   return null;
 };
 
-/** 
- * Resolves the account from an API key, or null
- * lets routes also accept an admin cookie session (e.g. template archiving). 
- */
 export const getAccountFromRequest = async (
   req: Request,
 ): Promise<Account | null> => {
+  const cached = (req as Partial<AuthedRequest>).account;
+  if (cached) return cached;
   const key = extractKey(req);
   return key ? getAccountByApiKey(key) : null;
 };
@@ -222,39 +171,61 @@ export const getAccountFromRequest = async (
 
 const RATE_LIMIT_MAX = 120; // requests
 const RATE_LIMIT_WINDOW_MS = 60_000; // per minute
-const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+const SIGNUP_RATE_MAX = 3; // signups per IP
+const SIGNUP_RATE_WINDOW_MS = 86_400_000; // per 24 h
+const buckets = new Map<string, { count: number; resetAt: number }>();
 
-/**
- * Fixed-window per-key limiter for `/api/v1`. Buckets by API key (falling back
- * to IP) so it can run *before* the account is resolved. In-memory — fine for a
- * single-process app; swap for a shared store if the poster is ever scaled out.
- */
-export const rateLimitApi = (
+const hitBucket = (bucketKey: string, windowMs: number): number => {
+  const now = Date.now();
+  let bucket = buckets.get(bucketKey);
+  if (!bucket || bucket.resetAt <= now) {
+    bucket = { count: 0, resetAt: now + windowMs };
+    buckets.set(bucketKey, bucket);
+  }
+  bucket.count += 1;
+  return bucket.count;
+};
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [bucketKey, bucket] of buckets)
+    if (bucket.resetAt <= now) buckets.delete(bucketKey);
+}, 60_000).unref();
+
+export const checkSignupRateLimit = (ip: string): boolean =>
+  hitBucket(`signup:${ip}`, SIGNUP_RATE_WINDOW_MS) <= SIGNUP_RATE_MAX;
+
+export const rateLimitApi = async (
   req: Request,
   res: Response,
   next: NextFunction,
-): void => {
-  const key = extractKey(req) ?? req.ip ?? "anon";
-  const now = Date.now();
+): Promise<void> => {
+  try {
+    const presentedKey = extractKey(req);
+    const account = presentedKey
+      ? await getAccountByApiKey(presentedKey)
+      : null;
+    if (account) (req as AuthedRequest).account = account;
 
-  let bucket = rateBuckets.get(key);
-  if (!bucket || bucket.resetAt <= now) {
-    bucket = { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS };
-    rateBuckets.set(key, bucket);
+    const bucketKey = account ? `acct:${account.id}` : `ip:${req.ip ?? "anon"}`;
+    const count = hitBucket(bucketKey, RATE_LIMIT_WINDOW_MS);
+
+    res.setHeader("X-RateLimit-Limit", String(RATE_LIMIT_MAX));
+    res.setHeader(
+      "X-RateLimit-Remaining",
+      String(Math.max(0, RATE_LIMIT_MAX - count)),
+    );
+
+    if (count > RATE_LIMIT_MAX) {
+      apiError(res, 429, "rate_limited", "Rate limit exceeded; slow down.");
+      return;
+    }
+    next();
+  } catch (err) {
+    // never let a limiter failure become an unhandled rejection
+    console.error("Rate limiter error:", err);
+    apiError(res, 500, "internal", "Internal server error");
   }
-  bucket.count += 1;
-
-  res.setHeader("X-RateLimit-Limit", String(RATE_LIMIT_MAX));
-  res.setHeader(
-    "X-RateLimit-Remaining",
-    String(Math.max(0, RATE_LIMIT_MAX - bucket.count)),
-  );
-
-  if (bucket.count > RATE_LIMIT_MAX) {
-    apiError(res, 429, "rate_limited", "Rate limit exceeded; slow down.");
-    return;
-  }
-  next();
 };
 
 export const requireApiKey = async (
@@ -274,7 +245,9 @@ export const requireApiKey = async (
       return;
     }
 
-    const account = await getAccountByApiKey(key);
+    const account =
+      (req as Partial<AuthedRequest>).account ??
+      (await getAccountByApiKey(key));
     if (!account) {
       apiError(res, 401, "unauthorized", "Invalid or revoked API key.");
       return;

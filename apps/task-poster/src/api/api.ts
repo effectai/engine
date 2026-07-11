@@ -1,11 +1,11 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import {
   type Account,
   type ApiKeyRecord,
   type AuthedRequest,
   checkSignupRateLimit,
   countActiveApiKeys,
-  createAccountWithKey,
+  createAccount,
   getAccountFromRequest,
   getApiKey,
   issueApiKey,
@@ -36,10 +36,12 @@ import {
   type TemplateRecord,
 } from "../templates.js";
 
+const MAX_NAME_LENGTH = 100;
+const MAX_EMAIL_LENGTH = 320;
+// Workers download the template for every task, so keep it light.
+const MAX_TEMPLATE_HTML_BYTES = 256 * 1024;
+
 export const addRequestorApiRoutes = (app: Express): void => {
-  // Public self-service signup: creates an account + issues the first key.
-  // Rate-limited by IP (3/24 h); the credit gate (0 balance by default) is the
-  // real protection against abuse.
   app.post(
     "/api/v1/signup",
     asyncHandler(async (req, res) => {
@@ -58,14 +60,17 @@ export const addRequestorApiRoutes = (app: Express): void => {
 
       if (!name)
         return apiError(res, 400, "invalid_request", "'name' is required.");
-      if (name.length > 100)
+      if (name.length > MAX_NAME_LENGTH)
         return apiError(
           res,
           400,
           "invalid_request",
-          "'name' must be 100 characters or fewer.",
+          `'name' must be ${MAX_NAME_LENGTH} characters or fewer.`,
         );
-      if (email !== undefined && !isValidEmail(email))
+      if (
+        email !== undefined &&
+        (email.length > MAX_EMAIL_LENGTH || !isValidEmail(email))
+      )
         return apiError(
           res,
           400,
@@ -73,7 +78,8 @@ export const addRequestorApiRoutes = (app: Express): void => {
           "'email' must be a valid email address.",
         );
 
-      const { account, key } = await createAccountWithKey(name, email);
+      const account = await createAccount(name, email);
+      const { key } = await issueApiKey(account.id);
       return apiJson(res, { key, accountId: account.id, name: account.name }, 201);
     }),
   );
@@ -100,8 +106,6 @@ export const addRequestorApiRoutes = (app: Express): void => {
     }),
   );
 
-  // Update contact fields. Partial: only the keys present in the body change;
-  // `email: ""` clears it. Credit balance and status are not editable here.
   app.patch(
     "/api/v1/account",
     requireApiKey,
@@ -113,19 +117,19 @@ export const addRequestorApiRoutes = (app: Express): void => {
         const name = String(req.body.name).trim();
         if (!name)
           return apiError(res, 400, "invalid_request", "'name' cannot be empty.");
-        if (name.length > 100)
+        if (name.length > MAX_NAME_LENGTH)
           return apiError(
             res,
             400,
             "invalid_request",
-            "'name' must be 100 characters or fewer.",
+            `'name' must be ${MAX_NAME_LENGTH} characters or fewer.`,
           );
         changes.name = name;
       }
       if (req.body?.email !== undefined) {
         const email = String(req.body.email).trim();
         // "" is allowed: it clears the stored email.
-        if (email && !isValidEmail(email))
+        if (email && (email.length > MAX_EMAIL_LENGTH || !isValidEmail(email)))
           return apiError(
             res,
             400,
@@ -157,9 +161,6 @@ export const addRequestorApiRoutes = (app: Express): void => {
     createdAt: key.createdAt,
   });
 
-  // Self-service key management, scoped to the caller's account. The raw key is
-  // only ever returned by POST (once); listing shows display prefixes + the
-  // hash, which is the id used to revoke (a one-way sha256, safe to expose).
   app.get(
     "/api/v1/keys",
     requireApiKey,
@@ -319,8 +320,22 @@ export const addRequestorApiRoutes = (app: Express): void => {
 
       if (!name)
         return apiError(res, 400, "invalid_request", "'name' is required.");
+      if (name.length > MAX_NAME_LENGTH)
+        return apiError(
+          res,
+          400,
+          "invalid_request",
+          `'name' must be ${MAX_NAME_LENGTH} characters or fewer.`,
+        );
       if (!html)
         return apiError(res, 400, "invalid_request", "'html' is required.");
+      if (Buffer.byteLength(html, "utf8") > MAX_TEMPLATE_HTML_BYTES)
+        return apiError(
+          res,
+          400,
+          "invalid_request",
+          `'html' must be ${MAX_TEMPLATE_HTML_BYTES / 1024} KB or smaller.`,
+        );
 
       const record = await registerTemplate({
         name,
@@ -359,13 +374,10 @@ export const addRequestorApiRoutes = (app: Express): void => {
     const owned = (await getAccountTemplateIds(account.id)).includes(
       record.data.templateId,
     );
+    // 404 (not 403): template ids are content hashes, so a 403 would confirm
+    // to a non-owner that someone has registered that exact HTML.
     if (!approved && !owned)
-      return apiError(
-        res,
-        403,
-        "forbidden",
-        "Template not found or not accessible to this account.",
-      );
+      return apiError(res, 404, "not_found", "Template not found.");
 
     const fields = getTemplateFields(record.data.data);
     const sampleData: Record<string, string | number | boolean> =
@@ -432,13 +444,9 @@ export const addRequestorApiRoutes = (app: Express): void => {
       const owned = (await getAccountTemplateIds(account.id)).includes(
         record.data.templateId,
       );
+      // Same 404-over-403 rule as /preview: don't confirm the id exists.
       if (!isTemplateApproved(record.data) && !owned)
-        return apiError(
-          res,
-          403,
-          "forbidden",
-          "Template not found or not accessible to this account.",
-        );
+        return apiError(res, 404, "not_found", "Template not found.");
 
       return apiJson(res, templateDetailView(record.data, owned));
     }),
@@ -466,16 +474,32 @@ export const addRequestorApiRoutes = (app: Express): void => {
         return apiError(res, 404, "not_found", "Template not found.");
 
       const owns = !!account && record.data.ownerId === account.id;
-      if (!isAdmin && !owns)
+      if (!isAdmin && !owns) {
+        // If the caller can't even see the template (unapproved, not theirs),
+        // 404 like the read endpoints so its existence isn't confirmed. A 403
+        // is fine for approved templates: the catalog is public anyway.
+        if (!isTemplateApproved(record.data))
+          return apiError(res, 404, "not_found", "Template not found.");
         return apiError(
           res,
           403,
           "forbidden",
           "Only the template's owner or the Effect team can delete it.",
         );
+      }
 
       const archived = await archiveTemplate(record.data.templateId);
       return apiJson(res, templateDetailView(archived ?? record.data, owns));
     }),
   );
+
+  // Health check endpoint: unauthenticated ping for integrators and load balancers.
+  app.get("/api/v1/health", (_req: Request, res: Response) => {
+    apiJson(res, {
+      status: "ok",
+      uptimeMs: Math.round(process.uptime() * 1000),
+      timestamp: new Date().toISOString(),
+    });
+  });
+
 };

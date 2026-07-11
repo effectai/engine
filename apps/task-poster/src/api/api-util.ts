@@ -1,10 +1,15 @@
 import type { Request, Response } from "express";
 
+const DEFAULT_PAGE_LIMIT = 100;
+const MAX_PAGE_LIMIT = 1000;
+
 export const parsePagination = (
   query: Record<string, unknown>,
-  { defaultLimit = 100, maxLimit = 1000 }: { defaultLimit?: number; maxLimit?: number } = {},
 ): { limit: number; offset: number } => ({
-  limit: Math.min(Math.max(Number(query.limit) || defaultLimit, 1), maxLimit),
+  limit: Math.min(
+    Math.max(Number(query.limit) || DEFAULT_PAGE_LIMIT, 1),
+    MAX_PAGE_LIMIT,
+  ),
   offset: Math.max(Number(query.offset) || 0, 0),
 });
 
@@ -24,9 +29,7 @@ export const apiError = (
   message: string,
 ): Response => res.status(status).json({ error: { code, message } });
 
-// JSON.stringify replacer so bigint (lamport) values serialize as strings
-// instead of throwing "Do not know how to serialize a BigInt".
-export const bigintReplacer = (_key: string, value: unknown): unknown =>
+const bigintReplacer = (_key: string, value: unknown): unknown =>
   typeof value === "bigint" ? value.toString() : value;
 
 export const apiJson = (res: Response, data: unknown, status = 200): Response =>
@@ -35,7 +38,6 @@ export const apiJson = (res: Response, data: unknown, status = 200): Response =>
     .type("application/json")
     .send(JSON.stringify(data, bigintReplacer));
 
-/** JSON 404 for unmatched `/api/v1/*` routes (keeps the error envelope). */
 export const apiNotFound = (req: Request, res: Response): void => {
   apiError(
     res,
@@ -45,16 +47,11 @@ export const apiNotFound = (req: Request, res: Response): void => {
   );
 };
 
-/**
- * Light email shape check (something@something.tld, no whitespace). Not RFC
- * exhaustive just enough to reject obvious garbage before storing it.
- */
 export const isValidEmail = (email: string): boolean =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 export const LAMPORTS_PER_EFFECT = 1_000_000n;
 
-/** Parses a human EFFECT amount (e.g. "10" or "0.5") into lamports. */
 export const effectToLamports = (input: string): bigint => {
   const trimmed = String(input).trim();
   if (!/^\d+(\.\d{1,6})?$/.test(trimmed))
@@ -64,7 +61,6 @@ export const effectToLamports = (input: string): bigint => {
   return BigInt(whole) * LAMPORTS_PER_EFFECT + BigInt(fracPadded);
 };
 
-/** Formats lamports as a trimmed EFFECT string (e.g. 1500000n → "1.5"). */
 export const lamportsToEffect = (lamports: bigint): string => {
   const whole = lamports / LAMPORTS_PER_EFFECT;
   const frac = lamports % LAMPORTS_PER_EFFECT;
@@ -72,10 +68,25 @@ export const lamportsToEffect = (lamports: bigint): string => {
   return `${whole}.${frac.toString().padStart(6, "0").replace(/0+$/, "")}`;
 };
 
-/**
- * Wraps an async route handler so rejected promises become a clean 500
- * instead of an unhandled rejection (Express 4 does not await handlers).
- */
+const locks = new Map<string, Promise<void>>();
+
+export const withLock = <ResultType>(
+  lockKey: string,
+  operation: () => Promise<ResultType>,
+): Promise<ResultType> => {
+  const previous = locks.get(lockKey) ?? Promise.resolve();
+  const run = previous.then(operation, operation);
+  const tail = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  locks.set(lockKey, tail);
+  tail.then(() => {
+    if (locks.get(lockKey) === tail) locks.delete(lockKey);
+  });
+  return run;
+};
+
 export const asyncHandler =
   (handler: (req: Request, res: Response) => Promise<unknown>) =>
   (req: Request, res: Response): void => {

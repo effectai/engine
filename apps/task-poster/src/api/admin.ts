@@ -1,9 +1,10 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import {
   type Account,
   type ApiKeyRecord,
   createAccount,
   getAccount,
+  getApiKey,
   issueApiKey,
   listAccounts,
   listApiKeys,
@@ -11,7 +12,7 @@ import {
 } from "./accounts.js";
 import { effectToLamports, lamportsToEffect } from "./api-util.js";
 import { requireAuth } from "../auth.js";
-import { make404, page } from "../html.js";
+import { isHtmx, make404, make500, page } from "../html.js";
 import { deleteAccountAndData } from "./jobs.js";
 import { credit, getBalance } from "./ledger.js";
 import {
@@ -30,6 +31,84 @@ import {
  * rest of the task-poster). Lets the team create accounts, issue API keys,
  * and manually top up credit balances until on-chain buying exists.
  */
+
+// Client-side pager shared by the admin list pages: shows 5 cards per page,
+// with an optional search box (filters on each card's data-search attribute)
+// and an optional match counter. Omitted element ids disable those features.
+const pagerScript = (options: {
+  listId: string;
+  pagerId: string;
+  cardClass: string;
+  searchId?: string;
+  countId?: string;
+  countNoun?: string;
+}): string => `
+<script>
+(() => {
+  const PAGE_SIZE = 5;
+  const list = document.getElementById(${JSON.stringify(options.listId)});
+  if (!list) return;
+  const cards = Array.from(list.querySelectorAll(${JSON.stringify(`.${options.cardClass}`)}));
+  const search = document.getElementById(${JSON.stringify(options.searchId ?? "")});
+  const count = document.getElementById(${JSON.stringify(options.countId ?? "")});
+  const pager = document.getElementById(${JSON.stringify(options.pagerId)});
+  const noun = ${JSON.stringify(options.countNoun ?? "item")};
+  let currentPage = 1;
+
+  const filtered = () => {
+    const query = (search?.value ?? "").trim().toLowerCase();
+    return cards.filter(
+      (card) => !query || (card.dataset.search ?? "").includes(query),
+    );
+  };
+
+  const render = () => {
+    const matches = filtered();
+    const pageCount = Math.max(1, Math.ceil(matches.length / PAGE_SIZE));
+    if (currentPage > pageCount) currentPage = pageCount;
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const visible = new Set(matches.slice(start, start + PAGE_SIZE));
+
+    for (const card of cards) {
+      card.style.display = visible.has(card) ? "" : "none";
+    }
+
+    if (count) {
+      count.textContent = matches.length
+        ? matches.length + " " + noun + (matches.length === 1 ? "" : "s")
+        : "no matches";
+    }
+
+    pager.innerHTML = "";
+    if (matches.length > PAGE_SIZE) {
+      const button = (label, page, disabled) => {
+        const element = document.createElement("button");
+        element.textContent = label;
+        element.disabled = disabled;
+        element.style.padding = "0.2rem 0.6rem";
+        element.onclick = () => {
+          currentPage = page;
+          render();
+        };
+        return element;
+      };
+      pager.appendChild(button("< Prev", currentPage - 1, currentPage <= 1));
+      const label = document.createElement("small");
+      label.textContent = "Page " + currentPage + " / " + pageCount;
+      pager.appendChild(label);
+      pager.appendChild(
+        button("Next >", currentPage + 1, currentPage >= pageCount),
+      );
+    }
+  };
+
+  search?.addEventListener("input", () => {
+    currentPage = 1;
+    render();
+  });
+  render();
+})();
+</script>`;
 
 const keyRow = (key: ApiKeyRecord): string => `
   <li style="display:flex;align-items:center;gap:0.5rem;justify-content:space-between">
@@ -131,71 +210,14 @@ const renderAccountsPage = async (): Promise<string> => {
 
   <div id="accounts-pager" style="display:flex;gap:0.5rem;align-items:center;justify-content:center;margin-top:1rem"></div>
 </div>
-<script>
-(() => {
-  const PAGE_SIZE = 5;
-  const list = document.getElementById("accounts-list");
-  if (!list) return;
-  const cards = Array.from(list.querySelectorAll(".account-card"));
-  const search = document.getElementById("acct-search");
-  const count = document.getElementById("acct-count");
-  const pager = document.getElementById("accounts-pager");
-  let currentPage = 1;
-
-  const filtered = () => {
-    const query = (search?.value ?? "").trim().toLowerCase();
-    return cards.filter(
-      (card) => !query || (card.dataset.search ?? "").includes(query),
-    );
-  };
-
-  const render = () => {
-    const matches = filtered();
-    const pageCount = Math.max(1, Math.ceil(matches.length / PAGE_SIZE));
-    if (currentPage > pageCount) currentPage = pageCount;
-    const start = (currentPage - 1) * PAGE_SIZE;
-    const visible = new Set(matches.slice(start, start + PAGE_SIZE));
-
-    for (const card of cards) {
-      card.style.display = visible.has(card) ? "" : "none";
-    }
-
-    if (count) {
-      count.textContent = matches.length
-        ? matches.length + " account" + (matches.length === 1 ? "" : "s")
-        : "no matches";
-    }
-
-    pager.innerHTML = "";
-    if (matches.length > PAGE_SIZE) {
-      const button = (label, page, disabled) => {
-        const element = document.createElement("button");
-        element.textContent = label;
-        element.disabled = disabled;
-        element.style.padding = "0.2rem 0.6rem";
-        element.onclick = () => {
-          currentPage = page;
-          render();
-        };
-        return element;
-      };
-      pager.appendChild(button("‹ Prev", currentPage - 1, currentPage <= 1));
-      const label = document.createElement("small");
-      label.textContent = "Page " + currentPage + " / " + pageCount;
-      pager.appendChild(label);
-      pager.appendChild(
-        button("Next ›", currentPage + 1, currentPage >= pageCount),
-      );
-    }
-  };
-
-  search?.addEventListener("input", () => {
-    currentPage = 1;
-    render();
-  });
-  render();
-})();
-</script>`;
+${pagerScript({
+  listId: "accounts-list",
+  pagerId: "accounts-pager",
+  cardClass: "account-card",
+  searchId: "acct-search",
+  countId: "acct-count",
+  countNoun: "account",
+})}`;
 };
 
 const formatTimestamp = (ts: number): string =>
@@ -232,44 +254,6 @@ const pendingTemplateCard = async (tpl: TemplateRecord): Promise<string> => {
 </div>`;
 };
 
-// Client-side pager: shows 5 cards at a time (matches the accounts page).
-const templatePagerScript = `
-<script>
-(() => {
-  const PAGE_SIZE = 5;
-  const list = document.getElementById("tpl-list");
-  if (!list) return;
-  const cards = Array.from(list.querySelectorAll(".tpl-card"));
-  const pager = document.getElementById("tpl-pager");
-  let currentPage = 1;
-  const render = () => {
-    const pageCount = Math.max(1, Math.ceil(cards.length / PAGE_SIZE));
-    if (currentPage > pageCount) currentPage = pageCount;
-    const start = (currentPage - 1) * PAGE_SIZE;
-    cards.forEach((card, index) => {
-      card.style.display = index >= start && index < start + PAGE_SIZE ? "" : "none";
-    });
-    pager.innerHTML = "";
-    if (cards.length > PAGE_SIZE) {
-      const button = (label, page, disabled) => {
-        const element = document.createElement("button");
-        element.textContent = label;
-        element.disabled = disabled;
-        element.style.padding = "0.2rem 0.6rem";
-        element.onclick = () => { currentPage = page; render(); };
-        return element;
-      };
-      pager.appendChild(button("‹ Prev", currentPage - 1, currentPage <= 1));
-      const label = document.createElement("small");
-      label.textContent = "Page " + currentPage + " / " + pageCount;
-      pager.appendChild(label);
-      pager.appendChild(button("Next ›", currentPage + 1, currentPage >= pageCount));
-    }
-  };
-  render();
-})();
-</script>`;
-
 const renderPendingPage = async (): Promise<string> => {
   const pending = (await getPendingApprovalTemplates()).sort(
     (first, second) => second.createdAt - first.createdAt,
@@ -293,22 +277,14 @@ const renderPendingPage = async (): Promise<string> => {
 
   <div id="tpl-pager" style="display:flex;gap:0.5rem;align-items:center;justify-content:center;margin-top:1rem"></div>
 </div>
-${templatePagerScript}`;
+${pagerScript({ listId: "tpl-list", pagerId: "tpl-pager", cardClass: "tpl-card" })}`;
 };
 
-// Full-screen review of a single template, rendered the way a worker sees it.
-// These templates are UNTRUSTED, so the iframe runs scripts in a hardened
-// sandbox WITHOUT `allow-same-origin`: the frame gets an opaque origin and
-// cannot read the admin's cookies/session or touch the parent document (the
-// worker platform isolates the same content on a cross-origin proxy iframe,
-// see apps/worker-app/app/components/TaskTemplate.vue).
 const renderTemplateReviewPage = async (
   tpl: TemplateRecord,
 ): Promise<string> => {
   const owner = tpl.ownerId ? await getAccount(tpl.ownerId) : null;
   const fields = getTemplateFields(tpl.data);
-  // Populate each ${field} with its own name so the reviewer can see where the
-  // fields render (a real task supplies row data here).
   const sampleData = Object.fromEntries(fields.map((field) => [field, field]));
   const rendered = await renderTemplate(tpl.data, sampleData);
   const id = encodeURIComponent(tpl.templateId);
@@ -345,23 +321,51 @@ const renderTemplateReviewPage = async (
 </div>`;
 };
 
+const adminHandler =
+  (handler: (req: Request, res: Response) => Promise<unknown>) =>
+  (req: Request, res: Response): void => {
+    Promise.resolve(handler(req, res)).catch((err) => {
+      console.error(`Admin route error (${req.method} ${req.path}):`, err);
+      if (res.headersSent) return;
+      if (isHtmx(req)) {
+        res.setHeader("HX-Retarget", "body");
+        res.setHeader("HX-Reswap", "afterbegin");
+        res
+          .status(200)
+          .send(
+            `<blockquote style="margin:0.5rem">Action failed: ${escapeHTML(String(err))}</blockquote>`,
+          );
+      } else {
+        make500(res);
+      }
+    });
+  };
+
 export const addAdminRoutes = (app: Express): void => {
-  app.get("/admin/accounts", requireAuth, async (_req, res) => {
-    res.send(page(await renderAccountsPage()));
-  });
+  app.get(
+    "/admin/accounts",
+    requireAuth,
+    adminHandler(async (_req, res) => {
+      res.send(page(await renderAccountsPage()));
+    }),
+  );
 
-  app.post("/admin/accounts", requireAuth, async (req, res) => {
-    const name = String(req.body.name ?? "").trim();
-    if (!name) {
-      res.status(400).send("Account name is required");
-      return;
-    }
-    await createAccount(name);
-    res.setHeader("HX-Location", "/admin/accounts");
-    res.end();
-  });
+  app.post(
+    "/admin/accounts",
+    requireAuth,
+    adminHandler(async (req, res) => {
+      const name = String(req.body.name ?? "").trim();
+      if (!name) {
+        res.status(400).send("Account name is required");
+        return;
+      }
+      await createAccount(name);
+      res.setHeader("HX-Location", "/admin/accounts");
+      res.end();
+    }),
+  );
 
-  app.post("/admin/accounts/:id/credits", requireAuth, async (req, res) => {
+  app.post("/admin/accounts/:id/credits", requireAuth, adminHandler(async (req, res) => {
     const account = await getAccount(req.params.id);
     if (!account) return make404(res);
 
@@ -378,58 +382,57 @@ export const addAdminRoutes = (app: Express): void => {
         .status(400)
         .send(`<blockquote>Could not top up: ${escapeHTML(String(err))}</blockquote>`);
     }
-  });
+  }));
 
-  app.post("/admin/accounts/:id/delete", requireAuth, async (req, res) => {
+  app.post("/admin/accounts/:id/delete", requireAuth, adminHandler(async (req, res) => {
     const account = await getAccount(req.params.id);
     if (!account) return make404(res);
     await deleteAccountAndData(account.id);
     res.setHeader("HX-Location", "/admin/accounts");
     res.end();
-  });
+  }));
 
-  app.post("/admin/accounts/:id/keys", requireAuth, async (req, res) => {
+  app.post("/admin/accounts/:id/keys", requireAuth, adminHandler(async (req, res) => {
     const account = await getAccount(req.params.id);
     if (!account) return make404(res);
 
     const { key } = await issueApiKey(account.id);
-    // Shown ONCE; there is no way to recover it later.
     res.send(`
 <div class="box" style="border:1px solid var(--accent);margin-top:0.5rem">
   <strong>New API key. Copy it now, it won't be shown again:</strong>
   <p><code style="word-break:break-all">${escapeHTML(key)}</code></p>
 </div>`);
-  });
+  }));
 
-  app.post("/admin/keys/:hash/revoke", requireAuth, async (req, res) => {
-    await revokeApiKey(req.params.hash);
+  app.post("/admin/keys/:hash/revoke", requireAuth, adminHandler(async (req, res) => {
+    const record = await getApiKey(req.params.hash);
+    if (!record) return make404(res);
+    await revokeApiKey(record.hash);
     res.setHeader("HX-Location", "/admin/accounts");
     res.end();
-  });
+  }));
 
   // ----------------------------------------------------- template approvals
 
-  app.get("/admin/templates/pending", requireAuth, async (_req, res) => {
+  app.get("/admin/templates/pending", requireAuth, adminHandler(async (_req, res) => {
     res.send(page(await renderPendingPage()));
-  });
+  }));
 
-  // Full-screen review of one template. Rendered full-width (empty bodyClass)
-  // so the preview iframe isn't capped by the 800px `.container`.
-  app.get("/admin/templates/:id/review", requireAuth, async (req, res) => {
+  app.get("/admin/templates/:id/review", requireAuth, adminHandler(async (req, res) => {
     const record = await getTemplate(req.params.id);
     if (!record) return make404(res);
     res.send(page(await renderTemplateReviewPage(record.data), ""));
-  });
+  }));
 
-  app.post("/admin/templates/:id/approve", requireAuth, async (req, res) => {
+  app.post("/admin/templates/:id/approve", requireAuth, adminHandler(async (req, res) => {
     await setTemplateApproval(req.params.id, true);
     res.setHeader("HX-Location", "/admin/templates/pending");
     res.end();
-  });
+  }));
 
-  app.post("/admin/templates/:id/reject", requireAuth, async (req, res) => {
+  app.post("/admin/templates/:id/reject", requireAuth, adminHandler(async (req, res) => {
     await rejectTemplateApproval(req.params.id);
     res.setHeader("HX-Location", "/admin/templates/pending");
     res.end();
-  });
+  }));
 };

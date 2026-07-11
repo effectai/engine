@@ -206,7 +206,16 @@ export const startAutoImport = async () => {
       let imported = 0;
       const fetchers = await fetcher.getFetchers(ds.id);
       for (const f of fetchers) {
-	imported += await fetcher.processFetcher(f!);
+	// one bad fetcher must not take down the whole import loop (an
+	// unhandled rejection here terminates the process on Node >= 15)
+	try {
+	  imported += await fetcher.processFetcher(f!);
+	} catch (error) {
+	  console.error(
+	    `processFetcher failed for [${f!.datasetId}, ${f!.index}]:`,
+	    error,
+	  );
+	}
       }
 
       // TODO: finish dataset when all fetchers are finished

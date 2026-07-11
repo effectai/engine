@@ -1,4 +1,5 @@
 import { ulid } from "ulid";
+import { withLock } from "./api-util.js";
 import { db } from "../state.js";
 
 /**
@@ -41,17 +42,6 @@ export class InsufficientCreditsError extends Error {
   }
 }
 
-// in-process mutex (promise chain) serializing every ledger mutation
-let chain: Promise<unknown> = Promise.resolve();
-const withLock = <T>(fn: () => Promise<T>): Promise<T> => {
-  const run = chain.then(fn, fn);
-  chain = run.then(
-    () => undefined,
-    () => undefined,
-  );
-  return run;
-};
-
 export const getBalance = async (accountId: string): Promise<bigint> => {
   const record = await db.get<LedgerRecord>(["ledger", accountId]);
   return record ? BigInt(record.data.balance) : 0n;
@@ -84,7 +74,7 @@ const apply = (
   amount: bigint,
   opts: { jobId?: string; note?: string } = {},
 ): Promise<bigint> =>
-  withLock(async () => {
+  withLock("ledger", async () => {
     if (amount < 0n) throw new Error("Ledger amount must be positive");
 
     const current = await getBalance(accountId);

@@ -1,7 +1,8 @@
 import type { Task } from "@effectai/protocol";
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { ulid } from "ulid";
 import {
+  type Account,
   type AuthedRequest,
   listApiKeys,
   requireApiKey,
@@ -14,6 +15,7 @@ import {
   effectToLamports,
   lamportsToEffect,
   parsePagination,
+  withLock,
 } from "./api-util.js";
 import { type DatasetRecord, getDataset, writeDataset } from "../dataset.js";
 import {
@@ -71,6 +73,12 @@ const MAX_JOB_COST_LAMPORTS = 1_000_000_000_000n; // 1,000,000 EFFECT per job
 const DEFAULT_BATCH_SIZE = 100;
 const DEFAULT_FREQUENCY_SECONDS = 2;
 const DEFAULT_TIME_LIMIT_SECONDS = 600;
+// Time-limit bounds match the legacy team UI (`formValidations` in fetcher.ts).
+const MIN_TIME_LIMIT_SECONDS = 60;
+const MAX_TIME_LIMIT_SECONDS = 86_400;
+const MAX_JOB_NAME_LENGTH = 200;
+const MAX_CAPABILITY_LENGTH = 100;
+const MAX_IDEMPOTENCY_KEY_LENGTH = 200;
 
 let lastDatasetId = 0;
 const nextDatasetId = (): number => {
@@ -204,22 +212,46 @@ const analyzeJob = async (
   const type = (String(body.type ?? "csv") as JobType) || "csv";
   const name = String(body.name ?? "").trim() || "Untitled job";
   const templateId = String(body.templateId ?? "");
-  const capability = String(body.capability ?? "");
-  const timeLimitSeconds =
-    Number(body.timeLimitSeconds) || DEFAULT_TIME_LIMIT_SECONDS;
+  const capability = String(body.capability ?? "").trim();
   const uniqueWorker =
     body.uniqueWorker === true || body.uniqueWorker === "true";
+
+  if (name.length > MAX_JOB_NAME_LENGTH)
+    return fail(
+      400,
+      "invalid_request",
+      `'name' must be ${MAX_JOB_NAME_LENGTH} characters or fewer.`,
+    );
+  if (capability.length > MAX_CAPABILITY_LENGTH)
+    return fail(
+      400,
+      "invalid_request",
+      `'capability' must be ${MAX_CAPABILITY_LENGTH} characters or fewer.`,
+    );
+
+  const timeLimitSeconds =
+    body.timeLimitSeconds === undefined
+      ? DEFAULT_TIME_LIMIT_SECONDS
+      : Number(body.timeLimitSeconds);
+  if (
+    !Number.isInteger(timeLimitSeconds) ||
+    timeLimitSeconds < MIN_TIME_LIMIT_SECONDS ||
+    timeLimitSeconds > MAX_TIME_LIMIT_SECONDS
+  )
+    return fail(
+      400,
+      "invalid_request",
+      `'timeLimitSeconds' must be an integer between ${MIN_TIME_LIMIT_SECONDS} and ${MAX_TIME_LIMIT_SECONDS}.`,
+    );
 
   if (!templateId)
     return fail(400, "invalid_request", "'templateId' is required.");
 
   const template = await resolveUsableTemplate(accountId, templateId);
-  if (!template)
-    return fail(
-      403,
-      "forbidden",
-      "Template not found or not accessible to this account.",
-    );
+  // 404 (not 403) whether the template is missing or merely not accessible:
+  // template ids are content hashes, so a 403 would confirm to a non-owner
+  // that someone has registered that exact HTML.
+  if (!template) return fail(404, "not_found", "Template not found.");
 
   let rewardLamports: bigint;
   try {
@@ -290,10 +322,52 @@ const analyzeJob = async (
         "invalid_request",
         "'maxTasks' (positive integer) is required for constant jobs.",
       );
-    constantData =
-      typeof body.data === "string"
-        ? body.data
-        : JSON.stringify(body.data ?? {});
+
+    let parsedData: unknown;
+    if (typeof body.data === "string") {
+      try {
+        parsedData = JSON.parse(body.data);
+      } catch {
+        return fail(400, "invalid_request", "'data' must be a JSON object.");
+      }
+    } else {
+      parsedData = body.data ?? {};
+    }
+    if (
+      parsedData === null ||
+      typeof parsedData !== "object" ||
+      Array.isArray(parsedData)
+    )
+      return fail(400, "invalid_request", "'data' must be a JSON object.");
+
+    // Same rule as CSV columns: every ${field} in the template must have a
+    // value, otherwise workers get blank placeholders and the requestor is
+    // charged for empty tasks.
+    const missingFields = missingTemplateFields(
+      template.data,
+      Object.keys(parsedData),
+    );
+    if (missingFields.length)
+      return fail(
+        400,
+        "invalid_request",
+        `'data' is missing values for template fields: ${missingFields.join(", ")}`,
+      );
+
+    // Reserved keys: same rule as CSV headers. Per-task reward overrides break
+    // uniform accounting (and feed BigInt() in getTasks), and `__effect*` keys
+    // are injected by the poster.
+    const reservedKeys = Object.keys(parsedData).filter(
+      (key) => key === "dataffect/reward" || key.startsWith("__effect"),
+    );
+    if (reservedKeys.length)
+      return fail(
+        400,
+        "invalid_request",
+        `Reserved key(s) not allowed in data: ${reservedKeys.join(", ")}.`,
+      );
+
+    constantData = JSON.stringify(parsedData);
     taskCount = maxTasks;
   } else {
     return fail(400, "invalid_request", "'type' must be 'csv' or 'constant'.");
@@ -329,6 +403,14 @@ const analyzeJob = async (
     constantData,
   };
 };
+
+// Stored 201 response for an Idempotency-Key replay (H2). Only successful
+// creations are cached: a 402 never debited and a failed create was refunded,
+// so re-running those on retry is safe. The shared `withLock` (api-util.js)
+// serializes job mutations: two concurrent cancels can't both pass the status
+// check and refund twice, and two creates with the same Idempotency-Key can't
+// both miss the cache and debit twice.
+type CachedJobResponse = { status: number; body: unknown };
 
 type TaskCounts = {
   queued: number;
@@ -421,120 +503,159 @@ export const addJobApiRoutes = (app: Express): void => {
 
   // Create a job: debit upfront, then build the owned dataset + fetcher and
   // import its tasks. Credits are refunded if creation fails after the debit.
+  // Passing an `Idempotency-Key` header makes retries safe: the first
+  // successful creation is cached per account+key, and any replay returns the
+  // stored response instead of debiting and creating a second job.
+  const performJobCreation = async (
+    req: Request,
+    res: Response,
+    account: Account,
+    idempotencyKey?: string,
+  ): Promise<unknown> => {
+    const analysis = await analyzeJob(account.id, req.body ?? {});
+    if (!analysis.ok)
+      return apiError(res, analysis.status, analysis.code, analysis.message);
+
+    const jobId = ulid();
+
+    try {
+      await debit(account.id, analysis.cost, {
+        jobId,
+        note: `job ${jobId} (${analysis.taskCount} tasks)`,
+      });
+    } catch (err) {
+      if (err instanceof InsufficientCreditsError)
+        return apiError(res, 402, "insufficient_credits", err.message);
+      throw err;
+    }
+
+    try {
+      const datasetId = nextDatasetId();
+      const dataset: DatasetRecord = {
+        id: datasetId,
+        name: analysis.name,
+        status: "active",
+        hidden: true, // off public dashboards; the fetcher stays worker-visible
+        ownerId: account.id,
+      };
+      await writeDataset(datasetId, dataset);
+
+      const fetcher = await createFetcher(dataset, {
+        name: analysis.name,
+        type: analysis.type,
+        capabilities: analysis.capability,
+        engine: "effectai",
+        price: analysis.rewardLamports.toString(),
+        template: analysis.templateId,
+        timeLimitSeconds: analysis.timeLimitSeconds,
+        frequency: DEFAULT_FREQUENCY_SECONDS,
+        batchSize: DEFAULT_BATCH_SIZE,
+        hidden: false,
+        // 1 = each worker may complete one task; 0 = no limit.
+        repetitions: analysis.uniqueWorker ? 1 : 0,
+      });
+
+      // Pin a stable batch id so the per-worker cap spans the whole job.
+      // Without this, constant jobs (which import in several batches) would
+      // reset the cap each batch, letting one worker answer many times.
+      if (analysis.uniqueWorker) {
+        fetcher.batchId = jobId;
+        await writeFetcher(fetcher);
+      }
+
+      if (analysis.type === "csv") {
+        await importCsvIntoFetcher(fetcher, analysis.csv);
+      } else {
+        fetcher.constantData = analysis.constantData;
+        fetcher.maxTasks = analysis.taskCount;
+        fetcher.targetQueueSize = Math.min(
+          analysis.taskCount,
+          DEFAULT_BATCH_SIZE,
+        );
+        await writeFetcher(fetcher);
+      }
+
+      const job: Job = {
+        id: jobId,
+        accountId: account.id,
+        datasetId,
+        fetcherIndex: fetcher.index,
+        type: analysis.type,
+        name: analysis.name,
+        templateId: analysis.templateId,
+        rewardLamports: analysis.rewardLamports.toString(),
+        taskCount: analysis.taskCount,
+        reservedLamports: analysis.cost.toString(),
+        consumedLamports: "0",
+        refundedLamports: "0",
+        status: "active",
+        uniqueWorker: analysis.uniqueWorker,
+        createdAt: Date.now(),
+      };
+      await writeJob(job);
+      await db.set(["job-by-dataset", datasetId], {
+        accountId: account.id,
+        jobId,
+      });
+
+      const view = jobView(job, {
+        queued: analysis.taskCount,
+        active: 0,
+        completed: 0,
+        failed: 0,
+      });
+      // Cache before responding so a replay can never observe a gap between
+      // the job existing and its response being stored.
+      if (idempotencyKey)
+        await db.set<CachedJobResponse>(
+          ["idempotency", account.id, idempotencyKey],
+          { status: 201, body: view },
+        );
+
+      return apiJson(res, view, 201);
+    } catch (err) {
+      console.error("Job creation failed, refunding:", err);
+      await refund(account.id, analysis.cost, {
+        jobId,
+        note: `job ${jobId} creation failed`,
+      });
+      return apiError(
+        res,
+        500,
+        "internal",
+        "Failed to create job; credits were refunded.",
+      );
+    }
+  };
+
   app.post(
     "/api/v1/jobs",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
-      const analysis = await analyzeJob(account.id, req.body ?? {});
-      if (!analysis.ok)
-        return apiError(res, analysis.status, analysis.code, analysis.message);
 
-      const jobId = ulid();
+      const idempotencyKey = req.get("Idempotency-Key")?.trim() || undefined;
+      if (!idempotencyKey) return performJobCreation(req, res, account);
 
-      try {
-        await debit(account.id, analysis.cost, {
-          jobId,
-          note: `job ${jobId} (${analysis.taskCount} tasks)`,
-        });
-      } catch (err) {
-        if (err instanceof InsufficientCreditsError)
-          return apiError(res, 402, "insufficient_credits", err.message);
-        throw err;
-      }
-
-      try {
-        const datasetId = nextDatasetId();
-        const dataset: DatasetRecord = {
-          id: datasetId,
-          name: analysis.name,
-          status: "active",
-          hidden: true, // off public dashboards; the fetcher stays worker-visible
-          ownerId: account.id,
-        };
-        await writeDataset(datasetId, dataset);
-
-        const fetcher = await createFetcher(dataset, {
-          name: analysis.name,
-          type: analysis.type,
-          capabilities: analysis.capability,
-          engine: "effectai",
-          price: analysis.rewardLamports.toString(),
-          template: analysis.templateId,
-          timeLimitSeconds: analysis.timeLimitSeconds,
-          frequency: DEFAULT_FREQUENCY_SECONDS,
-          batchSize: DEFAULT_BATCH_SIZE,
-          hidden: false,
-          // 1 = each worker may complete one task; 0 = no limit.
-          repetitions: analysis.uniqueWorker ? 1 : 0,
-        });
-
-        // Pin a stable batch id so the per-worker cap spans the whole job.
-        // Without this, constant jobs (which import in several batches) would
-        // reset the cap each batch, letting one worker answer many times.
-        if (analysis.uniqueWorker) {
-          fetcher.batchId = jobId;
-          await writeFetcher(fetcher);
-        }
-
-        if (analysis.type === "csv") {
-          await importCsvIntoFetcher(fetcher, analysis.csv);
-        } else {
-          fetcher.constantData = analysis.constantData;
-          fetcher.maxTasks = analysis.taskCount;
-          fetcher.targetQueueSize = Math.min(
-            analysis.taskCount,
-            DEFAULT_BATCH_SIZE,
-          );
-          await writeFetcher(fetcher);
-        }
-
-        const job: Job = {
-          id: jobId,
-          accountId: account.id,
-          datasetId,
-          fetcherIndex: fetcher.index,
-          type: analysis.type,
-          name: analysis.name,
-          templateId: analysis.templateId,
-          rewardLamports: analysis.rewardLamports.toString(),
-          taskCount: analysis.taskCount,
-          reservedLamports: analysis.cost.toString(),
-          consumedLamports: "0",
-          refundedLamports: "0",
-          status: "active",
-          uniqueWorker: analysis.uniqueWorker,
-          createdAt: Date.now(),
-        };
-        await writeJob(job);
-        await db.set(["job-by-dataset", datasetId], {
-          accountId: account.id,
-          jobId,
-        });
-
-        return apiJson(
-          res,
-          jobView(job, {
-            queued: analysis.taskCount,
-            active: 0,
-            completed: 0,
-            failed: 0,
-          }),
-          201,
-        );
-      } catch (err) {
-        console.error("Job creation failed, refunding:", err);
-        await refund(account.id, analysis.cost, {
-          jobId,
-          note: `job ${jobId} creation failed`,
-        });
+      if (idempotencyKey.length > MAX_IDEMPOTENCY_KEY_LENGTH)
         return apiError(
           res,
-          500,
-          "internal",
-          "Failed to create job; credits were refunded.",
+          400,
+          "invalid_request",
+          `'Idempotency-Key' must be ${MAX_IDEMPOTENCY_KEY_LENGTH} characters or fewer.`,
         );
-      }
+
+      // The lock serializes concurrent requests carrying the same key, so
+      // both can't miss the cache and debit twice.
+      return withLock(`idem:${account.id}:${idempotencyKey}`, async () => {
+        const cached = await db.get<CachedJobResponse>([
+          "idempotency",
+          account.id,
+          idempotencyKey,
+        ]);
+        if (cached) return apiJson(res, cached.data.body, cached.data.status);
+        return performJobCreation(req, res, account, idempotencyKey);
+      });
     }),
   );
 
@@ -656,40 +777,48 @@ export const addJobApiRoutes = (app: Express): void => {
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
-      const job = await getJob(account.id, req.params.id);
-      if (!job) return apiError(res, 404, "not_found", "Job not found.");
+      const existing = await getJob(account.id, req.params.id);
+      if (!existing) return apiError(res, 404, "not_found", "Job not found.");
 
-      if (job.status !== "cancelled") {
+      // Serialize with any concurrent cancel of the same job and re-read the
+      // job inside the lock, so only one request can see status !== "cancelled"
+      // and issue the refund.
+      const job = await withLock(existing.id, async (): Promise<Job | null> => {
+        const fresh = await getJob(account.id, req.params.id);
+        if (!fresh || fresh.status === "cancelled") return fresh;
+
         // Stop posting/polling: archive the fetcher + dataset.
-        const fetcher = await getFetcher(job.datasetId, job.fetcherIndex);
+        const fetcher = await getFetcher(fresh.datasetId, fresh.fetcherIndex);
         if (fetcher) {
           fetcher.status = "archived";
           await writeFetcher(fetcher);
         }
-        const dataset = await getDataset(job.datasetId);
+        const dataset = await getDataset(fresh.datasetId);
         if (dataset) {
           dataset.data.status = "archived";
-          await writeDataset(job.datasetId, dataset.data);
+          await writeDataset(fresh.datasetId, dataset.data);
         }
-        job.status = "cancelled";
+        fresh.status = "cancelled";
 
         // Refund everything not yet completed. After archiving, the poster
         // stops polling these tasks, so they can never be consumed later.
-        const counts = await countsFor(job);
-        const { consumed, remaining } = computeJobCredits(job, counts.completed);
+        const counts = await countsFor(fresh);
+        const { consumed, remaining } = computeJobCredits(fresh, counts.completed);
         if (remaining > 0n) {
           await refund(account.id, remaining, {
-            jobId: job.id,
-            note: `job ${job.id} cancelled - ${counts.queued + counts.active} unfinished tasks`,
+            jobId: fresh.id,
+            note: `job ${fresh.id} cancelled - ${counts.queued + counts.active} unfinished tasks`,
           });
-          job.consumedLamports = consumed.toString();
-          job.refundedLamports = (
-            BigInt(job.refundedLamports) + remaining
+          fresh.consumedLamports = consumed.toString();
+          fresh.refundedLamports = (
+            BigInt(fresh.refundedLamports) + remaining
           ).toString();
         }
-        await writeJob(job);
-      }
+        await writeJob(fresh);
+        return fresh;
+      });
 
+      if (!job) return apiError(res, 404, "not_found", "Job not found.");
       return apiJson(res, jobView(job, await countsFor(job)));
     }),
   );
