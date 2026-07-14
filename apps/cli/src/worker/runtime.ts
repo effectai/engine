@@ -1,4 +1,4 @@
-import { createWorker, type Task } from "@effectai/protocol";
+import { createWorker, type Connection, type Task } from "@effectai/protocol";
 import { multiaddr } from "@multiformats/multiaddr";
 import { Keypair } from "@solana/web3.js";
 import { state } from "./state.js";
@@ -50,11 +50,11 @@ const createProtocolWorker = async (): ReturnType<typeof createWorker> => {
   libp2p.addEventListener("peer:connect", () => {
     state.logger.info("Peer connected");
     state.logger.info("List of all peers", {
-      peers: libp2p.getConnections().map((c) => c.id),
+      peers: libp2p.getConnections().map((c: Connection) => c.id),
     });
   });
 
-  worker.events.addEventListener("task:created", async ({ detail }) => {
+  worker.events.addEventListener("task:created", async ({ detail }: CustomEvent<Task>) => {
     state.logger.debug("Received and queued new task ", { taskId: detail.id });
 
     // if we are not processing a task, optimistically trigger
