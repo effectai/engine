@@ -84,7 +84,7 @@ export const processNextTask = async() => {
   // the database
   if (!state.worker) return;
   await state.worker.cleanup();
-  const tasks = await state.worker.getTasks({});
+  const tasks = await state.worker.getTasks({ prefix: "tasks/active" });
   const task = tasks?.[0]?.state;
   if (!task) return;
 
