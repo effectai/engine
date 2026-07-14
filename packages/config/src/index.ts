@@ -1,5 +1,5 @@
-import { localnet } from "./profiles/localnet";
-import { mainnet } from "./profiles/mainnet";
+import { localnet } from "./profiles/localnet.js";
+import { mainnet } from "./profiles/mainnet.js";
 
 export * from "./schema";
 
