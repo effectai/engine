@@ -93,12 +93,9 @@ export const processNextTask = async() => {
   await state.worker.acceptTask({ taskId: task.id });
   state.logger.info("Accepted task", { taskId: task.id });
 
-  // await delay(Math.floor(Math.random() * 1000 * 5));
-  // await processTask(detail);
-
-  // state.logger.info("Completed task", { taskId: detail.id });
-
-  // state.activeTask = undefined;  
+  await processTask(task);
+  state.logger.info("Completed task", { taskId: task.id });
+  state.activeTask = undefined;
 };
 
 export const startWorker = async ({
