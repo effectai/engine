@@ -1,4 +1,4 @@
-import { createWorker, type Task } from "@effectai/protocol";
+import { createWorker, type Connection, type Task } from "@effectai/protocol";
 import { multiaddr } from "@multiformats/multiaddr";
 import { Keypair } from "@solana/web3.js";
 import { state } from "./state.js";
@@ -50,11 +50,11 @@ const createProtocolWorker = async (): ReturnType<typeof createWorker> => {
   libp2p.addEventListener("peer:connect", () => {
     state.logger.info("Peer connected");
     state.logger.info("List of all peers", {
-      peers: libp2p.getConnections().map((c) => c.id),
+      peers: libp2p.getConnections().map((c: Connection) => c.id),
     });
   });
 
-  worker.events.addEventListener("task:created", async ({ detail }) => {
+  worker.events.addEventListener("task:created", async ({ detail }: CustomEvent<Task>) => {
     state.logger.debug("Received and queued new task ", { taskId: detail.id });
 
     // if we are not processing a task, optimistically trigger
@@ -84,8 +84,8 @@ export const processNextTask = async() => {
   // the database
   if (!state.worker) return;
   await state.worker.cleanup();
-  const tasks = await state.worker.getTasks({});
-  const task = tasks?.[0].state;
+  const tasks = await state.worker.getTasks({ prefix: "tasks/active" });
+  const task = tasks?.[0]?.state;
   if (!task) return;
 
   state.activeTask = task;
@@ -93,12 +93,9 @@ export const processNextTask = async() => {
   await state.worker.acceptTask({ taskId: task.id });
   state.logger.info("Accepted task", { taskId: task.id });
 
-  // await delay(Math.floor(Math.random() * 1000 * 5));
-  // await processTask(detail);
-
-  // state.logger.info("Completed task", { taskId: detail.id });
-
-  // state.activeTask = undefined;  
+  await processTask(task);
+  state.logger.info("Completed task", { taskId: task.id });
+  state.activeTask = undefined;
 };
 
 export const startWorker = async ({
