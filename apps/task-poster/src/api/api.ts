@@ -22,6 +22,7 @@ import {
   parsePagination,
 } from "./api-util.js";
 import { countLedgerEntries, getBalance, listLedgerEntries } from "./ledger.js";
+import { requestableCapabilities } from "@effectai/capabilities";
 import { hasAuth } from "../auth.js";
 import {
   addAccountTemplate,
@@ -492,6 +493,26 @@ export const addRequestorApiRoutes = (app: Express): void => {
       return apiJson(res, templateDetailView(archived ?? record.data, owns));
     }),
   );
+
+  // ---------------------------------------------------------- capabilities
+
+  // The closed vocabulary for POST /jobs' `capability` field. Clients should
+  // build their pickers from this list instead of hard-coding ids; anything
+  // not in it is rejected at job creation. Only requestor-relevant fields are
+  // exposed — the registry's marketplace fields (cost, earnings, …) stay
+  // internal.
+  const capabilityView = requestableCapabilities.map((capability) => ({
+    id: capability.id,
+    name: capability.name,
+    category: capability.category,
+    description: capability.description,
+  }));
+  app.get("/api/v1/capabilities", requireApiKey, (_req: Request, res: Response) => {
+    apiJson(res, {
+      capabilities: capabilityView,
+      total: capabilityView.length,
+    });
+  });
 
   // Health check endpoint: unauthenticated ping for integrators and load balancers.
   app.get("/api/v1/health", (_req: Request, res: Response) => {

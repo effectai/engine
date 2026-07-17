@@ -1,0 +1,22 @@
+{
+  "name": "@effectai/capabilities",
+  "version": "0.1.0",
+  "description": "Canonical registry of worker capabilities, shared by the worker marketplace and the requestor API",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,3 +1,5 @@
+// Single source of truth for both the worker marketplace (apps/worker-app) and 
+// the requestor API (apps/task-poster)
 export type Capability = {
   icon: string;
   id: string;
@@ -5,13 +7,16 @@ export type Capability = {
   name: string;
   category: string;
   description: string;
-  cost: number; // Cost to acquire the capability
-  estimatedEarnings: number; // Estimated earnings from using the capability
+  cost: number; // Cost to acquire the capability (Still not in effect)
+  estimatedEarnings: number; // Estimated earnings from using the capability (Still not in effect)
   tags: string[];
   antiCapability: string;
   attempts?: number; // Maximum number of test attempts allowed (defaults to 3 if not specified)
   hidden?: boolean; // If true, hide from marketplace (but still awardable)
   prerequisite?: string; // Capability ID that must be earned before this one appears
+  // If false, jobs may not require this capability (it stays awardable to
+  // workers). Defaults to true.
+  requestable?: boolean;
 };
 
 export const availableCapabilities: Capability[] = [
@@ -42,7 +47,6 @@ export const availableCapabilities: Capability[] = [
     antiCapability: "effectai/english-language:0.0.3-disabled",
     hidden: false,
     attempts: 3,
-    
   },
   {
     icon: "i-lucide-wifi",
@@ -57,7 +61,6 @@ export const availableCapabilities: Capability[] = [
     antiCapability: "effectai/internet-speed:0.0.1-disabled",
     hidden: false,
     attempts: 99,
-    
   },
   {
     icon: "i-lucide-music",
@@ -78,7 +81,8 @@ export const availableCapabilities: Capability[] = [
     id: "effectai/music-transcription-validation:0.0.1",
     name: "Music Transcription Validation",
     category: "Audio",
-    description: "Qualified to validate and review music transcription submissions",
+    description:
+      "Qualified to validate and review music transcription submissions",
     cost: 0,
     estimatedEarnings: 1000,
     tags: ["Audio", "Validation", "Music", "Quality"],
@@ -128,5 +132,13 @@ export const availableCapabilities: Capability[] = [
     antiCapability: "effectai/halloween-spirit:0.0.1-disabled",
     hidden: true, // Hidden capability for Halloween fun
     attempts: 99, // Halloween spirit deserves many attempts!
-},
+    requestable: false, // A novelty badge, not a job qualification
+  },
 ];
+
+/** Capabilities a job may require via the requestor API's `capability` field. */
+export const requestableCapabilities: Capability[] =
+  availableCapabilities.filter((capability) => capability.requestable !== false);
+
+export const isRequestableCapability = (id: string): boolean =>
+  requestableCapabilities.some((capability) => capability.id === id);

@@ -206,6 +206,11 @@
             <input id="job-name" placeholder="My job" />
           </div>
         </div>
+        <div class="field" style="margin-top:.7rem">
+          <label class="field-label">Required capability <span class="muted">(optional)</span></label>
+          <select id="job-capability"><option value="">Any worker / no capability required</option></select>
+          <div id="job-capability-desc" class="muted" style="font-size:.8rem;margin-top:.3rem"></div>
+        </div>
         <label class="checkbox" style="margin-top:.7rem"><input id="job-unique" type="checkbox" /> Restrict each worker to one task in this job (no repeats)</label>
       </div>
 
@@ -249,6 +254,7 @@
 
     <!-- ---------- JOBS ---------- -->
     <section id="panel-jobs" class="tab-panel hide">
+      <div id="jobs-msg"></div>
       <div class="toolbar">
         <input id="jobs-search" class="grow" placeholder="Search jobs…" />
         <select id="jobs-filter" style="width:auto">

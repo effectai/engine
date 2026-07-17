@@ -33,6 +33,7 @@ import {
   getBalance,
   refund,
 } from "./ledger.js";
+import { isRequestableCapability } from "@effectai/capabilities";
 import { db } from "../state.js";
 import {
   getAccountTemplateIds,
@@ -77,7 +78,6 @@ const DEFAULT_TIME_LIMIT_SECONDS = 600;
 const MIN_TIME_LIMIT_SECONDS = 60;
 const MAX_TIME_LIMIT_SECONDS = 86_400;
 const MAX_JOB_NAME_LENGTH = 200;
-const MAX_CAPABILITY_LENGTH = 100;
 const MAX_IDEMPOTENCY_KEY_LENGTH = 200;
 
 let lastDatasetId = 0;
@@ -222,11 +222,13 @@ const analyzeJob = async (
       "invalid_request",
       `'name' must be ${MAX_JOB_NAME_LENGTH} characters or fewer.`,
     );
-  if (capability.length > MAX_CAPABILITY_LENGTH)
+  // Closed vocabulary: a typo'd capability would silently produce a job no
+  // worker can ever see, so reject anything outside the known list.
+  if (capability && !isRequestableCapability(capability))
     return fail(
       400,
       "invalid_request",
-      `'capability' must be ${MAX_CAPABILITY_LENGTH} characters or fewer.`,
+      "Unknown 'capability'. Use an id from GET /api/v1/capabilities, or omit it to allow any worker.",
     );
 
   const timeLimitSeconds =

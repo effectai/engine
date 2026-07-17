@@ -2,6 +2,7 @@ import { api, setApiKey, hasApiKey, fetchResultsCsv } from "./client.js";
 
 // ------------------------------------------------------------------ state
 let templates = [];
+let capabilities = [];
 let jobsCache = [];
 let openJobId = null;      // currently expanded job row
 let drawerResults = [];    // results currently loaded in the drawer
@@ -46,6 +47,7 @@ applyTheme(localStorage.getItem("effect-console-theme") || "light");
 
 // ------------------------------------------------------------------ tabs
 function showTab(name) {
+  byId("jobs-msg").innerHTML = "";
   document.querySelectorAll(".tab").forEach((tabButton) => tabButton.classList.toggle("active", tabButton.dataset.tab === name));
   document.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.toggle("hide", panel.id !== "panel-" + name));
 }
@@ -70,7 +72,7 @@ async function connect() {
     byId("key").value = "";
     byId("status-text").textContent = account.name || "Connected";
     showTab("overview");
-    await Promise.all([loadTemplates(), loadJobs(), loadKeys()]);
+    await Promise.all([loadTemplates(), loadCapabilities(), loadJobs(), loadKeys()]);
     await loadOverview();
   } catch (error) {
     setConnected(false);
@@ -286,6 +288,32 @@ function openSubmitForm() {
 }
 
 // ------------------------------------------------------------------ create job
+// The capability list is a closed server-side vocabulary (GET /capabilities),
+// so the picker offers exactly those ids — a typo can never create a job no
+// worker can see.
+async function loadCapabilities() {
+  ({ capabilities } = await api("/capabilities"));
+  const groups = new Map();
+  for (const capability of capabilities) {
+    if (!groups.has(capability.category)) groups.set(capability.category, []);
+    groups.get(capability.category).push(capability);
+  }
+  byId("job-capability").innerHTML =
+    `<option value="">Any worker / no capability required</option>` +
+    [...groups.entries()].map(([category, list]) =>
+      `<optgroup label="${esc(category)}">` +
+      list.map((capability) => `<option value="${esc(capability.id)}">${esc(capability.name)}</option>`).join("") +
+      `</optgroup>`).join("");
+  showCapabilityDesc();
+}
+
+function showCapabilityDesc() {
+  const selected = capabilities.find((capability) => capability.id === byId("job-capability").value);
+  byId("job-capability-desc").textContent = selected
+    ? `${selected.description}`
+    : "";
+}
+
 function currentJobType() {
   return document.querySelector('input[name="job-type"]:checked').value;
 }
@@ -316,6 +344,8 @@ function parseConstantData() {
 function jobBody() {
   const type = currentJobType();
   const base = { type, name: byId("job-name").value || "Untitled job", templateId: byId("job-tpl").value, reward: byId("job-reward").value, uniqueWorker: byId("job-unique").checked };
+  const capability = byId("job-capability").value;
+  if (capability) base.capability = capability;
   if (type === "constant") return { ...base, data: parseConstantData(), maxTasks: Number(byId("job-maxtasks").value) };
   return { ...base, csv: byId("job-csv").value };
 }
@@ -328,7 +358,7 @@ async function estimate() {
     byId("est-total").textContent = result.cost;
     const banner = byId("est-banner");
     banner.className = "banner " + (result.sufficient ? "banner-ok" : "banner-warn");
-    banner.textContent = `Balance: ${result.balance} EFFECT — ${result.sufficient ? "sufficient ✓" : "not enough credit"}`;
+    banner.textContent = `Balance: ${result.balance} EFFECT (${result.sufficient ? "sufficient ✓" : "not enough credit"})`;
     banner.classList.remove("hide");
     byId("job-msg").innerHTML = "";
   } catch (error) { clearEstimate(); showMsg(byId("job-msg"), error.message, "err"); }
@@ -337,7 +367,9 @@ async function estimate() {
 async function createJob() {
   try {
     const job = await api("/jobs", { method: "POST", body: jobBody() });
-    showMsg(byId("job-msg"), `Created job ${job.id} (${job.taskCount} tasks, reserved ${job.credits.reserved} EFFECT).`, "ok");
+    byId("job-msg").innerHTML = "";
+    showTab("jobs");
+    showMsg(byId("jobs-msg"), `Created job ${job.id} (${job.taskCount} tasks, reserved ${job.credits.reserved} EFFECT).`, "ok");
     await Promise.all([loadAccount(), loadJobs()]);
     await loadOverview();
   } catch (error) { showMsg(byId("job-msg"), error.message, "err"); }
@@ -491,7 +523,7 @@ async function renderActivity() {
   events.sort((first, second) => second.time - first.time);
   const recent = events.slice(0, 6);
   byId("ov-activity").innerHTML = recent.length
-    ? recent.map((event) => `<div class="activity-row"><span class="when">${relativeTime(event.time)}</span><div>${event.text} <span class="muted">— ${event.meta}</span></div></div>`).join("")
+    ? recent.map((event) => `<div class="activity-row"><span class="when">${relativeTime(event.time)}</span><div>${event.text} <span class="muted">· ${event.meta}</span></div></div>`).join("")
     : `<span class="muted">No activity yet.</span>`;
 }
 
@@ -545,7 +577,7 @@ function renderSampleBar(fields, values) {
   const bar = byId("tpl-preview-data");
   if (!fields.length) { bar.innerHTML = ""; bar.classList.add("hide"); return; }
   bar.innerHTML =
-    `<div class="sample-label">Sample data — fill fields as a real task row would</div>` +
+    `<div class="sample-label">Sample data: fill fields as a real task row would</div>` +
     fields.map((field) => `<label class="sample-field"><span>\${${esc(field)}}</span><input data-sample-field="${esc(field)}" value="${esc(values[field] ?? "")}" placeholder="${esc(field)}"></label>`).join("") +
     `<button class="btn-primary btn-sm" id="tpl-preview-apply">Re-render</button>`;
   bar.classList.remove("hide");
@@ -672,6 +704,7 @@ byId("panel-templates").addEventListener("click", (event) => {
 // Create job
 document.querySelectorAll('input[name="job-type"]').forEach((radio) => radio.addEventListener("change", onTypeChange));
 byId("job-tpl").onchange = showFields;
+byId("job-capability").onchange = showCapabilityDesc;
 byId("job-estimate").onclick = estimate;
 byId("job-create").onclick = createJob;
 byId("job-csv-template").onclick = downloadCsvTemplate;

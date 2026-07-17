@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@effectai/capabilities": "workspace:*",
     "@effectai/payment": "workspace:*",
     "@effectai/protobufs": "workspace:*",
     "@effectai/protocol-core": "workspace:*",
