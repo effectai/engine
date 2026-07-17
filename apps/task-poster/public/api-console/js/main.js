@@ -88,6 +88,7 @@ function disconnect() {
 // ------------------------------------------------------------------ account
 async function loadAccount() {
   const account = await api("/account");
+  byId("acct-id").textContent = account.id || "—";
   byId("acct-name").value = account.name || "";
   byId("acct-email").value = account.email || "";
   byId("acct-balance").textContent = effectFromLamports(account.credits.balance).toLocaleString();
@@ -723,6 +724,7 @@ byId("jobs-body").addEventListener("click", (event) => {
 
 // Account
 byId("acct-save").onclick = saveAccount;
+byId("acct-id-copy").onclick = () => copyText(byId("acct-id").textContent, byId("acct-id-copy"));
 
 // Keys
 byId("keys-new").onclick = issueKey;

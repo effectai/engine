@@ -281,6 +281,13 @@
           <div class="grow"><label class="field-label">Name</label><input id="acct-name" /></div>
           <div class="grow"><label class="field-label">Email <span class="muted">(optional)</span></label><input id="acct-email" placeholder="(none)" /></div>
         </div>
+        <div style="margin-top:.9rem">
+          <label class="field-label">Account ID <span class="muted">(share with the Effect team for support)</span></label>
+          <div class="row" style="gap:.5rem">
+            <code id="acct-id" class="mono grow" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;word-break:break-all;font-size:.78rem">—</code>
+            <button id="acct-id-copy" class="btn-ghost btn-sm" style="flex-shrink:0">Copy</button>
+          </div>
+        </div>
         <div class="row" style="justify-content:space-between;margin-top:.8rem">
           <span class="status-connected"><span class="status-dot" style="background:var(--ok-fg)"></span>Account active</span>
           <button id="acct-save" class="btn-primary">Save changes</button>
