@@ -18,8 +18,7 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "useDefineForClassFields": true,
-    "baseUrl": "."
+    "useDefineForClassFields": true
   },
   "exclude": ["node_modules"]
 }
