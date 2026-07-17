@@ -2,7 +2,7 @@
 
 List, issue, and revoke your API keys without needing Effect team involvement.
 
-Keys are prefixed `eff_live_` and stored as SHA-256 hashes — the raw key is shown exactly once at issuance and can never be recovered. If you lose your key, revoke it and issue a new one.
+Keys are prefixed `eff_live_` and stored as SHA-256 hashes, so the raw key is shown exactly once at issuance and can never be recovered. If you lose your key, revoke it and issue a new one.
 
 :::note
 Accounts are currently limited to **one active key at a time**. Issue a new key only after revoking the old one.
@@ -14,7 +14,7 @@ Accounts are currently limited to **one active key at a time**. Issue a new key 
 
 `GET /api/v1/keys`
 
-Returns all keys for your account. Raw keys are never returned — only the prefix and hash.
+Returns all keys for your account. Raw keys are never returned, only the prefix and hash.
 
 :::code-group
 
@@ -60,7 +60,7 @@ keys = res.json()['keys']
 
 | Field | Description |
 |---|---|
-| `hash` | SHA-256 hash of the key — use this to revoke |
+| `hash` | SHA-256 hash of the key. Use this to revoke |
 | `prefix` | First 15 characters of the raw key (plus `…`) for identification |
 | `status` | `"active"` or `"revoked"` |
 
@@ -70,7 +70,7 @@ keys = res.json()['keys']
 
 `POST /api/v1/keys`
 
-Issues a new API key. The raw key is returned **once** — copy it immediately.
+Issues a new API key. The raw key is returned **once**, so copy it immediately.
 
 Returns `403 forbidden` if you already have an active key. Revoke your existing key first.
 
@@ -87,7 +87,7 @@ const res = await fetch('https://api.effect.ai/api/v1/keys', {
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
 const data = await res.json()
-// data.key is shown only once — store it securely
+// data.key is shown only once, so store it securely
 ```
 
 ```python [Python]
@@ -98,7 +98,7 @@ res = requests.post(
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 data = res.json()
-# data['key'] is shown only once — store it securely
+# data['key'] is shown only once, so store it securely
 ```
 
 :::
@@ -117,8 +117,8 @@ data = res.json()
 
 | Field | Description |
 |---|---|
-| `key` | Raw API key — this is the only time it will be shown |
-| `hash` | SHA-256 hash — save this if you need to revoke later |
+| `key` | Raw API key. This is the only time it will be shown |
+| `hash` | SHA-256 hash. Save this if you need to revoke later |
 
 ---
 
@@ -126,7 +126,7 @@ data = res.json()
 
 `DELETE /api/v1/keys/:hash`
 
-Revokes a key by its SHA-256 hash. Idempotent — revoking an already-revoked key returns `200`.
+Revokes a key by its SHA-256 hash. This is idempotent, so revoking an already-revoked key returns `200`.
 
 Returns `404` if the hash doesn't belong to your account.
 

@@ -4,9 +4,9 @@ Manage your account profile and credit balance.
 
 ## Sign up
 
-`POST /api/v1/signup` — **No authentication required**
+`POST /api/v1/signup` (**No authentication required**)
 
-Creates a new account and issues your first API key. The raw key is shown **once** in the response and cannot be recovered — copy it immediately.
+Creates a new account and issues your first API key. The raw key is shown **once** in the response and cannot be recovered, so copy it immediately.
 
 Rate-limited to 3 signups per IP per day.
 
@@ -28,7 +28,7 @@ const res = await fetch('https://api.effect.ai/api/v1/signup', {
   body: JSON.stringify({ name: 'Acme Corp', email: 'you@acme.com' })
 })
 const data = await res.json()
-// data.key is shown only once — store it securely
+// data.key is shown only once, so store it securely
 ```
 
 ```python [Python]
@@ -39,7 +39,7 @@ res = requests.post(
     json={'name': 'Acme Corp', 'email': 'you@acme.com'}
 )
 data = res.json()
-# data['key'] is shown only once — store it securely
+# data['key'] is shown only once, so store it securely
 ```
 
 :::
@@ -56,7 +56,7 @@ data = res.json()
 
 | Field | Description |
 |---|---|
-| `key` | Your API key — store this securely, shown once only |
+| `key` | Your API key. Store this securely, shown once only |
 | `accountId` | Unique account identifier |
 | `name` | Account display name |
 
@@ -128,7 +128,7 @@ account = res.json()
 | `status` | `"active"` or `"suspended"` (suspended accounts cannot authenticate) |
 | `credits.balance` | Current balance in lamports (divide by `lamportsPerEffect` to get EFFECT) |
 | `credits.currency` | Always `"EFFECT"` |
-| `credits.lamportsPerEffect` | Conversion rate — 1 EFFECT = 1,000,000 lamports |
+| `credits.lamportsPerEffect` | Conversion rate, where 1 EFFECT = 1,000,000 lamports |
 
 The balance above (`"25000000"`) equals **25 EFFECT**.
 

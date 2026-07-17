@@ -1,6 +1,6 @@
 # API Reference
 
-The Effect AI Requestor API lets you post microtask jobs to the Effect AI network and retrieve completed results — without needing the Effect team involved after initial setup.
+The Effect AI Requestor API lets you post microtask jobs to the Effect AI network and retrieve completed results, without needing the Effect team involved after initial setup.
 
 Bring a CSV of inputs and an HTML template. Workers on the network complete one task per row. You poll for results.
 
@@ -30,7 +30,7 @@ Alternatively, use the `X-API-Key` header:
 -H "X-API-Key: eff_live_YOUR_KEY"
 ```
 
-API keys are prefixed `eff_live_` and are shown **exactly once** at issuance. Store yours securely — it cannot be recovered if lost. You can revoke and issue a new one via [API Keys](/api/keys).
+API keys are prefixed `eff_live_` and are shown **exactly once** at issuance. Store yours securely, because it cannot be recovered if lost. You can revoke and issue a new one via [API Keys](/api/keys).
 
 Requests with a missing, invalid, or revoked key return `401 unauthorized`. Keys belonging to a suspended account also return `401`.
 
@@ -54,7 +54,7 @@ Every list endpoint (`/jobs`, `/jobs/:id/results`, `/templates`, `/credits/trans
 | Parameter | Default | Max | Description |
 |---|---|---|---|
 | `limit` | 100 | 1000 | Number of items to return |
-| `offset` | 0 | — | Number of items to skip |
+| `offset` | 0 | None | Number of items to skip |
 
 ## Rate limits
 
@@ -88,7 +88,7 @@ All errors return a consistent JSON envelope:
 | `unauthorized` | 401 | Missing or invalid API key |
 | `forbidden` | 403 | Key is valid but you don't own this resource |
 | `not_found` | 404 | Resource does not exist |
-| `invalid_request` | 400 | Bad input — missing field, bad CSV, validation failure |
+| `invalid_request` | 400 | Bad input such as a missing field, bad CSV, or validation failure |
 | `insufficient_credits` | 402 | Not enough credit balance |
 | `rate_limited` | 429 | Over the rate limit |
 | `internal` | 500 | Server error (credits auto-refunded if job creation fails mid-way) |
@@ -112,7 +112,7 @@ const res = await fetch('https://api.effect.ai/api/v1/signup', {
   body: JSON.stringify({ name: 'Acme Corp', email: 'you@acme.com' })
 })
 const { key } = await res.json()
-// Store `key` — it is shown only once
+// Store `key`, it is shown only once
 ```
 
 ```python [Python]
@@ -122,7 +122,7 @@ res = requests.post(
     'https://api.effect.ai/api/v1/signup',
     json={'name': 'Acme Corp', 'email': 'you@acme.com'}
 )
-key = res.json()['key']  # Store this — shown only once
+key = res.json()['key']  # Store this, shown only once
 ```
 
 :::

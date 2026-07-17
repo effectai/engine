@@ -2,14 +2,14 @@
 
 Templates are the HTML pages workers see when completing tasks. Fields like `${product}` are filled from your CSV columns at task-serve time.
 
-Templates are **content-addressed** — the template ID is a hash of the HTML, so submitting the same HTML always produces the same ID regardless of submission order.
+Templates are **content-addressed**, meaning the template ID is a hash of the HTML, so submitting the same HTML always produces the same ID regardless of submission order.
 
 ## Trust levels
 
 | Badge | Meaning |
 |---|---|
-| Verified | Approved by the Effect team — full trust |
-| Unverified | Submitted by a requestor — workers see a caution warning |
+| Verified | Approved by the Effect team, carrying full trust |
+| Unverified | Submitted by a requestor, so workers see a caution warning |
 
 You can request team approval when creating a template. Unapproved templates are usable immediately.
 
@@ -399,7 +399,7 @@ Submitting identical HTML always returns the same `templateId` and does not rese
 
 Soft-archives your template. It disappears from listings and cannot be used in new jobs. Existing running jobs are not affected.
 
-The archive is reversible — resubmitting the same HTML via `POST /templates` revives the template with its previous approval status intact.
+The archive is reversible. Resubmitting the same HTML via `POST /templates` revives the template with its previous approval status intact.
 
 :::code-group
 

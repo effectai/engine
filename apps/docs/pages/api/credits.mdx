@@ -1,6 +1,6 @@
 # Credits
 
-EFFECT credits are the currency used to pay for jobs. All balance changes — top-ups, job debits, and refunds — are recorded as immutable ledger entries.
+EFFECT credits are the currency used to pay for jobs. All balance changes, including top-ups, job debits, and refunds, are recorded as immutable ledger entries.
 
 **1 EFFECT = 1,000,000 lamports.** All amounts in the API are returned as lamport strings to preserve precision.
 
@@ -15,8 +15,8 @@ In v1, the Effect team tops up account balances manually. Contact the team to ad
 | Event | Type | What triggers it |
 |---|---|---|
 | Team adds funds | `topup` | Manual admin top-up |
-| Job created | `debit` | `POST /jobs` — full cost reserved upfront |
-| Job cancelled | `refund` | `POST /jobs/:id/cancel` — unused tasks refunded |
+| Job created | `debit` | `POST /jobs` with the full cost reserved upfront |
+| Job cancelled | `refund` | `POST /jobs/:id/cancel` with unused tasks refunded |
 | Job creation fails | `refund` | Auto-refund if the job fails after debit |
 
 ---
@@ -88,7 +88,7 @@ data = res.json()
 | Parameter | Default | Max | Description |
 |---|---|---|---|
 | `limit` | 100 | 1000 | Number of entries to return |
-| `offset` | 0 | — | Number of entries to skip |
+| `offset` | 0 | None | Number of entries to skip |
 
 **Response `200`**
 
@@ -101,7 +101,7 @@ data = res.json()
       "amount": "5000000",
       "balanceAfter": "20000000",
       "jobId": "01JQKX3Z8VFNWRB2TGHM4Y5P6B",
-      "note": "job 01JQKX3Z8VFNWRB2TGHM4Y5P6B cancelled — 10 unfinished tasks",
+      "note": "job 01JQKX3Z8VFNWRB2TGHM4Y5P6B cancelled with 10 unfinished tasks",
       "timestamp": 1750000200000
     },
     {
