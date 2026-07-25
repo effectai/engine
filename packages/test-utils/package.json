@@ -2,16 +2,17 @@
   "name": "@effectai/test-utils",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsup ./src/ --config ../../tsup.config.package.ts"
+    "build": "tsc"
   },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "default": "./dist/index.js"
     }
   },
   "keywords": [],

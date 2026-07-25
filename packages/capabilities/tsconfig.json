@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "@effectai/test-utils",
+  "display": "@effectai/capabilities",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",

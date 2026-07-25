@@ -159,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import { availableCapabilities } from '~/constants/capabilities';
+import { availableCapabilities } from '@effectai/capabilities';
 
 const capabilityName = (id: string): string => {
   return availableCapabilities.find(c => c.id === id)?.name || id;

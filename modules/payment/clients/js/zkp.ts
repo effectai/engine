@@ -178,7 +178,7 @@ export const prove = async ({
   const PaymentBatchVerifier = await import(
     "../../circuits/PaymentBatch_verification.json",
     {
-      assert: { type: "json" },
+      with: { type: "json" },
     }
   );
 

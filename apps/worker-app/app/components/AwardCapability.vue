@@ -62,7 +62,7 @@
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
 import confetti from "canvas-confetti";
 
-import type { Capability } from "~/constants/capabilities";
+import type { Capability } from "@effectai/capabilities";
 
 const props = defineProps({
   capability: Object as () => Capability,
