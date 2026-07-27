@@ -188,6 +188,28 @@ export function createTaskManager({
     });
   };
 
+  const processTaskCancellation = async ({
+    taskId,
+    reason,
+    providerPeerIdStr,
+  }: {
+    taskId: string;
+    reason: string;
+    providerPeerIdStr: string;
+  }) => {
+    const { status, taskRecord } = await taskStore.cancel({
+      entityId: taskId,
+      peerIdStr: providerPeerIdStr,
+      reason,
+    });
+
+    if (status === "cancelled") {
+      events.safeDispatchEvent("task:cancelled", { detail: taskRecord });
+    }
+
+    return { status, taskRecord };
+  };
+
   const processTaskReport = async ({
     taskId,
     result,
@@ -362,6 +384,17 @@ export function createTaskManager({
       return;
     }
 
+    // a cancel was requested while the task was with a worker; now that it is
+    // assignable again, cancel it instead of re-assigning
+    const cancelledRecord = await taskStore.finalizeCancelIfRequested({
+      entityId,
+    });
+
+    if (cancelledRecord) {
+      events.safeDispatchEvent("task:cancelled", { detail: cancelledRecord });
+      return;
+    }
+
     const lastEvent = taskRecord.events[taskRecord.events.length - 1];
 
     if (lastEvent.type === "assign") {
@@ -490,6 +523,7 @@ export function createTaskManager({
     processTaskAcception,
     processTaskRejection,
     processTaskSubmission,
+    processTaskCancellation,
 
     registerTemplate,
 

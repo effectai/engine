@@ -20,6 +20,7 @@ export type ManagerTaskEvent =
   | TaskRejectedEvent
   | TaskReportedEvent
   | TaskAcceptedEvent
+  | TaskCancelledEvent
   | TaskPaymentEvent;
 
 export interface TaskCreatedEvent extends BaseTaskEvent {
@@ -53,6 +54,12 @@ export interface TaskSubmissionEvent extends BaseTaskEvent {
   type: "submission";
   result: string;
   submissionByPeer: string;
+}
+
+export interface TaskCancelledEvent extends BaseTaskEvent {
+  type: "cancel";
+  reason: string;
+  cancelledByPeer: string;
 }
 
 export interface TaskPaymentEvent extends BaseTaskEvent {
@@ -177,6 +184,8 @@ export const createManagerTaskStore = ({
       Buffer.from(stringifyWithBigInt(taskRecord)),
     );
     batch.delete(new Key(`/tasks/assign/${peerIdStr}/${entityId}`));
+    // the worker beat any pending cancel request; the submission wins
+    batch.delete(cancelRequestKey(entityId));
 
     if (taskRecord.state.batchId && taskRecord.state.repetitions > 0) {
       batch.put(
@@ -327,6 +336,7 @@ export const createManagerTaskStore = ({
     );
     batch.delete(new Key(`/tasks/active/${taskRecord.state.id}`));
     batch.delete(new Key(`/tasks/assign/${peerIdStr}/${entityId}`));
+    batch.delete(cancelRequestKey(entityId));
 
     if (taskRecord.state.batchId && taskRecord.state.repetitions > 0) {
       batch.delete(
@@ -339,6 +349,97 @@ export const createManagerTaskStore = ({
     await batch.commit();
 
     return taskRecord;
+  };
+
+  const cancelRequestKey = (entityId: string) =>
+    new Key(`/tasks/cancel-requested/${entityId}`);
+
+  const cancel = async ({
+    entityId,
+    peerIdStr,
+    reason,
+  }: {
+    entityId: string;
+    peerIdStr: string;
+    reason: string;
+  }): Promise<{
+    status: "cancelled" | "pending";
+    taskRecord: ManagerTaskRecord;
+  }> => {
+    const taskRecord = await getTask({ entityId });
+
+    if (!taskRecord) {
+      throw new TaskValidationError("Task not found");
+    }
+
+    const createEvent = taskRecord.events.find(
+      (event): event is TaskCreatedEvent => event.type === "create",
+    );
+
+    if (!createEvent || createEvent.providerPeer !== peerIdStr) {
+      throw new TaskValidationError("Task was not created by this provider");
+    }
+
+    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
+
+    // task is with a worker: remember the request, it is finalized once the
+    // worker rejects or the assignment expires
+    if (lastEvent.type !== "create" && lastEvent.type !== "reject") {
+      await datastore.put(cancelRequestKey(entityId), Buffer.from(reason));
+      return { status: "pending", taskRecord };
+    }
+
+    taskRecord.events.push({
+      timestamp: Math.floor(Date.now() / 1000),
+      type: "cancel",
+      reason,
+      cancelledByPeer: peerIdStr,
+    });
+
+    const batch = datastore.batch();
+
+    batch.put(
+      new Key(`/tasks/completed/${taskRecord.state.id}`),
+      Buffer.from(stringifyWithBigInt(taskRecord)),
+    );
+    batch.delete(new Key(`/tasks/active/${taskRecord.state.id}`));
+    batch.delete(cancelRequestKey(entityId));
+
+    await batch.commit();
+
+    return { status: "cancelled", taskRecord };
+  };
+
+  const finalizeCancelIfRequested = async ({
+    entityId,
+  }: {
+    entityId: string;
+  }): Promise<ManagerTaskRecord | null> => {
+    if (!(await datastore.has(cancelRequestKey(entityId)))) {
+      return null;
+    }
+
+    const reason = Buffer.from(
+      await datastore.get(cancelRequestKey(entityId)),
+    ).toString();
+
+    const taskRecord = await getTask({ entityId });
+
+    const createEvent = taskRecord?.events.find(
+      (event): event is TaskCreatedEvent => event.type === "create",
+    );
+
+    if (!createEvent) {
+      throw new TaskValidationError("Task has no create event");
+    }
+
+    const result = await cancel({
+      entityId,
+      peerIdStr: createEvent.providerPeer,
+      reason,
+    });
+
+    return result.status === "cancelled" ? result.taskRecord : null;
   };
 
   const payout = async ({
@@ -437,6 +538,8 @@ export const createManagerTaskStore = ({
     accept,
     reject,
     report,
+    cancel,
+    finalizeCancelIfRequested,
     payout,
     assign,
     getTask,

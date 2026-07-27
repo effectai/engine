@@ -316,7 +316,8 @@ job = res.json()
     "queued": 2,
     "active": 0,
     "completed": 0,
-    "failed": 0
+    "failed": 0,
+    "cancelled": 0
   },
   "credits": {
     "currency": "EFFECT",
@@ -589,7 +590,7 @@ Worker submissions are untrusted, so cells starting with `=`, `+`, `-`, or `@` a
 
 `POST /api/v1/jobs/:id/cancel`
 
-Stops the job immediately: no further tasks are posted to workers, and tasks currently in progress are not collected. Credits are refunded for **every task without a completed submission** at the moment of cancellation, both queued and in-progress. You only pay for tasks that were already completed.
+Stops the job: no further tasks are posted to workers, and every task that was never handed to a worker is refunded immediately. Tasks already out with workers are cancelled on the network; each one is refunded once the cancellation is confirmed, or consumed if the worker completes it first (that result still appears in your job results). Watch `tasks.active` shrink and `credits.remaining` reach zero as the last in-flight tasks settle, typically within the task time limit.
 
 This is idempotent, so cancelling an already-cancelled job returns `200`.
 
@@ -637,18 +638,19 @@ print(job['credits']['refunded'])  # EFFECT refunded
   "createdAt": 1750000100000,
   "tasks": {
     "queued": 0,
-    "active": 0,
+    "active": 1,
     "completed": 1,
-    "failed": 0
+    "failed": 0,
+    "cancelled": 1
   },
   "credits": {
     "currency": "EFFECT",
-    "reserved": "1",
+    "reserved": "1.5",
     "consumed": "0.5",
     "refunded": "0.5",
-    "remaining": "0"
+    "remaining": "0.5"
   }
 }
 ```
 
-1 task completed (0.5 EFFECT consumed), 1 task unfinished at cancellation (0.5 EFFECT refunded). `remaining` reaches zero, so the account is fully settled.
+1 task completed (0.5 EFFECT consumed), 1 queued task cancelled (0.5 EFFECT refunded right away), 1 task still with a worker (0.5 EFFECT reserved). The in-flight task settles on its own: `remaining` drops to zero once it is either cancelled on the network (refunded) or completed by the worker (consumed).

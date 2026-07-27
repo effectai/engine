@@ -101,7 +101,7 @@ data = res.json()
       "amount": "5000000",
       "balanceAfter": "20000000",
       "jobId": "01JQKX3Z8VFNWRB2TGHM4Y5P6B",
-      "note": "job 01JQKX3Z8VFNWRB2TGHM4Y5P6B cancelled with 10 unfinished tasks",
+      "note": "job 01JQKX3Z8VFNWRB2TGHM4Y5P6B cancelled - 0 tasks still in flight",
       "timestamp": 1750000200000
     },
     {
@@ -145,6 +145,6 @@ data = res.json()
 |---|---|---|---|
 | Top-up | +25,000,000 | +25 EFFECT | 25 EFFECT |
 | Debit (20 tasks × 0.5) | -10,000,000 | -10 EFFECT | 15 EFFECT |
-| Refund (10 unfinished × 0.5) | +5,000,000 | +5 EFFECT | 20 EFFECT |
+| Refund (10 never started × 0.5) | +5,000,000 | +5 EFFECT | 20 EFFECT |
 
-The 10 completed tasks consumed 5 EFFECT; the 10 unfinished tasks were refunded 5 EFFECT. `balanceAfter` reflects the exact balance immediately after each ledger write.
+The 10 completed tasks consumed 5 EFFECT; the 10 tasks that never reached a worker were refunded 5 EFFECT in one entry. Tasks that are still with a worker when you cancel settle later: each produces its own `refund` entry (`"task <id> cancelled"`) once the network confirms its cancellation, unless a worker completes it first. `balanceAfter` reflects the exact balance immediately after each ledger write.

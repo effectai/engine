@@ -60,9 +60,7 @@ export type Job = {
   consumedLamports: string;
   refundedLamports: string;
   status: JobStatus;
-  // When true, each worker may complete at most one task in this job (no
-  // repeats). Enforced by the manager via a per-worker, per-batch cap; the
-  // job pins a stable batch id so the cap spans the whole job.
+  // When true, each worker may complete at most one task in this job (no repeats). 
   uniqueWorker: boolean;
   createdAt: number;
 };
@@ -103,7 +101,7 @@ export const getJob = async (
 export const listJobs = async (accountId: string): Promise<Job[]> =>
   (await db.listAll<Job>(["job", accountId, {}])).map((record) => record.data);
 
-// reverse lookup used by credit reconciliation (Phase 4)
+// reverse lookup used by the per-task refunds in processResults
 export const getJobByDataset = async (
   datasetId: number,
 ): Promise<Job | null> => {
@@ -114,17 +112,10 @@ export const getJobByDataset = async (
   return ref ? getJob(ref.data.accountId, ref.data.jobId) : null;
 };
 
-/**
- * Permanently removes an account and everything scoped to it. Used by the admin
- * delete action. Jobs' fetchers/datasets are archived first so the poster stops
- * posting their queued tasks to workers (deleting the account record alone would
- * orphan still-running fetchers). The off-chain credit balance is discarded with
- * the account, there's nowhere to refund it to.
- */
 export const deleteAccountAndData = async (
   accountId: string,
 ): Promise<void> => {
-  // 1. Stop + remove the account's jobs.
+
   for (const job of await listJobs(accountId)) {
     const fetcher = await getFetcher(job.datasetId, job.fetcherIndex);
     if (fetcher) {
@@ -140,23 +131,19 @@ export const deleteAccountAndData = async (
     await db.delete(["job", accountId, job.id]);
   }
 
-  // 2. API keys (so they immediately stop authenticating).
   for (const key of await listApiKeys(accountId)) {
     await db.delete(["apikey", key.hash]);
   }
 
-  // 3. Ledger balance + audit entries.
   for (const entry of await db.listAll(["ledger-entry", accountId, {}])) {
     await db.delete(entry.key);
   }
   await db.delete(["ledger", accountId]);
 
-  // 4. Per-account template visibility index.
   for (const ref of await db.listAll(["account-template", accountId, {}])) {
     await db.delete(ref.key);
   }
 
-  // 5. The account record itself.
   await db.delete(["account", accountId]);
 };
 
@@ -204,7 +191,6 @@ const fail = (
   message: string,
 ): JobAnalysis => ({ ok: false, status, code, message });
 
-/** Validates + prices a job request without any side effects. */
 const analyzeJob = async (
   accountId: string,
   body: Record<string, unknown>,
@@ -250,9 +236,7 @@ const analyzeJob = async (
     return fail(400, "invalid_request", "'templateId' is required.");
 
   const template = await resolveUsableTemplate(accountId, templateId);
-  // 404 (not 403) whether the template is missing or merely not accessible:
-  // template ids are content hashes, so a 403 would confirm to a non-owner
-  // that someone has registered that exact HTML.
+
   if (!template) return fail(404, "not_found", "Template not found.");
 
   let rewardLamports: bigint;
@@ -304,8 +288,7 @@ const analyzeJob = async (
         "invalid_request",
         `CSV is missing columns for template fields: ${missing.join(", ")}`,
       );
-    // Reserved columns: per-row reward overrides break uniform accounting, and
-    // `__effect*` keys are injected by the poster (e.g. the template trust flag).
+
     const reserved = headers.filter(
       (header) => header === "dataffect/reward" || header.startsWith("__effect"),
     );
@@ -342,9 +325,6 @@ const analyzeJob = async (
     )
       return fail(400, "invalid_request", "'data' must be a JSON object.");
 
-    // Same rule as CSV columns: every ${field} in the template must have a
-    // value, otherwise workers get blank placeholders and the requestor is
-    // charged for empty tasks.
     const missingFields = missingTemplateFields(
       template.data,
       Object.keys(parsedData),
@@ -356,9 +336,6 @@ const analyzeJob = async (
         `'data' is missing values for template fields: ${missingFields.join(", ")}`,
       );
 
-    // Reserved keys: same rule as CSV headers. Per-task reward overrides break
-    // uniform accounting (and feed BigInt() in getTasks), and `__effect*` keys
-    // are injected by the poster.
     const reservedKeys = Object.keys(parsedData).filter(
       (key) => key === "dataffect/reward" || key.startsWith("__effect"),
     );
@@ -406,12 +383,6 @@ const analyzeJob = async (
   };
 };
 
-// Stored 201 response for an Idempotency-Key replay (H2). Only successful
-// creations are cached: a 402 never debited and a failed create was refunded,
-// so re-running those on retry is safe. The shared `withLock` (api-util.js)
-// serializes job mutations: two concurrent cancels can't both pass the status
-// check and refund twice, and two creates with the same Idempotency-Key can't
-// both miss the cache and debit twice.
 type CachedJobResponse = { status: number; body: unknown };
 
 type TaskCounts = {
@@ -419,6 +390,7 @@ type TaskCounts = {
   active: number;
   completed: number;
   failed: number;
+  cancelled: number;
 };
 
 const countsFor = async (job: Job): Promise<TaskCounts> => {
@@ -428,6 +400,7 @@ const countsFor = async (job: Job): Promise<TaskCounts> => {
     active: fetcher ? countTasks(fetcher, "active") : 0,
     completed: fetcher ? countTasks(fetcher, "done") : 0,
     failed: fetcher ? countTasks(fetcher, "failed") : 0,
+    cancelled: fetcher ? countTasks(fetcher, "cancelled") : 0,
   };
 };
 
@@ -468,10 +441,6 @@ const jobView = (job: Job, counts: TaskCounts) => {
   };
 };
 
-// Results come from untrusted workers, so neutralize CSV formula injection: a
-// cell starting with = + - @ (or tab/CR, which Excel strips back to those) is
-// treated as a formula by Excel/Sheets. Prefix those with a single quote so the
-// value is shown literally, then quote/escape as normal.
 const csvCell = (value: unknown): string => {
   let cell = String(value ?? "");
   if (/^[=+\-@\t\r]/.test(cell)) cell = `'${cell}`;
@@ -505,9 +474,7 @@ export const addJobApiRoutes = (app: Express): void => {
 
   // Create a job: debit upfront, then build the owned dataset + fetcher and
   // import its tasks. Credits are refunded if creation fails after the debit.
-  // Passing an `Idempotency-Key` header makes retries safe: the first
-  // successful creation is cached per account+key, and any replay returns the
-  // stored response instead of debiting and creating a second job.
+
   const performJobCreation = async (
     req: Request,
     res: Response,
@@ -557,9 +524,6 @@ export const addJobApiRoutes = (app: Express): void => {
         repetitions: analysis.uniqueWorker ? 1 : 0,
       });
 
-      // Pin a stable batch id so the per-worker cap spans the whole job.
-      // Without this, constant jobs (which import in several batches) would
-      // reset the cap each batch, letting one worker answer many times.
       if (analysis.uniqueWorker) {
         fetcher.batchId = jobId;
         await writeFetcher(fetcher);
@@ -605,9 +569,9 @@ export const addJobApiRoutes = (app: Express): void => {
         active: 0,
         completed: 0,
         failed: 0,
+        cancelled: 0,
       });
-      // Cache before responding so a replay can never observe a gap between
-      // the job existing and its response being stored.
+
       if (idempotencyKey)
         await db.set<CachedJobResponse>(
           ["idempotency", account.id, idempotencyKey],
@@ -647,8 +611,6 @@ export const addJobApiRoutes = (app: Express): void => {
           `'Idempotency-Key' must be ${MAX_IDEMPOTENCY_KEY_LENGTH} characters or fewer.`,
         );
 
-      // The lock serializes concurrent requests carrying the same key, so
-      // both can't miss the cache and debit twice.
       return withLock(`idem:${account.id}:${idempotencyKey}`, async () => {
         const cached = await db.get<CachedJobResponse>([
           "idempotency",
@@ -690,7 +652,6 @@ export const addJobApiRoutes = (app: Express): void => {
     }),
   );
 
-  // Completed results, scoped to the owner. `?format=csv` for a CSV download.
   app.get(
     "/api/v1/jobs/:id/results",
     requireApiKey,
@@ -772,8 +733,9 @@ export const addJobApiRoutes = (app: Express): void => {
     }),
   );
 
-  // Cancel: stop posting queued tasks (archive dataset + fetcher).
-  // Phase 4 adds the credit refund for tasks that never got a submission.
+  // Cancel: stop posting queued tasks and drain the in-flight ones. Tasks
+  // never posted are refunded here; tasks already at the manager settle one
+  // by one via processResults
   app.post(
     "/api/v1/jobs/:id/cancel",
     requireApiKey,
@@ -782,38 +744,53 @@ export const addJobApiRoutes = (app: Express): void => {
       const existing = await getJob(account.id, req.params.id);
       if (!existing) return apiError(res, 404, "not_found", "Job not found.");
 
-      // Serialize with any concurrent cancel of the same job and re-read the
-      // job inside the lock, so only one request can see status !== "cancelled"
-      // and issue the refund.
       const job = await withLock(existing.id, async (): Promise<Job | null> => {
         const fresh = await getJob(account.id, req.params.id);
         if (!fresh || fresh.status === "cancelled") return fresh;
 
-        // Stop posting/polling: archive the fetcher + dataset.
         const fetcher = await getFetcher(fresh.datasetId, fresh.fetcherIndex);
         if (fetcher) {
-          fetcher.status = "archived";
+          fetcher.status = "draining";
           await writeFetcher(fetcher);
-        }
-        const dataset = await getDataset(fresh.datasetId);
-        if (dataset) {
-          dataset.data.status = "archived";
-          await writeDataset(fresh.datasetId, dataset.data);
+
+          const queued = await db.listAll<boolean>([
+            "fetcher", fresh.datasetId, fresh.fetcherIndex, "queue", {},
+          ]);
+          for (const entry of queued) {
+            const taskId = entry.key[4] as string;
+            db.beginTransaction();
+            await db.delete([
+              "fetcher", fresh.datasetId, fresh.fetcherIndex, "queue", taskId,
+            ]);
+            await db.set<boolean>(
+              ["fetcher", fresh.datasetId, fresh.fetcherIndex, "cancelled", taskId],
+              true,
+            );
+            await db.endTransaction();
+          }
+        } else {
+          const dataset = await getDataset(fresh.datasetId);
+          if (dataset) {
+            dataset.data.status = "archived";
+            await writeDataset(fresh.datasetId, dataset.data);
+          }
         }
         fresh.status = "cancelled";
 
-        // Refund everything not yet completed. After archiving, the poster
-        // stops polling these tasks, so they can never be consumed later.
+        // Refund everything except completed and in-flight tasks; in-flight
+        // credits stay reserved until each task resolves.
         const counts = await countsFor(fresh);
         const { consumed, remaining } = computeJobCredits(fresh, counts.completed);
-        if (remaining > 0n) {
-          await refund(account.id, remaining, {
+        const inFlight = BigInt(fresh.rewardLamports) * BigInt(counts.active);
+        const refundNow = remaining - inFlight;
+        if (refundNow > 0n) {
+          await refund(account.id, refundNow, {
             jobId: fresh.id,
-            note: `job ${fresh.id} cancelled - ${counts.queued + counts.active} unfinished tasks`,
+            note: `job ${fresh.id} cancelled - ${counts.active} tasks still in flight`,
           });
           fresh.consumedLamports = consumed.toString();
           fresh.refundedLamports = (
-            BigInt(fresh.refundedLamports) + remaining
+            BigInt(fresh.refundedLamports) + refundNow
           ).toString();
         }
         await writeJob(fresh);

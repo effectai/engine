@@ -5,7 +5,10 @@ import type { Task } from "@effectai/protocol";
 import { parseString } from "@fast-csv/parse";
 import axios from "axios";
 import { ulid } from "ulid";
-import type { DatasetRecord } from "./dataset.js";
+import { type DatasetRecord, getDataset, writeDataset } from "./dataset.js";
+import { getJob, getJobByDataset, writeJob } from "./api/jobs.js";
+import { refund } from "./api/ledger.js";
+import { withLock } from "./api/api-util.js";
 import { db, managerId, publishProgress } from "./state.js";
 import * as state from "./state.js";
 import { validateNumericParams } from "./util.js";
@@ -63,7 +66,8 @@ export type Fetcher = {
   totalTasks: number;
 
   dataSample?: any;
-  status: "active" | "archived";
+  // draining: stop posting new tasks, wait for in-flight tasks to resolve
+  status: "active" | "draining" | "archived";
   hidden?: boolean;
 
   // fields for csv fetchers
@@ -373,7 +377,7 @@ export const fetcherForm = async (
  <button type="submit">${f ? "Update" : "Create"}</button>
 
  ${f ?
-   f.status === "active"
+   f.status !== "archived"
      ? `<button hx-post="/d/${dsId}/f/${f.index}/edit?action=archive">Archive</button>`
      : `<button hx-post="/d/${dsId}/f/${f.index}/edit?action=publish">Publish</button>`
    : ""}
@@ -537,11 +541,11 @@ export const getFetcher = async (dsid: number, fid: number) => {
   return f?.data;
 };
 
-// get all active fetchers
+// get all active (and still draining) fetchers
 export const getFetchers = async (dsId: number) => {
   const f = await db.listAll<Fetcher>(["fetcher", dsId, {}, "info"]);
 
-  return f.map(ff => ff.data).filter(ff => ff?.status ===  "active");
+  return f.map(ff => ff.data).filter(ff => ff?.status !== "archived");
 };
 
 const delay = (m: number): Promise<void> =>
@@ -763,12 +767,33 @@ const handleFetcherImport = async(fetcher: Fetcher, fields: FormValues) => {
  * 3)
  */
 export const processFetcher = async (fetcher: Fetcher) => {
-  if (fetcher.status !== "active")
+  if (fetcher.status === "archived")
     return 0;
 
   // always check for results, even outside schedule
   if (fetcher.engine === "effectai")
     await processResults(fetcher, 20);
+
+  // draining: no new tasks; keep asking the manager to cancel the in-flight
+  // ones until they all resolve, then archive the fetcher (and its dataset
+  // once no fetchers remain)
+  if (fetcher.status === "draining") {
+    if (countTasks(fetcher, "active") > 0) {
+      await cancelActiveTasks(fetcher);
+    } else {
+      fetcher.status = "archived";
+      await writeFetcher(fetcher);
+
+      if ((await getFetchers(fetcher.datasetId)).length === 0) {
+        const ds = await getDataset(fetcher.datasetId);
+        if (ds && ds.data.status === "active") {
+          ds.data.status = "archived";
+          await writeDataset(fetcher.datasetId, ds.data);
+        }
+      }
+    }
+    return 0;
+  }
 
   const withinSchedule = isWithinSchedule(fetcher.schedule);
   if (!withinSchedule) {
@@ -822,7 +847,7 @@ export const processFetcher = async (fetcher: Fetcher) => {
   return imported;
 }
 
-export const countTasks = (f: Fetcher, type: "active" | "queue" | "done" | "failed") => {
+export const countTasks = (f: Fetcher, type: "active" | "queue" | "done" | "failed" | "cancelled") => {
   if (f)
     return db.count(["fetcher", f.datasetId, f.index, type, {}]);
   else
@@ -914,6 +939,34 @@ export const importTasks = async (f: Fetcher) => {
   return tasks.length;
 };
 
+// ask the manager to cancel every task still in flight; confirmations come
+// back as `cancelled` results in processResults
+export const cancelActiveTasks = async (f: Fetcher) => {
+  const tasks = await db.listAll<boolean>(
+    ["fetcher", f.datasetId, f.index, "active", {}]
+  );
+
+  for (const entry of tasks) {
+    const taskId = entry.key[4] as string;
+    const cancelSentKey = ["fetcher", f.datasetId, f.index, "cancel-sent", taskId];
+
+    // ask the manager only once per task; the request stays pending on its
+    // side until the task becomes reassignable and gets finalized. the marker
+    // is cleared when the task resolves in processResults.
+    if (await db.get<boolean>(cancelSentKey))
+      continue;
+
+    try {
+      await api.post("/task/cancel", {
+        taskId, reason: "Job cancelled by requestor"
+      });
+      await db.set<boolean>(cancelSentKey, true);
+    } catch (error) {
+      console.log(`Error requesting cancel for task ${taskId} ${error}`);
+    }
+  }
+};
+
 export const processResults = async (f: Fetcher, batchSize: number) => {
   const keyBase = ["fetcher", f.datasetId, f.index];
 
@@ -933,8 +986,39 @@ export const processResults = async (f: Fetcher, batchSize: number) => {
       "/task-results", {params: {ids: ids.join(";")}}
     );
 
+    // datasetId is fixed for this fetcher, so look up the owning job at most
+    // once per batch instead of once per cancelled task
+    const hasCancelled = (data as any).some((d: any) => d.type === "cancelled");
+    const jobRef = hasCancelled ? await getJobByDataset(f.datasetId) : null;
+
     let importCount = 0;
     for (const d of data as any) {
+      if (d.type === "cancelled") {
+        db.beginTransaction();
+        await db.delete([...keyBase, "active", d.taskId]);
+        await db.set<boolean>([...keyBase, "cancelled", d.taskId], true);
+        await db.delete([...keyBase, "cancel-sent", d.taskId]);
+        await db.endTransaction();
+
+        // refund the requestor's credit for this task, if an API job owns it
+        if (jobRef) {
+          await withLock(jobRef.id, async () => {
+            const job = await getJob(jobRef.accountId, jobRef.id);
+            if (!job)
+              return;
+            const reward = BigInt(job.rewardLamports);
+            await refund(job.accountId, reward, {
+              jobId: job.id,
+              note: `task ${d.taskId} cancelled`,
+            });
+            job.refundedLamports =
+              (BigInt(job.refundedLamports) + reward).toString();
+            await writeJob(job);
+          });
+        }
+        continue;
+      }
+
       if (d.type !== "submission" && d.type !== "report")
 	continue;
       db.beginTransaction();
@@ -1080,7 +1164,12 @@ export const addFetcherRoutes = (app: Express): void => {
 
     const dataset = (await db.get<DatasetRecord>(["dataset", id, "info"]))!.data;
 
-    f!.status = req.query.action === "archive" ? "archived" : "active";
+    // a draining fetcher belongs to a cancelled job and must never go back
+    // to active; it can only be archived
+    if (req.query.action === "archive")
+      f!.status = "archived";
+    else if (f!.status !== "draining")
+      f!.status = "active";
 
     let { valid, errors } = await validateForm(req.body);
     let msg = Object.values(errors).join("<br/>- ");

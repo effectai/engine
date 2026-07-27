@@ -1,6 +1,5 @@
-import { api, setApiKey, hasApiKey, fetchResultsCsv } from "./client.js";
+import { api, setApiKey, hasApiKey, clearApiKey, fetchResultsCsv } from "./client.js";
 
-// ------------------------------------------------------------------ state
 let templates = [];
 let capabilities = [];
 let jobsCache = [];
@@ -8,7 +7,6 @@ let openJobId = null;      // currently expanded job row
 let drawerResults = [];    // results currently loaded in the drawer
 let drawerJobId = null;
 
-// ------------------------------------------------------------------ helpers
 const byId = (elementId) => document.getElementById(elementId);
 const esc = (value) => String(value ?? "").replace(/[&<>"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character]));
 const shortId = (value) => (value || "").slice(0, 10) + "…";
@@ -30,9 +28,6 @@ function relativeTime(timestamp) {
   return new Date(Number(timestamp)).toLocaleDateString();
 }
 
-// ------------------------------------------------------------------ theme
-// The theme preference is persisted (non-sensitive). The API key is still
-// never stored, so a reload always returns to the signup view.
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   byId("icon-sun").classList.toggle("hide", theme === "dark");
@@ -61,8 +56,7 @@ function setConnected(isConnected) {
   byId("disconnect").classList.toggle("hide", !isConnected);
 }
 
-// ------------------------------------------------------------------ connect
-async function connect() {
+async function connect({ silent = false } = {}) {
   const typed = byId("key").value.trim();
   if (typed) setApiKey(typed);
   if (!hasApiKey()) { setConnected(false); return; }
@@ -74,14 +68,16 @@ async function connect() {
     showTab("overview");
     await Promise.all([loadTemplates(), loadCapabilities(), loadJobs(), loadKeys()]);
     await loadOverview();
+    startLiveRefresh();
   } catch (error) {
     setConnected(false);
+    if (silent) { clearApiKey(); return; }
     showMsg(byId("signup-msg"), "Could not connect: " + error.message, "err");
   }
 }
 
 function disconnect() {
-  // No key persistence: the key lives only in memory, so reloading returns to signup.
+  clearApiKey();
   location.reload();
 }
 
@@ -179,8 +175,6 @@ async function issueKey() {
   finally { byId("keys-new").disabled = false; }
 }
 
-// Type-to-confirm revoke. Revoking the last active key locks the account out of
-// the API, so we warn harder and still require typing DELETE either way.
 async function revokeKey(hash, prefix, isLast) {
   const warning = isLast
     ? `⚠ This is your LAST active key.\n\nRevoking it locks this account out of the API. You would have to sign up again or ask the team to issue a new key.\n\nType DELETE to revoke ${prefix}:`
@@ -289,9 +283,6 @@ function openSubmitForm() {
 }
 
 // ------------------------------------------------------------------ create job
-// The capability list is a closed server-side vocabulary (GET /capabilities),
-// so the picker offers exactly those ids — a typo can never create a job no
-// worker can see.
 async function loadCapabilities() {
   ({ capabilities } = await api("/capabilities"));
   const groups = new Map();
@@ -488,7 +479,6 @@ async function cancelJob(jobId) {
   } catch (error) { alert(error.message); }
 }
 
-// ------------------------------------------------------------------ overview
 async function loadOverview() {
   try {
     const account = await api("/account");
@@ -505,8 +495,6 @@ async function loadOverview() {
   } catch (error) { byId("ov-activity").innerHTML = `<span class="msg err">${esc(error.message)}</span>`; }
 }
 
-// No dedicated activity endpoint exists, so the feed is synthesized from the
-// real timestamps we do have: job creation and credit transactions.
 async function renderActivity() {
   const events = [];
   for (const job of jobsCache) {
@@ -528,14 +516,40 @@ async function renderActivity() {
     : `<span class="muted">No activity yet.</span>`;
 }
 
+// ------------------------------------------------------------------ live refresh
+
+const LIVE_REFRESH_MS = 15000;
+let liveRefreshTimer = null;
+
+async function refreshBalances() {
+  const account = await api("/account");
+  const effect = effectFromLamports(account.credits.balance).toLocaleString();
+  byId("acct-balance").textContent = effect;
+  byId("acct-lamports").textContent = "≈ " + Number(account.credits.balance).toLocaleString() + " lamports";
+  byId("ov-balance").textContent = effect;
+}
+
+async function liveTick() {
+  if (document.hidden || !hasApiKey()) return;
+  try {
+    if (!openJobId) 
+      await loadJobs();
+    if (byId("panel-overview").classList.contains("hide")) 
+      await refreshBalances();
+    else await loadOverview();
+  } catch { /* transient network error; the next tick retries */ }
+}
+
+function startLiveRefresh() {
+  stopLiveRefresh();
+  liveRefreshTimer = setInterval(liveTick, LIVE_REFRESH_MS);
+}
+function stopLiveRefresh() {
+  if (liveRefreshTimer) { clearInterval(liveRefreshTimer); liveRefreshTimer = null; }
+}
+
 // ------------------------------------------------------------------ preview
-// Full template preview in a sandboxed iframe, fetched via the API (the only
-// way to send the Bearer key; a new tab could not authenticate). The sample
-// data bar re-renders the template server-side with user-typed values, so
-// templates that expect real shapes (image URLs, JSON strings) can be
-// previewed working. Last-used values persist per template in localStorage
-// (non-sensitive; template IDs are content-addressed, so stored values can
-// never apply to changed HTML).
+// Full template preview in a sandboxed iframe
 let previewTemplateId = null;
 
 const sampleStorageKey = (templateId) => "effect-console-sample:" + templateId;
@@ -572,8 +586,6 @@ async function previewTemplate(templateId) {
   }
 }
 
-// `values` echoes what the server actually rendered (stored overrides merged
-// over the field-name defaults), so the inputs always match the iframe.
 function renderSampleBar(fields, values) {
   const bar = byId("tpl-preview-data");
   if (!fields.length) { bar.innerHTML = ""; bar.classList.add("hide"); return; }
@@ -670,7 +682,7 @@ function triggerDownload(content, filename) {
 }
 
 // ------------------------------------------------------------------ wiring
-byId("connect").onclick = connect;
+byId("connect").onclick = () => connect();
 byId("key").addEventListener("keydown", (event) => { if (event.key === "Enter") connect(); });
 byId("disconnect").onclick = disconnect;
 byId("theme-toggle").onclick = toggleTheme;
@@ -732,11 +744,8 @@ byId("keys-list").addEventListener("click", (event) => {
   if (event.target.dataset.revoke) revokeKey(event.target.dataset.revoke, event.target.dataset.prefix, event.target.dataset.last === "1");
 });
 
-// Preview modal + results drawer. The preview modal closes only via its X
-// button (or Escape), never by clicking the backdrop, so a stray click can't
-// discard sample-data edits.
+// Preview modal + results drawer
 byId("tpl-preview-close").onclick = closePreview;
-// Sample data bar is re-rendered per template, so its events are delegated.
 byId("tpl-preview-data").addEventListener("click", (event) => { if (event.target.id === "tpl-preview-apply") applySampleData(); });
 byId("tpl-preview-data").addEventListener("keydown", (event) => { if (event.key === "Enter" && event.target.dataset.sampleField) applySampleData(); });
 byId("drawer-close").onclick = closeDrawer;
@@ -754,5 +763,10 @@ document.addEventListener("keydown", (event) => {
   else if (!byId("results-drawer").classList.contains("hide")) closeDrawer();
 });
 
-// No session persistence: the page always loads showing the signup view with an
-// empty key field. The user connects by pasting their key each visit.
+// Refresh immediately when the tab regains focus, so a user coming back sees
+// current numbers without waiting for the next poll.
+document.addEventListener("visibilitychange", () => { if (!document.hidden) liveTick(); });
+
+// Session persistence: if a key is already stored (e.g. after a refresh), skip
+// the signup view and reconnect silently. A stale key just falls back to signup.
+if (hasApiKey()) connect({ silent: true });

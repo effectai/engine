@@ -525,4 +525,165 @@ describe("ManagerTaskStore", () => {
       ).rejects.toThrow(TaskValidationError);
     });
   });
+
+  describe("cancel", () => {
+    it("should cancel immediately when the task is unassigned", async () => {
+      mockDatastore.get.mockResolvedValueOnce(
+        Buffer.from(
+          stringifyWithBigInt({
+            state: mockTask,
+            events: [
+              { type: "create", timestamp: 1000, providerPeer: "peerId123" },
+            ],
+          }),
+        ),
+      );
+
+      const result = await taskStore.cancel({
+        entityId: "task123",
+        peerIdStr: "peerId123",
+        reason: "Job cancelled by requestor",
+      });
+
+      expect(result.status).toBe("cancelled");
+      const updatedRecord = JSON.parse(
+        mockDatastore.batch().put.mock.calls[0][1].toString(),
+      );
+      expect(updatedRecord.events[1].type).toBe("cancel");
+      expect(updatedRecord.events[1].cancelledByPeer).toBe("peerId123");
+      expect(mockDatastore.batch().put.mock.calls[0][0].toString()).toBe(
+        "/tasks/completed/task123",
+      );
+      expect(mockDatastore.batch().commit).toHaveBeenCalled();
+    });
+
+    it("should cancel immediately when the last event is a reject", async () => {
+      mockDatastore.get.mockResolvedValueOnce(
+        Buffer.from(
+          stringifyWithBigInt({
+            state: mockTask,
+            events: [
+              { type: "create", timestamp: 1000, providerPeer: "peerId123" },
+              {
+                type: "reject",
+                timestamp: 2000,
+                reason: "busy",
+                rejectedByPeer: "worker1",
+              },
+            ],
+          }),
+        ),
+      );
+
+      const result = await taskStore.cancel({
+        entityId: "task123",
+        peerIdStr: "peerId123",
+        reason: "Job cancelled by requestor",
+      });
+
+      expect(result.status).toBe("cancelled");
+    });
+
+    it("should mark the cancel as pending when the task is with a worker", async () => {
+      mockDatastore.get.mockResolvedValueOnce(
+        Buffer.from(
+          stringifyWithBigInt({
+            state: mockTask,
+            events: [
+              { type: "create", timestamp: 1000, providerPeer: "peerId123" },
+              {
+                type: "assign",
+                timestamp: 2000,
+                assignedToPeer: "workerPeerId123",
+              },
+            ],
+          }),
+        ),
+      );
+
+      const result = await taskStore.cancel({
+        entityId: "task123",
+        peerIdStr: "peerId123",
+        reason: "Job cancelled by requestor",
+      });
+
+      expect(result.status).toBe("pending");
+      expect(mockDatastore.put.mock.calls[0][0].toString()).toBe(
+        "/tasks/cancel-requested/task123",
+      );
+      expect(mockDatastore.batch().commit).not.toHaveBeenCalled();
+    });
+
+    it("should throw when the peer is not the task provider", async () => {
+      mockDatastore.get.mockResolvedValueOnce(
+        Buffer.from(
+          stringifyWithBigInt({
+            state: mockTask,
+            events: [
+              { type: "create", timestamp: 1000, providerPeer: "peerId123" },
+            ],
+          }),
+        ),
+      );
+
+      await expect(
+        taskStore.cancel({
+          entityId: "task123",
+          peerIdStr: "someoneElse",
+          reason: "Job cancelled by requestor",
+        }),
+      ).rejects.toThrow(TaskValidationError);
+    });
+  });
+
+  describe("finalizeCancelIfRequested", () => {
+    it("should return null when no cancel was requested", async () => {
+      mockDatastore.has.mockResolvedValueOnce(false);
+
+      const result = await taskStore.finalizeCancelIfRequested({
+        entityId: "task123",
+      });
+
+      expect(result).toBeNull();
+      expect(mockDatastore.batch().commit).not.toHaveBeenCalled();
+    });
+
+    it("should cancel the task when a cancel was requested", async () => {
+      mockDatastore.has.mockResolvedValueOnce(true);
+      mockDatastore.get.mockImplementation(async (key: Key) =>
+        key.toString().includes("cancel-requested")
+          ? Buffer.from("Job cancelled by requestor")
+          : Buffer.from(
+              stringifyWithBigInt({
+                state: mockTask,
+                events: [
+                  {
+                    type: "create",
+                    timestamp: 1000,
+                    providerPeer: "peerId123",
+                  },
+                  {
+                    type: "reject",
+                    timestamp: 2000,
+                    reason: "expired",
+                    rejectedByPeer: "worker1",
+                  },
+                ],
+              }),
+            ),
+      );
+
+      const result = await taskStore.finalizeCancelIfRequested({
+        entityId: "task123",
+      });
+
+      expect(result).not.toBeNull();
+      const updatedRecord = JSON.parse(
+        mockDatastore.batch().put.mock.calls[0][1].toString(),
+      );
+      expect(updatedRecord.events[2].type).toBe("cancel");
+      expect(updatedRecord.events[2].reason).toBe("Job cancelled by requestor");
+      expect(updatedRecord.events[2].cancelledByPeer).toBe("peerId123");
+    });
+  });
 });

@@ -42,6 +42,7 @@ export type ManagerEvents = {
   "task:rejected": (task: TaskRecord) => void;
   "task:submission": (task: TaskRecord) => void;
   "task:completed": CustomEvent<TaskRecord>;
+  "task:cancelled": (task: TaskRecord) => void;
 
   "payment:created": (payment: Payment) => void;
 
@@ -365,15 +366,33 @@ export const createManager = async ({
     }
   });
 
-  /**
-   * Returns an ordered list of task results. Filters out only the
-   * first submission event, and adds a `taskId` property to it. Task
-   * IDs to fetch are supplied as a semicolon separated path
-   * parameter, like `?ids=1;2;3`
-   *
-   * If the task could not be found, the result array contains an
-   * object with an `error` key at the corresponding list index.
-   */
+  entity.post("/task/cancel", async (req, res) => {
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    logger.log.info({ ip }, "Received task cancel via HTTP");
+
+    if (!WHITELISTED_IPS.some((whitelisted) => ip?.includes(whitelisted))) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const { taskId, reason } = req.body;
+    try {
+      const { status } = await taskManager.processTaskCancellation({
+        taskId,
+        reason: reason || "Cancelled by provider",
+        providerPeerIdStr: entity.getPeerId().toString(),
+      });
+      res.json({ status });
+    } catch (e: unknown) {
+      console.error("Error cancelling task", e);
+      if (e instanceof Error) {
+        res.status(500).json({
+          status: "Error cancelling task",
+          error: e.message,
+        });
+      }
+    }
+  });
+
   entity.get("/task-results", (async (req: Request, res: Response) => {
     const { ids } = req.query;
 
@@ -390,9 +409,19 @@ export const createManager = async ({
         .then((taskRecord) => {
           const event = taskRecord.events.find(
             (taskEvent: any) =>
-              taskEvent.type === "submission" || taskEvent.type === "report",
+              taskEvent.type === "submission" ||
+              taskEvent.type === "report" ||
+              taskEvent.type === "cancel",
           );
           if (!event) return { taskId, error: "NOT FOUND" };
+
+          if (event.type === "cancel") {
+            return {
+              type: "cancelled",
+              timestamp: event.timestamp,
+              taskId,
+            };
+          }
 
           if (event.type === "report") {
             return {
