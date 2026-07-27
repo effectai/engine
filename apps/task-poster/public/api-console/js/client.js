@@ -1,7 +1,7 @@
 // The single API seam: every network request the console makes goes through
 // this file. If the API ever moves into the manager, only API_BASE (and the
 // manager's CORS allowlist) changes; the rest of the console is untouched.
-const API_BASE = (window.EFFECT_API_BASE || "") + "/api/v1";
+const API_BASE = (window.EFFECT_API_BASE || "") + "/v1";
 
 // The key lives only in memory, never in storage: a reload always returns
 // the console to the signup view.
