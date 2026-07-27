@@ -16,7 +16,6 @@ In v1, the Effect team tops up account balances manually. Contact the team to ad
 |---|---|---|
 | Team adds funds | `topup` | Manual admin top-up |
 | Job created | `debit` | `POST /jobs` with the full cost reserved upfront |
-| Job cancelled | `refund` | `POST /jobs/:id/cancel` with unused tasks refunded |
 | Job creation fails | `refund` | Auto-refund if the job fails after debit |
 
 ---
