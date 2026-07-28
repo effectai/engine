@@ -17,19 +17,19 @@ You can request team approval when creating a template. Unapproved templates are
 
 ## List templates
 
-`GET /api/v1/templates`
+`GET /v1/templates`
 
 Returns the public approved catalog plus your own templates. Archived templates are excluded.
 
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/templates" \
+curl -s "https://api.effect.ai/v1/templates" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/templates', {
+const res = await fetch('https://api.effect.ai/v1/templates', {
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
 const { templates, total } = await res.json()
@@ -39,7 +39,7 @@ const { templates, total } = await res.json()
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/templates',
+    'https://api.effect.ai/v1/templates',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 templates = res.json()['templates']
@@ -52,13 +52,13 @@ templates = res.json()['templates']
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/templates?limit=20&offset=0" \
+curl -s "https://api.effect.ai/v1/templates?limit=20&offset=0" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
 const res = await fetch(
-  'https://api.effect.ai/api/v1/templates?limit=20&offset=0',
+  'https://api.effect.ai/v1/templates?limit=20&offset=0',
   { headers: { Authorization: 'Bearer eff_live_YOUR_KEY' } }
 )
 const { templates, total } = await res.json()
@@ -68,7 +68,7 @@ const { templates, total } = await res.json()
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/templates',
+    'https://api.effect.ai/v1/templates',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     params={'limit': 20, 'offset': 0}
 )
@@ -107,19 +107,19 @@ templates = res.json()['templates']
 
 ## Get a template
 
-`GET /api/v1/templates/:id`
+`GET /v1/templates/:id`
 
 Returns metadata for a single template. You can only access templates that are approved or owned by your account.
 
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/templates/TEMPLATE_ID" \
+curl -s "https://api.effect.ai/v1/templates/TEMPLATE_ID" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/templates/TEMPLATE_ID', {
+const res = await fetch('https://api.effect.ai/v1/templates/TEMPLATE_ID', {
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
 const template = await res.json()
@@ -129,7 +129,7 @@ const template = await res.json()
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/templates/TEMPLATE_ID',
+    'https://api.effect.ai/v1/templates/TEMPLATE_ID',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 template = res.json()
@@ -156,7 +156,7 @@ template = res.json()
 
 ## Preview a template
 
-`GET /api/v1/templates/:id/preview`
+`GET /v1/templates/:id/preview`
 
 Returns the template's rendered HTML with each field filled in using its own name as a sample value (e.g. `${product}` becomes `product`). Useful for inspecting layout before using it in a job.
 
@@ -165,12 +165,12 @@ To preview with realistic values instead of field names, use the `POST` variant 
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/templates/TEMPLATE_ID/preview" \
+curl -s "https://api.effect.ai/v1/templates/TEMPLATE_ID/preview" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/templates/TEMPLATE_ID/preview', {
+const res = await fetch('https://api.effect.ai/v1/templates/TEMPLATE_ID/preview', {
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
 const { html, fields } = await res.json()
@@ -180,7 +180,7 @@ const { html, fields } = await res.json()
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/templates/TEMPLATE_ID/preview',
+    'https://api.effect.ai/v1/templates/TEMPLATE_ID/preview',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 data = res.json()
@@ -205,21 +205,21 @@ data = res.json()
 
 ### Preview with sample data
 
-`POST /api/v1/templates/:id/preview`
+`POST /v1/templates/:id/preview`
 
 Same as the `GET` variant, but accepts a `data` object with your own sample values, so templates that expect real shapes (image URLs, JSON strings) can be previewed working. Provided values merge over the field-name defaults; unknown fields are ignored. Values must be strings, numbers, or booleans.
 
 :::code-group
 
 ```bash [curl]
-curl -s -X POST "https://api.effect.ai/api/v1/templates/TEMPLATE_ID/preview" \
+curl -s -X POST "https://api.effect.ai/v1/templates/TEMPLATE_ID/preview" \
   -H "Authorization: Bearer eff_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"data": {"product": "Solar-powered lamp", "question": "Would you buy this?"}}'
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/templates/TEMPLATE_ID/preview', {
+const res = await fetch('https://api.effect.ai/v1/templates/TEMPLATE_ID/preview', {
   method: 'POST',
   headers: {
     Authorization: 'Bearer eff_live_YOUR_KEY',
@@ -236,7 +236,7 @@ const { html, sampleData } = await res.json()
 import requests
 
 res = requests.post(
-    'https://api.effect.ai/api/v1/templates/TEMPLATE_ID/preview',
+    'https://api.effect.ai/v1/templates/TEMPLATE_ID/preview',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     json={'data': {'product': 'Solar-powered lamp', 'question': 'Would you buy this?'}}
 )
@@ -265,7 +265,7 @@ data = res.json()
 
 ## Create a template
 
-`POST /api/v1/templates`
+`POST /v1/templates`
 
 Registers a new HTML template. Templates are usable immediately (with an unverified badge shown to workers). Optionally request team approval to get a verified badge.
 
@@ -280,7 +280,7 @@ window.parent.postMessage({ task: 'submit', values: { label: 'yes' } }, '*')
 :::code-group
 
 ```bash [curl]
-curl -s -X POST "https://api.effect.ai/api/v1/templates" \
+curl -s -X POST "https://api.effect.ai/v1/templates" \
   -H "Authorization: Bearer eff_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -296,7 +296,7 @@ const html = `
   <button onclick="window.parent.postMessage({task:'submit',values:{answer:'yes'}},'*')">Yes</button>
 `
 
-const res = await fetch('https://api.effect.ai/api/v1/templates', {
+const res = await fetch('https://api.effect.ai/v1/templates', {
   method: 'POST',
   headers: {
     Authorization: 'Bearer eff_live_YOUR_KEY',
@@ -317,7 +317,7 @@ html = """
 """
 
 res = requests.post(
-    'https://api.effect.ai/api/v1/templates',
+    'https://api.effect.ai/v1/templates',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     json={'name': 'Sentiment Analysis', 'html': html}
 )
@@ -331,7 +331,7 @@ template = res.json()
 :::code-group
 
 ```bash [curl]
-curl -s -X POST "https://api.effect.ai/api/v1/templates" \
+curl -s -X POST "https://api.effect.ai/v1/templates" \
   -H "Authorization: Bearer eff_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -342,7 +342,7 @@ curl -s -X POST "https://api.effect.ai/api/v1/templates" \
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/templates', {
+const res = await fetch('https://api.effect.ai/v1/templates', {
   method: 'POST',
   headers: {
     Authorization: 'Bearer eff_live_YOUR_KEY',
@@ -361,7 +361,7 @@ const template = await res.json()
 import requests
 
 res = requests.post(
-    'https://api.effect.ai/api/v1/templates',
+    'https://api.effect.ai/v1/templates',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     json={
         'name': 'Sentiment Analysis',
@@ -395,7 +395,7 @@ Submitting identical HTML always returns the same `templateId` and does not rese
 
 ## Delete a template
 
-`DELETE /api/v1/templates/:id`
+`DELETE /v1/templates/:id`
 
 Soft-archives your template. It disappears from listings and cannot be used in new jobs. Existing running jobs are not affected.
 
@@ -404,12 +404,12 @@ The archive is reversible. Resubmitting the same HTML via `POST /templates` revi
 :::code-group
 
 ```bash [curl]
-curl -s -X DELETE "https://api.effect.ai/api/v1/templates/TEMPLATE_ID" \
+curl -s -X DELETE "https://api.effect.ai/v1/templates/TEMPLATE_ID" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/templates/TEMPLATE_ID', {
+const res = await fetch('https://api.effect.ai/v1/templates/TEMPLATE_ID', {
   method: 'DELETE',
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
@@ -420,7 +420,7 @@ const template = await res.json()
 import requests
 
 res = requests.delete(
-    'https://api.effect.ai/api/v1/templates/TEMPLATE_ID',
+    'https://api.effect.ai/v1/templates/TEMPLATE_ID',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 template = res.json()

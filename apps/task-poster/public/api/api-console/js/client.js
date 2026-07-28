@@ -1,9 +1,12 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 const API_BASE = (window.EFFECT_API_BASE || "") + "/api/v1";
 =======
 // The single API seam: every network request the console makes goes through
 // this file. If the API ever moves into the manager, only API_BASE (and the
 // manager's CORS allowlist) changes; the rest of the console is untouched.
+=======
+>>>>>>> e770540814f2eed88d62c6440cf674ce3de1d142
 const API_BASE = (window.EFFECT_API_BASE || "") + "/v1";
 >>>>>>> 9145dae6f2b512375a7ca739b4435b79f9f08030
 

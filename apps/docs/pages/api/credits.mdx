@@ -22,19 +22,19 @@ In v1, the Effect team tops up account balances manually. Contact the team to ad
 
 ## List transactions
 
-`GET /api/v1/credits/transactions`
+`GET /v1/credits/transactions`
 
 Returns your full credit history, newest first.
 
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/credits/transactions" \
+curl -s "https://api.effect.ai/v1/credits/transactions" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/credits/transactions', {
+const res = await fetch('https://api.effect.ai/v1/credits/transactions', {
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
 const { transactions, total } = await res.json()
@@ -44,7 +44,7 @@ const { transactions, total } = await res.json()
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/credits/transactions',
+    'https://api.effect.ai/v1/credits/transactions',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 data = res.json()
@@ -57,13 +57,13 @@ data = res.json()
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/credits/transactions?limit=10&offset=0" \
+curl -s "https://api.effect.ai/v1/credits/transactions?limit=10&offset=0" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
 const res = await fetch(
-  'https://api.effect.ai/api/v1/credits/transactions?limit=10&offset=0',
+  'https://api.effect.ai/v1/credits/transactions?limit=10&offset=0',
   { headers: { Authorization: 'Bearer eff_live_YOUR_KEY' } }
 )
 const { transactions, total } = await res.json()
@@ -73,7 +73,7 @@ const { transactions, total } = await res.json()
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/credits/transactions',
+    'https://api.effect.ai/v1/credits/transactions',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     params={'limit': 10, 'offset': 0}
 )

@@ -214,7 +214,7 @@ const analyzeJob = async (
     return fail(
       400,
       "invalid_request",
-      "Unknown 'capability'. Use an id from GET /api/v1/capabilities, or omit it to allow any worker.",
+      "Unknown 'capability'. Use an id from GET /v1/capabilities, or omit it to allow any worker.",
     );
 
   const timeLimitSeconds =
@@ -451,7 +451,7 @@ const csvCell = (value: unknown): string => {
 
 export const addJobApiRoutes = (app: Express): void => {
   app.post(
-    "/api/v1/jobs/estimate",
+    "/v1/jobs/estimate",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -595,7 +595,7 @@ export const addJobApiRoutes = (app: Express): void => {
   };
 
   app.post(
-    "/api/v1/jobs",
+    "/v1/jobs",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -624,7 +624,7 @@ export const addJobApiRoutes = (app: Express): void => {
   );
 
   app.get(
-    "/api/v1/jobs",
+    "/v1/jobs",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -642,7 +642,7 @@ export const addJobApiRoutes = (app: Express): void => {
   );
 
   app.get(
-    "/api/v1/jobs/:id",
+    "/v1/jobs/:id",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -653,7 +653,7 @@ export const addJobApiRoutes = (app: Express): void => {
   );
 
   app.get(
-    "/api/v1/jobs/:id/results",
+    "/v1/jobs/:id/results",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -737,7 +737,7 @@ export const addJobApiRoutes = (app: Express): void => {
   // never posted are refunded here; tasks already at the manager settle one
   // by one via processResults
   app.post(
-    "/api/v1/jobs/:id/cancel",
+    "/v1/jobs/:id/cancel",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;

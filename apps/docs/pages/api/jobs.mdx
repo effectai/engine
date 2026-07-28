@@ -15,7 +15,7 @@ Credits are **debited upfront** at job creation (`reward × taskCount`). If a jo
 
 ## Estimate cost
 
-`POST /api/v1/jobs/estimate`
+`POST /v1/jobs/estimate`
 
 Validates a job and returns the cost without charging your account.
 
@@ -24,7 +24,7 @@ Validates a job and returns the cost without charging your account.
 :::code-group
 
 ```bash [curl]
-curl -s -X POST "https://api.effect.ai/api/v1/jobs/estimate" \
+curl -s -X POST "https://api.effect.ai/v1/jobs/estimate" \
   -H "Authorization: Bearer eff_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -36,7 +36,7 @@ curl -s -X POST "https://api.effect.ai/api/v1/jobs/estimate" \
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/jobs/estimate', {
+const res = await fetch('https://api.effect.ai/v1/jobs/estimate', {
   method: 'POST',
   headers: {
     Authorization: 'Bearer eff_live_YOUR_KEY',
@@ -56,7 +56,7 @@ const estimate = await res.json()
 import requests
 
 res = requests.post(
-    'https://api.effect.ai/api/v1/jobs/estimate',
+    'https://api.effect.ai/v1/jobs/estimate',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     json={
         'type': 'csv',
@@ -75,7 +75,7 @@ estimate = res.json()
 :::code-group
 
 ```bash [curl]
-curl -s -X POST "https://api.effect.ai/api/v1/jobs/estimate" \
+curl -s -X POST "https://api.effect.ai/v1/jobs/estimate" \
   -H "Authorization: Bearer eff_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -88,7 +88,7 @@ curl -s -X POST "https://api.effect.ai/api/v1/jobs/estimate" \
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/jobs/estimate', {
+const res = await fetch('https://api.effect.ai/v1/jobs/estimate', {
   method: 'POST',
   headers: {
     Authorization: 'Bearer eff_live_YOUR_KEY',
@@ -109,7 +109,7 @@ const estimate = await res.json()
 import requests
 
 res = requests.post(
-    'https://api.effect.ai/api/v1/jobs/estimate',
+    'https://api.effect.ai/v1/jobs/estimate',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     json={
         'type': 'constant',
@@ -142,7 +142,7 @@ estimate = res.json()
 
 ## Create a job
 
-`POST /api/v1/jobs`
+`POST /v1/jobs`
 
 Creates a job, debits your credits, and immediately begins posting tasks to workers.
 
@@ -151,7 +151,7 @@ Creates a job, debits your credits, and immediately begins posting tasks to work
 :::code-group
 
 ```bash [curl]
-curl -s -X POST "https://api.effect.ai/api/v1/jobs" \
+curl -s -X POST "https://api.effect.ai/v1/jobs" \
   -H "Authorization: Bearer eff_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -166,7 +166,7 @@ curl -s -X POST "https://api.effect.ai/api/v1/jobs" \
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/jobs', {
+const res = await fetch('https://api.effect.ai/v1/jobs', {
   method: 'POST',
   headers: {
     Authorization: 'Bearer eff_live_YOUR_KEY',
@@ -190,7 +190,7 @@ console.log(job.id) // use this to poll for status and results
 import requests
 
 res = requests.post(
-    'https://api.effect.ai/api/v1/jobs',
+    'https://api.effect.ai/v1/jobs',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     json={
         'type': 'csv',
@@ -230,7 +230,7 @@ The CSV must contain a column for every field the template uses; missing columns
 :::code-group
 
 ```bash [curl]
-curl -s -X POST "https://api.effect.ai/api/v1/jobs" \
+curl -s -X POST "https://api.effect.ai/v1/jobs" \
   -H "Authorization: Bearer eff_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -245,7 +245,7 @@ curl -s -X POST "https://api.effect.ai/api/v1/jobs" \
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/jobs', {
+const res = await fetch('https://api.effect.ai/v1/jobs', {
   method: 'POST',
   headers: {
     Authorization: 'Bearer eff_live_YOUR_KEY',
@@ -268,7 +268,7 @@ const job = await res.json()
 import requests
 
 res = requests.post(
-    'https://api.effect.ai/api/v1/jobs',
+    'https://api.effect.ai/v1/jobs',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     json={
         'type': 'constant',
@@ -337,19 +337,19 @@ job = res.json()
 
 ## List jobs
 
-`GET /api/v1/jobs`
+`GET /v1/jobs`
 
 Returns all your jobs, newest first. Supports `limit` / `offset` pagination.
 
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/jobs?limit=10&offset=0" \
+curl -s "https://api.effect.ai/v1/jobs?limit=10&offset=0" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/jobs?limit=10&offset=0', {
+const res = await fetch('https://api.effect.ai/v1/jobs?limit=10&offset=0', {
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
 const { jobs, total } = await res.json()
@@ -359,7 +359,7 @@ const { jobs, total } = await res.json()
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/jobs',
+    'https://api.effect.ai/v1/jobs',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     params={'limit': 10, 'offset': 0}
 )
@@ -403,7 +403,7 @@ data = res.json()
 
 ## Get job status
 
-`GET /api/v1/jobs/:id`
+`GET /v1/jobs/:id`
 
 Returns live task counts and credit breakdown. Poll this to monitor progress.
 
@@ -412,12 +412,12 @@ A job is fully complete when `tasks.queued + tasks.active === 0`.
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/jobs/JOB_ID" \
+curl -s "https://api.effect.ai/v1/jobs/JOB_ID" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/jobs/JOB_ID', {
+const res = await fetch('https://api.effect.ai/v1/jobs/JOB_ID', {
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
 const job = await res.json()
@@ -428,7 +428,7 @@ const isDone = job.tasks.queued + job.tasks.active === 0
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/jobs/JOB_ID',
+    'https://api.effect.ai/v1/jobs/JOB_ID',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 job = res.json()
@@ -470,7 +470,7 @@ is_done = job['tasks']['queued'] + job['tasks']['active'] == 0
 
 ## Get results
 
-`GET /api/v1/jobs/:id/results`
+`GET /v1/jobs/:id/results`
 
 Returns completed task results, newest first. Available as JSON (default) or CSV download.
 
@@ -479,13 +479,13 @@ Returns completed task results, newest first. Available as JSON (default) or CSV
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/jobs/JOB_ID/results?limit=10&offset=0" \
+curl -s "https://api.effect.ai/v1/jobs/JOB_ID/results?limit=10&offset=0" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
 const res = await fetch(
-  'https://api.effect.ai/api/v1/jobs/JOB_ID/results?limit=10&offset=0',
+  'https://api.effect.ai/v1/jobs/JOB_ID/results?limit=10&offset=0',
   { headers: { Authorization: 'Bearer eff_live_YOUR_KEY' } }
 )
 const { results, total } = await res.json()
@@ -495,7 +495,7 @@ const { results, total } = await res.json()
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/jobs/JOB_ID/results',
+    'https://api.effect.ai/v1/jobs/JOB_ID/results',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     params={'limit': 10, 'offset': 0}
 )
@@ -549,14 +549,14 @@ data = res.json()
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/jobs/JOB_ID/results?format=csv" \
+curl -s "https://api.effect.ai/v1/jobs/JOB_ID/results?format=csv" \
   -H "Authorization: Bearer eff_live_YOUR_KEY" \
   -o results.csv
 ```
 
 ```js [JavaScript]
 const res = await fetch(
-  'https://api.effect.ai/api/v1/jobs/JOB_ID/results?format=csv',
+  'https://api.effect.ai/v1/jobs/JOB_ID/results?format=csv',
   { headers: { Authorization: 'Bearer eff_live_YOUR_KEY' } }
 )
 const csv = await res.text()
@@ -568,7 +568,7 @@ const csv = await res.text()
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/jobs/JOB_ID/results',
+    'https://api.effect.ai/v1/jobs/JOB_ID/results',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     params={'format': 'csv'}
 )
@@ -588,7 +588,7 @@ Worker submissions are untrusted, so cells starting with `=`, `+`, `-`, or `@` a
 
 ## Cancel a job
 
-`POST /api/v1/jobs/:id/cancel`
+`POST /v1/jobs/:id/cancel`
 
 Stops the job: no further tasks are posted to workers, and every task that was never handed to a worker is refunded immediately. Tasks already out with workers are cancelled on the network; each one is refunded once the cancellation is confirmed, or consumed if the worker completes it first (that result still appears in your job results). Watch `tasks.active` shrink and `credits.remaining` reach zero as the last in-flight tasks settle, typically within the task time limit.
 
@@ -597,12 +597,12 @@ This is idempotent, so cancelling an already-cancelled job returns `200`.
 :::code-group
 
 ```bash [curl]
-curl -s -X POST "https://api.effect.ai/api/v1/jobs/JOB_ID/cancel" \
+curl -s -X POST "https://api.effect.ai/v1/jobs/JOB_ID/cancel" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/jobs/JOB_ID/cancel', {
+const res = await fetch('https://api.effect.ai/v1/jobs/JOB_ID/cancel', {
   method: 'POST',
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
@@ -614,7 +614,7 @@ console.log(job.credits.refunded) // EFFECT refunded
 import requests
 
 res = requests.post(
-    'https://api.effect.ai/api/v1/jobs/JOB_ID/cancel',
+    'https://api.effect.ai/v1/jobs/JOB_ID/cancel',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 job = res.json()
