@@ -37,6 +37,15 @@ useSeoMeta({
 </script>
 
 <style lang="scss">
+  .article img {
+    display: block;
+    width: 100%;
+    max-width: 800px;
+    aspect-ratio: 16 / 9;
+    object-fit: contain;
+    margin: 2rem auto;
+  }
+
   .blog-header::before {
     content: "";
     position: absolute;
