@@ -7,10 +7,10 @@ Bring a CSV of inputs and an HTML template. Workers on the network complete one 
 ## Base URL
 
 ```
-https://api.effect.ai/api/v1
+https://api.effect.ai/v1
 ```
 
-All endpoints are prefixed with `/api/v1`.
+All endpoints are prefixed with `/v1`.
 
 ## Try it in the browser
 
@@ -100,13 +100,13 @@ All errors return a consistent JSON envelope:
 :::code-group
 
 ```bash [curl]
-curl -s -X POST "https://api.effect.ai/api/v1/signup" \
+curl -s -X POST "https://api.effect.ai/v1/signup" \
   -H "Content-Type: application/json" \
   -d '{"name": "Acme Corp", "email": "you@acme.com"}'
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/signup', {
+const res = await fetch('https://api.effect.ai/v1/signup', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ name: 'Acme Corp', email: 'you@acme.com' })
@@ -119,7 +119,7 @@ const { key } = await res.json()
 import requests
 
 res = requests.post(
-    'https://api.effect.ai/api/v1/signup',
+    'https://api.effect.ai/v1/signup',
     json={'name': 'Acme Corp', 'email': 'you@acme.com'}
 )
 key = res.json()['key']  # Store this, shown only once
@@ -132,12 +132,12 @@ key = res.json()['key']  # Store this, shown only once
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/account" \
+curl -s "https://api.effect.ai/v1/account" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/account', {
+const res = await fetch('https://api.effect.ai/v1/account', {
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
 const account = await res.json()
@@ -148,7 +148,7 @@ console.log(account.credits.balance) // in lamports
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/account',
+    'https://api.effect.ai/v1/account',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 print(res.json()['credits']['balance'])  # in lamports
@@ -161,12 +161,12 @@ print(res.json()['credits']['balance'])  # in lamports
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/templates" \
+curl -s "https://api.effect.ai/v1/templates" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/templates', {
+const res = await fetch('https://api.effect.ai/v1/templates', {
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
 const { templates } = await res.json()
@@ -176,7 +176,7 @@ const { templates } = await res.json()
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/templates',
+    'https://api.effect.ai/v1/templates',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 templates = res.json()['templates']
@@ -189,7 +189,7 @@ templates = res.json()['templates']
 :::code-group
 
 ```bash [curl]
-curl -s -X POST "https://api.effect.ai/api/v1/jobs" \
+curl -s -X POST "https://api.effect.ai/v1/jobs" \
   -H "Authorization: Bearer eff_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -202,7 +202,7 @@ curl -s -X POST "https://api.effect.ai/api/v1/jobs" \
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/jobs', {
+const res = await fetch('https://api.effect.ai/v1/jobs', {
   method: 'POST',
   headers: {
     Authorization: 'Bearer eff_live_YOUR_KEY',
@@ -224,7 +224,7 @@ console.log(job.id) // save this to poll for results
 import requests
 
 res = requests.post(
-    'https://api.effect.ai/api/v1/jobs',
+    'https://api.effect.ai/v1/jobs',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     json={
         'type': 'csv',
@@ -244,12 +244,12 @@ job_id = res.json()['id']  # save this to poll for results
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/jobs/JOB_ID/results" \
+curl -s "https://api.effect.ai/v1/jobs/JOB_ID/results" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/jobs/JOB_ID/results', {
+const res = await fetch('https://api.effect.ai/v1/jobs/JOB_ID/results', {
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
 const { results, total } = await res.json()
@@ -259,7 +259,7 @@ const { results, total } = await res.json()
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/jobs/JOB_ID/results',
+    'https://api.effect.ai/v1/jobs/JOB_ID/results',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 data = res.json()

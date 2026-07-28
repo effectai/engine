@@ -187,7 +187,7 @@ const main = async () => {
     const status = (err as { status?: number }).status ?? 500;
     if (res.headersSent) return next(err);
 
-    if (req.path.startsWith("/api/")) {
+    if (req.path.startsWith("/v1/")) {
       if (status === 413)
         return apiError(
           res,
@@ -222,10 +222,10 @@ const main = async () => {
 
   console.log("Registering module routes");
   addApiRoutes(app);
-  app.use("/api/v1", rateLimitApi); // per-key rate limit for the Requestor API
+  app.use("/v1", rateLimitApi); // per-key rate limit for the Requestor API
   addRequestorApiRoutes(app);
   addJobApiRoutes(app);
-  app.use("/api/v1", apiNotFound); // JSON 404 for unmatched /api/v1/* routes
+  app.use("/v1", apiNotFound); // JSON 404 for unmatched /v1/* routes
   addAdminRoutes(app);
   addMainRoutes(app);
   addTemplateRoutes(app);

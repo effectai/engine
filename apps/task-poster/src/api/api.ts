@@ -44,7 +44,7 @@ const MAX_TEMPLATE_HTML_BYTES = 256 * 1024;
 
 export const addRequestorApiRoutes = (app: Express): void => {
   app.post(
-    "/api/v1/signup",
+    "/v1/signup",
     asyncHandler(async (req, res) => {
       const ip = req.ip ?? "unknown";
       if (!checkSignupRateLimit(ip)) {
@@ -99,7 +99,7 @@ export const addRequestorApiRoutes = (app: Express): void => {
   });
 
   app.get(
-    "/api/v1/account",
+    "/v1/account",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -108,7 +108,7 @@ export const addRequestorApiRoutes = (app: Express): void => {
   );
 
   app.patch(
-    "/api/v1/account",
+    "/v1/account",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -163,7 +163,7 @@ export const addRequestorApiRoutes = (app: Express): void => {
   });
 
   app.get(
-    "/api/v1/keys",
+    "/v1/keys",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -175,7 +175,7 @@ export const addRequestorApiRoutes = (app: Express): void => {
   );
 
   app.post(
-    "/api/v1/keys",
+    "/v1/keys",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -195,7 +195,7 @@ export const addRequestorApiRoutes = (app: Express): void => {
   );
 
   app.delete(
-    "/api/v1/keys/:hash",
+    "/v1/keys/:hash",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -228,7 +228,7 @@ export const addRequestorApiRoutes = (app: Express): void => {
   // ---------------------------------------------------------- credit history
 
   app.get(
-    "/api/v1/credits/transactions",
+    "/v1/credits/transactions",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -276,7 +276,7 @@ export const addRequestorApiRoutes = (app: Express): void => {
   // Available templates: the public/approved default catalog + the caller's own
   // (archived ones excluded), newest first, paginated.
   app.get(
-    "/api/v1/templates",
+    "/v1/templates",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -309,7 +309,7 @@ export const addRequestorApiRoutes = (app: Express): void => {
   // Submit a custom template. `requestApproval` queues it for team review;
   // either way it's usable immediately (the worker badge reflects approval).
   app.post(
-    "/api/v1/templates",
+    "/v1/templates",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -428,13 +428,13 @@ export const addRequestorApiRoutes = (app: Express): void => {
     });
   });
 
-  app.get("/api/v1/templates/:id/preview", requireApiKey, handleTemplatePreview);
-  app.post("/api/v1/templates/:id/preview", requireApiKey, handleTemplatePreview);
+  app.get("/v1/templates/:id/preview", requireApiKey, handleTemplatePreview);
+  app.post("/v1/templates/:id/preview", requireApiKey, handleTemplatePreview);
 
   // Single template (metadata only — no raw HTML). Access: approved (public
   // catalog) or owned, matching `/preview` and job creation.
   app.get(
-    "/api/v1/templates/:id",
+    "/v1/templates/:id",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -458,7 +458,7 @@ export const addRequestorApiRoutes = (app: Express): void => {
   // key) OR a logged-in team admin (cookie session), who may archive any
   // template. Public-catalog templates can't be retired by requestors.
   app.delete(
-    "/api/v1/templates/:id",
+    "/v1/templates/:id",
     asyncHandler(async (req, res) => {
       const isAdmin = hasAuth(req);
       const account = await getAccountFromRequest(req);
@@ -507,7 +507,7 @@ export const addRequestorApiRoutes = (app: Express): void => {
     category: capability.category,
     description: capability.description,
   }));
-  app.get("/api/v1/capabilities", requireApiKey, (_req: Request, res: Response) => {
+  app.get("/v1/capabilities", requireApiKey, (_req: Request, res: Response) => {
     apiJson(res, {
       capabilities: capabilityView,
       total: capabilityView.length,
@@ -515,7 +515,7 @@ export const addRequestorApiRoutes = (app: Express): void => {
   });
 
   // Health check endpoint: unauthenticated ping for integrators and load balancers.
-  app.get("/api/v1/health", (_req: Request, res: Response) => {
+  app.get("/v1/health", (_req: Request, res: Response) => {
     apiJson(res, {
       status: "ok",
       uptimeMs: Math.round(process.uptime() * 1000),
