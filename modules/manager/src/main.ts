@@ -387,12 +387,24 @@ export const createManager = async ({
           taskId,
           index: "completed",
         })
-        .then(
-          (a) =>
-            a.events
-              .filter((e: any) => e.type === "submission")
-              .map((e: any) => ({ ...e, taskId }))[0],
-        )
+        .then((taskRecord) => {
+          const event = taskRecord.events.find(
+            (taskEvent: any) =>
+              taskEvent.type === "submission" || taskEvent.type === "report",
+          );
+          if (!event) return { taskId, error: "NOT FOUND" };
+
+          if (event.type === "report") {
+            return {
+              type: "report",
+              timestamp: event.timestamp,
+              taskId,
+              submissionByPeer: event.reportedByPeer,
+              result: event.result,
+            };
+          }
+          return { ...event, taskId };
+        })
         .catch((_e) => ({ taskId, error: "NOT FOUND" }));
     });
 

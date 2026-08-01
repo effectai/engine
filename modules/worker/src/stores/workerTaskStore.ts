@@ -9,7 +9,6 @@ import {
   createEntityStore,
   stringifyWithBigInt,
   parseWithBigInt,
-  TASK_ACCEPTANCE_TIME,
 } from "@effectai/protocol-core";
 
 import type { Task } from "@effectai/protobufs";
@@ -176,8 +175,8 @@ export const createWorkerTaskStore = ({
       throw new Error("Task not created.");
     }
 
-    // Convert TASK_ACCEPTANCE_TIME from ms to s for comparison
-    if (Date.now() / 1000 - created.timestamp >= TASK_ACCEPTANCE_TIME / 1000) {
+    const timeLimitSeconds = Number(taskRecord.state.timeLimitSeconds ?? 600);
+    if (Date.now() / 1000 - created.timestamp >= timeLimitSeconds) {
       throw new TaskExpiredError("Task has expired.");
     }
 

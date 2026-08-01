@@ -3,7 +3,7 @@ import {
   getAddressEncoder,
   getProgramDerivedAddress,
 } from "@solana/kit";
-import { EFFECT_VESTING_PROGRAM_ADDRESS } from "./@generated";
+import { EFFECT_VESTING_PROGRAM_ADDRESS } from "./@generated/index.js";
 
 export const deriveVestingAccountsPDA = ({
   vestingAccount,

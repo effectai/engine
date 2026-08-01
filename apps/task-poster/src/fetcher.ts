@@ -10,7 +10,7 @@ import { db, managerId, publishProgress } from "./state.js";
 import * as state from "./state.js";
 import { validateNumericParams } from "./util.js";
 import { KVKey, KVQuery, KVTransactionResult } from "@cross/kv";
-import { getTemplate, getTemplates, renderTemplate, escapeHTML } from "./templates.js";
+import { getTemplate, getTemplates, renderTemplate, escapeHTML, isTemplateApproved } from "./templates.js";
 
 export type TimeSlot = { from: string; to: string };
 export type DayName = 'mon'|'tue'|'wed'|'thu'|'fri'|'sat'|'sun';
@@ -80,6 +80,16 @@ export type Fetcher = {
 
   // posting schedule: whitelist of days/time windows when tasks can be posted
   schedule?: Schedule;
+
+  // repetitions: how many tasks a single worker may complete from each import
+  // 0 means no limit, 1 means each worker may do one task.
+  repetitions?: number;
+
+  // Stable batch id override. Normally each import gets a fresh batch id, so the
+  // per-worker `repetitions` cap resets per import. Setting this pins one batch
+  // id across every import of this fetcher, making the cap apply for the whole
+  // run (used by unique-worker jobs, where a survey is filled in many batches).
+  batchId?: string;
 };
 
 const api = axios.create({
@@ -88,7 +98,7 @@ const api = axios.create({
   baseURL: state.managerUrl,
 });
 
-const parseCsv = (csv: string, delimiter = ","): Promise<any[]> => {
+export const parseCsv = (csv: string, delimiter = ","): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     const data: any[] = [];
 
@@ -186,8 +196,10 @@ export const fetcherForm = async (
 
       <label for="type"><strong>Data source</strong><br/>
       <small>How new tasks will be fetched.</small></label>
-      <select name="type" id="type">${["csv", "pipeline", "constant"].map(a =>
-	`<option value="${a}" ${values.type == a ? "selected" : ""}>${a}</option>`).join("")}
+      <select name="type" id="type"
+        onchange="repetitions.disabled=this.value!=='csv';if(repetitions.disabled)repetitions.value=0">
+        ${["csv", "pipeline", "constant"].map(a =>
+	        `<option value="${a}" ${values.type == a ? "selected" : ""}>${a}</option>`).join("")}
       </select>
 
   </fieldset>
@@ -238,6 +250,15 @@ export const fetcherForm = async (
 	    name="timeLimitSeconds"/>
 	</div>
       </section>
+
+      <div class="mt">
+        <label for="repetitions"><strong>Repetitions per worker</strong><br/>
+        <small>How many tasks a single worker may complete per import batch.
+        0 = no limit, 1 = each worker may do one task. Only applies to CSV data sources.</small></label>
+        <input type="number" id="repetitions" name="repetitions" min="0" step="1"
+          value="${values.repetitions ?? 0}"
+          ${(values.type ?? 'csv') !== 'csv' ? "disabled" : ""} />
+      </div>
 
       <div class="mt"></div>
       <label for="capabilities"><strong>Capabilities</strong><br/>
@@ -490,6 +511,7 @@ export const createFetcher = async (
 
     status: oldFetcher?.status ?? "active",
     hidden: fields.hidden === "on" || fields.hidden === true,
+    repetitions: Number(fields.repetitions) || 0,
 
     schedule: (() => {
       try {
@@ -586,7 +608,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	}
 
 	// regex filter
-	if (!task.result || (regex && regex.test(task.result)) || task.result == "<TASK REPORTED AND SKIPPED>") {
+	if (!task.result || (regex && regex.test(task.result)) || task.type === "report" || task.result == "<TASK REPORTED AND SKIPPED>") {
 	  continue;
 	}
 
@@ -614,6 +636,16 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
   // avoid expensive mistakes.
   const maxPrice = BigInt(fetcher.price) * BigInt(10);
 
+  // Trust signal for the worker: whether this task's template is approved.
+  // Baked into each task's data (reserved __effectApproved key) so the worker
+  // can show a safety badge without a protocol/schema change. Defaults to safe
+  // for team/legacy templates.
+  const approvalTpl = await getTemplate(fetcher.template);
+  const templateApproved = approvalTpl ? isTemplateApproved(approvalTpl.data) : true;
+  // A pinned batchId keeps the per-worker repetition cap stable across imports
+  // (see Fetcher.batchId); otherwise each import is its own batch.
+  const batchRunId = fetcher.batchId ?? ulid();
+
   const tasks = data.map(
     (d, _idx) => {
       const rawPrice = d["dataffect/reward"] ?
@@ -626,8 +658,10 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	reward: price,
 	timeLimitSeconds: fetcher.timeLimitSeconds ?? 600,
 	templateId: fetcher.template,
-	templateData: JSON.stringify(d),
+	templateData: JSON.stringify({ ...d, __effectApproved: templateApproved }),
 	capability: fetcher.capabilities[0],
+	batchId: `${fetcher.datasetId}-${fetcher.index}-${batchRunId}`,
+	repetitions: fetcher.repetitions ?? 0,
       } as Task;
     },
   );
@@ -645,7 +679,7 @@ export const getPendingTasks = async (f: Fetcher, queueName: string = "queue") =
 };
 
 // fetch new tasks and add the to the fetcher queue
-const importFetcherData = async (fetcher: Fetcher, csv: string = "") => {
+export const importFetcherData = async (fetcher: Fetcher, csv: string = "") => {
   let tasks = await getTasks(fetcher, csv);
   console.log(`trace: Importing ${tasks.length} new tasks for fetcher`);
   for (const t of tasks) {
@@ -655,6 +689,21 @@ const importFetcherData = async (fetcher: Fetcher, csv: string = "") => {
     );
   }
   return tasks;
+};
+
+// Imports a CSV string into a fetcher's queue and bumps its totalTasks.
+// Used by the Requestor API to populate a job's tasks at creation time.
+export const importCsvIntoFetcher = async (
+  fetcher: Fetcher,
+  csv: string,
+): Promise<number> => {
+  const tasks = await importFetcherData(fetcher, csv);
+  const entry = (await db.get<Fetcher>(
+    ["fetcher", fetcher.datasetId, fetcher.index, "info"],
+  ))!;
+  entry.data.totalTasks += tasks.length;
+  await db.set<Fetcher>(entry.key, entry.data);
+  return tasks.length;
 };
 
 // form submission handler for fetcher import
@@ -886,7 +935,7 @@ export const processResults = async (f: Fetcher, batchSize: number) => {
 
     let importCount = 0;
     for (const d of data as any) {
-      if (d.type !== "submission")
+      if (d.type !== "submission" && d.type !== "report")
 	continue;
       db.beginTransaction();
       await db.delete([...keyBase, "active", d.taskId]);
@@ -968,10 +1017,19 @@ const formValidations: ValidationMap = {
 	? "Must be a number"
 	: num <= 0
 	  ? "Price must be greater than 0"
-	  : num > 100000000 && "Price too large";
+	  : num > 3000000000 && "Price too large";
   },
 
   template: (v: string) => (!v || v.length === 0) && "Template is required",
+  repetitions: (v: any) => {
+    if (v === undefined || v === "") return false;
+    const repetitions = Number(v);
+    return (
+      (isNaN(repetitions) && "Repetitions must be a number") ||
+      (!Number.isInteger(repetitions) && "Repetitions must be a whole number") ||
+      (repetitions < 0 && "Repetitions cannot be negative")
+    );
+  },
   timeLimitSeconds: (v: any) => {
     const num = Number(v);
     return (
@@ -1075,10 +1133,11 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Finished: ${doneSize}</li>
   <li>Failed: ${failedSize}</li>
   <li>Batch / Freq: ${f.batchSize} / ${f.frequency}</li>
+  ${f.repetitions ? `<li>Repetitions per worker: ${f.repetitions}</li>` : ''}
   <li>Time Limit: ${f.timeLimitSeconds}s</li>
   <li>Schedule: ${f.schedule && Object.keys(f.schedule).length > 0
     ? Object.entries(f.schedule).map(([day, slots]) =>
-        `${day}: ${(slots as TimeSlot[]).map(s => s.from && s.to ? `${s.from}-${s.to}` : 'all day').join(', ')}`
+        `${day}: ${Array.isArray(slots) ? (slots as TimeSlot[]).map(s => s.from && s.to ? `${s.from}-${s.to}` : 'all day').join(', ') : 'all day'}`
       ).join('; ')
     : 'continuous (no restrictions)'}
     

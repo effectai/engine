@@ -1,4 +1,3 @@
-import { webRTC } from "@libp2p/webrtc";
 import { createPaymentWorker } from "./modules/createPaymentWorker.js";
 import { createTaskWorker } from "./modules/createTaskWorker.js";
 import { createWorkerTaskStore } from "./stores/workerTaskStore.js";
@@ -42,9 +41,19 @@ export const createWorkerEntity = async ({
   datastore,
   privateKey,
 }: {
-  datastore: Datastore;
+  datastore?: Datastore;
   privateKey: PrivateKey;
 }) => {
+  const transports = [webSockets(), circuitRelayTransport()];
+  const listen = ["/p2p-circuit"];
+  try {
+    const { webRTC } = await import("@libp2p/webrtc");
+    transports.push(webRTC());
+    listen.push("/webrtc");
+  } catch {
+    console.warn("WebRTC unavailable, skipping");
+  }
+
   return await createEffectEntity({
     protocol: {
       name: PROTOCOL_NAME,
@@ -56,9 +65,9 @@ export const createWorkerEntity = async ({
         privateKey,
         datastore,
         autoStart: false,
-        listen: ["/p2p-circuit", "/webrtc"],
+        listen,
         announce: [],
-        transports: [webSockets(), webRTC(), circuitRelayTransport()],
+        transports,
       }),
     ],
   });
@@ -217,6 +226,7 @@ export const createWorker = async ({
     completeTask,
     renderTask,
     getMaxNonce,
+    cleanup,
 
     getPayments,
     getPaymentsFromNonce,
