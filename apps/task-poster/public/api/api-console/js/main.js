@@ -214,8 +214,72 @@ async function loadTemplates() {
   const { templates: list } = await api("/templates");
   templates = list;
   renderTemplates();
-  byId("job-tpl").innerHTML = list.map((template) => `<option value="${template.templateId}">${esc(template.name)} ${template.approved ? "✓" : "⚠"}</option>`).join("");
+  // Default to the first template so the form works without opening the picker.
+  const current = byId("job-tpl").value;
+  const keep = list.some((template) => template.templateId === current);
+  selectJobTemplate(keep ? current : (list[0] ? list[0].templateId : ""));
+}
+
+// ------------------------------------------------------- template combobox
+// A native <select> can't contain a search box, so the job template picker is
+// a small combobox: the panel holds its own search input and the list below it
+// re-renders on every keystroke. Selection is kept in the hidden #job-tpl.
+let comboActiveIndex = -1; // keyboard-highlighted row, -1 = none
+
+function renderJobTemplateOptions() {
+  const query = byId("job-tpl-search").value.trim().toLowerCase();
+  const visible = templates.filter((template) => !query || template.name.toLowerCase().includes(query));
+  const selected = byId("job-tpl").value;
+
+  const owned = visible.filter((template) => template.owned);
+  const catalog = visible.filter((template) => !template.owned);
+  const collections = [...new Set(catalog.map((template) => template.collection))].sort();
+
+  const option = (template) => `<div class="combo-option${template.templateId === selected ? " selected" : ""}"
+      role="option" data-template-id="${esc(template.templateId)}">
+      <span>${esc(template.name)}</span>
+      <span class="muted">${template.approved ? "✓" : "⚠"}</span></div>`;
+  const group = (label, items) => items.length
+    ? `<div class="combo-group">${esc(label)}</div>` + items.map(option).join("")
+    : "";
+
+  byId("job-tpl-list").innerHTML = visible.length
+    ? group("My templates", owned) +
+      collections.map((name) => group(name, catalog.filter((template) => template.collection === name))).join("")
+    : `<div class="combo-empty muted">No templates match “${esc(query)}”</div>`;
+}
+
+function selectJobTemplate(templateId) {
+  byId("job-tpl").value = templateId;
+  const template = templates.find((entry) => entry.templateId === templateId);
+  byId("job-tpl-label").textContent = template ? template.name : "Select a template…";
+  byId("job-tpl-label").classList.toggle("muted", !template);
+  closeCombo();
   showFields();
+}
+
+function openCombo() {
+  byId("job-tpl-panel").classList.remove("hide");
+  byId("job-tpl-trigger").setAttribute("aria-expanded", "true");
+  comboActiveIndex = -1;
+  byId("job-tpl-search").value = "";
+  renderJobTemplateOptions();
+  byId("job-tpl-search").focus();
+}
+
+function closeCombo() {
+  byId("job-tpl-panel").classList.add("hide");
+  byId("job-tpl-trigger").setAttribute("aria-expanded", "false");
+}
+
+// Arrow keys walk the rendered rows, so keyboard order always matches what is
+// on screen regardless of how the groups were built.
+function moveComboActive(delta) {
+  const options = [...byId("job-tpl-list").querySelectorAll(".combo-option")];
+  if (!options.length) return;
+  comboActiveIndex = Math.max(0, Math.min(options.length - 1, comboActiveIndex + delta));
+  options.forEach((row, position) => row.classList.toggle("active", position === comboActiveIndex));
+  options[comboActiveIndex].scrollIntoView({ block: "nearest" });
 }
 
 function templateRow(template, showActions) {
@@ -230,6 +294,10 @@ function templateRow(template, showActions) {
     <td>${actions}</td></tr>`;
 }
 
+const templateTable = (list, showActions) =>
+  `<table><thead><tr><th>Name</th><th>Fields</th><th>Status</th><th>Template ID</th><th></th></tr></thead>` +
+  `<tbody>${list.map((template) => templateRow(template, showActions)).join("")}</tbody></table>`;
+
 function renderTemplates() {
   const query = byId("tpl-search").value.trim().toLowerCase();
   const filter = byId("tpl-filter").value;
@@ -239,13 +307,21 @@ function renderTemplates() {
 
   const owned = templates.filter((template) => template.owned && matches(template));
   const catalog = templates.filter((template) => !template.owned && matches(template));
-  const header = `<thead><tr><th>Name</th><th>Fields</th><th>Status</th><th>Template ID</th><th></th></tr></thead>`;
 
-  byId("tpl-catalog").innerHTML = catalog.length
-    ? `<table>${header}<tbody>${catalog.map((template) => templateRow(template, false)).join("")}</tbody></table>`
-    : `<div class="muted" style="padding:.8rem">No public templates match.</div>`;
+  // Grouped into a collapsible section per collection. A search query flattens
+  // the grouping, so a match is never hidden inside a collapsed section.
+  const collections = [...new Set(catalog.map((template) => template.collection))].sort();
+  byId("tpl-catalog").innerHTML = !catalog.length
+    ? `<div class="muted" style="padding:.8rem">No public templates match.</div>`
+    : query
+      ? templateTable(catalog, false)
+      : collections.map((name) => {
+          const group = catalog.filter((template) => template.collection === name);
+          return `<details open class="tpl-group"><summary>${esc(name)} <span class="muted">(${group.length})</span></summary>${templateTable(group, false)}</details>`;
+        }).join("");
+
   byId("tpl-owned").innerHTML = owned.length
-    ? `<table>${header}<tbody>${owned.map((template) => templateRow(template, true)).join("")}</tbody></table>`
+    ? templateTable(owned, true)
     : `<div class="muted" style="padding:.8rem">No templates of your own yet. Submit one below.</div>`;
 }
 
@@ -551,6 +627,7 @@ function stopLiveRefresh() {
 // ------------------------------------------------------------------ preview
 // Full template preview in a sandboxed iframe
 let previewTemplateId = null;
+let previewDraftHtml = null; // set instead of previewTemplateId for unsaved drafts
 
 const sampleStorageKey = (templateId) => "effect-console-sample:" + templateId;
 function loadStoredSample(templateId) {
@@ -560,6 +637,7 @@ function loadStoredSample(templateId) {
 
 async function previewTemplate(templateId) {
   previewTemplateId = templateId;
+  previewDraftHtml = null;
   const frame = byId("tpl-preview-frame");
   byId("tpl-preview").classList.remove("hide");
   byId("tpl-preview-title").textContent = "Loading preview…";
@@ -586,6 +664,33 @@ async function previewTemplate(templateId) {
   }
 }
 
+// Preview the template being typed in the submit form.
+const renderDraft = (html, values) =>
+  html.replace(/\$\{([^}]+)\}/g, (_, key) => {
+    const value = values[key.trim()];
+    return value === undefined ? "" : String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  });
+
+function previewDraftTemplate() {
+  const html = byId("tpl-html").value;
+  if (!html.trim()) { showMsg(byId("tpl-msg"), "Add some HTML to preview.", "err"); return; }
+
+  previewTemplateId = null;
+  previewDraftHtml = html;
+
+  const fields = [...new Set([...html.matchAll(/\$\{([^}]+)\}/g)].map((match) => match[1].trim()))];
+  const values = Object.fromEntries(fields.map((field) => [field, field]));
+
+  byId("tpl-preview").classList.remove("hide");
+  byId("tpl-preview-title").textContent = byId("tpl-name").value.trim() || "Untitled draft";
+  byId("tpl-preview-id").textContent = "not submitted yet";
+  byId("tpl-preview-url").textContent = "sandbox://preview/draft";
+  byId("tpl-preview-trust").innerHTML = `<span class="pill pill-warn">draft</span>`;
+  byId("tpl-preview-note").classList.remove("hide");
+  renderSampleBar(fields, values);
+  byId("tpl-preview-frame").srcdoc = renderDraft(html, values);
+}
+
 function renderSampleBar(fields, values) {
   const bar = byId("tpl-preview-data");
   if (!fields.length) { bar.innerHTML = ""; bar.classList.add("hide"); return; }
@@ -597,11 +702,16 @@ function renderSampleBar(fields, values) {
 }
 
 async function applySampleData() {
-  if (!previewTemplateId) return;
   const data = {};
   byId("tpl-preview-data").querySelectorAll("[data-sample-field]").forEach((input) => {
     data[input.dataset.sampleField] = input.value;
   });
+
+  if (previewDraftHtml !== null) {
+    byId("tpl-preview-frame").srcdoc = renderDraft(previewDraftHtml, data);
+    return;
+  }
+  if (!previewTemplateId) return;
   localStorage.setItem(sampleStorageKey(previewTemplateId), JSON.stringify(data));
   const frame = byId("tpl-preview-frame");
   try {
@@ -614,6 +724,7 @@ async function applySampleData() {
 
 function closePreview() {
   previewTemplateId = null;
+  previewDraftHtml = null;
   byId("tpl-preview").classList.add("hide");
   byId("tpl-preview-frame").srcdoc = "";
   byId("tpl-preview-data").innerHTML = "";
@@ -707,6 +818,7 @@ document.addEventListener("click", (event) => {
 byId("tpl-open-submit").onclick = openSubmitForm;
 byId("tpl-collapse").onclick = () => byId("tpl-submit-card").classList.add("hide");
 byId("tpl-submit").onclick = submitTemplate;
+byId("tpl-preview-draft").onclick = previewDraftTemplate;
 byId("tpl-search").addEventListener("input", renderTemplates);
 byId("tpl-filter").addEventListener("change", renderTemplates);
 byId("panel-templates").addEventListener("click", (event) => {
@@ -716,7 +828,31 @@ byId("panel-templates").addEventListener("click", (event) => {
 
 // Create job
 document.querySelectorAll('input[name="job-type"]').forEach((radio) => radio.addEventListener("change", onTypeChange));
-byId("job-tpl").onchange = showFields;
+byId("job-tpl-trigger").onclick = () =>
+  byId("job-tpl-panel").classList.contains("hide") ? openCombo() : closeCombo();
+byId("job-tpl-search").addEventListener("input", () => { comboActiveIndex = -1; renderJobTemplateOptions(); });
+byId("job-tpl-search").addEventListener("keydown", (event) => {
+  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    event.preventDefault();
+    moveComboActive(event.key === "ArrowDown" ? 1 : -1);
+  } else if (event.key === "Enter") {
+    event.preventDefault();
+    const options = byId("job-tpl-list").querySelectorAll(".combo-option");
+    const pick = options[comboActiveIndex] || options[0];
+    if (pick) selectJobTemplate(pick.dataset.templateId);
+  } else if (event.key === "Escape") {
+    closeCombo();
+    byId("job-tpl-trigger").focus();
+  }
+});
+byId("job-tpl-list").addEventListener("click", (event) => {
+  const row = event.target.closest(".combo-option");
+  if (row) selectJobTemplate(row.dataset.templateId);
+});
+// Clicking anywhere outside the combobox dismisses it.
+document.addEventListener("click", (event) => {
+  if (!event.target.closest("#job-tpl-combo")) closeCombo();
+});
 byId("job-capability").onchange = showCapabilityDesc;
 byId("job-estimate").onclick = estimate;
 byId("job-create").onclick = createJob;

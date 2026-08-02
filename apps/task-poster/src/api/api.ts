@@ -261,6 +261,7 @@ export const addRequestorApiRoutes = (app: Express): void => {
     name: tpl.name,
     fields: getTemplateFields(tpl.data),
     approved: isTemplateApproved(tpl),
+    collection: tpl.collection || "Uncategorized",
     owned,
   });
 

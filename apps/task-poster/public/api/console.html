@@ -9,7 +9,8 @@
 <!-- Inter matches the other Effect apps (worker-app loads it the same way).
      Space Mono is used for keys/ids. Both fall back to system fonts offline. -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/api-console/app.css" />
+<!-- Relative, not root-absolute -->
+<link rel="stylesheet" href="api-console/app.css" />
 </head>
 <body>
 
@@ -144,7 +145,7 @@
           <option value="approved">Approved</option>
           <option value="unapproved">Unapproved</option>
         </select>
-        <button id="tpl-open-submit" class="btn-primary">+ Submit template</button>
+        <button id="tpl-open-submit" class="btn-primary">+ Create a template</button>
       </div>
 
       <div class="section-label">Public catalog</div>
@@ -168,7 +169,10 @@
           <textarea id="tpl-html" rows="6" placeholder="&lt;h1&gt;Rate ${product}&lt;/h1&gt;&lt;p&gt;${question}&lt;/p&gt;"></textarea>
         </div>
         <label class="checkbox" style="margin-bottom:.8rem"><input id="tpl-approve" type="checkbox" /> Request team approval <span class="muted">(otherwise it runs unapproved and sandboxed)</span></label>
-        <button id="tpl-submit" class="btn-primary">Submit template</button>
+        <div class="row">
+          <button id="tpl-submit" class="btn-primary">Submit template</button>
+          <button id="tpl-preview-draft" class="btn-ghost">Preview</button>
+        </div>
         <div id="tpl-msg"></div>
       </div>
     </section>
@@ -193,7 +197,20 @@
         <div class="section-label">Job configuration</div>
         <div class="field">
           <label class="field-label">Template <span class="req">*</span></label>
-          <select id="job-tpl"></select>
+          <!-- Custom combobox: a native <select> can't hold a search box. The
+               hidden input carries the chosen id, so the rest of the form still
+               reads byId("job-tpl").value exactly as before. -->
+          <div class="combo" id="job-tpl-combo">
+            <input type="hidden" id="job-tpl" />
+            <button type="button" class="combo-trigger" id="job-tpl-trigger" aria-haspopup="listbox" aria-expanded="false">
+              <span id="job-tpl-label" class="muted">Select a template…</span>
+              <span class="combo-caret">▼</span>
+            </button>
+            <div class="combo-panel hide" id="job-tpl-panel">
+              <input id="job-tpl-search" placeholder="Search templates…" autocomplete="off" />
+              <div class="combo-list" id="job-tpl-list" role="listbox"></div>
+            </div>
+          </div>
           <div id="job-fields" class="muted" style="font-size:.8rem;margin-top:.3rem"></div>
         </div>
         <div class="row" style="align-items:flex-start">
@@ -393,6 +410,6 @@
   </div>
 </div>
 
-<script type="module" src="/api-console/js/main.js"></script>
+<script type="module" src="api-console/js/main.js"></script>
 </body>
 </html>
