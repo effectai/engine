@@ -4,7 +4,7 @@ Manage your account profile and credit balance.
 
 ## Sign up
 
-`POST /api/v1/signup` (**No authentication required**)
+`POST /v1/signup` (**No authentication required**)
 
 Creates a new account and issues your first API key. The raw key is shown **once** in the response and cannot be recovered, so copy it immediately.
 
@@ -13,7 +13,7 @@ Rate-limited to 3 signups per IP per day.
 :::code-group
 
 ```bash [curl]
-curl -s -X POST "https://api.effect.ai/api/v1/signup" \
+curl -s -X POST "https://api.effect.ai/v1/signup" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Acme Corp",
@@ -22,7 +22,7 @@ curl -s -X POST "https://api.effect.ai/api/v1/signup" \
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/signup', {
+const res = await fetch('https://api.effect.ai/v1/signup', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ name: 'Acme Corp', email: 'you@acme.com' })
@@ -35,7 +35,7 @@ const data = await res.json()
 import requests
 
 res = requests.post(
-    'https://api.effect.ai/api/v1/signup',
+    'https://api.effect.ai/v1/signup',
     json={'name': 'Acme Corp', 'email': 'you@acme.com'}
 )
 data = res.json()
@@ -75,19 +75,19 @@ New accounts start with a zero EFFECT balance. Contact the Effect team to top up
 
 ## Get account
 
-`GET /api/v1/account`
+`GET /v1/account`
 
 Returns your account details and current credit balance.
 
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/account" \
+curl -s "https://api.effect.ai/v1/account" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/account', {
+const res = await fetch('https://api.effect.ai/v1/account', {
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
 const account = await res.json()
@@ -97,7 +97,7 @@ const account = await res.json()
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/account',
+    'https://api.effect.ai/v1/account',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 account = res.json()
@@ -136,7 +136,7 @@ The balance above (`"25000000"`) equals **25 EFFECT**.
 
 ## Update account
 
-`PATCH /api/v1/account`
+`PATCH /v1/account`
 
 Updates your account name and/or email. Only fields present in the body are changed. A body with neither field returns `400 invalid_request`.
 
@@ -145,14 +145,14 @@ Updates your account name and/or email. Only fields present in the body are chan
 :::code-group
 
 ```bash [curl]
-curl -s -X PATCH "https://api.effect.ai/api/v1/account" \
+curl -s -X PATCH "https://api.effect.ai/v1/account" \
   -H "Authorization: Bearer eff_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name": "Acme Corp (updated)"}'
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/account', {
+const res = await fetch('https://api.effect.ai/v1/account', {
   method: 'PATCH',
   headers: {
     Authorization: 'Bearer eff_live_YOUR_KEY',
@@ -167,7 +167,7 @@ const account = await res.json()
 import requests
 
 res = requests.patch(
-    'https://api.effect.ai/api/v1/account',
+    'https://api.effect.ai/v1/account',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     json={'name': 'Acme Corp (updated)'}
 )
@@ -181,14 +181,14 @@ account = res.json()
 :::code-group
 
 ```bash [curl]
-curl -s -X PATCH "https://api.effect.ai/api/v1/account" \
+curl -s -X PATCH "https://api.effect.ai/v1/account" \
   -H "Authorization: Bearer eff_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"email": "new@acme.com"}'
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/account', {
+const res = await fetch('https://api.effect.ai/v1/account', {
   method: 'PATCH',
   headers: {
     Authorization: 'Bearer eff_live_YOUR_KEY',
@@ -203,7 +203,7 @@ const account = await res.json()
 import requests
 
 res = requests.patch(
-    'https://api.effect.ai/api/v1/account',
+    'https://api.effect.ai/v1/account',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     json={'email': 'new@acme.com'}
 )
@@ -217,14 +217,14 @@ account = res.json()
 :::code-group
 
 ```bash [curl]
-curl -s -X PATCH "https://api.effect.ai/api/v1/account" \
+curl -s -X PATCH "https://api.effect.ai/v1/account" \
   -H "Authorization: Bearer eff_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"email": ""}'
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/account', {
+const res = await fetch('https://api.effect.ai/v1/account', {
   method: 'PATCH',
   headers: {
     Authorization: 'Bearer eff_live_YOUR_KEY',
@@ -239,7 +239,7 @@ const account = await res.json()
 import requests
 
 res = requests.patch(
-    'https://api.effect.ai/api/v1/account',
+    'https://api.effect.ai/v1/account',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     json={'email': ''}
 )

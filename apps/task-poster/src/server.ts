@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from 'express';
+import type { Express, Router, Request, Response, NextFunction } from 'express';
 import express from "express";
 import { addAuthRoutes, hasAuth } from "./auth.js";
 import { addFetcherRoutes, getFetchers, countTasks } from "./fetcher.js";
@@ -40,7 +40,7 @@ const campaignCard = (d: DatasetRecord) => {
   );
 };
 
-const addApiRoutes = (app: Express) => {
+const addApiRoutes = (app: Router) => {
   // CORS handler for API routes
   const setCorsHeaders = (res: Response) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -187,7 +187,7 @@ const main = async () => {
     const status = (err as { status?: number }).status ?? 500;
     if (res.headersSent) return next(err);
 
-    if (req.path.startsWith("/api/")) {
+    if (req.path.startsWith("/v1/")) {
       if (status === 413)
         return apiError(
           res,
@@ -221,11 +221,16 @@ const main = async () => {
   if (liveReloadEnabled) await addLiveReload(app);
 
   console.log("Registering module routes");
-  addApiRoutes(app);
-  app.use("/api/v1", rateLimitApi); // per-key rate limit for the Requestor API
-  addRequestorApiRoutes(app);
-  addJobApiRoutes(app);
-  app.use("/api/v1", apiNotFound); // JSON 404 for unmatched /api/v1/* routes
+
+  // perfix all API routes with /api
+  const apiRouter = express.Router();
+  app.use("/api", apiRouter);
+  addApiRoutes(apiRouter);
+  apiRouter.use(rateLimitApi); // per requestor rate limit
+  addRequestorApiRoutes(apiRouter);
+  addJobApiRoutes(apiRouter);
+  apiRouter.use(apiNotFound); // JSON 404 for unmatched /v1/* routes
+
   addAdminRoutes(app);
   addMainRoutes(app);
   addTemplateRoutes(app);

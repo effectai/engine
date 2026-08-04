@@ -158,6 +158,26 @@
 
   .chip { display: inline-block; background: var(--surface-3); border: 1px solid var(--border); border-radius: 6px; padding: .12rem .45rem; font-family: "Space Mono", monospace; font-size: .74rem; color: var(--text-2); }
 
+  /* ---- Template combobox (job template picker) -------------------------- */
+  .combo { position: relative; }
+  .combo-trigger { display: flex; align-items: center; justify-content: space-between; gap: .5rem; width: 100%; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: .5rem .7rem; font: inherit; font-size: .9rem; text-align: left; cursor: pointer; }
+  .combo-trigger:hover { border-color: var(--border-strong); }
+  .combo-caret { color: var(--muted); font-size: .6rem; flex-shrink: 0; }
+  .combo-panel { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-lg); padding: .4rem; }
+  .combo-panel > input { width: 100%; margin-bottom: .35rem; }
+  .combo-list { max-height: 260px; overflow-y: auto; }
+  .combo-group { padding: .4rem .5rem .2rem; font-size: .7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .combo-option { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .35rem .5rem; border-radius: 6px; font-size: .88rem; cursor: pointer; }
+  .combo-option:hover, .combo-option.active { background: var(--surface-3); }
+  .combo-option.selected { font-weight: 600; }
+  .combo-empty { padding: .6rem .5rem; font-size: .85rem; }
+
+  /* ---- Template catalog groups ----------------------------------------- */
+  .tpl-group { border-bottom: 1px solid var(--border); }
+  .tpl-group:last-child { border-bottom: 0; }
+  .tpl-group > summary { cursor: pointer; padding: .55rem .8rem; font-weight: 600; font-size: .86rem; user-select: none; }
+  .tpl-group > summary:hover { background: var(--surface-2); }
+
   /* ---- Cost estimate --------------------------------------------------- */
   .estimate-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; text-align: center; }
   .estimate-grid .n { font-size: 1.4rem; font-weight: 700; }

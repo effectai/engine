@@ -30,6 +30,7 @@ export type TemplateRecord = {
   ownerId?: string; // undefined = team/default template (public catalog)
   approved?: boolean; // trust badge; team templates are implicitly approved
   approvalRequested?: boolean; // queued for team review
+  collection?: string; // undefined = "Uncategorized" in the catalog
 };
 
 // A template is "trusted" if the team approved it, or it's a team template
@@ -284,16 +285,36 @@ ${templateDataForm(html, fields)}` :
 const tplListFrame = async () => {
   const allTpls = await getTemplates();
 
+  const collections = [
+    ...new Set(allTpls.map((record) => record.data.collection).filter(Boolean)),
+  ].sort();
+
   const renderList = (status: string) => {
-    const tpls = allTpls.filter(t => t!.data.status === status);
-    const tplList = tpls.map(t => `
-<a class="box" href="/t/${t.data.templateId}">
-  ${t.data.name || "[no name]"} (${t.data.createdAt})
-</a>`
+    const tpls = allTpls.filter(record => record!.data.status === status);
+    const rows = tpls.map(record => `
+<tr>
+  <td>
+    <a href="/t/${record.data.templateId}">${record.data.name || "[no name]"}</a>
+    <small>(${record.data.createdAt})</small>
+  </td>
+  <td>
+    <form hx-post="/t/${record.data.templateId}?action=categorize"
+          hx-target="#saved-${record.data.templateId}" hx-swap="innerHTML"
+          style="display:flex;gap:.5rem;align-items:center;margin:0">
+      <input name="collection" list="collections" placeholder="Uncategorized"
+             style="flex:1;min-width:0"
+             value="${escapeHTML(record.data.collection || "")}" />
+      <small id="saved-${record.data.templateId}"
+             style="flex:0 0 3.5rem;text-align:right"></small>
+      <button type="submit" style="flex-shrink:0">Save</button>
+    </form>
+  </td>
+</tr>`
     );
     return [
       tpls.length,
-      `${tpls.length ? `<div class="boxbox">${tplList.join("")}</div>` : ""}`
+      `${tpls.length ? `<table><thead><tr><th>Name</th><th>Collection</th>`
+        + `</tr></thead><tbody>${rows.join("")}</tbody></table>` : ""}`
     ]
   };
 
@@ -301,6 +322,10 @@ const tplListFrame = async () => {
   const [nDraft, draftList] = renderList("draft");
 
   return `
+<datalist id="collections">
+  ${collections.map((name) => `<option value="${escapeHTML(name!)}"></option>`).join("")}
+</datalist>
+
 <h3>Active Templates (${nActive})</h3>
 ${activeList}
 
@@ -455,6 +480,10 @@ ${templateDataForm(html, fields, req.body)}`);
       tpl!.data.status = "active";
       await db.set<TemplateRecord>(tpl!.key, tpl!.data);
       msg = "Successfully published template";
+    } else if (req.query.action === "categorize") {
+      tpl!.data.collection = String(req.body.collection || "").trim() || undefined;
+      await db.set<TemplateRecord>(tpl!.key, tpl!.data);
+      return res.send("✓ saved");
     } else {
       return make500(res);
     }
