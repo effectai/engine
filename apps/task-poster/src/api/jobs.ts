@@ -1,5 +1,5 @@
 import type { Task } from "@effectai/protocol";
-import type { Express, Request, Response } from "express";
+import type { Express, Router, Request, Response } from "express";
 import { ulid } from "ulid";
 import {
   type Account,
@@ -480,7 +480,7 @@ const csvCell = (value: unknown): string => {
 
 // ------------------------------------------------------------------ routes
 
-export const addJobApiRoutes = (app: Express): void => {
+export const addJobApiRoutes = (app: Router): void => {
   app.post(
     "/v1/jobs/estimate",
     requireApiKey,
@@ -773,7 +773,6 @@ export const addJobApiRoutes = (app: Express): void => {
   );
 
   // Cancel: stop posting queued tasks (archive dataset + fetcher).
-  // Phase 4 adds the credit refund for tasks that never got a submission.
   app.post(
     "/v1/jobs/:id/cancel",
     requireApiKey,

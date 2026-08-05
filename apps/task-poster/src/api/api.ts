@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, Router } from "express";
 import {
   type Account,
   type ApiKeyRecord,
@@ -42,7 +42,7 @@ const MAX_EMAIL_LENGTH = 320;
 // Workers download the template for every task, so keep it light.
 const MAX_TEMPLATE_HTML_BYTES = 256 * 1024;
 
-export const addRequestorApiRoutes = (app: Express): void => {
+export const addRequestorApiRoutes = (app: Router): void => {
   app.post(
     "/v1/signup",
     asyncHandler(async (req, res) => {
@@ -261,6 +261,7 @@ export const addRequestorApiRoutes = (app: Express): void => {
     name: tpl.name,
     fields: getTemplateFields(tpl.data),
     approved: isTemplateApproved(tpl),
+    collection: tpl.collection || "Uncategorized",
     owned,
   });
 
