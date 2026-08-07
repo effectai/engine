@@ -6,8 +6,8 @@ import {
   intStringTo32Bytes,
   prove,
   signPayment,
-} from "../clients/js";
-import { publicKeyToTruncatedHex } from "../clients/js";
+} from "../clients/js/node";
+import { publicKeyToTruncatedHex } from "../clients/js/node";
 import { randomBytes } from "node:crypto";
 import { PublicKey } from "@solana/web3.js";
 import { buildEddsa } from "circomlibjs";
@@ -15,7 +15,10 @@ import { buildEddsa } from "circomlibjs";
 import { setup } from "@effectai/test-utils";
 import { generateKeyPairSigner } from "@solana/kit";
 
-describe("Generate Proof", () => {
+const runIntegrationTests = process.env.RUN_INTEGRATION_TESTS === "1";
+const describeIntegration = runIntegrationTests ? describe : describe.skip;
+
+describeIntegration("Generate Proof", () => {
   it("should generate and prove a proof", async () => {
     const privateKeyBytes = randomBytes(32);
 

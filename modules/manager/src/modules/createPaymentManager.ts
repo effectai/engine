@@ -3,7 +3,7 @@ import type { PaymentStore } from "@effectai/protocol-core";
 
 import type { PeerId, PrivateKey } from "@libp2p/interface";
 import { PublicKey } from "@solana/web3.js";
-import { ProofToProofResponseMessage, computePaymentId } from "../utils.js";
+import { ProofToProofResponseMessage } from "../utils.js";
 
 import {
   type Groth16Proof,
@@ -68,17 +68,9 @@ export async function createPaymentManager({
     }));
 
     //insert payment into the store
-    await paymentStore.put({
-      entityId: computePaymentId(payment),
-      record: {
-        state: payment,
-        events: [
-          {
-            type: "payment:created",
-            timestamp: Date.now(),
-          },
-        ],
-      },
+    await paymentStore.create({
+      peerId: peerId.toString(),
+      payment,
     });
 
     return payment;
@@ -251,17 +243,9 @@ export async function createPaymentManager({
     }));
 
     //save payment in store.
-    await paymentStore.put({
-      entityId: computePaymentId(payment),
-      record: {
-        state: payment,
-        events: [
-          {
-            type: "payment:created",
-            timestamp: Math.floor(Date.now() / 1000),
-          },
-        ],
-      },
+    await paymentStore.create({
+      peerId: peerId.toString(),
+      payment,
     });
 
     return payment;

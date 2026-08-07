@@ -11,7 +11,7 @@ import {
   getRecipientManagerDataAccountEncoder,
   PAYMENT_BATCH_SIZE,
   signPayment,
-} from "../clients/js";
+} from "../clients/js/node";
 
 import {
   address,
@@ -27,23 +27,27 @@ import {
 } from "@effectai/utils";
 import { LiteSVM } from "litesvm";
 
-describe("Payment Program", async () => {
-  const eddsa = await buildEddsa();
-  const liteSVM = new LiteSVM();
-  liteSVM.addProgramFromFile(
-    EFFECT_PAYMENT_PROGRAM_ADDRESS,
-    "../../../target/deploy/effect_payment.so",
-  );
+const runIntegrationTests = process.env.RUN_INTEGRATION_TESTS === "1";
+const describeIntegration = runIntegrationTests ? describe : describe.skip;
 
-  const managerPrivateKey = randomBytes(32);
-  const eddsaPublicKey = eddsa.prv2pub(managerPrivateKey);
-  const bs58ManagerPublicKey = getAddressDecoder().decode(
-    eddsa.babyJub.packPoint(eddsaPublicKey),
-  );
-
-  const provider = await createLocalSolanaProvider();
+describeIntegration("Payment Program", () => {
 
   it("can redeem a proof", async () => {
+    const eddsa = await buildEddsa();
+    const liteSVM = new LiteSVM();
+    liteSVM.addProgramFromFile(
+      EFFECT_PAYMENT_PROGRAM_ADDRESS,
+      "../../../target/deploy/effect_payment.so",
+    );
+
+    const managerPrivateKey = randomBytes(32);
+    const eddsaPublicKey = eddsa.prv2pub(managerPrivateKey);
+    const bs58ManagerPublicKey = getAddressDecoder().decode(
+      eddsa.babyJub.packPoint(eddsaPublicKey),
+    );
+
+    const provider = await createLocalSolanaProvider();
+
     const { mint, ata, signer } = await setup();
     const paymentAccount = await generateKeyPairSigner();
     console.log(PAYMENT_BATCH_SIZE, "PAYMENT_BATCH_SIZE");

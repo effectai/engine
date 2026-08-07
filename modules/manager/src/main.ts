@@ -250,6 +250,141 @@ export const createManager = async ({
         };
       },
     )
+    .onMessage("workerSyncRequest", async (syncRequest, { peerId }) => {
+      const workerId = syncRequest.workerId || peerId.toString();
+
+      if (workerId !== peerId.toString()) {
+        throw new Error("Worker ID mismatch");
+      }
+
+      const scopes =
+        syncRequest.scopes && syncRequest.scopes.length > 0
+          ? new Set(syncRequest.scopes)
+          : new Set(["status", "capabilities", "tasks", "payments"]);
+      const limit = syncRequest.limit ?? 200;
+      const tasksCursor = syncRequest.tasksCursor ?? "";
+      const paymentsCursor = syncRequest.paymentsCursor ?? "";
+      const now = Math.floor(Date.now() / 1000);
+      const worker = await workerManager.getWorker(workerId);
+
+      const toCursorKey = (timestamp: number, entityId: string) =>
+        `${timestamp.toString().padStart(10, "0")}:${entityId}`;
+
+      const workerSyncResponse: NonNullable<
+        EffectProtocolMessage["workerSyncResponse"]
+      > = {
+          serverTime: now,
+          workerId,
+          cursor: BigInt(now),
+          managerPeerId: entity.getPeerId().toString(),
+          status:
+            scopes.has("status") && worker
+              ? {
+                  state: workerManager.workerQueue.queue.includes(workerId)
+                    ? "connected"
+                    : "disconnected",
+                  lastActivity: worker.state.lastActivity,
+                }
+              : undefined,
+          capabilities:
+            scopes.has("capabilities") && worker
+              ? worker.state.capabilities.concat(
+                  worker.state.managerCapabilities || [],
+                )
+              : [],
+          tasks: [],
+          payments: [],
+          tasksCursor,
+          paymentsCursor,
+          tasksHasMore: false,
+          paymentsHasMore: false,
+        };
+
+      const response: EffectProtocolMessage = {
+        workerSyncResponse,
+      };
+
+      if (scopes.has("tasks")) {
+        const tasks = await taskStore.listByWorker({ workerId });
+        const taskPage = tasks
+          .map((taskRecord) => {
+            const lastEventAt =
+              taskRecord.events[taskRecord.events.length - 1]?.timestamp ?? 0;
+            return {
+              taskId: taskRecord.state.id,
+              status: taskRecord.syncStatus,
+              lastEventAt,
+              task: taskRecord.state,
+              cursorKey: toCursorKey(lastEventAt, taskRecord.state.id),
+            };
+          })
+          .filter((taskRecord) => taskRecord.cursorKey > tasksCursor)
+          .sort((a, b) => a.cursorKey.localeCompare(b.cursorKey));
+
+        const pagedTasks = taskPage.slice(0, limit);
+        workerSyncResponse.tasksHasMore = taskPage.length > limit;
+
+        for (const taskRecord of pagedTasks) {
+          workerSyncResponse.tasks.push({
+            taskId: taskRecord.taskId,
+            status: taskRecord.status,
+            lastEventAt: taskRecord.lastEventAt,
+            task: taskRecord.task,
+          });
+        }
+
+        const lastTask = pagedTasks[pagedTasks.length - 1];
+        if (lastTask) {
+          workerSyncResponse.tasksCursor = lastTask.cursorKey;
+        }
+      }
+
+      if (scopes.has("payments")) {
+        const payments = await paymentStore.all({
+          prefix: `payments/${workerId}`,
+        });
+        const paymentPage = payments
+          .map((paymentRecord) => {
+            const lastEventAt =
+              paymentRecord.events[paymentRecord.events.length - 1]?.timestamp ??
+              0;
+            const createdAt =
+              paymentRecord.events.find((event) => event.type === "create")
+                ?.timestamp ?? lastEventAt;
+
+            return {
+              paymentId: paymentRecord.state.id,
+              status: "created",
+              amount: paymentRecord.state.amount.toString(),
+              createdAt,
+              payment: paymentRecord.state,
+              cursorKey: toCursorKey(lastEventAt, paymentRecord.state.id),
+            };
+          })
+          .filter((paymentRecord) => paymentRecord.cursorKey > paymentsCursor)
+          .sort((a, b) => a.cursorKey.localeCompare(b.cursorKey));
+
+        const pagedPayments = paymentPage.slice(0, limit);
+        workerSyncResponse.paymentsHasMore = paymentPage.length > limit;
+
+        for (const paymentRecord of pagedPayments) {
+          workerSyncResponse.payments.push({
+            paymentId: paymentRecord.paymentId,
+            status: paymentRecord.status,
+            amount: paymentRecord.amount,
+            createdAt: paymentRecord.createdAt,
+            payment: paymentRecord.payment,
+          });
+        }
+
+        const lastPayment = pagedPayments[pagedPayments.length - 1];
+        if (lastPayment) {
+          workerSyncResponse.paymentsCursor = lastPayment.cursorKey;
+        }
+      }
+
+      return response;
+    })
     .onMessage("task", async (task, { peerId }) => {
       await taskManager.createTask({
         task,

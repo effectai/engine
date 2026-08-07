@@ -545,6 +545,616 @@ export namespace RequestToWorkResponse {
   }
 }
 
+export interface WorkerSyncRequest {
+  timestamp: number
+  workerId: string
+  cursor?: bigint
+  scopes: string[]
+  limit?: number
+  tasksCursor?: string
+  paymentsCursor?: string
+}
+
+export namespace WorkerSyncRequest {
+  let _codec: Codec<WorkerSyncRequest>
+
+  export const codec = (): Codec<WorkerSyncRequest> => {
+    if (_codec == null) {
+      _codec = message<WorkerSyncRequest>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.timestamp != null && obj.timestamp !== 0)) {
+          w.uint32(8)
+          w.uint32(obj.timestamp)
+        }
+
+        if ((obj.workerId != null && obj.workerId !== '')) {
+          w.uint32(18)
+          w.string(obj.workerId)
+        }
+
+        if (obj.cursor != null) {
+          w.uint32(24)
+          w.uint64(obj.cursor)
+        }
+
+        if (obj.scopes != null) {
+          for (const value of obj.scopes) {
+            w.uint32(34)
+            w.string(value)
+          }
+        }
+
+        if (obj.limit != null) {
+          w.uint32(40)
+          w.uint32(obj.limit)
+        }
+
+        if (obj.tasksCursor != null) {
+          w.uint32(50)
+          w.string(obj.tasksCursor)
+        }
+
+        if (obj.paymentsCursor != null) {
+          w.uint32(58)
+          w.string(obj.paymentsCursor)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          timestamp: 0,
+          workerId: '',
+          scopes: []
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.timestamp = reader.uint32()
+              break
+            }
+            case 2: {
+              obj.workerId = reader.string()
+              break
+            }
+            case 3: {
+              obj.cursor = reader.uint64()
+              break
+            }
+            case 4: {
+              if (opts.limits?.scopes != null && obj.scopes.length === opts.limits.scopes) {
+                throw new MaxLengthError('Decode error - map field "scopes" had too many elements')
+              }
+
+              obj.scopes.push(reader.string())
+              break
+            }
+            case 5: {
+              obj.limit = reader.uint32()
+              break
+            }
+            case 6: {
+              obj.tasksCursor = reader.string()
+              break
+            }
+            case 7: {
+              obj.paymentsCursor = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<WorkerSyncRequest>): Uint8Array => {
+    return encodeMessage(obj, WorkerSyncRequest.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<WorkerSyncRequest>): WorkerSyncRequest => {
+    return decodeMessage(buf, WorkerSyncRequest.codec(), opts)
+  }
+}
+
+export interface WorkerSyncStatus {
+  state: string
+  lastActivity: number
+}
+
+export namespace WorkerSyncStatus {
+  let _codec: Codec<WorkerSyncStatus>
+
+  export const codec = (): Codec<WorkerSyncStatus> => {
+    if (_codec == null) {
+      _codec = message<WorkerSyncStatus>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.state != null && obj.state !== '')) {
+          w.uint32(10)
+          w.string(obj.state)
+        }
+
+        if ((obj.lastActivity != null && obj.lastActivity !== 0)) {
+          w.uint32(16)
+          w.uint32(obj.lastActivity)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          state: '',
+          lastActivity: 0
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.state = reader.string()
+              break
+            }
+            case 2: {
+              obj.lastActivity = reader.uint32()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<WorkerSyncStatus>): Uint8Array => {
+    return encodeMessage(obj, WorkerSyncStatus.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<WorkerSyncStatus>): WorkerSyncStatus => {
+    return decodeMessage(buf, WorkerSyncStatus.codec(), opts)
+  }
+}
+
+export interface WorkerSyncTask {
+  taskId: string
+  status: string
+  lastEventAt: number
+  task?: Task
+}
+
+export namespace WorkerSyncTask {
+  let _codec: Codec<WorkerSyncTask>
+
+  export const codec = (): Codec<WorkerSyncTask> => {
+    if (_codec == null) {
+      _codec = message<WorkerSyncTask>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.taskId != null && obj.taskId !== '')) {
+          w.uint32(10)
+          w.string(obj.taskId)
+        }
+
+        if ((obj.status != null && obj.status !== '')) {
+          w.uint32(18)
+          w.string(obj.status)
+        }
+
+        if ((obj.lastEventAt != null && obj.lastEventAt !== 0)) {
+          w.uint32(24)
+          w.uint32(obj.lastEventAt)
+        }
+
+        if (obj.task != null) {
+          w.uint32(34)
+          Task.codec().encode(obj.task, w)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          taskId: '',
+          status: '',
+          lastEventAt: 0
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.taskId = reader.string()
+              break
+            }
+            case 2: {
+              obj.status = reader.string()
+              break
+            }
+            case 3: {
+              obj.lastEventAt = reader.uint32()
+              break
+            }
+            case 4: {
+              obj.task = Task.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.task
+              })
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<WorkerSyncTask>): Uint8Array => {
+    return encodeMessage(obj, WorkerSyncTask.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<WorkerSyncTask>): WorkerSyncTask => {
+    return decodeMessage(buf, WorkerSyncTask.codec(), opts)
+  }
+}
+
+export interface WorkerSyncPayment {
+  paymentId: string
+  status: string
+  amount: string
+  taskId?: string
+  createdAt: number
+  payment?: Payment
+}
+
+export namespace WorkerSyncPayment {
+  let _codec: Codec<WorkerSyncPayment>
+
+  export const codec = (): Codec<WorkerSyncPayment> => {
+    if (_codec == null) {
+      _codec = message<WorkerSyncPayment>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.paymentId != null && obj.paymentId !== '')) {
+          w.uint32(10)
+          w.string(obj.paymentId)
+        }
+
+        if ((obj.status != null && obj.status !== '')) {
+          w.uint32(18)
+          w.string(obj.status)
+        }
+
+        if ((obj.amount != null && obj.amount !== '')) {
+          w.uint32(26)
+          w.string(obj.amount)
+        }
+
+        if (obj.taskId != null) {
+          w.uint32(34)
+          w.string(obj.taskId)
+        }
+
+        if ((obj.createdAt != null && obj.createdAt !== 0)) {
+          w.uint32(40)
+          w.uint32(obj.createdAt)
+        }
+
+        if (obj.payment != null) {
+          w.uint32(50)
+          Payment.codec().encode(obj.payment, w)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          paymentId: '',
+          status: '',
+          amount: '',
+          createdAt: 0
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.paymentId = reader.string()
+              break
+            }
+            case 2: {
+              obj.status = reader.string()
+              break
+            }
+            case 3: {
+              obj.amount = reader.string()
+              break
+            }
+            case 4: {
+              obj.taskId = reader.string()
+              break
+            }
+            case 5: {
+              obj.createdAt = reader.uint32()
+              break
+            }
+            case 6: {
+              obj.payment = Payment.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.payment
+              })
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<WorkerSyncPayment>): Uint8Array => {
+    return encodeMessage(obj, WorkerSyncPayment.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<WorkerSyncPayment>): WorkerSyncPayment => {
+    return decodeMessage(buf, WorkerSyncPayment.codec(), opts)
+  }
+}
+
+export interface WorkerSyncResponse {
+  serverTime: number
+  workerId: string
+  cursor: bigint
+  managerPeerId: string
+  status?: WorkerSyncStatus
+  capabilities: string[]
+  tasks: WorkerSyncTask[]
+  payments: WorkerSyncPayment[]
+  tasksCursor?: string
+  paymentsCursor?: string
+  tasksHasMore: boolean
+  paymentsHasMore: boolean
+}
+
+export namespace WorkerSyncResponse {
+  let _codec: Codec<WorkerSyncResponse>
+
+  export const codec = (): Codec<WorkerSyncResponse> => {
+    if (_codec == null) {
+      _codec = message<WorkerSyncResponse>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.serverTime != null && obj.serverTime !== 0)) {
+          w.uint32(8)
+          w.uint32(obj.serverTime)
+        }
+
+        if ((obj.workerId != null && obj.workerId !== '')) {
+          w.uint32(18)
+          w.string(obj.workerId)
+        }
+
+        if ((obj.cursor != null && obj.cursor !== 0n)) {
+          w.uint32(24)
+          w.uint64(obj.cursor)
+        }
+
+        if ((obj.managerPeerId != null && obj.managerPeerId !== '')) {
+          w.uint32(34)
+          w.string(obj.managerPeerId)
+        }
+
+        if (obj.status != null) {
+          w.uint32(42)
+          WorkerSyncStatus.codec().encode(obj.status, w)
+        }
+
+        if (obj.capabilities != null) {
+          for (const value of obj.capabilities) {
+            w.uint32(50)
+            w.string(value)
+          }
+        }
+
+        if (obj.tasks != null) {
+          for (const value of obj.tasks) {
+            w.uint32(58)
+            WorkerSyncTask.codec().encode(value, w)
+          }
+        }
+
+        if (obj.payments != null) {
+          for (const value of obj.payments) {
+            w.uint32(66)
+            WorkerSyncPayment.codec().encode(value, w)
+          }
+        }
+
+        if (obj.tasksCursor != null) {
+          w.uint32(74)
+          w.string(obj.tasksCursor)
+        }
+
+        if (obj.paymentsCursor != null) {
+          w.uint32(82)
+          w.string(obj.paymentsCursor)
+        }
+
+        if ((obj.tasksHasMore != null && obj.tasksHasMore !== false)) {
+          w.uint32(88)
+          w.bool(obj.tasksHasMore)
+        }
+
+        if ((obj.paymentsHasMore != null && obj.paymentsHasMore !== false)) {
+          w.uint32(96)
+          w.bool(obj.paymentsHasMore)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          serverTime: 0,
+          workerId: '',
+          cursor: 0n,
+          managerPeerId: '',
+          capabilities: [],
+          tasks: [],
+          payments: [],
+          tasksHasMore: false,
+          paymentsHasMore: false
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.serverTime = reader.uint32()
+              break
+            }
+            case 2: {
+              obj.workerId = reader.string()
+              break
+            }
+            case 3: {
+              obj.cursor = reader.uint64()
+              break
+            }
+            case 4: {
+              obj.managerPeerId = reader.string()
+              break
+            }
+            case 5: {
+              obj.status = WorkerSyncStatus.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.status
+              })
+              break
+            }
+            case 6: {
+              if (opts.limits?.capabilities != null && obj.capabilities.length === opts.limits.capabilities) {
+                throw new MaxLengthError('Decode error - map field "capabilities" had too many elements')
+              }
+
+              obj.capabilities.push(reader.string())
+              break
+            }
+            case 7: {
+              if (opts.limits?.tasks != null && obj.tasks.length === opts.limits.tasks) {
+                throw new MaxLengthError('Decode error - map field "tasks" had too many elements')
+              }
+
+              obj.tasks.push(WorkerSyncTask.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.tasks$
+              }))
+              break
+            }
+            case 8: {
+              if (opts.limits?.payments != null && obj.payments.length === opts.limits.payments) {
+                throw new MaxLengthError('Decode error - map field "payments" had too many elements')
+              }
+
+              obj.payments.push(WorkerSyncPayment.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.payments$
+              }))
+              break
+            }
+            case 9: {
+              obj.tasksCursor = reader.string()
+              break
+            }
+            case 10: {
+              obj.paymentsCursor = reader.string()
+              break
+            }
+            case 11: {
+              obj.tasksHasMore = reader.bool()
+              break
+            }
+            case 12: {
+              obj.paymentsHasMore = reader.bool()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<WorkerSyncResponse>): Uint8Array => {
+    return encodeMessage(obj, WorkerSyncResponse.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<WorkerSyncResponse>): WorkerSyncResponse => {
+    return decodeMessage(buf, WorkerSyncResponse.codec(), opts)
+  }
+}
+
 export interface EffectProtocolMessage {
   task?: Task
   taskAccepted?: TaskAccepted
@@ -563,6 +1173,8 @@ export interface EffectProtocolMessage {
   identifyRequest?: EffectIdentifyRequest
   identifyResponse?: EffectIdentifyResponse
   bulkProofRequest?: BulkProofRequest
+  workerSyncRequest?: WorkerSyncRequest
+  workerSyncResponse?: WorkerSyncResponse
 }
 
 export namespace EffectProtocolMessage {
@@ -577,7 +1189,51 @@ export namespace EffectProtocolMessage {
 
         obj = { ...obj }
 
+        if (obj.workerSyncResponse != null) {
+          obj.workerSyncRequest = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.workerSyncRequest != null) {
+          obj.workerSyncResponse = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
         if (obj.bulkProofRequest != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
           obj.requestToWorkResponse = undefined
@@ -597,6 +1253,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.identifyResponse != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyRequest = undefined
           obj.requestToWorkResponse = undefined
@@ -616,6 +1274,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.identifyRequest != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.requestToWorkResponse = undefined
@@ -635,6 +1295,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.requestToWorkResponse != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -654,6 +1316,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.requestToWork != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -673,6 +1337,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.ack != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -692,6 +1358,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.error != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -711,6 +1379,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.templateResponse != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -730,6 +1400,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.templateRequest != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -749,6 +1421,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.proofResponse != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -768,6 +1442,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.proofRequest != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -787,6 +1463,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.payoutRequest != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -806,6 +1484,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.payment != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -825,6 +1505,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskCompleted != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -844,6 +1526,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskRejected != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -863,6 +1547,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskAccepted != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -882,6 +1568,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.task != null) {
+          obj.workerSyncResponse = undefined
+          obj.workerSyncRequest = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -983,6 +1671,16 @@ export namespace EffectProtocolMessage {
         if (obj.bulkProofRequest != null) {
           w.uint32(138)
           BulkProofRequest.codec().encode(obj.bulkProofRequest, w)
+        }
+
+        if (obj.workerSyncRequest != null) {
+          w.uint32(146)
+          WorkerSyncRequest.codec().encode(obj.workerSyncRequest, w)
+        }
+
+        if (obj.workerSyncResponse != null) {
+          w.uint32(154)
+          WorkerSyncResponse.codec().encode(obj.workerSyncResponse, w)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -1099,6 +1797,18 @@ export namespace EffectProtocolMessage {
               })
               break
             }
+            case 18: {
+              obj.workerSyncRequest = WorkerSyncRequest.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.workerSyncRequest
+              })
+              break
+            }
+            case 19: {
+              obj.workerSyncResponse = WorkerSyncResponse.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.workerSyncResponse
+              })
+              break
+            }
             default: {
               reader.skipType(tag & 7)
               break
@@ -1106,7 +1816,51 @@ export namespace EffectProtocolMessage {
           }
         }
 
+        if (obj.workerSyncResponse != null) {
+          delete obj.workerSyncRequest
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.workerSyncRequest != null) {
+          delete obj.workerSyncResponse
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
         if (obj.bulkProofRequest != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
           delete obj.requestToWorkResponse
@@ -1126,6 +1880,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.identifyResponse != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyRequest
           delete obj.requestToWorkResponse
@@ -1145,6 +1901,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.identifyRequest != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.requestToWorkResponse
@@ -1164,6 +1922,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.requestToWorkResponse != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1183,6 +1943,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.requestToWork != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1202,6 +1964,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.ack != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1221,6 +1985,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.error != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1240,6 +2006,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.templateResponse != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1259,6 +2027,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.templateRequest != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1278,6 +2048,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.proofResponse != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1297,6 +2069,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.proofRequest != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1316,6 +2090,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.payoutRequest != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1335,6 +2111,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.payment != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1354,6 +2132,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskCompleted != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1373,6 +2153,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskRejected != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1392,6 +2174,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskAccepted != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1411,6 +2195,8 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.task != null) {
+          delete obj.workerSyncResponse
+          delete obj.workerSyncRequest
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
