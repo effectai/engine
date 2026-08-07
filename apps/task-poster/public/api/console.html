@@ -188,7 +188,7 @@
           </label>
           <label class="radio" id="radio-constant">
             <input type="radio" name="job-type" value="constant" />
-            <div><div class="t">Constant / survey</div><div class="d">Same data, N workers</div></div>
+            <div><div class="t">Survey</div><div class="d">Each row answered by N workers</div></div>
           </label>
         </div>
       </div>
@@ -244,12 +244,18 @@
       <div class="card hide" id="job-constant-mode">
         <div class="section-label">Survey data</div>
         <div class="field">
-          <label class="field-label">Number of workers (max tasks) <span class="req">*</span></label>
+          <label class="field-label">Workers per row <span class="req">*</span></label>
           <input id="job-maxtasks" value="100" style="max-width:160px" />
         </div>
         <div class="field">
-          <label class="field-label">JSON task data <span class="req">*</span> <span id="job-const-fields" class="muted"></span></label>
-          <textarea id="job-data" rows="5" placeholder='{"product":"Widget","question":"Good?"}'></textarea>
+          <div class="field-label">Required columns (from template) <span id="job-const-fields"></span></div>
+          <div class="field-label" style="margin-top:.6rem">Paste CSV rows <span class="req">*</span> <span class="muted">(first row is the header)</span></div>
+          <textarea id="job-const-csv" rows="6" placeholder="product,question&#10;Widget,Good?&#10;Gadget,Good?"></textarea>
+          <div class="muted" style="font-size:.8rem;margin-top:.4rem">
+            Every row is posted as its own survey job, each answered by the number of
+            workers above. For a single survey, paste one row. Tick the no-repeat box
+            above so nobody answers the same row twice.
+          </div>
         </div>
       </div>
 

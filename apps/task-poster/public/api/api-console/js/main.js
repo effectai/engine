@@ -330,7 +330,7 @@ function showFields() {
   const fieldList = template && template.fields.length ? template.fields : [];
   byId("job-fields").textContent = fieldList.length ? "Needs columns: " + fieldList.join(", ") : "";
   byId("job-csv-fields").innerHTML = fieldList.length ? fieldList.map((field) => `<span class="chip">${esc(field)}</span>`).join(" ") : `<span class="muted">none</span>`;
-  byId("job-const-fields").textContent = fieldList.length ? "(keys: " + fieldList.join(", ") + ")" : "";
+  byId("job-const-fields").innerHTML = fieldList.length ? fieldList.map((field) => `<span class="chip">${esc(field)}</span>`).join(" ") : `<span class="muted">none</span>`;
 }
 
 async function submitTemplate() {
@@ -402,45 +402,76 @@ function clearEstimate() {
   byId("est-banner").classList.add("hide");
 }
 
-function parseConstantData() {
-  const raw = byId("job-data").value.trim();
-  if (!raw) return {};
-  try { return JSON.parse(raw); }
-  catch { throw new Error('Data must be a valid JSON object, e.g. {"question":"Good?"}'); }
-}
-
 function jobBody() {
   const type = currentJobType();
   const base = { type, name: byId("job-name").value || "Untitled job", templateId: byId("job-tpl").value, reward: byId("job-reward").value, uniqueWorker: byId("job-unique").checked };
   const capability = byId("job-capability").value;
   if (capability) base.capability = capability;
-  if (type === "constant") return { ...base, data: parseConstantData(), maxTasks: Number(byId("job-maxtasks").value) };
+  // Surveys always go through the CSV form: one row is just a run of one.
+  if (type === "constant") return { ...base, csv: byId("job-const-csv").value, maxTasks: Number(byId("job-maxtasks").value) };
   return { ...base, csv: byId("job-csv").value };
+}
+
+function showEstimate({ taskCount, rewardPerTask, cost, balance, sufficient }) {
+  byId("est-tasks").textContent = taskCount;
+  byId("est-rate").textContent = rewardPerTask;
+  byId("est-total").textContent = cost;
+  const banner = byId("est-banner");
+  banner.className = "banner " + (sufficient ? "banner-ok" : "banner-warn");
+  banner.textContent = `Balance: ${balance} EFFECT (${sufficient ? "sufficient ✓" : "not enough credit"})`;
+  banner.classList.remove("hide");
+  byId("job-msg").innerHTML = "";
 }
 
 async function estimate() {
   try {
-    const result = await api("/jobs/estimate", { method: "POST", body: jobBody() });
-    byId("est-tasks").textContent = result.taskCount;
-    byId("est-rate").textContent = result.rewardPerTask;
-    byId("est-total").textContent = result.cost;
-    const banner = byId("est-banner");
-    banner.className = "banner " + (result.sufficient ? "banner-ok" : "banner-warn");
-    banner.textContent = `Balance: ${result.balance} EFFECT (${result.sufficient ? "sufficient ✓" : "not enough credit"})`;
-    banner.classList.remove("hide");
-    byId("job-msg").innerHTML = "";
+    if (currentJobType() === "constant") {
+      // No bulk estimate endpoint: price one row's worth by asking the CSV
+      // estimator how many rows there are (which also validates the header
+      // against the template), then multiply by the workers each row gets.
+      const body = jobBody();
+      const perRow = await api("/jobs/estimate", { method: "POST", body: { ...body, type: "csv" } });
+      const rows = perRow.taskCount;
+      const workers = body.maxTasks;
+      const total = Number(perRow.rewardPerTask) * rows * workers;
+      showEstimate({
+        taskCount: `${rows * workers} (${rows} rows x ${workers})`,
+        rewardPerTask: perRow.rewardPerTask,
+        cost: String(Number(total.toFixed(6))),
+        balance: perRow.balance,
+        sufficient: Number(perRow.balance) >= total,
+      });
+      return;
+    }
+    showEstimate(await api("/jobs/estimate", { method: "POST", body: jobBody() }));
   } catch (error) { clearEstimate(); showMsg(byId("job-msg"), error.message, "err"); }
 }
 
 async function createJob() {
   try {
-    const job = await api("/jobs", { method: "POST", body: jobBody() });
-    byId("job-msg").innerHTML = "";
-    showTab("jobs");
-    showMsg(byId("jobs-msg"), `Created job ${job.id} (${job.taskCount} tasks, reserved ${job.credits.reserved} EFFECT).`, "ok");
-    await Promise.all([loadAccount(), loadJobs()]);
-    await loadOverview();
-  } catch (error) { showMsg(byId("job-msg"), error.message, "err"); }
+    if (currentJobType() === "constant") {
+      const result = await api("/jobs/bulk", { method: "POST", body: jobBody() });
+      byId("job-msg").innerHTML = "";
+      showTab("jobs");
+      const tasks = result.jobs.reduce((sum, job) => sum + job.taskCount, 0);
+      showMsg(byId("jobs-msg"), `Created ${result.created} jobs (one per CSV row, ${tasks} tasks total).`, "ok");
+    } else {
+      const job = await api("/jobs", { method: "POST", body: jobBody() });
+      byId("job-msg").innerHTML = "";
+      showTab("jobs");
+      showMsg(byId("jobs-msg"), `Created job ${job.id} (${job.taskCount} tasks, reserved ${job.credits.reserved} EFFECT).`, "ok");
+    }
+  } catch (error) {
+    // A bulk run that stops halfway has still created (and charged for) the
+    // rows before the failure, so say so rather than showing a bare error.
+    const partial = error.data && error.data.created;
+    showMsg(byId("job-msg"), partial
+      ? `Stopped after creating ${partial} job(s): ${error.message}`
+      : error.message, "err");
+  }
+  // Runs either way: a partial bulk run leaves real jobs to show.
+  await Promise.all([loadAccount(), loadJobs()]);
+  await loadOverview();
 }
 
 function downloadCsvTemplate() {

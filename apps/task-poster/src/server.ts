@@ -48,12 +48,13 @@ const addApiRoutes = (app: Router) => {
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   };
 
-  app.options("/api/stats", (_req: Request, res: Response) => {
+  // Paths are relative to the router's /api mount, so no /api prefix here.
+  app.options("/stats", (_req: Request, res: Response) => {
     setCorsHeaders(res);
     res.status(204).end();
   });
 
-  app.get("/api/stats", async (_req: Request, res: Response) => {
+  app.get("/stats", async (_req: Request, res: Response) => {
     setCorsHeaders(res);
     const activeDatasets = await getActiveDatasets("active");
 
@@ -187,7 +188,7 @@ const main = async () => {
     const status = (err as { status?: number }).status ?? 500;
     if (res.headersSent) return next(err);
 
-    if (req.path.startsWith("/v1/")) {
+    if (req.path.startsWith("/api/v1/")) {
       if (status === 413)
         return apiError(
           res,

@@ -406,13 +406,14 @@ const analyzeJob = async (
   };
 };
 
-// Stored 201 response for an Idempotency-Key replay (H2). Only successful
-// creations are cached: a 402 never debited and a failed create was refunded,
-// so re-running those on retry is safe. The shared `withLock` (api-util.js)
-// serializes job mutations: two concurrent cancels can't both pass the status
-// check and refund twice, and two creates with the same Idempotency-Key can't
-// both miss the cache and debit twice.
 type CachedJobResponse = { status: number; body: unknown };
+type JobCreationResult = { status: number; body: unknown };
+
+const creationError = (
+  status: number,
+  code: ApiErrorCode,
+  message: string,
+): JobCreationResult => ({ status, body: { error: { code, message } } });
 
 type TaskCounts = {
   queued: number;
@@ -468,10 +469,7 @@ const jobView = (job: Job, counts: TaskCounts) => {
   };
 };
 
-// Results come from untrusted workers, so neutralize CSV formula injection: a
-// cell starting with = + - @ (or tab/CR, which Excel strips back to those) is
-// treated as a formula by Excel/Sheets. Prefix those with a single quote so the
-// value is shown literally, then quote/escape as normal.
+// Results come from untrusted workers, so neutralize CSV formula injection
 const csvCell = (value: unknown): string => {
   let cell = String(value ?? "");
   if (/^[=+\-@\t\r]/.test(cell)) cell = `'${cell}`;
@@ -503,20 +501,14 @@ export const addJobApiRoutes = (app: Router): void => {
     }),
   );
 
-  // Create a job: debit upfront, then build the owned dataset + fetcher and
-  // import its tasks. Credits are refunded if creation fails after the debit.
-  // Passing an `Idempotency-Key` header makes retries safe: the first
-  // successful creation is cached per account+key, and any replay returns the
-  // stored response instead of debiting and creating a second job.
   const performJobCreation = async (
-    req: Request,
-    res: Response,
     account: Account,
+    requestBody: Record<string, unknown>,
     idempotencyKey?: string,
-  ): Promise<unknown> => {
-    const analysis = await analyzeJob(account.id, req.body ?? {});
+  ): Promise<JobCreationResult> => {
+    const analysis = await analyzeJob(account.id, requestBody);
     if (!analysis.ok)
-      return apiError(res, analysis.status, analysis.code, analysis.message);
+      return creationError(analysis.status, analysis.code, analysis.message);
 
     const jobId = ulid();
 
@@ -527,7 +519,7 @@ export const addJobApiRoutes = (app: Router): void => {
       });
     } catch (err) {
       if (err instanceof InsufficientCreditsError)
-        return apiError(res, 402, "insufficient_credits", err.message);
+        return creationError(402, "insufficient_credits", err.message);
       throw err;
     }
 
@@ -557,9 +549,6 @@ export const addJobApiRoutes = (app: Router): void => {
         repetitions: analysis.uniqueWorker ? 1 : 0,
       });
 
-      // Pin a stable batch id so the per-worker cap spans the whole job.
-      // Without this, constant jobs (which import in several batches) would
-      // reset the cap each batch, letting one worker answer many times.
       if (analysis.uniqueWorker) {
         fetcher.batchId = jobId;
         await writeFetcher(fetcher);
@@ -614,21 +603,35 @@ export const addJobApiRoutes = (app: Router): void => {
           { status: 201, body: view },
         );
 
-      return apiJson(res, view, 201);
+      return { status: 201, body: view };
     } catch (err) {
       console.error("Job creation failed, refunding:", err);
       await refund(account.id, analysis.cost, {
         jobId,
         note: `job ${jobId} creation failed`,
       });
-      return apiError(
-        res,
+      return creationError(
         500,
         "internal",
         "Failed to create job; credits were refunded.",
       );
     }
   };
+
+  const performJobCreationOnce = (
+    account: Account,
+    requestBody: Record<string, unknown>,
+    idempotencyKey: string,
+  ): Promise<JobCreationResult> =>
+    withLock(`idem:${account.id}:${idempotencyKey}`, async () => {
+      const cached = await db.get<CachedJobResponse>([
+        "idempotency",
+        account.id,
+        idempotencyKey,
+      ]);
+      if (cached) return { status: cached.data.status, body: cached.data.body };
+      return performJobCreation(account, requestBody, idempotencyKey);
+    });
 
   app.post(
     "/v1/jobs",
@@ -637,9 +640,7 @@ export const addJobApiRoutes = (app: Router): void => {
       const { account } = req as AuthedRequest;
 
       const idempotencyKey = req.get("Idempotency-Key")?.trim() || undefined;
-      if (!idempotencyKey) return performJobCreation(req, res, account);
-
-      if (idempotencyKey.length > MAX_IDEMPOTENCY_KEY_LENGTH)
+      if (idempotencyKey && idempotencyKey.length > MAX_IDEMPOTENCY_KEY_LENGTH)
         return apiError(
           res,
           400,
@@ -647,17 +648,56 @@ export const addJobApiRoutes = (app: Router): void => {
           `'Idempotency-Key' must be ${MAX_IDEMPOTENCY_KEY_LENGTH} characters or fewer.`,
         );
 
-      // The lock serializes concurrent requests carrying the same key, so
-      // both can't miss the cache and debit twice.
-      return withLock(`idem:${account.id}:${idempotencyKey}`, async () => {
-        const cached = await db.get<CachedJobResponse>([
-          "idempotency",
-          account.id,
-          idempotencyKey,
-        ]);
-        if (cached) return apiJson(res, cached.data.body, cached.data.status);
-        return performJobCreation(req, res, account, idempotencyKey);
-      });
+      const result = idempotencyKey
+        ? await performJobCreationOnce(account, req.body ?? {}, idempotencyKey)
+        : await performJobCreation(account, req.body ?? {});
+      return apiJson(res, result.body, result.status);
+    }),
+  );
+
+  // Bulk survey: same body as a constant job, but `csv` instead of `data`.
+  // Every row becomes its own constant job of `maxTasks` tasks, so with
+  // `uniqueWorker` each row is answered once per worker, by `maxTasks` workers.
+  app.post(
+    "/v1/jobs/bulk",
+    requireApiKey,
+    asyncHandler(async (req, res) => {
+      const { account } = req as AuthedRequest;
+      const body = (req.body ?? {}) as Record<string, unknown>;
+
+      let rows: Record<string, unknown>[];
+      try {
+        rows = await parseCsv(String(body.csv ?? ""));
+      } catch {
+        return apiError(res, 400, "invalid_request", "Could not parse CSV.");
+      }
+      if (rows.length === 0)
+        return apiError(res, 400, "invalid_request", "CSV has no data rows.");
+
+      const jobs: unknown[] = [];
+      for (const row of rows) {
+        const result = await performJobCreation(account, {
+          ...body,
+          type: "constant",
+          data: row,
+        });
+        // Stop on the first failure and report what was already created, so a
+        // half-finished run is visible rather than silently partial
+        if (result.status !== 201)
+          return apiJson(
+            res,
+            {
+              created: jobs.length,
+              jobs,
+              failedRow: jobs.length,
+              ...(result.body as Record<string, unknown>),
+            },
+            result.status,
+          );
+        jobs.push(result.body);
+      }
+
+      return apiJson(res, { created: jobs.length, jobs }, 201);
     }),
   );
 

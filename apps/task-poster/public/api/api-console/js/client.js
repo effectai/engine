@@ -1,4 +1,5 @@
-const API_BASE = (window.EFFECT_API_BASE || "") + "/v1";
+const consolePrefix = new URL(".", window.location.href).pathname.replace(/\/$/, "");
+const API_BASE = (window.EFFECT_API_BASE ?? consolePrefix) + "/v1";
 
 // The key is kept in sessionStorage so a browser refresh stays connected, but
 // it clears when the tab closes (never persisted to disk via localStorage).
@@ -24,7 +25,13 @@ export async function api(path, { method = "GET", body, auth = true } = {}) {
   const text = await response.text();
   let data;
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-  if (!response.ok) throw new Error((data && data.error && data.error.message) || response.status + " " + response.statusText);
+  if (!response.ok) {
+    const error = new Error((data && data.error && data.error.message) || response.status + " " + response.statusText);
+    // Kept so you can read a partial result off a failed call
+    // e.g. how many jobs /jobs/bulk managed to create before it stopped
+    error.data = data;
+    throw error;
+  }
   return data;
 }
 
