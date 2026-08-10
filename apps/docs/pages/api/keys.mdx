@@ -12,19 +12,19 @@ Accounts are currently limited to **one active key at a time**. Issue a new key 
 
 ## List keys
 
-`GET /api/v1/keys`
+`GET /v1/keys`
 
 Returns all keys for your account. Raw keys are never returned, only the prefix and hash.
 
 :::code-group
 
 ```bash [curl]
-curl -s "https://api.effect.ai/api/v1/keys" \
+curl -s "https://api.effect.ai/v1/keys" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/keys', {
+const res = await fetch('https://api.effect.ai/v1/keys', {
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
 const { keys } = await res.json()
@@ -34,7 +34,7 @@ const { keys } = await res.json()
 import requests
 
 res = requests.get(
-    'https://api.effect.ai/api/v1/keys',
+    'https://api.effect.ai/v1/keys',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 keys = res.json()['keys']
@@ -68,7 +68,7 @@ keys = res.json()['keys']
 
 ## Issue a new key
 
-`POST /api/v1/keys`
+`POST /v1/keys`
 
 Issues a new API key. The raw key is returned **once**, so copy it immediately.
 
@@ -77,12 +77,12 @@ Returns `403 forbidden` if you already have an active key. Revoke your existing 
 :::code-group
 
 ```bash [curl]
-curl -s -X POST "https://api.effect.ai/api/v1/keys" \
+curl -s -X POST "https://api.effect.ai/v1/keys" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/keys', {
+const res = await fetch('https://api.effect.ai/v1/keys', {
   method: 'POST',
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
@@ -94,7 +94,7 @@ const data = await res.json()
 import requests
 
 res = requests.post(
-    'https://api.effect.ai/api/v1/keys',
+    'https://api.effect.ai/v1/keys',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 data = res.json()
@@ -124,7 +124,7 @@ data = res.json()
 
 ## Revoke a key
 
-`DELETE /api/v1/keys/:hash`
+`DELETE /v1/keys/:hash`
 
 Revokes a key by its SHA-256 hash. This is idempotent, so revoking an already-revoked key returns `200`.
 
@@ -133,12 +133,12 @@ Returns `404` if the hash doesn't belong to your account.
 :::code-group
 
 ```bash [curl]
-curl -s -X DELETE "https://api.effect.ai/api/v1/keys/KEY_HASH" \
+curl -s -X DELETE "https://api.effect.ai/v1/keys/KEY_HASH" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/keys/KEY_HASH', {
+const res = await fetch('https://api.effect.ai/v1/keys/KEY_HASH', {
   method: 'DELETE',
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
@@ -149,7 +149,7 @@ const data = await res.json()
 import requests
 
 res = requests.delete(
-    'https://api.effect.ai/api/v1/keys/KEY_HASH',
+    'https://api.effect.ai/v1/keys/KEY_HASH',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'}
 )
 data = res.json()
@@ -175,12 +175,12 @@ Revoking the only active key requires an explicit confirmation query parameter t
 :::code-group
 
 ```bash [curl]
-curl -s -X DELETE "https://api.effect.ai/api/v1/keys/KEY_HASH?confirm=DELETE" \
+curl -s -X DELETE "https://api.effect.ai/v1/keys/KEY_HASH?confirm=DELETE" \
   -H "Authorization: Bearer eff_live_YOUR_KEY"
 ```
 
 ```js [JavaScript]
-const res = await fetch('https://api.effect.ai/api/v1/keys/KEY_HASH?confirm=DELETE', {
+const res = await fetch('https://api.effect.ai/v1/keys/KEY_HASH?confirm=DELETE', {
   method: 'DELETE',
   headers: { Authorization: 'Bearer eff_live_YOUR_KEY' }
 })
@@ -191,7 +191,7 @@ const data = await res.json()
 import requests
 
 res = requests.delete(
-    'https://api.effect.ai/api/v1/keys/KEY_HASH',
+    'https://api.effect.ai/v1/keys/KEY_HASH',
     headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
     params={'confirm': 'DELETE'}
 )

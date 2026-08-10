@@ -1,5 +1,5 @@
 import type { Task } from "@effectai/protocol";
-import type { Express, Request, Response } from "express";
+import type { Express, Router, Request, Response } from "express";
 import { ulid } from "ulid";
 import {
   type Account,
@@ -228,7 +228,7 @@ const analyzeJob = async (
     return fail(
       400,
       "invalid_request",
-      "Unknown 'capability'. Use an id from GET /api/v1/capabilities, or omit it to allow any worker.",
+      "Unknown 'capability'. Use an id from GET /v1/capabilities, or omit it to allow any worker.",
     );
 
   const timeLimitSeconds =
@@ -480,9 +480,9 @@ const csvCell = (value: unknown): string => {
 
 // ------------------------------------------------------------------ routes
 
-export const addJobApiRoutes = (app: Express): void => {
+export const addJobApiRoutes = (app: Router): void => {
   app.post(
-    "/api/v1/jobs/estimate",
+    "/v1/jobs/estimate",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -631,7 +631,7 @@ export const addJobApiRoutes = (app: Express): void => {
   };
 
   app.post(
-    "/api/v1/jobs",
+    "/v1/jobs",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -662,7 +662,7 @@ export const addJobApiRoutes = (app: Express): void => {
   );
 
   app.get(
-    "/api/v1/jobs",
+    "/v1/jobs",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -680,7 +680,7 @@ export const addJobApiRoutes = (app: Express): void => {
   );
 
   app.get(
-    "/api/v1/jobs/:id",
+    "/v1/jobs/:id",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -692,7 +692,7 @@ export const addJobApiRoutes = (app: Express): void => {
 
   // Completed results, scoped to the owner. `?format=csv` for a CSV download.
   app.get(
-    "/api/v1/jobs/:id/results",
+    "/v1/jobs/:id/results",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
@@ -773,9 +773,8 @@ export const addJobApiRoutes = (app: Express): void => {
   );
 
   // Cancel: stop posting queued tasks (archive dataset + fetcher).
-  // Phase 4 adds the credit refund for tasks that never got a submission.
   app.post(
-    "/api/v1/jobs/:id/cancel",
+    "/v1/jobs/:id/cancel",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;

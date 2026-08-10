@@ -1,6 +1,5 @@
-import { api, setApiKey, hasApiKey, fetchResultsCsv } from "./client.js";
+import { api, setApiKey, hasApiKey, clearApiKey, fetchResultsCsv } from "./client.js";
 
-// ------------------------------------------------------------------ state
 let templates = [];
 let capabilities = [];
 let jobsCache = [];
@@ -8,7 +7,6 @@ let openJobId = null;      // currently expanded job row
 let drawerResults = [];    // results currently loaded in the drawer
 let drawerJobId = null;
 
-// ------------------------------------------------------------------ helpers
 const byId = (elementId) => document.getElementById(elementId);
 const esc = (value) => String(value ?? "").replace(/[&<>"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character]));
 const shortId = (value) => (value || "").slice(0, 10) + "…";
@@ -30,9 +28,6 @@ function relativeTime(timestamp) {
   return new Date(Number(timestamp)).toLocaleDateString();
 }
 
-// ------------------------------------------------------------------ theme
-// The theme preference is persisted (non-sensitive). The API key is still
-// never stored, so a reload always returns to the signup view.
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   byId("icon-sun").classList.toggle("hide", theme === "dark");
@@ -61,8 +56,7 @@ function setConnected(isConnected) {
   byId("disconnect").classList.toggle("hide", !isConnected);
 }
 
-// ------------------------------------------------------------------ connect
-async function connect() {
+async function connect({ silent = false } = {}) {
   const typed = byId("key").value.trim();
   if (typed) setApiKey(typed);
   if (!hasApiKey()) { setConnected(false); return; }
@@ -74,20 +68,23 @@ async function connect() {
     showTab("overview");
     await Promise.all([loadTemplates(), loadCapabilities(), loadJobs(), loadKeys()]);
     await loadOverview();
+    startLiveRefresh();
   } catch (error) {
     setConnected(false);
+    if (silent) { clearApiKey(); return; }
     showMsg(byId("signup-msg"), "Could not connect: " + error.message, "err");
   }
 }
 
 function disconnect() {
-  // No key persistence: the key lives only in memory, so reloading returns to signup.
+  clearApiKey();
   location.reload();
 }
 
 // ------------------------------------------------------------------ account
 async function loadAccount() {
   const account = await api("/account");
+  byId("acct-id").textContent = account.id || "—";
   byId("acct-name").value = account.name || "";
   byId("acct-email").value = account.email || "";
   byId("acct-balance").textContent = effectFromLamports(account.credits.balance).toLocaleString();
@@ -178,8 +175,6 @@ async function issueKey() {
   finally { byId("keys-new").disabled = false; }
 }
 
-// Type-to-confirm revoke. Revoking the last active key locks the account out of
-// the API, so we warn harder and still require typing DELETE either way.
 async function revokeKey(hash, prefix, isLast) {
   const warning = isLast
     ? `⚠ This is your LAST active key.\n\nRevoking it locks this account out of the API. You would have to sign up again or ask the team to issue a new key.\n\nType DELETE to revoke ${prefix}:`
@@ -219,8 +214,72 @@ async function loadTemplates() {
   const { templates: list } = await api("/templates");
   templates = list;
   renderTemplates();
-  byId("job-tpl").innerHTML = list.map((template) => `<option value="${template.templateId}">${esc(template.name)} ${template.approved ? "✓" : "⚠"}</option>`).join("");
+  // Default to the first template so the form works without opening the picker.
+  const current = byId("job-tpl").value;
+  const keep = list.some((template) => template.templateId === current);
+  selectJobTemplate(keep ? current : (list[0] ? list[0].templateId : ""));
+}
+
+// ------------------------------------------------------- template combobox
+// A native <select> can't contain a search box, so the job template picker is
+// a small combobox: the panel holds its own search input and the list below it
+// re-renders on every keystroke. Selection is kept in the hidden #job-tpl.
+let comboActiveIndex = -1; // keyboard-highlighted row, -1 = none
+
+function renderJobTemplateOptions() {
+  const query = byId("job-tpl-search").value.trim().toLowerCase();
+  const visible = templates.filter((template) => !query || template.name.toLowerCase().includes(query));
+  const selected = byId("job-tpl").value;
+
+  const owned = visible.filter((template) => template.owned);
+  const catalog = visible.filter((template) => !template.owned);
+  const collections = [...new Set(catalog.map((template) => template.collection))].sort();
+
+  const option = (template) => `<div class="combo-option${template.templateId === selected ? " selected" : ""}"
+      role="option" data-template-id="${esc(template.templateId)}">
+      <span>${esc(template.name)}</span>
+      <span class="muted">${template.approved ? "✓" : "⚠"}</span></div>`;
+  const group = (label, items) => items.length
+    ? `<div class="combo-group">${esc(label)}</div>` + items.map(option).join("")
+    : "";
+
+  byId("job-tpl-list").innerHTML = visible.length
+    ? group("My templates", owned) +
+      collections.map((name) => group(name, catalog.filter((template) => template.collection === name))).join("")
+    : `<div class="combo-empty muted">No templates match “${esc(query)}”</div>`;
+}
+
+function selectJobTemplate(templateId) {
+  byId("job-tpl").value = templateId;
+  const template = templates.find((entry) => entry.templateId === templateId);
+  byId("job-tpl-label").textContent = template ? template.name : "Select a template…";
+  byId("job-tpl-label").classList.toggle("muted", !template);
+  closeCombo();
   showFields();
+}
+
+function openCombo() {
+  byId("job-tpl-panel").classList.remove("hide");
+  byId("job-tpl-trigger").setAttribute("aria-expanded", "true");
+  comboActiveIndex = -1;
+  byId("job-tpl-search").value = "";
+  renderJobTemplateOptions();
+  byId("job-tpl-search").focus();
+}
+
+function closeCombo() {
+  byId("job-tpl-panel").classList.add("hide");
+  byId("job-tpl-trigger").setAttribute("aria-expanded", "false");
+}
+
+// Arrow keys walk the rendered rows, so keyboard order always matches what is
+// on screen regardless of how the groups were built.
+function moveComboActive(delta) {
+  const options = [...byId("job-tpl-list").querySelectorAll(".combo-option")];
+  if (!options.length) return;
+  comboActiveIndex = Math.max(0, Math.min(options.length - 1, comboActiveIndex + delta));
+  options.forEach((row, position) => row.classList.toggle("active", position === comboActiveIndex));
+  options[comboActiveIndex].scrollIntoView({ block: "nearest" });
 }
 
 function templateRow(template, showActions) {
@@ -235,6 +294,10 @@ function templateRow(template, showActions) {
     <td>${actions}</td></tr>`;
 }
 
+const templateTable = (list, showActions) =>
+  `<table><thead><tr><th>Name</th><th>Fields</th><th>Status</th><th>Template ID</th><th></th></tr></thead>` +
+  `<tbody>${list.map((template) => templateRow(template, showActions)).join("")}</tbody></table>`;
+
 function renderTemplates() {
   const query = byId("tpl-search").value.trim().toLowerCase();
   const filter = byId("tpl-filter").value;
@@ -244,13 +307,21 @@ function renderTemplates() {
 
   const owned = templates.filter((template) => template.owned && matches(template));
   const catalog = templates.filter((template) => !template.owned && matches(template));
-  const header = `<thead><tr><th>Name</th><th>Fields</th><th>Status</th><th>Template ID</th><th></th></tr></thead>`;
 
-  byId("tpl-catalog").innerHTML = catalog.length
-    ? `<table>${header}<tbody>${catalog.map((template) => templateRow(template, false)).join("")}</tbody></table>`
-    : `<div class="muted" style="padding:.8rem">No public templates match.</div>`;
+  // Grouped into a collapsible section per collection. A search query flattens
+  // the grouping, so a match is never hidden inside a collapsed section.
+  const collections = [...new Set(catalog.map((template) => template.collection))].sort();
+  byId("tpl-catalog").innerHTML = !catalog.length
+    ? `<div class="muted" style="padding:.8rem">No public templates match.</div>`
+    : query
+      ? templateTable(catalog, false)
+      : collections.map((name) => {
+          const group = catalog.filter((template) => template.collection === name);
+          return `<details open class="tpl-group"><summary>${esc(name)} <span class="muted">(${group.length})</span></summary>${templateTable(group, false)}</details>`;
+        }).join("");
+
   byId("tpl-owned").innerHTML = owned.length
-    ? `<table>${header}<tbody>${owned.map((template) => templateRow(template, true)).join("")}</tbody></table>`
+    ? templateTable(owned, true)
     : `<div class="muted" style="padding:.8rem">No templates of your own yet. Submit one below.</div>`;
 }
 
@@ -288,9 +359,6 @@ function openSubmitForm() {
 }
 
 // ------------------------------------------------------------------ create job
-// The capability list is a closed server-side vocabulary (GET /capabilities),
-// so the picker offers exactly those ids — a typo can never create a job no
-// worker can see.
 async function loadCapabilities() {
   ({ capabilities } = await api("/capabilities"));
   const groups = new Map();
@@ -487,7 +555,6 @@ async function cancelJob(jobId) {
   } catch (error) { alert(error.message); }
 }
 
-// ------------------------------------------------------------------ overview
 async function loadOverview() {
   try {
     const account = await api("/account");
@@ -504,8 +571,6 @@ async function loadOverview() {
   } catch (error) { byId("ov-activity").innerHTML = `<span class="msg err">${esc(error.message)}</span>`; }
 }
 
-// No dedicated activity endpoint exists, so the feed is synthesized from the
-// real timestamps we do have: job creation and credit transactions.
 async function renderActivity() {
   const events = [];
   for (const job of jobsCache) {
@@ -527,15 +592,42 @@ async function renderActivity() {
     : `<span class="muted">No activity yet.</span>`;
 }
 
+// ------------------------------------------------------------------ live refresh
+
+const LIVE_REFRESH_MS = 15000;
+let liveRefreshTimer = null;
+
+async function refreshBalances() {
+  const account = await api("/account");
+  const effect = effectFromLamports(account.credits.balance).toLocaleString();
+  byId("acct-balance").textContent = effect;
+  byId("acct-lamports").textContent = "≈ " + Number(account.credits.balance).toLocaleString() + " lamports";
+  byId("ov-balance").textContent = effect;
+}
+
+async function liveTick() {
+  if (document.hidden || !hasApiKey()) return;
+  try {
+    if (!openJobId) 
+      await loadJobs();
+    if (byId("panel-overview").classList.contains("hide")) 
+      await refreshBalances();
+    else await loadOverview();
+  } catch { /* transient network error; the next tick retries */ }
+}
+
+function startLiveRefresh() {
+  stopLiveRefresh();
+  liveRefreshTimer = setInterval(liveTick, LIVE_REFRESH_MS);
+}
+function stopLiveRefresh() {
+  if (liveRefreshTimer) { clearInterval(liveRefreshTimer); liveRefreshTimer = null; }
+}
+
 // ------------------------------------------------------------------ preview
-// Full template preview in a sandboxed iframe, fetched via the API (the only
-// way to send the Bearer key; a new tab could not authenticate). The sample
-// data bar re-renders the template server-side with user-typed values, so
-// templates that expect real shapes (image URLs, JSON strings) can be
-// previewed working. Last-used values persist per template in localStorage
-// (non-sensitive; template IDs are content-addressed, so stored values can
-// never apply to changed HTML).
+// Full template preview in a sandboxed iframe
 let previewTemplateId = null;
+let previewDraftHtml = null; // set instead of previewTemplateId for unsaved drafts
 
 const sampleStorageKey = (templateId) => "effect-console-sample:" + templateId;
 function loadStoredSample(templateId) {
@@ -545,6 +637,7 @@ function loadStoredSample(templateId) {
 
 async function previewTemplate(templateId) {
   previewTemplateId = templateId;
+  previewDraftHtml = null;
   const frame = byId("tpl-preview-frame");
   byId("tpl-preview").classList.remove("hide");
   byId("tpl-preview-title").textContent = "Loading preview…";
@@ -571,8 +664,33 @@ async function previewTemplate(templateId) {
   }
 }
 
-// `values` echoes what the server actually rendered (stored overrides merged
-// over the field-name defaults), so the inputs always match the iframe.
+// Preview the template being typed in the submit form.
+const renderDraft = (html, values) =>
+  html.replace(/\$\{([^}]+)\}/g, (_, key) => {
+    const value = values[key.trim()];
+    return value === undefined ? "" : String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  });
+
+function previewDraftTemplate() {
+  const html = byId("tpl-html").value;
+  if (!html.trim()) { showMsg(byId("tpl-msg"), "Add some HTML to preview.", "err"); return; }
+
+  previewTemplateId = null;
+  previewDraftHtml = html;
+
+  const fields = [...new Set([...html.matchAll(/\$\{([^}]+)\}/g)].map((match) => match[1].trim()))];
+  const values = Object.fromEntries(fields.map((field) => [field, field]));
+
+  byId("tpl-preview").classList.remove("hide");
+  byId("tpl-preview-title").textContent = byId("tpl-name").value.trim() || "Untitled draft";
+  byId("tpl-preview-id").textContent = "not submitted yet";
+  byId("tpl-preview-url").textContent = "sandbox://preview/draft";
+  byId("tpl-preview-trust").innerHTML = `<span class="pill pill-warn">draft</span>`;
+  byId("tpl-preview-note").classList.remove("hide");
+  renderSampleBar(fields, values);
+  byId("tpl-preview-frame").srcdoc = renderDraft(html, values);
+}
+
 function renderSampleBar(fields, values) {
   const bar = byId("tpl-preview-data");
   if (!fields.length) { bar.innerHTML = ""; bar.classList.add("hide"); return; }
@@ -584,11 +702,16 @@ function renderSampleBar(fields, values) {
 }
 
 async function applySampleData() {
-  if (!previewTemplateId) return;
   const data = {};
   byId("tpl-preview-data").querySelectorAll("[data-sample-field]").forEach((input) => {
     data[input.dataset.sampleField] = input.value;
   });
+
+  if (previewDraftHtml !== null) {
+    byId("tpl-preview-frame").srcdoc = renderDraft(previewDraftHtml, data);
+    return;
+  }
+  if (!previewTemplateId) return;
   localStorage.setItem(sampleStorageKey(previewTemplateId), JSON.stringify(data));
   const frame = byId("tpl-preview-frame");
   try {
@@ -601,6 +724,7 @@ async function applySampleData() {
 
 function closePreview() {
   previewTemplateId = null;
+  previewDraftHtml = null;
   byId("tpl-preview").classList.add("hide");
   byId("tpl-preview-frame").srcdoc = "";
   byId("tpl-preview-data").innerHTML = "";
@@ -669,7 +793,7 @@ function triggerDownload(content, filename) {
 }
 
 // ------------------------------------------------------------------ wiring
-byId("connect").onclick = connect;
+byId("connect").onclick = () => connect();
 byId("key").addEventListener("keydown", (event) => { if (event.key === "Enter") connect(); });
 byId("disconnect").onclick = disconnect;
 byId("theme-toggle").onclick = toggleTheme;
@@ -694,6 +818,7 @@ document.addEventListener("click", (event) => {
 byId("tpl-open-submit").onclick = openSubmitForm;
 byId("tpl-collapse").onclick = () => byId("tpl-submit-card").classList.add("hide");
 byId("tpl-submit").onclick = submitTemplate;
+byId("tpl-preview-draft").onclick = previewDraftTemplate;
 byId("tpl-search").addEventListener("input", renderTemplates);
 byId("tpl-filter").addEventListener("change", renderTemplates);
 byId("panel-templates").addEventListener("click", (event) => {
@@ -703,7 +828,31 @@ byId("panel-templates").addEventListener("click", (event) => {
 
 // Create job
 document.querySelectorAll('input[name="job-type"]').forEach((radio) => radio.addEventListener("change", onTypeChange));
-byId("job-tpl").onchange = showFields;
+byId("job-tpl-trigger").onclick = () =>
+  byId("job-tpl-panel").classList.contains("hide") ? openCombo() : closeCombo();
+byId("job-tpl-search").addEventListener("input", () => { comboActiveIndex = -1; renderJobTemplateOptions(); });
+byId("job-tpl-search").addEventListener("keydown", (event) => {
+  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    event.preventDefault();
+    moveComboActive(event.key === "ArrowDown" ? 1 : -1);
+  } else if (event.key === "Enter") {
+    event.preventDefault();
+    const options = byId("job-tpl-list").querySelectorAll(".combo-option");
+    const pick = options[comboActiveIndex] || options[0];
+    if (pick) selectJobTemplate(pick.dataset.templateId);
+  } else if (event.key === "Escape") {
+    closeCombo();
+    byId("job-tpl-trigger").focus();
+  }
+});
+byId("job-tpl-list").addEventListener("click", (event) => {
+  const row = event.target.closest(".combo-option");
+  if (row) selectJobTemplate(row.dataset.templateId);
+});
+// Clicking anywhere outside the combobox dismisses it.
+document.addEventListener("click", (event) => {
+  if (!event.target.closest("#job-tpl-combo")) closeCombo();
+});
 byId("job-capability").onchange = showCapabilityDesc;
 byId("job-estimate").onclick = estimate;
 byId("job-create").onclick = createJob;
@@ -723,6 +872,7 @@ byId("jobs-body").addEventListener("click", (event) => {
 
 // Account
 byId("acct-save").onclick = saveAccount;
+byId("acct-id-copy").onclick = () => copyText(byId("acct-id").textContent, byId("acct-id-copy"));
 
 // Keys
 byId("keys-new").onclick = issueKey;
@@ -730,11 +880,8 @@ byId("keys-list").addEventListener("click", (event) => {
   if (event.target.dataset.revoke) revokeKey(event.target.dataset.revoke, event.target.dataset.prefix, event.target.dataset.last === "1");
 });
 
-// Preview modal + results drawer. The preview modal closes only via its X
-// button (or Escape), never by clicking the backdrop, so a stray click can't
-// discard sample-data edits.
+// Preview modal + results drawer
 byId("tpl-preview-close").onclick = closePreview;
-// Sample data bar is re-rendered per template, so its events are delegated.
 byId("tpl-preview-data").addEventListener("click", (event) => { if (event.target.id === "tpl-preview-apply") applySampleData(); });
 byId("tpl-preview-data").addEventListener("keydown", (event) => { if (event.key === "Enter" && event.target.dataset.sampleField) applySampleData(); });
 byId("drawer-close").onclick = closeDrawer;
@@ -752,5 +899,10 @@ document.addEventListener("keydown", (event) => {
   else if (!byId("results-drawer").classList.contains("hide")) closeDrawer();
 });
 
-// No session persistence: the page always loads showing the signup view with an
-// empty key field. The user connects by pasting their key each visit.
+// Refresh immediately when the tab regains focus, so a user coming back sees
+// current numbers without waiting for the next poll.
+document.addEventListener("visibilitychange", () => { if (!document.hidden) liveTick(); });
+
+// Session persistence: if a key is already stored (e.g. after a refresh), skip
+// the signup view and reconnect silently. A stale key just falls back to signup.
+if (hasApiKey()) connect({ silent: true });

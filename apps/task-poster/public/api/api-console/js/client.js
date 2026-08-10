@@ -1,12 +1,15 @@
-// The single API seam: every network request the console makes goes through
-// this file. If the API ever moves into the manager, only API_BASE (and the
-// manager's CORS allowlist) changes; the rest of the console is untouched.
-const API_BASE = (window.EFFECT_API_BASE || "") + "/api/v1";
+const API_BASE = (window.EFFECT_API_BASE || "") + "/v1";
 
-// The key lives only in memory, never in storage: a reload always returns
-// the console to the signup view.
-let apiKey = "";
-export const setApiKey = (key) => { apiKey = key; };
+// The key is kept in sessionStorage so a browser refresh stays connected, but
+// it clears when the tab closes (never persisted to disk via localStorage).
+const KEY_STORAGE = "effect-console-key";
+let apiKey = sessionStorage.getItem(KEY_STORAGE) || "";
+export const setApiKey = (key) => {
+  apiKey = key || "";
+  if (apiKey) sessionStorage.setItem(KEY_STORAGE, apiKey);
+  else sessionStorage.removeItem(KEY_STORAGE);
+};
+export const clearApiKey = () => { apiKey = ""; sessionStorage.removeItem(KEY_STORAGE); };
 export const hasApiKey = () => Boolean(apiKey);
 
 export async function api(path, { method = "GET", body, auth = true } = {}) {
@@ -25,8 +28,6 @@ export async function api(path, { method = "GET", body, auth = true } = {}) {
   return data;
 }
 
-// The one binary download; it bypasses the JSON wrapper above but stays in
-// this file so the Authorization header never leaks into UI code.
 export async function fetchResultsCsv(jobId) {
   const response = await fetch(`${API_BASE}/jobs/${jobId}/results?format=csv`, {
     headers: { Authorization: "Bearer " + apiKey },
