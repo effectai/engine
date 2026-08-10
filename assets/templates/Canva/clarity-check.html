@@ -1,0 +1,294 @@
+<style>
+  [v-cloak] {
+    display: none;
+  }
+  .rating-buttons {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+  }
+  .rating-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 2px solid #dbdbdb;
+    background: white;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rating-btn:hover {
+    border-color: #3273dc;
+    background: #f0f4ff;
+  }
+  .rating-btn.selected {
+    border-color: #3273dc;
+    background: #3273dc;
+    color: white;
+  }
+  .context-box {
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  .context-item {
+    margin-bottom: 0.75rem;
+  }
+  .context-item:last-child {
+    margin-bottom: 0;
+  }
+  .context-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: #7a7a7a;
+    margin-bottom: 0.25rem;
+  }
+  .context-value {
+    font-size: 1rem;
+    color: #363636;
+  }
+  .design-image {
+    max-width: 100%;
+    max-height: 500px;
+    height: auto;
+    margin: 0 auto;
+    display: block;
+    border-radius: 8px;
+    border: 1px solid #eee;
+  }
+  .critique-area {
+    margin-top: 1.5rem;
+  }
+  @media (max-width: 768px) {
+    #app h1.title.is-3 {
+      font-size: 1.5rem;
+    }
+    #app p.subtitle.is-6 {
+      font-size: 0.95rem;
+    }
+    .rating-btn {
+      width: 42px;
+      height: 42px;
+      font-size: 1rem;
+    }
+    .context-box {
+      padding: 1rem;
+    }
+    .design-image {
+      max-height: none;
+    }
+    .critique-area .textarea {
+      min-height: 100px;
+    }
+  }
+</style>
+
+<div id="app" style="text-align: center" v-cloak>
+  <h1 class="title is-3">Effect AI - Clarity Check</h1>
+  <p class="subtitle is-6">Rate how clear and easy to understand this design is</p>
+
+  <hr />
+
+  <div class="mx-auto has-text-centered" style="max-width: 700px;">
+
+    <!-- Design image -->
+    <img
+      v-show="!loading && !loadError"
+      @load="loading = false"
+      :src="imageSource"
+      class="design-image"
+      alt="Design to evaluate"
+    />
+
+    <div v-if="loading" class="mt-5 mb-5">
+      <div class="is-size-5">Loading design...</div>
+      <progress class="progress is-primary mt-2"></progress>
+    </div>
+
+    <div v-if="loadError" class="notification is-danger mt-5">
+      <p>Failed to load the design image.</p>
+    </div>
+
+    <!-- Context (below image) -->
+    <div v-show="!loading && !loadError" class="context-box has-text-left">
+      <div class="context-item" v-if="purpose">
+        <div class="context-label">Purpose</div>
+        <div class="context-value">{{ purpose }}</div>
+      </div>
+      <div class="context-item" v-if="audience">
+        <div class="context-label">Target Audience</div>
+        <div class="context-value">{{ audience }}</div>
+      </div>
+      <div class="context-item" v-if="goal">
+        <div class="context-label">Main Goal</div>
+        <div class="context-value">{{ goal }}</div>
+      </div>
+    </div>
+
+    <!-- Rating -->
+    <div v-show="!loading && !loadError">
+      <h2 class="title is-5 mt-5 mb-3">How clear is this design?</h2>
+      <p class="help mb-3">Select a rating from 1 (not clear at all) to 10 (very clear)</p>
+
+      <div class="rating-buttons">
+        <button
+          v-for="n in 10"
+          :key="n"
+          class="rating-btn"
+          :class="{ selected: rating === n }"
+          @click="rating = n"
+        >
+          {{ n }}
+        </button>
+      </div>
+
+      <!-- Optional critique -->
+      <div class="critique-area has-text-left">
+        <label class="label">Critique (optional)</label>
+        <textarea
+          class="textarea"
+          rows="4"
+          v-model="insight"
+          placeholder="How could this design be clearer? What works well and what could be improved?"
+        ></textarea>
+        <p class="help">Share any specific suggestions for improving clarity.</p>
+      </div>
+    </div>
+
+    <hr />
+
+    <!-- Validation -->
+    <p style="color: red;" :class="{'is-hidden mb-3': !notComplete}">
+      Please select a rating before submitting.
+    </p>
+
+    <!-- Submit -->
+    <button
+      @click.prevent="uploadAndSubmit"
+      class="button is-success is-large mt-4 mx-auto"
+      :class="{'is-loading': btnLoading}"
+    >
+      Submit
+    </button>
+  </div>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <!-- Vue app -->
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    createApp({
+      data() {
+        return {
+
+          effect_collection: "Canva",
+          effect_tags: "tag1,tag2,tag3",
+
+          title: "Effect AI - Clarity Check",
+          imageSource: "${imageUrl}",
+          purpose: "${purpose}",
+          audience: "${audience}",
+          goal: "${goal}",
+          taskId: "${taskId}",
+          checkType: "${checkType}",
+
+          rating: null,
+          insight: "",
+          notComplete: false,
+          btnLoading: false,
+          loading: true,
+          loadError: false,
+
+          instructions: `
+            <div>
+              <h2>Clarity Check - Instructions</h2>
+
+              <h3>What you'll do</h3>
+              <p>You will see a design image and be asked to rate how clear and easy to understand it is on a scale of 1 to 10, then optionally provide feedback.</p>
+
+              <h3>How to rate clarity</h3>
+              <ul>
+                <li><strong>1-3 (Low):</strong> The design is confusing or hard to understand. The message is unclear or requires too much effort to decipher.</li>
+                <li><strong>4-6 (Medium):</strong> The design is somewhat understandable but has clarity issues. Some elements work while others don't.</li>
+                <li><strong>7-10 (High):</strong> The design is clear and communicates its message effectively. The viewer understands the purpose at a glance.</li>
+              </ul>
+
+              <h3>Consider these questions</h3>
+              <ul>
+                <li>Can you understand the main message within 5 seconds?</li>
+                <li>Is the visual hierarchy clear? Do your eyes naturally flow to the most important elements first?</li>
+                <li>Are there any confusing or distracting elements?</li>
+                <li>Does the design match its stated purpose and audience?</li>
+              </ul>
+
+              <h3>Providing critique</h3>
+              <p>If you noticed something that could be improved, share your thoughts in the critique area. Specific suggestions are more helpful than general feedback.</p>
+
+              <h4>Good critique example:</h4>
+              <blockquote>"The call to action button is too small and blends into the background. Making it larger and using a contrasting color would improve clarity."</blockquote>
+
+              <h4>Less helpful:</h4>
+              <blockquote>"It's okay I guess."</blockquote>
+            </div>
+          `,
+        };
+      },
+      mounted() {
+        window.top.postMessage(
+          {
+            type: "task-instructions",
+            instructions: this.instructions,
+          },
+          "*"
+        );
+      },
+      methods: {
+        async uploadAndSubmit() {
+          this.notComplete = false;
+
+          // Validate
+          if (!this.rating) {
+            this.notComplete = true;
+            return;
+          }
+
+          this.btnLoading = true;
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  taskTitle: this.title,
+                  answer: {
+                    taskId: this.taskId,
+                    checkType: this.checkType,
+                    score: this.rating,
+                    insight: this.insight || undefined,
+                  },
+                },
+              },
+              "*"
+            );
+          } catch (error) {
+            console.error("Error submitting task:", error);
+          }
+          this.btnLoading = false;
+        },
+      },
+    }).mount("#app");
+  </script>
+</div>
