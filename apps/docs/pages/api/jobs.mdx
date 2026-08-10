@@ -1,8 +1,10 @@
 # Jobs
 
-A job is a batch of tasks posted to the Effect AI worker network. Workers complete tasks and submit answers; you poll for results.
+A job is a batch of tasks posted to the Effect AI worker network. Workers
+complete tasks and submit answers; you poll for results.
 
-Credits are **debited upfront** at job creation (`reward × taskCount`). If a job fails to create after the debit, credits are automatically refunded.
+Credits are **debited upfront** at job creation (`reward × taskCount`). If a
+job fails to create after the debit, credits are automatically refunded.
 
 ## Job types
 
@@ -215,14 +217,17 @@ job_id = job['id']  # use this to poll for status and results
 | `type` | Yes | `"csv"` |
 | `name` | No | Display name for the job (defaults to `"Untitled job"`) |
 | `templateId` | Yes | ID of the template to use |
-| `reward` | Yes | EFFECT reward per completed task (0.001–100) |
+| `reward` | Yes | EFFECT reward per completed task (0.001-100) |
 | `csv` | Yes | CSV string where the first row is the header, max 10,000 rows |
 | `uniqueWorker` | No | `true` prevents the same worker completing multiple tasks |
 | `timeLimitSeconds` | No | Seconds a worker has to complete a task before re-queue (default 600) |
 | `capability` | No | Filter to workers with a specific capability tag |
 
 :::note
-The CSV must contain a column for every field the template uses; missing columns are rejected with `400 invalid_request`. The column name `dataffect/reward` and any column starting with `__effect` are reserved and rejected.
+The CSV must contain a column for every field the template uses; missing
+columns are rejected with `400 invalid_request`. The column name
+`dataffect/reward` and any column starting with `__effect` are reserved and
+rejected.
 :::
 
 ### Constant job
@@ -329,8 +334,129 @@ job = res.json()
 ```
 
 :::note
-`status` is either `"active"` or `"cancelled"`. There is no `"completed"` status: a job is done when `tasks.queued + tasks.active === 0`.
+`status` is either `"active"` or `"cancelled"`. There is no `"completed"`
+status: a job is done when `tasks.queued + tasks.active === 0`.
 :::
+
+---
+
+## Bulk survey
+
+`POST /v1/jobs/bulk`
+
+Creates one constant job per CSV row: the bulk equivalent of the
+[constant job](#constant-job) above. Takes the same body, except `csv`
+replaces `data`: every row becomes its own job of `maxTasks` tasks. Use it
+when you have many things to survey and want each one answered by several
+workers.
+
+:::code-group
+
+```bash [curl]
+curl -s -X POST "https://api.effect.ai/v1/jobs/bulk" \
+  -H "Authorization: Bearer eff_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Clickability",
+    "templateId": "TEMPLATE_ID",
+    "reward": "0.05",
+    "maxTasks": 15,
+    "uniqueWorker": true,
+    "csv": "imageUrl,purpose\nexample.com/a.png,Social post\nexample.com/b.png,Flyer"
+  }'
+```
+
+```js [JavaScript]
+const res = await fetch('https://api.effect.ai/v1/jobs/bulk', {
+  method: 'POST',
+  headers: {
+    Authorization: 'Bearer eff_live_YOUR_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'Clickability',
+    templateId: 'TEMPLATE_ID',
+    reward: '0.05',
+    maxTasks: 15,
+    uniqueWorker: true,
+    csv: 'imageUrl,purpose\nexample.com/a.png,Social post\nexample.com/b.png,Flyer'
+  })
+})
+const { created, jobs } = await res.json()
+```
+
+```python [Python]
+import requests
+
+res = requests.post(
+    'https://api.effect.ai/v1/jobs/bulk',
+    headers={'Authorization': 'Bearer eff_live_YOUR_KEY'},
+    json={
+        'name': 'Clickability',
+        'templateId': 'TEMPLATE_ID',
+        'reward': '0.05',
+        'maxTasks': 15,
+        'uniqueWorker': True,
+        'csv': 'imageUrl,purpose\nexample.com/a.png,Social post\nexample.com/b.png,Flyer'
+    }
+)
+data = res.json()
+created, jobs = data['created'], data['jobs']
+```
+
+:::
+
+**Bulk survey fields**
+
+| Field | Required | Description |
+|---|---|---|
+| `name` | No | Display name applied to every row's job |
+| `templateId` | Yes | Template ID |
+| `reward` | Yes | EFFECT reward per completed task |
+| `maxTasks` | Yes | Workers per row (cost = reward × rows × maxTasks) |
+| `csv` | Yes | CSV string, first row is the header; each row becomes its own job |
+| `uniqueWorker` | No | `true` limits each worker to one answer per row (recommended) |
+| `timeLimitSeconds` | No | Seconds per task before re-queue (default 600) |
+| `capability` | No | Capability filter |
+
+**Response `201`**
+
+```json
+{
+  "created": 2,
+  "jobs": [
+    { "id": "01JQKX3Z8VFNWRB2TGHM4Y5P6B", "type": "constant", "taskCount": 15, "..." : "..." },
+    { "id": "01JQKX3Z8VFNWRB2TGHM4Y5P6C", "type": "constant", "taskCount": 15, "..." : "..." }
+  ]
+}
+```
+
+Each entry in `jobs` has the same shape as a single job creation response.
+
+:::note
+**Why rows become separate jobs.** `uniqueWorker` caps a worker at one task
+per job. Splitting each row into its own job means a worker can answer every
+row once but never the same row twice. Posting the same rows as one CSV job
+would let a worker answer a duplicated row repeatedly.
+:::
+
+**Partial runs.** Rows are created one at a time, and the run stops at the
+first failure (a row missing a template field, or credits running out
+mid-run). The response then carries the failing status plus whatever was
+already created: those jobs are real and already charged. Nothing is charged
+for rows that were never reached:
+
+```json
+{
+  "created": 12,
+  "jobs": ["..."],
+  "failedRow": 12,
+  "error": { "code": "insufficient_credits", "message": "..." }
+}
+```
+
+Estimate the run first (`POST /v1/jobs/estimate` with `type: "csv"` and the
+same CSV gives you the row count) to avoid running out partway.
 
 ---
 
@@ -580,7 +706,10 @@ with open('results.csv', 'w') as f:
 CSV columns: `taskId`, `submittedAt`, `worker`, `input`, `result`
 
 :::note
-Worker submissions are untrusted, so cells starting with `=`, `+`, `-`, or `@` are prefixed with a single quote (`'`) in the CSV download. This prevents spreadsheet formula injection when the file is opened in Excel or Google Sheets.
+Worker submissions are untrusted, so cells starting with `=`, `+`, `-`, or `@`
+are prefixed with a single quote (`'`) in the CSV download. This prevents
+spreadsheet formula injection when the file is opened in Excel or Google
+Sheets.
 :::
 
 ---
@@ -589,7 +718,10 @@ Worker submissions are untrusted, so cells starting with `=`, `+`, `-`, or `@` a
 
 `POST /v1/jobs/:id/cancel`
 
-Stops the job immediately: no further tasks are posted to workers, and tasks currently in progress are not collected. Credits are refunded for **every task without a completed submission** at the moment of cancellation, both queued and in-progress. You only pay for tasks that were already completed.
+Stops the job immediately: no further tasks are posted to workers, and tasks
+currently in progress are not collected. Credits are refunded for **every
+task without a completed submission** at the moment of cancellation, both
+queued and in-progress. You only pay for tasks that were already completed.
 
 This is idempotent, so cancelling an already-cancelled job returns `200`.
 
@@ -651,4 +783,6 @@ print(job['credits']['refunded'])  # EFFECT refunded
 }
 ```
 
-1 task completed (0.5 EFFECT consumed), 1 task unfinished at cancellation (0.5 EFFECT refunded). `remaining` reaches zero, so the account is fully settled.
+1 task completed (0.5 EFFECT consumed), 1 task unfinished at cancellation
+(0.5 EFFECT refunded). `remaining` reaches zero, so the account is fully
+settled.
