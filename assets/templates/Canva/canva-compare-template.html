@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Effect AI — Compare Versions</title>
+  <title>Effect AI - Compare Versions</title>
   <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
   <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
 </head>
 <body>
 <div id="app" style="text-align: center">
-  <h1 class="title is-4">Effect AI — Compare Versions</h1>
+  <h1 class="title is-4">Effect AI - Compare Versions</h1>
 
   <hr />
 
@@ -74,7 +74,7 @@
       <label class="label">Why did you choose that version? <span class="has-text-grey">(optional)</span></label>
       <div class="control">
         <div class="select is-fullwidth">
-          <select v-model="insight">
+          <select v-model="insight" @change="missingOtherText = false">
             <option value="">— Select a reason —</option>
             <option value="Stronger or clearer headline">Stronger or clearer headline</option>
             <option value="Better color contrast or palette">Better color contrast or palette</option>
@@ -90,14 +90,17 @@
       <div class="control mt-2" v-if="insight === 'Other'">
         <textarea
           class="textarea"
+          :class="{ 'is-danger': missingOtherText }"
           v-model="otherText"
           placeholder="Please tell us more…"
           rows="2"
         ></textarea>
+        <p class="help">Required when you choose "Other".</p>
       </div>
     </div>
 
     <p class="has-text-danger mb-3" v-if="notComplete">Please pick a version before submitting.</p>
+    <p class="has-text-danger mb-3" v-if="missingOtherText">Please explain your reason before submitting, or choose a different option.</p>
 
     <button
       class="button is-success is-large"
@@ -129,6 +132,7 @@
           otherText: "",
           btnLoading: false,
           notComplete: false,
+          missingOtherText: false,
         };
       },
       mounted() {
@@ -158,20 +162,35 @@
           if (this.winner !== value) {
             this.insight = "";
             this.otherText = "";
+            this.missingOtherText = false;
           }
           this.winner = value;
         },
-        handleKey(e) {
-          if (e.key === "a" || e.key === "A") this.setWinner("A");
-          if (e.key === "b" || e.key === "B") this.setWinner("B");
-          if (e.key === "Enter") this.submit();
+        handleKey(event) {
+          // Ignore shortcuts while the worker is typing their reason, otherwise
+          // "a" / "b" would reset the selection and wipe what they wrote.
+          const tagName = event.target && event.target.tagName;
+          if (tagName === "TEXTAREA" || tagName === "INPUT" || tagName === "SELECT") return;
+
+          if (event.key === "a" || event.key === "A") this.setWinner("A");
+          if (event.key === "b" || event.key === "B") this.setWinner("B");
+          if (event.key === "Enter") this.submit();
         },
         submit() {
+          this.notComplete = false;
+          this.missingOtherText = false;
+
           if (!this.winner) {
             this.notComplete = true;
             return;
           }
-          this.notComplete = false;
+
+          // Every reason except "Other" stands on its own; "Other" needs the worker to say what it was.
+          if (this.insight === "Other" && !this.otherText.trim()) {
+            this.missingOtherText = true;
+            return;
+          }
+
           this.btnLoading = true;
           parent.postMessage(
             {
@@ -182,7 +201,7 @@
                   taskId: this.taskId,
                   checkType: this.checkType,
                   winner: this.winner,
-                  insight: this.insight === "Other" ? this.otherText.trim() : this.insight,
+                  insight: (this.insight === "Other" ? this.otherText.trim() : this.insight) || undefined,
                 },
               },
             },
