@@ -279,12 +279,19 @@
     <section id="panel-jobs" class="tab-panel hide">
       <div id="jobs-msg"></div>
       <div class="toolbar">
-        <input id="jobs-search" class="grow" placeholder="Search jobs…" />
+        <input id="jobs-search" class="grow" placeholder="Search jobs, surveys and rows…" />
         <select id="jobs-filter" style="width:auto">
           <option value="all">All status</option>
           <option value="active">Active</option>
           <option value="done">Done</option>
           <option value="cancelled">Cancelled</option>
+          <!-- A survey whose rows ended differently (some done, some cancelled). -->
+          <option value="partial">Partial</option>
+        </select>
+        <select id="jobs-page-size" style="width:auto" title="How many surveys and jobs to show per page">
+          <option value="5" selected>5 per page</option>
+          <option value="10">10 per page</option>
+          <option value="25">25 per page</option>
         </select>
         <button id="jobs-refresh" class="btn-ghost">Refresh</button>
       </div>
@@ -294,6 +301,7 @@
           <tbody id="jobs-body"><tr><td colspan="5" class="muted">…</td></tr></tbody>
         </table>
       </div>
+      <div id="jobs-pager" class="pager"></div>
     </section>
 
     <!-- ---------- ACCOUNT ---------- -->

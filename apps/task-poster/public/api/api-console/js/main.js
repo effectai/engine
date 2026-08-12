@@ -3,9 +3,11 @@ import { api, setApiKey, hasApiKey, clearApiKey, fetchResultsCsv } from "./clien
 let templates = [];
 let capabilities = [];
 let jobsCache = [];
-let openJobId = null;      // currently expanded job row
-let drawerResults = [];    // results currently loaded in the drawer
-let drawerJobId = null;
+let jobGroups = [];
+let openJobId = null;
+let openBatchId = null;
+let drawerResults = [];
+let drawerTarget = null;
 
 const byId = (elementId) => document.getElementById(elementId);
 const esc = (value) => String(value ?? "").replace(/[&<>"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character]));
@@ -448,13 +450,16 @@ async function estimate() {
 }
 
 async function createJob() {
+  jobsPage = 1;
   try {
     if (currentJobType() === "constant") {
       const result = await api("/jobs/bulk", { method: "POST", body: jobBody() });
       byId("job-msg").innerHTML = "";
       showTab("jobs");
       const tasks = result.jobs.reduce((sum, job) => sum + job.taskCount, 0);
-      showMsg(byId("jobs-msg"), `Created ${result.created} jobs (one per CSV row, ${tasks} tasks total).`, "ok");
+
+      openBatchId = result.batchId;
+      showMsg(byId("jobs-msg"), `Created a survey of ${result.created} rows (${tasks} tasks total). It is grouped as one row below.`, "ok");
     } else {
       const job = await api("/jobs", { method: "POST", body: jobBody() });
       byId("job-msg").innerHTML = "";
@@ -462,14 +467,12 @@ async function createJob() {
       showMsg(byId("jobs-msg"), `Created job ${job.id} (${job.taskCount} tasks, reserved ${job.credits.reserved} EFFECT).`, "ok");
     }
   } catch (error) {
-    // A bulk run that stops halfway has still created (and charged for) the
-    // rows before the failure, so say so rather than showing a bare error.
     const partial = error.data && error.data.created;
+    if (error.data && error.data.batchId) openBatchId = error.data.batchId;
     showMsg(byId("job-msg"), partial
       ? `Stopped after creating ${partial} job(s): ${error.message}`
       : error.message, "err");
   }
-  // Runs either way: a partial bulk run leaves real jobs to show.
   await Promise.all([loadAccount(), loadJobs()]);
   await loadOverview();
 }
@@ -488,42 +491,217 @@ function jobStatusPill(job) {
   return { label: "active", html: `<span class="pill pill-warn">active</span>` };
 }
 
+const isRunning = (job) => jobStatusPill(job).label === "active" && (job.tasks.queued + job.tasks.active) > 0;
+
+const JOBS_PAGE_SIZES = [5, 10, 25];
+const JOBS_PAGE_SIZE_KEY = "effect-console-jobs-page-size";
+let jobsPage = 1;
+let jobsPageSize = JOBS_PAGE_SIZES.includes(Number(localStorage.getItem(JOBS_PAGE_SIZE_KEY)))
+  ? Number(localStorage.getItem(JOBS_PAGE_SIZE_KEY))
+  : JOBS_PAGE_SIZES[0];
+
 async function loadJobs() {
   try {
-    const { jobs } = await api("/jobs");
+    const { jobs } = await api("/jobs?limit=1000");
     jobsCache = jobs;
     renderJobs();
   } catch (error) { byId("jobs-body").innerHTML = `<tr><td colspan="5"><span class="msg err">${esc(error.message)}</span></td></tr>`; }
 }
 
-function renderJobs() {
-  const query = byId("jobs-search").value.trim().toLowerCase();
-  const filter = byId("jobs-filter").value;
-  const rows = jobsCache.filter((job) => {
-    const statusLabel = jobStatusPill(job).label;
-    return (!query || job.name.toLowerCase().includes(query) || job.id.toLowerCase().includes(query)) &&
-      (filter === "all" || statusLabel === filter);
-  });
+function groupJobs(jobs) {
+  const groups = [];
+  const byBatchId = new Map();
 
-  if (!rows.length) { byId("jobs-body").innerHTML = `<tr><td colspan="5" class="muted">No jobs match. Create one in the Create Job tab.</td></tr>`; return; }
+  for (const job of jobs) {
+    const batchId = job.batch && job.batch.id;
+    if (!batchId) {
+      groups.push({ id: job.id, batchId: null, name: job.name, members: [job] });
+      continue;
+    }
+    let group = byBatchId.get(batchId);
+    if (!group) {
+      group = { id: batchId, batchId, name: job.name, members: [] };
+      byBatchId.set(batchId, group);
+      groups.push(group);
+    }
+    group.members.push(job);
+  }
 
-  byId("jobs-body").innerHTML = rows.map((job) => {
-    const status = jobStatusPill(job);
-    const base = `<tr class="job-row${openJobId === job.id ? " open" : ""}" data-job="${job.id}">
-      <td><div>${esc(job.name)}</div><div class="mono muted" style="font-size:.72rem">${shortId(job.id)}</div></td>
+  for (const group of groups) {
+    if (group.batchId) group.members.sort((first, second) => first.batch.index - second.batch.index);
+  }
+  return groups;
+}
+
+const sumEffect = (values) => Number(values.reduce((total, value) => total + Number(value), 0).toFixed(6));
+
+function groupTotals(group) {
+  const tasks = { queued: 0, active: 0, completed: 0, failed: 0 };
+
+  for (const job of group.members) {
+    tasks.queued += job.tasks.queued;
+    tasks.active += job.tasks.active;
+    tasks.completed += job.tasks.completed;
+    tasks.failed += job.tasks.failed;
+  }
+  const pick = (field) => sumEffect(group.members.map((job) => job.credits[field]));
+  return {
+    tasks,
+    taskCount: group.members.reduce((total, job) => total + job.taskCount, 0),
+    credits: { reserved: pick("reserved"), consumed: pick("consumed"), refunded: pick("refunded"), remaining: pick("remaining") },
+  };
+}
+
+// A survey's rows can end up in different states (one cancelled, the rest
+// finished), so the rolled-up pill says "partial" rather than picking a winner
+function groupStatusPill(group) {
+  const labels = group.members.map((job) => jobStatusPill(job).label);
+  if (labels.every((label) => label === labels[0])) return jobStatusPill(group.members[0]);
+  if (labels.includes("active")) return { label: "active", html: `<span class="pill pill-warn">active</span>` };
+  return { label: "partial", html: `<span class="pill pill-muted">partial</span>` };
+}
+
+const memberLabel = (job) => `Job #${job.batch.index + 1}`;
+
+function jobRowHtml(job, { member = false } = {}) {
+  const status = jobStatusPill(job);
+  const title = member
+    ? `<div>${memberLabel(job)}</div><div class="mono muted" style="font-size:.72rem">${shortId(job.id)}</div>`
+    : `<div>${esc(job.name)}</div><div class="mono muted" style="font-size:.72rem">${shortId(job.id)}</div>`;
+  const row = `<tr class="job-row${member ? " batch-member" : ""}${openJobId === job.id ? " open" : ""}" data-job="${job.id}">
+      <td>${title}</td>
       <td>${status.html}</td>
       <td class="mono">${job.tasks.queued} / ${job.tasks.active} / ${job.tasks.completed}</td>
       <td class="mono">${esc(job.credits.consumed)} / ${esc(job.credits.remaining)}</td>
-      <td>${status.label === "active" && (job.tasks.queued + job.tasks.active) > 0 ? `<button class="btn-danger btn-sm" data-cancel="${job.id}">Cancel</button>` : ""}</td></tr>`;
-    const detail = openJobId === job.id ? `<tr class="job-detail"><td colspan="5"><div class="job-detail-inner" id="detail-${job.id}"><span class="muted">Loading…</span></div></td></tr>` : "";
-    return base + detail;
-  }).join("");
+      <td>${isRunning(job) ? `<button class="btn-danger btn-sm" data-cancel="${job.id}">Cancel</button>` : ""}</td></tr>`;
+  const detail = openJobId === job.id
+    ? `<tr class="job-detail${member ? " batch-member" : ""}"><td colspan="5"><div class="job-detail-inner" id="detail-${job.id}"><span class="muted">Loading…</span></div></td></tr>`
+    : "";
+  return row + detail;
+}
+
+function batchGroupHtml(group) {
+  const open = openBatchId === group.id;
+  const totals = groupTotals(group);
+  const status = groupStatusPill(group);
+  const workersPerRow = group.members[0].taskCount;
+  const declaredSize = group.members[0].batch.size;
+  // A bulk run that failed halfway created fewer jobs than rows it promised.
+  const sizeNote = group.members.length < declaredSize
+    ? `${group.members.length} of ${declaredSize} rows created`
+    : `${group.members.length} rows · ${workersPerRow} workers each`;
+
+  const header = `<tr class="job-row batch-row${open ? " open" : ""}" data-batch="${group.id}">
+      <td>
+        <div><span class="tree-caret">${open ? "▾" : "▸"}</span>${esc(group.name)} <span class="pill pill-muted">survey · ${group.members.length} rows</span></div>
+        <div class="mono muted" style="font-size:.72rem;padding-left:1.1rem">${shortId(group.id)} · ${sizeNote}</div>
+      </td>
+      <td>${status.html}</td>
+      <td class="mono">${totals.tasks.queued} / ${totals.tasks.active} / ${totals.tasks.completed}</td>
+      <td class="mono">${totals.credits.consumed} / ${totals.credits.remaining}</td>
+      <td>${group.members.some(isRunning) ? `<button class="btn-danger btn-sm" data-cancel-batch="${group.id}">Cancel all</button>` : ""}</td></tr>`;
+
+  if (!open) return header;
+
+  const done = totals.tasks.completed;
+  const totalTasks = totals.tasks.queued + totals.tasks.active + totals.tasks.completed;
+  const percent = totalTasks ? Math.round((done / totalTasks) * 100) : 0;
+  const summary = `<tr class="job-detail batch-summary"><td colspan="5"><div class="job-detail-inner">
+      <div class="kk muted" style="font-size:.72rem;margin-bottom:.25rem">Survey completion (all rows)</div>
+      <div class="progress"><div class="progress-fill" style="width:${percent}%"></div></div>
+      <div class="muted" style="font-size:.78rem;margin:.3rem 0">${done} / ${totalTasks} tasks complete (${percent}%) across ${group.members.length} rows</div>
+      <div class="credit-grid">
+        <div class="credit-cell"><div class="n">${totals.credits.reserved}</div><div class="l">Reserved</div></div>
+        <div class="credit-cell"><div class="n">${totals.credits.consumed}</div><div class="l">Consumed</div></div>
+        <div class="credit-cell"><div class="n">${totals.credits.refunded}</div><div class="l">Refunded</div></div>
+        <div class="credit-cell"><div class="n">${totals.credits.remaining}</div><div class="l">Remaining</div></div>
+      </div>
+      <div class="row" style="margin-top:.7rem">
+        <button class="btn-ghost btn-sm" data-batch-results="${group.id}">View all results</button>
+        <button class="btn-ghost btn-sm" data-batch-download="${group.id}">↓ Download merged CSV</button>
+      </div></div></td></tr>`;
+
+  return header + summary + group.members.map((job) => jobRowHtml(job, { member: true })).join("");
+}
+
+function renderJobs() {
+  const query = byId("jobs-search").value.trim().toLowerCase();
+  const filter = byId("jobs-filter").value;
+  jobGroups = groupJobs(jobsCache);
+
+  const matchesQuery = (group) => !query ||
+    group.name.toLowerCase().includes(query) ||
+    group.id.toLowerCase().includes(query) ||
+    group.members.some((job) => job.id.toLowerCase().includes(query));
+
+  const visible = jobGroups.filter((group) =>
+    matchesQuery(group) && (filter === "all" || groupStatusPill(group).label === filter));
+
+  if (!visible.length) {
+    byId("jobs-body").innerHTML = `<tr><td colspan="5" class="muted">No jobs match. Create one in the Create Job tab.</td></tr>`;
+    byId("jobs-pager").innerHTML = "";
+    return;
+  }
+
+  const pageCount = Math.max(1, Math.ceil(visible.length / jobsPageSize));
+  jobsPage = Math.min(Math.max(jobsPage, 1), pageCount);
+  const start = (jobsPage - 1) * jobsPageSize;
+  const pageGroups = visible.slice(start, start + jobsPageSize);
+
+  byId("jobs-body").innerHTML = pageGroups
+    .map((group) => (group.batchId ? batchGroupHtml(group) : jobRowHtml(group.members[0])))
+    .join("");
+  renderJobsPager({ total: visible.length, start, shown: pageGroups.length, pageCount });
 
   if (openJobId) renderJobDetail(openJobId);
 }
 
+function pageWindow(current, pageCount) {
+  const span = 5;
+  let first = Math.max(1, current - Math.floor(span / 2));
+  const last = Math.min(pageCount, first + span - 1);
+  first = Math.max(1, last - span + 1);
+  const pages = [];
+  for (let page = first; page <= last; page++) pages.push(page);
+  return pages;
+}
+
+function renderJobsPager({ total, start, shown, pageCount }) {
+  const count = `Showing ${start + 1} to ${start + shown} of ${total} survey${total === 1 ? "" : "s"} and job${total === 1 ? "" : "s"}`;
+  if (pageCount === 1) {
+    byId("jobs-pager").innerHTML = `<span class="muted">${count}</span>`;
+    return;
+  }
+  const pages = pageWindow(jobsPage, pageCount);
+  const numbers = [
+    pages[0] > 1 ? `<button class="page-btn" data-page="1">1</button>${pages[0] > 2 ? `<span class="muted">…</span>` : ""}` : "",
+    ...pages.map((page) => `<button class="page-btn${page === jobsPage ? " current" : ""}" data-page="${page}">${page}</button>`),
+    pages[pages.length - 1] < pageCount ? `${pages[pages.length - 1] < pageCount - 1 ? `<span class="muted">…</span>` : ""}<button class="page-btn" data-page="${pageCount}">${pageCount}</button>` : "",
+  ].join("");
+
+  byId("jobs-pager").innerHTML =
+    `<span class="muted">${count}</span>
+     <div class="pager-controls">
+       <button class="page-btn" data-page="${jobsPage - 1}"${jobsPage === 1 ? " disabled" : ""}>‹ Prev</button>
+       ${numbers}
+       <button class="page-btn" data-page="${jobsPage + 1}"${jobsPage === pageCount ? " disabled" : ""}>Next ›</button>
+     </div>`;
+}
+
+function goToJobsPage(page) {
+  jobsPage = page;
+  renderJobs();
+  byId("panel-jobs").scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
 function toggleJob(jobId) {
   openJobId = openJobId === jobId ? null : jobId;
+  renderJobs();
+}
+
+function toggleBatch(batchId) {
+  openBatchId = openBatchId === batchId ? null : batchId;
+  if (!openBatchId) openJobId = null;
   renderJobs();
 }
 
@@ -536,11 +714,13 @@ async function renderJobDetail(jobId) {
   const totalTasks = job.tasks.queued + job.tasks.active + job.tasks.completed;
   const percent = totalTasks ? Math.round((done / totalTasks) * 100) : 0;
 
+  const displayName = job.batch ? `${job.name} · ${memberLabel(job)}` : job.name;
   container.innerHTML =
     `<div class="kv-grid">
        <div class="kv"><div class="kk">Type</div><div class="vv">${job.type === "constant" ? "Constant / survey" : "CSV"}</div></div>
        <div class="kv"><div class="kk">Template</div><div class="vv">${esc(template ? template.name : shortId(job.templateId))}</div></div>
        <div class="kv"><div class="kk">Reward</div><div class="vv">${esc(job.reward)} EFFECT / task</div></div>
+       ${job.batch ? `<div class="kv"><div class="kk">Survey row</div><div class="vv">${job.batch.index + 1} of ${job.batch.size}</div></div>` : ""}
      </div>
      <div class="kk muted" style="font-size:.72rem;margin-bottom:.25rem">Task completion</div>
      <div class="progress"><div class="progress-fill" style="width:${percent}%"></div></div>
@@ -553,9 +733,9 @@ async function renderJobDetail(jobId) {
      </div>
      <div id="detail-results-${jobId}" class="muted" style="font-size:.82rem">Loading recent results…</div>
      <div class="row" style="margin-top:.7rem">
-       <button class="btn-ghost btn-sm" data-results="${jobId}" data-name="${esc(job.name)}">View all results</button>
+       <button class="btn-ghost btn-sm" data-results="${jobId}" data-name="${esc(displayName)}">View all results</button>
        <button class="btn-ghost btn-sm" data-download="${jobId}">↓ Download CSV</button>
-       ${jobStatusPill(job).label === "active" && (job.tasks.queued + job.tasks.active) > 0 ? `<button class="btn-danger btn-sm" data-cancel="${jobId}">Cancel job</button>` : ""}
+       ${isRunning(job) ? `<button class="btn-danger btn-sm" data-cancel="${jobId}">Cancel ${job.batch ? "row" : "job"}</button>` : ""}
      </div>`;
 
   try {
@@ -586,14 +766,35 @@ async function cancelJob(jobId) {
   } catch (error) { alert(error.message); }
 }
 
+async function cancelBatch(batchId) {
+  const group = jobGroups.find((entry) => entry.id === batchId);
+  if (!group) return;
+  const running = group.members.filter(isRunning);
+  if (!running.length) return;
+  if (!confirm(`Cancel this survey? ${running.length} of ${group.members.length} rows are still running; their unfinished tasks are refunded.`)) return;
+
+  const failures = [];
+  for (const job of running) {
+    try { await api(`/jobs/${job.id}/cancel`, { method: "POST" }); }
+    catch (error) { failures.push(`${memberLabel(job)}: ${error.message}`); }
+  }
+  await Promise.all([loadAccount(), loadJobs()]);
+  await loadOverview();
+  if (failures.length)
+    showMsg(byId("jobs-msg"), `Cancelled ${running.length - failures.length} of ${running.length} rows. Failed: ${failures.join("; ")}`, "err");
+  else
+    showMsg(byId("jobs-msg"), `Cancelled ${running.length} row(s); unfinished tasks were refunded.`, "ok");
+}
+
 async function loadOverview() {
   try {
     const account = await api("/account");
     byId("ov-balance").textContent = effectFromLamports(account.credits.balance).toLocaleString();
 
-    const activeJobs = jobsCache.filter((job) => jobStatusPill(job).label === "active");
-    byId("ov-active").textContent = activeJobs.length;
+    const activeGroups = groupJobs(jobsCache).filter((group) => groupStatusPill(group).label === "active");
+    byId("ov-active").textContent = activeGroups.length;
     byId("ov-pending").textContent = jobsCache.reduce((sum, job) => sum + job.tasks.queued + job.tasks.active, 0).toLocaleString();
+    
     const approvedCount = templates.filter((template) => template.approved).length;
     byId("ov-templates").textContent = templates.length;
     byId("ov-templates-sub").textContent = `${approvedCount} approved`;
@@ -604,8 +805,16 @@ async function loadOverview() {
 
 async function renderActivity() {
   const events = [];
-  for (const job of jobsCache) {
-    if (job.createdAt) events.push({ time: new Date(job.createdAt).getTime(), text: `Job "${esc(job.name)}" created`, meta: `${job.taskCount} tasks` });
+  
+  for (const group of groupJobs(jobsCache)) {
+    const first = group.members[0];
+    if (!first.createdAt) continue;
+    const totals = groupTotals(group);
+    events.push({
+      time: new Date(first.createdAt).getTime(),
+      text: `${group.batchId ? "Survey" : "Job"} "${esc(group.name)}" created`,
+      meta: group.batchId ? `${group.members.length} rows · ${totals.taskCount} tasks` : `${totals.taskCount} tasks`,
+    });
   }
   try {
     const { transactions } = await api("/credits/transactions?limit=10");
@@ -762,32 +971,87 @@ function closePreview() {
 }
 
 // ------------------------------------------------------------------ results drawer
-async function openResults(jobId, name) {
-  drawerJobId = jobId;
+const RESULTS_PAGE = 200;
+// A survey costs one request per row, against a 120/minute API limit.
+const BATCH_FETCH_CONCURRENCY = 4;
+const BATCH_FETCH_WARN_ROWS = 60;
+
+async function mapWithLimit(items, limit, mapper) {
+  const results = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await mapper(items[index], index);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+function confirmLargeBatch(group) {
+  if (group.members.length <= BATCH_FETCH_WARN_ROWS) return true;
+  return confirm(`This survey has ${group.members.length} rows and each one is fetched separately, which may hit the API rate limit (120 requests per minute). Continue?`);
+}
+
+function openDrawer(title) {
   byId("results-drawer").classList.remove("hide");
-  byId("drawer-title").textContent = "Results · " + name;
+  byId("drawer-title").textContent = "Results · " + title;
   byId("drawer-sub").textContent = "Loading…";
   byId("drawer-json").textContent = "Loading…";
   byId("drawer-table").innerHTML = "";
+  byId("drawer-count").textContent = "";
+  drawerResults = [];
   showDrawerView("json");
+}
+
+function fillDrawer(shown, total) {
+  byId("drawer-sub").textContent = `${total} results total`;
+  byId("drawer-count").textContent = `${shown} shown of ${total}`;
+  byId("drawer-json").textContent = drawerResults.length ? JSON.stringify(drawerResults, null, 2) : "No results yet (workers have not completed any tasks).";
+  renderDrawerTable();
+}
+
+async function openResults(jobId, name) {
+  drawerTarget = { kind: "job", id: jobId, name };
+  openDrawer(name);
   try {
-    const response = await api(`/jobs/${jobId}/results?limit=200`);
+    const response = await api(`/jobs/${jobId}/results?limit=${RESULTS_PAGE}`);
     drawerResults = response.results || [];
-    byId("drawer-sub").textContent = `${response.total} results total`;
-    byId("drawer-count").textContent = `${response.count} shown of ${response.total}`;
-    byId("drawer-json").textContent = drawerResults.length ? JSON.stringify(drawerResults, null, 2) : "No results yet (workers have not completed any tasks).";
-    renderDrawerTable();
+    fillDrawer(response.count, response.total);
   } catch (error) {
     byId("drawer-json").textContent = error.message;
     byId("drawer-sub").textContent = "";
   }
 }
 
+// A survey's results live in one job per row, so merge them here and keep the
+// row label on each result; without it the merged list is unreadable.
+async function openBatchResults(batchId) {
+  const group = jobGroups.find((entry) => entry.id === batchId);
+  if (!group || !confirmLargeBatch(group)) return;
+  drawerTarget = { kind: "batch", id: batchId, name: group.name };
+  openDrawer(`${group.name} (${group.members.length} rows)`);
+  try {
+    const responses = await mapWithLimit(group.members, BATCH_FETCH_CONCURRENCY,
+      (job) => api(`/jobs/${job.id}/results?limit=${RESULTS_PAGE}`).then((response) => ({ job, response })));
+    drawerResults = responses.flatMap(({ job, response }) =>
+      (response.results || []).map((result) => ({ row: memberLabel(job), ...result })));
+    const total = responses.reduce((sum, entry) => sum + entry.response.total, 0);
+    fillDrawer(drawerResults.length, total);
+  } catch (error) {
+    byId("drawer-json").textContent = `Could not load every row of this survey: ${error.message}\n\nOpen an individual row to see its results on its own.`;
+    byId("drawer-sub").textContent = "";
+  }
+}
+
 function renderDrawerTable() {
   if (!drawerResults.length) { byId("drawer-table").innerHTML = `<span class="muted">No results yet.</span>`; return; }
+  const showRow = drawerTarget && drawerTarget.kind === "batch";
   byId("drawer-table").innerHTML =
-    `<div class="table-wrap"><table><thead><tr><th>Task ID</th><th>Worker</th><th>Result</th><th>Submitted</th></tr></thead><tbody>` +
+    `<div class="table-wrap"><table><thead><tr>${showRow ? "<th>Row</th>" : ""}<th>Task ID</th><th>Worker</th><th>Result</th><th>Submitted</th></tr></thead><tbody>` +
     drawerResults.map((row) => `<tr>
+      ${showRow ? `<td>${esc(row.row)}</td>` : ""}
       <td class="mono">${shortId(row.taskId)}</td>
       <td class="mono">${shortId(row.worker)}</td>
       <td>${esc(typeof row.result === "object" ? JSON.stringify(row.result) : row.result)}</td>
@@ -804,7 +1068,32 @@ function showDrawerView(view) {
 function closeDrawer() { byId("results-drawer").classList.add("hide"); }
 
 async function downloadCsv(jobId) {
-  triggerDownload(await fetchResultsCsv(jobId), `job-${jobId}-results.csv`);
+  try {
+    triggerDownload(await fetchResultsCsv(jobId), `job-${jobId}-results.csv`);
+  } catch (error) { showMsg(byId("jobs-msg"), `Download failed: ${error.message}`, "err"); }
+}
+
+// One file for the whole survey. Each row's job returns the same fixed header
+// line, so keep the first and drop it from the rest. The per-row inputs are
+// already carried in each record's `input` column, so nothing is lost.
+async function downloadBatchCsv(batchId) {
+  const group = jobGroups.find((entry) => entry.id === batchId);
+  if (!group || !confirmLargeBatch(group)) return;
+  let files;
+  try {
+    files = await mapWithLimit(group.members, BATCH_FETCH_CONCURRENCY,
+      (job) => fetchResultsCsv(job.id).then((blob) => blob.text()));
+  } catch (error) {
+    // Better no file than one quietly missing rows.
+    showMsg(byId("jobs-msg"), `Could not download every row of this survey (${error.message}). Nothing was saved; try again or download rows individually.`, "err");
+    return;
+  }
+  const merged = files.map((text, index) => {
+    if (index === 0) return text;
+    const firstNewline = text.indexOf("\n");
+    return firstNewline === -1 ? "" : text.slice(firstNewline + 1);
+  }).join("");
+  triggerDownload(merged, `survey-${batchId}-results.csv`);
 }
 
 // ------------------------------------------------------------------ small utils
@@ -891,14 +1180,32 @@ byId("job-csv-template").onclick = downloadCsvTemplate;
 
 // Jobs
 byId("jobs-refresh").onclick = loadJobs;
-byId("jobs-search").addEventListener("input", renderJobs);
-byId("jobs-filter").addEventListener("change", renderJobs);
+// Narrowing the list makes the current page meaningless, so start over at 1.
+const renderJobsFromFirstPage = () => { jobsPage = 1; renderJobs(); };
+byId("jobs-search").addEventListener("input", renderJobsFromFirstPage);
+byId("jobs-filter").addEventListener("change", renderJobsFromFirstPage);
+byId("jobs-page-size").value = String(jobsPageSize);
+byId("jobs-page-size").addEventListener("change", (event) => {
+  jobsPageSize = Number(event.target.value);
+  localStorage.setItem(JOBS_PAGE_SIZE_KEY, String(jobsPageSize));
+  renderJobsFromFirstPage();
+});
+byId("jobs-pager").addEventListener("click", (event) => {
+  const button = event.target.closest(".page-btn");
+  if (button && !button.disabled) goToJobsPage(Number(button.dataset.page));
+});
 byId("jobs-body").addEventListener("click", (event) => {
-  if (event.target.dataset.cancel) { event.stopPropagation(); cancelJob(event.target.dataset.cancel); return; }
-  if (event.target.dataset.results) { event.stopPropagation(); openResults(event.target.dataset.results, event.target.dataset.name); return; }
-  if (event.target.dataset.download) { event.stopPropagation(); downloadCsv(event.target.dataset.download); return; }
+  const data = event.target.dataset;
+  if (data.cancel) { event.stopPropagation(); cancelJob(data.cancel); return; }
+  if (data.cancelBatch) { event.stopPropagation(); cancelBatch(data.cancelBatch); return; }
+  if (data.results) { event.stopPropagation(); openResults(data.results, data.name); return; }
+  if (data.batchResults) { event.stopPropagation(); openBatchResults(data.batchResults); return; }
+  if (data.download) { event.stopPropagation(); downloadCsv(data.download); return; }
+  if (data.batchDownload) { event.stopPropagation(); downloadBatchCsv(data.batchDownload); return; }
   const row = event.target.closest(".job-row");
-  if (row) toggleJob(row.dataset.job);
+  if (!row) return;
+  if (row.dataset.batch) toggleBatch(row.dataset.batch);
+  else toggleJob(row.dataset.job);
 });
 
 // Account
@@ -917,7 +1224,11 @@ byId("tpl-preview-data").addEventListener("click", (event) => { if (event.target
 byId("tpl-preview-data").addEventListener("keydown", (event) => { if (event.key === "Enter" && event.target.dataset.sampleField) applySampleData(); });
 byId("drawer-close").onclick = closeDrawer;
 byId("results-drawer").addEventListener("click", (event) => { if (event.target.id === "results-drawer") closeDrawer(); });
-byId("drawer-csv").onclick = () => { if (drawerJobId) downloadCsv(drawerJobId); };
+byId("drawer-csv").onclick = () => {
+  if (!drawerTarget) return;
+  if (drawerTarget.kind === "batch") downloadBatchCsv(drawerTarget.id);
+  else downloadCsv(drawerTarget.id);
+};
 document.querySelectorAll(".drawer-tab").forEach((tabButton) => tabButton.onclick = () => showDrawerView(tabButton.dataset.view));
 
 // Load account transactions when the Account tab is first opened, and lazily

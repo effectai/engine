@@ -211,6 +211,29 @@
   .credit-cell .n { font-weight: 700; }
   .credit-cell .l { font-size: .68rem; color: var(--muted); margin-top: .15rem; }
 
+  /* ---- Pager ------------------------------------------------------------ */
+  .pager { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; margin-top: .7rem; font-size: .82rem; }
+  .pager-controls { display: flex; align-items: center; gap: .25rem; flex-wrap: wrap; }
+  .page-btn { background: var(--surface); color: var(--text-2); border: 1px solid var(--border); border-radius: 7px; padding: .28rem .55rem; font-size: .8rem; font-weight: 500; cursor: pointer; min-width: 2rem; }
+  .page-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+  .page-btn.current { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); font-weight: 700; }
+  .page-btn:disabled { opacity: .45; cursor: default; }
+
+  /* ---- Survey (batch) grouping ----------------------------------------- */
+  /* A bulk survey is one job per CSV row; the rows nest under a summary row. */
+  .tree-caret { display: inline-block; width: 1.1rem; color: var(--muted); font-size: .7rem; }
+  .batch-row > td:first-child { font-weight: 600; }
+  .batch-row.open > td { border-bottom: none; }
+  .batch-summary td { border-left: 3px solid var(--primary); }
+  /* Members are indented and share the survey's left rail, so a long run still
+     reads as one block rather than a second flat list. */
+  .job-row.batch-member > td { background: var(--surface-2); }
+  .job-row.batch-member > td:first-child { padding-left: 1.9rem; border-left: 3px solid var(--border-strong); }
+  .job-row.batch-member:hover > td,
+  .job-row.batch-member.open > td { background: var(--surface-3); }
+  .job-detail.batch-member td { border-left: 3px solid var(--border-strong); }
+  .job-detail.batch-member .job-detail-inner { padding-left: 1.6rem; }
+
   /* ---- Modal (template preview) --------------------------------------- */
   .modal-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 1rem; }
   .modal { background: var(--surface); border-radius: 12px; width: 100%; max-width: 1100px; height: 100%; max-height: 96vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-lg); }
