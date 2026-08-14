@@ -116,7 +116,7 @@ export const createStorageManager = ({
   const handleGetObject = async (
     payload: { hash: string; limit?: number },
   ) => {
-    const limit = payload.limit ?? DEFAULT_LIMIT;
+    const limit = payload.limit || DEFAULT_LIMIT;
     const items: Array<{
       hash: string;
       type: number;
