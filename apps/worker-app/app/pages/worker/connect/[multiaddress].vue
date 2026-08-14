@@ -171,7 +171,17 @@ const connectHandler = async (accessCode?: string) => {
     if (error instanceof Error) {
       if (error.message.includes("Access code is required")) {
         promptAccessCode.value = true;
+        return;
       }
+
+      // Show the actual error (e.g. device registration failure)
+      toast.add({
+        title: "Connection Error",
+        description: error.message,
+        color: "error",
+      });
+
+      navigateTo("/");
     } else {
       console.error("Unexpected error:", error);
       toast.add({
@@ -179,7 +189,7 @@ const connectHandler = async (accessCode?: string) => {
         description: "An unexpected error occurred while connecting.",
         color: "error",
       });
-      return;
+      navigateTo("/");
     }
   }
 };
