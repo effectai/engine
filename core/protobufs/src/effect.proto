@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "./payment/message.proto";
 import "./task/message.proto";
+import "./storage/message.proto";
 
 message EffectError {
   uint32 timestamp = 1;
@@ -62,5 +63,10 @@ message EffectProtocolMessage {
     EffectIdentifyRequest identify_request = 15;
     EffectIdentifyResponse identify_response = 16;
     BulkProofRequest bulk_proof_request = 17;
+    StoreObject store_object = 18;
+    StoreObjectResponse store_object_response = 19;
+    GetObject get_object = 20;
+    GetObjectResponse get_object_response = 21;
+    DeleteObject delete_object = 22;
   }
 }

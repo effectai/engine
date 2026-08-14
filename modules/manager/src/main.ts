@@ -12,6 +12,8 @@ import type { Request, Response } from "express";
 import { createPaymentManager } from "./modules/createPaymentManager.js";
 import { createTaskManager } from "./modules/createTaskManager.js";
 import { createManagerTaskStore } from "./stores/managerTaskStore.js";
+import { createStorageObjectStore } from "./stores/storageObjectStore.js";
+import { createStorageManager } from "./modules/createStorageManager.js";
 
 import { buildEddsa } from "@effectai/payment";
 import { createWorkerManager } from "./modules/createWorkerManager.js";
@@ -165,6 +167,7 @@ export const createManager = async ({
   const paymentStore = createPaymentStore({ datastore });
   const templateStore = createTemplateStore({ datastore });
   const taskStore = createManagerTaskStore({ datastore });
+  const storageStore = createStorageObjectStore({ datastore });
 
   // setup event emitter
   const events = new TypedEventEmitter<ManagerEvents>();
@@ -193,6 +196,10 @@ export const createManager = async ({
     managerSettings,
     paymentManager,
     workerManager,
+  });
+
+  const storageManager = createStorageManager({
+    storageStore,
   });
 
   // register message handlers
@@ -327,6 +334,15 @@ export const createManager = async ({
       return {
         templateResponse: { ...record?.state },
       };
+    })
+    .onMessage("storeObject", async (payload, { peerId }) => {
+      return storageManager.handleStoreObject(payload, { peerId });
+    })
+    .onMessage("getObject", async (payload) => {
+      return storageManager.handleGetObject(payload);
+    })
+    .onMessage("deleteObject", async (payload, { peerId }) => {
+      return storageManager.handleDeleteObject(payload, { peerId });
     });
 
   const WHITELISTED_IPS = [
@@ -450,7 +466,6 @@ export const createManager = async ({
       }
     }
   });
-
   const { isStarted, pause, resume, getCycle, start, stop, cycle } =
     createManagerControls({
       events,
@@ -494,6 +509,7 @@ export const createManager = async ({
 
     taskManager,
     workerManager,
+    storageManager,
 
     stop,
   };

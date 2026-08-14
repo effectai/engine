@@ -563,6 +563,11 @@ export interface EffectProtocolMessage {
   identifyRequest?: EffectIdentifyRequest
   identifyResponse?: EffectIdentifyResponse
   bulkProofRequest?: BulkProofRequest
+  storeObject?: StoreObject
+  storeObjectResponse?: StoreObjectResponse
+  getObject?: GetObject
+  getObjectResponse?: GetObjectResponse
+  deleteObject?: DeleteObject
 }
 
 export namespace EffectProtocolMessage {
@@ -577,7 +582,132 @@ export namespace EffectProtocolMessage {
 
         obj = { ...obj }
 
+        if (obj.deleteObject != null) {
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.getObjectResponse != null) {
+          obj.deleteObject = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.getObject != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.storeObjectResponse != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.storeObject != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
         if (obj.bulkProofRequest != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
           obj.requestToWorkResponse = undefined
@@ -597,6 +727,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.identifyResponse != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyRequest = undefined
           obj.requestToWorkResponse = undefined
@@ -616,6 +751,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.identifyRequest != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.requestToWorkResponse = undefined
@@ -635,6 +775,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.requestToWorkResponse != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -654,6 +799,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.requestToWork != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -673,6 +823,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.ack != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -692,6 +847,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.error != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -711,6 +871,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.templateResponse != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -730,6 +895,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.templateRequest != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -749,6 +919,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.proofResponse != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -768,6 +943,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.proofRequest != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -787,6 +967,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.payoutRequest != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -806,6 +991,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.payment != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -825,6 +1015,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskCompleted != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -844,6 +1039,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskRejected != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -863,6 +1063,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskAccepted != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -882,6 +1087,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.task != null) {
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -983,6 +1193,31 @@ export namespace EffectProtocolMessage {
         if (obj.bulkProofRequest != null) {
           w.uint32(138)
           BulkProofRequest.codec().encode(obj.bulkProofRequest, w)
+        }
+
+        if (obj.storeObject != null) {
+          w.uint32(146)
+          StoreObject.codec().encode(obj.storeObject, w)
+        }
+
+        if (obj.storeObjectResponse != null) {
+          w.uint32(154)
+          StoreObjectResponse.codec().encode(obj.storeObjectResponse, w)
+        }
+
+        if (obj.getObject != null) {
+          w.uint32(162)
+          GetObject.codec().encode(obj.getObject, w)
+        }
+
+        if (obj.getObjectResponse != null) {
+          w.uint32(170)
+          GetObjectResponse.codec().encode(obj.getObjectResponse, w)
+        }
+
+        if (obj.deleteObject != null) {
+          w.uint32(178)
+          DeleteObject.codec().encode(obj.deleteObject, w)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -1099,6 +1334,36 @@ export namespace EffectProtocolMessage {
               })
               break
             }
+            case 18: {
+              obj.storeObject = StoreObject.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.storeObject
+              })
+              break
+            }
+            case 19: {
+              obj.storeObjectResponse = StoreObjectResponse.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.storeObjectResponse
+              })
+              break
+            }
+            case 20: {
+              obj.getObject = GetObject.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.getObject
+              })
+              break
+            }
+            case 21: {
+              obj.getObjectResponse = GetObjectResponse.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.getObjectResponse
+              })
+              break
+            }
+            case 22: {
+              obj.deleteObject = DeleteObject.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.deleteObject
+              })
+              break
+            }
             default: {
               reader.skipType(tag & 7)
               break
@@ -1106,7 +1371,132 @@ export namespace EffectProtocolMessage {
           }
         }
 
+        if (obj.deleteObject != null) {
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.getObjectResponse != null) {
+          delete obj.deleteObject
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.getObject != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.storeObjectResponse
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.storeObjectResponse != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.storeObject != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
         if (obj.bulkProofRequest != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.identifyResponse
           delete obj.identifyRequest
           delete obj.requestToWorkResponse
@@ -1126,6 +1516,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.identifyResponse != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyRequest
           delete obj.requestToWorkResponse
@@ -1145,6 +1540,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.identifyRequest != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.requestToWorkResponse
@@ -1164,6 +1564,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.requestToWorkResponse != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1183,6 +1588,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.requestToWork != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1202,6 +1612,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.ack != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1221,6 +1636,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.error != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1240,6 +1660,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.templateResponse != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1259,6 +1684,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.templateRequest != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1278,6 +1708,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.proofResponse != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1297,6 +1732,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.proofRequest != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1316,6 +1756,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.payoutRequest != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1335,6 +1780,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.payment != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1354,6 +1804,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskCompleted != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1373,6 +1828,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskRejected != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1392,6 +1852,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskAccepted != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1411,6 +1876,11 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.task != null) {
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -3420,5 +3890,316 @@ export namespace Template {
 
   export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<Template>): Template => {
     return decodeMessage(buf, Template.codec(), opts)
+  }
+}
+
+export interface StoreObject {
+  data: Uint8Array
+}
+
+export namespace StoreObject {
+  let _codec: Codec<StoreObject>
+
+  export const codec = (): Codec<StoreObject> => {
+    if (_codec == null) {
+      _codec = message<StoreObject>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.data != null && obj.data.byteLength > 0)) {
+          w.uint32(10)
+          w.bytes(obj.data)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          data: uint8ArrayAlloc(0)
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.data = reader.bytes()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<StoreObject>): Uint8Array => {
+    return encodeMessage(obj, StoreObject.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<StoreObject>): StoreObject => {
+    return decodeMessage(buf, StoreObject.codec(), opts)
+  }
+}
+
+export interface StoreObjectResponse {
+  hash: string
+}
+
+export namespace StoreObjectResponse {
+  let _codec: Codec<StoreObjectResponse>
+
+  export const codec = (): Codec<StoreObjectResponse> => {
+    if (_codec == null) {
+      _codec = message<StoreObjectResponse>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.hash != null && obj.hash !== '')) {
+          w.uint32(10)
+          w.string(obj.hash)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          hash: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.hash = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<StoreObjectResponse>): Uint8Array => {
+    return encodeMessage(obj, StoreObjectResponse.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<StoreObjectResponse>): StoreObjectResponse => {
+    return decodeMessage(buf, StoreObjectResponse.codec(), opts)
+  }
+}
+
+export interface GetObject {
+  hash: string
+}
+
+export namespace GetObject {
+  let _codec: Codec<GetObject>
+
+  export const codec = (): Codec<GetObject> => {
+    if (_codec == null) {
+      _codec = message<GetObject>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.hash != null && obj.hash !== '')) {
+          w.uint32(10)
+          w.string(obj.hash)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          hash: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.hash = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<GetObject>): Uint8Array => {
+    return encodeMessage(obj, GetObject.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<GetObject>): GetObject => {
+    return decodeMessage(buf, GetObject.codec(), opts)
+  }
+}
+
+export interface GetObjectResponse {
+  data: Uint8Array
+  owner: string
+}
+
+export namespace GetObjectResponse {
+  let _codec: Codec<GetObjectResponse>
+
+  export const codec = (): Codec<GetObjectResponse> => {
+    if (_codec == null) {
+      _codec = message<GetObjectResponse>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.data != null && obj.data.byteLength > 0)) {
+          w.uint32(10)
+          w.bytes(obj.data)
+        }
+
+        if ((obj.owner != null && obj.owner !== '')) {
+          w.uint32(18)
+          w.string(obj.owner)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          data: uint8ArrayAlloc(0),
+          owner: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.data = reader.bytes()
+              break
+            }
+            case 2: {
+              obj.owner = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<GetObjectResponse>): Uint8Array => {
+    return encodeMessage(obj, GetObjectResponse.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<GetObjectResponse>): GetObjectResponse => {
+    return decodeMessage(buf, GetObjectResponse.codec(), opts)
+  }
+}
+
+export interface DeleteObject {
+  hash: string
+}
+
+export namespace DeleteObject {
+  let _codec: Codec<DeleteObject>
+
+  export const codec = (): Codec<DeleteObject> => {
+    if (_codec == null) {
+      _codec = message<DeleteObject>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.hash != null && obj.hash !== '')) {
+          w.uint32(10)
+          w.string(obj.hash)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          hash: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.hash = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<DeleteObject>): Uint8Array => {
+    return encodeMessage(obj, DeleteObject.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<DeleteObject>): DeleteObject => {
+    return decodeMessage(buf, DeleteObject.codec(), opts)
   }
 }

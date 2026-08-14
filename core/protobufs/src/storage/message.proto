@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+message StoreObject {
+  bytes data = 1;
+}
+
+message StoreObjectResponse {
+  string hash = 1;
+}
+
+message GetObject {
+  string hash = 1;
+}
+
+message GetObjectResponse {
+  bytes data = 1;
+  string owner = 2;
+}
+
+message DeleteObject {
+  string hash = 1;
+}
