@@ -106,6 +106,13 @@ export function shouldExpectResponse(message: EffectProtocolMessage): boolean {
     "requestToWork" in message ||
     "identifyRequest" in message ||
     "bulkProofRequest" in message ||
+    "storeObject" in message ||
+    "getObject" in message ||
+    "deleteObject" in message ||
+    "setPointer" in message ||
+    "getPointer" in message ||
+    "deletePointer" in message ||
+    "listPointers" in message ||
     false
   );
 }

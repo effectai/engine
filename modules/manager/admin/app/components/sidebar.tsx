@@ -6,11 +6,11 @@ import {
   Bot,
   ChevronRight,
   Command,
+  Database,
   Frame,
   GalleryVerticalEnd,
   PieChart,
   Settings2,
-  // Sidebar,
   SquareTerminal,
   User,
 } from "lucide-react";
@@ -64,6 +64,11 @@ const data = {
       title: "Workers",
       url: "/workers",
       icon: User,
+    },
+    {
+      title: "Storage",
+      url: "/storage",
+      icon: Database,
     },
   ],
 };

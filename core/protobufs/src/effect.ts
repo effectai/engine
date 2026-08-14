@@ -563,6 +563,18 @@ export interface EffectProtocolMessage {
   identifyRequest?: EffectIdentifyRequest
   identifyResponse?: EffectIdentifyResponse
   bulkProofRequest?: BulkProofRequest
+  storeObject?: StoreObject
+  storeObjectResponse?: StoreObjectResponse
+  getObject?: GetObject
+  getObjectResponse?: GetObjectResponse
+  deleteObject?: DeleteObject
+  setPointer?: SetPointer
+  setPointerResponse?: SetPointerResponse
+  getPointer?: GetPointer
+  getPointerResponse?: GetPointerResponse
+  deletePointer?: DeletePointer
+  listPointers?: ListPointers
+  listPointersResponse?: ListPointersResponse
 }
 
 export namespace EffectProtocolMessage {
@@ -577,7 +589,391 @@ export namespace EffectProtocolMessage {
 
         obj = { ...obj }
 
+        if (obj.listPointersResponse != null) {
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.listPointers != null) {
+          obj.listPointersResponse = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.deletePointer != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.getPointerResponse != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.getPointer != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.setPointerResponse != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.setPointer != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.deleteObject != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.getObjectResponse != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.getObject != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.storeObjectResponse != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObject = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
+        if (obj.storeObject != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.bulkProofRequest = undefined
+          obj.identifyResponse = undefined
+          obj.identifyRequest = undefined
+          obj.requestToWorkResponse = undefined
+          obj.requestToWork = undefined
+          obj.ack = undefined
+          obj.error = undefined
+          obj.templateResponse = undefined
+          obj.templateRequest = undefined
+          obj.proofResponse = undefined
+          obj.proofRequest = undefined
+          obj.payoutRequest = undefined
+          obj.payment = undefined
+          obj.taskCompleted = undefined
+          obj.taskRejected = undefined
+          obj.taskAccepted = undefined
+          obj.task = undefined
+        }
+
         if (obj.bulkProofRequest != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
           obj.requestToWorkResponse = undefined
@@ -597,6 +993,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.identifyResponse != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyRequest = undefined
           obj.requestToWorkResponse = undefined
@@ -616,6 +1024,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.identifyRequest != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.requestToWorkResponse = undefined
@@ -635,6 +1055,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.requestToWorkResponse != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -654,6 +1086,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.requestToWork != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -673,6 +1117,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.ack != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -692,6 +1148,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.error != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -711,6 +1179,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.templateResponse != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -730,6 +1210,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.templateRequest != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -749,6 +1241,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.proofResponse != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -768,6 +1272,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.proofRequest != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -787,6 +1303,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.payoutRequest != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -806,6 +1334,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.payment != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -825,6 +1365,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskCompleted != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -844,6 +1396,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskRejected != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -863,6 +1427,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskAccepted != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -882,6 +1458,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.task != null) {
+          obj.listPointersResponse = undefined
+          obj.listPointers = undefined
+          obj.deletePointer = undefined
+          obj.getPointerResponse = undefined
+          obj.getPointer = undefined
+          obj.setPointerResponse = undefined
+          obj.setPointer = undefined
+          obj.deleteObject = undefined
+          obj.getObjectResponse = undefined
+          obj.getObject = undefined
+          obj.storeObjectResponse = undefined
+          obj.storeObject = undefined
           obj.bulkProofRequest = undefined
           obj.identifyResponse = undefined
           obj.identifyRequest = undefined
@@ -983,6 +1571,66 @@ export namespace EffectProtocolMessage {
         if (obj.bulkProofRequest != null) {
           w.uint32(138)
           BulkProofRequest.codec().encode(obj.bulkProofRequest, w)
+        }
+
+        if (obj.storeObject != null) {
+          w.uint32(146)
+          StoreObject.codec().encode(obj.storeObject, w)
+        }
+
+        if (obj.storeObjectResponse != null) {
+          w.uint32(154)
+          StoreObjectResponse.codec().encode(obj.storeObjectResponse, w)
+        }
+
+        if (obj.getObject != null) {
+          w.uint32(162)
+          GetObject.codec().encode(obj.getObject, w)
+        }
+
+        if (obj.getObjectResponse != null) {
+          w.uint32(170)
+          GetObjectResponse.codec().encode(obj.getObjectResponse, w)
+        }
+
+        if (obj.deleteObject != null) {
+          w.uint32(178)
+          DeleteObject.codec().encode(obj.deleteObject, w)
+        }
+
+        if (obj.setPointer != null) {
+          w.uint32(186)
+          SetPointer.codec().encode(obj.setPointer, w)
+        }
+
+        if (obj.setPointerResponse != null) {
+          w.uint32(194)
+          SetPointerResponse.codec().encode(obj.setPointerResponse, w)
+        }
+
+        if (obj.getPointer != null) {
+          w.uint32(202)
+          GetPointer.codec().encode(obj.getPointer, w)
+        }
+
+        if (obj.getPointerResponse != null) {
+          w.uint32(210)
+          GetPointerResponse.codec().encode(obj.getPointerResponse, w)
+        }
+
+        if (obj.deletePointer != null) {
+          w.uint32(218)
+          DeletePointer.codec().encode(obj.deletePointer, w)
+        }
+
+        if (obj.listPointers != null) {
+          w.uint32(226)
+          ListPointers.codec().encode(obj.listPointers, w)
+        }
+
+        if (obj.listPointersResponse != null) {
+          w.uint32(234)
+          ListPointersResponse.codec().encode(obj.listPointersResponse, w)
         }
 
         if (opts.lengthDelimited !== false) {
@@ -1099,6 +1747,78 @@ export namespace EffectProtocolMessage {
               })
               break
             }
+            case 18: {
+              obj.storeObject = StoreObject.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.storeObject
+              })
+              break
+            }
+            case 19: {
+              obj.storeObjectResponse = StoreObjectResponse.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.storeObjectResponse
+              })
+              break
+            }
+            case 20: {
+              obj.getObject = GetObject.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.getObject
+              })
+              break
+            }
+            case 21: {
+              obj.getObjectResponse = GetObjectResponse.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.getObjectResponse
+              })
+              break
+            }
+            case 22: {
+              obj.deleteObject = DeleteObject.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.deleteObject
+              })
+              break
+            }
+            case 23: {
+              obj.setPointer = SetPointer.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.setPointer
+              })
+              break
+            }
+            case 24: {
+              obj.setPointerResponse = SetPointerResponse.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.setPointerResponse
+              })
+              break
+            }
+            case 25: {
+              obj.getPointer = GetPointer.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.getPointer
+              })
+              break
+            }
+            case 26: {
+              obj.getPointerResponse = GetPointerResponse.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.getPointerResponse
+              })
+              break
+            }
+            case 27: {
+              obj.deletePointer = DeletePointer.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.deletePointer
+              })
+              break
+            }
+            case 28: {
+              obj.listPointers = ListPointers.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.listPointers
+              })
+              break
+            }
+            case 29: {
+              obj.listPointersResponse = ListPointersResponse.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.listPointersResponse
+              })
+              break
+            }
             default: {
               reader.skipType(tag & 7)
               break
@@ -1106,7 +1826,391 @@ export namespace EffectProtocolMessage {
           }
         }
 
+        if (obj.listPointersResponse != null) {
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.listPointers != null) {
+          delete obj.listPointersResponse
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.deletePointer != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.getPointerResponse != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.getPointer != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.setPointerResponse != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.setPointer != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.deleteObject != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.getObjectResponse != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.getObject != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.storeObjectResponse
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.storeObjectResponse != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObject
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
+        if (obj.storeObject != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.bulkProofRequest
+          delete obj.identifyResponse
+          delete obj.identifyRequest
+          delete obj.requestToWorkResponse
+          delete obj.requestToWork
+          delete obj.ack
+          delete obj.error
+          delete obj.templateResponse
+          delete obj.templateRequest
+          delete obj.proofResponse
+          delete obj.proofRequest
+          delete obj.payoutRequest
+          delete obj.payment
+          delete obj.taskCompleted
+          delete obj.taskRejected
+          delete obj.taskAccepted
+          delete obj.task
+        }
+
         if (obj.bulkProofRequest != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.identifyResponse
           delete obj.identifyRequest
           delete obj.requestToWorkResponse
@@ -1126,6 +2230,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.identifyResponse != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyRequest
           delete obj.requestToWorkResponse
@@ -1145,6 +2261,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.identifyRequest != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.requestToWorkResponse
@@ -1164,6 +2292,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.requestToWorkResponse != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1183,6 +2323,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.requestToWork != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1202,6 +2354,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.ack != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1221,6 +2385,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.error != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1240,6 +2416,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.templateResponse != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1259,6 +2447,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.templateRequest != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1278,6 +2478,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.proofResponse != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1297,6 +2509,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.proofRequest != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1316,6 +2540,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.payoutRequest != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1335,6 +2571,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.payment != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1354,6 +2602,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskCompleted != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1373,6 +2633,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskRejected != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1392,6 +2664,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.taskAccepted != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -1411,6 +2695,18 @@ export namespace EffectProtocolMessage {
         }
 
         if (obj.task != null) {
+          delete obj.listPointersResponse
+          delete obj.listPointers
+          delete obj.deletePointer
+          delete obj.getPointerResponse
+          delete obj.getPointer
+          delete obj.setPointerResponse
+          delete obj.setPointer
+          delete obj.deleteObject
+          delete obj.getObjectResponse
+          delete obj.getObject
+          delete obj.storeObjectResponse
+          delete obj.storeObject
           delete obj.bulkProofRequest
           delete obj.identifyResponse
           delete obj.identifyRequest
@@ -3420,5 +4716,992 @@ export namespace Template {
 
   export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<Template>): Template => {
     return decodeMessage(buf, Template.codec(), opts)
+  }
+}
+
+export interface StoreObject {
+  data: Uint8Array
+  type: number
+  next: string
+}
+
+export namespace StoreObject {
+  let _codec: Codec<StoreObject>
+
+  export const codec = (): Codec<StoreObject> => {
+    if (_codec == null) {
+      _codec = message<StoreObject>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.data != null && obj.data.byteLength > 0)) {
+          w.uint32(10)
+          w.bytes(obj.data)
+        }
+
+        if ((obj.type != null && obj.type !== 0)) {
+          w.uint32(16)
+          w.uint32(obj.type)
+        }
+
+        if ((obj.next != null && obj.next !== '')) {
+          w.uint32(26)
+          w.string(obj.next)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          data: uint8ArrayAlloc(0),
+          type: 0,
+          next: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.data = reader.bytes()
+              break
+            }
+            case 2: {
+              obj.type = reader.uint32()
+              break
+            }
+            case 3: {
+              obj.next = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<StoreObject>): Uint8Array => {
+    return encodeMessage(obj, StoreObject.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<StoreObject>): StoreObject => {
+    return decodeMessage(buf, StoreObject.codec(), opts)
+  }
+}
+
+export interface StoreObjectResponse {
+  hash: string
+}
+
+export namespace StoreObjectResponse {
+  let _codec: Codec<StoreObjectResponse>
+
+  export const codec = (): Codec<StoreObjectResponse> => {
+    if (_codec == null) {
+      _codec = message<StoreObjectResponse>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.hash != null && obj.hash !== '')) {
+          w.uint32(10)
+          w.string(obj.hash)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          hash: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.hash = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<StoreObjectResponse>): Uint8Array => {
+    return encodeMessage(obj, StoreObjectResponse.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<StoreObjectResponse>): StoreObjectResponse => {
+    return decodeMessage(buf, StoreObjectResponse.codec(), opts)
+  }
+}
+
+export interface GetObject {
+  hash: string
+  limit: number
+}
+
+export namespace GetObject {
+  let _codec: Codec<GetObject>
+
+  export const codec = (): Codec<GetObject> => {
+    if (_codec == null) {
+      _codec = message<GetObject>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.hash != null && obj.hash !== '')) {
+          w.uint32(10)
+          w.string(obj.hash)
+        }
+
+        if ((obj.limit != null && obj.limit !== 0)) {
+          w.uint32(16)
+          w.uint32(obj.limit)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          hash: '',
+          limit: 0
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.hash = reader.string()
+              break
+            }
+            case 2: {
+              obj.limit = reader.uint32()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<GetObject>): Uint8Array => {
+    return encodeMessage(obj, GetObject.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<GetObject>): GetObject => {
+    return decodeMessage(buf, GetObject.codec(), opts)
+  }
+}
+
+export interface GetObjectResponseItem {
+  hash: string
+  type: number
+  owner: Uint8Array
+  next: string
+  data: Uint8Array
+}
+
+export namespace GetObjectResponseItem {
+  let _codec: Codec<GetObjectResponseItem>
+
+  export const codec = (): Codec<GetObjectResponseItem> => {
+    if (_codec == null) {
+      _codec = message<GetObjectResponseItem>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.hash != null && obj.hash !== '')) {
+          w.uint32(10)
+          w.string(obj.hash)
+        }
+
+        if ((obj.type != null && obj.type !== 0)) {
+          w.uint32(16)
+          w.uint32(obj.type)
+        }
+
+        if ((obj.owner != null && obj.owner.byteLength > 0)) {
+          w.uint32(26)
+          w.bytes(obj.owner)
+        }
+
+        if ((obj.next != null && obj.next !== '')) {
+          w.uint32(34)
+          w.string(obj.next)
+        }
+
+        if ((obj.data != null && obj.data.byteLength > 0)) {
+          w.uint32(42)
+          w.bytes(obj.data)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          hash: '',
+          type: 0,
+          owner: uint8ArrayAlloc(0),
+          next: '',
+          data: uint8ArrayAlloc(0)
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.hash = reader.string()
+              break
+            }
+            case 2: {
+              obj.type = reader.uint32()
+              break
+            }
+            case 3: {
+              obj.owner = reader.bytes()
+              break
+            }
+            case 4: {
+              obj.next = reader.string()
+              break
+            }
+            case 5: {
+              obj.data = reader.bytes()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<GetObjectResponseItem>): Uint8Array => {
+    return encodeMessage(obj, GetObjectResponseItem.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<GetObjectResponseItem>): GetObjectResponseItem => {
+    return decodeMessage(buf, GetObjectResponseItem.codec(), opts)
+  }
+}
+
+export interface GetObjectResponse {
+  items: GetObjectResponseItem[]
+}
+
+export namespace GetObjectResponse {
+  let _codec: Codec<GetObjectResponse>
+
+  export const codec = (): Codec<GetObjectResponse> => {
+    if (_codec == null) {
+      _codec = message<GetObjectResponse>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if (obj.items != null) {
+          for (const value of obj.items) {
+            w.uint32(10)
+            GetObjectResponseItem.codec().encode(value, w)
+          }
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          items: []
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              if (opts.limits?.items != null && obj.items.length === opts.limits.items) {
+                throw new MaxLengthError('Decode error - map field "items" had too many elements')
+              }
+
+              obj.items.push(GetObjectResponseItem.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.items$
+              }))
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<GetObjectResponse>): Uint8Array => {
+    return encodeMessage(obj, GetObjectResponse.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<GetObjectResponse>): GetObjectResponse => {
+    return decodeMessage(buf, GetObjectResponse.codec(), opts)
+  }
+}
+
+export interface DeleteObject {
+  hash: string
+}
+
+export namespace DeleteObject {
+  let _codec: Codec<DeleteObject>
+
+  export const codec = (): Codec<DeleteObject> => {
+    if (_codec == null) {
+      _codec = message<DeleteObject>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.hash != null && obj.hash !== '')) {
+          w.uint32(10)
+          w.string(obj.hash)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          hash: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.hash = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<DeleteObject>): Uint8Array => {
+    return encodeMessage(obj, DeleteObject.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<DeleteObject>): DeleteObject => {
+    return decodeMessage(buf, DeleteObject.codec(), opts)
+  }
+}
+
+export interface SetPointer {
+  key: string
+  value: string
+  expected?: string
+}
+
+export namespace SetPointer {
+  let _codec: Codec<SetPointer>
+
+  export const codec = (): Codec<SetPointer> => {
+    if (_codec == null) {
+      _codec = message<SetPointer>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.key != null && obj.key !== '')) {
+          w.uint32(10)
+          w.string(obj.key)
+        }
+
+        if ((obj.value != null && obj.value !== '')) {
+          w.uint32(18)
+          w.string(obj.value)
+        }
+
+        if (obj.expected != null) {
+          w.uint32(26)
+          w.string(obj.expected)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          key: '',
+          value: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.key = reader.string()
+              break
+            }
+            case 2: {
+              obj.value = reader.string()
+              break
+            }
+            case 3: {
+              obj.expected = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<SetPointer>): Uint8Array => {
+    return encodeMessage(obj, SetPointer.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<SetPointer>): SetPointer => {
+    return decodeMessage(buf, SetPointer.codec(), opts)
+  }
+}
+
+export interface SetPointerResponse {
+  updated: boolean
+}
+
+export namespace SetPointerResponse {
+  let _codec: Codec<SetPointerResponse>
+
+  export const codec = (): Codec<SetPointerResponse> => {
+    if (_codec == null) {
+      _codec = message<SetPointerResponse>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.updated != null && obj.updated !== false)) {
+          w.uint32(8)
+          w.bool(obj.updated)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          updated: false
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.updated = reader.bool()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<SetPointerResponse>): Uint8Array => {
+    return encodeMessage(obj, SetPointerResponse.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<SetPointerResponse>): SetPointerResponse => {
+    return decodeMessage(buf, SetPointerResponse.codec(), opts)
+  }
+}
+
+export interface GetPointer {
+  key: string
+}
+
+export namespace GetPointer {
+  let _codec: Codec<GetPointer>
+
+  export const codec = (): Codec<GetPointer> => {
+    if (_codec == null) {
+      _codec = message<GetPointer>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.key != null && obj.key !== '')) {
+          w.uint32(10)
+          w.string(obj.key)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          key: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.key = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<GetPointer>): Uint8Array => {
+    return encodeMessage(obj, GetPointer.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<GetPointer>): GetPointer => {
+    return decodeMessage(buf, GetPointer.codec(), opts)
+  }
+}
+
+export interface GetPointerResponse {
+  found: boolean
+  key: string
+  value: string
+}
+
+export namespace GetPointerResponse {
+  let _codec: Codec<GetPointerResponse>
+
+  export const codec = (): Codec<GetPointerResponse> => {
+    if (_codec == null) {
+      _codec = message<GetPointerResponse>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.found != null && obj.found !== false)) {
+          w.uint32(8)
+          w.bool(obj.found)
+        }
+
+        if ((obj.key != null && obj.key !== '')) {
+          w.uint32(18)
+          w.string(obj.key)
+        }
+
+        if ((obj.value != null && obj.value !== '')) {
+          w.uint32(26)
+          w.string(obj.value)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          found: false,
+          key: '',
+          value: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.found = reader.bool()
+              break
+            }
+            case 2: {
+              obj.key = reader.string()
+              break
+            }
+            case 3: {
+              obj.value = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<GetPointerResponse>): Uint8Array => {
+    return encodeMessage(obj, GetPointerResponse.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<GetPointerResponse>): GetPointerResponse => {
+    return decodeMessage(buf, GetPointerResponse.codec(), opts)
+  }
+}
+
+export interface DeletePointer {
+  key: string
+}
+
+export namespace DeletePointer {
+  let _codec: Codec<DeletePointer>
+
+  export const codec = (): Codec<DeletePointer> => {
+    if (_codec == null) {
+      _codec = message<DeletePointer>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.key != null && obj.key !== '')) {
+          w.uint32(10)
+          w.string(obj.key)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          key: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.key = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<DeletePointer>): Uint8Array => {
+    return encodeMessage(obj, DeletePointer.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<DeletePointer>): DeletePointer => {
+    return decodeMessage(buf, DeletePointer.codec(), opts)
+  }
+}
+
+export interface ListPointers {
+  owner: string
+}
+
+export namespace ListPointers {
+  let _codec: Codec<ListPointers>
+
+  export const codec = (): Codec<ListPointers> => {
+    if (_codec == null) {
+      _codec = message<ListPointers>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.owner != null && obj.owner !== '')) {
+          w.uint32(10)
+          w.string(obj.owner)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          owner: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.owner = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<ListPointers>): Uint8Array => {
+    return encodeMessage(obj, ListPointers.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<ListPointers>): ListPointers => {
+    return decodeMessage(buf, ListPointers.codec(), opts)
+  }
+}
+
+export interface ListPointersResponse {
+  pointers: PointerEntry[]
+}
+
+export namespace ListPointersResponse {
+  let _codec: Codec<ListPointersResponse>
+
+  export const codec = (): Codec<ListPointersResponse> => {
+    if (_codec == null) {
+      _codec = message<ListPointersResponse>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if (obj.pointers != null) {
+          for (const value of obj.pointers) {
+            w.uint32(10)
+            PointerEntry.codec().encode(value, w)
+          }
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          pointers: []
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              if (opts.limits?.pointers != null && obj.pointers.length === opts.limits.pointers) {
+                throw new MaxLengthError('Decode error - map field "pointers" had too many elements')
+              }
+
+              obj.pointers.push(PointerEntry.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.pointers$
+              }))
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<ListPointersResponse>): Uint8Array => {
+    return encodeMessage(obj, ListPointersResponse.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<ListPointersResponse>): ListPointersResponse => {
+    return decodeMessage(buf, ListPointersResponse.codec(), opts)
+  }
+}
+
+export interface PointerEntry {
+  key: string
+  value: string
+}
+
+export namespace PointerEntry {
+  let _codec: Codec<PointerEntry>
+
+  export const codec = (): Codec<PointerEntry> => {
+    if (_codec == null) {
+      _codec = message<PointerEntry>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.key != null && obj.key !== '')) {
+          w.uint32(10)
+          w.string(obj.key)
+        }
+
+        if ((obj.value != null && obj.value !== '')) {
+          w.uint32(18)
+          w.string(obj.value)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          key: '',
+          value: ''
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.key = reader.string()
+              break
+            }
+            case 2: {
+              obj.value = reader.string()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<PointerEntry>): Uint8Array => {
+    return encodeMessage(obj, PointerEntry.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<PointerEntry>): PointerEntry => {
+    return decodeMessage(buf, PointerEntry.codec(), opts)
   }
 }
