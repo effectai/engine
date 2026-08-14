@@ -251,12 +251,17 @@ export const createStorageManager = ({
     return { listPointersResponse: { pointers } };
   };
 
+  const listPointersFor = async (ownerHex: string) => {
+    return storagePointerStore.listPointers(ownerHex);
+  };
+
   return {
     handleStoreObject,
     handleGetObject,
     handleDeleteObject,
     getQuota,
     listQuotas,
+    listPointersFor,
     handleSetPointer,
     handleGetPointer,
     handleDeletePointer,
