@@ -69,7 +69,12 @@ export default function Component() {
 
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-6">
-      <h1 className="text-2xl font-bold">Storage Explorer</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Storage Explorer</h1>
+        <a href="/storage/pointers" className="text-blue-600 hover:underline text-sm">
+          View Pointers
+        </a>
+      </div>
 
       <Card>
         <CardContent className="py-4 flex gap-4">
