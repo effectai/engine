@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { PeerId } from "@libp2p/interface";
 import type { StorageObjectStore } from "../stores/storageObjectStore.js";
+import type { StoragePointerStore } from "../stores/storagePointerStore.js";
 
 const OBJECT_TYPE_RAW = 0;
 const OBJECT_TYPE_LINKED_LIST = 1;
@@ -77,8 +78,10 @@ export const computeObjectHash = (data: Uint8Array): string => {
 
 export const createStorageManager = ({
   storageStore,
+  storagePointerStore,
 }: {
   storageStore: StorageObjectStore;
+  storagePointerStore: StoragePointerStore;
 }) => {
   const handleStoreObject = async (
     payload: { data: Uint8Array; type?: number; next?: string },
@@ -186,12 +189,78 @@ export const createStorageManager = ({
     return storageStore.listQuotas();
   };
 
+  // --- Pointer handlers ---
+
+  const handleSetPointer = async (
+    payload: { key: string; value: string; expected?: string },
+    { peerId }: { peerId: PeerId },
+  ) => {
+    const ownerHex = bytesToHex(getOwnerBytes(peerId));
+
+    // Validate value is a 64-char hex string (32 bytes)
+    if (!/^[0-9a-f]{64}$/i.test(payload.value)) {
+      throw new Error("Pointer value must be a 64-character hex string (32 bytes)");
+    }
+
+    if (payload.expected !== undefined) {
+      if (!/^[0-9a-f]{64}$/i.test(payload.expected)) {
+        throw new Error("Pointer expected value must be a 64-character hex string (32 bytes)");
+      }
+      const { updated } = await storagePointerStore.compareAndSetPointer(
+        ownerHex,
+        payload.key,
+        payload.expected,
+        payload.value,
+      );
+      return { setPointerResponse: { updated } };
+    }
+
+    await storagePointerStore.setPointer(ownerHex, payload.key, payload.value);
+    return { setPointerResponse: { updated: true } };
+  };
+
+  const handleGetPointer = async (
+    payload: { key: string },
+    { peerId }: { peerId: PeerId },
+  ) => {
+    const ownerHex = bytesToHex(getOwnerBytes(peerId));
+    const ptr = await storagePointerStore.getPointer(ownerHex, payload.key);
+    if (!ptr) {
+      return { getPointerResponse: { found: false, key: payload.key, value: "" } };
+    }
+    return { getPointerResponse: { found: true, key: ptr.key, value: ptr.value } };
+  };
+
+  const handleDeletePointer = async (
+    payload: { key: string },
+    { peerId }: { peerId: PeerId },
+  ) => {
+    const ownerHex = bytesToHex(getOwnerBytes(peerId));
+    const deleted = await storagePointerStore.deletePointer(ownerHex, payload.key);
+    if (!deleted) {
+      throw new Error("Pointer not found");
+    }
+  };
+
+  const handleListPointers = async (
+    payload: { owner?: string },
+    { peerId }: { peerId: PeerId },
+  ) => {
+    const ownerHex = payload.owner || bytesToHex(getOwnerBytes(peerId));
+    const pointers = await storagePointerStore.listPointers(ownerHex);
+    return { listPointersResponse: { pointers } };
+  };
+
   return {
     handleStoreObject,
     handleGetObject,
     handleDeleteObject,
     getQuota,
     listQuotas,
+    handleSetPointer,
+    handleGetPointer,
+    handleDeletePointer,
+    handleListPointers,
   };
 };
 

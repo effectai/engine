@@ -8,6 +8,7 @@ import {
   createStorageManager,
 } from "./createStorageManager.js";
 import { createStorageObjectStore } from "../stores/storageObjectStore.js";
+import { createStoragePointerStore } from "../stores/storagePointerStore.js";
 
 const TEST_DIR = "/tmp/storage-manager-test";
 
@@ -16,9 +17,17 @@ const ownerBytes = (id: string): Uint8Array =>
 
 const peer = (id: string) => ({ toString: () => id }) as PeerId;
 
+const hashA = "a".repeat(64);
+const hashB = "b".repeat(64);
+const hashC = "c".repeat(64);
+const hashP1 = "1".repeat(64);
+const hashP2 = "2".repeat(64);
+const hashStale = "f".repeat(64);
+
 describe("createStorageManager", () => {
   let datastore: LevelDatastore;
   let storageStore: ReturnType<typeof createStorageObjectStore>;
+  let storagePointerStore: ReturnType<typeof createStoragePointerStore>;
   let storageManager: ReturnType<typeof createStorageManager>;
 
   beforeEach(async () => {
@@ -26,8 +35,10 @@ describe("createStorageManager", () => {
     datastore = new LevelDatastore(TEST_DIR);
     await datastore.open();
     storageStore = createStorageObjectStore({ datastore });
+    storagePointerStore = createStoragePointerStore({ datastore });
     storageManager = createStorageManager({
       storageStore,
+      storagePointerStore,
     });
   });
 
@@ -364,6 +375,188 @@ describe("createStorageManager", () => {
       const q2 = await storageStore.getQuota(p2Hex);
       expect(q1.objectCount).toBe(1);
       expect(q2.objectCount).toBe(1);
+    });
+  });
+
+  describe("handleSetPointer", () => {
+    it("creates a pointer for the sender's namespace", async () => {
+      const res = await storageManager.handleSetPointer(
+        { key: "latest", value: hashA },
+        { peerId: peer("peer1") },
+      );
+      expect(res.setPointerResponse.updated).toBe(true);
+
+      const got = await storageManager.handleGetPointer(
+        { key: "latest" },
+        { peerId: peer("peer1") },
+      );
+      expect(got.getPointerResponse).toEqual({
+        found: true,
+        key: "latest",
+value: hashA,
+      });
+    });
+
+    it("overwrites an existing pointer when no expected is given", async () => {
+      await storageManager.handleSetPointer(
+        { key: "latest", value: hashA },
+        { peerId: peer("peer1") },
+      );
+      const res = await storageManager.handleSetPointer(
+        { key: "latest", value: hashB },
+        { peerId: peer("peer1") },
+      );
+      expect(res.setPointerResponse.updated).toBe(true);
+
+      const got = await storageManager.handleGetPointer(
+        { key: "latest" },
+        { peerId: peer("peer1") },
+      );
+      expect(got.getPointerResponse.value).toBe(hashB);
+    });
+
+    it("namespaces pointers per owner (same key, different values)", async () => {
+      await storageManager.handleSetPointer(
+        { key: "mine", value: hashP1 },
+        { peerId: peer("peer1") },
+      );
+      await storageManager.handleSetPointer(
+        { key: "mine", value: hashP2 },
+        { peerId: peer("peer2") },
+      );
+
+      const p1 = await storageManager.handleGetPointer(
+        { key: "mine" },
+        { peerId: peer("peer1") },
+      );
+      const p2 = await storageManager.handleGetPointer(
+        { key: "mine" },
+        { peerId: peer("peer2") },
+      );
+      expect(p1.getPointerResponse.value).toBe(hashP1);
+      expect(p2.getPointerResponse.value).toBe(hashP2);
+    });
+  });
+
+  describe("handleSetPointer CAS", () => {
+    it("updates only when expected matches the current value", async () => {
+      await storageManager.handleSetPointer(
+        { key: "latest", value: hashA },
+        { peerId: peer("peer1") },
+      );
+
+      const ok = await storageManager.handleSetPointer(
+        { key: "latest", value: hashB, expected: hashA },
+        { peerId: peer("peer1") },
+      );
+      expect(ok.setPointerResponse.updated).toBe(true);
+
+      const got = await storageManager.handleGetPointer(
+        { key: "latest" },
+        { peerId: peer("peer1") },
+      );
+      expect(got.getPointerResponse.value).toBe(hashB);
+    });
+
+    it("rejects when expected does not match and leaves value unchanged", async () => {
+      await storageManager.handleSetPointer(
+        { key: "latest", value: hashA },
+        { peerId: peer("peer1") },
+      );
+
+      const fail = await storageManager.handleSetPointer(
+        { key: "latest", value: hashB, expected: hashStale },
+        { peerId: peer("peer1") },
+      );
+      expect(fail.setPointerResponse.updated).toBe(false);
+
+      const got = await storageManager.handleGetPointer(
+        { key: "latest" },
+        { peerId: peer("peer1") },
+      );
+      expect(got.getPointerResponse.value).toBe(hashA);
+    });
+  });
+
+  describe("handleDeletePointer", () => {
+    it("deletes the pointer and returns deleted=true", async () => {
+      await storageManager.handleSetPointer(
+        { key: "gone", value: hashA },
+        { peerId: peer("peer1") },
+      );
+
+      const res = await storageManager.handleDeletePointer(
+        { key: "gone" },
+        { peerId: peer("peer1") },
+      );
+
+      const got = await storageManager.handleGetPointer(
+        { key: "gone" },
+        { peerId: peer("peer1") },
+      );
+      expect(got.getPointerResponse.found).toBe(false);
+    });
+
+    it("throws for an unknown pointer", async () => {
+      await expect(
+        storageManager.handleDeletePointer(
+          { key: "nope" },
+          { peerId: peer("peer1") },
+        ),
+      ).rejects.toThrow("Pointer not found");
+    });
+  });
+
+  describe("handleSetPointer validation", () => {
+    it("rejects a value that is not 64 hex chars", async () => {
+      await expect(
+        storageManager.handleSetPointer(
+          { key: "k", value: "not-a-hash" },
+          { peerId: peer("peer1") },
+        ),
+      ).rejects.toThrow("Pointer value must be a 64-character hex string");
+    });
+
+    it("rejects an expected value that is not 64 hex chars", async () => {
+      await expect(
+        storageManager.handleSetPointer(
+          { key: "k", value: "aa".repeat(32), expected: "bad" },
+          { peerId: peer("peer1") },
+        ),
+      ).rejects.toThrow("Pointer expected value must be a 64-character hex string");
+    });
+  });
+
+  describe("handleListPointers", () => {
+    it("lists only the caller's pointers", async () => {
+      await storageManager.handleSetPointer(
+        { key: "a", value: hashA },
+        { peerId: peer("peer1") },
+      );
+      await storageManager.handleSetPointer(
+        { key: "b", value: hashB },
+        { peerId: peer("peer1") },
+      );
+      await storageManager.handleSetPointer(
+        { key: "c", value: hashC },
+        { peerId: peer("peer2") },
+      );
+
+      const p1 = await storageManager.handleListPointers(
+        {},
+        { peerId: peer("peer1") },
+      );
+      const p2 = await storageManager.handleListPointers(
+        {},
+        { peerId: peer("peer2") },
+      );
+
+      expect(p1.listPointersResponse.pointers).toHaveLength(2);
+      expect(p2.listPointersResponse.pointers).toHaveLength(1);
+      expect(p1.listPointersResponse.pointers.map((p) => p.key).sort()).toEqual([
+        "a",
+        "b",
+      ]);
     });
   });
 });

@@ -68,5 +68,12 @@ message EffectProtocolMessage {
     GetObject get_object = 20;
     GetObjectResponse get_object_response = 21;
     DeleteObject delete_object = 22;
+    SetPointer set_pointer = 23;
+    SetPointerResponse set_pointer_response = 24;
+    GetPointer get_pointer = 25;
+    GetPointerResponse get_pointer_response = 26;
+    DeletePointer delete_pointer = 27;
+    ListPointers list_pointers = 28;
+    ListPointersResponse list_pointers_response = 29;
   }
 }
