@@ -24,8 +24,6 @@ import {
 
 export const statusProgram = new Command();
 
-const MANAGER_MA = "/ip4/127.0.0.1/tcp/11995/ws/p2p/12D3KooWAQH4SQHt12N2eGnAUR4iixS8TAfKxRqfd17sDurZ1v5R";
-
 statusProgram
   .name("status")
   .description("Network and identity status check.")
@@ -78,7 +76,7 @@ Account
   try {
     await w.node.start();
     const pingService = w.node.services.ping as Ping;
-    pingRes = await pingService.ping(multiaddr(MANAGER_MA));
+    pingRes = await pingService.ping(multiaddr(opts.manager));
   } catch {
     connection = "Failed";
   }

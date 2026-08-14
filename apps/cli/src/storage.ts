@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { readFileSync } from "node:fs";
 import { generateKeyPairFromSeed, createWorkerEntity } from "@effectai/protocol";
-import { multiaddr, type Multiaddr } from "@multiformats/multiaddr";
+import { multiaddr } from "@multiformats/multiaddr";
 
 export const storageCommand = new Command();
 
@@ -12,7 +12,6 @@ storageCommand
 storageCommand
   .command("store")
   .description("Store data on a manager node")
-  .requiredOption("-m, --manager <multiaddr>", "Manager libp2p multiaddr")
   .requiredOption("-d, --data <base64>", "Base64-encoded data to store")
   .action(async (options, cmd) => {
     const opts = cmd.optsWithGlobals();
@@ -25,7 +24,7 @@ storageCommand
     try {
       const bytes = Uint8Array.from(Buffer.from(options.data, "base64"));
       const [response, error] = await w.sendMessage(
-        multiaddr(options.manager) as any,
+        multiaddr(opts.manager) as any,
         { storeObject: { data: bytes } },
       );
 
@@ -50,7 +49,6 @@ storageCommand
 storageCommand
   .command("get")
   .description("Retrieve an object by its content hash")
-  .requiredOption("-m, --manager <multiaddr>", "Manager libp2p multiaddr")
   .requiredOption("-c, --cid <hash>", "Content hash (SHA-256 hex)")
   .action(async (options, cmd) => {
     const opts = cmd.optsWithGlobals();
@@ -62,7 +60,7 @@ storageCommand
 
     try {
       const [response, error] = await w.sendMessage(
-        multiaddr(options.manager) as any,
+        multiaddr(opts.manager) as any,
         { getObject: { hash: options.cid } },
       );
 
@@ -90,7 +88,6 @@ storageCommand
 storageCommand
   .command("delete")
   .description("Delete an object by its content hash (must be owner)")
-  .requiredOption("-m, --manager <multiaddr>", "Manager libp2p multiaddr")
   .requiredOption("-c, --cid <hash>", "Content hash (SHA-256 hex)")
   .action(async (options, cmd) => {
     const opts = cmd.optsWithGlobals();
@@ -102,7 +99,7 @@ storageCommand
 
     try {
       const [response, error] = await w.sendMessage(
-        multiaddr(options.manager) as any,
+        multiaddr(opts.manager) as any,
         { deleteObject: { hash: options.cid } },
       );
 

@@ -5,6 +5,8 @@ import { statusProgram } from "./status.js";
 import { storageCommand } from "./storage.js";
 import { workerProgram } from "./worker/index.js";
 
+const MANAGER_MA = "/ip4/127.0.0.1/tcp/11995/ws/p2p/12D3KooWAQH4SQHt12N2eGnAUR4iixS8TAfKxRqfd17sDurZ1v5R";
+
 export const effectCLI = new Command();
 
 effectCLI
@@ -12,6 +14,7 @@ effectCLI
   .description("CLI for interacting with Effect AI")
   .version("0.1.0")
   .option("-k, --keypair <path>", "Path to JSON key file.")
+  .option("-m, --manager <multiaddr>", `Manager libp2p multiaddr`, MANAGER_MA)
   .option("-s, --solana-rpc <url>", "Solana RPC node.",
     "https://api.mainnet.solana.com")
   .option("-v, --verbose", "Enable debug logging", false);
