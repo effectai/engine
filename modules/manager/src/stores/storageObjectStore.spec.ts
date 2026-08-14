@@ -53,4 +53,34 @@ describe("createStorageObjectStore", () => {
     expect(await store.get(hash)).toBeNull();
     expect(await store.getMeta(hash)).toBeNull();
   });
+
+  describe("quota tracking", () => {
+    it("returns zero quota for an unknown owner", async () => {
+      const q = await store.getQuota("unknown");
+      expect(q).toEqual({ objectCount: 0, totalBytes: 0 });
+    });
+
+    it("increments and decrements quota", async () => {
+      const owner = "aa".repeat(32);
+
+      await store.incrementQuota(owner, 100);
+      let q = await store.getQuota(owner);
+      expect(q).toEqual({ objectCount: 1, totalBytes: 100 });
+
+      await store.incrementQuota(owner, 50);
+      q = await store.getQuota(owner);
+      expect(q).toEqual({ objectCount: 2, totalBytes: 150 });
+
+      await store.decrementQuota(owner, 50);
+      q = await store.getQuota(owner);
+      expect(q).toEqual({ objectCount: 1, totalBytes: 100 });
+    });
+
+    it("does not go negative on decrement", async () => {
+      const owner = "bb".repeat(32);
+      await store.decrementQuota(owner, 999);
+      const q = await store.getQuota(owner);
+      expect(q).toEqual({ objectCount: 0, totalBytes: 0 });
+    });
+  });
 });

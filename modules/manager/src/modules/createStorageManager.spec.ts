@@ -18,14 +18,16 @@ const peer = (id: string) => ({ toString: () => id }) as PeerId;
 
 describe("createStorageManager", () => {
   let datastore: LevelDatastore;
+  let storageStore: ReturnType<typeof createStorageObjectStore>;
   let storageManager: ReturnType<typeof createStorageManager>;
 
   beforeEach(async () => {
     await promises.rm(TEST_DIR, { recursive: true, force: true });
     datastore = new LevelDatastore(TEST_DIR);
     await datastore.open();
+    storageStore = createStorageObjectStore({ datastore });
     storageManager = createStorageManager({
-      storageStore: createStorageObjectStore({ datastore }),
+      storageStore,
     });
   });
 
@@ -181,14 +183,6 @@ describe("createStorageManager", () => {
       );
       const hashB = bResp.storeObjectResponse.hash;
 
-      await storageManager.handleStoreObject(
-        { data: new TextEncoder().encode("C"), type: 1, next: hashB },
-        { peerId: peer("peer1") },
-      );
-      // hashC is the head
-
-      // Can't get hashC cleanly without storing it
-      // So store it directly for the test
       const cResp = await storageManager.handleStoreObject(
         { data: new TextEncoder().encode("C"), type: 1, next: hashB },
         { peerId: peer("peer1") },
@@ -309,4 +303,75 @@ describe("createStorageManager", () => {
       ).rejects.toThrow("Object not found");
     });
   });
+
+  describe("quota tracking", () => {
+    it("increments quota on store and decrements on delete", async () => {
+      const ownerHex = bytesToHex(ownerBytes("peer1"));
+      const data = new TextEncoder().encode("quota test data");
+      const dataLen = data.length;
+
+      const storeResp = await storageManager.handleStoreObject(
+        { data, type: 0 },
+        { peerId: peer("peer1") },
+      );
+
+      let q = await storageStore.getQuota(ownerHex);
+      expect(q).toEqual({ objectCount: 1, totalBytes: dataLen });
+
+      await storageManager.handleDeleteObject(
+        { hash: storeResp.storeObjectResponse.hash },
+        { peerId: peer("peer1") },
+      );
+
+      q = await storageStore.getQuota(ownerHex);
+      expect(q).toEqual({ objectCount: 0, totalBytes: 0 });
+    });
+
+    it("does not increment quota on deduplicated store", async () => {
+      const ownerHex = bytesToHex(ownerBytes("peer1"));
+      const data = new TextEncoder().encode("dedupe quota");
+
+      const first = await storageManager.handleStoreObject(
+        { data, type: 0 },
+        { peerId: peer("peer1") },
+      );
+      const q1 = await storageStore.getQuota(ownerHex);
+
+      await storageManager.handleStoreObject(
+        { data, type: 0 },
+        { peerId: peer("peer1") },
+      );
+      const q2 = await storageStore.getQuota(ownerHex);
+
+      expect(q2).toEqual(q1);
+    });
+
+    it("tracks quotas separately per owner", async () => {
+      const data = new TextEncoder().encode("shared");
+      const p1Hex = bytesToHex(ownerBytes("peer1"));
+      const p2Hex = bytesToHex(ownerBytes("peer2"));
+
+      await storageManager.handleStoreObject(
+        { data, type: 0 },
+        { peerId: peer("peer1") },
+      );
+      await storageManager.handleStoreObject(
+        { data, type: 0 },
+        { peerId: peer("peer2") },
+      );
+
+      const q1 = await storageStore.getQuota(p1Hex);
+      const q2 = await storageStore.getQuota(p2Hex);
+      expect(q1.objectCount).toBe(1);
+      expect(q2.objectCount).toBe(1);
+    });
+  });
 });
+
+function bytesToHex(bytes: Uint8Array): string {
+  let h = "";
+  for (let i = 0; i < bytes.length; i++) {
+    h += bytes[i].toString(16).padStart(2, "0");
+  }
+  return h;
+}

@@ -6,6 +6,11 @@ export interface ObjectMeta {
   next: string;   // next hash, or "" for end of chain
 }
 
+export interface Quota {
+  objectCount: number;
+  totalBytes: number;  // sum of raw user data byte lengths
+}
+
 export const createStorageObjectStore = ({
   datastore,
 }: {
@@ -13,9 +18,11 @@ export const createStorageObjectStore = ({
 }) => {
   const DATA_PREFIX = "storage-data";
   const META_PREFIX = "storage-meta";
+  const QUOTA_PREFIX = "storage-quota";
 
   const dataKey = (hash: string) => new Key(`/${DATA_PREFIX}/${hash}`);
   const metaKey = (hash: string) => new Key(`/${META_PREFIX}/${hash}`);
+  const quotaKey = (owner: string) => new Key(`/${QUOTA_PREFIX}/${owner}`);
 
   const has = async (hash: string): Promise<boolean> => {
     return datastore.has(metaKey(hash));
@@ -62,6 +69,47 @@ export const createStorageObjectStore = ({
     await datastore.delete(dataKey(hash));
   };
 
+  // --- Quota tracking ---
+
+  const getQuota = async (owner: string): Promise<Quota> => {
+    try {
+      const raw = await datastore.get(quotaKey(owner));
+      return JSON.parse(new TextDecoder().decode(raw)) as Quota;
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message?.includes("NotFound")) {
+        return { objectCount: 0, totalBytes: 0 };
+      }
+      throw e;
+    }
+  };
+
+  const writeQuota = async (owner: string, quota: Quota): Promise<void> => {
+    await datastore.put(
+      quotaKey(owner),
+      new TextEncoder().encode(JSON.stringify(quota)),
+    );
+  };
+
+  const incrementQuota = async (
+    owner: string,
+    byteCount: number,
+  ): Promise<void> => {
+    const quota = await getQuota(owner);
+    quota.objectCount += 1;
+    quota.totalBytes += byteCount;
+    await writeQuota(owner, quota);
+  };
+
+  const decrementQuota = async (
+    owner: string,
+    byteCount: number,
+  ): Promise<void> => {
+    const quota = await getQuota(owner);
+    quota.objectCount = Math.max(0, quota.objectCount - 1);
+    quota.totalBytes = Math.max(0, quota.totalBytes - byteCount);
+    await writeQuota(owner, quota);
+  };
+
   return {
     has,
     get,
@@ -69,6 +117,9 @@ export const createStorageObjectStore = ({
     put,
     putMeta,
     delete: del,
+    getQuota,
+    incrementQuota,
+    decrementQuota,
   };
 };
 

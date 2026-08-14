@@ -105,6 +105,7 @@ export const createStorageManager = ({
       owner: bytesToHex(ownerBytes),
       next: next ?? "",
     });
+    await storageStore.incrementQuota(bytesToHex(ownerBytes), payload.data.length);
 
     return { storeObjectResponse: { hash } };
   };
@@ -165,7 +166,13 @@ export const createStorageManager = ({
         meta.type === OBJECT_TYPE_LINKED_LIST && meta.next
           ? meta.next
           : null;
+
+      // Get data length for quota tracking before deleting
+      const data = await storageStore.get(currentHash);
+      const dataLen = data?.length ?? 0;
+
       await storageStore.delete(currentHash);
+      await storageStore.decrementQuota(requesterHex, dataLen);
       currentHash = nextHash;
     }
   };
