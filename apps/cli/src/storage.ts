@@ -12,10 +12,10 @@ storageCommand
 storageCommand
   .command("store")
   .description("Store data on a manager node")
-  .requiredOption("-d, --data <base64>", "Base64-encoded data to store")
+  .argument("<data>", "Base64-encoded data to store")
   .option("-t, --type <number>", "Object type: 0=raw (default), 1=linked-list", "0")
   .option("-n, --next <hash>", "Hash of the next node in a linked list")
-  .action(async (options, cmd) => {
+  .action(async (data, options, cmd) => {
     const opts = cmd.optsWithGlobals();
     const secretKey = loadKeypair(opts.keypair);
     const keypair = await generateKeyPairFromSeed("Ed25519", secretKey.slice(0, 32));
@@ -24,7 +24,7 @@ storageCommand
     await w.node.start();
 
     try {
-      const bytes = Uint8Array.from(Buffer.from(options.data, "base64"));
+      const bytes = Uint8Array.from(Buffer.from(data, "base64"));
       const msg: any = { storeObject: { data: bytes } };
       msg.storeObject.type = parseInt(options.type, 10);
       if (options.next) {
@@ -57,9 +57,9 @@ storageCommand
 storageCommand
   .command("get")
   .description("Retrieve an object by its content hash")
-  .requiredOption("-c, --cid <hash>", "Content hash (SHA-256 hex)")
+  .argument("<hash>", "Content hash (SHA-256 hex)")
   .option("-l, --limit <number>", "Max items to follow for linked lists", "10")
-  .action(async (options, cmd) => {
+  .action(async (hash, options, cmd) => {
     const opts = cmd.optsWithGlobals();
     const secretKey = loadKeypair(opts.keypair);
     const keypair = await generateKeyPairFromSeed("Ed25519", secretKey.slice(0, 32));
@@ -70,7 +70,7 @@ storageCommand
     try {
       const [response, error] = await w.sendMessage(
         multiaddr(opts.manager) as any,
-        { getObject: { hash: options.cid, limit: parseInt(options.limit, 10) } },
+        { getObject: { hash, limit: parseInt(options.limit, 10) } },
       );
 
       if (error) {
@@ -104,8 +104,8 @@ storageCommand
 storageCommand
   .command("delete")
   .description("Delete an object by its content hash (must be owner)")
-  .requiredOption("-c, --cid <hash>", "Content hash (SHA-256 hex)")
-  .action(async (options, cmd) => {
+  .argument("<hash>", "Content hash (SHA-256 hex)")
+  .action(async (hash, options, cmd) => {
     const opts = cmd.optsWithGlobals();
     const secretKey = loadKeypair(opts.keypair);
     const keypair = await generateKeyPairFromSeed("Ed25519", secretKey.slice(0, 32));
@@ -116,7 +116,7 @@ storageCommand
     try {
       const [response, error] = await w.sendMessage(
         multiaddr(opts.manager) as any,
-        { deleteObject: { hash: options.cid } },
+        { deleteObject: { hash } },
       );
 
       if (error) {

@@ -147,6 +147,7 @@ export const createStorageManager = ({
     return { getObjectResponse: { items } };
   };
 
+  /** Delete a storage object and all it's linked items recursively */
   const handleDeleteObject = async (
     payload: { hash: string },
     { peerId }: { peerId: PeerId },
