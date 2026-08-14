@@ -177,10 +177,20 @@ export const createStorageManager = ({
     }
   };
 
+  const getQuota = async (owner: string) => {
+    return storageStore.getQuota(owner);
+  };
+
+  const listQuotas = async () => {
+    return storageStore.listQuotas();
+  };
+
   return {
     handleStoreObject,
     handleGetObject,
     handleDeleteObject,
+    getQuota,
+    listQuotas,
   };
 };
 

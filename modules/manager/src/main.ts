@@ -62,6 +62,7 @@ export type ManagerContext = {
   entity: ManagerEntity;
   taskManager: ReturnType<typeof createTaskManager>;
   workerManager: ReturnType<typeof createWorkerManager>;
+  storageManager: ReturnType<typeof createStorageManager>;
 };
 
 export type ManagerSettings = {
@@ -480,6 +481,7 @@ export const createManager = async ({
       taskManager,
       entity,
       workerManager,
+      storageManager,
       getCycle,
       pause,
       resume,

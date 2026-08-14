@@ -110,6 +110,17 @@ export const createStorageObjectStore = ({
     await writeQuota(owner, quota);
   };
 
+  const listQuotas = async (): Promise<Quota[]> => {
+    const quotas: Quota[] = [];
+    for await (const key of datastore.queryKeys({ prefix: `/${QUOTA_PREFIX}/` })) {
+      const raw = await datastore.get(key);
+      if (raw != null) {
+        quotas.push(JSON.parse(new TextDecoder().decode(raw)) as Quota);
+      }
+    }
+    return quotas;
+  };
+
   return {
     has,
     get,
@@ -120,6 +131,7 @@ export const createStorageObjectStore = ({
     getQuota,
     incrementQuota,
     decrementQuota,
+    listQuotas,
   };
 };
 
