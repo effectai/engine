@@ -3895,6 +3895,8 @@ export namespace Template {
 
 export interface StoreObject {
   data: Uint8Array
+  type: number
+  next: string
 }
 
 export namespace StoreObject {
@@ -3912,12 +3914,24 @@ export namespace StoreObject {
           w.bytes(obj.data)
         }
 
+        if ((obj.type != null && obj.type !== 0)) {
+          w.uint32(16)
+          w.uint32(obj.type)
+        }
+
+        if ((obj.next != null && obj.next !== '')) {
+          w.uint32(26)
+          w.string(obj.next)
+        }
+
         if (opts.lengthDelimited !== false) {
           w.ldelim()
         }
       }, (reader, length, opts = {}) => {
         const obj: any = {
-          data: uint8ArrayAlloc(0)
+          data: uint8ArrayAlloc(0),
+          type: 0,
+          next: ''
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -3928,6 +3942,14 @@ export namespace StoreObject {
           switch (tag >>> 3) {
             case 1: {
               obj.data = reader.bytes()
+              break
+            }
+            case 2: {
+              obj.type = reader.uint32()
+              break
+            }
+            case 3: {
+              obj.next = reader.string()
               break
             }
             default: {
@@ -4015,6 +4037,7 @@ export namespace StoreObjectResponse {
 
 export interface GetObject {
   hash: string
+  limit: number
 }
 
 export namespace GetObject {
@@ -4032,12 +4055,18 @@ export namespace GetObject {
           w.string(obj.hash)
         }
 
+        if ((obj.limit != null && obj.limit !== 0)) {
+          w.uint32(16)
+          w.uint32(obj.limit)
+        }
+
         if (opts.lengthDelimited !== false) {
           w.ldelim()
         }
       }, (reader, length, opts = {}) => {
         const obj: any = {
-          hash: ''
+          hash: '',
+          limit: 0
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -4048,6 +4077,10 @@ export namespace GetObject {
           switch (tag >>> 3) {
             case 1: {
               obj.hash = reader.string()
+              break
+            }
+            case 2: {
+              obj.limit = reader.uint32()
               break
             }
             default: {
@@ -4073,9 +4106,112 @@ export namespace GetObject {
   }
 }
 
-export interface GetObjectResponse {
+export interface GetObjectResponseItem {
+  hash: string
+  type: number
+  owner: Uint8Array
+  next: string
   data: Uint8Array
-  owner: string
+}
+
+export namespace GetObjectResponseItem {
+  let _codec: Codec<GetObjectResponseItem>
+
+  export const codec = (): Codec<GetObjectResponseItem> => {
+    if (_codec == null) {
+      _codec = message<GetObjectResponseItem>((obj, w, opts = {}) => {
+        if (opts.lengthDelimited !== false) {
+          w.fork()
+        }
+
+        if ((obj.hash != null && obj.hash !== '')) {
+          w.uint32(10)
+          w.string(obj.hash)
+        }
+
+        if ((obj.type != null && obj.type !== 0)) {
+          w.uint32(16)
+          w.uint32(obj.type)
+        }
+
+        if ((obj.owner != null && obj.owner.byteLength > 0)) {
+          w.uint32(26)
+          w.bytes(obj.owner)
+        }
+
+        if ((obj.next != null && obj.next !== '')) {
+          w.uint32(34)
+          w.string(obj.next)
+        }
+
+        if ((obj.data != null && obj.data.byteLength > 0)) {
+          w.uint32(42)
+          w.bytes(obj.data)
+        }
+
+        if (opts.lengthDelimited !== false) {
+          w.ldelim()
+        }
+      }, (reader, length, opts = {}) => {
+        const obj: any = {
+          hash: '',
+          type: 0,
+          owner: uint8ArrayAlloc(0),
+          next: '',
+          data: uint8ArrayAlloc(0)
+        }
+
+        const end = length == null ? reader.len : reader.pos + length
+
+        while (reader.pos < end) {
+          const tag = reader.uint32()
+
+          switch (tag >>> 3) {
+            case 1: {
+              obj.hash = reader.string()
+              break
+            }
+            case 2: {
+              obj.type = reader.uint32()
+              break
+            }
+            case 3: {
+              obj.owner = reader.bytes()
+              break
+            }
+            case 4: {
+              obj.next = reader.string()
+              break
+            }
+            case 5: {
+              obj.data = reader.bytes()
+              break
+            }
+            default: {
+              reader.skipType(tag & 7)
+              break
+            }
+          }
+        }
+
+        return obj
+      })
+    }
+
+    return _codec
+  }
+
+  export const encode = (obj: Partial<GetObjectResponseItem>): Uint8Array => {
+    return encodeMessage(obj, GetObjectResponseItem.codec())
+  }
+
+  export const decode = (buf: Uint8Array | Uint8ArrayList, opts?: DecodeOptions<GetObjectResponseItem>): GetObjectResponseItem => {
+    return decodeMessage(buf, GetObjectResponseItem.codec(), opts)
+  }
+}
+
+export interface GetObjectResponse {
+  items: GetObjectResponseItem[]
 }
 
 export namespace GetObjectResponse {
@@ -4088,14 +4224,11 @@ export namespace GetObjectResponse {
           w.fork()
         }
 
-        if ((obj.data != null && obj.data.byteLength > 0)) {
-          w.uint32(10)
-          w.bytes(obj.data)
-        }
-
-        if ((obj.owner != null && obj.owner !== '')) {
-          w.uint32(18)
-          w.string(obj.owner)
+        if (obj.items != null) {
+          for (const value of obj.items) {
+            w.uint32(10)
+            GetObjectResponseItem.codec().encode(value, w)
+          }
         }
 
         if (opts.lengthDelimited !== false) {
@@ -4103,8 +4236,7 @@ export namespace GetObjectResponse {
         }
       }, (reader, length, opts = {}) => {
         const obj: any = {
-          data: uint8ArrayAlloc(0),
-          owner: ''
+          items: []
         }
 
         const end = length == null ? reader.len : reader.pos + length
@@ -4114,11 +4246,13 @@ export namespace GetObjectResponse {
 
           switch (tag >>> 3) {
             case 1: {
-              obj.data = reader.bytes()
-              break
-            }
-            case 2: {
-              obj.owner = reader.string()
+              if (opts.limits?.items != null && obj.items.length === opts.limits.items) {
+                throw new MaxLengthError('Decode error - map field "items" had too many elements')
+              }
+
+              obj.items.push(GetObjectResponseItem.codec().decode(reader, reader.uint32(), {
+                limits: opts.limits?.items$
+              }))
               break
             }
             default: {

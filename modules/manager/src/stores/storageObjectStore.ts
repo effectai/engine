@@ -1,8 +1,9 @@
 import { type Datastore, Key } from "@effectai/protocol-core";
 
-export interface ObjectMetadata {
-  owner: string;
-  timestamp: number;
+export interface ObjectMeta {
+  type: number;
+  owner: string;  // hex-encoded raw public key bytes (64 hex chars)
+  next: string;   // next hash, or "" for end of chain
 }
 
 export const createStorageObjectStore = ({
@@ -10,28 +11,17 @@ export const createStorageObjectStore = ({
 }: {
   datastore: Datastore;
 }) => {
-  const dataPrefix = "storage-data";
-  const metaPrefix = "storage-meta";
+  const DATA_PREFIX = "storage-data";
+  const META_PREFIX = "storage-meta";
 
-  const dataKey = (hash: string) => new Key(`/${dataPrefix}/${hash}`);
-  const metaKey = (hash: string) => new Key(`/${metaPrefix}/${hash}`);
+  const dataKey = (hash: string) => new Key(`/${DATA_PREFIX}/${hash}`);
+  const metaKey = (hash: string) => new Key(`/${META_PREFIX}/${hash}`);
 
   const has = async (hash: string): Promise<boolean> => {
     return datastore.has(metaKey(hash));
   };
 
-  const getMeta = async (hash: string): Promise<ObjectMetadata | null> => {
-    try {
-      const raw = await datastore.get(metaKey(hash));
-      return JSON.parse(new TextDecoder().decode(raw)) as ObjectMetadata;
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message?.includes("NotFound")) {
-        return null;
-      }
-      throw e;
-    }
-  };
-
+  /** Returns the raw user data bytes, or null. */
   const get = async (hash: string): Promise<Uint8Array | null> => {
     try {
       return await datastore.get(dataKey(hash));
@@ -43,21 +33,28 @@ export const createStorageObjectStore = ({
     }
   };
 
-  const put = async ({
-    hash,
-    data,
-    owner,
-  }: {
-    hash: string;
-    data: Uint8Array;
-    owner: string;
-  }): Promise<void> => {
-    const metadata: ObjectMetadata = {
-      owner,
-      timestamp: Math.floor(Date.now() / 1000),
-    };
-    await datastore.put(metaKey(hash), new TextEncoder().encode(JSON.stringify(metadata)));
+  const getMeta = async (hash: string): Promise<ObjectMeta | null> => {
+    try {
+      const raw = await datastore.get(metaKey(hash));
+      if (raw == null) return null;
+      return JSON.parse(new TextDecoder().decode(raw)) as ObjectMeta;
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message?.includes("NotFound")) {
+        return null;
+      }
+      throw e;
+    }
+  };
+
+  const put = async (hash: string, data: Uint8Array): Promise<void> => {
     await datastore.put(dataKey(hash), data);
+  };
+
+  const putMeta = async (hash: string, meta: ObjectMeta): Promise<void> => {
+    await datastore.put(
+      metaKey(hash),
+      new TextEncoder().encode(JSON.stringify(meta)),
+    );
   };
 
   const del = async (hash: string): Promise<void> => {
@@ -70,6 +67,7 @@ export const createStorageObjectStore = ({
     get,
     getMeta,
     put,
+    putMeta,
     delete: del,
   };
 };

@@ -2,6 +2,8 @@ syntax = "proto3";
 
 message StoreObject {
   bytes data = 1;
+  uint32 type = 2;   // 0x00 = raw, 0x01 = linked list node
+  string next = 3;   // hash of next node (linked list), empty = none
 }
 
 message StoreObjectResponse {
@@ -10,11 +12,19 @@ message StoreObjectResponse {
 
 message GetObject {
   string hash = 1;
+  uint32 limit = 2;  // max items to follow (linked list), default 10
+}
+
+message GetObjectResponseItem {
+  string hash = 1;
+  uint32 type = 2;
+  bytes owner = 3;       // 32 raw bytes
+  string next = 4;       // hash of next node, empty = end
+  bytes data = 5;        // user payload (no headers)
 }
 
 message GetObjectResponse {
-  bytes data = 1;
-  string owner = 2;
+  repeated GetObjectResponseItem items = 1;
 }
 
 message DeleteObject {
