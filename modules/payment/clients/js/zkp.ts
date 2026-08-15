@@ -175,12 +175,23 @@ export const prove = async ({
   proof: Groth16Proof;
   publicSignals: PublicSignals;
 }) => {
-  const PaymentBatchVerifier = await import(
-    "../../circuits/PaymentBatch_verification.json",
-    {
-      with: { type: "json" },
-    }
-  );
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  let verifierPath;
+  if (__dirname.includes("dist")) {
+    verifierPath = path.resolve(
+      __dirname,
+      "../circuits/PaymentBatch_verification.json",
+    );
+  } else {
+    verifierPath = path.resolve(
+      __dirname,
+      "../../circuits/PaymentBatch_verification.json",
+    );
+  }
+  const PaymentBatchVerifier = await import(verifierPath, {
+    with: { type: "json" },
+  });
 
   return await groth16.verify(
     PaymentBatchVerifier,
