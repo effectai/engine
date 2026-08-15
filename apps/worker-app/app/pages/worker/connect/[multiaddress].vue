@@ -145,7 +145,7 @@ const {
   uptimeSeconds,
   disconnectFromManagerMutation,
 } = useSession();
-const { mutateAsync: connect } = connectToManagerMutation;
+const { mutateAsync: connect, isPending } = connectToManagerMutation;
 const { mutateAsync: disconnect } = disconnectFromManagerMutation;
 
 const connectHandler = async (accessCode?: string) => {
@@ -234,7 +234,7 @@ const { data: identify } = useIdentifyQuery(decodedMultiAddr.value.toString());
 watch(
   () => identify.value?.isConnected,
   (isConnected, oldValue) => {
-    if (isConnected === false && oldValue === true) {
+    if (isConnected === false && oldValue === true && !isPending.value) {
       navigateTo("/");
     }
   },
