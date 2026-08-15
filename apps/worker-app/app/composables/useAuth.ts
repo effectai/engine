@@ -48,17 +48,29 @@ export const useAuth = () => {
   // In memory storage for private key
   const privateKey = useState<string | null>("privateKey", () => null);
 
+  // Set when login completes but no device modifier is set yet
+  const pendingRecoveryPrivateKey = useState<string | null>(
+    "pendingRecoveryPrivateKey",
+    () => null,
+  );
+
   async function setProvider(privateKey: string) {
     const privateKeyBytes = Buffer.from(privateKey, "hex").slice(0, 32);
 
-    const seedModifier = useLocalStorage("modifier", crypto.randomUUID());
-    const modifierBytes = Buffer.from(seedModifier.value).slice(0, 4);
-    const modifiedSeed = Buffer.concat([
-      privateKeyBytes.slice(0, 28),
-      modifierBytes,
-    ]);
-
-    const keypair = await generateKeyPairFromSeed("Ed25519", modifiedSeed);
+    const seedModifier = useLocalStorage<string | null>("modifier", null);
+    let keypair;
+    if (seedModifier.value) {
+      // Modifier is stored as hex (4 bytes hex-encoded, e.g. "32626536")
+      const excess = Buffer.from(seedModifier.value, "hex").slice(0, 4);
+      const modifiedSeed = Buffer.concat([
+        privateKeyBytes.slice(0, 28),
+        excess,
+      ]);
+      keypair = await generateKeyPairFromSeed("Ed25519", modifiedSeed);
+    } else {
+      // Modifier not set yet, use raw private key (temporary wallet)
+      keypair = await generateKeyPairFromSeed("Ed25519", privateKeyBytes);
+    }
 
     const providerInstance = await SolanaPrivateKeyProvider.getProviderInstance(
       {
@@ -135,11 +147,19 @@ export const useAuth = () => {
         });
       }
 
-      const privateKey = await web3Auth.value.provider?.request({
+      const pk = await web3Auth.value.provider?.request({
         method: "solanaPrivateKey",
       });
+      const privateKeyHex = pk as string;
 
-      setProvider(privateKey as string);
+      // If no modifier, defer auth and show recovery
+      if (!localStorage.getItem("modifier")) {
+        privateKey.value = privateKeyHex;
+        pendingRecoveryPrivateKey.value = privateKeyHex;
+        return;
+      }
+
+      setProvider(privateKeyHex);
 
       userInfo.value = await web3Auth.value?.getUserInfo().then((user) => ({
         username: user.name || "Web3Auth User",
@@ -160,7 +180,12 @@ export const useAuth = () => {
   // Login with private key
   const loginWithPrivateKey = async (privateKey: string) => {
     try {
-      // Create wallet from private key
+      // If no modifier, defer auth and show recovery
+      if (!localStorage.getItem("modifier")) {
+        pendingRecoveryPrivateKey.value = privateKey;
+        return;
+      }
+
       setProvider(privateKey);
 
       userInfo.value = {
@@ -274,5 +299,6 @@ export const useAuth = () => {
     web3Auth,
     privateKey,
     account,
+    pendingRecoveryPrivateKey,
   };
 };

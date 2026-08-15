@@ -1,4 +1,5 @@
 <template>
+  <!-- Seed phrase entry -->
   <UCard class="w-full max-w-2xl mx-auto">
     <div class="">
       <div class="">
@@ -51,10 +52,12 @@
 import { sha512 } from "@noble/hashes/sha512";
 import { Keypair } from "@solana/web3.js";
 import { generateMnemonic, mnemonicToSeed } from "bip39";
+import { multiaddr } from "@effectai/protocol-core";
+import { toString } from "uint8arrays";
 
 const mnemonic = ref("");
 const emit = defineEmits(["back"]);
-const { loginWithPrivateKey } = useAuth();
+const { loginWithPrivateKey, privateKey: privateKeyRef } = useAuth();
 
 const generateSeedPhrase = () => {
   mnemonic.value = generateMnemonic(128);
@@ -68,9 +71,16 @@ const connect = async () => {
   const seed = await mnemonicToSeed(mnemonic.value);
   const ed25519privateKey = sha512(seed.slice(0, 32));
   const pk = Keypair.fromSeed(ed25519privateKey.slice(0, 32));
-  await loginWithPrivateKey(Buffer.from(pk.secretKey).toString("hex"));
-  navigateTo("/");
+  const privateKeyHex = Buffer.from(pk.secretKey).toString("hex");
+
+  await loginWithPrivateKey(privateKeyHex);
+
+  // If no modifier was set by loginWithPrivateKey, recovery is pending
+  // RecoveryFlow handles it: don't navigate yet.
+  // If modifier was already set, loginWithPrivateKey completed auth
+  // and navigateTo is handled by RecoveryFlow watcher for the no-modifier case
 };
+
 </script>
 
 <style scoped></style>
