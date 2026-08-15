@@ -11,6 +11,7 @@ export const useSession = () => {
   const { useGetNoncesAsyncQuery } = useNonce();
   const { useIdentifyAsyncQuery } = useIdentify();
   const { registerDevice } = useDeviceRegistration();
+  const { syncPayments } = usePaymentSync();
 
   const managerInfo = computed(() => ({
     multiaddr: manager.value?.multiaddr,
@@ -48,6 +49,7 @@ export const useSession = () => {
       // Register this device in the manager's storage layer
       try {
         await registerDevice(multiaddr(multiAddress));
+        await syncPayments(multiaddr(multiAddress), nonces);
       } catch {
         // Registration failed — roll back the connection
         await sessionStore.terminate();
