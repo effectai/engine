@@ -189,7 +189,7 @@ export const prove = async ({
       "../../circuits/PaymentBatch_verification.json",
     );
   }
-  const PaymentBatchVerifier = await import(verifierPath, {
+  const { default: PaymentBatchVerifier } = await import(verifierPath, {
     with: { type: "json" },
   });
 
