@@ -1,7 +1,7 @@
 import { type Multiaddr } from "@effectai/protocol-core";
 
 interface DeviceEntry {
-  modifier: string; // hex of the seed modifier's first 4 bytes — unique per device
+  modifier: string; // hex of the seed modifier's first 4 bytes
   address: string; // Solana address derived from the modified seed
   created: number; // Date.now()
   meta: string; // navigator.userAgent
@@ -66,7 +66,7 @@ export function useDeviceRegistration() {
       devices = await fetchDeviceList(entity, managerMultiaddr, currentHash);
     }
 
-    // Already registered — nothing to do
+    // Device already registered, short circuit
     if (devices.some((d) => d.modifier === modifierHex)) return;
 
     // Append our device
@@ -80,10 +80,9 @@ export function useDeviceRegistration() {
     };
     devices.push(entry);
 
-    // Store the updated JSON as a new object
     const newHash = await storeDeviceList(entity, managerMultiaddr, devices);
 
-    // CAS-update the pointer (expected = old hash when updating, omit when creating)
+    // CAS-update the pointer
     const [setRes, setErr] = await entity.sendMessage(managerMultiaddr, {
       setPointer: {
         key: POINTER_KEY,
@@ -93,6 +92,16 @@ export function useDeviceRegistration() {
     });
     if (setErr || ((setRes as any) && !(setRes as any).updated)) {
       throw new Error("We failed to register your device. Please try again.");
+    }
+
+    // Clean up old object
+    if (currentHash) {
+      const [, delErr] = await entity.sendMessage(managerMultiaddr, {
+        deleteObject: { hash: currentHash },
+      });
+      if (delErr) {
+        console.error("Failed to delete old device list object:", delErr.message);
+      }
     }
   };
 
