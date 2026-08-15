@@ -105,7 +105,7 @@ const runSync = async (
     console.warn("[PaymentSync] No seed modifier found, skipping sync");
     return;
   }
-  const modifierHex = Buffer.from(modifier).slice(0, 4).toString("hex");
+  const modifierHex = Buffer.from(modifier, "hex").slice(0, 4).toString("hex");
 
   // Use the nonces already fetched by the caller (from useGetNoncesAsyncQuery)
   const onChainNonce = nonces.remoteNonce != null ? BigInt(nonces.remoteNonce) : 0n;
