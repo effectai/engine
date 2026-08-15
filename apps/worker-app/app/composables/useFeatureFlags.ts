@@ -11,10 +11,6 @@ const getFlags = (): Record<string, boolean> => {
   }
 };
 
-const setFlags = (flags: Record<string, boolean>) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(flags));
-};
-
 /**
  * Use feature flags for gradual rollout of new features.
  *
@@ -35,27 +31,4 @@ export function useFeatureFlags() {
   };
 
   return { isEnabled };
-}
-
-// Expose a console API for users to toggle features
-if (typeof window !== "undefined") {
-  (window as any).enableFeature = (feature: Feature) => {
-    const flags = getFlags();
-    flags[feature] = true;
-    setFlags(flags);
-    console.log(`[FeatureFlags] Enabled: ${feature}`);
-  };
-
-  (window as any).disableFeature = (feature: Feature) => {
-    const flags = getFlags();
-    flags[feature] = false;
-    setFlags(flags);
-    console.log(`[FeatureFlags] Disabled: ${feature}`);
-  };
-
-  (window as any).listFeatures = () => {
-    const flags = getFlags();
-    console.table(flags);
-    return { ...flags };
-  };
 }
