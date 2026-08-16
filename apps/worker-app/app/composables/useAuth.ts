@@ -17,6 +17,21 @@ import {
 import { SOLANA_CHAIN_IDS } from "@web3auth/ws-embed";
 import { ref, useState } from "#imports";
 
+// Get or compute the 4-byte hex modifier derived from the UUID modifier.
+// This is the canonical seed for address derivation and storage keys.
+// Caches the result in localStorage so it's stable across reloads.
+export function getModifierHex(): string | null {
+  let hex = localStorage.getItem("modifierHex");
+  if (hex) return hex;
+
+  const modifier = localStorage.getItem("modifier");
+  if (!modifier) return null;
+
+  hex = Buffer.from(modifier).slice(0, 4).toString("hex");
+  localStorage.setItem("modifierHex", hex);
+  return hex;
+}
+
 type UserInfo = {
   username: string;
   profileImage: string;
@@ -57,18 +72,17 @@ export const useAuth = () => {
   async function setProvider(privateKey: string) {
     const privateKeyBytes = Buffer.from(privateKey, "hex").slice(0, 32);
 
-    const seedModifier = useLocalStorage<string | null>("modifier", null);
+    const modifierHex = getModifierHex();
     let keypair;
-    if (seedModifier.value) {
-      // Modifier is stored as hex (4 bytes hex-encoded, e.g. "32626536")
-      const excess = Buffer.from(seedModifier.value, "hex").slice(0, 4);
+    if (modifierHex) {
+      const modifierBytes = Buffer.from(modifierHex, "hex");
       const modifiedSeed = Buffer.concat([
         privateKeyBytes.slice(0, 28),
-        excess,
+        modifierBytes,
       ]);
       keypair = await generateKeyPairFromSeed("Ed25519", modifiedSeed);
     } else {
-      // Modifier not set yet, use raw private key (temporary wallet)
+      // No modifier yet, use raw private key (temporary wallet)
       keypair = await generateKeyPairFromSeed("Ed25519", privateKeyBytes);
     }
 

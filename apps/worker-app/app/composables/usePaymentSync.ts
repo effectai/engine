@@ -5,6 +5,8 @@ import {
 } from "@effectai/protocol-core";
 import type { Payment } from "@effectai/protobufs";
 
+import { getModifierHex } from "./useAuth";
+
 const MAX_BATCH_SIZE = 100;
 const NODE_FETCH_LIMIT = 3;
 
@@ -99,13 +101,11 @@ const runSync = async (
     return;
   }
 
-  // Derive device identity from the seed modifier (same as device registration)
-  const modifier = localStorage.getItem("modifier");
-  if (!modifier) {
+  const modifierHex = getModifierHex();
+  if (!modifierHex) {
     console.warn("[PaymentSync] No seed modifier found, skipping sync");
     return;
   }
-  const modifierHex = Buffer.from(modifier, "hex").slice(0, 4).toString("hex");
 
   // Use the nonces already fetched by the caller (from useGetNoncesAsyncQuery)
   const onChainNonce = nonces.remoteNonce != null ? BigInt(nonces.remoteNonce) : 0n;

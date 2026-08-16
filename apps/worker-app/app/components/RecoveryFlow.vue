@@ -93,7 +93,10 @@ watch(
     if (!pk) return;
     const recovered = await checkForRecovery(pk);
     if (recovered) {
-      localStorage.setItem("modifier", recovered.modifier);
+      localStorage.setItem("modifierHex", recovered.modifier);
+      // UUIDs are no longer needed, so we don't recover them. Use an tempy
+      // value for now until they are permantenly removed
+      localStorage.setItem("modifier", "00000000-0000-0000-0000-000000000000");
       // Complete auth
       await loginWithPrivateKey(pk);
       // Initialize the worker
@@ -106,8 +109,7 @@ watch(
       recoveredManagerP2pAddr.value = recovered.managerP2pAddr;
     } else {
       // No recovery needed, generate random modifier and complete auth
-      const randomBytes = crypto.getRandomValues(new Uint8Array(4));
-      localStorage.setItem("modifier", Buffer.from(randomBytes).toString("hex"));
+      localStorage.setItem("modifier", crypto.randomUUID());
       await loginWithPrivateKey(pk);
       navigateTo("/");
     }

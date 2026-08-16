@@ -1,7 +1,8 @@
 import { type Multiaddr } from "@effectai/protocol-core";
+import { getModifierHex } from "./useAuth";
 
 export interface DeviceEntry {
-  modifier: string; // hex of the seed modifier's first 4 bytes
+  modifier: string; // 4-byte hex of the device modifier
   address: string; // Solana address derived from the modified seed
   created: number; // Date.now()
   meta: string; // navigator.userAgent
@@ -46,10 +47,9 @@ export function useDeviceRegistration() {
     const entity = workerStore.instance?.entity;
     if (!entity) throw new Error("Worker not initialized");
 
-    // Get the seed modifier, this is the per-device identity, stored as hex
-    const modifier = localStorage.getItem("modifier");
-    if (!modifier) throw new Error("No seed modifier found");
-    const modifierHex = Buffer.from(modifier, "hex").slice(0, 4).toString("hex");
+    // Get the seed modifier hex, this is the per-device identity
+    const modifierHex = getModifierHex();
+    if (!modifierHex) throw new Error("No seed modifier found");
 
     // Fetch the current worker-devices pointer
     const [ptrRes, ptrErr] = await entity.sendMessage(managerMultiaddr, {
