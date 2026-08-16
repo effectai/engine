@@ -75,11 +75,10 @@ const connect = async () => {
 
   await loginWithPrivateKey(privateKeyHex);
 
-  // If no modifier was set by loginWithPrivateKey, recovery is pending
-  // RecoveryFlow handles it: don't navigate yet.
-  // If modifier was already set, loginWithPrivateKey completed auth
-  // and navigateTo is handled by RecoveryFlow watcher for the no-modifier case
-};
+  // If auth completed immediately (had modifier), navigate home.
+  if (useAuth().isAuthenticated.value) {
+    await navigateTo("/");
+  }
 
 </script>
 
