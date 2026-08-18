@@ -37,47 +37,28 @@ export const useTasks = () => {
 
   const useGetActiveTasks = (index: Ref<number | string>) => {
     const queryClient = useQueryClient();
-
-    const handleTaskEvent = (event: CustomEvent<Task>) => {
-      queryClient.setQueryData<Task[]>(["tasks", index], (old) =>
-        old ? [...old, event.detail] : [event.detail],
-      );
-    };
+    const { account } = useAuth();
 
     const invalidateTasks = () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", index] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", index, account] });
     };
 
-    onMounted(() => {
-      instance.value?.events.addEventListener("task:created", handleTaskEvent);
-      instance.value?.events.addEventListener("task:rejected", invalidateTasks);
-      instance.value?.events.addEventListener(
-        "task:completed",
-        invalidateTasks,
-      );
-      instance.value?.events.addEventListener(
-        "task:expired",
-        invalidateTasks,
-      );
-    });
+    // Register listeners as soon as instance is available, not just on mount.
+    watchEffect((onCleanup) => {
+      const events = instance.value?.events;
+      if (!events) return;
 
-    onUnmounted(() => {
-      instance.value?.events.removeEventListener(
-        "task:created",
-        handleTaskEvent,
-      );
-      instance.value?.events.removeEventListener(
-        "task:rejected",
-        invalidateTasks,
-      );
-      instance.value?.events.removeEventListener(
-        "task:completed",
-        invalidateTasks,
-      );
-      instance.value?.events.removeEventListener(
-        "task:expired",
-        invalidateTasks,
-      );
+      events.addEventListener("task:created", invalidateTasks);
+      events.addEventListener("task:rejected", invalidateTasks);
+      events.addEventListener("task:completed", invalidateTasks);
+      events.addEventListener("task:expired", invalidateTasks);
+
+      onCleanup(() => {
+        events.removeEventListener("task:created", invalidateTasks);
+        events.removeEventListener("task:rejected", invalidateTasks);
+        events.removeEventListener("task:completed", invalidateTasks);
+        events.removeEventListener("task:expired", invalidateTasks);
+      });
     });
 
     return useGetTasks(index);

@@ -6,7 +6,8 @@ export const db = new KV({ autoSync: true });
 // state to track the publish proress of CSV files
 export const publishProgress: Record<number, Record<number, any>> = {};
 
-export const managerUrl = "http://mgr1.alpha.effect.net:8889";
+export const defaultManagerUrl = "http://localhost:8889"
+export const managerUrl = process.env.MANAGER_URL || defaultManagerUrl;
 
 export var theme = "pistachio";
 export const setTheme = (t: string) => (theme = t);

@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Effect AI · Requestor Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- Inter matches the other Effect apps (worker-app loads it the same way).
+     Space Mono is used for keys/ids. Both fall back to system fonts offline. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet" />
+<!-- Relative, not root-absolute -->
+<link rel="stylesheet" href="api-console/app.css" />
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark">⬡</span><span class="name">Effect AI</span>
+    <span class="sep">/</span><span class="sub">Requestor Console</span>
+  </div>
+  <div class="grow"></div>
+
+  <!-- Not-connected: paste + connect. Connected: masked prefix + status. -->
+  <div id="connect-wrap" class="connect-box">
+    <input id="key" type="password" placeholder="Paste your API key (eff_live_…)" autocomplete="off" />
+    <button id="connect" class="btn-primary btn-sm" style="border-radius:0">Connect</button>
+  </div>
+  <span id="status-connected" class="status-connected hide">
+    <span class="status-dot" style="background:var(--ok-fg)"></span>
+    <span id="status-text">Connected</span>
+  </span>
+  <button id="disconnect" class="btn-ghost btn-sm hide">Disconnect</button>
+
+  <button id="theme-toggle" class="icon-btn" title="Toggle light / dark" aria-label="Toggle theme">
+    <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    <svg id="icon-moon" class="hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+  </button>
+  <a href="https://docs.effect.ai" target="_blank" rel="noopener">Docs ↗</a>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab" data-tab="overview" disabled>Overview</button>
+  <button class="tab" data-tab="templates" disabled>Templates</button>
+  <button class="tab" data-tab="create" disabled>Create Job</button>
+  <button class="tab" data-tab="jobs" disabled>Jobs</button>
+  <button class="tab" data-tab="account" disabled>Account</button>
+  <button class="tab" data-tab="keys" disabled>API Keys</button>
+</nav>
+
+<main>
+  <!-- ================= SIGNUP / UNAUTHENTICATED ================= -->
+  <section id="signup-view">
+    <div class="card" style="max-width:400px;margin:2rem auto;text-align:center">
+      <div style="width:48px;height:48px;border:2px dashed var(--border-strong);border-radius:12px;margin:.2rem auto 1rem;display:flex;align-items:center;justify-content:center;font-size:1.3rem">🔑</div>
+      <h2 style="justify-content:center">No API key connected</h2>
+      <p class="muted" style="margin:-.4rem 0 1.3rem">Create an account for instant access to the Effect AI task network.</p>
+
+      <div id="signup-form" style="text-align:left">
+        <div class="field">
+          <label class="field-label">Name or project <span class="req">*</span></label>
+          <input id="signup-name" placeholder="e.g. My Research Project" />
+        </div>
+        <div class="field">
+          <label class="field-label">Email <span class="muted">(optional)</span></label>
+          <input id="signup-email" placeholder="you@example.com" />
+        </div>
+        <button id="signup-btn" class="btn-primary" style="width:100%">Get API Key →</button>
+        <div id="signup-msg"></div>
+        <div class="row" style="margin:1.1rem 0 .3rem;gap:.6rem">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span class="muted" style="font-size:.8rem">or</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+        <p class="muted" style="text-align:center;font-size:.83rem;margin:.4rem 0 0">Paste an existing key in the top bar and click <b>Connect</b>.</p>
+      </div>
+
+      <!-- Key reveal (hidden until signup succeeds) -->
+      <div id="signup-reveal" class="hide" style="text-align:left">
+        <div class="banner banner-warn" style="margin-bottom:.7rem">⚠ Copy your key now; it will not be shown again.</div>
+        <div class="row" style="gap:.5rem">
+          <code id="signup-key" class="mono grow" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;word-break:break-all;font-size:.78rem"></code>
+          <button id="signup-copy" class="btn-ghost btn-sm" style="flex-shrink:0">Copy</button>
+        </div>
+        <div class="banner banner-info" style="margin-top:.8rem">
+          Paste the key above to connect, then top up credits on
+          <a href="https://discord.gg/effectai" target="_blank" rel="noopener">Discord</a>.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= APP (authenticated) ================= -->
+  <div id="app-view" class="hide">
+
+    <!-- ---------- OVERVIEW ---------- -->
+    <section id="panel-overview" class="tab-panel">
+      <div class="metric-grid" style="margin-bottom:1.1rem">
+        <div class="metric">
+          <div class="k">Credit balance</div>
+          <div class="v" id="ov-balance">—</div>
+          <div class="u">EFFECT</div>
+          <a class="cta" href="https://discord.gg/effectai" target="_blank" rel="noopener">+ Top up ↗</a>
+        </div>
+        <div class="metric">
+          <div class="k">Active jobs</div>
+          <div class="v" id="ov-active">—</div>
+          <div class="u">in progress</div>
+          <span class="cta" data-goto="jobs">View all →</span>
+        </div>
+        <div class="metric">
+          <div class="k">Pending tasks</div>
+          <div class="v" id="ov-pending">—</div>
+          <div class="u">across all jobs</div>
+        </div>
+        <div class="metric">
+          <div class="k">Templates</div>
+          <div class="v" id="ov-templates">—</div>
+          <div class="u" id="ov-templates-sub">available</div>
+          <span class="cta" data-goto="templates">Manage →</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Quick actions</div>
+        <div class="row">
+          <button class="btn-ghost" data-goto="templates" data-open-submit="1">+ New template</button>
+          <button class="btn-primary" data-goto="create">+ New job</button>
+          <button class="btn-ghost" data-goto="jobs">View all jobs</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Recent activity</div>
+        <div id="ov-activity" class="muted">…</div>
+      </div>
+    </section>
+
+    <!-- ---------- TEMPLATES ---------- -->
+    <section id="panel-templates" class="tab-panel hide">
+      <div class="toolbar">
+        <input id="tpl-search" class="grow" placeholder="Search templates…" />
+        <select id="tpl-filter" style="width:auto">
+          <option value="all">All status</option>
+          <option value="approved">Approved</option>
+          <option value="unapproved">Unapproved</option>
+        </select>
+        <button id="tpl-open-submit" class="btn-primary">+ Create a template</button>
+      </div>
+
+      <div class="section-label">Public catalog</div>
+      <div id="tpl-catalog" class="table-wrap" style="margin-bottom:1.2rem"><div class="muted" style="padding:.8rem">…</div></div>
+
+      <div class="section-label">My templates</div>
+      <div id="tpl-owned" class="table-wrap" style="margin-bottom:1.2rem"><div class="muted" style="padding:.8rem">…</div></div>
+
+      <!-- Submit form -->
+      <div id="tpl-submit-card" class="card hide">
+        <div class="row" style="justify-content:space-between">
+          <strong>Submit custom template</strong>
+          <button id="tpl-collapse" class="btn-ghost btn-sm">Collapse</button>
+        </div>
+        <div class="field" style="margin-top:.8rem">
+          <label class="field-label">Template name <span class="req">*</span></label>
+          <input id="tpl-name" placeholder="My custom template" />
+        </div>
+        <div class="field">
+          <label class="field-label">HTML code <span class="req">*</span> <span class="muted">(use ${field} placeholders; each needs a CSV column)</span></label>
+          <textarea id="tpl-html" rows="6" placeholder="&lt;h1&gt;Rate ${product}&lt;/h1&gt;&lt;p&gt;${question}&lt;/p&gt;"></textarea>
+        </div>
+        <label class="checkbox" style="margin-bottom:.8rem"><input id="tpl-approve" type="checkbox" /> Request team approval <span class="muted">(otherwise it runs unapproved and sandboxed)</span></label>
+        <div class="row">
+          <button id="tpl-submit" class="btn-primary">Submit template</button>
+          <button id="tpl-preview-draft" class="btn-ghost">Preview</button>
+        </div>
+        <div id="tpl-msg"></div>
+      </div>
+    </section>
+
+    <!-- ---------- CREATE JOB ---------- -->
+    <section id="panel-create" class="tab-panel hide">
+      <div class="card">
+        <div class="section-label">Job type</div>
+        <div class="radio-set">
+          <label class="radio selected" id="radio-csv">
+            <input type="radio" name="job-type" value="csv" checked />
+            <div><div class="t">CSV mode</div><div class="d">Each row = one task</div></div>
+          </label>
+          <label class="radio" id="radio-constant">
+            <input type="radio" name="job-type" value="constant" />
+            <div><div class="t">Survey</div><div class="d">Each row answered by N workers</div></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Job configuration</div>
+        <div class="field">
+          <label class="field-label">Template <span class="req">*</span></label>
+          <!-- Custom combobox: a native <select> can't hold a search box. The
+               hidden input carries the chosen id, so the rest of the form still
+               reads byId("job-tpl").value exactly as before. -->
+          <div class="combo" id="job-tpl-combo">
+            <input type="hidden" id="job-tpl" />
+            <button type="button" class="combo-trigger" id="job-tpl-trigger" aria-haspopup="listbox" aria-expanded="false">
+              <span id="job-tpl-label" class="muted">Select a template…</span>
+              <span class="combo-caret">▼</span>
+            </button>
+            <div class="combo-panel hide" id="job-tpl-panel">
+              <input id="job-tpl-search" placeholder="Search templates…" autocomplete="off" />
+              <div class="combo-list" id="job-tpl-list" role="listbox"></div>
+            </div>
+          </div>
+          <div id="job-fields" class="muted" style="font-size:.8rem;margin-top:.3rem"></div>
+        </div>
+        <div class="row" style="align-items:flex-start">
+          <div class="grow" style="flex-basis:140px">
+            <label class="field-label">Reward per task (EFFECT) <span class="req">*</span></label>
+            <input id="job-reward" value="0.5" />
+          </div>
+          <div class="grow" style="flex-basis:200px">
+            <label class="field-label">Job name <span class="muted">(optional)</span></label>
+            <input id="job-name" placeholder="My job" />
+          </div>
+        </div>
+        <div class="field" style="margin-top:.7rem">
+          <label class="field-label">Required capability <span class="muted">(optional)</span></label>
+          <select id="job-capability"><option value="">Any worker / no capability required</option></select>
+          <div id="job-capability-desc" class="muted" style="font-size:.8rem;margin-top:.3rem"></div>
+        </div>
+        <label class="checkbox" style="margin-top:.7rem"><input id="job-unique" type="checkbox" /> Restrict each worker to one task in this job (no repeats)</label>
+      </div>
+
+      <!-- CSV data -->
+      <div class="card" id="job-csv-mode">
+        <div class="section-label">CSV data input</div>
+        <div class="field-label">Required columns (from template) <span id="job-csv-fields"></span></div>
+        <div class="field-label" style="margin-top:.6rem">Paste CSV rows <span class="muted">(first row is the header)</span></div>
+        <textarea id="job-csv" rows="6" placeholder="product,question&#10;Widget,Good?&#10;Gadget,Good?"></textarea>
+        <button id="job-csv-template" class="btn-ghost btn-sm" style="margin-top:.6rem">↓ Download CSV template</button>
+      </div>
+
+      <!-- Constant data -->
+      <div class="card hide" id="job-constant-mode">
+        <div class="section-label">Survey data</div>
+        <div class="field">
+          <label class="field-label">Workers per row <span class="req">*</span></label>
+          <input id="job-maxtasks" value="100" style="max-width:160px" />
+        </div>
+        <div class="field">
+          <div class="field-label">Required columns (from template) <span id="job-const-fields"></span></div>
+          <div class="field-label" style="margin-top:.6rem">Paste CSV rows <span class="req">*</span> <span class="muted">(first row is the header)</span></div>
+          <textarea id="job-const-csv" rows="6" placeholder="product,question&#10;Widget,Good?&#10;Gadget,Good?"></textarea>
+          <div class="muted" style="font-size:.8rem;margin-top:.4rem">
+            Every row is posted as its own survey job, each answered by the number of
+            workers above. For a single survey, paste one row. Tick the no-repeat box
+            above so nobody answers the same row twice.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Cost estimate</div>
+        <div class="estimate-grid" style="margin-bottom:.8rem">
+          <div><div class="n" id="est-tasks">—</div><div class="l">Tasks</div></div>
+          <div><div class="n" id="est-rate">—</div><div class="l">EFFECT / task</div></div>
+          <div><div class="n" id="est-total">—</div><div class="l">EFFECT total</div></div>
+        </div>
+        <div id="est-banner" class="hide" style="margin-bottom:.8rem"></div>
+        <div class="row">
+          <button id="job-estimate" class="btn-ghost">Estimate cost</button>
+          <button id="job-create" class="btn-primary">Create job</button>
+        </div>
+        <div id="job-msg"></div>
+      </div>
+    </section>
+
+    <!-- ---------- JOBS ---------- -->
+    <section id="panel-jobs" class="tab-panel hide">
+      <div id="jobs-msg"></div>
+      <div class="toolbar">
+        <input id="jobs-search" class="grow" placeholder="Search jobs…" />
+        <select id="jobs-filter" style="width:auto">
+          <option value="all">All status</option>
+          <option value="active">Active</option>
+          <option value="done">Done</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <button id="jobs-refresh" class="btn-ghost">Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name / ID</th><th>Status</th><th>Tasks Q / A / D</th><th>Credits</th><th></th></tr></thead>
+          <tbody id="jobs-body"><tr><td colspan="5" class="muted">…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---------- ACCOUNT ---------- -->
+    <section id="panel-account" class="tab-panel hide">
+      <div class="section-label">Profile</div>
+      <div class="card">
+        <div class="row" style="align-items:flex-start">
+          <div class="grow"><label class="field-label">Name</label><input id="acct-name" /></div>
+          <div class="grow"><label class="field-label">Email <span class="muted">(optional)</span></label><input id="acct-email" placeholder="(none)" /></div>
+        </div>
+        <div style="margin-top:.9rem">
+          <label class="field-label">Account ID <span class="muted">(share with the Effect team for support)</span></label>
+          <div class="row" style="gap:.5rem">
+            <code id="acct-id" class="mono grow" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;word-break:break-all;font-size:.78rem">—</code>
+            <button id="acct-id-copy" class="btn-ghost btn-sm" style="flex-shrink:0">Copy</button>
+          </div>
+        </div>
+        <div class="row" style="justify-content:space-between;margin-top:.8rem">
+          <span class="status-connected"><span class="status-dot" style="background:var(--ok-fg)"></span>Account active</span>
+          <button id="acct-save" class="btn-primary">Save changes</button>
+        </div>
+        <div id="acct-msg"></div>
+      </div>
+
+      <div class="section-label" style="margin-top:1.2rem">Credits</div>
+      <div class="card">
+        <div class="row" style="align-items:flex-end;gap:.8rem">
+          <div><div style="font-size:2rem;font-weight:700;line-height:1" id="acct-balance">—</div><div class="muted" style="font-size:.82rem">EFFECT tokens</div></div>
+          <div class="muted" style="font-size:.82rem;padding-bottom:.15rem" id="acct-lamports"></div>
+        </div>
+        <div class="banner banner-info" style="margin:.9rem 0">To top up credits, reach out on <a href="https://discord.gg/effectai" target="_blank" rel="noopener"><b>Discord</b></a>. Credits are managed by the Effect team.</div>
+        <div class="section-label">Transaction history</div>
+        <div id="tx-list" class="muted">…</div>
+      </div>
+
+      <div class="section-label" style="margin-top:1.2rem">API key</div>
+      <div class="card">
+        <div id="acct-key-mini" class="muted">…</div>
+        <div class="row" style="margin-top:.8rem">
+          <button class="btn-ghost btn-sm" data-goto="keys">Manage keys →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- API KEYS ---------- -->
+    <section id="panel-keys" class="tab-panel hide">
+      <div class="banner banner-warn" style="margin-bottom:1rem">⚠ Rotate keys safely: issue a new key first, then revoke the old one so nothing using it breaks. The raw key is shown only once, at creation.</div>
+      <div id="keys-list" class="table-wrap" style="margin-bottom:1rem"><div class="muted" style="padding:.8rem">…</div></div>
+      <button id="keys-new" class="btn-ghost">+ Issue new key</button>
+      <div id="keys-reveal"></div>
+      <div id="keys-msg"></div>
+
+      <div class="card" style="margin-top:1.2rem">
+        <strong>Security best practices</strong>
+        <div class="stack" style="margin-top:.6rem;font-size:.86rem;color:var(--text-2)">
+          <div>✓ Never commit keys to version control; use <span class="mono">.env</span> files.</div>
+          <div>✓ Use separate keys for development and production.</div>
+          <div>✓ Revoke immediately if a key is compromised or leaked.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- ================= TEMPLATE PREVIEW MODAL ================= -->
+<!-- Templates may be untrusted, so the iframe runs scripts in a hardened
+     sandbox WITHOUT allow-same-origin (matches the admin review page): the
+     frame gets an opaque origin and cannot reach this page. -->
+<div id="tpl-preview" class="modal-overlay hide">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="row" style="gap:.6rem">
+        <div>
+          <strong id="tpl-preview-title">Template preview</strong>
+          <div id="tpl-preview-id" class="mono muted" style="font-size:.72rem"></div>
+        </div>
+        <span id="tpl-preview-trust"></span>
+      </div>
+      <button class="close-x" id="tpl-preview-close" aria-label="Close">×</button>
+    </div>
+    <div id="tpl-preview-note" class="banner banner-warn hide" style="border-radius:0">⚠ Unapproved template. Scripts run in a hardened sandbox; review it carefully before posting a job.</div>
+    <!-- Sample data: one input per ${field}, re-rendered server-side on apply.
+         Populated by main.js; hidden for templates without fields. -->
+    <div id="tpl-preview-data" class="sample-bar hide"></div>
+    <div class="frame-chrome">
+      <div class="frame-dots"><span style="background:#f5a3a3"></span><span style="background:#f5d98a"></span><span style="background:#a7dcae"></span></div>
+      <div class="frame-url" id="tpl-preview-url">sandbox://preview</div>
+      <span class="chip">sandboxed</span>
+    </div>
+    <iframe id="tpl-preview-frame" title="Template preview"
+      sandbox="allow-scripts allow-modals allow-forms allow-popups allow-pointer-lock"></iframe>
+    <div class="modal-foot">
+      <span class="muted" style="font-size:.82rem">sandboxed · no external requests allowed</span>
+    </div>
+  </div>
+</div>
+
+<!-- ================= RESULTS DRAWER ================= -->
+<div id="results-drawer" class="drawer-overlay hide">
+  <div class="drawer">
+    <div class="drawer-head">
+      <div>
+        <strong id="drawer-title">Results</strong>
+        <div id="drawer-sub" class="muted" style="font-size:.8rem"></div>
+      </div>
+      <button class="close-x" id="drawer-close" aria-label="Close">×</button>
+    </div>
+    <div class="drawer-tabs">
+      <button class="drawer-tab active" data-view="json">JSON view</button>
+      <button class="drawer-tab" data-view="table">Table view</button>
+    </div>
+    <div class="drawer-body">
+      <pre id="drawer-json" class="hide"></pre>
+      <div id="drawer-table"></div>
+    </div>
+    <div class="drawer-foot">
+      <button id="drawer-csv" class="btn-primary btn-sm">↓ Download CSV</button>
+      <span id="drawer-count" class="muted" style="font-size:.82rem"></span>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="api-console/js/main.js"></script>
+</body>
+</html>

@@ -26,7 +26,20 @@ export type TemplateRecord = {
   templateId: string;
   data: string;
   status: "draft" | "active" | "archived";
+  // Requestor-API fields (absent on legacy/team templates):
+  ownerId?: string; // undefined = team/default template (public catalog)
+  approved?: boolean; // trust badge; team templates are implicitly approved
+  approvalRequested?: boolean; // queued for team review
+  collection?: string; // undefined = "Uncategorized" in the catalog
 };
+
+// A template is "trusted" if the team approved it, or it's a team template
+// (no owner). Content-addressing means an approval verdict is tied to the
+// exact HTML, so it can safely be shared across requestors using it.
+export const isTemplateApproved = (tpl: TemplateRecord): boolean =>
+  tpl.approved === true || !tpl.ownerId;
+
+export const isPublicTemplate = (tpl: TemplateRecord): boolean => !tpl.ownerId;
 
 const api = axios.create({
   timeout: 5000,
@@ -35,12 +48,14 @@ const api = axios.create({
 });
 
 export const escapeHTML = (html: string): string =>
-  html
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  typeof html === 'string' ?
+    html
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;")
+    : html;
 
 export const getTemplates = async (status?: string) => {
   // TODO: support order by created at
@@ -73,11 +88,129 @@ const findTemplateFields = (html: string) => {
   const re = /\$\{([^}]+)\}/g;
   const matches: string[][] = [];
   let m;
-  do {
-    const m = re.exec(html);
-    if (m) matches.push(m.slice(0, 3));
-  } while (m);
-  return matches;
+  while ((m = re.exec(html))) {
+    matches.push(m.slice(0, 2));
+  }
+  // Deduplicate by field name
+  const seen = new Set<string>();
+  return matches.filter(([_, name]) => {
+    if (seen.has(name)) return false;
+    seen.add(name);
+    return true;
+  });
+};
+
+// Field names referenced by a template's ${...} placeholders.
+export const getTemplateFields = (html: string): string[] =>
+  findTemplateFields(html).map(([, name]) => name);
+
+/**
+ * Computes the template id, (best-effort) registers it with the manager so
+ * workers can fetch it, and upserts the local record. Shared by the team UI
+ * and the Requestor API. Approval is sticky: once this exact HTML is approved
+ * it stays approved.
+ */
+export const registerTemplate = async (input: {
+  name: string;
+  html: string;
+  ownerId?: string;
+  approved: boolean;
+  approvalRequested?: boolean;
+}): Promise<TemplateRecord> => {
+  const templateId = computeTemplateId(managerId, input.html);
+  const existing = (await getTemplate(templateId))?.data;
+
+  const template: Template = {
+    templateId,
+    data: input.html,
+    createdAt: existing?.createdAt ?? Date.now(),
+  };
+
+  // Register with the manager so workers can fetch it. Best-effort: the local
+  // record is still saved if the manager is unreachable (matches prior team
+  // behaviour); the worker just can't fetch it until re-registered.
+  try {
+    await api.post<APIResponse>("/template/register", {
+      template,
+      providerPeerIdStr: managerId,
+    });
+  } catch (e) {
+    console.warn("Template manager registration failed (saved locally):", e);
+  }
+
+  const record: TemplateRecord = {
+    ...template,
+    name: existing?.name ?? input.name,
+    status: "active",
+    ownerId: existing?.ownerId ?? input.ownerId,
+    approved: existing?.approved || input.approved,
+    approvalRequested:
+      existing?.approvalRequested || input.approvalRequested || false,
+  };
+  await db.set<TemplateRecord>(["templates", templateId], record);
+  return record;
+};
+
+// Per-account visibility index, so a content-addressed template can be listed
+// for every requestor that submitted it (without clobbering ownership).
+export const addAccountTemplate = (accountId: string, templateId: string) =>
+  db.set<boolean>(["account-template", accountId, templateId], true);
+
+export const getAccountTemplateIds = async (
+  accountId: string,
+): Promise<string[]> =>
+  (await db.listAll<boolean>(["account-template", accountId, {}])).map(
+    (record) => record.key[2] as string,
+  );
+
+export const getPublicApprovedTemplates = async (): Promise<TemplateRecord[]> =>
+  (await getTemplates("active"))
+    .map((record) => record.data)
+    .filter((tpl) => isPublicTemplate(tpl) && isTemplateApproved(tpl));
+
+export const getPendingApprovalTemplates = async (): Promise<TemplateRecord[]> =>
+  (await getTemplates())
+    .map((record) => record.data)
+    .filter((tpl) => tpl.approvalRequested && !tpl.approved);
+
+export const setTemplateApproval = async (
+  templateId: string,
+  approved: boolean,
+): Promise<TemplateRecord | null> => {
+  const record = await getTemplate(templateId);
+  if (!record) return null;
+  record.data.approved = approved;
+  if (approved) record.data.approvalRequested = false;
+  await db.set<TemplateRecord>(["templates", templateId], record.data);
+  return record.data;
+};
+
+export const rejectTemplateApproval = async (
+  templateId: string,
+): Promise<TemplateRecord | null> => {
+  const record = await getTemplate(templateId);
+  if (!record) return null;
+  record.data.approved = false;
+  record.data.approvalRequested = false;
+  await db.set<TemplateRecord>(["templates", templateId], record.data);
+  return record.data;
+};
+
+/**
+ * Retires a template by flipping its status to "archived": it drops out of the
+ * requestor's `/templates` list, the public catalog, and can no longer back new
+ * jobs (existing jobs keep their already-imported tasks). Reversible because
+ * IDs are content-addressed, re-submitting the identical HTML revives it
+ * (`registerTemplate` always writes status "active"). Returns null if unknown.
+ */
+export const archiveTemplate = async (
+  templateId: string,
+): Promise<TemplateRecord | null> => {
+  const record = await getTemplate(templateId);
+  if (!record) return null;
+  record.data.status = "archived";
+  await db.set<TemplateRecord>(["templates", templateId], record.data);
+  return record.data;
 };
 
 const form = (msg = "", values: Record<string, string> = {}): string => `
@@ -117,12 +250,11 @@ ${fields.map(
 <label for="f${name}">${name}</label>
 <input
   ${values[name] ? `value="${escapeHTML(values[name])}" ` : ""}
-  id="f${name}" name="${name}" type="text"></input>
+  id="f${name}" name="${name}" type="text">`,
+).join("")}
 <textarea style="display: none;" name="html">${escapeHTML(html)}</textarea>
 <button type="submit">Preview</button>
 </form>
-`,
-)}
 `;
 
 const templatePreviewFrame = async (
@@ -153,16 +285,36 @@ ${templateDataForm(html, fields)}` :
 const tplListFrame = async () => {
   const allTpls = await getTemplates();
 
+  const collections = [
+    ...new Set(allTpls.map((record) => record.data.collection).filter(Boolean)),
+  ].sort();
+
   const renderList = (status: string) => {
-    const tpls = allTpls.filter(t => t!.data.status === status);
-    const tplList = tpls.map(t => `
-<a class="box" href="/t/${t.data.templateId}">
-  ${t.data.name || "[no name]"} (${t.data.createdAt})
-</a>`
+    const tpls = allTpls.filter(record => record!.data.status === status);
+    const rows = tpls.map(record => `
+<tr>
+  <td>
+    <a href="/t/${record.data.templateId}">${record.data.name || "[no name]"}</a>
+    <small>(${record.data.createdAt})</small>
+  </td>
+  <td>
+    <form hx-post="/t/${record.data.templateId}?action=categorize"
+          hx-target="#saved-${record.data.templateId}" hx-swap="innerHTML"
+          style="display:flex;gap:.5rem;align-items:center;margin:0">
+      <input name="collection" list="collections" placeholder="Uncategorized"
+             style="flex:1;min-width:0"
+             value="${escapeHTML(record.data.collection || "")}" />
+      <small id="saved-${record.data.templateId}"
+             style="flex:0 0 3.5rem;text-align:right"></small>
+      <button type="submit" style="flex-shrink:0">Save</button>
+    </form>
+  </td>
+</tr>`
     );
     return [
       tpls.length,
-      `${tpls.length ? `<div class="boxbox">${tplList.join("")}</div>` : ""}`
+      `${tpls.length ? `<table><thead><tr><th>Name</th><th>Collection</th>`
+        + `</tr></thead><tbody>${rows.join("")}</tbody></table>` : ""}`
     ]
   };
 
@@ -170,6 +322,10 @@ const tplListFrame = async () => {
   const [nDraft, draftList] = renderList("draft");
 
   return `
+<datalist id="collections">
+  ${collections.map((name) => `<option value="${escapeHTML(name!)}"></option>`).join("")}
+</datalist>
+
 <h3>Active Templates (${nActive})</h3>
 ${activeList}
 
@@ -231,33 +387,19 @@ export const addTemplateRoutes = (app: Express): void => {
     }
 
     if (valid && req.query.action === "publish") {
-      const templateId = computeTemplateId(managerId, req.body.html);
-      console.log(`Publishing new template ${templateId}...`);
-
-      const template: Template = {
-        templateId,
-        data: req.body.html,
-        createdAt: Date.now(),
-      };
-
       try {
-        const { data } = await api.post<APIResponse>("/template/register", {
-          template,
-          providerPeerIdStr: managerId,
+        const record = await registerTemplate({
+          name: req.body.name,
+          html: req.body.html,
+          approved: true, // team templates are trusted by default
         });
-        msg = `<p>Success! ${data.status}:</p><p>${data.id}</p>`;
+        console.log(`Published template ${record.templateId}`);
+        msg = `<p>Success! ${record.templateId}</p>`;
       } catch (e) {
         console.log(`Errors during registration`, e);
         msg = "Error during template registration.";
         valid = false;
       }
-
-      const templateEntry: TemplateRecord = {
-        ...template,
-        name: req.body.name,
-        status: "active",
-      };
-      await db.set<TemplateRecord>(["templates", templateId], templateEntry);
     }
     if (req.query.action === "edit") {
       res.send(form(undefined, req.body));
@@ -317,7 +459,7 @@ export const addTemplateRoutes = (app: Express): void => {
   width="100%"
   srcdoc="${escapeHTML(renderedTemplate)}"></iframe>
 
-${templateDataForm(escapeHTML(html), fields, req.body)}`);
+${templateDataForm(html, fields, req.body)}`);
   });
 
   app.post("/t/:id", requireAuth, async (req, res) => {
@@ -338,6 +480,10 @@ ${templateDataForm(escapeHTML(html), fields, req.body)}`);
       tpl!.data.status = "active";
       await db.set<TemplateRecord>(tpl!.key, tpl!.data);
       msg = "Successfully published template";
+    } else if (req.query.action === "categorize") {
+      tpl!.data.collection = String(req.body.collection || "").trim() || undefined;
+      await db.set<TemplateRecord>(tpl!.key, tpl!.data);
+      return res.send("✓ saved");
     } else {
       return make500(res);
     }

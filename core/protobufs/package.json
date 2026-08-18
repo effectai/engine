@@ -1,6 +1,7 @@
 {
   "name": "@effectai/protobufs",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "./dist/effect.js",
   "exports": {

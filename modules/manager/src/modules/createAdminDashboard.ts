@@ -38,7 +38,7 @@ export const setupManagerDashboard = async ({
     const require = createRequire(import.meta.url);
 
     const build = await import(
-      require.resolve("../admin/build/server/index.js")
+      require.resolve(path.join(import.meta.dirname, "../../admin/build/server/index.js"))
     );
 
     const remixHandler = createRequestHandler({
@@ -64,7 +64,7 @@ export const setupManagerDashboard = async ({
   app.use(basicAuth);
 
   app.use(
-    express.default.static(path.join(__dirname, "../admin/build/client")),
+    express.default.static(path.join(import.meta.dirname, "../../admin/build/client")),
   );
 
   app.get("/favicon.ico", (_req: any, res: any) => {

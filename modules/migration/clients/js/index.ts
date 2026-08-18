@@ -1,2 +1,2 @@
 export * from "./@generated/index.js";
-export * from "./derive";
+export * from "./derive.js";

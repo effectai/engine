@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-const { web3Auth, init, privateKey, userInfo, isAuthenticated } = useAuth();
+const { web3Auth, init, privateKey, userInfo, isAuthenticated, pendingRecoveryPrivateKey } = useAuth();
 
 definePageMeta({
   layout: "worker",
@@ -18,9 +18,21 @@ onMounted(async () => {
 
     if (!pk) {
       console.error("No private key found");
+      navigateTo("/login");
+      return;
     }
 
-    privateKey.value = pk as string;
+    const privateKeyHex = pk as string;
+
+    // If no modifier, defer to recovery flow
+    if (!localStorage.getItem("modifier")) {
+      privateKey.value = privateKeyHex;
+      pendingRecoveryPrivateKey.value = privateKeyHex;
+      navigateTo("/login", { replace: true });
+      return;
+    }
+
+    privateKey.value = privateKeyHex;
 
     userInfo.value = await web3Auth.value?.getUserInfo().then((user) => ({
       username: user.email || user.name || "Web3Auth User",

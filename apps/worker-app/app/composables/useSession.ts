@@ -10,6 +10,9 @@ export const useSession = () => {
 
   const { useGetNoncesAsyncQuery } = useNonce();
   const { useIdentifyAsyncQuery } = useIdentify();
+  const { registerDevice } = useDeviceRegistration();
+  const { syncPayments } = usePaymentSync();
+  const { isEnabled } = useFeatureFlags();
 
   const managerInfo = computed(() => ({
     multiaddr: manager.value?.multiaddr,
@@ -38,11 +41,27 @@ export const useSession = () => {
       assertExists(nonces, "Nonces are not available");
 
       assertExists(account.value, "Account is not available");
-      return sessionStore.establish(multiAddress, {
+      const result = await sessionStore.establish(multiAddress, {
         recipient: account.value,
         currentNonce: nonces.nextNonce,
         accessCode,
       });
+
+      // Register this device in the manager's storage layer
+      try {
+        if (isEnabled("device-storage")) {
+          await registerDevice(multiaddr(multiAddress));
+        }
+        if (isEnabled("payment-storage")) {
+          await syncPayments(multiaddr(multiAddress), nonces);
+        }
+      } catch {
+        // Registration failed — roll back the connection
+        await sessionStore.terminate();
+        throw new Error("We failed to register your device. Please try again.");
+      }
+
+      return result;
     },
     onError: (error) => {
       console.error(error);

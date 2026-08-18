@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from 'express';
+import type { Express, Router, Request, Response, NextFunction } from 'express';
 import express from "express";
 import { addAuthRoutes, hasAuth } from "./auth.js";
 import { addFetcherRoutes, getFetchers, countTasks } from "./fetcher.js";
@@ -15,6 +15,11 @@ import * as state from "./state.js";
 import {
   addTemplateRoutes,
 } from "./templates.js";
+import { addRequestorApiRoutes } from "./api/api.js";
+import { addAdminRoutes } from "./api/admin.js";
+import { addJobApiRoutes } from "./api/jobs.js";
+import { rateLimitApi } from "./api/accounts.js";
+import { apiError, apiNotFound } from "./api/api-util.js";
 
 const formatDate = (ts: number) =>
   new Date(ts).toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -35,7 +40,7 @@ const campaignCard = (d: DatasetRecord) => {
   );
 };
 
-const addApiRoutes = (app: Express) => {
+const addApiRoutes = (app: Router) => {
   // CORS handler for API routes
   const setCorsHeaders = (res: Response) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -43,12 +48,13 @@ const addApiRoutes = (app: Express) => {
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   };
 
-  app.options("/api/stats", (_req: Request, res: Response) => {
+  // Paths are relative to the router's /api mount, so no /api prefix here.
+  app.options("/stats", (_req: Request, res: Response) => {
     setCorsHeaders(res);
     res.status(204).end();
   });
 
-  app.get("/api/stats", async (_req: Request, res: Response) => {
+  app.get("/stats", async (_req: Request, res: Response) => {
     setCorsHeaders(res);
     const activeDatasets = await getActiveDatasets("active");
 
@@ -89,6 +95,7 @@ const addApiRoutes = (app: Express) => {
             index: f.index,
             name: f.name,
             type: f.type,
+            capabilities: f.capabilities || [],
             tasksQueued: stepQueued,
             tasksActive: stepActive,
             tasksCompleted: stepCompleted,
@@ -124,7 +131,8 @@ const addApiRoutes = (app: Express) => {
 
 const addMainRoutes = (app: Express) => {
   app.get("/", async (req: Request, res: Response) => {
-    const datasets = await getActiveDatasets("active");
+    // hidden datasets (incl. Requestor-API jobs) stay off the public homepage
+    const datasets = (await getActiveDatasets("active")).filter((d) => !d.hidden);
 
     const dsList = datasets.map((d) => campaignCard(d));
 
@@ -174,19 +182,39 @@ const main = async () => {
   app.use(express.urlencoded({ limit: "20mb", extended: true }));
   app.use(express.json({ limit: "20mb" }));
 
-  // gracefull error when files are too lar1ge
-  app.use((err: Error, _: Request, res: Response, next: NextFunction) => {
-    if ((err as any).status === 413) {
-      // TODO: use htmx-ext-response-targets for a 413
+  // Body-parser errors (bad JSON, oversized body, ...) land here. API routes
+  // get the JSON error envelope; the HTMX UI keeps its inline 413 message.
+  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+    const status = (err as { status?: number }).status ?? 500;
+    if (res.headersSent) return next(err);
+
+    if (req.path.startsWith("/api/v1/")) {
+      if (status === 413)
+        return apiError(
+          res,
+          413,
+          "invalid_request",
+          "Request body too large (max 20 MB).",
+        );
+      if (status >= 400 && status < 500)
+        return apiError(res, status, "invalid_request", "Malformed request body.");
+      console.error("Unhandled API error:", err);
+      return apiError(res, 500, "internal", "Internal server error");
+    }
+
+    if (status === 413) {
+      // 200 on purpose: plain htmx only swaps 2xx responses, and the legacy
+      // upload UI relies on this fragment showing up inline.
+      // TODO: use htmx-ext-response-targets for a real 413
       res.setHeader("HX-Retarget", "#messages");
-      res.status(200).send(`
+      return res.status(200).send(`
 <div id="messages">
   <p><blockquote>
     The data is too large. Try submitting less data.
   </blockquote></p>
 </div>`);
-      next(err);
     }
+    next(err);
   });
 
   // only add livereload when the flag is provided on dev
@@ -194,7 +222,17 @@ const main = async () => {
   if (liveReloadEnabled) await addLiveReload(app);
 
   console.log("Registering module routes");
-  addApiRoutes(app);
+
+  // perfix all API routes with /api
+  const apiRouter = express.Router();
+  app.use("/api", apiRouter);
+  addApiRoutes(apiRouter);
+  apiRouter.use(rateLimitApi); // per requestor rate limit
+  addRequestorApiRoutes(apiRouter);
+  addJobApiRoutes(apiRouter);
+  apiRouter.use(apiNotFound); // JSON 404 for unmatched /v1/* routes
+
+  addAdminRoutes(app);
   addMainRoutes(app);
   addTemplateRoutes(app);
   addDatasetRoutes(app);

@@ -10,7 +10,7 @@ import { db, managerId, publishProgress } from "./state.js";
 import * as state from "./state.js";
 import { validateNumericParams } from "./util.js";
 import { KVKey, KVQuery, KVTransactionResult } from "@cross/kv";
-import { getTemplate, getTemplates, renderTemplate, escapeHTML } from "./templates.js";
+import { getTemplate, getTemplates, renderTemplate, escapeHTML, isTemplateApproved } from "./templates.js";
 
 export type TimeSlot = { from: string; to: string };
 export type DayName = 'mon'|'tue'|'wed'|'thu'|'fri'|'sat'|'sun';
@@ -80,6 +80,16 @@ export type Fetcher = {
 
   // posting schedule: whitelist of days/time windows when tasks can be posted
   schedule?: Schedule;
+
+  // repetitions: how many tasks a single worker may complete from each import
+  // 0 means no limit, 1 means each worker may do one task.
+  repetitions?: number;
+
+  // Stable batch id override. Normally each import gets a fresh batch id, so the
+  // per-worker `repetitions` cap resets per import. Setting this pins one batch
+  // id across every import of this fetcher, making the cap apply for the whole
+  // run (used by unique-worker jobs, where a survey is filled in many batches).
+  batchId?: string;
 };
 
 const api = axios.create({
@@ -88,7 +98,7 @@ const api = axios.create({
   baseURL: state.managerUrl,
 });
 
-const parseCsv = (csv: string, delimiter = ","): Promise<any[]> => {
+export const parseCsv = (csv: string, delimiter = ","): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     const data: any[] = [];
 
@@ -116,7 +126,7 @@ const formatDate = (ts: number) =>
 
 // little shorthand to inject form field's value if it exists
 const addVal = (values: FormValues, key: string,  defaultVal: string = ""): string =>
-  `${values[key] ? `value="${values[key]}"` : defaultVal ? `value="${defaultVal}"` : ""}`;
+  `${values[key] ? `value="${escapeHTML(values[key])}"` : defaultVal ? `value="${escapeHTML(defaultVal)}"` : ""}`;
 
 type FormValues = Record<string, any>;
 
@@ -146,7 +156,13 @@ export const fetcherForm = async (
   dsId: number, values: FormValues, msg = "", f: Fetcher | undefined = undefined) => `
 <div id="page">
 <form hx-post="/d/${dsId}/${f?.index ? `f/${f.index}/edit` : "fetcher-create"}">
+  <div id="messages">
+    ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
+  </div>
   <fieldset>
+  <div id="messages">
+    ${msg ? `<p id="messages"><blockquote>${msg}</blockquote></p>` : ""}
+  </div>
     <legend>step info</legend>
     <label for="name"><strong>Name</strong></label>
     <input
@@ -180,8 +196,10 @@ export const fetcherForm = async (
 
       <label for="type"><strong>Data source</strong><br/>
       <small>How new tasks will be fetched.</small></label>
-      <select name="type" id="type">${["csv", "pipeline", "constant"].map(a =>
-	`<option value="${a}" ${values.type == a ? "selected" : ""}>${a}</option>`).join("")}
+      <select name="type" id="type"
+        onchange="repetitions.disabled=this.value!=='csv';if(repetitions.disabled)repetitions.value=0">
+        ${["csv", "pipeline", "constant"].map(a =>
+	        `<option value="${a}" ${values.type == a ? "selected" : ""}>${a}</option>`).join("")}
       </select>
 
   </fieldset>
@@ -210,13 +228,16 @@ export const fetcherForm = async (
 
       <section class="columns gap">
 	<div class="column">
-	  <label for="price"><strong>Price per task</strong></label>
-<small>Reward in $EFFECT for each task.<br/>&nbsp;</small>
-	  <input
-	    placeholder="$EFFECT"
-	    type="number"
-	    id="price"  ${addVal(values, "price")}
-	    name="price"/>
+          <label for="price"><strong>Price per task</strong><br/>
+          <small>Default price per task. Can be overwritten in the task data with
+     the "dataffect/price" property. To avoid mistakes, task property price is capped
+     at 10x the default price. <strong>Important:</strong> both values are in
+     "lamports", so for 1 EFFECT enter 1000000.</small></label></label>
+          <input
+            placeholder="$EFFECT"
+    	    type="number"
+    	    id="price"  ${addVal(values, "price")}
+            name="price"/>
 	</div>
 
 	<div class="column">
@@ -230,8 +251,18 @@ export const fetcherForm = async (
 	</div>
       </section>
 
+      <div class="mt">
+        <label for="repetitions"><strong>Repetitions per worker</strong><br/>
+        <small>How many tasks a single worker may complete per import batch.
+        0 = no limit, 1 = each worker may do one task. Only applies to CSV data sources.</small></label>
+        <input type="number" id="repetitions" name="repetitions" min="0" step="1"
+          value="${values.repetitions ?? 0}"
+          ${(values.type ?? 'csv') !== 'csv' ? "disabled" : ""} />
+      </div>
+
+      <div class="mt"></div>
       <label for="capabilities"><strong>Capabilities</strong><br/>
-      <small>Comma separated list of capabilities required for tasks. Workers must have ALL listed capabilities to receive the task.</small></label>
+      <small>Comma separated list of capabilities required for tasks (note: only 1 capability is used at the moment).</small></label>
       <input
 	placeholder="effectai/common-voice-validator:1.0.0, effectai/admin:1.0.0"
 	id="capabilities"  ${addVal(values, "capabilities")}
@@ -480,6 +511,7 @@ export const createFetcher = async (
 
     status: oldFetcher?.status ?? "active",
     hidden: fields.hidden === "on" || fields.hidden === true,
+    repetitions: Number(fields.repetitions) || 0,
 
     schedule: (() => {
       try {
@@ -576,7 +608,7 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
 	}
 
 	// regex filter
-	if (!task.result || (regex && regex.test(task.result)) || task.result == "<TASK REPORTED AND SKIPPED>") {
+	if (!task.result || (regex && regex.test(task.result)) || task.type === "report" || task.result == "<TASK REPORTED AND SKIPPED>") {
 	  continue;
 	}
 
@@ -600,35 +632,54 @@ export const getTasks = async (fetcher: Fetcher, csv: string) => {
       break;
   }
 
+  // we cap the maximum price of a task to 10* the default price, to
+  // avoid expensive mistakes.
+  const maxPrice = BigInt(fetcher.price) * BigInt(10);
+
+  // Trust signal for the worker: whether this task's template is approved.
+  // Baked into each task's data (reserved __effectApproved key) so the worker
+  // can show a safety badge without a protocol/schema change. Defaults to safe
+  // for team/legacy templates.
+  const approvalTpl = await getTemplate(fetcher.template);
+  const templateApproved = approvalTpl ? isTemplateApproved(approvalTpl.data) : true;
+  // A pinned batchId keeps the per-worker repetition cap stable across imports
+  // (see Fetcher.batchId); otherwise each import is its own batch.
+  const batchRunId = fetcher.batchId ?? ulid();
+
   const tasks = data.map(
-    (d, _idx) =>
-      ({
+    (d, _idx) => {
+      const rawPrice = d["dataffect/reward"] ?
+	BigInt(d["dataffect/reward"] as string) : BigInt(fetcher.price);
+      const price = rawPrice > maxPrice ? maxPrice : rawPrice;
+
+      return {
 	id: ulid(),
 	title: fetcher.name,
-	reward: BigInt(fetcher.price * 1000000),
+	reward: price,
 	timeLimitSeconds: fetcher.timeLimitSeconds ?? 600,
 	templateId: fetcher.template,
-	templateData: JSON.stringify(d),
-	// TODO: When proto is updated to support `repeated string capabilities`,
-	// change this to pass an array instead of a comma-separated string.
-	capability: fetcher.capabilities.join(","),
-      }) as Task,
+	templateData: JSON.stringify({ ...d, __effectApproved: templateApproved }),
+	capability: fetcher.capabilities[0],
+	batchId: `${fetcher.datasetId}-${fetcher.index}-${batchRunId}`,
+	repetitions: fetcher.repetitions ?? 0,
+      } as Task;
+    },
   );
 
   return tasks;
 };
 
-export const getPendingTasks = async (f: Fetcher) => {
+export const getPendingTasks = async (f: Fetcher, queueName: string = "queue") => {
 
   const tasks = await db.listAll<boolean>(
-    ["fetcher", f.datasetId, f.index, "queue", {}], f.batchSize, false
+    ["fetcher", f.datasetId, f.index, queueName, {}], f.batchSize, false
   );
 
   return tasks.map(t => t.key[4]);
 };
 
 // fetch new tasks and add the to the fetcher queue
-const importFetcherData = async (fetcher: Fetcher, csv: string = "") => {
+export const importFetcherData = async (fetcher: Fetcher, csv: string = "") => {
   let tasks = await getTasks(fetcher, csv);
   console.log(`trace: Importing ${tasks.length} new tasks for fetcher`);
   for (const t of tasks) {
@@ -638,6 +689,21 @@ const importFetcherData = async (fetcher: Fetcher, csv: string = "") => {
     );
   }
   return tasks;
+};
+
+// Imports a CSV string into a fetcher's queue and bumps its totalTasks.
+// Used by the Requestor API to populate a job's tasks at creation time.
+export const importCsvIntoFetcher = async (
+  fetcher: Fetcher,
+  csv: string,
+): Promise<number> => {
+  const tasks = await importFetcherData(fetcher, csv);
+  const entry = (await db.get<Fetcher>(
+    ["fetcher", fetcher.datasetId, fetcher.index, "info"],
+  ))!;
+  entry.data.totalTasks += tasks.length;
+  await db.set<Fetcher>(entry.key, entry.data);
+  return tasks.length;
 };
 
 // form submission handler for fetcher import
@@ -757,7 +823,10 @@ export const processFetcher = async (fetcher: Fetcher) => {
 }
 
 export const countTasks = (f: Fetcher, type: "active" | "queue" | "done" | "failed") => {
-  return db.count(["fetcher", f.datasetId, f.index, type, {}]);
+  if (f)
+    return db.count(["fetcher", f.datasetId, f.index, type, {}]);
+  else
+    return 0;
 };
 
 /**
@@ -804,15 +873,19 @@ export const importTasks = async (f: Fetcher) => {
     await delay(400);
 
     const task = await db.get<Task>(["task", taskId]);
+    if (!task) {
+      console.error(`Queued task not found in db ${taskId}, skipping.`);
+      continue;
+    }
 
     try {
-      // TODO: actualize some of the data from the fetcher (like prize
-      // and templateId. these should probably not be stored to begin
-      // with, to avoid confusion.
+      // actualize some of the data from the fetcher (like the
+      // templateId). these should probably not be stored in the task
+      // to begin with, to avoid confusion.
       const serializedTask = {
 	...task!.data,
 	// convert bigint to string for serialization
-	reward: BigInt(f.price * 1000000).toString(),
+	reward: task!.data.reward.toString(),
 	templateId: f.template,
       };
 
@@ -862,7 +935,7 @@ export const processResults = async (f: Fetcher, batchSize: number) => {
 
     let importCount = 0;
     for (const d of data as any) {
-      if (d.type !== "submission")
+      if (d.type !== "submission" && d.type !== "report")
 	continue;
       db.beginTransaction();
       await db.delete([...keyBase, "active", d.taskId]);
@@ -944,10 +1017,19 @@ const formValidations: ValidationMap = {
 	? "Must be a number"
 	: num <= 0
 	  ? "Price must be greater than 0"
-	  : num > 100 && "Price too large";
+	  : num > 3000000000 && "Price too large";
   },
 
   template: (v: string) => (!v || v.length === 0) && "Template is required",
+  repetitions: (v: any) => {
+    if (v === undefined || v === "") return false;
+    const repetitions = Number(v);
+    return (
+      (isNaN(repetitions) && "Repetitions must be a number") ||
+      (!Number.isInteger(repetitions) && "Repetitions must be a whole number") ||
+      (repetitions < 0 && "Repetitions cannot be negative")
+    );
+  },
   timeLimitSeconds: (v: any) => {
     const num = Number(v);
     return (
@@ -985,6 +1067,7 @@ export const addFetcherRoutes = (app: Express): void => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
+    if (!f) return make404(res);
 
     res.send(page(await fetcherForm(id, f!, "", f)));
   });
@@ -993,6 +1076,8 @@ export const addFetcherRoutes = (app: Express): void => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
+    if (!f) return make404(res);
+
     const dataset = (await db.get<DatasetRecord>(["dataset", id, "info"]))!.data;
 
     f!.status = req.query.action === "archive" ? "archived" : "active";
@@ -1008,16 +1093,18 @@ export const addFetcherRoutes = (app: Express): void => {
     } else {
       msg = '<h4 style="margin-top: 0;">Could not create dataset:</h4>' + msg;
       console.log(`Invalid form submission ${msg}`);
-      res.send(await fetcherForm(id, req.body, msg));
+      res.send(await fetcherForm(id, req.body, msg, f));
     }
   });
 
   app.get("/d/:id/f/:fid",
     validateNumericParams("id", "fid"),
     async (req, res) => {
-    const id = Number(req.params.id);
-    const fid = Number(req.params.fid);
-    const f = await getFetcher(id, fid);
+      const id = Number(req.params.id);
+      const fid = Number(req.params.fid);
+      const f = await getFetcher(id, fid);
+      if (!f) return make404(res);
+
 
     const queueSize = countTasks(f!, "queue");
     const activeSize = countTasks(f!, "active");
@@ -1046,10 +1133,11 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Finished: ${doneSize}</li>
   <li>Failed: ${failedSize}</li>
   <li>Batch / Freq: ${f.batchSize} / ${f.frequency}</li>
+  ${f.repetitions ? `<li>Repetitions per worker: ${f.repetitions}</li>` : ''}
   <li>Time Limit: ${f.timeLimitSeconds}s</li>
   <li>Schedule: ${f.schedule && Object.keys(f.schedule).length > 0
     ? Object.entries(f.schedule).map(([day, slots]) =>
-        `${day}: ${(slots as TimeSlot[]).map(s => s.from && s.to ? `${s.from}-${s.to}` : 'all day').join(', ')}`
+        `${day}: ${Array.isArray(slots) ? (slots as TimeSlot[]).map(s => s.from && s.to ? `${s.from}-${s.to}` : 'all day').join(', ') : 'all day'}`
       ).join('; ')
     : 'continuous (no restrictions)'}
     
@@ -1112,6 +1200,7 @@ export const addFetcherRoutes = (app: Express): void => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
+    if (!f) return make404(res);
 
     res.send(page(await fetcherImportForm(f!, {
       filter: f?.pipelineFilterRegex,
@@ -1135,6 +1224,7 @@ export const addFetcherRoutes = (app: Express): void => {
       const id = Number(req.params.id);
       const fid = Number(req.params.fid);
       const f = await getFetcher(id, fid);
+      if (!f) return make404(res);
       res.send(f);
     });
 
@@ -1152,6 +1242,7 @@ export const addFetcherRoutes = (app: Express): void => {
     const id = Number(req.params.id);
     const fid = Number(req.params.fid);
     const f = await getFetcher(id, fid);
+    if (!f) return make404(res);
 
     let { valid, errors } = await validateForm(req.body, importValidations(f!));
     let msg = Object.values(errors).join("<br/>- ");
@@ -1320,6 +1411,8 @@ ${Object.entries(peers)
       const id = Number(req.params.id);
       const fid = Number(req.params.fid);
       const f = await getFetcher(id, fid);
+      if (!f) return make404(res);
+
       const offset = Number(req.query.offset || "0");
 
       const tasks = await getPendingTasks(f!);
@@ -1352,7 +1445,8 @@ ${Object.entries(peers)
   id="templateFrame"
   height="450px"
   width="100%"
-  srcdoc="${escapeHTML(renderedTemplate)}"></iframe>`));
+  srcdoc="${escapeHTML(renderedTemplate)}"></iframe>
+<pre>${JSON.stringify(task, (_, v) => typeof v === 'bigint' ? v.toString() : v)}</pre>`));
     });
 
   app.get("/d/:id/pipeline-preview", async (req, res) => {

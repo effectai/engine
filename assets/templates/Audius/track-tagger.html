@@ -1,90 +1,202 @@
-<div id="app" style="text-align: center">
-  <h1>Effect AI - Track Tagger</h1>
+<style>
+  #app {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+    text-align: center;
+  }
+  .tag-section {
+    margin-bottom: 2rem;
+  }
+  .tag-section h2 {
+    margin-bottom: 1rem;
+  }
+  .radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+  .radio-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+  }
+  .radio-option label {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .radio-option input[type="radio"]:checked + label {
+    background: #4a90e2;
+    color: white;
+    border-color: #4a90e2;
+  }
+  .other-input {
+    margin-top: 0.5rem;
+  }
+  audio {
+    width: 100%;
+    max-width: 600px;
+    margin: 1rem 0;
+  }
+</style>
 
-  <hr />
+  <div id="app">
+    <h1>Effect AI - Track Tagger</h1>
 
-  <div class="mx-auto" style="max-width: 80%">
     <audio ref="songPlayer" controls>
       <source :src="songSource" type="audio/mp3" />
     </audio>
 
-    <hr />
-
-    <p style="color: red;" :class="{'is-hidden mb-3': !notComplete}">
+    <p v-if="notComplete" style="color: red;">
       Task incomplete - Please complete all sections of the task
     </p>
 
-    <div>
-      <h2 class="is-size-4 has-text-weight-semibold mb-3">Genre:</h2>
-      <div class="checkboxes">
-        <label class="radio mx-2"><input type="radio" name="genre" value="Electronic" v-model="selectedGenre" /> Electronic</label>
-        <label class="radio mx-2"><input type="radio" name="genre" value="Rock" v-model="selectedGenre" /> Rock</label>
-        <label class="radio mx-2"><input type="radio" name="genre" value="Metal" v-model="selectedGenre" /> Metal</label>
-        <label class="radio mx-2"><input type="radio" name="genre" value="Alternative" v-model="selectedGenre" /> Alternative</label>
-        <label class="radio mx-2"><input type="radio" name="genre" value="Hip-Hop/Rap" v-model="selectedGenre" /> Hip-Hop/Rap</label>
-        <label class="radio mx-2"><input type="radio" name="genre" value="Punk" v-model="selectedGenre" /> Punk</label>
-        <label class="radio mx-2"><input type="radio" name="genre" value="Folk" v-model="selectedGenre" /> Folk</label>
-        <label class="radio mx-2"><input type="radio" name="genre" value="Classical" v-model="selectedGenre" /> Classical</label>
-        <label class="radio mx-2"><input type="radio" name="genre" value="Other" v-model="selectedGenre" /> Other</label>
-        <div v-if="selectedGenre === 'Other'" class="is-flex is-justify-content-center mt-2">
-          <input type="text" class="input column is-10-mobile is-6-tablet is-4-desktop" placeholder="Enter genre" v-model="selectedGenreOther" />
+    <div class="tag-section">
+      <h2>🎵 Genre</h2>
+      <div class="radio-group">
+        <div class="radio-option">
+          <input type="radio" id="genre-electronic" name="genre" value="Electronic" v-model="selectedGenre" />
+          <label for="genre-electronic">Electronic</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="genre-rock" name="genre" value="Rock" v-model="selectedGenre" />
+          <label for="genre-rock">Rock</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="genre-metal" name="genre" value="Metal" v-model="selectedGenre" />
+          <label for="genre-metal">Metal</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="genre-alternative" name="genre" value="Alternative" v-model="selectedGenre" />
+          <label for="genre-alternative">Alternative</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="genre-hiphop" name="genre" value="Hip-Hop/Rap" v-model="selectedGenre" />
+          <label for="genre-hiphop">Hip-Hop/Rap</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="genre-punk" name="genre" value="Punk" v-model="selectedGenre" />
+          <label for="genre-punk">Punk</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="genre-folk" name="genre" value="Folk" v-model="selectedGenre" />
+          <label for="genre-folk">Folk</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="genre-classical" name="genre" value="Classical" v-model="selectedGenre" />
+          <label for="genre-classical">Classical</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="genre-other" name="genre" value="Other" v-model="selectedGenre" />
+          <label for="genre-other">Other</label>
+        </div>
+      </div>
+      <div v-if="selectedGenre === 'Other'" class="other-input">
+        <input type="text" class="input" placeholder="Enter genre" v-model="selectedGenreOther" />
+      </div>
+    </div>
+
+    <div class="tag-section">
+      <h2>🎙️ Vocal Presence</h2>
+      <div class="radio-group">
+        <div class="radio-option">
+          <input type="radio" id="vocals-instrumental" name="vocals" value="Instrumental" v-model="selectedVocals"/>
+          <label for="vocals-instrumental">Instrumental</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="vocals-single" name="vocals" value="Vocal (Single)" v-model="selectedVocals"/>
+          <label for="vocals-single">Vocal (Single)</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="vocals-multiple" name="vocals" value="Vocal (Multiple)" v-model="selectedVocals"/>
+          <label for="vocals-multiple">Vocal (Multiple)</label>
         </div>
       </div>
     </div>
 
-    <hr />
-
-    <div>
-      <h2 class="is-size-4 has-text-weight-semibold mb-3">Mood:</h2>
-      <div class="checkboxes">
-        <label class="radio mx-2"><input type="radio" name="mood" value="Happy" v-model="selectedMood"/> Happy</label>
-        <label class="radio mx-2"><input type="radio" name="mood" value="Sad" v-model="selectedMood"/> Sad</label>
-        <label class="radio mx-2"><input type="radio" name="mood" value="Aggressive" v-model="selectedMood"/> Aggressive</label>
-        <label class="radio mx-2"><input type="radio" name="mood" value="Chill" v-model="selectedMood"/> Chill</label>
-        <label class="radio mx-2"><input type="radio" name="mood" value="Uplifting" v-model="selectedMood"/> Uplifting</label>
-        <label class="radio mx-2"><input type="radio" name="mood" value="Dark" v-model="selectedMood"/> Dark</label>
+    <div class="tag-section">
+      <h2>🎤 Lyric Clarity</h2>
+      <div class="radio-group">
+        <div class="radio-option">
+          <input type="radio" id="clarity-very-clear" name="clarity" value="Very Clear" v-model="selectedClarity"/>
+          <label for="clarity-very-clear">Very Clear</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="clarity-clear" name="clarity" value="Clear" v-model="selectedClarity"/>
+          <label for="clarity-clear">Clear</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="clarity-somewhat" name="clarity" value="Somewhat Clear" v-model="selectedClarity"/>
+          <label for="clarity-somewhat">Somewhat Clear</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="clarity-unclear" name="clarity" value="Unclear" v-model="selectedClarity"/>
+          <label for="clarity-unclear">Unclear</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="clarity-instrumental" name="clarity" value="Instrumental" v-model="selectedClarity"/>
+          <label for="clarity-instrumental">Instrumental</label>
+        </div>
       </div>
     </div>
 
-    <hr />
-
-    <div>
-      <h2 class="is-size-4 has-text-weight-semibold mb-3">Energy Level:</h2>
-      <div>
-        <label class="radio mx-2"><input type="radio" name="energy" value="Low" v-model="selectedEnergy"/> Low</label>
-        <label class="radio mx-2"><input type="radio" name="energy" value="Medium" v-model="selectedEnergy"/> Medium</label>
-        <label class="radio mx-2"><input type="radio" name="energy" value="High" v-model="selectedEnergy"/> High</label>
+    <div class="tag-section">
+      <h2>💭 How it makes you feel</h2>
+      <div class="radio-group">
+        <div class="radio-option">
+          <input type="radio" id="mood-happy" name="mood" value="Happy" v-model="selectedMood"/>
+          <label for="mood-happy">Happy</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="mood-sad" name="mood" value="Sad" v-model="selectedMood"/>
+          <label for="mood-sad">Sad</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="mood-aggressive" name="mood" value="Aggressive" v-model="selectedMood"/>
+          <label for="mood-aggressive">Aggressive</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="mood-chill" name="mood" value="Chill" v-model="selectedMood"/>
+          <label for="mood-chill">Chill</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="mood-uplifting" name="mood" value="Uplifting" v-model="selectedMood"/>
+          <label for="mood-uplifting">Uplifting</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="mood-dark" name="mood" value="Dark" v-model="selectedMood"/>
+          <label for="mood-dark">Dark</label>
+        </div>
       </div>
     </div>
 
-    <hr />
-
-    <div>
-      <h2 class="is-size-4 has-text-weight-semibold mb-3">Danceability:</h2>
-      <div>
-        <label class="radio mx-2"><input type="radio" name="dance" value="Not Danceable" v-model="selectedDance"/> Not Danceable</label>
-        <label class="radio mx-2"><input type="radio" name="dance" value="Somewhat Danceable" v-model="selectedDance"/> Somewhat Danceable</label>
-        <label class="radio mx-2"><input type="radio" name="dance" value="Very Danceable" v-model="selectedDance"/> Very Danceable</label>
+    <div class="tag-section">
+      <h2>💃 Danceability</h2>
+      <div class="radio-group">
+        <div class="radio-option">
+          <input type="radio" id="dance-not" name="dance" value="Not Danceable" v-model="selectedDance"/>
+          <label for="dance-not">Not Danceable</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="dance-somewhat" name="dance" value="Somewhat Danceable" v-model="selectedDance"/>
+          <label for="dance-somewhat">Somewhat Danceable</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="dance-very" name="dance" value="Very Danceable" v-model="selectedDance"/>
+          <label for="dance-very">Very Danceable</label>
+        </div>
       </div>
     </div>
-
-    <hr />
-
-    <div>
-      <h2 class="is-size-4 has-text-weight-semibold mb-3">Vocal Presence:</h2>
-      <div>
-        <label class="radio mx-2"><input type="radio" name="vocals" value="Instrumental" v-model="selectedVocals"/> Instrumental</label>
-        <label class="radio mx-2"><input type="radio" name="vocals" value="Vocal (Single)" v-model="selectedVocals"/> Vocal (Single)</label>
-        <label class="radio mx-2"><input type="radio" name="vocals" value="Vocal (Multiple)" v-model="selectedVocals"/> Vocal (Multiple)</label>
-      </div>
-    </div>
-
-    <hr />
 
     <button
       @click.prevent="uploadAndSubmit"
       class="button is-success is-large"
       :class="{'is-loading': btnLoading}"
+      :disabled="btnLoading"
     >
       Submit
     </button>
@@ -111,21 +223,31 @@
           notComplete: false,
           selectedGenre: "",
           selectedMood: "",
-          selectedEnergy: "",
+          selectedClarity: "",
           selectedDance: "",
           selectedVocals: "",
           selectedGenreOther: "",
           instructions: `
           <div class="">
-            <h2 class="text-lg">*NOTE*</h2>
+            <h2 class="text-lg">Song Tagging Instructions</h2>
             <p>
-              Songs may take a few seconds to load. If the song does not load in a reasonable amount of time, please report the task using the report button.
+              Listen to the track and tag it with appropriate attributes. Your input helps improve music discovery and organization.
             </p>
             <br><hr><br>
-            <li>Listen to at least a few seconds of the song before answering the questions.</li>
+            <h3>Guidelines:</h3>
+            <li><strong>Genre:</strong> Select the primary genre of the track. If it doesn't fit standard genres, choose "Other" and specify.</li>
+            <li><strong>How it makes you feel:</strong> Choose the emotion or mood that best describes how the track makes you feel.</li>
+            <li><strong>Lyric Clarity:</strong> Rate how clear and understandable the lyrics are. Choose "Instrumental" if there are no vocals.</li>
+            <li><strong>Danceability:</strong> Assess how suitable the track is for dancing based on rhythm and tempo.</li>
+            <li><strong>Vocal Presence:</strong> Indicate if the track is instrumental or has single/multiple vocalists.</li>
+            <br><hr><br>
+            <h3>Important Notes:</h3>
+            <li>Songs may take a few seconds to load. If the song does not load in a reasonable amount of time, please report the task.</li>
+            <li>Listen to at least 30 seconds of the song before answering the questions.</li>
             <li>Try to be accurate — guess only if you genuinely can't tell.</li>
             <li>Use headphones or a quiet environment for the best experience.</li>
-            <li>If the song abruptly cuts off, is silent, or sounds corrupted, report it.</li>
+            <li>If the song abruptly cuts off, is silent, or sounds corrupted, please report it.</li>
+            <li>All fields are required before you can submit.</li>
           </div>`
         };
       },
@@ -144,7 +266,7 @@
       methods: {
         async uploadAndSubmit() {
           this.btnLoading = true;
-          const fields = [this.selectedGenre, this.selectedMood, this.selectedEnergy, this.selectedDance, this.selectedVocals];
+          const fields = [this.selectedGenre, this.selectedMood, this.selectedClarity, this.selectedDance, this.selectedVocals];
           if (fields.some(field => field === "")) {
             this.notComplete = true
           }
@@ -159,11 +281,11 @@
                       song: this.songSource,
                       genre: this.selectedGenre,
                       mood: this.selectedMood,
-                      energy: this.selectedEnergy,
+                      clarity: this.selectedClarity,
                       dance: this.selectedDance,
                       vocals: this.selectedVocals,
                     }
-                    
+
                   },
                 },
                 "*",

@@ -1,4 +1,4 @@
-import type { Profile } from "../schema.ts";
+import type { Profile } from "../schema.js";
 
 export const localnet: Profile = {
   NAME: "localnet",
