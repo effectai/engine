@@ -11,7 +11,6 @@ export const usePayout = () => {
   const { manager } = storeToRefs(sessionStore);
   const { account } = useAuth();
   const { useGetNoncesAsyncQuery } = useNonce();
-  const { isEnabled } = useFeatureFlags();
   const { syncPayments } = usePaymentSync();
 
   const intervalMs = Number.parseInt(config.public.PAYOUT_INTERVAL);
@@ -51,7 +50,6 @@ export const usePayout = () => {
   watchDebounced(
     [data, manager, account],
     async () => {
-      if (!isEnabled("payment-storage")) return;
       if (!data.value || !manager.value || !account.value) return;
 
       const multiaddr = manager.value.multiaddr;
