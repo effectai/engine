@@ -79,7 +79,7 @@ const connect = async () => {
   if (useAuth().isAuthenticated.value) {
     await navigateTo("/");
   }
-
+};
 </script>
 
 <style scoped></style>
