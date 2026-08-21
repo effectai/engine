@@ -80,7 +80,6 @@ const connect = async () => {
     await navigateTo("/");
   }
 };
-
 </script>
 
 <style scoped></style>

@@ -76,13 +76,16 @@
         <div class="select is-fullwidth">
           <select v-model="insight" @change="missingOtherText = false">
             <option value="">— Select a reason —</option>
+            <option value="Communicates the message more clearly">Communicates the message more clearly</option>
             <option value="Stronger or clearer headline">Stronger or clearer headline</option>
+            <option value="Stronger visual hierarchy">Stronger visual hierarchy</option>
             <option value="Better color contrast or palette">Better color contrast or palette</option>
             <option value="More visually appealing layout">More visually appealing layout</option>
             <option value="Clearer call to action">Clearer call to action</option>
             <option value="Better image or visual">Better image or visual</option>
             <option value="Easier to read">Easier to read</option>
             <option value="More relevant to the audience">More relevant to the audience</option>
+            <option value="Better fit for the stated goal">Better fit for the stated goal</option>
             <option value="Other">Other</option>
           </select>
         </div>
@@ -141,14 +144,34 @@
             type: "task-instructions",
             instructions: `
               <div>
-                <p>Compare the two design versions side by side and pick the one that works better for the stated purpose and audience.</p>
+                <h2>Compare Versions</h2>
+                <p>Two versions of the same design, side by side. Pick the one that works better for the stated <strong>purpose and audience</strong>.</p>
+
+                <h3>1. How to answer</h3>
                 <ul>
-                  <li>Focus on <strong>overall effectiveness</strong>, not personal taste</li>
-                  <li>Consider clarity, visual appeal, and how well it communicates</li>
-                  <li>Click on the image or use the Pick button to select</li>
+                  <li>Read the <strong>Purpose</strong>, <strong>Audience</strong> and <strong>Goal</strong> at the top before you compare.</li>
+                  <li>Click an image, or use its Pick button, to choose that version.</li>
+                  <li>Judge <strong>overall effectiveness, not personal taste</strong>. The stronger version does not have to be your favourite.</li>
+                  <li>Compare things like: which message lands faster, the headline, readability, contrast, layout, imagery, the call to action, and the fit with the audience and goal.</li>
+                  <li><strong>Shortcuts:</strong> A = left version, B = right version, Enter = Submit.</li>
                 </ul>
-                <hr>
-                <p><strong>Shortcuts:</strong> A = pick left version, B = pick right version, Enter = Submit</p>
+
+                <h3>2. Your reason</h3>
+                <ul>
+                  <li>Choose the reason that best matches the difference that decided it for you.</li>
+                  <li>Pick <strong>Other</strong> to write your own reason. That box is required when you choose Other.</li>
+                  <li>Your reason is delivered <strong>directly to the client</strong>. When you write one, keep it clear, specific and correctly spelled. A few sentences are enough.</li>
+                  <li>Use <strong>Other</strong> to call out any obvious mistake you notice in either version, such as a typo or a detail that contradicts another part of the design.</li>
+                </ul>
+
+                <h4>Good:</h4>
+                <blockquote>"Version B is more effective: the headline is easier to read and the call-to-action stands out. The simpler layout also suits the audience."</blockquote>
+
+                <h4>Avoid:</h4>
+                <blockquote>"B is better" &nbsp;&middot;&nbsp; "I like A" &nbsp;&middot;&nbsp; "b cuz colors"</blockquote>
+
+                <h3>3. Remember</h3>
+                <p>Compare Versions asks which design works better for this purpose and audience, not which one is better in general.</p>
               </div>
             `,
           },
