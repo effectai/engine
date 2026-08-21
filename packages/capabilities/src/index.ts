@@ -120,6 +120,21 @@ export const availableCapabilities: Capability[] = [
     attempts: 3,
   },
   {
+    icon: "i-lucide-scan-eye",
+    id: "effectai/design-review:0.0.1",
+    href: "capabilities/design-review",
+    name: "Design Review",
+    category: "Design",
+    description:
+      "Catches typos and contradictory details in a design while giving feedback on it",
+    cost: 40,
+    estimatedEarnings: 900,
+    tags: ["Design", "Feedback", "Quality", "Attention to Detail"],
+    antiCapability: "effectai/design-review:0.0.1-disabled",
+    hidden: false,
+    attempts: 3,
+  },
+  {
     icon: "i-lucide-ghost",
     id: "effectai/halloween-spirit:0.0.1",
     href: "capabilities/halloween",

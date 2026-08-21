@@ -1,0 +1,438 @@
+<style>
+  [v-cloak] {
+    display: none;
+  }
+  .image-loading-bar {
+    width: 80%;
+    max-width: 400px;
+    height: 6px;
+    background: #eee;
+    border-radius: 3px;
+    margin: 1rem auto;
+    overflow: hidden;
+  }
+  .image-loading-bar-inner {
+    height: 100%;
+    width: 40%;
+    background: #3273dc;
+    border-radius: 3px;
+    animation: loading-slide 1s ease-in-out infinite;
+  }
+  @keyframes loading-slide {
+    0% { margin-left: 0; }
+    50% { margin-left: 56%; }
+    100% { margin-left: 0; }
+  }
+  .reveal-container {
+    position: relative;
+    display: inline-block;
+    margin: 0 auto;
+  }
+  .design-image {
+    max-width: 100%;
+    max-height: 500px;
+    height: auto;
+    margin: 0 auto;
+    display: block;
+    border-radius: 8px;
+    border: 1px solid #eee;
+  }
+  .countdown-bar {
+    height: 4px;
+    background: #3273dc;
+    border-radius: 2px;
+    transition: width 0.1s linear;
+  }
+  .timer-overlay {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: rgba(0, 0, 0, 0.65);
+    color: white;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+  }
+  .choice-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+  }
+  .choice-btn {
+    min-width: 200px;
+    padding: 1rem 2rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 2px solid #dbdbdb;
+    background: white;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .choice-btn:hover {
+    border-color: #3273dc;
+    background: #f0f4ff;
+  }
+  .choice-btn.selected-yes {
+    border-color: #48c774;
+    background: #48c774;
+    color: white;
+  }
+  .choice-btn.selected-no {
+    border-color: #f14668;
+    background: #f14668;
+    color: white;
+  }
+  .context-box {
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  .context-item {
+    margin-bottom: 0.75rem;
+  }
+  .context-item:last-child {
+    margin-bottom: 0;
+  }
+  .context-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: #7a7a7a;
+    margin-bottom: 0.25rem;
+  }
+  .context-value {
+    font-size: 1rem;
+    color: #363636;
+  }
+  .critique-area {
+    margin-top: 1.5rem;
+  }
+  .review-btn {
+    margin-top: 0.75rem;
+  }
+  @media (max-width: 768px) {
+    #app h1.title.is-3 {
+      font-size: 1.5rem;
+    }
+    #app p.subtitle.is-6 {
+      font-size: 0.95rem;
+    }
+    .choice-btn {
+      min-width: 140px;
+      padding: 0.85rem 1.25rem;
+      font-size: 1rem;
+    }
+    .context-box {
+      padding: 1rem;
+    }
+    .design-image {
+      max-height: none;
+    }
+    .critique-area .textarea {
+      min-height: 100px;
+    }
+  }
+</style>
+
+<div id="app" style="text-align: center" v-cloak>
+  <h1 class="title is-3">Effect AI - Clickability Check</h1>
+  <p class="subtitle is-6">Would this design make you stop scrolling or click?</p>
+
+  <hr />
+
+  <div class="mx-auto has-text-centered" style="max-width: 700px;">
+
+    <!-- Initial reveal phase: the design is shown automatically as soon as it has loaded -->
+    <div v-if="phase === 'loading' || phase === 'reveal'">
+      <p class="mb-3" v-if="phase === 'loading'">Loading design… please wait.</p>
+      <!-- Animated loading bar shown while image downloads -->
+      <div class="image-loading-bar" v-if="phase === 'loading'">
+        <div class="image-loading-bar-inner"></div>
+      </div>
+      <p class="mb-3" v-else>Look at the design for <strong>{{ remainingTime }}s</strong>.</p>
+
+      <div class="reveal-container" v-show="phase === 'reveal'">
+        <img
+          :src="imageSource"
+          class="design-image"
+          alt="Design to evaluate"
+          @load="beginRevealCountdown"
+          @error="beginRevealCountdown"
+        />
+      </div>
+    </div>
+
+    <!-- Review phase (after reveal or after re-review) -->
+    <div v-if="phase === 'rate'">
+      <!-- Context -->
+      <div class="context-box has-text-left">
+        <div class="context-item" v-if="purpose">
+          <div class="context-label">Purpose</div>
+          <div class="context-value">{{ purpose }}</div>
+        </div>
+        <div class="context-item" v-if="audience">
+          <div class="context-label">Target Audience</div>
+          <div class="context-value">{{ audience }}</div>
+        </div>
+        <div class="context-item" v-if="goal">
+          <div class="context-label">Main Goal</div>
+          <div class="context-value">{{ goal }}</div>
+        </div>
+      </div>
+
+      <h2 class="title is-5 mt-5 mb-3">Would you stop scrolling or click on this?</h2>
+
+      <!-- Choice buttons -->
+      <div class="choice-buttons">
+        <button
+          class="choice-btn"
+          :class="{ 'selected-yes': choice === 'yes' }"
+          @click="choice = 'yes'"
+        >
+          Yes
+        </button>
+        <button
+          class="choice-btn"
+          :class="{ 'selected-no': choice === 'no' }"
+          @click="choice = 'no'"
+        >
+          No
+        </button>
+      </div>
+
+      <!-- Review again -->
+      <button
+        class="button is-info is-outlined review-btn"
+        @click="startReview"
+        :disabled="isReviewing"
+      >
+        {{ isReviewing ? '⏳ Reviewing...' : '👁️ Review image again' }}
+      </button>
+
+      <!-- Optional reasoning -->
+      <div class="critique-area has-text-left">
+        <label class="label mt-5">Why? (optional)</label>
+        <textarea
+          class="textarea"
+          rows="4"
+          v-model="reason"
+          placeholder="What made you want to click, or what caused you to scroll past?"
+        ></textarea>
+        <p class="help">Share what caught your eye (or didn't).</p>
+      </div>
+
+      <hr />
+
+      <!-- Validation -->
+      <p style="color: red;" :class="{'is-hidden mb-3': !notComplete}">
+        Please select an answer before submitting.
+      </p>
+
+      <!-- Submit -->
+      <button
+        @click.prevent="uploadAndSubmit"
+        class="button is-success is-large mt-4 mx-auto"
+        :class="{'is-loading': btnLoading}"
+      >
+        Submit
+      </button>
+    </div>
+
+    <!-- Re-review phase (showing image again) -->
+    <div v-if="phase === 'review'">
+      <p class="mb-3">Review the design again.</p>
+
+      <div class="reveal-container">
+        <img
+          :src="imageSource"
+          class="design-image"
+          alt="Design to evaluate"
+        />
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <!-- Vue app -->
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    createApp({
+      data() {
+        return {
+          title: "Effect AI - Clickability Check",
+          imageSource: "${imageUrl}",
+          purpose: "${purpose}",
+          audience: "${audience}",
+          goal: "${goal}",
+          taskId: "${taskId}",
+          checkType: "${checkType}",
+          revealDuration: parseInt("${revealDuration}", 10) || 3,
+
+          // Phases: 'loading' -> waiting for the image, 'reveal' -> first countdown,
+          // 'rate' -> answer question, 'review' -> re-show image
+          phase: "loading",
+          isReviewing: false,
+          revealStarted: false,
+
+          remainingTime: null,
+          timer: null,
+          loadFallbackTimer: null,
+
+          choice: null,      // 'yes' or 'no'
+          reason: "",
+          notComplete: false,
+          btnLoading: false,
+
+          instructions: `
+            <div>
+              <h2>Clickability Check</h2>
+              <p>A design flashes on screen for a few seconds, the way it would appear while you scroll a feed. Then answer one question: <strong>would this make you stop scrolling or click?</strong></p>
+
+              <h3>1. How to answer</h3>
+              <ul>
+                <li><strong>Yes:</strong> it caught your attention enough that you would realistically pause, tap, or want to learn more.</li>
+                <li><strong>No:</strong> you would keep scrolling past it.</li>
+                <li>Trust your first reaction. The question is not "could I design this better", it is "would this actually stop me".</li>
+                <li>Use <strong>Review image again</strong> for one more look before you answer.</li>
+                <li>The Purpose, Target Audience and Main Goal tell you what the design is trying to achieve.</li>
+              </ul>
+
+              <h3>2. Your written feedback</h3>
+              <ul>
+                <li>Your comments are delivered <strong>directly to the client</strong>, so treat them as part of the work you deliver: clear, specific, correctly spelled.</li>
+                <li>Explain <strong>why you would stop or keep scrolling</strong>, and name something specific: the headline, the image, contrast, layout, readability, or the call to action.</li>
+                <li>A few clear sentences are enough. Length is not the point, usefulness is.</li>
+                <li>Call out any obvious mistake you notice, such as a typo or a detail that contradicts another part of the design, even though the task only asks for yes or no.</li>
+              </ul>
+
+              <h4>Good:</h4>
+              <blockquote>"The bold headline caught my attention and the contrasting call-to-action made me curious enough to click."</blockquote>
+              <blockquote>"I would keep scrolling. The headline blends into the background and the image does not show what is being offered."</blockquote>
+
+              <h4>Avoid:</h4>
+              <blockquote>"looks good" &nbsp;&middot;&nbsp; "yeah id click" &nbsp;&middot;&nbsp; "not really"</blockquote>
+
+              <h3>3. Remember</h3>
+              <p>Clickability is about whether you would stop or click. A design can be attention-grabbing without being clear, and clear without being worth a click.</p>
+            </div>
+          `,
+        };
+      },
+      computed: {
+        progressPercent() {
+          if (this.revealDuration <= 0) return 100;
+          return Math.round((this.remainingTime / this.revealDuration) * 100);
+        },
+      },
+      mounted() {
+        // Send instructions to parent
+        window.top.postMessage(
+          {
+            type: "task-instructions",
+            instructions: this.instructions,
+          },
+          "*"
+        );
+
+        // Preload the image before starting the reveal countdown.
+        // This ensures the image is fully downloaded so it appears instantly
+        // when the reveal phase begins — critical for short reveal durations.
+        const img = new Image();
+        img.onload = () => {
+          if (this.loadFallbackTimer) clearTimeout(this.loadFallbackTimer);
+          this.beginRevealCountdown();
+        };
+        img.onerror = () => {
+          // Even on error (e.g., broken URL), proceed so the worker isn't stuck
+          if (this.loadFallbackTimer) clearTimeout(this.loadFallbackTimer);
+          this.beginRevealCountdown();
+        };
+        img.src = this.imageSource;
+
+        // Safety net: if the image never fires load or error, reveal it anyway after 5s
+        this.loadFallbackTimer = setTimeout(this.beginRevealCountdown, 5000);
+      },
+      beforeUnmount() {
+        if (this.timer) clearInterval(this.timer);
+        if (this.loadFallbackTimer) clearTimeout(this.loadFallbackTimer);
+      },
+      methods: {
+        // Runs the countdown for the given phase, then drops the worker back on the question
+        runCountdown(countdownPhase) {
+          if (this.timer) clearInterval(this.timer);
+
+          this.phase = countdownPhase;
+          this.remainingTime = this.revealDuration;
+
+          this.timer = setInterval(() => {
+            this.remainingTime--;
+            if (this.remainingTime <= 0) {
+              clearInterval(this.timer);
+              this.timer = null;
+              this.remainingTime = 0;
+              this.phase = "rate";
+              this.isReviewing = false;
+            }
+          }, 1000);
+        },
+        beginRevealCountdown() {
+          if (this.revealStarted) return;
+          this.revealStarted = true;
+          if (this.loadFallbackTimer) clearTimeout(this.loadFallbackTimer);
+
+          this.runCountdown("reveal");
+        },
+        startReview() {
+          if (this.isReviewing) return;
+          this.isReviewing = true;
+
+          this.runCountdown("review");
+        },
+        async uploadAndSubmit() {
+          this.notComplete = false;
+
+          // Validate
+          if (!this.choice) {
+            this.notComplete = true;
+            return;
+          }
+
+          this.btnLoading = true;
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  taskTitle: this.title,
+                  answer: {
+                    taskId: this.taskId,
+                    checkType: this.checkType,
+                    wouldClick: this.choice === "yes",
+                    insight: this.reason || undefined,
+                  },
+                },
+              },
+              "*"
+            );
+          } catch (error) {
+            console.error("Error submitting task:", error);
+          }
+          this.btnLoading = false;
+        },
+      },
+    }).mount("#app");
+  </script>
+</div>
