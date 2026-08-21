@@ -60,10 +60,10 @@ export type Job = {
   consumedLamports: string;
   refundedLamports: string;
   status: JobStatus;
-  // When true, each worker may complete at most one task in this job (no
-  // repeats). Enforced by the manager via a per-worker, per-batch cap; the
-  // job pins a stable batch id so the cap spans the whole job.
   uniqueWorker: boolean;
+  batchId: string | null;
+  batchIndex: number;
+  batchSize: number;
   createdAt: number;
 };
 
@@ -409,6 +409,17 @@ const analyzeJob = async (
 type CachedJobResponse = { status: number; body: unknown };
 type JobCreationResult = { status: number; body: unknown };
 
+type BatchMembership = {
+  id: string;
+  index: number;
+  size: number;
+};
+
+type JobCreationOptions = {
+  idempotencyKey?: string;
+  batch?: BatchMembership;
+};
+
 const creationError = (
   status: number,
   code: ApiErrorCode,
@@ -457,6 +468,9 @@ const jobView = (job: Job, counts: TaskCounts) => {
     reward: lamportsToEffect(BigInt(job.rewardLamports)),
     taskCount: job.taskCount,
     uniqueWorker: job.uniqueWorker,
+    batch: job.batchId
+      ? { id: job.batchId, index: job.batchIndex, size: job.batchSize }
+      : null,
     createdAt: job.createdAt,
     tasks: counts,
     credits: {
@@ -504,7 +518,7 @@ export const addJobApiRoutes = (app: Router): void => {
   const performJobCreation = async (
     account: Account,
     requestBody: Record<string, unknown>,
-    idempotencyKey?: string,
+    { idempotencyKey, batch }: JobCreationOptions = {},
   ): Promise<JobCreationResult> => {
     const analysis = await analyzeJob(account.id, requestBody);
     if (!analysis.ok)
@@ -581,6 +595,9 @@ export const addJobApiRoutes = (app: Router): void => {
         refundedLamports: "0",
         status: "active",
         uniqueWorker: analysis.uniqueWorker,
+        batchId: batch?.id ?? null,
+        batchIndex: batch?.index ?? 0,
+        batchSize: batch?.size ?? 1,
         createdAt: Date.now(),
       };
       await writeJob(job);
@@ -630,7 +647,7 @@ export const addJobApiRoutes = (app: Router): void => {
         idempotencyKey,
       ]);
       if (cached) return { status: cached.data.status, body: cached.data.body };
-      return performJobCreation(account, requestBody, idempotencyKey);
+      return performJobCreation(account, requestBody, { idempotencyKey });
     });
 
   app.post(
@@ -674,19 +691,22 @@ export const addJobApiRoutes = (app: Router): void => {
       if (rows.length === 0)
         return apiError(res, 400, "invalid_request", "CSV has no data rows.");
 
+      const batchId = ulid();
+
       const jobs: unknown[] = [];
       for (const row of rows) {
-        const result = await performJobCreation(account, {
-          ...body,
-          type: "constant",
-          data: row,
-        });
+        const result = await performJobCreation(
+          account,
+          { ...body, type: "constant", data: row },
+          { batch: { id: batchId, index: jobs.length, size: rows.length } },
+        );
         // Stop on the first failure and report what was already created, so a
         // half-finished run is visible rather than silently partial
         if (result.status !== 201)
           return apiJson(
             res,
             {
+              batchId,
               created: jobs.length,
               jobs,
               failedRow: jobs.length,
@@ -697,7 +717,7 @@ export const addJobApiRoutes = (app: Router): void => {
         jobs.push(result.body);
       }
 
-      return apiJson(res, { created: jobs.length, jobs }, 201);
+      return apiJson(res, { batchId, created: jobs.length, jobs }, 201);
     }),
   );
 
@@ -707,9 +727,11 @@ export const addJobApiRoutes = (app: Router): void => {
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
       const { limit, offset } = parsePagination(req.query);
-      const jobs = (await listJobs(account.id)).sort(
-        (first, second) => second.createdAt - first.createdAt,
-      );
+      // ?batchId= narrows to the jobs of one bulk survey run.
+      const batchId = String(req.query.batchId ?? "").trim();
+      const jobs = (await listJobs(account.id))
+        .filter((job) => !batchId || job.batchId === batchId)
+        .sort((first, second) => second.createdAt - first.createdAt);
       const views = await Promise.all(
         jobs
           .slice(offset, offset + limit)

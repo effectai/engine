@@ -39,5 +39,12 @@ export async function fetchResultsCsv(jobId) {
   const response = await fetch(`${API_BASE}/jobs/${jobId}/results?format=csv`, {
     headers: { Authorization: "Bearer " + apiKey },
   });
+
+  if (!response.ok) {
+    const text = await response.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = null; }
+    throw new Error((data && data.error && data.error.message) || response.status + " " + response.statusText);
+  }
   return response.blob();
 }
