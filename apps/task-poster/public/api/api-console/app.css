@@ -70,9 +70,10 @@
     background: var(--surface); border-bottom: 1px solid var(--border);
     padding: .6rem 1.1rem; display: flex; gap: .7rem; align-items: center; flex-wrap: wrap;
   }
-  .brand { display: flex; align-items: baseline; gap: .45rem; font-weight: 700; }
-  .brand .mark { font-size: 1.1rem; color: var(--text); }
-  .brand .name { font-size: .95rem; }
+  .brand { display: flex; align-items: center; gap: .5rem; font-weight: 700; }
+  /* The logo is the shipped Effect AI lockup, inlined so its paths pick up the
+     theme text colour (light: near-black, dark: near-white) from currentColor. */
+  .brand .logo { height: 20px; width: auto; color: var(--text); display: block; }
   .brand .sep { color: var(--border-strong); font-weight: 400; }
   .brand .sub { font-size: .82rem; font-weight: 500; color: var(--muted); }
 

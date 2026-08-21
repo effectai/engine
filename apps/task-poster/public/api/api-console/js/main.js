@@ -103,13 +103,37 @@ async function saveAccount() {
   } catch (error) { showMsg(byId("acct-msg"), error.message, "err"); }
 }
 
-async function loadTransactions() {
+const TX_PAGE_SIZE = 10;
+let txPage = 1;
+
+function transactionSource(transaction) {
+  const job = transaction.jobId ? jobsCache.find((entry) => entry.id === transaction.jobId) : null;
+  const detail = String(transaction.note || "")
+    .replace(/^job\s+\S+\s*/i, "")
+    .replace(/^\((.*)\)$/, "$1")
+    .replace(/^-\s*/, "")
+    .trim();
+  if (job) {
+    // A survey's jobs all share one name, so say which one this entry paid for
+    const tail = [job.batch ? memberLabel(job) : "", detail].filter(Boolean).join(" · ");
+    return esc(job.name) + (tail ? ` <span class="muted">· ${esc(tail)}</span>` : "");
+  }
+  return `<span class="muted">${esc(detail || "—")}</span>`;
+}
+
+async function loadTransactions(page = 1) {
+  txPage = Math.max(1, page);
   byId("tx-list").innerHTML = "Loading…";
+  byId("tx-pager").innerHTML = "";
   try {
-    const { transactions, total } = await api("/credits/transactions?limit=50");
+    const offset = (txPage - 1) * TX_PAGE_SIZE;
+    const { transactions, total } = await api(`/credits/transactions?limit=${TX_PAGE_SIZE}&offset=${offset}`);
+    // New spending while a later page is open can leave that page past the end.
+    if (!transactions.length && txPage > 1) 
+      return loadTransactions(Math.ceil(total / TX_PAGE_SIZE) || 1);
     if (!transactions.length) { byId("tx-list").innerHTML = `<span class="muted">No transactions yet. Ask the team to top up your credits.</span>`; return; }
     byId("tx-list").innerHTML =
-      `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Balance</th><th>Note</th></tr></thead><tbody>` +
+      `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Balance</th><th>Job / note</th></tr></thead><tbody>` +
       transactions.map((transaction) => {
         // `amount` is always positive; the type carries the direction.
         const amount = effectFromLamports(transaction.amount);
@@ -119,10 +143,34 @@ async function loadTransactions() {
           <td><span class="pill ${isDebit ? "pill-warn" : "pill-ok"}">${esc(transaction.type)}</span></td>
           <td class="mono" style="color:${isDebit ? "var(--danger-fg)" : "var(--ok-fg)"}">${isDebit ? "-" : "+"}${amount} EFFECT</td>
           <td class="mono">${effectFromLamports(transaction.balanceAfter)}</td>
-          <td class="muted">${esc(transaction.note || "")}</td></tr>`;
-      }).join("") + `</tbody></table></div>` +
-      (total > transactions.length ? `<div class="muted" style="margin-top:.5rem;font-size:.82rem">Showing ${transactions.length} of ${total}.</div>` : "");
+          <td>${transactionSource(transaction)}</td></tr>`;
+      }).join("") + `</tbody></table></div>`;
+    renderTxPager({ total, offset, shown: transactions.length });
   } catch (error) { byId("tx-list").innerHTML = `<span class="msg err">${esc(error.message)}</span>`; }
+}
+
+// Same controls as the jobs page
+function renderTxPager({ total, offset, shown }) {
+  const pageCount = Math.max(1, Math.ceil(total / TX_PAGE_SIZE));
+  const count = `Showing ${offset + 1} to ${offset + shown} of ${total} transaction${total === 1 ? "" : "s"}`;
+  if (pageCount === 1) {
+    byId("tx-pager").innerHTML = `<span class="muted">${count}</span>`;
+    return;
+  }
+  const pages = pageWindow(txPage, pageCount);
+  const numbers = [
+    pages[0] > 1 ? `<button class="page-btn" data-tx-page="1">1</button>${pages[0] > 2 ? `<span class="muted">…</span>` : ""}` : "",
+    ...pages.map((page) => `<button class="page-btn${page === txPage ? " current" : ""}" data-tx-page="${page}">${page}</button>`),
+    pages[pages.length - 1] < pageCount ? `${pages[pages.length - 1] < pageCount - 1 ? `<span class="muted">…</span>` : ""}<button class="page-btn" data-tx-page="${pageCount}">${pageCount}</button>` : "",
+  ].join("");
+
+  byId("tx-pager").innerHTML =
+    `<span class="muted">${count}</span>
+     <div class="pager-controls">
+       <button class="page-btn" data-tx-page="${txPage - 1}"${txPage === 1 ? " disabled" : ""}>‹ Prev</button>
+       ${numbers}
+       <button class="page-btn" data-tx-page="${txPage + 1}"${txPage === pageCount ? " disabled" : ""}>Next ›</button>
+     </div>`;
 }
 
 async function loadKeyMini() {
@@ -459,7 +507,7 @@ async function createJob() {
       const tasks = result.jobs.reduce((sum, job) => sum + job.taskCount, 0);
 
       openBatchId = result.batchId;
-      showMsg(byId("jobs-msg"), `Created a survey of ${result.created} rows (${tasks} tasks total). It is grouped as one row below.`, "ok");
+      showMsg(byId("jobs-msg"), `Created a survey of ${result.created} jobs (${tasks} tasks total). They are grouped together below.`, "ok");
     } else {
       const job = await api("/jobs", { method: "POST", body: jobBody() });
       byId("job-msg").innerHTML = "";
@@ -552,8 +600,6 @@ function groupTotals(group) {
   };
 }
 
-// A survey's rows can end up in different states (one cancelled, the rest
-// finished), so the rolled-up pill says "partial" rather than picking a winner
 function groupStatusPill(group) {
   const labels = group.members.map((job) => jobStatusPill(job).label);
   if (labels.every((label) => label === labels[0])) return jobStatusPill(group.members[0]);
@@ -563,11 +609,15 @@ function groupStatusPill(group) {
 
 const memberLabel = (job) => `Job #${job.batch.index + 1}`;
 
+function templateNameFor(job) {
+  const template = templates.find((entry) => entry.templateId === job.templateId);
+  return template ? template.name : shortId(job.templateId);
+}
+
 function jobRowHtml(job, { member = false } = {}) {
   const status = jobStatusPill(job);
-  const title = member
-    ? `<div>${memberLabel(job)}</div><div class="mono muted" style="font-size:.72rem">${shortId(job.id)}</div>`
-    : `<div>${esc(job.name)}</div><div class="mono muted" style="font-size:.72rem">${shortId(job.id)}</div>`;
+  const heading = member ? memberLabel(job) : esc(job.name);
+  const title = `<div>${heading}</div><div class="muted" style="font-size:.72rem">${esc(templateNameFor(job))}</div>`;
   const row = `<tr class="job-row${member ? " batch-member" : ""}${openJobId === job.id ? " open" : ""}" data-job="${job.id}">
       <td>${title}</td>
       <td>${status.html}</td>
@@ -584,17 +634,16 @@ function batchGroupHtml(group) {
   const open = openBatchId === group.id;
   const totals = groupTotals(group);
   const status = groupStatusPill(group);
-  const workersPerRow = group.members[0].taskCount;
+  const workersPerJob = group.members[0].taskCount;
   const declaredSize = group.members[0].batch.size;
-  // A bulk run that failed halfway created fewer jobs than rows it promised.
-  const sizeNote = group.members.length < declaredSize
-    ? `${group.members.length} of ${declaredSize} rows created`
-    : `${group.members.length} rows · ${workersPerRow} workers each`;
+  const jobNote = group.members.length < declaredSize
+    ? `${group.members.length} of ${declaredSize} jobs created`
+    : `${group.members.length} jobs`;
 
   const header = `<tr class="job-row batch-row${open ? " open" : ""}" data-batch="${group.id}">
       <td>
-        <div><span class="tree-caret">${open ? "▾" : "▸"}</span>${esc(group.name)} <span class="pill pill-muted">survey · ${group.members.length} rows</span></div>
-        <div class="mono muted" style="font-size:.72rem;padding-left:1.1rem">${shortId(group.id)} · ${sizeNote}</div>
+        <div><span class="tree-caret">${open ? "▾" : "▸"}</span>${esc(group.name)} <span class="pill pill-muted">survey · ${jobNote}</span></div>
+        <div class="muted" style="font-size:.72rem;padding-left:1.1rem">${esc(templateNameFor(group.members[0]))} · ${workersPerJob} workers each</div>
       </td>
       <td>${status.html}</td>
       <td class="mono">${totals.tasks.queued} / ${totals.tasks.active} / ${totals.tasks.completed}</td>
@@ -607,9 +656,9 @@ function batchGroupHtml(group) {
   const totalTasks = totals.tasks.queued + totals.tasks.active + totals.tasks.completed;
   const percent = totalTasks ? Math.round((done / totalTasks) * 100) : 0;
   const summary = `<tr class="job-detail batch-summary"><td colspan="5"><div class="job-detail-inner">
-      <div class="kk muted" style="font-size:.72rem;margin-bottom:.25rem">Survey completion (all rows)</div>
+      <div class="kk muted" style="font-size:.72rem;margin-bottom:.25rem">Survey completion (all jobs)</div>
       <div class="progress"><div class="progress-fill" style="width:${percent}%"></div></div>
-      <div class="muted" style="font-size:.78rem;margin:.3rem 0">${done} / ${totalTasks} tasks complete (${percent}%) across ${group.members.length} rows</div>
+      <div class="muted" style="font-size:.78rem;margin:.3rem 0">${done} / ${totalTasks} tasks complete (${percent}%) across ${group.members.length} jobs</div>
       <div class="credit-grid">
         <div class="credit-cell"><div class="n">${totals.credits.reserved}</div><div class="l">Reserved</div></div>
         <div class="credit-cell"><div class="n">${totals.credits.consumed}</div><div class="l">Consumed</div></div>
@@ -720,7 +769,7 @@ async function renderJobDetail(jobId) {
        <div class="kv"><div class="kk">Type</div><div class="vv">${job.type === "constant" ? "Constant / survey" : "CSV"}</div></div>
        <div class="kv"><div class="kk">Template</div><div class="vv">${esc(template ? template.name : shortId(job.templateId))}</div></div>
        <div class="kv"><div class="kk">Reward</div><div class="vv">${esc(job.reward)} EFFECT / task</div></div>
-       ${job.batch ? `<div class="kv"><div class="kk">Survey row</div><div class="vv">${job.batch.index + 1} of ${job.batch.size}</div></div>` : ""}
+       ${job.batch ? `<div class="kv"><div class="kk">Survey</div><div class="vv">Job ${job.batch.index + 1} of ${job.batch.size}</div></div>` : ""}
      </div>
      <div class="kk muted" style="font-size:.72rem;margin-bottom:.25rem">Task completion</div>
      <div class="progress"><div class="progress-fill" style="width:${percent}%"></div></div>
@@ -735,7 +784,7 @@ async function renderJobDetail(jobId) {
      <div class="row" style="margin-top:.7rem">
        <button class="btn-ghost btn-sm" data-results="${jobId}" data-name="${esc(displayName)}">View all results</button>
        <button class="btn-ghost btn-sm" data-download="${jobId}">↓ Download CSV</button>
-       ${isRunning(job) ? `<button class="btn-danger btn-sm" data-cancel="${jobId}">Cancel ${job.batch ? "row" : "job"}</button>` : ""}
+       ${isRunning(job) ? `<button class="btn-danger btn-sm" data-cancel="${jobId}">Cancel job</button>` : ""}
      </div>`;
 
   try {
@@ -771,7 +820,7 @@ async function cancelBatch(batchId) {
   if (!group) return;
   const running = group.members.filter(isRunning);
   if (!running.length) return;
-  if (!confirm(`Cancel this survey? ${running.length} of ${group.members.length} rows are still running; their unfinished tasks are refunded.`)) return;
+  if (!confirm(`Cancel this survey? ${running.length} of ${group.members.length} jobs are still running; their unfinished tasks are refunded.`)) return;
 
   const failures = [];
   for (const job of running) {
@@ -781,9 +830,9 @@ async function cancelBatch(batchId) {
   await Promise.all([loadAccount(), loadJobs()]);
   await loadOverview();
   if (failures.length)
-    showMsg(byId("jobs-msg"), `Cancelled ${running.length - failures.length} of ${running.length} rows. Failed: ${failures.join("; ")}`, "err");
+    showMsg(byId("jobs-msg"), `Cancelled ${running.length - failures.length} of ${running.length} jobs. Failed: ${failures.join("; ")}`, "err");
   else
-    showMsg(byId("jobs-msg"), `Cancelled ${running.length} row(s); unfinished tasks were refunded.`, "ok");
+    showMsg(byId("jobs-msg"), `Cancelled ${running.length} job(s); unfinished tasks were refunded.`, "ok");
 }
 
 async function loadOverview() {
@@ -813,7 +862,7 @@ async function renderActivity() {
     events.push({
       time: new Date(first.createdAt).getTime(),
       text: `${group.batchId ? "Survey" : "Job"} "${esc(group.name)}" created`,
-      meta: group.batchId ? `${group.members.length} rows · ${totals.taskCount} tasks` : `${totals.taskCount} tasks`,
+      meta: group.batchId ? `${group.members.length} jobs · ${totals.taskCount} tasks` : `${totals.taskCount} tasks`,
     });
   }
   try {
@@ -972,7 +1021,7 @@ function closePreview() {
 
 // ------------------------------------------------------------------ results drawer
 const RESULTS_PAGE = 200;
-// A survey costs one request per row, against a 120/minute API limit.
+// A survey costs one request per job, against a 120/minute API limit.
 const BATCH_FETCH_CONCURRENCY = 4;
 const BATCH_FETCH_WARN_ROWS = 60;
 
@@ -991,7 +1040,7 @@ async function mapWithLimit(items, limit, mapper) {
 
 function confirmLargeBatch(group) {
   if (group.members.length <= BATCH_FETCH_WARN_ROWS) return true;
-  return confirm(`This survey has ${group.members.length} rows and each one is fetched separately, which may hit the API rate limit (120 requests per minute). Continue?`);
+  return confirm(`This survey has ${group.members.length} jobs and each one is fetched separately, which may hit the API rate limit (120 requests per minute). Continue?`);
 }
 
 function openDrawer(title) {
@@ -1025,33 +1074,33 @@ async function openResults(jobId, name) {
   }
 }
 
-// A survey's results live in one job per row, so merge them here and keep the
-// row label on each result; without it the merged list is unreadable.
+// A survey's results live in one job per CSV row, so merge them here and keep
+// the job label on each result
 async function openBatchResults(batchId) {
   const group = jobGroups.find((entry) => entry.id === batchId);
   if (!group || !confirmLargeBatch(group)) return;
   drawerTarget = { kind: "batch", id: batchId, name: group.name };
-  openDrawer(`${group.name} (${group.members.length} rows)`);
+  openDrawer(`${group.name} (${group.members.length} jobs)`);
   try {
     const responses = await mapWithLimit(group.members, BATCH_FETCH_CONCURRENCY,
       (job) => api(`/jobs/${job.id}/results?limit=${RESULTS_PAGE}`).then((response) => ({ job, response })));
     drawerResults = responses.flatMap(({ job, response }) =>
-      (response.results || []).map((result) => ({ row: memberLabel(job), ...result })));
+      (response.results || []).map((result) => ({ job: memberLabel(job), ...result })));
     const total = responses.reduce((sum, entry) => sum + entry.response.total, 0);
     fillDrawer(drawerResults.length, total);
   } catch (error) {
-    byId("drawer-json").textContent = `Could not load every row of this survey: ${error.message}\n\nOpen an individual row to see its results on its own.`;
+    byId("drawer-json").textContent = `Could not load every job of this survey: ${error.message}\n\nOpen an individual job to see its results on its own.`;
     byId("drawer-sub").textContent = "";
   }
 }
 
 function renderDrawerTable() {
   if (!drawerResults.length) { byId("drawer-table").innerHTML = `<span class="muted">No results yet.</span>`; return; }
-  const showRow = drawerTarget && drawerTarget.kind === "batch";
+  const showJob = drawerTarget && drawerTarget.kind === "batch";
   byId("drawer-table").innerHTML =
-    `<div class="table-wrap"><table><thead><tr>${showRow ? "<th>Row</th>" : ""}<th>Task ID</th><th>Worker</th><th>Result</th><th>Submitted</th></tr></thead><tbody>` +
+    `<div class="table-wrap"><table><thead><tr>${showJob ? "<th>Job</th>" : ""}<th>Task ID</th><th>Worker</th><th>Result</th><th>Submitted</th></tr></thead><tbody>` +
     drawerResults.map((row) => `<tr>
-      ${showRow ? `<td>${esc(row.row)}</td>` : ""}
+      ${showJob ? `<td>${esc(row.job)}</td>` : ""}
       <td class="mono">${shortId(row.taskId)}</td>
       <td class="mono">${shortId(row.worker)}</td>
       <td>${esc(typeof row.result === "object" ? JSON.stringify(row.result) : row.result)}</td>
@@ -1073,9 +1122,7 @@ async function downloadCsv(jobId) {
   } catch (error) { showMsg(byId("jobs-msg"), `Download failed: ${error.message}`, "err"); }
 }
 
-// One file for the whole survey. Each row's job returns the same fixed header
-// line, so keep the first and drop it from the rest. The per-row inputs are
-// already carried in each record's `input` column, so nothing is lost.
+// One file for the whole survey
 async function downloadBatchCsv(batchId) {
   const group = jobGroups.find((entry) => entry.id === batchId);
   if (!group || !confirmLargeBatch(group)) return;
@@ -1084,8 +1131,7 @@ async function downloadBatchCsv(batchId) {
     files = await mapWithLimit(group.members, BATCH_FETCH_CONCURRENCY,
       (job) => fetchResultsCsv(job.id).then((blob) => blob.text()));
   } catch (error) {
-    // Better no file than one quietly missing rows.
-    showMsg(byId("jobs-msg"), `Could not download every row of this survey (${error.message}). Nothing was saved; try again or download rows individually.`, "err");
+    showMsg(byId("jobs-msg"), `Could not download every job of this survey (${error.message}). Nothing was saved; try again or download jobs individually.`, "err");
     return;
   }
   const merged = files.map((text, index) => {
@@ -1193,6 +1239,10 @@ byId("jobs-page-size").addEventListener("change", (event) => {
 byId("jobs-pager").addEventListener("click", (event) => {
   const button = event.target.closest(".page-btn");
   if (button && !button.disabled) goToJobsPage(Number(button.dataset.page));
+});
+byId("tx-pager").addEventListener("click", (event) => {
+  const button = event.target.closest(".page-btn");
+  if (button && !button.disabled) loadTransactions(Number(button.dataset.txPage));
 });
 byId("jobs-body").addEventListener("click", (event) => {
   const data = event.target.dataset;
