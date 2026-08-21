@@ -228,6 +228,7 @@ export const createWorker = async ({
     getMaxNonce,
     cleanup,
 
+    createPayment,
     getPayments,
     getPaymentsFromNonce,
     getPaginatedPayments,

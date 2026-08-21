@@ -4,6 +4,7 @@ import { Input } from "@/app/components/ui/input";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useLoaderData, useNavigation } from "@remix-run/react";
 import React from "react";
+import { createHash } from "node:crypto";
 
 export async function loader({ request, context, params }: LoaderFunctionArgs) {
   const id = params.id;
@@ -17,13 +18,19 @@ export async function loader({ request, context, params }: LoaderFunctionArgs) {
   if (!worker) {
     throw new Response("Worker not found", { status: 404 });
   }
+
+  // Fetch per-worker storage quota
+  const ownerHex = createHash("sha256").update(worker.state.peerId).digest("hex");
+  const quota = await context.storageManager.getQuota(ownerHex);
+
   return {
     worker,
+    quota,
   };
 }
 
 export default function Component() {
-  const { worker } = useLoaderData<typeof loader>();
+  const { worker, quota } = useLoaderData<typeof loader>();
   const [capability, setCapability] = React.useState("");
   const navigation = useNavigation();
 
@@ -58,6 +65,10 @@ export default function Component() {
         </Form>
       </div>
       <br></br>
+      <h2>Storage Usage</h2>
+      <div className="mb-4 text-sm text-muted-foreground">
+        Objects: {quota.objectCount} &middot; Total bytes: {quota.totalBytes.toLocaleString()}
+      </div>
       <h2>Worker State</h2>
       <JSONTreeViewer data={worker.state} className="mb-4"/>
 

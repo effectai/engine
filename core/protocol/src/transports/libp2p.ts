@@ -247,10 +247,7 @@ export class Libp2pTransport implements Transport<Libp2pMethods> {
         error: {
           timestamp: Math.floor(Date.now() / 1000),
           code: "500",
-          message:
-            error instanceof EffectProtocolError
-              ? error.message
-              : "Internal server error",
+          message: error instanceof Error ? error.message : "Internal server error",
         },
       });
     } catch (error) {

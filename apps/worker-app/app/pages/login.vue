@@ -156,6 +156,8 @@
         </div>
       </div>
     </div>
+    <!-- Recovery flow — shared across all login methods -->
+    <RecoveryFlow />
   </div>
 </template>
 <script setup lang="ts">

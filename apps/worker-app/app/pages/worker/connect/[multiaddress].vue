@@ -145,7 +145,7 @@ const {
   uptimeSeconds,
   disconnectFromManagerMutation,
 } = useSession();
-const { mutateAsync: connect } = connectToManagerMutation;
+const { mutateAsync: connect, isPending } = connectToManagerMutation;
 const { mutateAsync: disconnect } = disconnectFromManagerMutation;
 
 const connectHandler = async (accessCode?: string) => {
@@ -171,7 +171,17 @@ const connectHandler = async (accessCode?: string) => {
     if (error instanceof Error) {
       if (error.message.includes("Access code is required")) {
         promptAccessCode.value = true;
+        return;
       }
+
+      // Show the actual error (e.g. device registration failure)
+      toast.add({
+        title: "Connection Error",
+        description: error.message,
+        color: "error",
+      });
+
+      navigateTo("/");
     } else {
       console.error("Unexpected error:", error);
       toast.add({
@@ -179,7 +189,7 @@ const connectHandler = async (accessCode?: string) => {
         description: "An unexpected error occurred while connecting.",
         color: "error",
       });
-      return;
+      navigateTo("/");
     }
   }
 };
@@ -224,7 +234,7 @@ const { data: identify } = useIdentifyQuery(decodedMultiAddr.value.toString());
 watch(
   () => identify.value?.isConnected,
   (isConnected, oldValue) => {
-    if (isConnected === false && oldValue === true) {
+    if (isConnected === false && oldValue === true && !isPending.value) {
       navigateTo("/");
     }
   },
