@@ -1,4 +1,4 @@
-import { availableCapabilities } from "../consts.js";
+import { availableCapabilities } from "@effectai/capabilities";
 
 import type { ManagerSettings } from "../main.js";
 import {
