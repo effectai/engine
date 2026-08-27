@@ -21,6 +21,21 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
+function decodeData(bytes: Uint8Array): string | null {
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return null;
+  }
+
+  try {
+    return JSON.stringify(JSON.parse(text), null, 2);
+  } catch {
+    return text;
+  }
+}
+
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const hash = url.searchParams.get("hash")?.trim() || "";
@@ -41,6 +56,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
           owner: bytesToHex(raw.owner as unknown as Uint8Array),
           next: raw.next,
           data: bytesToBase64(raw.data as unknown as Uint8Array),
+          decoded: decodeData(raw.data as unknown as Uint8Array),
         };
       } else {
         error = "Object not found";
@@ -130,8 +146,20 @@ export default function Component() {
                 </div>
               )}
               <div className="flex gap-2">
-                <span className="font-semibold w-20">Data:</span>
+                <span className="font-semibold w-20 shrink-0">Data:</span>
                 <span className="font-mono text-sm break-all">{item.data as string}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-semibold w-20 shrink-0">Decoded:</span>
+                {item.decoded ? (
+                  <pre className="flex-1 min-w-0 max-h-96 overflow-auto rounded bg-muted p-2 font-mono text-sm whitespace-pre-wrap break-all">
+                    {item.decoded as string}
+                  </pre>
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    Binary data, not valid UTF-8
+                  </span>
+                )}
               </div>
             </CardContent>
           </Card>
