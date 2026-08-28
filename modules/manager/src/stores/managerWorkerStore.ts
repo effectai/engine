@@ -39,6 +39,7 @@ export interface WorkerState {
   capabilities: string[];
   managerCapabilities: string[];
   accessCodeRedeemed?: string;
+  discordName?: string;
 }
 
 export interface ManagerWorkerRecord<T> {
@@ -48,6 +49,22 @@ export interface ManagerWorkerRecord<T> {
 
 export type WorkerRecord = ManagerWorkerRecord<ManagerWorkerEvent>;
 
+/**
+ * parseWithBigInt revives any "<digits>n" string as a bigint, so free text like
+ * a Discord name of "123n" or a generated access code of "1234567n" comes back
+ * as a bigint and crashes consumers expecting a string. None of these fields is
+ * ever legitimately a bigint, so appending the "n" back restores the text.
+ */
+const TEXT_STATE_FIELDS = ["discordName", "accessCodeRedeemed"] as const;
+
+const recoverTextFields = (record: WorkerRecord): WorkerRecord => {
+  for (const field of TEXT_STATE_FIELDS)
+    if (typeof record?.state?.[field] === "bigint")
+      record.state[field] = `${record.state[field]}n`;
+
+  return record;
+};
+
 export const createWorkerStore = ({ datastore }: { datastore: Datastore }) => {
   const coreStore = createEntityStore<
     ManagerWorkerEvent,
@@ -56,7 +73,7 @@ export const createWorkerStore = ({ datastore }: { datastore: Datastore }) => {
     datastore,
     defaultPrefix: "worker",
     stringify: (record) => stringifyWithBigInt(record),
-    parse: (data) => parseWithBigInt(data),
+    parse: (data) => recoverTextFields(parseWithBigInt(data)),
   });
 
   const createWorker = async (

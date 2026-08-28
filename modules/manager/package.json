@@ -26,6 +26,7 @@
     "@effectai/protocol-core": "workspace:*",
     "@effectai/protobufs": "workspace:*",
     "@effectai/payment": "workspace:*",
+    "@effectai/capabilities": "workspace:*",
     "@libp2p/interface": "^2.7.0",
     "@solana/web3.js": "^1.98.2",
     "@remix-run/express": "^2.16.5",
