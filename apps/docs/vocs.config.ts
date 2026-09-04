@@ -141,4 +141,5 @@ export default defineConfig({
     },
   ],
   title: "Effect AI",
+  aiCta: false,
 });
