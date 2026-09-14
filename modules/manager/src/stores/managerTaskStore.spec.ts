@@ -446,6 +446,132 @@ describe("ManagerTaskStore", () => {
     });
   });
 
+  describe("cancel", () => {
+    it("should retire a task nobody holds and drop its pending cancel request", async () => {
+      mockDatastore.get.mockResolvedValueOnce(
+        Buffer.from(
+          stringifyWithBigInt({
+            state: mockTask,
+            events: [
+              { type: "create", timestamp: 1000, providerPeer: "peerId123" },
+              {
+                type: "assign",
+                timestamp: 2000,
+                assignedToPeer: "workerPeerId123",
+              },
+              {
+                type: "reject",
+                timestamp: 3000,
+                reason: "Too busy",
+                rejectedByPeer: "workerPeerId123",
+              },
+            ],
+          }),
+        ),
+      );
+
+      const record = await taskStore.cancel({ entityId: "task123" });
+
+      expect(record.events[3].type).toBe("cancel");
+      const batch = mockDatastore.batch();
+      expect(batch.put.mock.calls[0][0].toString()).toBe(
+        "/tasks/completed/task123",
+      );
+      expect(
+        batch.delete.mock.calls.map((call) => call[0].toString()),
+      ).toEqual([
+        "/tasks/active/task123",
+        "/tasks/cancel-requested/task123",
+      ]);
+      expect(batch.commit).toHaveBeenCalled();
+    });
+
+    it("should refuse to cancel a task a worker holds", async () => {
+      mockDatastore.get.mockResolvedValueOnce(
+        Buffer.from(
+          stringifyWithBigInt({
+            state: mockTask,
+            events: [
+              { type: "create", timestamp: 1000, providerPeer: "peerId123" },
+              {
+                type: "assign",
+                timestamp: 2000,
+                assignedToPeer: "workerPeerId123",
+              },
+              {
+                type: "accept",
+                timestamp: 3000,
+                acceptedByPeer: "workerPeerId123",
+              },
+            ],
+          }),
+        ),
+      );
+
+      await expect(
+        taskStore.cancel({ entityId: "task123" }),
+      ).rejects.toThrow(TaskValidationError);
+      expect(mockDatastore.batch().commit).not.toHaveBeenCalled();
+    });
+
+    it("should refuse to cancel a task that already has a submission", async () => {
+      mockDatastore.get.mockResolvedValueOnce(
+        Buffer.from(
+          stringifyWithBigInt({
+            state: mockTask,
+            events: [
+              { type: "create", timestamp: 1000, providerPeer: "peerId123" },
+              {
+                type: "assign",
+                timestamp: 2000,
+                assignedToPeer: "workerPeerId123",
+              },
+              {
+                type: "accept",
+                timestamp: 3000,
+                acceptedByPeer: "workerPeerId123",
+              },
+              {
+                type: "submission",
+                timestamp: 4000,
+                submissionByPeer: "workerPeerId123",
+                result: "done",
+              },
+            ],
+          }),
+        ),
+      );
+
+      await expect(
+        taskStore.cancel({ entityId: "task123" }),
+      ).rejects.toThrow(TaskValidationError);
+      expect(mockDatastore.batch().commit).not.toHaveBeenCalled();
+    });
+
+    it("should record and report a cancel request", async () => {
+      await taskStore.requestCancel({ entityId: "task123" });
+      expect(mockDatastore.put.mock.calls[0][0].toString()).toBe(
+        "/tasks/cancel-requested/task123",
+      );
+
+      mockDatastore.has.mockResolvedValueOnce(true);
+      expect(await taskStore.hasCancelRequest({ entityId: "task123" })).toBe(
+        true,
+      );
+      expect(mockDatastore.has.mock.calls[0][0].toString()).toBe(
+        "/tasks/cancel-requested/task123",
+      );
+    });
+
+    it("should throw when the task is not active", async () => {
+      mockDatastore.get.mockRejectedValueOnce(new Error("not found"));
+
+      await expect(
+        taskStore.cancel({ entityId: "task123" }),
+      ).rejects.toThrow(TaskValidationError);
+    });
+  });
+
   describe("payout", () => {
     const mockPayment = {
       id: "payment123",

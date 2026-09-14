@@ -20,7 +20,8 @@ export type ManagerTaskEvent =
   | TaskRejectedEvent
   | TaskReportedEvent
   | TaskAcceptedEvent
-  | TaskPaymentEvent;
+  | TaskPaymentEvent
+  | TaskCancelledEvent;
 
 export interface TaskCreatedEvent extends BaseTaskEvent {
   type: "create";
@@ -58,6 +59,11 @@ export interface TaskSubmissionEvent extends BaseTaskEvent {
 export interface TaskPaymentEvent extends BaseTaskEvent {
   type: "payout";
   payment: Payment;
+}
+
+// The provider withdrew the task before any worker submitted it.
+export interface TaskCancelledEvent extends BaseTaskEvent {
+  type: "cancel";
 }
 
 export interface TaskCompletedEvent extends BaseTaskEvent {
@@ -327,6 +333,7 @@ export const createManagerTaskStore = ({
     );
     batch.delete(new Key(`/tasks/active/${taskRecord.state.id}`));
     batch.delete(new Key(`/tasks/assign/${peerIdStr}/${entityId}`));
+    batch.delete(new Key(`/tasks/cancel-requested/${entityId}`));
 
     if (taskRecord.state.batchId && taskRecord.state.repetitions > 0) {
       batch.delete(
@@ -340,6 +347,59 @@ export const createManagerTaskStore = ({
 
     return taskRecord;
   };
+
+  const cancel = async ({
+    entityId,
+  }: {
+    entityId: string;
+  }): Promise<ManagerTaskRecord> => {
+    const taskRecord = await getTask({ entityId });
+
+    if (!taskRecord) {
+      throw new TaskValidationError("Task not found");
+    }
+
+    const lastEvent = taskRecord.events[taskRecord.events.length - 1];
+    if (lastEvent.type !== "create" && lastEvent.type !== "reject") {
+      throw new TaskValidationError("Task is not in a valid state to cancel");
+    }
+
+    taskRecord.events.push({
+      timestamp: Math.floor(Date.now() / 1000),
+      type: "cancel",
+    });
+
+    const batch = datastore.batch();
+
+    batch.put(
+      new Key(`/tasks/completed/${taskRecord.state.id}`),
+      Buffer.from(stringifyWithBigInt(taskRecord)),
+    );
+    batch.delete(new Key(`/tasks/active/${taskRecord.state.id}`));
+    batch.delete(new Key(`/tasks/cancel-requested/${entityId}`));
+
+    await batch.commit();
+
+    return taskRecord;
+  };
+
+  const requestCancel = async ({
+    entityId,
+  }: {
+    entityId: string;
+  }): Promise<void> => {
+    await datastore.put(
+      new Key(`/tasks/cancel-requested/${entityId}`),
+      new Uint8Array(),
+    );
+  };
+
+  const hasCancelRequest = async ({
+    entityId,
+  }: {
+    entityId: string;
+  }): Promise<boolean> =>
+    await datastore.has(new Key(`/tasks/cancel-requested/${entityId}`));
 
   const payout = async ({
     entityId,
@@ -375,6 +435,8 @@ export const createManagerTaskStore = ({
       Buffer.from(stringifyWithBigInt(taskRecord)),
     );
     batch.delete(new Key(`/tasks/active/${taskRecord.state.id}`));
+    // the worker finished first, so a pending cancel request is moot
+    batch.delete(new Key(`/tasks/cancel-requested/${entityId}`));
 
     await batch.commit();
   };
@@ -437,6 +499,9 @@ export const createManagerTaskStore = ({
     accept,
     reject,
     report,
+    cancel,
+    requestCancel,
+    hasCancelRequest,
     payout,
     assign,
     getTask,

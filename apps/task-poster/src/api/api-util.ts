@@ -20,6 +20,7 @@ export type ApiErrorCode =
   | "invalid_request"
   | "insufficient_credits"
   | "rate_limited"
+  | "network_unavailable"
   | "internal";
 
 export const apiError = (

@@ -11,6 +11,7 @@ import * as state from "./state.js";
 import { validateNumericParams } from "./util.js";
 import { KVKey, KVQuery, KVTransactionResult } from "@cross/kv";
 import { getTemplate, getTemplates, renderTemplate, escapeHTML, isTemplateApproved } from "./templates.js";
+import { reconcileCancelledJob } from "./api/jobs.js";
 
 export type TimeSlot = { from: string; to: string };
 export type DayName = 'mon'|'tue'|'wed'|'thu'|'fri'|'sat'|'sun';
@@ -102,11 +103,14 @@ export const parseCsv = (csv: string, delimiter = ","): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     const data: any[] = [];
 
-    parseString(csv, { headers: true, delimiter })
+    // ignoreEmpty drops rows whose every column is blank (stray newlines at the
+    // end of a paste, or a "," separator line). Without it each one becomes a
+    // real task with no content, and a paid one in the Requestor API.
+    parseString(csv, { headers: true, delimiter, ignoreEmpty: true })
       .on("error", (error) => reject(error))
       .on("data", (row) => data.push(row))
       .on("end", (rowCount: number) => {
-	console.log(`CSV: Parsed ${rowCount} rows`);
+	console.log(`CSV: Parsed ${data.length} rows (${rowCount} read, blank rows skipped)`);
 	resolve(data);
       });
   });
@@ -763,12 +767,14 @@ const handleFetcherImport = async(fetcher: Fetcher, fields: FormValues) => {
  * 3)
  */
 export const processFetcher = async (fetcher: Fetcher) => {
-  if (fetcher.status !== "active")
-    return 0;
-
-  // always check for results, even outside schedule
+  // always check for results, even outside schedule and for archived
+  // fetchers: tasks already out with workers still come back
   if (fetcher.engine === "effectai")
     await processResults(fetcher, 20);
+
+  // only active fetchers post new tasks
+  if (fetcher.status !== "active")
+    return 0;
 
   const withinSchedule = isWithinSchedule(fetcher.schedule);
   if (!withinSchedule) {
@@ -822,7 +828,7 @@ export const processFetcher = async (fetcher: Fetcher) => {
   return imported;
 }
 
-export const countTasks = (f: Fetcher, type: "active" | "queue" | "done" | "failed") => {
+export const countTasks = (f: Fetcher, type: "active" | "queue" | "done" | "cancelled" | "failed") => {
   if (f)
     return db.count(["fetcher", f.datasetId, f.index, type, {}]);
   else
@@ -914,6 +920,22 @@ export const importTasks = async (f: Fetcher) => {
   return tasks.length;
 };
 
+// Asks the manager to withdraw already-posted tasks
+// Sent in chunks because the manager reads bodies with express.json()'s 100 KB
+// default, which a 10k-task job would exceed.
+export const cancelTasks = async (ids: string[]) => {
+  const outcomes: { taskId: string; status: string }[] = [];
+  for (let start = 0; start < ids.length; start += 1000) {
+    const { data } = await api.post<{ taskId: string; status: string }[]>(
+      "/tasks/cancel",
+      { ids: ids.slice(start, start + 1000) },
+      { timeout: 60_000 },
+    );
+    outcomes.push(...data);
+  }
+  return outcomes;
+};
+
 export const processResults = async (f: Fetcher, batchSize: number) => {
   const keyBase = ["fetcher", f.datasetId, f.index];
 
@@ -934,7 +956,16 @@ export const processResults = async (f: Fetcher, batchSize: number) => {
     );
 
     let importCount = 0;
+    let cancelCount = 0;
     for (const d of data as any) {
+      if (d.type === "cancel") {
+        db.beginTransaction();
+        await db.delete([...keyBase, "active", d.taskId]);
+        await db.set<boolean>([...keyBase, "cancelled", d.taskId], true);
+        await db.endTransaction();
+        cancelCount++;
+        continue;
+      }
       if (d.type !== "submission" && d.type !== "report")
 	continue;
       db.beginTransaction();
@@ -947,6 +978,9 @@ export const processResults = async (f: Fetcher, batchSize: number) => {
 
       console.log(`trace: ${importCount} tasks finished`);
     }
+
+    if (cancelCount > 0 || importCount > 0)
+      await reconcileCancelledJob(f.datasetId);
   } catch (e) {
     console.log(`error: ${e}`);
   }
@@ -1109,6 +1143,7 @@ export const addFetcherRoutes = (app: Express): void => {
     const queueSize = countTasks(f!, "queue");
     const activeSize = countTasks(f!, "active");
     const doneSize = countTasks(f!, "done");
+    const cancelledSize = countTasks(f!, "cancelled");
     const failedSize = countTasks(f!, "failed");
 
     const resultIds = (await db.listAll<boolean>(
@@ -1131,6 +1166,7 @@ export const addFetcherRoutes = (app: Express): void => {
   <li>Queued: ${queueSize}</li>
   <li>Active: ${activeSize}</li>
   <li>Finished: ${doneSize}</li>
+  <li>Cancelled: ${cancelledSize}</li>
   <li>Failed: ${failedSize}</li>
   <li>Batch / Freq: ${f.batchSize} / ${f.frequency}</li>
   ${f.repetitions ? `<li>Repetitions per worker: ${f.repetitions}</li>` : ''}

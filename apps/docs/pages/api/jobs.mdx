@@ -321,6 +321,7 @@ job = res.json()
     "queued": 2,
     "active": 0,
     "completed": 0,
+    "cancelled": 0,
     "failed": 0
   },
   "credits": {
@@ -336,6 +337,10 @@ job = res.json()
 :::note
 `status` is either `"active"` or `"cancelled"`. There is no `"completed"`
 status: a job is done when `tasks.queued + tasks.active === 0`.
+
+`tasks.cancelled` counts tasks retired by [cancelling the job](#cancel-a-job);
+`tasks.failed` counts tasks that could not be posted to the network. Neither
+ever gets a submission, and both are refunded.
 :::
 
 ---
@@ -508,7 +513,7 @@ data = res.json()
       "taskCount": 2,
       "uniqueWorker": false,
       "createdAt": 1750000100000,
-      "tasks": { "queued": 0, "active": 1, "completed": 1, "failed": 0 },
+      "tasks": { "queued": 0, "active": 1, "completed": 1, "cancelled": 0, "failed": 0 },
       "credits": {
         "currency": "EFFECT",
         "reserved": "1",
@@ -579,6 +584,7 @@ is_done = job['tasks']['queued'] + job['tasks']['active'] == 0
     "queued": 0,
     "active": 1,
     "completed": 1,
+    "cancelled": 0,
     "failed": 0
   },
   "credits": {
@@ -718,12 +724,28 @@ Sheets.
 
 `POST /v1/jobs/:id/cancel`
 
-Stops the job immediately: no further tasks are posted to workers, and tasks
-currently in progress are not collected. Credits are refunded for **every
-task without a completed submission** at the moment of cancellation, both
-queued and in-progress. You only pay for tasks that were already completed.
+Stops the job. Tasks that were still queued are dropped, and tasks posted to
+the network that no worker has picked up yet are withdrawn. You are refunded
+for **every task that ends without a submission**, and you only pay for tasks
+a worker actually submitted.
+
+Tasks a worker is already working on are left with that worker, so nobody
+opens a task they can no longer submit. If the worker finishes, the
+submission is kept, paid, and shows up in your results as usual. If the
+worker rejects the task or runs out of time, it is retired instead of being
+handed to the next worker, and you are refunded for it at that point. Such
+tasks stay in `tasks.active` until they resolve one way or the other, so a
+cancelled job can keep a non-zero `tasks.active` and `credits.remaining` for
+up to the job's `timeLimitSeconds`. Everything retired lands in
+`tasks.cancelled`.
 
 This is idempotent, so cancelling an already-cancelled job returns `200`.
+
+If the worker network cannot be reached, the job is still marked cancelled and
+the queued tasks are still refunded, but tasks already sent to workers stay
+live and the response is `503 network_unavailable`. Nothing retries in the
+background, so cancel the job again in a few minutes. The repeat call withdraws
+whatever is still out and refunds whatever has ended since.
 
 :::code-group
 
@@ -771,6 +793,7 @@ print(job['credits']['refunded'])  # EFFECT refunded
     "queued": 0,
     "active": 0,
     "completed": 1,
+    "cancelled": 1,
     "failed": 0
   },
   "credits": {
@@ -783,6 +806,8 @@ print(job['credits']['refunded'])  # EFFECT refunded
 }
 ```
 
-1 task completed (0.5 EFFECT consumed), 1 task unfinished at cancellation
+1 task completed (0.5 EFFECT consumed), 1 task withdrawn at cancellation
 (0.5 EFFECT refunded). `remaining` reaches zero, so the account is fully
-settled.
+settled. Had a worker been holding the second task, it would have stayed in
+`active` with 0.5 EFFECT `remaining` until the worker either submitted it
+(consumed) or gave it up (refunded).

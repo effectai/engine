@@ -212,6 +212,34 @@ export function createTaskManager({
     });
   };
 
+  const cancelTask = async ({
+    taskId,
+  }: {
+    taskId: string;
+  }): Promise<"cancelled" | "assigned" | "submitted" | "not_found"> => {
+    const active = await taskStore.getTask({ entityId: taskId }).catch(() => null);
+
+    if (!active) {
+      const completed = await taskStore
+        .getTask({ entityId: taskId, index: "completed" })
+        .catch(() => null);
+      if (!completed) return "not_found";
+      return completed.events.some((event) => event.type === "cancel")
+        ? "cancelled"
+        : "submitted";
+    }
+
+    const lastEvent = active.events[active.events.length - 1];
+    if (lastEvent.type === "submission") return "submitted";
+    if (lastEvent.type === "assign" || lastEvent.type === "accept") {
+      await taskStore.requestCancel({ entityId: taskId });
+      return "assigned";
+    }
+
+    await taskStore.cancel({ entityId: taskId });
+    return "cancelled";
+  };
+
   const handleCreateEvent = async (taskRecord: ManagerTaskRecord) => {
     await assignTask({ entityId: taskRecord.state.id });
   };
@@ -368,6 +396,13 @@ export function createTaskManager({
       throw new Error("Task is already assigned.");
     }
 
+    // A cancel that arrived while a worker held this task takes effect now
+    // that they have let go of it, instead of handing it to the next worker.
+    if (await taskStore.hasCancelRequest({ entityId })) {
+      await taskStore.cancel({ entityId });
+      return;
+    }
+
     // In a repetition-limited batch, the most recent rejector of this task must
     // be excluded from the re-assignment - otherwise Task 1 bounces straight
     // back to them and consumes the batch slot they need for Task 2.
@@ -490,6 +525,7 @@ export function createTaskManager({
     processTaskAcception,
     processTaskRejection,
     processTaskSubmission,
+    cancelTask,
 
     registerTemplate,
 

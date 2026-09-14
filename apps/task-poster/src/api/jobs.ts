@@ -20,6 +20,7 @@ import {
 import { type DatasetRecord, getDataset, writeDataset } from "../dataset.js";
 import {
   type Fetcher,
+  cancelTasks,
   countTasks,
   createFetcher,
   getFetcher,
@@ -430,6 +431,7 @@ type TaskCounts = {
   queued: number;
   active: number;
   completed: number;
+  cancelled: number;
   failed: number;
 };
 
@@ -439,6 +441,7 @@ const countsFor = async (job: Job): Promise<TaskCounts> => {
     queued: fetcher ? countTasks(fetcher, "queue") : 0,
     active: fetcher ? countTasks(fetcher, "active") : 0,
     completed: fetcher ? countTasks(fetcher, "done") : 0,
+    cancelled: fetcher ? countTasks(fetcher, "cancelled") : 0,
     failed: fetcher ? countTasks(fetcher, "failed") : 0,
   };
 };
@@ -481,6 +484,118 @@ const jobView = (job: Job, counts: TaskCounts) => {
       remaining: lamportsToEffect(credits.remaining),
     },
   };
+};
+
+// Refunds every task of a cancelled job that ended without a submission
+const settleCancelledJob = async (job: Job): Promise<Job> => {
+  const keyBase = ["fetcher", job.datasetId, job.fetcherIndex];
+
+  let ended = 0n;
+  let endedCount = 0;
+  for (const bucket of ["cancelled", "failed"]) {
+    for (const entry of await db.listAll<boolean>([...keyBase, bucket, {}])) {
+      const task = await db.get<Task>(["task", entry.key[4] as string]);
+      ended += task ? BigInt(task.data.reward) : BigInt(job.rewardLamports);
+      endedCount++;
+    }
+  }
+
+  const counts = await countsFor(job);
+  const { remaining } = computeJobCredits(job, counts.completed);
+  const owed = ended - BigInt(job.refundedLamports);
+  const refundNow = owed > remaining ? remaining : owed;
+  if (refundNow > 0n) {
+    await refund(job.accountId, refundNow, {
+      jobId: job.id,
+      note: `job ${job.id} cancelled: ${endedCount} tasks without a submission`,
+    });
+    job.refundedLamports = (
+      BigInt(job.refundedLamports) + refundNow
+    ).toString();
+  }
+
+  // A job owns its dataset, so once its own tasks are done nothing else needs
+  // that dataset and the loop can stop walking it every tick.
+  if (counts.queued === 0 && counts.active === 0) {
+    const dataset = await getDataset(job.datasetId);
+    if (dataset && dataset.data.status === "active") {
+      dataset.data.status = "archived";
+      await writeDataset(job.datasetId, dataset.data);
+    }
+  }
+
+  await writeJob(job);
+  return job;
+};
+
+//  Cancels a job on a best-effort basis: drops the queued tasks, asks the
+//  manager to withdraw the ones already posted, then settles the credits.
+
+//  Tasks the manager reports as assigned or submitted stay `active`.
+//  The poster loop keeps polling archived fetchers, so they come back either 
+//  as a result (consumed) or, once the worker lets go of them, as cancelled 
+
+export const cancelJob = (
+  job: Job,
+): Promise<{ job: Job; withdrawalFailed: boolean }> =>
+  withLock(job.id, async () => {
+    const fresh = (await getJob(job.accountId, job.id)) ?? job;
+    const keyBase = ["fetcher", fresh.datasetId, fresh.fetcherIndex];
+    const fetcher = await getFetcher(fresh.datasetId, fresh.fetcherIndex);
+
+    if (fetcher && fetcher.status !== "archived") {
+      fetcher.status = "archived";
+      await writeFetcher(fetcher);
+    }
+    fresh.status = "cancelled";
+
+    for (const entry of await db.listAll<boolean>([...keyBase, "queue", {}])) {
+      db.beginTransaction();
+      await db.delete(entry.key);
+      await db.set<boolean>([...keyBase, "cancelled", entry.key[4]], true);
+      await db.endTransaction();
+    }
+
+    let withdrawalFailed = false;
+    const activeIds = (await db.listAll<boolean>([...keyBase, "active", {}]))
+      .map((entry) => entry.key[4] as string);
+    if (activeIds.length > 0) {
+      try {
+        for (const { taskId, status } of await cancelTasks(activeIds)) {
+          // A worker has task, so it cannot be withdrawn. 
+          // Mark it and let it finish or expire on its own
+          if (status === "assigned" || status === "submitted") {
+            await db.set<boolean>([...keyBase, "held", taskId], true);
+            continue;
+          }
+          if (status !== "cancelled" && status !== "not_found") continue;
+          db.beginTransaction();
+          await db.delete([...keyBase, "active", taskId]);
+          await db.delete([...keyBase, "held", taskId]);
+          await db.set<boolean>([...keyBase, "cancelled", taskId], true);
+          await db.endTransaction();
+        }
+      } catch (err) {
+        withdrawalFailed = true;
+        console.error(
+          `job ${fresh.id}: manager cancel failed, tasks stay active until the next cancel:`,
+          err,
+        );
+      }
+    }
+
+    return { job: await settleCancelledJob(fresh), withdrawalFailed };
+  });
+
+export const reconcileCancelledJob = async (
+  datasetId: number,
+): Promise<void> => {
+  const job = await getJobByDataset(datasetId);
+  if (job?.status !== "cancelled") return;
+
+  await withLock(job.id, async () =>
+    settleCancelledJob((await getJob(job.accountId, job.id)) ?? job),
+  );
 };
 
 // Results come from untrusted workers, so neutralize CSV formula injection
@@ -610,6 +725,7 @@ export const addJobApiRoutes = (app: Router): void => {
         queued: analysis.taskCount,
         active: 0,
         completed: 0,
+        cancelled: 0,
         failed: 0,
       });
       // Cache before responding so a replay can never observe a gap between
@@ -834,55 +950,37 @@ export const addJobApiRoutes = (app: Router): void => {
     }),
   );
 
-  // Cancel: stop posting queued tasks (archive dataset + fetcher).
+  // Cancel: best effort, idempotent. If the manager cannot be reached, the
+  // requestor is told to call again rather than the poster retrying forever.
+  //
+  // Known gap, accepted for now because the manager is expected to be up: the
+  // 503 is the only record that a withdrawal still has to happen, and nothing
+  // is stored on the job. Callers work it out from `tasks.active` on a
+  // cancelled job, which is also what the console gates its button on, but
+  // that number cannot tell "a worker is holding it" (settles by itself) from
+  // "the withdrawal never got through" (needs another cancel). Fixing that
+  // means a flag on the Job record.
   app.post(
     "/v1/jobs/:id/cancel",
     requireApiKey,
     asyncHandler(async (req, res) => {
       const { account } = req as AuthedRequest;
-      const existing = await getJob(account.id, req.params.id);
-      if (!existing) return apiError(res, 404, "not_found", "Job not found.");
-
-      // Serialize with any concurrent cancel of the same job and re-read the
-      // job inside the lock, so only one request can see status !== "cancelled"
-      // and issue the refund.
-      const job = await withLock(existing.id, async (): Promise<Job | null> => {
-        const fresh = await getJob(account.id, req.params.id);
-        if (!fresh || fresh.status === "cancelled") return fresh;
-
-        // Stop posting/polling: archive the fetcher + dataset.
-        const fetcher = await getFetcher(fresh.datasetId, fresh.fetcherIndex);
-        if (fetcher) {
-          fetcher.status = "archived";
-          await writeFetcher(fetcher);
-        }
-        const dataset = await getDataset(fresh.datasetId);
-        if (dataset) {
-          dataset.data.status = "archived";
-          await writeDataset(fresh.datasetId, dataset.data);
-        }
-        fresh.status = "cancelled";
-
-        // Refund everything not yet completed. After archiving, the poster
-        // stops polling these tasks, so they can never be consumed later.
-        const counts = await countsFor(fresh);
-        const { consumed, remaining } = computeJobCredits(fresh, counts.completed);
-        if (remaining > 0n) {
-          await refund(account.id, remaining, {
-            jobId: fresh.id,
-            note: `job ${fresh.id} cancelled - ${counts.queued + counts.active} unfinished tasks`,
-          });
-          fresh.consumedLamports = consumed.toString();
-          fresh.refundedLamports = (
-            BigInt(fresh.refundedLamports) + remaining
-          ).toString();
-        }
-        await writeJob(fresh);
-        return fresh;
-      });
-
+      const job = await getJob(account.id, req.params.id);
       if (!job) return apiError(res, 404, "not_found", "Job not found.");
-      return apiJson(res, jobView(job, await countsFor(job)));
+
+      const { job: cancelled, withdrawalFailed } = await cancelJob(job);
+      if (withdrawalFailed)
+        return apiError(
+          res,
+          503,
+          "network_unavailable",
+          "The job is cancelled and its queued tasks were refunded, but " +
+            "tasks already sent to workers could not be withdrawn because " +
+            "the network did not respond. Try cancelling the job again in a few " +
+            "minutes to withdraw them.",
+        );
+
+      return apiJson(res, jobView(cancelled, await countsFor(cancelled)));
     }),
   );
 };

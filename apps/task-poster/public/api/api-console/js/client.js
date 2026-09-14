@@ -27,6 +27,8 @@ export async function api(path, { method = "GET", body, auth = true } = {}) {
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
   if (!response.ok) {
     const error = new Error((data && data.error && data.error.message) || response.status + " " + response.statusText);
+    // Lets caller group failures by kind instead of by message text
+    error.code = (data && data.error && data.error.code) || "http_error";
     // Kept so you can read a partial result off a failed call
     // e.g. how many jobs /jobs/bulk managed to create before it stopped
     error.data = data;

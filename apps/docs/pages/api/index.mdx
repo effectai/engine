@@ -93,6 +93,7 @@ All errors return a consistent JSON envelope:
 | `invalid_request` | 400 | Bad input such as a missing field, bad CSV, or validation failure |
 | `insufficient_credits` | 402 | Not enough credit balance |
 | `rate_limited` | 429 | Over the rate limit |
+| `network_unavailable` | 503 | The worker network did not respond; repeat the request in a few minutes |
 | `internal` | 500 | Server error (credits auto-refunded if job creation fails mid-way) |
 
 ## Quick start

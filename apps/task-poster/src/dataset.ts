@@ -204,7 +204,10 @@ export const startAutoImport = async () => {
     // await Promise.all(activeDatasets.map(async (ds) => {
     for (const ds of activeDatasets) {
       let imported = 0;
-      const fetchers = await fetcher.getFetchers(ds.id);
+      // gets all fetchers including archived ones
+      const fetchers = (
+        await db.listAll<Fetcher>(["fetcher", ds.id, {}, "info"])
+      ).map((entry) => entry.data);
       for (const f of fetchers) {
 	// one bad fetcher must not take down the whole import loop (an
 	// unhandled rejection here terminates the process on Node >= 15)

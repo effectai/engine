@@ -397,6 +397,27 @@ export const createManager = async ({
     }
   });
 
+  entity.post("/tasks/cancel", (async (req: Request, res: Response) => {
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    if (!WHITELISTED_IPS.some((whitelisted) => ip?.includes(whitelisted))) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const ids: unknown = req.body?.ids;
+    if (!Array.isArray(ids) || !ids.every((id) => typeof id === "string")) {
+      return res.status(400).json({ error: "'ids' must be a string array" });
+    }
+
+    const outcomes = await Promise.all(
+      ids.map(async (taskId: string) => ({
+        taskId,
+        status: await taskManager.cancelTask({ taskId }),
+      })),
+    );
+
+    res.json(outcomes);
+  }) as HttpHandler);
+
   /**
    * Returns an ordered list of task results. Filters out only the
    * first submission event, and adds a `taskId` property to it. Task
@@ -422,10 +443,15 @@ export const createManager = async ({
         .then((taskRecord) => {
           const event = taskRecord.events.find(
             (taskEvent: any) =>
-              taskEvent.type === "submission" || taskEvent.type === "report",
+              taskEvent.type === "submission" ||
+              taskEvent.type === "report" ||
+              taskEvent.type === "cancel",
           );
           if (!event) return { taskId, error: "NOT FOUND" };
 
+          if (event.type === "cancel") {
+            return { type: "cancel", timestamp: event.timestamp, taskId };
+          }
           if (event.type === "report") {
             return {
               type: "report",

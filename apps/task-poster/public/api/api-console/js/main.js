@@ -534,12 +534,19 @@ function downloadCsvTemplate() {
 // ------------------------------------------------------------------ jobs
 function jobStatusPill(job) {
   const outstanding = job.tasks.queued + job.tasks.active;
+
+  if (job.status === "cancelled" && job.tasks.active > 0)
+    return { label: "cancelling", html: `<span class="pill pill-warn">cancelling</span>` };
   if (job.status !== "active") return { label: job.status, html: `<span class="pill pill-danger">${esc(job.status)}</span>` };
   if (outstanding === 0) return { label: "done", html: `<span class="pill pill-ok">done</span>` };
   return { label: "active", html: `<span class="pill pill-warn">active</span>` };
 }
 
 const isRunning = (job) => jobStatusPill(job).label === "active" && (job.tasks.queued + job.tasks.active) > 0;
+
+// if task isn't cancelled for some reason, we can try to cancel it again to stop the remaining tasks
+const hasTasksOut = (job) => job.status === "cancelled" && job.tasks.active > 0;
+const canCancel = (job) => isRunning(job) || hasTasksOut(job);
 
 const JOBS_PAGE_SIZES = [5, 10, 25];
 const JOBS_PAGE_SIZE_KEY = "effect-console-jobs-page-size";
@@ -623,7 +630,7 @@ function jobRowHtml(job, { member = false } = {}) {
       <td>${status.html}</td>
       <td class="mono">${job.tasks.queued} / ${job.tasks.active} / ${job.tasks.completed}</td>
       <td class="mono">${esc(job.credits.consumed)} / ${esc(job.credits.remaining)}</td>
-      <td>${isRunning(job) ? `<button class="btn-danger btn-sm" data-cancel="${job.id}">Cancel</button>` : ""}</td></tr>`;
+      <td>${canCancel(job) ? `<button class="btn-danger btn-sm" data-cancel="${job.id}">${hasTasksOut(job) ? "Cancel again" : "Cancel"}</button>` : ""}</td></tr>`;
   const detail = openJobId === job.id
     ? `<tr class="job-detail${member ? " batch-member" : ""}"><td colspan="5"><div class="job-detail-inner" id="detail-${job.id}"><span class="muted">Loading…</span></div></td></tr>`
     : "";
@@ -648,7 +655,7 @@ function batchGroupHtml(group) {
       <td>${status.html}</td>
       <td class="mono">${totals.tasks.queued} / ${totals.tasks.active} / ${totals.tasks.completed}</td>
       <td class="mono">${totals.credits.consumed} / ${totals.credits.remaining}</td>
-      <td>${group.members.some(isRunning) ? `<button class="btn-danger btn-sm" data-cancel-batch="${group.id}">Cancel all</button>` : ""}</td></tr>`;
+      <td>${group.members.some(canCancel) ? `<button class="btn-danger btn-sm" data-cancel-batch="${group.id}">${group.members.some(hasTasksOut) ? "Cancel again" : "Cancel all"}</button>` : ""}</td></tr>`;
 
   if (!open) return header;
 
@@ -784,7 +791,7 @@ async function renderJobDetail(jobId) {
      <div class="row" style="margin-top:.7rem">
        <button class="btn-ghost btn-sm" data-results="${jobId}" data-name="${esc(displayName)}">View all results</button>
        <button class="btn-ghost btn-sm" data-download="${jobId}">↓ Download CSV</button>
-       ${isRunning(job) ? `<button class="btn-danger btn-sm" data-cancel="${jobId}">Cancel job</button>` : ""}
+       ${canCancel(job) ? `<button class="btn-danger btn-sm" data-cancel="${jobId}">${hasTasksOut(job) ? "Cancel again" : "Cancel job"}</button>` : ""}
      </div>`;
 
   try {
@@ -818,21 +825,37 @@ async function cancelJob(jobId) {
 async function cancelBatch(batchId) {
   const group = jobGroups.find((entry) => entry.id === batchId);
   if (!group) return;
-  const running = group.members.filter(isRunning);
+  const running = group.members.filter(canCancel);
   if (!running.length) return;
-  if (!confirm(`Cancel this survey? ${running.length} of ${group.members.length} jobs are still running; their unfinished tasks are refunded.`)) return;
+  if (!confirm(`Cancel this survey? ${running.length} of ${group.members.length} jobs still have tasks out; their unfinished tasks are refunded.`)) return;
 
   const failures = [];
   for (const job of running) {
     try { await api(`/jobs/${job.id}/cancel`, { method: "POST" }); }
-    catch (error) { failures.push(`${memberLabel(job)}: ${error.message}`); }
+    catch (error) { failures.push(error); }
   }
   await Promise.all([loadAccount(), loadJobs()]);
   await loadOverview();
-  if (failures.length)
-    showMsg(byId("jobs-msg"), `Cancelled ${running.length - failures.length} of ${running.length} jobs. Failed: ${failures.join("; ")}`, "err");
-  else
+
+  if (!failures.length) {
     showMsg(byId("jobs-msg"), `Cancelled ${running.length} job(s); unfinished tasks were refunded.`, "ok");
+    return;
+  }
+
+  // Every job of a survey fails the same way, so say it once with a count
+  // rather than repeating the same sentence per job.
+  const sentences = [`Cancelled ${running.length - failures.length} of ${running.length} jobs.`];
+  const offline = failures.filter((error) => error.code === "network_unavailable").length;
+  if (offline)
+    sentences.push(`${offline} could not reach the worker network, so their queued tasks were refunded but tasks workers already have were not withdrawn. Cancel the survey again in a few minutes.`);
+
+  const otherReasons = new Map();
+  for (const error of failures.filter((error) => error.code !== "network_unavailable"))
+    otherReasons.set(error.message, (otherReasons.get(error.message) || 0) + 1);
+  for (const [message, count] of otherReasons)
+    sentences.push(count > 1 ? `${count} failed: ${message}` : message);
+
+  showMsg(byId("jobs-msg"), sentences.join(" "), "err");
 }
 
 async function loadOverview() {
