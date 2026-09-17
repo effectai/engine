@@ -178,7 +178,7 @@ const main = async () => {
   console.log("Initializing HTTP server");
   const app = express();
   app.disable("x-powered-by");
-  app.use(express.static("public"));
+  app.use(express.static("public", { extensions: ["html"] }));
   app.use(express.urlencoded({ limit: "20mb", extended: true }));
   app.use(express.json({ limit: "20mb" }));
 
