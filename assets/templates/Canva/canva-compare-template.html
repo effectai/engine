@@ -71,11 +71,11 @@
 
     <!-- Insight -->
     <div class="field mb-4" v-if="winner !== null">
-      <label class="label">Why did you choose that version? <span class="has-text-grey">(optional)</span></label>
+      <label class="label">Why did you choose that version?</label>
       <div class="control">
         <div class="select is-fullwidth">
           <select v-model="insight" @change="missingOtherText = false">
-            <option value="">— Select a reason —</option>
+            <option value="Typed">Write my own reason</option>
             <option value="Communicates the message more clearly">Communicates the message more clearly</option>
             <option value="Stronger or clearer headline">Stronger or clearer headline</option>
             <option value="Stronger visual hierarchy">Stronger visual hierarchy</option>
@@ -86,24 +86,26 @@
             <option value="Easier to read">Easier to read</option>
             <option value="More relevant to the audience">More relevant to the audience</option>
             <option value="Better fit for the stated goal">Better fit for the stated goal</option>
-            <option value="Other">Other</option>
           </select>
         </div>
       </div>
-      <div class="control mt-2" v-if="insight === 'Other'">
+      <div class="control mt-2" v-if="insight === 'Typed'">
         <textarea
           class="textarea"
           :class="{ 'is-danger': missingOtherText }"
           v-model="otherText"
-          placeholder="Please tell us more…"
-          rows="2"
+          @input="missingOtherText = false"
+          placeholder="e.g. Version B is more effective: the headline is easier to read and the call to action stands out."
+          rows="3"
         ></textarea>
-        <p class="help">Required when you choose "Other".</p>
+        <p class="help" :class="{ 'is-danger': missingOtherText }">
+          {{ otherText.trim().length }} / {{ minTypedLength }} characters minimum, or pick a reason from the list above.
+        </p>
       </div>
     </div>
 
     <p class="has-text-danger mb-3" v-if="notComplete">Please pick a version before submitting.</p>
-    <p class="has-text-danger mb-3" v-if="missingOtherText">Please explain your reason before submitting, or choose a different option.</p>
+    <p class="has-text-danger mb-3" v-if="missingOtherText">Please write at least {{ minTypedLength }} characters, or pick a reason from the list.</p>
 
     <button
       class="button is-success is-large"
@@ -131,8 +133,9 @@
           taskId: "${taskId}",
           checkType: "${checkType}",
           winner: null,
-          insight: "",
+          insight: "Typed",
           otherText: "",
+          minTypedLength: 30,
           btnLoading: false,
           notComplete: false,
           missingOtherText: false,
@@ -158,10 +161,10 @@
 
                 <h3>2. Your reason</h3>
                 <ul>
-                  <li>Choose the reason that best matches the difference that decided it for you.</li>
-                  <li>Pick <strong>Other</strong> to write your own reason. That box is required when you choose Other.</li>
+                  <li>By default you write your own reason, <strong>at least 30 characters</strong>. This is the most useful answer for the client.</li>
+                  <li>If a reason in the list matches the difference that decided it for you, you can pick it instead.</li>
                   <li>Your reason is delivered <strong>directly to the client</strong>. When you write one, keep it clear, specific and correctly spelled. A few sentences are enough.</li>
-                  <li>Use <strong>Other</strong> to call out any obvious mistake you notice in either version, such as a typo or a detail that contradicts another part of the design.</li>
+                  <li>Use your written reason to call out any obvious mistake you notice in either version, such as a typo or a detail that contradicts another part of the design.</li>
                 </ul>
 
                 <h4>Good:</h4>
@@ -183,7 +186,7 @@
         onLoad() {},
         setWinner(value) {
           if (this.winner !== value) {
-            this.insight = "";
+            this.insight = "Typed";
             this.otherText = "";
             this.missingOtherText = false;
           }
@@ -208,8 +211,8 @@
             return;
           }
 
-          // Every reason except "Other" stands on its own; "Other" needs the worker to say what it was.
-          if (this.insight === "Other" && !this.otherText.trim()) {
+          // Preset reasons stand on their own; a typed reason must say something specific.
+          if (this.insight === "Typed" && this.otherText.trim().length < this.minTypedLength) {
             this.missingOtherText = true;
             return;
           }
@@ -224,7 +227,7 @@
                   taskId: this.taskId,
                   checkType: this.checkType,
                   winner: this.winner,
-                  insight: (this.insight === "Other" ? this.otherText.trim() : this.insight) || undefined,
+                  insight: this.insight === "Typed" ? this.otherText.trim() : this.insight,
                 },
               },
             },
