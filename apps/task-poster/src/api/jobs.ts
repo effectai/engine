@@ -68,6 +68,9 @@ export type Job = {
 };
 
 const MAX_TASKS_PER_JOB = 10_000;
+// Size of the current worker pool. A uniqueWorker job needs one distinct
+// worker per task, so anything larger could never finish.
+const MAX_UNIQUE_WORKERS = 25;
 const MIN_REWARD_LAMPORTS = 1_000n; // 0.001 EFFECT
 const MAX_REWARD_LAMPORTS = 100_000_000n; // 100 EFFECT (matches the legacy price cap)
 const MAX_JOB_COST_LAMPORTS = 1_000_000_000_000n; // 1,000,000 EFFECT per job
@@ -380,6 +383,12 @@ const analyzeJob = async (
       400,
       "invalid_request",
       `Too many tasks (${taskCount}); max ${MAX_TASKS_PER_JOB} per job.`,
+    );
+  if (uniqueWorker && taskCount > MAX_UNIQUE_WORKERS)
+    return fail(
+      400,
+      "invalid_request",
+      `Too many tasks (${taskCount}) for uniqueWorker; max ${MAX_UNIQUE_WORKERS} unique workers per job.`,
     );
 
   const cost = rewardLamports * BigInt(taskCount);

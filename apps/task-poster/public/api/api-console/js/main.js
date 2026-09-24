@@ -338,14 +338,15 @@ function templateRow(template, showActions) {
     (showActions ? ` <button class="btn-danger btn-sm" data-delete="${esc(template.templateId)}" data-name="${esc(template.name)}">Delete</button>` : "");
   return `<tr>
     <td>${esc(template.name)}</td>
-    <td class="mono muted">${esc((template.fields || []).join(", ") || "none")}</td>
+    <td class="mono muted col-wide">${esc((template.fields || []).join(", ") || "none")}</td>
     <td>${trust}</td>
-    <td class="mono muted">${shortId(template.templateId)}</td>
-    <td>${actions}</td></tr>`;
+    <td class="mono muted col-wide">${shortId(template.templateId)}</td>
+    <td class="col-actions">${actions}</td></tr>`;
 }
 
+// col-wide columns are dropped on phones so the Preview button stays in view.
 const templateTable = (list, showActions) =>
-  `<table><thead><tr><th>Name</th><th>Fields</th><th>Status</th><th>Template ID</th><th></th></tr></thead>` +
+  `<table><thead><tr><th>Name</th><th class="col-wide">Fields</th><th>Status</th><th class="col-wide">Template ID</th><th></th></tr></thead>` +
   `<tbody>${list.map((template) => templateRow(template, showActions)).join("")}</tbody></table>`;
 
 function renderTemplates() {
@@ -483,6 +484,9 @@ async function estimate() {
       const perRow = await api("/jobs/estimate", { method: "POST", body: { ...body, type: "csv" } });
       const rows = perRow.taskCount;
       const workers = body.maxTasks;
+      // Matches MAX_UNIQUE_WORKERS in the API; the bulk create enforces it too.
+      if (body.uniqueWorker && workers > 25)
+        throw new Error(`With no repeats each row can have at most 25 workers (the current worker pool).`);
       const total = Number(perRow.rewardPerTask) * rows * workers;
       showEstimate({
         taskCount: `${rows * workers} (${rows} rows x ${workers})`,
@@ -917,6 +921,8 @@ function stopLiveRefresh() {
 // Full template preview in a sandboxed iframe
 let previewTemplateId = null;
 let previewDraftHtml = null; // set instead of previewTemplateId for unsaved drafts
+let previewInstructions = null; // HTML the template posted as "task-instructions"
+let previewSampleData = {}; // values rendered into the frame, echoed as the result row's input
 
 const sampleStorageKey = (templateId) => "effect-console-sample:" + templateId;
 function loadStoredSample(templateId) {
@@ -924,11 +930,19 @@ function loadStoredSample(templateId) {
   catch { return {}; }
 }
 
+// While an overlay is open the page behind must not scroll, or a swipe over
+// the template frame moves the console instead of the task.
+function setPageScrollLocked(isLocked) {
+  document.documentElement.classList.toggle("scroll-locked", isLocked);
+}
+
 async function previewTemplate(templateId) {
   previewTemplateId = templateId;
   previewDraftHtml = null;
+  resetPreviewSession();
   const frame = byId("tpl-preview-frame");
   byId("tpl-preview").classList.remove("hide");
+  setPageScrollLocked(true);
   byId("tpl-preview-title").textContent = "Loading preview…";
   byId("tpl-preview-id").textContent = "";
   byId("tpl-preview-trust").innerHTML = "";
@@ -946,6 +960,7 @@ async function previewTemplate(templateId) {
     byId("tpl-preview-trust").innerHTML = preview.approved ? `<span class="pill pill-ok">approved</span>` : `<span class="pill pill-warn">unapproved</span>`;
     byId("tpl-preview-note").classList.toggle("hide", preview.approved);
     renderSampleBar(preview.fields || [], preview.sampleData || {});
+    previewSampleData = preview.sampleData || {};
     frame.srcdoc = preview.html;
   } catch (error) {
     byId("tpl-preview-title").textContent = "Preview failed";
@@ -966,25 +981,35 @@ function previewDraftTemplate() {
 
   previewTemplateId = null;
   previewDraftHtml = html;
+  resetPreviewSession();
 
   const fields = [...new Set([...html.matchAll(/\$\{([^}]+)\}/g)].map((match) => match[1].trim()))];
   const values = Object.fromEntries(fields.map((field) => [field, field]));
 
   byId("tpl-preview").classList.remove("hide");
+  setPageScrollLocked(true);
   byId("tpl-preview-title").textContent = byId("tpl-name").value.trim() || "Untitled draft";
   byId("tpl-preview-id").textContent = "not submitted yet";
   byId("tpl-preview-url").textContent = "sandbox://preview/draft";
   byId("tpl-preview-trust").innerHTML = `<span class="pill pill-warn">draft</span>`;
   byId("tpl-preview-note").classList.remove("hide");
   renderSampleBar(fields, values);
+  previewSampleData = values;
   byId("tpl-preview-frame").srcdoc = renderDraft(html, values);
 }
+
+// On a phone the form would push the template off screen, so it starts
+// collapsed there; the label toggles it at any width.
+const isNarrowScreen = () => window.matchMedia("(max-width: 760px)").matches;
 
 function renderSampleBar(fields, values) {
   const bar = byId("tpl-preview-data");
   if (!fields.length) { bar.innerHTML = ""; bar.classList.add("hide"); return; }
+  bar.classList.toggle("collapsed", isNarrowScreen());
   bar.innerHTML =
-    `<div class="sample-label">Sample data: fill fields as a real task row would</div>` +
+    `<button type="button" class="sample-label sample-toggle" id="tpl-preview-data-toggle">
+       Sample data: fill fields as a real task row would <span class="muted">(${fields.length})</span><span class="sample-caret">▾</span>
+     </button>` +
     fields.map((field) => `<label class="sample-field"><span>\${${esc(field)}}</span><input data-sample-field="${esc(field)}" value="${esc(values[field] ?? "")}" placeholder="${esc(field)}"></label>`).join("") +
     `<button class="btn-primary btn-sm" id="tpl-preview-apply">Re-render</button>`;
   bar.classList.remove("hide");
@@ -995,8 +1020,10 @@ async function applySampleData() {
   byId("tpl-preview-data").querySelectorAll("[data-sample-field]").forEach((input) => {
     data[input.dataset.sampleField] = input.value;
   });
+  showPreviewStage("task");
 
   if (previewDraftHtml !== null) {
+    previewSampleData = data;
     byId("tpl-preview-frame").srcdoc = renderDraft(previewDraftHtml, data);
     return;
   }
@@ -1005,6 +1032,7 @@ async function applySampleData() {
   const frame = byId("tpl-preview-frame");
   try {
     const preview = await api(`/templates/${previewTemplateId}/preview`, { method: "POST", body: { data } });
+    previewSampleData = preview.sampleData || data;
     frame.srcdoc = preview.html;
   } catch (error) {
     frame.srcdoc = `<p style="font:14px/1.5 system-ui,sans-serif;padding:1rem;color:#b00020">${esc(error.message)}</p>`;
@@ -1014,9 +1042,83 @@ async function applySampleData() {
 function closePreview() {
   previewTemplateId = null;
   previewDraftHtml = null;
+  resetPreviewSession();
   byId("tpl-preview").classList.add("hide");
+  setPageScrollLocked(false);
   byId("tpl-preview-frame").srcdoc = "";
   byId("tpl-preview-data").innerHTML = "";
+}
+
+function resetPreviewSession() {
+  previewInstructions = null;
+  previewSampleData = {};
+  renderInstructions();
+  showPreviewStage("task");
+}
+
+function onPreviewMessage(event) {
+  const frame = byId("tpl-preview-frame");
+  if (!frame.contentWindow || event.source !== frame.contentWindow) return;
+  const message = event.data;
+  if (!message || typeof message !== "object") return;
+  if (message.type === "task-instructions") {
+    previewInstructions = String(message.instructions ?? "");
+    renderInstructions();
+  }
+  if (message.task === "submit") showPreviewResult(message);
+}
+
+function showPreviewStage(stage) {
+  byId("tpl-preview-result").classList.toggle("hide", stage !== "result");
+}
+
+function showPreviewResult(message) {
+  let result;
+  try { result = JSON.stringify(message); }
+  catch { result = String(message); }
+  const answer = message.values !== undefined ? message.values : message;
+  const row = { taskId: "preview-task", submittedAt: Date.now(), worker: "preview-worker", input: previewSampleData, result };
+  byId("tpl-preview-answer").textContent = JSON.stringify(answer, null, 2);
+  byId("tpl-preview-row").textContent = JSON.stringify(row, null, 2);
+  showPreviewStage("result");
+  byId("tpl-preview-result").scrollTop = 0;
+  byId("tpl-preview-again").focus({ preventScroll: true });
+}
+
+function retryPreviewTask() {
+  showPreviewStage("task");
+  const frame = byId("tpl-preview-frame");
+  // Reassigning srcdoc reloads the template with a clean state.
+  frame.srcdoc = frame.srcdoc;
+}
+
+function setInstructionsOpen(isOpen) {
+  byId("tpl-preview-instructions").classList.toggle("hide", !isOpen);
+  byId("tpl-preview-instructions-toggle").setAttribute("aria-pressed", String(isOpen));
+}
+
+function renderInstructions() {
+  const hasInstructions = Boolean(previewInstructions && previewInstructions.trim());
+  byId("tpl-preview-instructions-toggle").classList.toggle("has-content", hasInstructions);
+  byId("tpl-preview-instructions-empty").classList.toggle("hide", hasInstructions);
+  const body = byId("tpl-preview-instructions-body");
+  body.classList.toggle("hide", !hasInstructions);
+  if (hasInstructions) showSanitizedInstructions(body, previewInstructions);
+  else body.replaceChildren();
+}
+
+//santize the template instructions HTML before showing it in the preview
+function showSanitizedInstructions(container, html) {
+  if (!("setHTML" in Element.prototype)) {
+    container.textContent = "This browser can't safely display template instructions. Open the preview in a current Chrome or Firefox to read them.";
+    return;
+  }
+  const sanitizer = new Sanitizer();
+  sanitizer.allowElement({ name: "img", attributes: ["src", "alt"] });
+  container.setHTML(html, { sanitizer });
+  for (const link of container.querySelectorAll("a[href]")) {
+    Object.assign(link, { target: "_blank", rel: "noopener noreferrer" });
+  }
 }
 
 // ------------------------------------------------------------------ results drawer
@@ -1045,6 +1147,7 @@ function confirmLargeBatch(group) {
 
 function openDrawer(title) {
   byId("results-drawer").classList.remove("hide");
+  setPageScrollLocked(true);
   byId("drawer-title").textContent = "Results · " + title;
   byId("drawer-sub").textContent = "Loading…";
   byId("drawer-json").textContent = "Loading…";
@@ -1114,7 +1217,10 @@ function showDrawerView(view) {
   byId("drawer-table").classList.toggle("hide", view !== "table");
 }
 
-function closeDrawer() { byId("results-drawer").classList.add("hide"); }
+function closeDrawer() {
+  byId("results-drawer").classList.add("hide");
+  setPageScrollLocked(false);
+}
 
 async function downloadCsv(jobId) {
   try {
@@ -1270,8 +1376,17 @@ byId("keys-list").addEventListener("click", (event) => {
 
 // Preview modal + results drawer
 byId("tpl-preview-close").onclick = closePreview;
-byId("tpl-preview-data").addEventListener("click", (event) => { if (event.target.id === "tpl-preview-apply") applySampleData(); });
+byId("tpl-preview-data").addEventListener("click", (event) => {
+  if (event.target.id === "tpl-preview-apply") applySampleData();
+  if (event.target.closest("#tpl-preview-data-toggle")) byId("tpl-preview-data").classList.toggle("collapsed");
+});
 byId("tpl-preview-data").addEventListener("keydown", (event) => { if (event.key === "Enter" && event.target.dataset.sampleField) applySampleData(); });
+window.addEventListener("message", onPreviewMessage);
+byId("tpl-preview-instructions-toggle").onclick = () =>
+  setInstructionsOpen(byId("tpl-preview-instructions").classList.contains("hide"));
+byId("tpl-preview-instructions-close").onclick = () => setInstructionsOpen(false);
+byId("tpl-preview-again").onclick = retryPreviewTask;
+byId("tpl-preview-copy").onclick = () => copyText(byId("tpl-preview-row").textContent, byId("tpl-preview-copy"));
 byId("drawer-close").onclick = closeDrawer;
 byId("results-drawer").addEventListener("click", (event) => { if (event.target.id === "results-drawer") closeDrawer(); });
 byId("drawer-csv").onclick = () => {

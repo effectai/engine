@@ -231,7 +231,7 @@
           <select id="job-capability"><option value="">Any worker / no capability required</option></select>
           <div id="job-capability-desc" class="muted" style="font-size:.8rem;margin-top:.3rem"></div>
         </div>
-        <label class="checkbox" style="margin-top:.7rem"><input id="job-unique" type="checkbox" /> Restrict each worker to one task in this job (no repeats)</label>
+        <label class="checkbox" style="margin-top:.7rem"><input id="job-unique" type="checkbox" /> Restrict each worker to one task in this job (no repeats, max 25 tasks per job)</label>
       </div>
 
       <!-- CSV data -->
@@ -248,7 +248,7 @@
         <div class="section-label">Survey data</div>
         <div class="field">
           <label class="field-label">Workers per row <span class="req">*</span></label>
-          <input id="job-maxtasks" value="100" style="max-width:160px" />
+          <input id="job-maxtasks" value="25" style="max-width:160px" />
         </div>
         <div class="field">
           <div class="field-label">Required columns (from template) <span id="job-const-fields"></span></div>
@@ -383,21 +383,62 @@
         </div>
         <span id="tpl-preview-trust"></span>
       </div>
-      <button class="close-x" id="tpl-preview-close" aria-label="Close">×</button>
+      <div class="row" style="gap:.4rem;flex-wrap:nowrap">
+        <button class="btn-ghost btn-sm" id="tpl-preview-instructions-toggle" aria-pressed="false" aria-controls="tpl-preview-instructions">
+          <span class="status-dot instructions-dot"></span>Instructions
+        </button>
+        <button class="close-x" id="tpl-preview-close" aria-label="Close">×</button>
+      </div>
     </div>
     <div id="tpl-preview-note" class="banner banner-warn hide" style="border-radius:0">⚠ Unapproved template. Scripts run in a hardened sandbox; review it carefully before posting a job.</div>
-    <!-- Sample data: one input per ${field}, re-rendered server-side on apply.
-         Populated by main.js; hidden for templates without fields. -->
+
     <div id="tpl-preview-data" class="sample-bar hide"></div>
-    <div class="frame-chrome">
-      <div class="frame-dots"><span style="background:#f5a3a3"></span><span style="background:#f5d98a"></span><span style="background:#a7dcae"></span></div>
-      <div class="frame-url" id="tpl-preview-url">sandbox://preview</div>
-      <span class="chip">sandboxed</span>
+    <div class="preview-body">
+      <div class="preview-stage">
+        <div class="frame-chrome">
+          <div class="frame-dots"><span style="background:#f5a3a3"></span><span style="background:#f5d98a"></span><span style="background:#a7dcae"></span></div>
+          <div class="frame-url" id="tpl-preview-url">sandbox://preview</div>
+          <span class="chip">sandboxed</span>
+        </div>
+        <div class="preview-viewport">
+          <iframe id="tpl-preview-frame" title="Template preview"
+            sandbox="allow-scripts allow-modals allow-forms allow-popups allow-pointer-lock"></iframe>
+
+          <div id="tpl-preview-result" class="preview-result hide">
+            <div class="banner banner-ok">✓ Submitted. The template sent its answer the same way it does for a worker. This is a preview, so nothing was posted or charged.</div>
+            <div class="section-label">Answer</div>
+            <pre id="tpl-preview-answer"></pre>
+            <div class="section-label">Result row</div>
+            <p class="muted">
+              How this submission appears in <span class="mono">GET /v1/jobs/{id}/results</span>.
+              <span class="mono">result</span> is the template's submit message as a JSON string, so parse it to read the answer.
+              The CSV download carries the same string in its <span class="mono">result</span> column.
+            </p>
+            <pre id="tpl-preview-row"></pre>
+            <div class="row">
+              <button class="btn-primary btn-sm" id="tpl-preview-again">Try again</button>
+              <button class="btn-ghost btn-sm" id="tpl-preview-copy">Copy JSON</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside id="tpl-preview-instructions" class="preview-side hide">
+        <div class="preview-side-head">
+          <strong>Worker instructions</strong>
+          <button class="close-x" id="tpl-preview-instructions-close" aria-label="Hide instructions">×</button>
+        </div>
+        <div id="tpl-preview-instructions-empty" class="preview-side-empty muted">
+          This template has not sent any instructions. Workers see instructions behind the info button of a task.
+          A template provides them when it loads with
+          <code class="mono">window.top.postMessage({ type: "task-instructions", instructions: "&lt;p&gt;…&lt;/p&gt;" }, "*")</code>
+        </div>
+        <div id="tpl-preview-instructions-body" class="instructions-body hide"></div>
+      </aside>
     </div>
-    <iframe id="tpl-preview-frame" title="Template preview"
-      sandbox="allow-scripts allow-modals allow-forms allow-popups allow-pointer-lock"></iframe>
     <div class="modal-foot">
-      <span class="muted" style="font-size:.82rem">sandboxed · no external requests allowed</span>
+      <span class="muted" style="font-size:.82rem">Complete the task and press its submit button to see the result you will receive.</span>
+      <span class="muted hide-narrow" style="font-size:.82rem">sandboxed · no external requests allowed</span>
     </div>
   </div>
 </div>
