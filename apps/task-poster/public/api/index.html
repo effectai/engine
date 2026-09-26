@@ -171,6 +171,10 @@
           <label class="field-label">HTML code <span class="req">*</span> <span class="muted">(use ${field} placeholders; each needs a CSV column)</span></label>
           <textarea id="tpl-html" rows="6" placeholder="&lt;h1&gt;Rate ${product}&lt;/h1&gt;&lt;p&gt;${question}&lt;/p&gt;"></textarea>
         </div>
+        <div class="field">
+          <label class="field-label">Worker instructions <span class="muted">(optional HTML, shown behind the task's info button)</span></label>
+          <textarea id="tpl-instructions" rows="5" placeholder="&lt;h3&gt;How to rate&lt;/h3&gt;&lt;ul&gt;&lt;li&gt;1 = poor, 5 = excellent&lt;/li&gt;&lt;/ul&gt;"></textarea>
+        </div>
         <label class="checkbox" style="margin-bottom:.8rem"><input id="tpl-approve" type="checkbox" /> Request team approval <span class="muted">(otherwise it runs unapproved and sandboxed)</span></label>
         <div class="row">
           <button id="tpl-submit" class="btn-primary">Submit template</button>
@@ -430,7 +434,7 @@
         </div>
         <div id="tpl-preview-instructions-empty" class="preview-side-empty muted">
           This template has not sent any instructions. Workers see instructions behind the info button of a task.
-          A template provides them when it loads with
+          Add them in the Worker instructions field when you create the template, or have the template send them when it loads with
           <code class="mono">window.top.postMessage({ type: "task-instructions", instructions: "&lt;p&gt;…&lt;/p&gt;" }, "*")</code>
         </div>
         <div id="tpl-preview-instructions-body" class="instructions-body hide"></div>
