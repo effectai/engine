@@ -384,11 +384,27 @@ function showFields() {
   byId("job-const-fields").innerHTML = fieldList.length ? fieldList.map((field) => `<span class="chip">${esc(field)}</span>`).join(" ") : `<span class="muted">none</span>`;
 }
 
+// adds the Worker instructions to the HTML if they are not already present.
+function templateHtmlWithInstructions() {
+  const html = byId("tpl-html").value;
+  const instructions = byId("tpl-instructions").value.trim();
+  if (!instructions) return html;
+  const literal = JSON.stringify(instructions).replace(/</g, "\\u003c").replace(/\$/g, "\\u0024");
+  return `${html}\n<script>\n  window.top.postMessage({ type: "task-instructions", instructions: ${literal} }, "*");\n</script>\n`;
+}
+
+function hasDuplicateInstructions() {
+  const duplicate = byId("tpl-instructions").value.trim() && byId("tpl-html").value.includes("task-instructions");
+  if (duplicate) showMsg(byId("tpl-msg"), "This HTML already sends its own instructions. Remove them from the HTML or leave Worker instructions empty.", "err");
+  return Boolean(duplicate);
+}
+
 async function submitTemplate() {
+  if (hasDuplicateInstructions()) return;
   try {
-    await api("/templates", { method: "POST", body: { name: byId("tpl-name").value, html: byId("tpl-html").value, requestApproval: byId("tpl-approve").checked } });
+    await api("/templates", { method: "POST", body: { name: byId("tpl-name").value, html: templateHtmlWithInstructions(), requestApproval: byId("tpl-approve").checked } });
     showMsg(byId("tpl-msg"), "Template submitted.", "ok");
-    byId("tpl-name").value = ""; byId("tpl-html").value = "";
+    byId("tpl-name").value = ""; byId("tpl-html").value = ""; byId("tpl-instructions").value = "";
     await loadTemplates();
   } catch (error) { showMsg(byId("tpl-msg"), error.message, "err"); }
 }
@@ -976,8 +992,9 @@ const renderDraft = (html, values) =>
   });
 
 function previewDraftTemplate() {
-  const html = byId("tpl-html").value;
-  if (!html.trim()) { showMsg(byId("tpl-msg"), "Add some HTML to preview.", "err"); return; }
+  if (!byId("tpl-html").value.trim()) { showMsg(byId("tpl-msg"), "Add some HTML to preview.", "err"); return; }
+  if (hasDuplicateInstructions()) return;
+  const html = templateHtmlWithInstructions();
 
   previewTemplateId = null;
   previewDraftHtml = html;
