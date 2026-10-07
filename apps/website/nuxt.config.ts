@@ -10,4 +10,14 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
   modules: ["@nuxt/icon", "@nuxt/content", "@nuxt/image"],
+  content: {
+    build: {
+      markdown: {
+        highlight: {
+          theme: "github-dark",
+          langs: ["js", "json", "ts", "css", "html", "bash", "md", "yaml", "vue", "csv"],
+        },
+      },
+    },
+  },
 });

@@ -2,7 +2,8 @@
   <div class="-mt-[76px] font-inter">
     <div
       v-if="data"
-      class="relative px-6 lg:px-section-x py-section-y bg-[url('../img/blog-header.png')] bg-cover bg-[position:right_0%_bottom_20%]"
+      class="relative px-6 lg:px-section-x py-section-y bg-cover bg-[position:right_0%_bottom_20%]"
+      :style="{ backgroundImage: `url('${data.headerImage || '/img/blog-header.png'}')` }"
     >
       <div class="absolute inset-0 bg-white/60"></div>
       <div class="container max-w-7xl mx-auto relative z-10">
@@ -44,6 +45,26 @@ useSeoMeta({
     aspect-ratio: 16 / 9;
     object-fit: contain;
     margin: 2rem auto;
+  }
+
+  .article img.screenshot {
+    height: auto;
+    aspect-ratio: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+  }
+
+  .article :not(pre) > code {
+    padding: 0.15em 0.4em;
+    border-radius: 0.3em;
+    background: #f1f1f4;
+    font-size: 0.85em;
+    font-weight: 500;
+  }
+
+  .article :not(pre) > code::before,
+  .article :not(pre) > code::after {
+    content: none;
   }
 
   .blog-header::before {
