@@ -102,7 +102,7 @@ export const parseCsv = (csv: string, delimiter = ","): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     const data: any[] = [];
 
-    parseString(csv, { headers: true, delimiter })
+    parseString(csv, { headers: true, delimiter, ignoreEmpty: true })
       .on("error", (error) => reject(error))
       .on("data", (row) => data.push(row))
       .on("end", (rowCount: number) => {
