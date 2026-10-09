@@ -817,12 +817,16 @@ export const addJobApiRoutes = (app: Router): void => {
           "Content-Disposition",
           `attachment; filename="job-${job.id}-results.csv"`,
         );
-        res.write("taskId,submittedAt,worker,input,result\n");
+        res.write("taskId,submittedAt (UTC),worker,input,result\n");
         for (const row of results) {
           res.write(
             [
               csvCell(row.taskId),
-              csvCell(row.submittedAt),
+              csvCell(
+                row.submittedAt
+                  ? new Date(row.submittedAt * 1000).toISOString().replace(/\.\d{3}Z$/, "Z")
+                  : "",
+              ),
               csvCell(row.worker),
               csvCell(JSON.stringify(row.input)),
               csvCell(row.result),
