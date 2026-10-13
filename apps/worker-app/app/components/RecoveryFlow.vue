@@ -8,29 +8,79 @@
       <div
         style="background: white; border-radius: 16px; padding: 24px; max-width: 420px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);"
       >
-        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Recover Device</h2>
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Recover Your Wallet</h2>
         <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
-          We found existing devices for your account. Choose one to recover or create a new device.
+          We found wallets already linked to this account. Pick the one whose wallet address
+          matches the address you used before.
         </p>
-        <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div role="radiogroup" aria-label="Wallets" style="display: flex; flex-direction: column; gap: 8px;">
           <div
             v-for="device in devices"
             :key="device.modifier"
-            style="display: flex; align-items: center; gap: 12px; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; cursor: pointer;"
-            @click="resolveRecovery(device.modifier)"
+            role="radio"
+            :aria-checked="selectedModifier === device.modifier"
+            :style="{
+              border: '1px solid',
+              borderColor: selectedModifier === device.modifier ? '#111827' : '#e5e7eb',
+              boxShadow: selectedModifier === device.modifier ? '0 0 0 1px #111827' : 'none',
+              borderRadius: '12px',
+              padding: '12px',
+              cursor: 'pointer',
+            }"
+            @click="selectedModifier = device.modifier"
           >
-            <div>
-              <p style="font-size: 14px; font-weight: 500;">{{ device.meta || "Unknown device" }}</p>
-              <p style="font-size: 12px; color: #888;">{{ device.address.slice(0, 5) }}...{{ device.address.slice(-5) }} · {{ new Date(device.created).toLocaleDateString() }}</p>
+            <span
+              v-if="selectedModifier === device.modifier"
+              style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: white; background: #111827; border-radius: 999px; padding: 2px 8px; margin-bottom: 8px;"
+            >
+              <UIcon name="lucide:check" class="h-3 w-3" />
+              Selected
+            </span>
+            <p style="font-size: 12px; color: #888; margin-bottom: 2px;">Wallet address</p>
+            <p style="font-size: 14px; font-weight: 600; font-family: ui-monospace, monospace; word-break: break-all; margin-bottom: 8px;">
+              {{ device.address }}
+            </p>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <p style="font-size: 12px; color: #888;">
+                Set up {{ formatDate(new Date(device.created)) }}
+              </p>
+              <button
+                type="button"
+                style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #888; background: transparent; border: none; cursor: pointer; padding: 0;"
+                :aria-expanded="expandedDeviceInfo === device.modifier"
+                @click.stop="toggleDeviceInfo(device.modifier)"
+              >
+                <UIcon name="lucide:info" class="h-4 w-4" />
+                Device info
+              </button>
             </div>
+            <p
+              v-if="expandedDeviceInfo === device.modifier"
+              style="font-size: 12px; color: #666; background: #f9fafb; border-radius: 8px; padding: 8px; margin-top: 8px; word-break: break-word;"
+            >
+              {{ device.meta || "Unknown device" }}
+            </p>
           </div>
         </div>
+        <UButton
+          v-if="selectedModifier"
+          color="neutral"
+          size="lg"
+          block
+          style="margin-top: 16px;"
+          @click="resolveRecovery(selectedModifier)"
+        >
+          Recover Selected Wallet
+        </UButton>
         <button
           style="margin-top: 16px; width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background: transparent; font-size: 14px; cursor: pointer;"
           @click="resolveRecovery(null)"
         >
-          Create New Device
+          Create New Wallet
         </button>
+        <p style="font-size: 12px; color: #888; margin-top: 8px; text-align: center;">
+          A new wallet gets a different address from the ones above.
+        </p>
       </div>
     </div>
 
@@ -43,9 +93,9 @@
         style="background: white; border-radius: 16px; padding: 24px; max-width: 420px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);"
       >
         <div class="text-center space-y-2 mb-4">
-          <h2 class="text-xl font-semibold">Device Recovered</h2>
+          <h2 class="text-xl font-semibold">Wallet Recovered</h2>
           <p class="text-sm text-gray-600 dark:text-gray-400">
-            We recovered your device. In order to sync your latest data, you will
+            We recovered your wallet. In order to sync your latest data, you will
             first need to connect to a manager.
           </p>
         </div>
@@ -85,6 +135,13 @@ const {
 
 const recoveredManagerP2pAddr = ref<string | null>(null);
 const connecting = ref(false);
+const selectedModifier = ref<string | null>(null);
+const expandedDeviceInfo = ref<string | null>(null);
+
+const toggleDeviceInfo = (modifier: string) => {
+  expandedDeviceInfo.value =
+    expandedDeviceInfo.value === modifier ? null : modifier;
+};
 
 // Watch for pending recovery from any login method
 watch(
