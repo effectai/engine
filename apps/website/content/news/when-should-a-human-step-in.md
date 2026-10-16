@@ -30,7 +30,7 @@ Below is a seven-point test that answers it, a map of where people fit across th
 
 The rule is simple. If even one of these signals fits a step in your pipeline, put a person there. If none fit, automate it.
 
-![The Human-in-the-Loop Test: seven signals that a human should step in](/img/news/step-in-test2.png)
+![The Human-in-the-Loop Test: seven signals that a human should step in](/img/news/step-in-test.png)
 
 ### 1. There is no ground truth yet
 
