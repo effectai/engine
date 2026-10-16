@@ -2,7 +2,7 @@
 title: "When Should a Human Step In? 7 Signals for Human-in-the-Loop AI"
 description: "Seven signals that show exactly where a human belongs in your AI pipeline, from data creation to evaluation, and how to plug them in on Effect AI."
 image:
-  src: "/img/news/BlogBG-09.jpg"
+  src: "/img/news/news-header-ai-collaboration.png"
 headerImage: "/img/news/news-header-ai-collaboration.png"
 author: "Miguel"
 head:
