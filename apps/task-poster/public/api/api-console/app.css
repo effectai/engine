@@ -7,6 +7,8 @@
     --surface: #ffffff;
     --surface-2: #faf9f7;
     --surface-3: #f1efea;
+    --group-bg: #efece6;   /* rows inside an expanded survey */
+    --group-hover: #e6e2da;
     --border: #e5e2dc;
     --border-strong: #d6d2ca;
     --text: #1c1917;
@@ -29,6 +31,8 @@
     --surface: #27272a;
     --surface-2: #202023;
     --surface-3: #2f2f33;
+    --group-bg: #323236;
+    --group-hover: #3a3a3f;
     --border: #3f3f46;
     --border-strong: #52525b;
     --text: #f4f4f5;
@@ -81,6 +85,9 @@
   .connect-box input { border: 0; background: transparent; padding: .4rem .6rem; font: inherit; color: var(--text); min-width: 210px; outline: none; }
   .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
   .status-connected { display: flex; align-items: center; gap: .35rem; font-size: .82rem; font-weight: 500; color: var(--ok-fg); white-space: nowrap; }
+
+  .discord-link { display: inline-flex; align-items: center; gap: .35rem; }
+  .discord-link svg { width: 16px; height: 16px; }
 
   .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-2); cursor: pointer; padding: 0; }
   .icon-btn:hover { background: var(--surface-3); }
@@ -189,6 +196,10 @@
   .banner-warn { background: var(--warn-bg); color: var(--warn-fg); }
   .banner-info { background: var(--info-bg); color: var(--info-fg); border: 1px solid var(--info-border); }
   .banner-danger { background: var(--danger-bg); color: var(--danger-fg); }
+  .topup-banner { display: flex; align-items: center; gap: .6rem 1rem; flex-wrap: wrap; margin-bottom: 1.1rem; padding: .8rem 1rem; border-radius: 10px; background: var(--warn-bg); color: var(--warn-fg); font-size: .86rem; }
+  .topup-banner strong { color: var(--text); }
+  .topup-cta { display: inline-block; white-space: nowrap; }
+  .topup-cta:hover { text-decoration: none; }
 
   /* ---- Progress -------------------------------------------------------- */
   .progress { height: 9px; background: var(--surface-3); border-radius: 999px; overflow: hidden; }
@@ -203,8 +214,9 @@
   .job-row { cursor: pointer; }
   .job-row:hover { background: var(--surface-2); }
   .job-row.open { background: var(--surface-2); }
-  .job-detail td { background: var(--surface); border-left: 3px solid var(--primary); }
+  .job-detail td { background: var(--surface); }
   .job-detail-inner { padding: .4rem .3rem .6rem; }
+  .result-text { max-height: 9em; overflow: auto; overflow-wrap: anywhere; white-space: pre-wrap; }
   .kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: .7rem; margin-bottom: .9rem; }
   .kv .kk { font-size: .72rem; color: var(--muted); }
   .kv .vv { font-size: .88rem; }
@@ -226,14 +238,18 @@
   .tree-caret { display: inline-block; width: 1.1rem; color: var(--muted); font-size: .7rem; }
   .batch-row > td:first-child { font-weight: 600; }
   .batch-row.open > td { border-bottom: none; }
-  .batch-summary td { border-left: 3px solid var(--primary); }
-  /* Members are indented and share the survey's left rail, so a long run still
-     reads as one block rather than a second flat list. */
-  .job-row.batch-member > td { background: var(--surface-2); }
-  .job-row.batch-member > td:first-child { padding-left: 1.9rem; border-left: 3px solid var(--border-strong); }
+  /* Everything under an open survey's header shares one tint (darker in light
+     mode, lighter in dark mode), so it reads apart from the jobs around it. */
+  .batch-summary td,
+  .job-row.batch-member > td,
+  .job-detail.batch-member td { background: var(--group-bg); }
+  .batch-summary .credit-cell,
+  .batch-summary .progress,
+  .job-detail.batch-member .credit-cell,
+  .job-detail.batch-member .progress { background: var(--surface); }
+  .job-row.batch-member > td:first-child { padding-left: 1.9rem; }
   .job-row.batch-member:hover > td,
-  .job-row.batch-member.open > td { background: var(--surface-3); }
-  .job-detail.batch-member td { border-left: 3px solid var(--border-strong); }
+  .job-row.batch-member.open > td { background: var(--group-hover); }
   .job-detail.batch-member .job-detail-inner { padding-left: 1.6rem; }
 
   /* ---- Modal (template preview) --------------------------------------- */
@@ -276,7 +292,7 @@
   .instructions-body > :first-child, .instructions-body > :first-child > :first-child { margin-top: 0; }
   .instructions-body ul, .instructions-body ol { padding-left: 1.2rem; }
   .instructions-body li { margin: .25em 0; }
-  .instructions-body blockquote { margin: .5em 0; padding: .5em .8em; border-left: 3px solid var(--primary); background: var(--surface-2); color: var(--text-2); border-radius: 0 6px 6px 0; }
+  .instructions-body blockquote { margin: .5em 0; padding: .5em .8em; background: var(--surface-2); color: var(--text-2); border-radius: 6px; }
   .instructions-body img { max-width: 100%; height: auto; }
   .instructions-body table { margin: .5em 0; }
   /* The dot lights up once the template has sent instructions. */

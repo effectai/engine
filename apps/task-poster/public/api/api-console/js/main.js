@@ -18,6 +18,12 @@ function showMsg(element, text, kind) {
   element.innerHTML = `<div class="msg ${kind}">${esc(text)}</div>`;
 }
 
+const formatSubmittedAt = (seconds) => seconds ? new Date(Number(seconds) * 1000).toLocaleString() : "";
+
+function updateTopupBanner(balanceLamports) {
+  byId("topup-banner").classList.toggle("hide", Number(balanceLamports) > 0);
+}
+
 function relativeTime(timestamp) {
   const seconds = Math.floor((Date.now() - Number(timestamp)) / 1000);
   if (seconds < 60) return "just now";
@@ -91,6 +97,7 @@ async function loadAccount() {
   byId("acct-email").value = account.email || "";
   byId("acct-balance").textContent = effectFromLamports(account.credits.balance).toLocaleString();
   byId("acct-lamports").textContent = "≈ " + Number(account.credits.balance).toLocaleString() + " lamports";
+  updateTopupBanner(account.credits.balance);
   return account;
 }
 
@@ -459,7 +466,19 @@ function onTypeChange() {
   byId("job-constant-mode").classList.toggle("hide", !isConstant);
   byId("radio-csv").classList.toggle("selected", !isConstant);
   byId("radio-constant").classList.toggle("selected", isConstant);
+  byId("job-unique-row").classList.toggle("hide", isConstant);
   clearEstimate();
+}
+
+const MAX_SURVEY_WORKERS = 25;
+
+function capSurveyWorkers() {
+  const input = byId("job-maxtasks");
+  const warning = byId("job-maxtasks-warn");
+  if (Number(input.value) <= MAX_SURVEY_WORKERS) { warning.classList.add("hide"); return; }
+  warning.textContent = `Changed to ${MAX_SURVEY_WORKERS}: a survey row can have at most ${MAX_SURVEY_WORKERS} workers, since each worker answers it only once.`;
+  warning.classList.remove("hide");
+  input.value = String(MAX_SURVEY_WORKERS);
 }
 
 function clearEstimate() {
@@ -474,8 +493,9 @@ function jobBody() {
   const base = { type, name: byId("job-name").value || "Untitled job", templateId: byId("job-tpl").value, reward: byId("job-reward").value, uniqueWorker: byId("job-unique").checked };
   const capability = byId("job-capability").value;
   if (capability) base.capability = capability;
-  // Surveys always go through the CSV form: one row is just a run of one.
-  if (type === "constant") return { ...base, csv: byId("job-const-csv").value, maxTasks: Number(byId("job-maxtasks").value) };
+
+  // always restrict each worker to one task instead of offering the choice.
+  if (type === "constant") return { ...base, uniqueWorker: true, csv: byId("job-const-csv").value, maxTasks: Number(byId("job-maxtasks").value) };
   return { ...base, csv: byId("job-csv").value };
 }
 
@@ -485,7 +505,9 @@ function showEstimate({ taskCount, rewardPerTask, cost, balance, sufficient }) {
   byId("est-total").textContent = cost;
   const banner = byId("est-banner");
   banner.className = "banner " + (sufficient ? "banner-ok" : "banner-warn");
-  banner.textContent = `Balance: ${balance} EFFECT (${sufficient ? "sufficient ✓" : "not enough credit"})`;
+  banner.innerHTML = sufficient
+    ? `Balance: ${esc(balance)} EFFECT (sufficient ✓)`
+    : `Balance: ${esc(balance)} EFFECT (not enough credit). <a href="https://discord.com/invite/effectnetwork" target="_blank" rel="noopener"><b>Ask for a top up on Discord ↗</b></a>`;
   banner.classList.remove("hide");
   byId("job-msg").innerHTML = "";
 }
@@ -493,16 +515,13 @@ function showEstimate({ taskCount, rewardPerTask, cost, balance, sufficient }) {
 async function estimate() {
   try {
     if (currentJobType() === "constant") {
-      // No bulk estimate endpoint: price one row's worth by asking the CSV
-      // estimator how many rows there are (which also validates the header
-      // against the template), then multiply by the workers each row gets.
       const body = jobBody();
       const perRow = await api("/jobs/estimate", { method: "POST", body: { ...body, type: "csv" } });
       const rows = perRow.taskCount;
       const workers = body.maxTasks;
-      // Matches MAX_UNIQUE_WORKERS in the API; the bulk create enforces it too.
-      if (body.uniqueWorker && workers > 25)
-        throw new Error(`With no repeats each row can have at most 25 workers (the current worker pool).`);
+      
+      if (workers > MAX_SURVEY_WORKERS)
+        throw new Error(`Each survey row can have at most ${MAX_SURVEY_WORKERS} workers (the current worker pool).`);
       const total = Number(perRow.rewardPerTask) * rows * workers;
       showEstimate({
         taskCount: `${rows * workers} (${rows} rows x ${workers})`,
@@ -817,7 +836,7 @@ async function renderJobDetail(jobId) {
         preview.results.map((row) => `<tr>
           <td class="mono">${shortId(row.taskId)}</td>
           <td class="mono">${shortId(row.worker)}</td>
-          <td>${esc(typeof row.result === "object" ? JSON.stringify(row.result) : row.result)}</td></tr>`).join("") +
+          <td><div class="result-text">${esc(typeof row.result === "object" ? JSON.stringify(row.result) : row.result)}</div></td></tr>`).join("") +
         `</tbody></table></div>`
       : `<span class="muted">No results yet (workers have not completed any tasks).</span>`;
   } catch (error) {
@@ -859,6 +878,7 @@ async function loadOverview() {
   try {
     const account = await api("/account");
     byId("ov-balance").textContent = effectFromLamports(account.credits.balance).toLocaleString();
+    updateTopupBanner(account.credits.balance);
 
     const activeGroups = groupJobs(jobsCache).filter((group) => groupStatusPill(group).label === "active");
     byId("ov-active").textContent = activeGroups.length;
@@ -912,6 +932,7 @@ async function refreshBalances() {
   byId("acct-balance").textContent = effect;
   byId("acct-lamports").textContent = "≈ " + Number(account.credits.balance).toLocaleString() + " lamports";
   byId("ov-balance").textContent = effect;
+  updateTopupBanner(account.credits.balance);
 }
 
 async function liveTick() {
@@ -1094,7 +1115,9 @@ function showPreviewResult(message) {
   try { result = JSON.stringify(message); }
   catch { result = String(message); }
   const answer = message.values !== undefined ? message.values : message;
-  const row = { taskId: "preview-task", submittedAt: Date.now(), worker: "preview-worker", input: previewSampleData, result };
+  // Same UTC date format and label as the results CSV download.
+  const submittedAtUtc = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+  const row = { taskId: "preview-task", "submittedAt (UTC)": submittedAtUtc, worker: "preview-worker", input: previewSampleData, result };
   byId("tpl-preview-answer").textContent = JSON.stringify(answer, null, 2);
   byId("tpl-preview-row").textContent = JSON.stringify(row, null, 2);
   showPreviewStage("result");
@@ -1177,7 +1200,8 @@ function openDrawer(title) {
 function fillDrawer(shown, total) {
   byId("drawer-sub").textContent = `${total} results total`;
   byId("drawer-count").textContent = `${shown} shown of ${total}`;
-  byId("drawer-json").textContent = drawerResults.length ? JSON.stringify(drawerResults, null, 2) : "No results yet (workers have not completed any tasks).";
+  const readable = drawerResults.map((row) => ({ ...row, submittedAt: formatSubmittedAt(row.submittedAt) }));
+  byId("drawer-json").textContent = drawerResults.length ? JSON.stringify(readable, null, 2) : "No results yet (workers have not completed any tasks).";
   renderDrawerTable();
 }
 
@@ -1223,8 +1247,8 @@ function renderDrawerTable() {
       ${showJob ? `<td>${esc(row.job)}</td>` : ""}
       <td class="mono">${shortId(row.taskId)}</td>
       <td class="mono">${shortId(row.worker)}</td>
-      <td>${esc(typeof row.result === "object" ? JSON.stringify(row.result) : row.result)}</td>
-      <td class="muted">${row.submittedAt ? esc(new Date(row.submittedAt).toLocaleString()) : ""}</td></tr>`).join("") +
+      <td><div class="result-text">${esc(typeof row.result === "object" ? JSON.stringify(row.result) : row.result)}</div></td>
+      <td class="muted">${esc(formatSubmittedAt(row.submittedAt))}</td></tr>`).join("") +
     `</tbody></table></div>`;
 }
 
@@ -1342,6 +1366,7 @@ byId("job-tpl-list").addEventListener("click", (event) => {
 document.addEventListener("click", (event) => {
   if (!event.target.closest("#job-tpl-combo")) closeCombo();
 });
+byId("job-maxtasks").addEventListener("input", capSurveyWorkers);
 byId("job-capability").onchange = showCapabilityDesc;
 byId("job-estimate").onclick = estimate;
 byId("job-create").onclick = createJob;
@@ -1374,8 +1399,7 @@ byId("jobs-body").addEventListener("click", (event) => {
   if (data.results) { event.stopPropagation(); openResults(data.results, data.name); return; }
   if (data.batchResults) { event.stopPropagation(); openBatchResults(data.batchResults); return; }
   if (data.download) { event.stopPropagation(); downloadCsv(data.download); return; }
-  if (data.batchDownload) { event.stopPropagation(); downloadBatchCsv(data.batchDownload); return; }
-  const row = event.target.closest(".job-row");
+  if (data.batchDownload) { event.stopPropagation(); downloadBatchCsv(data.batchDownload); return; }  const row = event.target.closest(".job-row");
   if (!row) return;
   if (row.dataset.batch) toggleBatch(row.dataset.batch);
   else toggleJob(row.dataset.job);
@@ -1384,6 +1408,7 @@ byId("jobs-body").addEventListener("click", (event) => {
 // Account
 byId("acct-save").onclick = saveAccount;
 byId("acct-id-copy").onclick = () => copyText(byId("acct-id").textContent, byId("acct-id-copy"));
+byId("topup-copy-id").onclick = () => copyText(byId("acct-id").textContent, byId("topup-copy-id"));
 
 // Keys
 byId("keys-new").onclick = issueKey;

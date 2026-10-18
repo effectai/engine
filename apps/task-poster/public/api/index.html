@@ -6,10 +6,7 @@
 <title>Effect AI · Requestor Console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<!-- Inter matches the other Effect apps (worker-app loads it the same way).
-     Space Mono is used for keys/ids. Both fall back to system fonts offline. -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet" />
-<!-- Relative, not root-absolute -->
 <link rel="stylesheet" href="api-console/app.css" />
 </head>
 <body>
@@ -24,7 +21,6 @@
   </div>
   <div class="grow"></div>
 
-  <!-- Not-connected: paste + connect. Connected: masked prefix + status. -->
   <div id="connect-wrap" class="connect-box">
     <input id="key" type="password" placeholder="Paste your API key (eff_live_…)" autocomplete="off" />
     <button id="connect" class="btn-primary btn-sm" style="border-radius:0">Connect</button>
@@ -39,6 +35,10 @@
     <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
     <svg id="icon-moon" class="hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
   </button>
+  <a href="https://discord.com/invite/effectnetwork" target="_blank" rel="noopener" class="discord-link" title="Get help or a credit top up from the Effect team">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.6 1.3a18.4 18.4 0 0 0-5.5 0L8.6 3a19.7 19.7 0 0 0-4.9 1.5C.6 9.1-.3 13.6.1 18.1a19.9 19.9 0 0 0 6 3l1.3-2a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4a12.8 12.8 0 0 1-2 1l1.3 2a19.8 19.8 0 0 0 6-3c.5-5.2-.9-9.7-3.6-13.7ZM8 15.3c-1.2 0-2.2-1.1-2.2-2.4S6.8 10.5 8 10.5s2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Zm8 0c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Z"/></svg>
+    Discord
+  </a>
   <a href="https://docs.effect.ai" target="_blank" rel="noopener">Docs ↗</a>
 </header>
 
@@ -87,7 +87,7 @@
         </div>
         <div class="banner banner-info" style="margin-top:.8rem">
           Paste the key above to connect, then top up credits on
-          <a href="https://discord.gg/effectai" target="_blank" rel="noopener">Discord</a>.
+          <a href="https://discord.com/invite/effectnetwork" target="_blank" rel="noopener">Discord</a>.
         </div>
       </div>
     </div>
@@ -96,6 +96,18 @@
   <!-- ================= APP (authenticated) ================= -->
   <div id="app-view" class="hide">
 
+    <!-- Shown on every tab while the balance is 0: -->
+    <div id="topup-banner" class="topup-banner hide">
+      <div class="grow">
+        <strong>You have 0 EFFECT, so you can't post jobs yet.</strong>
+        <div>Credits are topped up by the Effect team. Ask for a top up in our Discord and include your Account ID.</div>
+      </div>
+      <div class="row" style="gap:.5rem">
+        <button id="topup-copy-id" class="btn-ghost btn-sm">Copy Account ID</button>
+        <a class="btn btn-primary btn-sm topup-cta" href="https://discord.com/invite/effectnetwork" target="_blank" rel="noopener">Request a top up on Discord ↗</a>
+      </div>
+    </div>
+
     <!-- ---------- OVERVIEW ---------- -->
     <section id="panel-overview" class="tab-panel">
       <div class="metric-grid" style="margin-bottom:1.1rem">
@@ -103,7 +115,7 @@
           <div class="k">Credit balance</div>
           <div class="v" id="ov-balance">—</div>
           <div class="u">EFFECT</div>
-          <a class="cta" href="https://discord.gg/effectai" target="_blank" rel="noopener">+ Top up ↗</a>
+          <a class="cta" href="https://discord.com/invite/effectnetwork" target="_blank" rel="noopener">+ Top up ↗</a>
         </div>
         <div class="metric">
           <div class="k">Active jobs</div>
@@ -204,9 +216,6 @@
         <div class="section-label">Job configuration</div>
         <div class="field">
           <label class="field-label">Template <span class="req">*</span></label>
-          <!-- Custom combobox: a native <select> can't hold a search box. The
-               hidden input carries the chosen id, so the rest of the form still
-               reads byId("job-tpl").value exactly as before. -->
           <div class="combo" id="job-tpl-combo">
             <input type="hidden" id="job-tpl" />
             <button type="button" class="combo-trigger" id="job-tpl-trigger" aria-haspopup="listbox" aria-expanded="false">
@@ -235,7 +244,7 @@
           <select id="job-capability"><option value="">Any worker / no capability required</option></select>
           <div id="job-capability-desc" class="muted" style="font-size:.8rem;margin-top:.3rem"></div>
         </div>
-        <label class="checkbox" style="margin-top:.7rem"><input id="job-unique" type="checkbox" /> Restrict each worker to one task in this job (no repeats, max 25 tasks per job)</label>
+        <label class="checkbox" id="job-unique-row" style="margin-top:.7rem"><input id="job-unique" type="checkbox" /> Restrict each worker to one task in this job (no repeats, max 25 tasks per job)</label>
       </div>
 
       <!-- CSV data -->
@@ -252,7 +261,9 @@
         <div class="section-label">Survey data</div>
         <div class="field">
           <label class="field-label">Workers per row <span class="req">*</span></label>
-          <input id="job-maxtasks" value="25" style="max-width:160px" />
+          <input id="job-maxtasks" value="15" style="max-width:160px" />
+          <div class="muted" style="font-size:.8rem;margin-top:.3rem">Up to 25. Each worker answers a row only once.</div>
+          <div id="job-maxtasks-warn" class="banner banner-warn hide" style="margin-top:.4rem;max-width:420px"></div>
         </div>
         <div class="field">
           <div class="field-label">Required columns (from template) <span id="job-const-fields"></span></div>
@@ -260,8 +271,8 @@
           <textarea id="job-const-csv" rows="6" placeholder="product,question&#10;Widget,Good?&#10;Gadget,Good?"></textarea>
           <div class="muted" style="font-size:.8rem;margin-top:.4rem">
             Every row is posted as its own survey job, each answered by the number of
-            workers above. For a single survey, paste one row. Tick the no-repeat box
-            above so nobody answers the same row twice.
+            workers above. For a single survey, paste one row. Nobody answers the
+            same row twice.
           </div>
         </div>
       </div>
@@ -338,7 +349,7 @@
           <div><div style="font-size:2rem;font-weight:700;line-height:1" id="acct-balance">—</div><div class="muted" style="font-size:.82rem">EFFECT tokens</div></div>
           <div class="muted" style="font-size:.82rem;padding-bottom:.15rem" id="acct-lamports"></div>
         </div>
-        <div class="banner banner-info" style="margin:.9rem 0">To top up credits, reach out on <a href="https://discord.gg/effectai" target="_blank" rel="noopener"><b>Discord</b></a>. Credits are managed by the Effect team.</div>
+        <div class="banner banner-info" style="margin:.9rem 0">To top up credits, reach out on <a href="https://discord.com/invite/effectnetwork" target="_blank" rel="noopener"><b>Discord</b></a>. Credits are managed by the Effect team.</div>
         <div class="section-label">Transaction history</div>
         <div id="tx-list" class="muted">…</div>
         <div id="tx-pager" class="pager"></div>
@@ -374,9 +385,6 @@
 </main>
 
 <!-- ================= TEMPLATE PREVIEW MODAL ================= -->
-<!-- Templates may be untrusted, so the iframe runs scripts in a hardened
-     sandbox WITHOUT allow-same-origin (matches the admin review page): the
-     frame gets an opaque origin and cannot reach this page. -->
 <div id="tpl-preview" class="modal-overlay hide">
   <div class="modal">
     <div class="modal-head">
@@ -417,6 +425,7 @@
               How this submission appears in <span class="mono">GET /v1/jobs/{id}/results</span>.
               <span class="mono">result</span> is the template's submit message as a JSON string, so parse it to read the answer.
               The CSV download carries the same string in its <span class="mono">result</span> column.
+              The submit time is shown here as a UTC date, as in the CSV; the JSON API returns <span class="mono">submittedAt</span> as unix seconds.
             </p>
             <pre id="tpl-preview-row"></pre>
             <div class="row">
