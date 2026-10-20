@@ -2,13 +2,13 @@ use crate::*;
 use anchor_spl::token::{Token, TokenAccount};
 
 use effect_common::cpi;
-use effect_staking::accounts::StakeAccount;
+use effect_staking::{accounts::StakeAccount, program::EffectStaking};
 
 #[derive(Accounts)]
 pub struct Claim<'info> {
     #[account(
         mut,
-        seeds = [b"reflection", recipient_token_account.mint.as_ref()],
+        seeds = [b"reflection", stake_vault_token_account.mint.as_ref()],
         bump,
     )]
     pub reflection_account: Account<'info, ReflectionAccount>,
@@ -19,16 +19,23 @@ pub struct Claim<'info> {
         bump
     )]
     pub reward_vault_token_account: Account<'info, TokenAccount>,
-  
+
     #[account(
         mut,
         has_one = authority @ RewardErrors::Unauthorized,
         constraint = stake_account.weighted_amount >= reward_account.weighted_amount @ RewardErrors::Decreased,
     )]
     pub stake_account: Account<'info, StakeAccount>,
-   
+
     #[account(
-        mut, 
+        seeds = [ stake_account.key().as_ref() ],
+        bump,
+        seeds::program = stake_program.key(),
+    )]
+    pub stake_vault_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
         seeds = [stake_account.key().as_ref()],
         bump,
         has_one = authority @ RewardErrors::Unauthorized)
@@ -37,14 +44,15 @@ pub struct Claim<'info> {
 
     #[account(
         mut,
-        token::mint = recipient_token_account.mint,
+        token::mint = stake_vault_token_account.mint,
         token::authority = authority,
      )]
     pub recipient_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
     pub authority: Signer<'info>,
-   
+
+    pub stake_program: Program<'info, EffectStaking>,
     pub token_program: Program<'info, Token>,
 }
 
