@@ -8,6 +8,17 @@
       <div
         style="background: white; border-radius: 16px; padding: 24px; max-width: 420px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);"
       >
+        <div
+          v-if="isSearching"
+          style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 0; text-align: center;"
+        >
+          <UIcon name="lucide:loader-2" class="h-6 w-6 animate-spin" />
+          <h2 style="font-size: 20px; font-weight: 700;">Looking for your wallets</h2>
+          <p style="font-size: 14px; color: #666;">
+            Checking whether this account already has wallets. This only takes a moment.
+          </p>
+        </div>
+        <template v-else>
         <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Recover Your Wallet</h2>
         <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
           We found wallets already linked to this account. Pick the one whose wallet address
@@ -62,6 +73,33 @@
             </p>
           </div>
         </div>
+        <div
+          v-if="confirmingNewWallet"
+          style="margin-top: 16px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px;"
+        >
+          <p style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">
+            Are you sure you want a new wallet?
+          </p>
+          <p style="font-size: 13px; color: #666; margin-bottom: 12px;">
+            This device will get a new wallet with a different address. Your EFFECT
+            and unclaimed payments stay in the wallets above and won't show up here.
+          </p>
+          <UButton
+            color="neutral"
+            size="lg"
+            block
+            @click="resolveRecovery(null)"
+          >
+            Yes, Create New Wallet
+          </UButton>
+          <button
+            style="margin-top: 8px; width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background: transparent; font-size: 14px; cursor: pointer;"
+            @click="confirmingNewWallet = false"
+          >
+            Go Back
+          </button>
+        </div>
+        <template v-else>
         <UButton
           v-if="selectedModifier"
           color="neutral"
@@ -74,13 +112,15 @@
         </UButton>
         <button
           style="margin-top: 16px; width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background: transparent; font-size: 14px; cursor: pointer;"
-          @click="resolveRecovery(null)"
+          @click="confirmingNewWallet = true"
         >
           Create New Wallet
         </button>
         <p style="font-size: 12px; color: #888; margin-top: 8px; text-align: center;">
           A new wallet gets a different address from the ones above.
         </p>
+        </template>
+        </template>
       </div>
     </div>
 
@@ -128,6 +168,7 @@ const { connectToManagerMutation } = useSession();
 const { mutateAsync: connectToManager } = connectToManagerMutation;
 const {
   showRecovery,
+  isSearching,
   devices,
   checkForRecovery,
   resolveRecovery,
@@ -137,6 +178,7 @@ const recoveredManagerP2pAddr = ref<string | null>(null);
 const connecting = ref(false);
 const selectedModifier = ref<string | null>(null);
 const expandedDeviceInfo = ref<string | null>(null);
+const confirmingNewWallet = ref(false);
 
 const toggleDeviceInfo = (modifier: string) => {
   expandedDeviceInfo.value =

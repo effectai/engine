@@ -79,6 +79,7 @@ async function fetchDevicesFromManager(
 
 export function useLoginRecovery() {
   const showRecovery = ref(false);
+  const isSearching = ref(false);
   const devices = ref<DeviceEntry[]>([]);
   let resolveChoice: ((modifier: string | null) => void) | null = null;
 
@@ -89,22 +90,31 @@ export function useLoginRecovery() {
     const managers = config.public.EFFECT_MANAGERS as string[] | undefined;
     if (!managers || managers.length === 0) return null;
 
-    for (const httpUrl of managers) {
-      const result = await fetchDevicesFromManager(privateKeyHex, httpUrl);
-      if (result && result.devices.length > 0) {
-        devices.value = result.devices;
-        const addr = result.managerP2pAddr;
-        showRecovery.value = true;
-        const modifier = await new Promise<string | null>((resolve) => {
-          resolveChoice = resolve;
-        });
-        if (modifier) {
-          return { modifier, managerP2pAddr: addr };
+    // Open the popup straight away so the user knows to wait
+    devices.value = [];
+    isSearching.value = true;
+    showRecovery.value = true;
+    try {
+      for (const httpUrl of managers) {
+        const result = await fetchDevicesFromManager(privateKeyHex, httpUrl);
+        if (result && result.devices.length > 0) {
+          devices.value = result.devices;
+          const addr = result.managerP2pAddr;
+          isSearching.value = false;
+          const modifier = await new Promise<string | null>((resolve) => {
+            resolveChoice = resolve;
+          });
+          if (modifier) {
+            return { modifier, managerP2pAddr: addr };
+          }
+          return null;
         }
-        return null;
       }
+      return null;
+    } finally {
+      isSearching.value = false;
+      showRecovery.value = false;
     }
-    return null;
   };
 
   const resolveRecovery = (modifierHex: string | null) => {
@@ -113,5 +123,11 @@ export function useLoginRecovery() {
     showRecovery.value = false;
   };
 
-  return { showRecovery, devices, checkForRecovery, resolveRecovery };
+  return {
+    showRecovery,
+    isSearching,
+    devices,
+    checkForRecovery,
+    resolveRecovery,
+  };
 }
