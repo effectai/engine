@@ -54,6 +54,18 @@ useSeoMeta({
     border-radius: 8px;
   }
 
+  .article img.left {
+    margin-left: 0;
+  }
+
+  .article img.small {
+    max-width: 300px;
+  }
+
+  .article img.medium {
+    max-width: 480px;
+  }
+
   .article :not(pre) > code {
     padding: 0.15em 0.4em;
     border-radius: 0.3em;
