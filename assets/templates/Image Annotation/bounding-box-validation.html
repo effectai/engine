@@ -1,0 +1,755 @@
+<style>
+  .canvas-container {
+    position: relative;
+    display: inline-block;
+    user-select: none;
+    touch-action: none;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .canvas-container canvas {
+    display: block;
+    cursor: default;
+  }
+  .annotation-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #dbdbdb;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .annotation-item:hover {
+    background: #f5f5f5;
+  }
+  .annotation-item.is-highlighted {
+    border-color: #3273dc;
+    background: #eef3fc;
+  }
+  .annotation-item.is-rejected {
+    border-color: #f14668;
+    background: #feecf0;
+  }
+  .annotation-item.is-approved {
+    border-color: #48c774;
+    background: #effaf3;
+  }
+  .bbox-color-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+  }
+  .canvas-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .size-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .size-control input[type="range"] {
+    width: 180px;
+  }
+  .verdict-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .verdict-buttons .button {
+    min-width: 80px;
+  }
+  .rejection-reason {
+    margin-top: 0.5rem;
+  }
+  .summary-box {
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+  }
+  .summary-box.is-success { background: #effaf3; border: 1px solid #48c774; }
+  .summary-box.is-danger { background: #feecf0; border: 1px solid #f14668; }
+  .summary-box.is-warning { background: #fffbeb; border: 1px solid #ffdd57; }
+  @media (max-width: 768px) {
+    .size-control input[type="range"] {
+      width: 120px;
+    }
+    .annotation-item {
+      font-size: 0.85rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .verdict-buttons .button {
+      min-width: 60px;
+      font-size: 0.8rem;
+    }
+  }
+</style>
+
+<div id="app" style="text-align: center">
+  <h1 class="title is-3">Effect AI - Bounding Box Validation</h1>
+  <p class="subtitle is-6">Review the bounding box annotations and approve or reject each one</p>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 95%">
+
+    <!-- Summary -->
+    <div class="summary-box" :class="summaryClass">
+      <strong>{{ approvedCount }}</strong> approved,
+      <strong>{{ rejectedCount }}</strong> rejected,
+      <strong>{{ pendingCount }}</strong> pending
+      &mdash; {{ annotations.length }} total annotations
+    </div>
+
+    <p class="help mb-3" v-if="!isMobile">Click an annotation in the list to highlight it on the image. <strong>Shift+scroll</strong> to zoom. <strong>Shift+drag</strong> to pan.</p>
+    <p class="help mb-3" v-else>Tap an annotation in the list to highlight it. <strong>Pinch</strong> to zoom, <strong>two fingers</strong> to pan.</p>
+
+    <!-- Canvas controls -->
+    <div class="canvas-controls" v-if="!loading && !loadError">
+      <div class="size-control">
+        <small>Zoom:</small>
+        <input type="range" min="100" max="500" step="10" v-model.number="zoomSlider" @input="onZoomSlider" />
+        <small>{{ zoomSlider }}%</small>
+      </div>
+      <button class="button is-small" @click="resetView" title="Reset zoom, pan, and show all boxes">Reset view</button>
+    </div>
+
+    <!-- Loading indicator -->
+    <div v-if="loading" class="mb-3">
+      <div class="is-size-5 mb-2">Loading image...</div>
+      <progress v-if="!loadTimedOut" class="progress is-small is-info" style="max-width: 300px; margin: 0 auto;"></progress>
+      <div v-if="loadTimedOut" class="notification is-warning" style="max-width: 500px; margin: 0 auto;">
+        <p class="mb-3">The image could not be loaded. You may skip this task.</p>
+        <button class="button is-warning" @click="skipTask">Skip Task</button>
+      </div>
+    </div>
+
+    <!-- Load error -->
+    <div v-if="loadError && !loading" class="notification is-danger" style="max-width: 500px; margin: 0 auto;">
+      <p class="mb-3">Failed to load image. You may skip this task.</p>
+      <button class="button is-danger is-outlined" @click="skipTask">Skip Task</button>
+    </div>
+
+    <!-- Canvas area -->
+    <div class="canvas-container"
+      v-show="!loading && !loadError"
+      @mousedown="onMouseDown"
+      @mousemove="onMouseMove"
+      @mouseup="onMouseUp"
+      @wheel="onWheel"
+      @touchstart.prevent="onTouchStart"
+      @touchmove.prevent="onTouchMove"
+      @touchend.prevent="onTouchEnd"
+    >
+      <canvas ref="canvas"></canvas>
+    </div>
+
+    <hr />
+
+    <!-- Bulk actions -->
+    <div class="mb-4" v-if="annotations.length > 0">
+      <div class="buttons is-centered">
+        <button class="button is-success is-outlined" @click="approveAll">Approve All</button>
+        <button class="button is-danger is-outlined" @click="rejectAll">Reject All</button>
+        <button class="button is-light" @click="resetAll">Reset All</button>
+      </div>
+    </div>
+
+    <!-- Annotation list -->
+    <div class="mx-auto has-text-left" style="max-width: 700px" v-if="annotations.length > 0">
+      <h2 class="title is-5">Annotations ({{ annotations.length }})</h2>
+
+      <div class="annotation-item"
+        v-for="(ann, idx) in annotations"
+        :key="idx"
+        :class="{
+          'is-highlighted': highlightedIdx === idx,
+          'is-approved': verdicts[idx] === 'approved',
+          'is-rejected': verdicts[idx] === 'rejected'
+        }"
+        @click="highlightAnnotation(idx)"
+      >
+        <div style="display: flex; align-items: center; flex: 1; min-width: 0;">
+          <span class="bbox-color-dot" :style="{ background: ann.color }"></span>
+          <span class="has-text-weight-semibold mr-2">{{ ann.label }}</span>
+          <span class="has-text-grey is-size-7">
+            [{{ ann.bbox[0] }}, {{ ann.bbox[1] }}, {{ ann.bbox[2] }}, {{ ann.bbox[3] }}]
+          </span>
+        </div>
+        <div class="verdict-buttons" @click.stop>
+          <button class="button is-small"
+            :class="verdicts[idx] === 'approved' ? 'is-success' : 'is-success is-outlined'"
+            @click="setVerdict(idx, 'approved')" title="Approve">
+            &#10003;
+          </button>
+          <button class="button is-small"
+            :class="verdicts[idx] === 'rejected' ? 'is-danger' : 'is-danger is-outlined'"
+            @click="setVerdict(idx, 'rejected')" title="Reject">
+            &#10007;
+          </button>
+        </div>
+      </div>
+
+      <!-- Per-annotation rejection reason (shown when rejected) -->
+      <div v-for="(ann, idx) in annotations" :key="'reason-' + idx">
+        <div class="rejection-reason" v-if="verdicts[idx] === 'rejected'">
+          <div class="field">
+            <label class="label is-small">Rejection reason for "{{ ann.label }}" #{{ idx + 1 }}:</label>
+            <div class="control">
+              <div class="select is-small is-fullwidth">
+                <select v-model="reasons[idx]">
+                  <option value="">Select a reason...</option>
+                  <option value="wrong_label">Wrong label</option>
+                  <option value="box_too_large">Box too large / loose</option>
+                  <option value="box_too_small">Box too small / cuts off object</option>
+                  <option value="wrong_object">Box on wrong object</option>
+                  <option value="duplicate">Duplicate box</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="annotations.length === 0" class="has-text-grey mt-3 mb-3">
+      No annotations to review.
+    </div>
+
+    <hr />
+
+    <!-- Validation -->
+    <p style="color: red;" v-if="notComplete" class="mb-3">
+      Please review all annotations before submitting. {{ pendingCount }} annotation(s) still pending.
+    </p>
+
+    <!-- Submit -->
+    <button
+      @click.prevent="submitValidation"
+      class="button is-success is-large mt-4"
+      :class="{'is-loading': btnLoading}"
+    >
+      Submit Review
+    </button>
+  </div>
+
+  <!-- Resources -->
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    const BOX_COLORS = [
+      "#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4",
+      "#42d4f4", "#f032e6", "#bfef45", "#fabed4", "#469990",
+      "#dcbeff", "#9A6324", "#800000", "#aaffc3", "#808000",
+      "#000075", "#a9a9a9"
+    ];
+
+    createApp({
+      data() {
+        return {
+          title: "Bounding Box Validation",
+          // Pipeline input: upstream task's full submission, packed as a JSON string
+          // under the `result` field. Shape: {task, values: {taskTitle, answer: {...}}}
+          rawResult: "${result}",
+          upstreamTaskId: "${taskId}",
+          upstreamPeer: "${submissionByPeer}",
+
+          imageUrl: "",
+          inputId: "",
+          inputSource: "",
+          imageWidth: 0,
+          imageHeight: 0,
+
+          btnLoading: false,
+          notComplete: false,
+          loading: true,
+          loadError: false,
+          loadTimedOut: false,
+          loadTimer: null,
+          isMobile: false,
+
+          // Parsed annotations with color
+          annotations: [],
+          labelColorMap: {},
+
+          // Verdicts: "approved", "rejected", or "" (pending) per annotation
+          verdicts: [],
+          reasons: [],
+
+          // Canvas state
+          highlightedIdx: -1,
+          viewCenterX: 0,
+          viewCenterY: 0,
+          viewZoom: 1,
+          baseScale: 1,
+          img: null,
+          canvasW: 0,
+          canvasH: 0,
+          zoomSlider: 100,
+
+          // Pan state
+          _isPanning: false,
+          _panStart: null,
+          _panStartCenter: null,
+
+          // Touch
+          lastTouchDist: 0,
+          lastTouchMid: null,
+          touchMode: null,
+          pinchStartZoom: 1,
+          pinchStartCenter: null,
+
+          instructions: `<div>
+            <h2>Bounding Box Validation</h2>
+            <p>In this task you will review bounding box annotations drawn by another worker.</p>
+
+            <h3>1. Instructions</h3>
+            <ul>
+              <li>You are shown an image with bounding boxes already drawn on it.</li>
+              <li>For <strong>each annotation</strong>, decide whether it is correct or not.</li>
+              <li>Click the <strong>&#10003;</strong> button to approve, or <strong>&#10007;</strong> to reject.</li>
+              <li>If you reject an annotation, select a reason from the dropdown.</li>
+              <li>Click on an annotation in the list to <strong>highlight</strong> it on the image.</li>
+              <li>Use <strong>Approve All</strong> or <strong>Reject All</strong> for quick bulk actions.</li>
+              <li>Use zoom and pan to inspect annotations closely.</li>
+              <li>You must review <strong>every annotation</strong> before submitting.</li>
+            </ul>
+
+            <h3>2. What to check</h3>
+            <ul>
+              <li><strong>Correct label</strong> &mdash; Does the box label match the object inside?</li>
+              <li><strong>Tight fit</strong> &mdash; Does the box closely fit the object without large margins?</li>
+              <li><strong>Complete coverage</strong> &mdash; Is the entire object inside the box?</li>
+              <li><strong>No duplicates</strong> &mdash; Is there only one box per distinct object instance?</li>
+            </ul>
+
+            <h3>3. Tips</h3>
+            <ul>
+              <li><strong>Zoom in</strong> for better inspection of tight-fit quality.</li>
+              <li>Click an annotation in the list to jump to it on the image.</li>
+              <li>Use overall feedback for general comments about annotation quality.</li>
+            </ul>
+          </div>`
+        };
+      },
+      computed: {
+        approvedCount() {
+          return this.verdicts.filter(v => v === "approved").length;
+        },
+        rejectedCount() {
+          return this.verdicts.filter(v => v === "rejected").length;
+        },
+        pendingCount() {
+          return this.verdicts.filter(v => v === "").length;
+        },
+        summaryClass() {
+          if (this.pendingCount > 0) return "is-warning";
+          if (this.rejectedCount > 0) return "is-danger";
+          return "is-success";
+        }
+      },
+      mounted() {
+        this.isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+        // Parse the upstream submission envelope and pull the annotation answer out
+        let answer = null;
+        try {
+          const envelope = JSON.parse(this.rawResult);
+          answer = envelope?.values?.answer ?? envelope?.answer ?? envelope;
+        } catch (e) {
+          console.error("Failed to parse upstream result:", e, this.rawResult);
+        }
+
+        if (answer) {
+          this.imageUrl = answer.image_url || "";
+          this.inputId = answer.id || "";
+          this.inputSource = answer.source || "";
+          this.imageWidth = answer.image_width || 0;
+          this.imageHeight = answer.image_height || 0;
+
+          const rawAnns = Array.isArray(answer.annotations) ? answer.annotations : [];
+          const labels = [...new Set(rawAnns.map(a => a.label))];
+          labels.forEach((label, i) => {
+            this.labelColorMap[label] = BOX_COLORS[i % BOX_COLORS.length];
+          });
+
+          this.annotations = rawAnns.map(a => ({
+            label: a.label,
+            bbox: a.bbox, // [x_min, y_min, x_max, y_max]
+            color: this.labelColorMap[a.label] || "#a9a9a9"
+          }));
+        }
+
+        this.verdicts = this.annotations.map(() => "");
+        this.reasons = this.annotations.map(() => "");
+
+        window.top.postMessage(
+          { type: "task-instructions", instructions: this.instructions },
+          "*"
+        );
+        this.loadImage();
+      },
+      beforeUnmount() {
+        if (this.loadTimer) clearTimeout(this.loadTimer);
+      },
+      methods: {
+        // ── Image loading ──
+        loadImage() {
+          this.img = new Image();
+          this.loadTimer = setTimeout(() => {
+            if (this.loading) this.loadTimedOut = true;
+          }, 12000);
+          this.img.onload = () => {
+            clearTimeout(this.loadTimer);
+            this.loading = false;
+            this.loadTimedOut = false;
+            this.initCanvas();
+          };
+          this.img.onerror = () => {
+            clearTimeout(this.loadTimer);
+            this.loading = false;
+            this.loadError = true;
+          };
+          this.img.src = this.imageUrl;
+        },
+        skipTask() {
+          try {
+            parent.postMessage({
+              task: "submit",
+              values: {
+                taskTitle: this.title,
+                answer: {
+                  id: this.inputId, source: this.inputSource,
+                  image_url: this.imageUrl, skipped: true, reason: "image_load_failed"
+                }
+              }
+            }, "*");
+          } catch (e) { console.error("Skip failed:", e); }
+        },
+
+        // ── Canvas / viewport ──
+        initCanvas() {
+          const canvas = this.$refs.canvas;
+          const container = canvas.parentElement.parentElement;
+          this.canvasW = container.clientWidth;
+          this.canvasH = Math.min(
+            Math.round(this.canvasW * (this.img.naturalHeight / this.img.naturalWidth)),
+            Math.round(window.innerHeight * 0.75)
+          );
+          canvas.width = this.canvasW;
+          canvas.height = this.canvasH;
+
+          this.baseScale = Math.min(
+            this.canvasW / this.img.naturalWidth,
+            this.canvasH / this.img.naturalHeight
+          );
+          this.viewZoom = 1;
+          this.viewCenterX = this.img.naturalWidth / 2;
+          this.viewCenterY = this.img.naturalHeight / 2;
+          this.zoomSlider = 100;
+          this.redraw();
+        },
+
+        imgToCanvas(ix, iy) {
+          const s = this.baseScale * this.viewZoom;
+          return {
+            x: (ix - this.viewCenterX) * s + this.canvasW / 2,
+            y: (iy - this.viewCenterY) * s + this.canvasH / 2
+          };
+        },
+        canvasToImg(cx, cy) {
+          const s = this.baseScale * this.viewZoom;
+          return {
+            x: (cx - this.canvasW / 2) / s + this.viewCenterX,
+            y: (cy - this.canvasH / 2) / s + this.viewCenterY
+          };
+        },
+        clampView() {
+          const imgW = this.img.naturalWidth;
+          const imgH = this.img.naturalHeight;
+          this.viewCenterX = Math.max(-imgW * 0.25, Math.min(imgW * 1.25, this.viewCenterX));
+          this.viewCenterY = Math.max(-imgH * 0.25, Math.min(imgH * 1.25, this.viewCenterY));
+          this.viewZoom = Math.max(1, Math.min(5, this.viewZoom));
+        },
+        resetView() {
+          this.viewZoom = 1;
+          this.viewCenterX = this.img.naturalWidth / 2;
+          this.viewCenterY = this.img.naturalHeight / 2;
+          this.zoomSlider = 100;
+          this.highlightedIdx = -1;
+          this.redraw();
+        },
+        onZoomSlider() {
+          this.viewZoom = this.zoomSlider / 100;
+          this.clampView();
+          this.redraw();
+        },
+
+        // ── Drawing ──
+        redraw() {
+          const canvas = this.$refs.canvas;
+          if (!canvas) return;
+          const ctx = canvas.getContext("2d");
+          const s = this.baseScale * this.viewZoom;
+
+          ctx.clearRect(0, 0, this.canvasW, this.canvasH);
+
+          // Draw image
+          const tl = this.imgToCanvas(0, 0);
+          ctx.drawImage(this.img, tl.x, tl.y,
+            this.img.naturalWidth * s, this.img.naturalHeight * s);
+
+          // Draw annotation boxes — when one is highlighted, focus mode hides the rest
+          const focusMode = this.highlightedIdx >= 0;
+          for (let i = 0; i < this.annotations.length; i++) {
+            if (focusMode && i !== this.highlightedIdx) continue;
+
+            const ann = this.annotations[i];
+            const [x_min, y_min, x_max, y_max] = ann.bbox;
+            const p1 = this.imgToCanvas(x_min, y_min);
+            const p2 = this.imgToCanvas(x_max, y_max);
+            const w = p2.x - p1.x;
+            const h = p2.y - p1.y;
+
+            const isHighlighted = i === this.highlightedIdx;
+            const verdict = this.verdicts[i];
+
+            let color = ann.color;
+            if (verdict === "rejected") color = "#f14668";
+            else if (verdict === "approved") color = "#48c774";
+
+            this.drawBox(ctx, p1.x, p1.y, w, h, color, ann.label, isHighlighted, verdict);
+          }
+        },
+
+        drawBox(ctx, x, y, w, h, color, label, highlighted, verdict) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = highlighted ? 4 : 2;
+          ctx.strokeRect(x, y, w, h);
+
+          ctx.fillStyle = color + (highlighted ? "33" : "18");
+          ctx.fillRect(x, y, w, h);
+
+          if (label) {
+            ctx.font = "bold 13px sans-serif";
+            const labelText = verdict ? `${label} ${verdict === "approved" ? "\u2713" : "\u2717"}` : label;
+            const textW = ctx.measureText(labelText).width + 8;
+            const textH = 20;
+            const labelY = y > textH ? y - textH : y;
+            ctx.fillStyle = color;
+            ctx.fillRect(x, labelY, textW, textH);
+            ctx.fillStyle = "#ffffff";
+            ctx.fillText(labelText, x + 4, labelY + 14);
+          }
+
+          // Draw highlight ring
+          if (highlighted) {
+            ctx.setLineDash([6, 3]);
+            ctx.strokeStyle = "#3273dc";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x - 3, y - 3, w + 6, h + 6);
+            ctx.setLineDash([]);
+          }
+        },
+
+        // ── Annotation interaction ──
+        highlightAnnotation(idx) {
+          this.highlightedIdx = this.highlightedIdx === idx ? -1 : idx;
+
+          // Center view on the annotation without changing zoom
+          if (this.highlightedIdx >= 0) {
+            const ann = this.annotations[this.highlightedIdx];
+            const [x_min, y_min, x_max, y_max] = ann.bbox;
+            this.viewCenterX = (x_min + x_max) / 2;
+            this.viewCenterY = (y_min + y_max) / 2;
+            this.clampView();
+          }
+          this.redraw();
+        },
+
+        setVerdict(idx, verdict) {
+          if (this.verdicts[idx] === verdict) {
+            this.verdicts[idx] = ""; // toggle off
+          } else {
+            this.verdicts[idx] = verdict;
+          }
+          if (verdict !== "rejected") {
+            this.reasons[idx] = "";
+          }
+          this.notComplete = false;
+          this.redraw();
+        },
+
+        approveAll() {
+          this.verdicts = this.annotations.map(() => "approved");
+          this.reasons = this.annotations.map(() => "");
+          this.notComplete = false;
+          this.redraw();
+        },
+        rejectAll() {
+          this.verdicts = this.annotations.map(() => "rejected");
+          this.notComplete = false;
+          this.redraw();
+        },
+        resetAll() {
+          this.verdicts = this.annotations.map(() => "");
+          this.reasons = this.annotations.map(() => "");
+          this.highlightedIdx = -1;
+          this.notComplete = false;
+          this.redraw();
+        },
+
+        // ── Mouse events (pan + zoom only, no drawing) ──
+        getCanvasXY(event) {
+          const canvas = this.$refs.canvas;
+          const rect = canvas.getBoundingClientRect();
+          return {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top
+          };
+        },
+        onMouseDown(event) {
+          if (event.shiftKey) {
+            const canvasPos = this.getCanvasXY(event);
+            this._panStart = canvasPos;
+            this._panStartCenter = { x: this.viewCenterX, y: this.viewCenterY };
+            this._isPanning = true;
+          }
+        },
+        onMouseMove(event) {
+          if (this._isPanning) {
+            const canvasPos = this.getCanvasXY(event);
+            const s = this.baseScale * this.viewZoom;
+            this.viewCenterX = this._panStartCenter.x - (canvasPos.x - this._panStart.x) / s;
+            this.viewCenterY = this._panStartCenter.y - (canvasPos.y - this._panStart.y) / s;
+            this.clampView();
+            this.redraw();
+          }
+        },
+        onMouseUp() {
+          this._isPanning = false;
+        },
+        onWheel(event) {
+          if (!event.shiftKey) return;
+          event.preventDefault();
+
+          const canvasPos = this.getCanvasXY(event);
+          const imgBefore = this.canvasToImg(canvasPos.x, canvasPos.y);
+
+          const factor = event.deltaY < 0 ? 1.15 : 1 / 1.15;
+          this.viewZoom = Math.max(1, Math.min(5, this.viewZoom * factor));
+
+          const imgAfter = this.canvasToImg(canvasPos.x, canvasPos.y);
+          this.viewCenterX += imgBefore.x - imgAfter.x;
+          this.viewCenterY += imgBefore.y - imgAfter.y;
+          this.clampView();
+          this.zoomSlider = Math.round(this.viewZoom * 100);
+          this.redraw();
+        },
+
+        // ── Touch events (zoom + pan only) ──
+        onTouchStart(event) {
+          if (event.touches.length === 2) {
+            this.touchMode = "pinch";
+            const t1 = event.touches[0], t2 = event.touches[1];
+            this.lastTouchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            this.lastTouchMid = {
+              x: (t1.clientX + t2.clientX) / 2,
+              y: (t1.clientY + t2.clientY) / 2
+            };
+            this.pinchStartZoom = this.viewZoom;
+            this.pinchStartCenter = { x: this.viewCenterX, y: this.viewCenterY };
+          }
+        },
+        onTouchMove(event) {
+          if (this.touchMode === "pinch" && event.touches.length === 2) {
+            const t1 = event.touches[0], t2 = event.touches[1];
+            const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            const mid = {
+              x: (t1.clientX + t2.clientX) / 2,
+              y: (t1.clientY + t2.clientY) / 2
+            };
+
+            const zoomFactor = dist / this.lastTouchDist;
+            this.viewZoom = Math.max(1, Math.min(5, this.pinchStartZoom * zoomFactor));
+
+            const canvas = this.$refs.canvas;
+            const rect = canvas.getBoundingClientRect();
+            const s = this.baseScale * this.viewZoom;
+            const midCanvas = { x: mid.x - rect.left, y: mid.y - rect.top };
+            const startMidCanvas = {
+              x: this.lastTouchMid.x - rect.left,
+              y: this.lastTouchMid.y - rect.top
+            };
+            this.viewCenterX = this.pinchStartCenter.x - (midCanvas.x - startMidCanvas.x) / s;
+            this.viewCenterY = this.pinchStartCenter.y - (midCanvas.y - startMidCanvas.y) / s;
+
+            this.clampView();
+            this.zoomSlider = Math.round(this.viewZoom * 100);
+            this.redraw();
+          }
+        },
+        onTouchEnd(event) {
+          if (event.touches.length === 0) {
+            this.touchMode = null;
+          }
+        },
+
+        // ── Submit ──
+        async submitValidation() {
+          this.btnLoading = true;
+
+          if (this.pendingCount > 0) {
+            this.notComplete = true;
+            this.btnLoading = false;
+            return;
+          }
+
+          const results = this.annotations.map((ann, idx) => ({
+            label: ann.label,
+            bbox: [ann.bbox[0], ann.bbox[1], ann.bbox[2], ann.bbox[3]],
+            verdict: this.verdicts[idx],
+            reason: this.reasons[idx] || null
+          }));
+
+          try {
+            parent.postMessage({
+              task: "submit",
+              values: {
+                taskTitle: this.title,
+                answer: {
+                  id: this.inputId, source: this.inputSource,
+                  image_url: this.imageUrl,
+                  upstream_task_id: this.upstreamTaskId,
+                  upstream_peer: this.upstreamPeer,
+                  approved_count: this.approvedCount,
+                  rejected_count: this.rejectedCount,
+                  total_count: this.annotations.length,
+                  overall_approved: this.rejectedCount === 0,
+                  results
+                }
+              }
+            }, "*");
+          } catch (error) {
+            console.error("Submit failed:", error);
+          }
+          this.btnLoading = false;
+        }
+      }
+    }).mount("#app");
+  </script>
+</div>

@@ -1,0 +1,146 @@
+<meta charset="UTF-8">
+<div id="app" style="text-align: center">
+  <h1>Effect AI - Sentence Verification </h1>
+
+  <hr />
+
+  <div class="mx-auto" style="max-width: 80%">
+
+  <p class="mb-5">Is a linguistically correct sentence?</p>
+  <div class="box">
+    <p class="is-size-4 has-text-weight-semibold">{{sentence}}</p>
+  </div>
+
+  <div class="mb-5">
+    <button class="button is-medium"
+    :class="{ 'is-success': this.isValidated == 'Yes' }"
+    @click="this.isValidated='Yes'">Yes</button>
+
+    <button class="button is-medium mx-3"
+    :class="{ 'is-dark': this.isValidated == 'Skip' }"
+    @click="this.isValidated='Skip'">Skip</button>
+
+    <button class="button is-medium"
+    :class="{ 'is-danger': this.isValidated == 'No' }"
+    @click="this.isValidated='No'">No</button>
+  </div>
+
+  <p style="color: red;"
+  :class="{'is-hidden mb-3': !notComplete}">
+    Task incomplete - Please complete all sections of the task
+  </p>
+
+  <button
+    @click.prevent="uploadAndSubmit"
+    class="button is-success is-large"
+    :class="{'is-loading': btnLoading}"
+  >
+    Submit
+  </button>
+</div>
+
+<!-- 📚 Load in resources: [Bulma, Effect Network Styling]  -->
+<link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+<link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+<script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
+<script type="module">
+  import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+  
+
+  createApp({
+    data() {
+      return {
+        title: "Effect AI Sentence Verifier",
+        btnLoading: false,
+        author: "${submissionByPeer}", 
+        // incoming result - {"timestamp": "", "submissionByPeer": "", "taskId": "", "result": "JSON_STRING"}
+        sentence: "${sentence}",
+        isValidated: "",
+        loading: true,
+        notComplete: false,
+instructions: `
+          <div>
+            <h2>Verify a Sentence</h2>
+            <p>
+              In this task, you'll review short sentences extracted from TV dialogue scripts.
+              Your goal is to decide whether each sentence is clear, readable, and suitable for use in training AI speech models.
+            </p>
+
+            <h3>1. Instructions</h3>
+            <p>
+              Your job is to carefully read each sentence and decide whether it sounds like something a person would naturally say out loud.
+              You should mark a sentence as <strong>"Yes"</strong> if it follows the rules below, or <strong>"No"</strong> if it does not. If 
+              you are unsure, you may <strong>Skip</strong> it.
+            </p>
+
+            <h4>Sentence Verification Guidelines</h4>
+            <ul>
+              <li>The sentence should be fewer than 15 words.</li>
+              <li>It must be a complete thought that makes sense on its own.</li>
+              <li>It should sound natural when read aloud, like real spoken English.</li>
+              <li>Casual or emotional language is fine, these are from dramatic dialogue.</li>
+              <li>Character names (e.g. "I love you, Ryan.") are acceptable.</li>
+            </ul>
+
+            <h4>Mark as INCORRECT if you see:</h4>
+            <ul>
+              <li>Numbers or special characters (e.g. $, %, @, #, 123).</li>
+              <li>Foreign letters or words not in English.</li>
+              <li>The sentence appears cut off, garbled, or incomplete (e.g. "I didn't come here to talk me?").</li>
+              <li>Stage directions or sound cues that were not properly removed (e.g. "(Music-plays)", "[Door slams]").</li>
+              <li>The sentence is too short or vague to make sense on its own (e.g. "That is." or "Yeah.").</li>
+              <li>Overly technical or unnatural language that doesn't sound like real speech.</li>
+              <li>Real-world personal information such as addresses, phone numbers, or emails.</li>
+            </ul>
+
+            <h3>2. Tips for Success</h3>
+            <ul>
+              <li>Read the sentence out loud, it should sound natural and easy to say.</li>
+              <li>If the sentence feels incomplete or confusing, mark it as incorrect.</li>
+              <li>Don't penalize sentences just because they sound dramatic or emotional. This is expected from this type of dialogue.</li>
+              <li>Don't overthink it, use your common sense and trust your ear for natural English.</li>
+            </ul>
+          </div>
+          `
+      };
+    },
+    computed: {},
+    created() {},
+    mounted() {
+      window.top.postMessage(
+        {
+          type: 'task-instructions',
+          instructions: this.instructions
+        },
+        "*"
+      );
+    },
+    methods: {
+      async uploadAndSubmit() {
+        this.btnLoading = true;
+        if(this.isValidated == ""){
+            this.notComplete = true
+          }
+        else
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  taskTitle: this.title,
+                  author: this.author,
+                  sentence: this.sentence,
+                  isValidated: this.isValidated
+                },
+              },
+              "*"
+            );
+          } catch (error) {
+            console.error("Failed to upload to IPFS", error);
+          }
+        this.btnLoading = false;
+      },
+    },
+  }).mount("#app");
+</script>

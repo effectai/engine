@@ -12,6 +12,9 @@ import type { Request, Response } from "express";
 import { createPaymentManager } from "./modules/createPaymentManager.js";
 import { createTaskManager } from "./modules/createTaskManager.js";
 import { createManagerTaskStore } from "./stores/managerTaskStore.js";
+import { createStorageObjectStore } from "./stores/storageObjectStore.js";
+import { createStoragePointerStore } from "./stores/storagePointerStore.js";
+import { createStorageManager } from "./modules/createStorageManager.js";
 
 import { buildEddsa } from "@effectai/payment";
 import { createWorkerManager } from "./modules/createWorkerManager.js";
@@ -60,6 +63,7 @@ export type ManagerContext = {
   entity: ManagerEntity;
   taskManager: ReturnType<typeof createTaskManager>;
   workerManager: ReturnType<typeof createWorkerManager>;
+  storageManager: ReturnType<typeof createStorageManager>;
 };
 
 export type ManagerSettings = {
@@ -165,6 +169,8 @@ export const createManager = async ({
   const paymentStore = createPaymentStore({ datastore });
   const templateStore = createTemplateStore({ datastore });
   const taskStore = createManagerTaskStore({ datastore });
+  const storageStore = createStorageObjectStore({ datastore });
+  const storagePointerStore = createStoragePointerStore({ datastore });
 
   // setup event emitter
   const events = new TypedEventEmitter<ManagerEvents>();
@@ -193,6 +199,11 @@ export const createManager = async ({
     managerSettings,
     paymentManager,
     workerManager,
+  });
+
+  const storageManager = createStorageManager({
+    storageStore,
+    storagePointerStore,
   });
 
   // register message handlers
@@ -327,6 +338,27 @@ export const createManager = async ({
       return {
         templateResponse: { ...record?.state },
       };
+    })
+    .onMessage("storeObject", async (payload, { peerId }) => {
+      return storageManager.handleStoreObject(payload, { peerId });
+    })
+    .onMessage("getObject", async (payload) => {
+      return storageManager.handleGetObject(payload);
+    })
+    .onMessage("deleteObject", async (payload, { peerId }) => {
+      return storageManager.handleDeleteObject(payload, { peerId });
+    })
+    .onMessage("setPointer", async (payload, { peerId }) => {
+      return storageManager.handleSetPointer(payload, { peerId });
+    })
+    .onMessage("getPointer", async (payload, { peerId }) => {
+      return storageManager.handleGetPointer(payload, { peerId });
+    })
+    .onMessage("deletePointer", async (payload, { peerId }) => {
+      return storageManager.handleDeletePointer(payload, { peerId });
+    })
+    .onMessage("listPointers", async (payload, { peerId }) => {
+      return storageManager.handleListPointers(payload, { peerId });
     });
 
   const WHITELISTED_IPS = [
@@ -387,12 +419,24 @@ export const createManager = async ({
           taskId,
           index: "completed",
         })
-        .then(
-          (a) =>
-            a.events
-              .filter((e: any) => e.type === "submission")
-              .map((e: any) => ({ ...e, taskId }))[0],
-        )
+        .then((taskRecord) => {
+          const event = taskRecord.events.find(
+            (taskEvent: any) =>
+              taskEvent.type === "submission" || taskEvent.type === "report",
+          );
+          if (!event) return { taskId, error: "NOT FOUND" };
+
+          if (event.type === "report") {
+            return {
+              type: "report",
+              timestamp: event.timestamp,
+              taskId,
+              submissionByPeer: event.reportedByPeer,
+              result: event.result,
+            };
+          }
+          return { ...event, taskId };
+        })
         .catch((_e) => ({ taskId, error: "NOT FOUND" }));
     });
 
@@ -438,7 +482,6 @@ export const createManager = async ({
       }
     }
   });
-
   const { isStarted, pause, resume, getCycle, start, stop, cycle } =
     createManagerControls({
       events,
@@ -453,6 +496,7 @@ export const createManager = async ({
       taskManager,
       entity,
       workerManager,
+      storageManager,
       getCycle,
       pause,
       resume,
@@ -482,6 +526,7 @@ export const createManager = async ({
 
     taskManager,
     workerManager,
+    storageManager,
 
     stop,
   };

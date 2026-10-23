@@ -74,7 +74,7 @@ This monorepo is organized into the following main directories:
 
 | Directory                                               | Description                                                      |
 | ------------------------------------------------------- | ---------------------------------------------------------------- |
-| **[`tools/cli/`](./tools/cli)**                         | Command-line interface (`@effectai/cli`) for network interaction |
+| **[`apps/cli/`](./apps/cli)**                           | Command-line interface (`@effectai/cli`) for network interaction |
 | **[`tools/docker/`](./tools/docker)**                   | Docker configurations and deployment scripts                     |
 | **[`tools/scripts/`](./tools/scripts)**                 | Development and deployment scripts                               |
 | **[`tools/keys/`](./tools/keys)**                       | Key management utilities                                         |

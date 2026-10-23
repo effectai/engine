@@ -2,6 +2,9 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "display": "@effectai/protocol-core",
   "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
   "include": ["./src"],
   "exclude": ["@generated"]
 }

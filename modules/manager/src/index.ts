@@ -4,3 +4,4 @@ export {
   computeTemplateId,
   computeTaskId,
 } from "./utils.js";
+export { computeObjectHash } from "./modules/createStorageManager.js";

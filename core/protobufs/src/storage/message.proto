@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+message StoreObject {
+  bytes data = 1;
+  uint32 type = 2;   // 0x00 = raw, 0x01 = linked list node
+  string next = 3;   // hash of next node (linked list), empty = none
+}
+
+message StoreObjectResponse {
+  string hash = 1;
+}
+
+message GetObject {
+  string hash = 1;
+  uint32 limit = 2;  // max items to follow (linked list), default 10
+}
+
+message GetObjectResponseItem {
+  string hash = 1;
+  uint32 type = 2;
+  bytes owner = 3;       // 32 raw bytes
+  string next = 4;       // hash of next node, empty = end
+  bytes data = 5;        // user payload (no headers)
+}
+
+message GetObjectResponse {
+  repeated GetObjectResponseItem items = 1;
+}
+
+message DeleteObject {
+  string hash = 1;
+}
+
+message SetPointer {
+  string key = 1;
+  string value = 2;              // content hash the pointer resolves to
+  optional string expected = 3;  // if set, CAS: only update when current == expected
+}
+
+message SetPointerResponse {
+  bool updated = 1;   // false when expected was set and current value didn't match
+}
+
+message GetPointer {
+  string key = 1;
+}
+
+message GetPointerResponse {
+  bool found = 1;
+  string key = 2;
+  string value = 3;
+}
+
+message DeletePointer {
+  string key = 1;
+}
+
+message ListPointers {
+  string owner = 1;  // optional filter; empty = list own pointers
+}
+
+message ListPointersResponse {
+  repeated PointerEntry pointers = 1;
+}
+
+message PointerEntry {
+  string key = 1;
+  string value = 2;
+}

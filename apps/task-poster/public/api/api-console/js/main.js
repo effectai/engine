@@ -1,0 +1,1457 @@
+import { api, setApiKey, hasApiKey, clearApiKey, fetchResultsCsv } from "./client.js";
+
+let templates = [];
+let capabilities = [];
+let jobsCache = [];
+let jobGroups = [];
+let openJobId = null;
+let openBatchId = null;
+let drawerResults = [];
+let drawerTarget = null;
+
+const byId = (elementId) => document.getElementById(elementId);
+const esc = (value) => String(value ?? "").replace(/[&<>"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character]));
+const shortId = (value) => (value || "").slice(0, 10) + "…";
+const effectFromLamports = (lamports) => Number(lamports) / 1e6;
+
+function showMsg(element, text, kind) {
+  element.innerHTML = `<div class="msg ${kind}">${esc(text)}</div>`;
+}
+
+const formatSubmittedAt = (seconds) => seconds ? new Date(Number(seconds) * 1000).toLocaleString() : "";
+
+function updateTopupBanner(balanceLamports) {
+  byId("topup-banner").classList.toggle("hide", Number(balanceLamports) > 0);
+}
+
+function relativeTime(timestamp) {
+  const seconds = Math.floor((Date.now() - Number(timestamp)) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return minutes + "m ago";
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return hours + "h ago";
+  const days = Math.floor(hours / 24);
+  if (days < 7) return days + "d ago";
+  return new Date(Number(timestamp)).toLocaleDateString();
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  byId("icon-sun").classList.toggle("hide", theme === "dark");
+  byId("icon-moon").classList.toggle("hide", theme !== "dark");
+}
+function toggleTheme() {
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  localStorage.setItem("effect-console-theme", next);
+  applyTheme(next);
+}
+applyTheme(localStorage.getItem("effect-console-theme") || "light");
+
+// ------------------------------------------------------------------ tabs
+function showTab(name) {
+  byId("jobs-msg").innerHTML = "";
+  document.querySelectorAll(".tab").forEach((tabButton) => tabButton.classList.toggle("active", tabButton.dataset.tab === name));
+  document.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.toggle("hide", panel.id !== "panel-" + name));
+}
+
+function setConnected(isConnected) {
+  document.querySelectorAll(".tab").forEach((tabButton) => { tabButton.disabled = !isConnected; });
+  byId("app-view").classList.toggle("hide", !isConnected);
+  byId("signup-view").classList.toggle("hide", isConnected);
+  byId("connect-wrap").classList.toggle("hide", isConnected);
+  byId("status-connected").classList.toggle("hide", !isConnected);
+  byId("disconnect").classList.toggle("hide", !isConnected);
+}
+
+async function connect({ silent = false } = {}) {
+  const typed = byId("key").value.trim();
+  if (typed) setApiKey(typed);
+  if (!hasApiKey()) { setConnected(false); return; }
+  try {
+    const account = await loadAccount();
+    setConnected(true);
+    byId("key").value = "";
+    byId("status-text").textContent = account.name || "Connected";
+    showTab("overview");
+    await Promise.all([loadTemplates(), loadCapabilities(), loadJobs(), loadKeys()]);
+    await loadOverview();
+    startLiveRefresh();
+  } catch (error) {
+    setConnected(false);
+    if (silent) { clearApiKey(); return; }
+    showMsg(byId("signup-msg"), "Could not connect: " + error.message, "err");
+  }
+}
+
+function disconnect() {
+  clearApiKey();
+  location.reload();
+}
+
+// ------------------------------------------------------------------ account
+async function loadAccount() {
+  const account = await api("/account");
+  byId("acct-id").textContent = account.id || "—";
+  byId("acct-name").value = account.name || "";
+  byId("acct-email").value = account.email || "";
+  byId("acct-balance").textContent = effectFromLamports(account.credits.balance).toLocaleString();
+  byId("acct-lamports").textContent = "≈ " + Number(account.credits.balance).toLocaleString() + " lamports";
+  updateTopupBanner(account.credits.balance);
+  return account;
+}
+
+async function saveAccount() {
+  try {
+    await api("/account", { method: "PATCH", body: { name: byId("acct-name").value.trim(), email: byId("acct-email").value.trim() } });
+    showMsg(byId("acct-msg"), "Saved.", "ok");
+    await Promise.all([loadAccount(), loadKeyMini()]);
+    byId("status-text").textContent = byId("acct-name").value.trim() || "Connected";
+  } catch (error) { showMsg(byId("acct-msg"), error.message, "err"); }
+}
+
+const TX_PAGE_SIZE = 10;
+let txPage = 1;
+
+function transactionSource(transaction) {
+  const job = transaction.jobId ? jobsCache.find((entry) => entry.id === transaction.jobId) : null;
+  const detail = String(transaction.note || "")
+    .replace(/^job\s+\S+\s*/i, "")
+    .replace(/^\((.*)\)$/, "$1")
+    .replace(/^-\s*/, "")
+    .trim();
+  if (job) {
+    // A survey's jobs all share one name, so say which one this entry paid for
+    const tail = [job.batch ? memberLabel(job) : "", detail].filter(Boolean).join(" · ");
+    return esc(job.name) + (tail ? ` <span class="muted">· ${esc(tail)}</span>` : "");
+  }
+  return `<span class="muted">${esc(detail || "—")}</span>`;
+}
+
+async function loadTransactions(page = 1) {
+  txPage = Math.max(1, page);
+  byId("tx-list").innerHTML = "Loading…";
+  byId("tx-pager").innerHTML = "";
+  try {
+    const offset = (txPage - 1) * TX_PAGE_SIZE;
+    const { transactions, total } = await api(`/credits/transactions?limit=${TX_PAGE_SIZE}&offset=${offset}`);
+    // New spending while a later page is open can leave that page past the end.
+    if (!transactions.length && txPage > 1) 
+      return loadTransactions(Math.ceil(total / TX_PAGE_SIZE) || 1);
+    if (!transactions.length) { byId("tx-list").innerHTML = `<span class="muted">No transactions yet. Ask the team to top up your credits.</span>`; return; }
+    byId("tx-list").innerHTML =
+      `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Balance</th><th>Job / note</th></tr></thead><tbody>` +
+      transactions.map((transaction) => {
+        // `amount` is always positive; the type carries the direction.
+        const amount = effectFromLamports(transaction.amount);
+        const isDebit = transaction.type === "debit";
+        return `<tr>
+          <td class="muted">${esc(new Date(transaction.timestamp).toLocaleString())}</td>
+          <td><span class="pill ${isDebit ? "pill-warn" : "pill-ok"}">${esc(transaction.type)}</span></td>
+          <td class="mono" style="color:${isDebit ? "var(--danger-fg)" : "var(--ok-fg)"}">${isDebit ? "-" : "+"}${amount} EFFECT</td>
+          <td class="mono">${effectFromLamports(transaction.balanceAfter)}</td>
+          <td>${transactionSource(transaction)}</td></tr>`;
+      }).join("") + `</tbody></table></div>`;
+    renderTxPager({ total, offset, shown: transactions.length });
+  } catch (error) { byId("tx-list").innerHTML = `<span class="msg err">${esc(error.message)}</span>`; }
+}
+
+// Same controls as the jobs page
+function renderTxPager({ total, offset, shown }) {
+  const pageCount = Math.max(1, Math.ceil(total / TX_PAGE_SIZE));
+  const count = `Showing ${offset + 1} to ${offset + shown} of ${total} transaction${total === 1 ? "" : "s"}`;
+  if (pageCount === 1) {
+    byId("tx-pager").innerHTML = `<span class="muted">${count}</span>`;
+    return;
+  }
+  const pages = pageWindow(txPage, pageCount);
+  const numbers = [
+    pages[0] > 1 ? `<button class="page-btn" data-tx-page="1">1</button>${pages[0] > 2 ? `<span class="muted">…</span>` : ""}` : "",
+    ...pages.map((page) => `<button class="page-btn${page === txPage ? " current" : ""}" data-tx-page="${page}">${page}</button>`),
+    pages[pages.length - 1] < pageCount ? `${pages[pages.length - 1] < pageCount - 1 ? `<span class="muted">…</span>` : ""}<button class="page-btn" data-tx-page="${pageCount}">${pageCount}</button>` : "",
+  ].join("");
+
+  byId("tx-pager").innerHTML =
+    `<span class="muted">${count}</span>
+     <div class="pager-controls">
+       <button class="page-btn" data-tx-page="${txPage - 1}"${txPage === 1 ? " disabled" : ""}>‹ Prev</button>
+       ${numbers}
+       <button class="page-btn" data-tx-page="${txPage + 1}"${txPage === pageCount ? " disabled" : ""}>Next ›</button>
+     </div>`;
+}
+
+async function loadKeyMini() {
+  try {
+    const { keys } = await api("/keys");
+    const activeKey = keys.find((key) => key.status === "active");
+    byId("acct-key-mini").innerHTML = activeKey
+      ? `<div class="row" style="justify-content:space-between">
+           <div><div class="mono">${esc(activeKey.prefix)}…</div><div class="muted" style="font-size:.8rem">Created ${esc(new Date(activeKey.createdAt).toLocaleDateString())}</div></div>
+           <span class="pill pill-ok">active</span></div>`
+      : `<span class="muted">No active key.</span>`;
+  } catch (error) { byId("acct-key-mini").innerHTML = `<span class="msg err">${esc(error.message)}</span>`; }
+}
+
+// ------------------------------------------------------------------ keys
+async function loadKeys() {
+  byId("keys-list").innerHTML = `<div class="muted" style="padding:.8rem">Loading…</div>`;
+  try {
+    const { keys } = await api("/keys");
+    const activeCount = keys.filter((key) => key.status === "active").length;
+    byId("keys-list").innerHTML = keys.length
+      ? `<table><thead><tr><th>Key prefix</th><th>Status</th><th>Created</th><th></th></tr></thead><tbody>` +
+        keys.map((key) => `<tr${key.status === "active" ? "" : ' style="opacity:.6"'}>
+          <td class="mono">${esc(key.prefix)}…</td>
+          <td>${key.status === "active" ? '<span class="pill pill-ok">active</span>' : '<span class="pill pill-muted">revoked</span>'}</td>
+          <td class="muted">${esc(new Date(key.createdAt).toLocaleDateString())}</td>
+          <td>${key.status === "active"
+            ? `<button class="btn-danger btn-sm" data-revoke="${esc(key.hash)}" data-prefix="${esc(key.prefix)}" data-last="${activeCount <= 1 ? "1" : ""}">Revoke</button>`
+            : ""}</td></tr>`).join("") + `</tbody></table>`
+      : `<div class="muted" style="padding:.8rem">No keys.</div>`;
+    await loadKeyMini();
+  } catch (error) { byId("keys-list").innerHTML = `<div style="padding:.8rem"><span class="msg err">${esc(error.message)}</span></div>`; }
+}
+
+async function issueKey() {
+  byId("keys-new").disabled = true;
+  try {
+    const created = await api("/keys", { method: "POST" });
+    byId("keys-reveal").innerHTML =
+      `<div class="card" style="margin-top:1rem;border-style:dashed">
+        <div class="section-label">New key · one-time reveal</div>
+        <div class="row" style="gap:.5rem">
+          <code class="mono grow" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;word-break:break-all;font-size:.78rem">${esc(created.key)}</code>
+          <button class="btn-ghost btn-sm" id="reveal-copy" style="flex-shrink:0">Copy</button>
+        </div>
+        <div class="banner banner-danger" style="margin-top:.7rem">⚠ This key will <b>never be shown again</b>. Copy it to a secure location now.</div>
+      </div>`;
+    byId("reveal-copy").onclick = () => copyText(created.key, byId("reveal-copy"));
+    byId("keys-msg").innerHTML = "";
+    await loadKeys();
+  } catch (error) { showMsg(byId("keys-msg"), error.message, "err"); }
+  finally { byId("keys-new").disabled = false; }
+}
+
+async function revokeKey(hash, prefix, isLast) {
+  const warning = isLast
+    ? `⚠ This is your LAST active key.\n\nRevoking it locks this account out of the API. You would have to sign up again or ask the team to issue a new key.\n\nType DELETE to revoke ${prefix}:`
+    : `Revoke key ${prefix}? Anything using it stops working immediately.\n\nType DELETE to confirm:`;
+  const typed = prompt(warning);
+  if (typed === null) return;
+  if (typed !== "DELETE") { showMsg(byId("keys-msg"), "Cancelled. You must type DELETE exactly to revoke.", "err"); return; }
+  try {
+    await api(`/keys/${hash}?confirm=DELETE`, { method: "DELETE" });
+    showMsg(byId("keys-msg"), "Key revoked.", "ok");
+    await loadKeys();
+  } catch (error) { showMsg(byId("keys-msg"), error.message, "err"); }
+}
+
+// ------------------------------------------------------------------ signup
+async function signup() {
+  const name = byId("signup-name").value.trim();
+  if (!name) { showMsg(byId("signup-msg"), "Name is required.", "err"); return; }
+  byId("signup-btn").disabled = true;
+  try {
+    const data = await api("/signup", {
+      method: "POST",
+      body: { name, email: byId("signup-email").value.trim() || undefined },
+      auth: false,
+    });
+    byId("signup-key").textContent = data.key;
+    byId("signup-form").classList.add("hide");
+    byId("signup-reveal").classList.remove("hide");
+  } catch (error) {
+    showMsg(byId("signup-msg"), error.message, "err");
+    byId("signup-btn").disabled = false;
+  }
+}
+
+// ------------------------------------------------------------------ templates
+async function loadTemplates() {
+  const { templates: list } = await api("/templates");
+  templates = list;
+  renderTemplates();
+  // Default to the first template so the form works without opening the picker.
+  const current = byId("job-tpl").value;
+  const keep = list.some((template) => template.templateId === current);
+  selectJobTemplate(keep ? current : (list[0] ? list[0].templateId : ""));
+}
+
+// ------------------------------------------------------- template combobox
+// A native <select> can't contain a search box, so the job template picker is
+// a small combobox: the panel holds its own search input and the list below it
+// re-renders on every keystroke. Selection is kept in the hidden #job-tpl.
+let comboActiveIndex = -1; // keyboard-highlighted row, -1 = none
+
+function renderJobTemplateOptions() {
+  const query = byId("job-tpl-search").value.trim().toLowerCase();
+  const visible = templates.filter((template) => !query || template.name.toLowerCase().includes(query));
+  const selected = byId("job-tpl").value;
+
+  const owned = visible.filter((template) => template.owned);
+  const catalog = visible.filter((template) => !template.owned);
+  const collections = [...new Set(catalog.map((template) => template.collection))].sort();
+
+  const option = (template) => `<div class="combo-option${template.templateId === selected ? " selected" : ""}"
+      role="option" data-template-id="${esc(template.templateId)}">
+      <span>${esc(template.name)}</span>
+      <span class="muted">${template.approved ? "✓" : "⚠"}</span></div>`;
+  const group = (label, items) => items.length
+    ? `<div class="combo-group">${esc(label)}</div>` + items.map(option).join("")
+    : "";
+
+  byId("job-tpl-list").innerHTML = visible.length
+    ? group("My templates", owned) +
+      collections.map((name) => group(name, catalog.filter((template) => template.collection === name))).join("")
+    : `<div class="combo-empty muted">No templates match “${esc(query)}”</div>`;
+}
+
+function selectJobTemplate(templateId) {
+  byId("job-tpl").value = templateId;
+  const template = templates.find((entry) => entry.templateId === templateId);
+  byId("job-tpl-label").textContent = template ? template.name : "Select a template…";
+  byId("job-tpl-label").classList.toggle("muted", !template);
+  closeCombo();
+  showFields();
+}
+
+function openCombo() {
+  byId("job-tpl-panel").classList.remove("hide");
+  byId("job-tpl-trigger").setAttribute("aria-expanded", "true");
+  comboActiveIndex = -1;
+  byId("job-tpl-search").value = "";
+  renderJobTemplateOptions();
+  byId("job-tpl-search").focus();
+}
+
+function closeCombo() {
+  byId("job-tpl-panel").classList.add("hide");
+  byId("job-tpl-trigger").setAttribute("aria-expanded", "false");
+}
+
+// Arrow keys walk the rendered rows, so keyboard order always matches what is
+// on screen regardless of how the groups were built.
+function moveComboActive(delta) {
+  const options = [...byId("job-tpl-list").querySelectorAll(".combo-option")];
+  if (!options.length) return;
+  comboActiveIndex = Math.max(0, Math.min(options.length - 1, comboActiveIndex + delta));
+  options.forEach((row, position) => row.classList.toggle("active", position === comboActiveIndex));
+  options[comboActiveIndex].scrollIntoView({ block: "nearest" });
+}
+
+function templateRow(template, showActions) {
+  const trust = template.approved ? '<span class="pill pill-ok">approved</span>' : '<span class="pill pill-warn">unapproved</span>';
+  const actions = `<button class="btn-ghost btn-sm" data-preview="${esc(template.templateId)}">Preview</button>` +
+    (showActions ? ` <button class="btn-danger btn-sm" data-delete="${esc(template.templateId)}" data-name="${esc(template.name)}">Delete</button>` : "");
+  return `<tr>
+    <td>${esc(template.name)}</td>
+    <td class="mono muted col-wide">${esc((template.fields || []).join(", ") || "none")}</td>
+    <td>${trust}</td>
+    <td class="mono muted col-wide">${shortId(template.templateId)}</td>
+    <td class="col-actions">${actions}</td></tr>`;
+}
+
+// col-wide columns are dropped on phones so the Preview button stays in view.
+const templateTable = (list, showActions) =>
+  `<table><thead><tr><th>Name</th><th class="col-wide">Fields</th><th>Status</th><th class="col-wide">Template ID</th><th></th></tr></thead>` +
+  `<tbody>${list.map((template) => templateRow(template, showActions)).join("")}</tbody></table>`;
+
+function renderTemplates() {
+  const query = byId("tpl-search").value.trim().toLowerCase();
+  const filter = byId("tpl-filter").value;
+  const matches = (template) =>
+    (!query || template.name.toLowerCase().includes(query)) &&
+    (filter === "all" || (filter === "approved" ? template.approved : !template.approved));
+
+  const owned = templates.filter((template) => template.owned && matches(template));
+  const catalog = templates.filter((template) => !template.owned && matches(template));
+
+  // Grouped into a collapsible section per collection. A search query flattens
+  // the grouping, so a match is never hidden inside a collapsed section.
+  const collections = [...new Set(catalog.map((template) => template.collection))].sort();
+  byId("tpl-catalog").innerHTML = !catalog.length
+    ? `<div class="muted" style="padding:.8rem">No public templates match.</div>`
+    : query
+      ? templateTable(catalog, false)
+      : collections.map((name) => {
+          const group = catalog.filter((template) => template.collection === name);
+          return `<details open class="tpl-group"><summary>${esc(name)} <span class="muted">(${group.length})</span></summary>${templateTable(group, false)}</details>`;
+        }).join("");
+
+  byId("tpl-owned").innerHTML = owned.length
+    ? templateTable(owned, true)
+    : `<div class="muted" style="padding:.8rem">No templates of your own yet. Submit one below.</div>`;
+}
+
+function showFields() {
+  const template = templates.find((entry) => entry.templateId === byId("job-tpl").value);
+  const fieldList = template && template.fields.length ? template.fields : [];
+  byId("job-fields").textContent = fieldList.length ? "Needs columns: " + fieldList.join(", ") : "";
+  byId("job-csv-fields").innerHTML = fieldList.length ? fieldList.map((field) => `<span class="chip">${esc(field)}</span>`).join(" ") : `<span class="muted">none</span>`;
+  byId("job-const-fields").innerHTML = fieldList.length ? fieldList.map((field) => `<span class="chip">${esc(field)}</span>`).join(" ") : `<span class="muted">none</span>`;
+}
+
+// adds the Worker instructions to the HTML if they are not already present.
+function templateHtmlWithInstructions() {
+  const html = byId("tpl-html").value;
+  const instructions = byId("tpl-instructions").value.trim();
+  if (!instructions) return html;
+  const literal = JSON.stringify(instructions).replace(/</g, "\\u003c").replace(/\$/g, "\\u0024");
+  return `${html}\n<script>\n  window.top.postMessage({ type: "task-instructions", instructions: ${literal} }, "*");\n</script>\n`;
+}
+
+function hasDuplicateInstructions() {
+  const duplicate = byId("tpl-instructions").value.trim() && byId("tpl-html").value.includes("task-instructions");
+  if (duplicate) showMsg(byId("tpl-msg"), "This HTML already sends its own instructions. Remove them from the HTML or leave Worker instructions empty.", "err");
+  return Boolean(duplicate);
+}
+
+async function submitTemplate() {
+  if (hasDuplicateInstructions()) return;
+  try {
+    await api("/templates", { method: "POST", body: { name: byId("tpl-name").value, html: templateHtmlWithInstructions(), requestApproval: byId("tpl-approve").checked } });
+    showMsg(byId("tpl-msg"), "Template submitted.", "ok");
+    byId("tpl-name").value = ""; byId("tpl-html").value = ""; byId("tpl-instructions").value = "";
+    await loadTemplates();
+  } catch (error) { showMsg(byId("tpl-msg"), error.message, "err"); }
+}
+
+// Retire a template you own (soft archive). The API allows this only for the
+// owner; the Delete button is shown only on owned rows.
+async function deleteTemplate(templateId, name) {
+  if (!confirm(`Delete template "${name}"?\n\nIt will be retired: hidden from your list and unusable for new jobs. Jobs already running on it keep working. You can revive it by re-submitting the identical HTML.`)) return;
+  try {
+    await api(`/templates/${templateId}`, { method: "DELETE" });
+    showMsg(byId("tpl-msg"), `Template "${name}" retired.`, "ok");
+    await loadTemplates();
+  } catch (error) { showMsg(byId("tpl-msg"), error.message, "err"); }
+}
+
+function openSubmitForm() {
+  byId("tpl-submit-card").classList.remove("hide");
+  byId("tpl-submit-card").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+// ------------------------------------------------------------------ create job
+async function loadCapabilities() {
+  ({ capabilities } = await api("/capabilities"));
+  const groups = new Map();
+  for (const capability of capabilities) {
+    if (!groups.has(capability.category)) groups.set(capability.category, []);
+    groups.get(capability.category).push(capability);
+  }
+  byId("job-capability").innerHTML =
+    `<option value="">Any worker / no capability required</option>` +
+    [...groups.entries()].map(([category, list]) =>
+      `<optgroup label="${esc(category)}">` +
+      list.map((capability) => `<option value="${esc(capability.id)}">${esc(capability.name)}</option>`).join("") +
+      `</optgroup>`).join("");
+  showCapabilityDesc();
+}
+
+function showCapabilityDesc() {
+  const selected = capabilities.find((capability) => capability.id === byId("job-capability").value);
+  byId("job-capability-desc").textContent = selected
+    ? `${selected.description}`
+    : "";
+}
+
+function currentJobType() {
+  return document.querySelector('input[name="job-type"]:checked').value;
+}
+
+function onTypeChange() {
+  const isConstant = currentJobType() === "constant";
+  byId("job-csv-mode").classList.toggle("hide", isConstant);
+  byId("job-constant-mode").classList.toggle("hide", !isConstant);
+  byId("radio-csv").classList.toggle("selected", !isConstant);
+  byId("radio-constant").classList.toggle("selected", isConstant);
+  byId("job-unique-row").classList.toggle("hide", isConstant);
+  clearEstimate();
+}
+
+const MAX_SURVEY_WORKERS = 25;
+
+function capSurveyWorkers() {
+  const input = byId("job-maxtasks");
+  const warning = byId("job-maxtasks-warn");
+  if (Number(input.value) <= MAX_SURVEY_WORKERS) { warning.classList.add("hide"); return; }
+  warning.textContent = `Changed to ${MAX_SURVEY_WORKERS}: a survey row can have at most ${MAX_SURVEY_WORKERS} workers, since each worker answers it only once.`;
+  warning.classList.remove("hide");
+  input.value = String(MAX_SURVEY_WORKERS);
+}
+
+function clearEstimate() {
+  byId("est-tasks").textContent = "—";
+  byId("est-rate").textContent = "—";
+  byId("est-total").textContent = "—";
+  byId("est-banner").classList.add("hide");
+}
+
+function jobBody() {
+  const type = currentJobType();
+  const base = { type, name: byId("job-name").value || "Untitled job", templateId: byId("job-tpl").value, reward: byId("job-reward").value, uniqueWorker: byId("job-unique").checked };
+  const capability = byId("job-capability").value;
+  if (capability) base.capability = capability;
+
+  // always restrict each worker to one task instead of offering the choice.
+  if (type === "constant") return { ...base, uniqueWorker: true, csv: byId("job-const-csv").value, maxTasks: Number(byId("job-maxtasks").value) };
+  return { ...base, csv: byId("job-csv").value };
+}
+
+function showEstimate({ taskCount, rewardPerTask, cost, balance, sufficient }) {
+  byId("est-tasks").textContent = taskCount;
+  byId("est-rate").textContent = rewardPerTask;
+  byId("est-total").textContent = cost;
+  const banner = byId("est-banner");
+  banner.className = "banner " + (sufficient ? "banner-ok" : "banner-warn");
+  banner.innerHTML = sufficient
+    ? `Balance: ${esc(balance)} EFFECT (sufficient ✓)`
+    : `Balance: ${esc(balance)} EFFECT (not enough credit). <a href="https://discord.com/invite/effectnetwork" target="_blank" rel="noopener"><b>Ask for a top up on Discord ↗</b></a>`;
+  banner.classList.remove("hide");
+  byId("job-msg").innerHTML = "";
+}
+
+async function estimate() {
+  try {
+    if (currentJobType() === "constant") {
+      const body = jobBody();
+      const perRow = await api("/jobs/estimate", { method: "POST", body: { ...body, type: "csv" } });
+      const rows = perRow.taskCount;
+      const workers = body.maxTasks;
+      
+      if (workers > MAX_SURVEY_WORKERS)
+        throw new Error(`Each survey row can have at most ${MAX_SURVEY_WORKERS} workers (the current worker pool).`);
+      const total = Number(perRow.rewardPerTask) * rows * workers;
+      showEstimate({
+        taskCount: `${rows * workers} (${rows} rows x ${workers})`,
+        rewardPerTask: perRow.rewardPerTask,
+        cost: String(Number(total.toFixed(6))),
+        balance: perRow.balance,
+        sufficient: Number(perRow.balance) >= total,
+      });
+      return;
+    }
+    showEstimate(await api("/jobs/estimate", { method: "POST", body: jobBody() }));
+  } catch (error) { clearEstimate(); showMsg(byId("job-msg"), error.message, "err"); }
+}
+
+async function createJob() {
+  jobsPage = 1;
+  try {
+    if (currentJobType() === "constant") {
+      const result = await api("/jobs/bulk", { method: "POST", body: jobBody() });
+      byId("job-msg").innerHTML = "";
+      showTab("jobs");
+      const tasks = result.jobs.reduce((sum, job) => sum + job.taskCount, 0);
+
+      openBatchId = result.batchId;
+      showMsg(byId("jobs-msg"), `Created a survey of ${result.created} jobs (${tasks} tasks total). They are grouped together below.`, "ok");
+    } else {
+      const job = await api("/jobs", { method: "POST", body: jobBody() });
+      byId("job-msg").innerHTML = "";
+      showTab("jobs");
+      showMsg(byId("jobs-msg"), `Created job ${job.id} (${job.taskCount} tasks, reserved ${job.credits.reserved} EFFECT).`, "ok");
+    }
+  } catch (error) {
+    const partial = error.data && error.data.created;
+    if (error.data && error.data.batchId) openBatchId = error.data.batchId;
+    showMsg(byId("job-msg"), partial
+      ? `Stopped after creating ${partial} job(s): ${error.message}`
+      : error.message, "err");
+  }
+  await Promise.all([loadAccount(), loadJobs()]);
+  await loadOverview();
+}
+
+function downloadCsvTemplate() {
+  const template = templates.find((entry) => entry.templateId === byId("job-tpl").value);
+  const fields = (template && template.fields.length) ? template.fields : ["field1", "field2"];
+  triggerDownload(fields.join(",") + "\n", `template-${(template ? template.name : "job").replace(/\s+/g, "-")}.csv`);
+}
+
+// ------------------------------------------------------------------ jobs
+function jobStatusPill(job) {
+  const outstanding = job.tasks.queued + job.tasks.active;
+  if (job.status !== "active") return { label: job.status, html: `<span class="pill pill-danger">${esc(job.status)}</span>` };
+  if (outstanding === 0) return { label: "done", html: `<span class="pill pill-ok">done</span>` };
+  return { label: "active", html: `<span class="pill pill-warn">active</span>` };
+}
+
+const isRunning = (job) => jobStatusPill(job).label === "active" && (job.tasks.queued + job.tasks.active) > 0;
+
+const JOBS_PAGE_SIZES = [5, 10, 25];
+const JOBS_PAGE_SIZE_KEY = "effect-console-jobs-page-size";
+let jobsPage = 1;
+let jobsPageSize = JOBS_PAGE_SIZES.includes(Number(localStorage.getItem(JOBS_PAGE_SIZE_KEY)))
+  ? Number(localStorage.getItem(JOBS_PAGE_SIZE_KEY))
+  : JOBS_PAGE_SIZES[0];
+
+async function loadJobs() {
+  try {
+    const { jobs } = await api("/jobs?limit=1000");
+    jobsCache = jobs;
+    renderJobs();
+  } catch (error) { byId("jobs-body").innerHTML = `<tr><td colspan="5"><span class="msg err">${esc(error.message)}</span></td></tr>`; }
+}
+
+function groupJobs(jobs) {
+  const groups = [];
+  const byBatchId = new Map();
+
+  for (const job of jobs) {
+    const batchId = job.batch && job.batch.id;
+    if (!batchId) {
+      groups.push({ id: job.id, batchId: null, name: job.name, members: [job] });
+      continue;
+    }
+    let group = byBatchId.get(batchId);
+    if (!group) {
+      group = { id: batchId, batchId, name: job.name, members: [] };
+      byBatchId.set(batchId, group);
+      groups.push(group);
+    }
+    group.members.push(job);
+  }
+
+  for (const group of groups) {
+    if (group.batchId) group.members.sort((first, second) => first.batch.index - second.batch.index);
+  }
+  return groups;
+}
+
+const sumEffect = (values) => Number(values.reduce((total, value) => total + Number(value), 0).toFixed(6));
+
+function groupTotals(group) {
+  const tasks = { queued: 0, active: 0, completed: 0, failed: 0 };
+
+  for (const job of group.members) {
+    tasks.queued += job.tasks.queued;
+    tasks.active += job.tasks.active;
+    tasks.completed += job.tasks.completed;
+    tasks.failed += job.tasks.failed;
+  }
+  const pick = (field) => sumEffect(group.members.map((job) => job.credits[field]));
+  return {
+    tasks,
+    taskCount: group.members.reduce((total, job) => total + job.taskCount, 0),
+    credits: { reserved: pick("reserved"), consumed: pick("consumed"), refunded: pick("refunded"), remaining: pick("remaining") },
+  };
+}
+
+function groupStatusPill(group) {
+  const labels = group.members.map((job) => jobStatusPill(job).label);
+  if (labels.every((label) => label === labels[0])) return jobStatusPill(group.members[0]);
+  if (labels.includes("active")) return { label: "active", html: `<span class="pill pill-warn">active</span>` };
+  return { label: "partial", html: `<span class="pill pill-muted">partial</span>` };
+}
+
+const memberLabel = (job) => `Job #${job.batch.index + 1}`;
+
+function templateNameFor(job) {
+  const template = templates.find((entry) => entry.templateId === job.templateId);
+  return template ? template.name : shortId(job.templateId);
+}
+
+function jobRowHtml(job, { member = false } = {}) {
+  const status = jobStatusPill(job);
+  const heading = member ? memberLabel(job) : esc(job.name);
+  const title = `<div>${heading}</div><div class="muted" style="font-size:.72rem">${esc(templateNameFor(job))}</div>`;
+  const row = `<tr class="job-row${member ? " batch-member" : ""}${openJobId === job.id ? " open" : ""}" data-job="${job.id}">
+      <td>${title}</td>
+      <td>${status.html}</td>
+      <td class="mono">${job.tasks.queued} / ${job.tasks.active} / ${job.tasks.completed}</td>
+      <td class="mono">${esc(job.credits.consumed)} / ${esc(job.credits.remaining)}</td>
+      <td>${isRunning(job) ? `<button class="btn-danger btn-sm" data-cancel="${job.id}">Cancel</button>` : ""}</td></tr>`;
+  const detail = openJobId === job.id
+    ? `<tr class="job-detail${member ? " batch-member" : ""}"><td colspan="5"><div class="job-detail-inner" id="detail-${job.id}"><span class="muted">Loading…</span></div></td></tr>`
+    : "";
+  return row + detail;
+}
+
+function batchGroupHtml(group) {
+  const open = openBatchId === group.id;
+  const totals = groupTotals(group);
+  const status = groupStatusPill(group);
+  const workersPerJob = group.members[0].taskCount;
+  const declaredSize = group.members[0].batch.size;
+  const jobNote = group.members.length < declaredSize
+    ? `${group.members.length} of ${declaredSize} jobs created`
+    : `${group.members.length} jobs`;
+
+  const header = `<tr class="job-row batch-row${open ? " open" : ""}" data-batch="${group.id}">
+      <td>
+        <div><span class="tree-caret">${open ? "▾" : "▸"}</span>${esc(group.name)} <span class="pill pill-muted">survey · ${jobNote}</span></div>
+        <div class="muted" style="font-size:.72rem;padding-left:1.1rem">${esc(templateNameFor(group.members[0]))} · ${workersPerJob} workers each</div>
+      </td>
+      <td>${status.html}</td>
+      <td class="mono">${totals.tasks.queued} / ${totals.tasks.active} / ${totals.tasks.completed}</td>
+      <td class="mono">${totals.credits.consumed} / ${totals.credits.remaining}</td>
+      <td>${group.members.some(isRunning) ? `<button class="btn-danger btn-sm" data-cancel-batch="${group.id}">Cancel all</button>` : ""}</td></tr>`;
+
+  if (!open) return header;
+
+  const done = totals.tasks.completed;
+  const totalTasks = totals.tasks.queued + totals.tasks.active + totals.tasks.completed;
+  const percent = totalTasks ? Math.round((done / totalTasks) * 100) : 0;
+  const summary = `<tr class="job-detail batch-summary"><td colspan="5"><div class="job-detail-inner">
+      <div class="kk muted" style="font-size:.72rem;margin-bottom:.25rem">Survey completion (all jobs)</div>
+      <div class="progress"><div class="progress-fill" style="width:${percent}%"></div></div>
+      <div class="muted" style="font-size:.78rem;margin:.3rem 0">${done} / ${totalTasks} tasks complete (${percent}%) across ${group.members.length} jobs</div>
+      <div class="credit-grid">
+        <div class="credit-cell"><div class="n">${totals.credits.reserved}</div><div class="l">Reserved</div></div>
+        <div class="credit-cell"><div class="n">${totals.credits.consumed}</div><div class="l">Consumed</div></div>
+        <div class="credit-cell"><div class="n">${totals.credits.refunded}</div><div class="l">Refunded</div></div>
+        <div class="credit-cell"><div class="n">${totals.credits.remaining}</div><div class="l">Remaining</div></div>
+      </div>
+      <div class="row" style="margin-top:.7rem">
+        <button class="btn-ghost btn-sm" data-batch-results="${group.id}">View all results</button>
+        <button class="btn-ghost btn-sm" data-batch-download="${group.id}">↓ Download merged CSV</button>
+      </div></div></td></tr>`;
+
+  return header + summary + group.members.map((job) => jobRowHtml(job, { member: true })).join("");
+}
+
+function renderJobs() {
+  const query = byId("jobs-search").value.trim().toLowerCase();
+  const filter = byId("jobs-filter").value;
+  jobGroups = groupJobs(jobsCache);
+
+  const matchesQuery = (group) => !query ||
+    group.name.toLowerCase().includes(query) ||
+    group.id.toLowerCase().includes(query) ||
+    group.members.some((job) => job.id.toLowerCase().includes(query));
+
+  const visible = jobGroups.filter((group) =>
+    matchesQuery(group) && (filter === "all" || groupStatusPill(group).label === filter));
+
+  if (!visible.length) {
+    byId("jobs-body").innerHTML = `<tr><td colspan="5" class="muted">No jobs match. Create one in the Create Job tab.</td></tr>`;
+    byId("jobs-pager").innerHTML = "";
+    return;
+  }
+
+  const pageCount = Math.max(1, Math.ceil(visible.length / jobsPageSize));
+  jobsPage = Math.min(Math.max(jobsPage, 1), pageCount);
+  const start = (jobsPage - 1) * jobsPageSize;
+  const pageGroups = visible.slice(start, start + jobsPageSize);
+
+  byId("jobs-body").innerHTML = pageGroups
+    .map((group) => (group.batchId ? batchGroupHtml(group) : jobRowHtml(group.members[0])))
+    .join("");
+  renderJobsPager({ total: visible.length, start, shown: pageGroups.length, pageCount });
+
+  if (openJobId) renderJobDetail(openJobId);
+}
+
+function pageWindow(current, pageCount) {
+  const span = 5;
+  let first = Math.max(1, current - Math.floor(span / 2));
+  const last = Math.min(pageCount, first + span - 1);
+  first = Math.max(1, last - span + 1);
+  const pages = [];
+  for (let page = first; page <= last; page++) pages.push(page);
+  return pages;
+}
+
+function renderJobsPager({ total, start, shown, pageCount }) {
+  const count = `Showing ${start + 1} to ${start + shown} of ${total} survey${total === 1 ? "" : "s"} and job${total === 1 ? "" : "s"}`;
+  if (pageCount === 1) {
+    byId("jobs-pager").innerHTML = `<span class="muted">${count}</span>`;
+    return;
+  }
+  const pages = pageWindow(jobsPage, pageCount);
+  const numbers = [
+    pages[0] > 1 ? `<button class="page-btn" data-page="1">1</button>${pages[0] > 2 ? `<span class="muted">…</span>` : ""}` : "",
+    ...pages.map((page) => `<button class="page-btn${page === jobsPage ? " current" : ""}" data-page="${page}">${page}</button>`),
+    pages[pages.length - 1] < pageCount ? `${pages[pages.length - 1] < pageCount - 1 ? `<span class="muted">…</span>` : ""}<button class="page-btn" data-page="${pageCount}">${pageCount}</button>` : "",
+  ].join("");
+
+  byId("jobs-pager").innerHTML =
+    `<span class="muted">${count}</span>
+     <div class="pager-controls">
+       <button class="page-btn" data-page="${jobsPage - 1}"${jobsPage === 1 ? " disabled" : ""}>‹ Prev</button>
+       ${numbers}
+       <button class="page-btn" data-page="${jobsPage + 1}"${jobsPage === pageCount ? " disabled" : ""}>Next ›</button>
+     </div>`;
+}
+
+function goToJobsPage(page) {
+  jobsPage = page;
+  renderJobs();
+  byId("panel-jobs").scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+function toggleJob(jobId) {
+  openJobId = openJobId === jobId ? null : jobId;
+  renderJobs();
+}
+
+function toggleBatch(batchId) {
+  openBatchId = openBatchId === batchId ? null : batchId;
+  if (!openBatchId) openJobId = null;
+  renderJobs();
+}
+
+async function renderJobDetail(jobId) {
+  const job = jobsCache.find((entry) => entry.id === jobId);
+  const container = byId("detail-" + jobId);
+  if (!job || !container) return;
+  const template = templates.find((entry) => entry.templateId === job.templateId);
+  const done = job.tasks.completed;
+  const totalTasks = job.tasks.queued + job.tasks.active + job.tasks.completed;
+  const percent = totalTasks ? Math.round((done / totalTasks) * 100) : 0;
+
+  const displayName = job.batch ? `${job.name} · ${memberLabel(job)}` : job.name;
+  container.innerHTML =
+    `<div class="kv-grid">
+       <div class="kv"><div class="kk">Type</div><div class="vv">${job.type === "constant" ? "Constant / survey" : "CSV"}</div></div>
+       <div class="kv"><div class="kk">Template</div><div class="vv">${esc(template ? template.name : shortId(job.templateId))}</div></div>
+       <div class="kv"><div class="kk">Reward</div><div class="vv">${esc(job.reward)} EFFECT / task</div></div>
+       ${job.batch ? `<div class="kv"><div class="kk">Survey</div><div class="vv">Job ${job.batch.index + 1} of ${job.batch.size}</div></div>` : ""}
+     </div>
+     <div class="kk muted" style="font-size:.72rem;margin-bottom:.25rem">Task completion</div>
+     <div class="progress"><div class="progress-fill" style="width:${percent}%"></div></div>
+     <div class="muted" style="font-size:.78rem;margin:.3rem 0 .3rem">${done} / ${totalTasks} tasks complete (${percent}%)</div>
+     <div class="credit-grid">
+       <div class="credit-cell"><div class="n">${esc(job.credits.reserved)}</div><div class="l">Reserved</div></div>
+       <div class="credit-cell"><div class="n">${esc(job.credits.consumed)}</div><div class="l">Consumed</div></div>
+       <div class="credit-cell"><div class="n">${esc(job.credits.refunded)}</div><div class="l">Refunded</div></div>
+       <div class="credit-cell"><div class="n">${esc(job.credits.remaining)}</div><div class="l">Remaining</div></div>
+     </div>
+     <div id="detail-results-${jobId}" class="muted" style="font-size:.82rem">Loading recent results…</div>
+     <div class="row" style="margin-top:.7rem">
+       <button class="btn-ghost btn-sm" data-results="${jobId}" data-name="${esc(displayName)}">View all results</button>
+       <button class="btn-ghost btn-sm" data-download="${jobId}">↓ Download CSV</button>
+       ${isRunning(job) ? `<button class="btn-danger btn-sm" data-cancel="${jobId}">Cancel job</button>` : ""}
+     </div>`;
+
+  try {
+    const preview = await api(`/jobs/${jobId}/results?limit=3`);
+    const target = byId("detail-results-" + jobId);
+    if (!target) return;
+    target.innerHTML = preview.count
+      ? `<div class="kk muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.35rem">Recent results (${preview.count} of ${preview.total})</div>
+         <div class="table-wrap"><table><thead><tr><th>Task ID</th><th>Worker</th><th>Result</th></tr></thead><tbody>` +
+        preview.results.map((row) => `<tr>
+          <td class="mono">${shortId(row.taskId)}</td>
+          <td class="mono">${shortId(row.worker)}</td>
+          <td><div class="result-text">${esc(typeof row.result === "object" ? JSON.stringify(row.result) : row.result)}</div></td></tr>`).join("") +
+        `</tbody></table></div>`
+      : `<span class="muted">No results yet (workers have not completed any tasks).</span>`;
+  } catch (error) {
+    const target = byId("detail-results-" + jobId);
+    if (target) target.innerHTML = `<span class="msg err">${esc(error.message)}</span>`;
+  }
+}
+
+async function cancelJob(jobId) {
+  if (!confirm("Cancel this job? Unfinished tasks are refunded.")) return;
+  try {
+    await api(`/jobs/${jobId}/cancel`, { method: "POST" });
+    await Promise.all([loadAccount(), loadJobs()]);
+    await loadOverview();
+  } catch (error) { alert(error.message); }
+}
+
+async function cancelBatch(batchId) {
+  const group = jobGroups.find((entry) => entry.id === batchId);
+  if (!group) return;
+  const running = group.members.filter(isRunning);
+  if (!running.length) return;
+  if (!confirm(`Cancel this survey? ${running.length} of ${group.members.length} jobs are still running; their unfinished tasks are refunded.`)) return;
+
+  const failures = [];
+  for (const job of running) {
+    try { await api(`/jobs/${job.id}/cancel`, { method: "POST" }); }
+    catch (error) { failures.push(`${memberLabel(job)}: ${error.message}`); }
+  }
+  await Promise.all([loadAccount(), loadJobs()]);
+  await loadOverview();
+  if (failures.length)
+    showMsg(byId("jobs-msg"), `Cancelled ${running.length - failures.length} of ${running.length} jobs. Failed: ${failures.join("; ")}`, "err");
+  else
+    showMsg(byId("jobs-msg"), `Cancelled ${running.length} job(s); unfinished tasks were refunded.`, "ok");
+}
+
+async function loadOverview() {
+  try {
+    const account = await api("/account");
+    byId("ov-balance").textContent = effectFromLamports(account.credits.balance).toLocaleString();
+    updateTopupBanner(account.credits.balance);
+
+    const activeGroups = groupJobs(jobsCache).filter((group) => groupStatusPill(group).label === "active");
+    byId("ov-active").textContent = activeGroups.length;
+    byId("ov-pending").textContent = jobsCache.reduce((sum, job) => sum + job.tasks.queued + job.tasks.active, 0).toLocaleString();
+    
+    const approvedCount = templates.filter((template) => template.approved).length;
+    byId("ov-templates").textContent = templates.length;
+    byId("ov-templates-sub").textContent = `${approvedCount} approved`;
+
+    await renderActivity();
+  } catch (error) { byId("ov-activity").innerHTML = `<span class="msg err">${esc(error.message)}</span>`; }
+}
+
+async function renderActivity() {
+  const events = [];
+  
+  for (const group of groupJobs(jobsCache)) {
+    const first = group.members[0];
+    if (!first.createdAt) continue;
+    const totals = groupTotals(group);
+    events.push({
+      time: new Date(first.createdAt).getTime(),
+      text: `${group.batchId ? "Survey" : "Job"} "${esc(group.name)}" created`,
+      meta: group.batchId ? `${group.members.length} jobs · ${totals.taskCount} tasks` : `${totals.taskCount} tasks`,
+    });
+  }
+  try {
+    const { transactions } = await api("/credits/transactions?limit=10");
+    for (const transaction of transactions) {
+      const amount = effectFromLamports(transaction.amount);
+      const sign = transaction.type === "debit" ? "-" : "+";
+      events.push({ time: Number(transaction.timestamp), text: transaction.type === "topup" ? "Credit top-up" : `Credit ${esc(transaction.type)}`, meta: `${sign}${amount} EFFECT` });
+    }
+  } catch { /* transactions are best-effort for the feed */ }
+
+  events.sort((first, second) => second.time - first.time);
+  const recent = events.slice(0, 6);
+  byId("ov-activity").innerHTML = recent.length
+    ? recent.map((event) => `<div class="activity-row"><span class="when">${relativeTime(event.time)}</span><div>${event.text} <span class="muted">· ${event.meta}</span></div></div>`).join("")
+    : `<span class="muted">No activity yet.</span>`;
+}
+
+// ------------------------------------------------------------------ live refresh
+
+const LIVE_REFRESH_MS = 15000;
+let liveRefreshTimer = null;
+
+async function refreshBalances() {
+  const account = await api("/account");
+  const effect = effectFromLamports(account.credits.balance).toLocaleString();
+  byId("acct-balance").textContent = effect;
+  byId("acct-lamports").textContent = "≈ " + Number(account.credits.balance).toLocaleString() + " lamports";
+  byId("ov-balance").textContent = effect;
+  updateTopupBanner(account.credits.balance);
+}
+
+async function liveTick() {
+  if (document.hidden || !hasApiKey()) return;
+  try {
+    if (!openJobId) 
+      await loadJobs();
+    if (byId("panel-overview").classList.contains("hide")) 
+      await refreshBalances();
+    else await loadOverview();
+  } catch { /* transient network error; the next tick retries */ }
+}
+
+function startLiveRefresh() {
+  stopLiveRefresh();
+  liveRefreshTimer = setInterval(liveTick, LIVE_REFRESH_MS);
+}
+function stopLiveRefresh() {
+  if (liveRefreshTimer) { clearInterval(liveRefreshTimer); liveRefreshTimer = null; }
+}
+
+// ------------------------------------------------------------------ preview
+// Full template preview in a sandboxed iframe
+let previewTemplateId = null;
+let previewDraftHtml = null; // set instead of previewTemplateId for unsaved drafts
+let previewInstructions = null; // HTML the template posted as "task-instructions"
+let previewSampleData = {}; // values rendered into the frame, echoed as the result row's input
+
+const sampleStorageKey = (templateId) => "effect-console-sample:" + templateId;
+function loadStoredSample(templateId) {
+  try { return JSON.parse(localStorage.getItem(sampleStorageKey(templateId))) || {}; }
+  catch { return {}; }
+}
+
+// While an overlay is open the page behind must not scroll, or a swipe over
+// the template frame moves the console instead of the task.
+function setPageScrollLocked(isLocked) {
+  document.documentElement.classList.toggle("scroll-locked", isLocked);
+}
+
+async function previewTemplate(templateId) {
+  previewTemplateId = templateId;
+  previewDraftHtml = null;
+  resetPreviewSession();
+  const frame = byId("tpl-preview-frame");
+  byId("tpl-preview").classList.remove("hide");
+  setPageScrollLocked(true);
+  byId("tpl-preview-title").textContent = "Loading preview…";
+  byId("tpl-preview-id").textContent = "";
+  byId("tpl-preview-trust").innerHTML = "";
+  byId("tpl-preview-note").classList.add("hide");
+  byId("tpl-preview-data").classList.add("hide");
+  frame.srcdoc = "";
+  try {
+    const stored = loadStoredSample(templateId);
+    const preview = Object.keys(stored).length
+      ? await api(`/templates/${templateId}/preview`, { method: "POST", body: { data: stored } })
+      : await api(`/templates/${templateId}/preview`);
+    byId("tpl-preview-title").textContent = preview.name || "Template preview";
+    byId("tpl-preview-id").textContent = shortId(preview.templateId);
+    byId("tpl-preview-url").textContent = "sandbox://preview/" + shortId(preview.templateId);
+    byId("tpl-preview-trust").innerHTML = preview.approved ? `<span class="pill pill-ok">approved</span>` : `<span class="pill pill-warn">unapproved</span>`;
+    byId("tpl-preview-note").classList.toggle("hide", preview.approved);
+    renderSampleBar(preview.fields || [], preview.sampleData || {});
+    previewSampleData = preview.sampleData || {};
+    frame.srcdoc = preview.html;
+  } catch (error) {
+    byId("tpl-preview-title").textContent = "Preview failed";
+    frame.srcdoc = `<p style="font:14px/1.5 system-ui,sans-serif;padding:1rem;color:#b00020">${esc(error.message)}</p>`;
+  }
+}
+
+// Preview the template being typed in the submit form.
+const renderDraft = (html, values) =>
+  html.replace(/\$\{([^}]+)\}/g, (_, key) => {
+    const value = values[key.trim()];
+    return value === undefined ? "" : String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  });
+
+function previewDraftTemplate() {
+  if (!byId("tpl-html").value.trim()) { showMsg(byId("tpl-msg"), "Add some HTML to preview.", "err"); return; }
+  if (hasDuplicateInstructions()) return;
+  const html = templateHtmlWithInstructions();
+
+  previewTemplateId = null;
+  previewDraftHtml = html;
+  resetPreviewSession();
+
+  const fields = [...new Set([...html.matchAll(/\$\{([^}]+)\}/g)].map((match) => match[1].trim()))];
+  const values = Object.fromEntries(fields.map((field) => [field, field]));
+
+  byId("tpl-preview").classList.remove("hide");
+  setPageScrollLocked(true);
+  byId("tpl-preview-title").textContent = byId("tpl-name").value.trim() || "Untitled draft";
+  byId("tpl-preview-id").textContent = "not submitted yet";
+  byId("tpl-preview-url").textContent = "sandbox://preview/draft";
+  byId("tpl-preview-trust").innerHTML = `<span class="pill pill-warn">draft</span>`;
+  byId("tpl-preview-note").classList.remove("hide");
+  renderSampleBar(fields, values);
+  previewSampleData = values;
+  byId("tpl-preview-frame").srcdoc = renderDraft(html, values);
+}
+
+// On a phone the form would push the template off screen, so it starts
+// collapsed there; the label toggles it at any width.
+const isNarrowScreen = () => window.matchMedia("(max-width: 760px)").matches;
+
+function renderSampleBar(fields, values) {
+  const bar = byId("tpl-preview-data");
+  if (!fields.length) { bar.innerHTML = ""; bar.classList.add("hide"); return; }
+  bar.classList.toggle("collapsed", isNarrowScreen());
+  bar.innerHTML =
+    `<button type="button" class="sample-label sample-toggle" id="tpl-preview-data-toggle">
+       Sample data: fill fields as a real task row would <span class="muted">(${fields.length})</span><span class="sample-caret">▾</span>
+     </button>` +
+    fields.map((field) => `<label class="sample-field"><span>\${${esc(field)}}</span><input data-sample-field="${esc(field)}" value="${esc(values[field] ?? "")}" placeholder="${esc(field)}"></label>`).join("") +
+    `<button class="btn-primary btn-sm" id="tpl-preview-apply">Re-render</button>`;
+  bar.classList.remove("hide");
+}
+
+async function applySampleData() {
+  const data = {};
+  byId("tpl-preview-data").querySelectorAll("[data-sample-field]").forEach((input) => {
+    data[input.dataset.sampleField] = input.value;
+  });
+  showPreviewStage("task");
+
+  if (previewDraftHtml !== null) {
+    previewSampleData = data;
+    byId("tpl-preview-frame").srcdoc = renderDraft(previewDraftHtml, data);
+    return;
+  }
+  if (!previewTemplateId) return;
+  localStorage.setItem(sampleStorageKey(previewTemplateId), JSON.stringify(data));
+  const frame = byId("tpl-preview-frame");
+  try {
+    const preview = await api(`/templates/${previewTemplateId}/preview`, { method: "POST", body: { data } });
+    previewSampleData = preview.sampleData || data;
+    frame.srcdoc = preview.html;
+  } catch (error) {
+    frame.srcdoc = `<p style="font:14px/1.5 system-ui,sans-serif;padding:1rem;color:#b00020">${esc(error.message)}</p>`;
+  }
+}
+
+function closePreview() {
+  previewTemplateId = null;
+  previewDraftHtml = null;
+  resetPreviewSession();
+  byId("tpl-preview").classList.add("hide");
+  setPageScrollLocked(false);
+  byId("tpl-preview-frame").srcdoc = "";
+  byId("tpl-preview-data").innerHTML = "";
+}
+
+function resetPreviewSession() {
+  previewInstructions = null;
+  previewSampleData = {};
+  renderInstructions();
+  showPreviewStage("task");
+}
+
+function onPreviewMessage(event) {
+  const frame = byId("tpl-preview-frame");
+  if (!frame.contentWindow || event.source !== frame.contentWindow) return;
+  const message = event.data;
+  if (!message || typeof message !== "object") return;
+  if (message.type === "task-instructions") {
+    previewInstructions = String(message.instructions ?? "");
+    renderInstructions();
+  }
+  if (message.task === "submit") showPreviewResult(message);
+}
+
+function showPreviewStage(stage) {
+  byId("tpl-preview-result").classList.toggle("hide", stage !== "result");
+}
+
+function showPreviewResult(message) {
+  let result;
+  try { result = JSON.stringify(message); }
+  catch { result = String(message); }
+  const answer = message.values !== undefined ? message.values : message;
+  // Same UTC date format and label as the results CSV download.
+  const submittedAtUtc = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+  const row = { taskId: "preview-task", "submittedAt (UTC)": submittedAtUtc, worker: "preview-worker", input: previewSampleData, result };
+  byId("tpl-preview-answer").textContent = JSON.stringify(answer, null, 2);
+  byId("tpl-preview-row").textContent = JSON.stringify(row, null, 2);
+  showPreviewStage("result");
+  byId("tpl-preview-result").scrollTop = 0;
+  byId("tpl-preview-again").focus({ preventScroll: true });
+}
+
+function retryPreviewTask() {
+  showPreviewStage("task");
+  const frame = byId("tpl-preview-frame");
+  // Reassigning srcdoc reloads the template with a clean state.
+  frame.srcdoc = frame.srcdoc;
+}
+
+function setInstructionsOpen(isOpen) {
+  byId("tpl-preview-instructions").classList.toggle("hide", !isOpen);
+  byId("tpl-preview-instructions-toggle").setAttribute("aria-pressed", String(isOpen));
+}
+
+function renderInstructions() {
+  const hasInstructions = Boolean(previewInstructions && previewInstructions.trim());
+  byId("tpl-preview-instructions-toggle").classList.toggle("has-content", hasInstructions);
+  byId("tpl-preview-instructions-empty").classList.toggle("hide", hasInstructions);
+  const body = byId("tpl-preview-instructions-body");
+  body.classList.toggle("hide", !hasInstructions);
+  if (hasInstructions) showSanitizedInstructions(body, previewInstructions);
+  else body.replaceChildren();
+}
+
+//santize the template instructions HTML before showing it in the preview
+function showSanitizedInstructions(container, html) {
+  if (!("setHTML" in Element.prototype)) {
+    container.textContent = "This browser can't safely display template instructions. Open the preview in a current Chrome or Firefox to read them.";
+    return;
+  }
+  const sanitizer = new Sanitizer();
+  sanitizer.allowElement({ name: "img", attributes: ["src", "alt"] });
+  container.setHTML(html, { sanitizer });
+  for (const link of container.querySelectorAll("a[href]")) {
+    Object.assign(link, { target: "_blank", rel: "noopener noreferrer" });
+  }
+}
+
+// ------------------------------------------------------------------ results drawer
+const RESULTS_PAGE = 200;
+// A survey costs one request per job, against a 120/minute API limit.
+const BATCH_FETCH_CONCURRENCY = 4;
+const BATCH_FETCH_WARN_ROWS = 60;
+
+async function mapWithLimit(items, limit, mapper) {
+  const results = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await mapper(items[index], index);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+function confirmLargeBatch(group) {
+  if (group.members.length <= BATCH_FETCH_WARN_ROWS) return true;
+  return confirm(`This survey has ${group.members.length} jobs and each one is fetched separately, which may hit the API rate limit (120 requests per minute). Continue?`);
+}
+
+function openDrawer(title) {
+  byId("results-drawer").classList.remove("hide");
+  setPageScrollLocked(true);
+  byId("drawer-title").textContent = "Results · " + title;
+  byId("drawer-sub").textContent = "Loading…";
+  byId("drawer-json").textContent = "Loading…";
+  byId("drawer-table").innerHTML = "";
+  byId("drawer-count").textContent = "";
+  drawerResults = [];
+  showDrawerView("json");
+}
+
+function fillDrawer(shown, total) {
+  byId("drawer-sub").textContent = `${total} results total`;
+  byId("drawer-count").textContent = `${shown} shown of ${total}`;
+  const readable = drawerResults.map((row) => ({ ...row, submittedAt: formatSubmittedAt(row.submittedAt) }));
+  byId("drawer-json").textContent = drawerResults.length ? JSON.stringify(readable, null, 2) : "No results yet (workers have not completed any tasks).";
+  renderDrawerTable();
+}
+
+async function openResults(jobId, name) {
+  drawerTarget = { kind: "job", id: jobId, name };
+  openDrawer(name);
+  try {
+    const response = await api(`/jobs/${jobId}/results?limit=${RESULTS_PAGE}`);
+    drawerResults = response.results || [];
+    fillDrawer(response.count, response.total);
+  } catch (error) {
+    byId("drawer-json").textContent = error.message;
+    byId("drawer-sub").textContent = "";
+  }
+}
+
+// A survey's results live in one job per CSV row, so merge them here and keep
+// the job label on each result
+async function openBatchResults(batchId) {
+  const group = jobGroups.find((entry) => entry.id === batchId);
+  if (!group || !confirmLargeBatch(group)) return;
+  drawerTarget = { kind: "batch", id: batchId, name: group.name };
+  openDrawer(`${group.name} (${group.members.length} jobs)`);
+  try {
+    const responses = await mapWithLimit(group.members, BATCH_FETCH_CONCURRENCY,
+      (job) => api(`/jobs/${job.id}/results?limit=${RESULTS_PAGE}`).then((response) => ({ job, response })));
+    drawerResults = responses.flatMap(({ job, response }) =>
+      (response.results || []).map((result) => ({ job: memberLabel(job), ...result })));
+    const total = responses.reduce((sum, entry) => sum + entry.response.total, 0);
+    fillDrawer(drawerResults.length, total);
+  } catch (error) {
+    byId("drawer-json").textContent = `Could not load every job of this survey: ${error.message}\n\nOpen an individual job to see its results on its own.`;
+    byId("drawer-sub").textContent = "";
+  }
+}
+
+function renderDrawerTable() {
+  if (!drawerResults.length) { byId("drawer-table").innerHTML = `<span class="muted">No results yet.</span>`; return; }
+  const showJob = drawerTarget && drawerTarget.kind === "batch";
+  byId("drawer-table").innerHTML =
+    `<div class="table-wrap"><table><thead><tr>${showJob ? "<th>Job</th>" : ""}<th>Task ID</th><th>Worker</th><th>Result</th><th>Submitted</th></tr></thead><tbody>` +
+    drawerResults.map((row) => `<tr>
+      ${showJob ? `<td>${esc(row.job)}</td>` : ""}
+      <td class="mono">${shortId(row.taskId)}</td>
+      <td class="mono">${shortId(row.worker)}</td>
+      <td><div class="result-text">${esc(typeof row.result === "object" ? JSON.stringify(row.result) : row.result)}</div></td>
+      <td class="muted">${esc(formatSubmittedAt(row.submittedAt))}</td></tr>`).join("") +
+    `</tbody></table></div>`;
+}
+
+function showDrawerView(view) {
+  document.querySelectorAll(".drawer-tab").forEach((tabButton) => tabButton.classList.toggle("active", tabButton.dataset.view === view));
+  byId("drawer-json").classList.toggle("hide", view !== "json");
+  byId("drawer-table").classList.toggle("hide", view !== "table");
+}
+
+function closeDrawer() {
+  byId("results-drawer").classList.add("hide");
+  setPageScrollLocked(false);
+}
+
+async function downloadCsv(jobId) {
+  try {
+    triggerDownload(await fetchResultsCsv(jobId), `job-${jobId}-results.csv`);
+  } catch (error) { showMsg(byId("jobs-msg"), `Download failed: ${error.message}`, "err"); }
+}
+
+// One file for the whole survey
+async function downloadBatchCsv(batchId) {
+  const group = jobGroups.find((entry) => entry.id === batchId);
+  if (!group || !confirmLargeBatch(group)) return;
+  let files;
+  try {
+    files = await mapWithLimit(group.members, BATCH_FETCH_CONCURRENCY,
+      (job) => fetchResultsCsv(job.id).then((blob) => blob.text()));
+  } catch (error) {
+    showMsg(byId("jobs-msg"), `Could not download every job of this survey (${error.message}). Nothing was saved; try again or download jobs individually.`, "err");
+    return;
+  }
+  const merged = files.map((text, index) => {
+    if (index === 0) return text;
+    const firstNewline = text.indexOf("\n");
+    return firstNewline === -1 ? "" : text.slice(firstNewline + 1);
+  }).join("");
+  triggerDownload(merged, `survey-${batchId}-results.csv`);
+}
+
+// ------------------------------------------------------------------ small utils
+function copyText(text, buttonElement) {
+  navigator.clipboard.writeText(text).then(() => {
+    const original = buttonElement.textContent;
+    buttonElement.textContent = "Copied!";
+    setTimeout(() => { buttonElement.textContent = original; }, 2000);
+  });
+}
+function triggerDownload(content, filename) {
+  const blob = content instanceof Blob ? content : new Blob([content], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url; anchor.download = filename; anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+// ------------------------------------------------------------------ wiring
+byId("connect").onclick = () => connect();
+byId("key").addEventListener("keydown", (event) => { if (event.key === "Enter") connect(); });
+byId("disconnect").onclick = disconnect;
+byId("theme-toggle").onclick = toggleTheme;
+
+byId("signup-btn").onclick = signup;
+byId("signup-name").addEventListener("keydown", (event) => { if (event.key === "Enter") signup(); });
+byId("signup-copy").onclick = () => copyText(byId("signup-key").textContent, byId("signup-copy"));
+
+// Tabs + any element that jumps to a tab (metric CTAs, quick actions)
+document.querySelectorAll(".tab").forEach((tabButton) => {
+  tabButton.onclick = () => { if (!tabButton.disabled) showTab(tabButton.dataset.tab); };
+});
+document.addEventListener("click", (event) => {
+  const jump = event.target.closest("[data-goto]");
+  if (jump) {
+    showTab(jump.dataset.goto);
+    if (jump.dataset.openSubmit) openSubmitForm();
+  }
+});
+
+// Templates
+byId("tpl-open-submit").onclick = openSubmitForm;
+byId("tpl-collapse").onclick = () => byId("tpl-submit-card").classList.add("hide");
+byId("tpl-submit").onclick = submitTemplate;
+byId("tpl-preview-draft").onclick = previewDraftTemplate;
+byId("tpl-search").addEventListener("input", renderTemplates);
+byId("tpl-filter").addEventListener("change", renderTemplates);
+byId("panel-templates").addEventListener("click", (event) => {
+  if (event.target.dataset.preview) previewTemplate(event.target.dataset.preview);
+  if (event.target.dataset.delete) deleteTemplate(event.target.dataset.delete, event.target.dataset.name);
+});
+
+// Create job
+document.querySelectorAll('input[name="job-type"]').forEach((radio) => radio.addEventListener("change", onTypeChange));
+byId("job-tpl-trigger").onclick = () =>
+  byId("job-tpl-panel").classList.contains("hide") ? openCombo() : closeCombo();
+byId("job-tpl-search").addEventListener("input", () => { comboActiveIndex = -1; renderJobTemplateOptions(); });
+byId("job-tpl-search").addEventListener("keydown", (event) => {
+  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    event.preventDefault();
+    moveComboActive(event.key === "ArrowDown" ? 1 : -1);
+  } else if (event.key === "Enter") {
+    event.preventDefault();
+    const options = byId("job-tpl-list").querySelectorAll(".combo-option");
+    const pick = options[comboActiveIndex] || options[0];
+    if (pick) selectJobTemplate(pick.dataset.templateId);
+  } else if (event.key === "Escape") {
+    closeCombo();
+    byId("job-tpl-trigger").focus();
+  }
+});
+byId("job-tpl-list").addEventListener("click", (event) => {
+  const row = event.target.closest(".combo-option");
+  if (row) selectJobTemplate(row.dataset.templateId);
+});
+// Clicking anywhere outside the combobox dismisses it.
+document.addEventListener("click", (event) => {
+  if (!event.target.closest("#job-tpl-combo")) closeCombo();
+});
+byId("job-maxtasks").addEventListener("input", capSurveyWorkers);
+byId("job-capability").onchange = showCapabilityDesc;
+byId("job-estimate").onclick = estimate;
+byId("job-create").onclick = createJob;
+byId("job-csv-template").onclick = downloadCsvTemplate;
+
+// Jobs
+byId("jobs-refresh").onclick = loadJobs;
+// Narrowing the list makes the current page meaningless, so start over at 1.
+const renderJobsFromFirstPage = () => { jobsPage = 1; renderJobs(); };
+byId("jobs-search").addEventListener("input", renderJobsFromFirstPage);
+byId("jobs-filter").addEventListener("change", renderJobsFromFirstPage);
+byId("jobs-page-size").value = String(jobsPageSize);
+byId("jobs-page-size").addEventListener("change", (event) => {
+  jobsPageSize = Number(event.target.value);
+  localStorage.setItem(JOBS_PAGE_SIZE_KEY, String(jobsPageSize));
+  renderJobsFromFirstPage();
+});
+byId("jobs-pager").addEventListener("click", (event) => {
+  const button = event.target.closest(".page-btn");
+  if (button && !button.disabled) goToJobsPage(Number(button.dataset.page));
+});
+byId("tx-pager").addEventListener("click", (event) => {
+  const button = event.target.closest(".page-btn");
+  if (button && !button.disabled) loadTransactions(Number(button.dataset.txPage));
+});
+byId("jobs-body").addEventListener("click", (event) => {
+  const data = event.target.dataset;
+  if (data.cancel) { event.stopPropagation(); cancelJob(data.cancel); return; }
+  if (data.cancelBatch) { event.stopPropagation(); cancelBatch(data.cancelBatch); return; }
+  if (data.results) { event.stopPropagation(); openResults(data.results, data.name); return; }
+  if (data.batchResults) { event.stopPropagation(); openBatchResults(data.batchResults); return; }
+  if (data.download) { event.stopPropagation(); downloadCsv(data.download); return; }
+  if (data.batchDownload) { event.stopPropagation(); downloadBatchCsv(data.batchDownload); return; }  const row = event.target.closest(".job-row");
+  if (!row) return;
+  if (row.dataset.batch) toggleBatch(row.dataset.batch);
+  else toggleJob(row.dataset.job);
+});
+
+// Account
+byId("acct-save").onclick = saveAccount;
+byId("acct-id-copy").onclick = () => copyText(byId("acct-id").textContent, byId("acct-id-copy"));
+byId("topup-copy-id").onclick = () => copyText(byId("acct-id").textContent, byId("topup-copy-id"));
+
+// Keys
+byId("keys-new").onclick = issueKey;
+byId("keys-list").addEventListener("click", (event) => {
+  if (event.target.dataset.revoke) revokeKey(event.target.dataset.revoke, event.target.dataset.prefix, event.target.dataset.last === "1");
+});
+
+// Preview modal + results drawer
+byId("tpl-preview-close").onclick = closePreview;
+byId("tpl-preview-data").addEventListener("click", (event) => {
+  if (event.target.id === "tpl-preview-apply") applySampleData();
+  if (event.target.closest("#tpl-preview-data-toggle")) byId("tpl-preview-data").classList.toggle("collapsed");
+});
+byId("tpl-preview-data").addEventListener("keydown", (event) => { if (event.key === "Enter" && event.target.dataset.sampleField) applySampleData(); });
+window.addEventListener("message", onPreviewMessage);
+byId("tpl-preview-instructions-toggle").onclick = () =>
+  setInstructionsOpen(byId("tpl-preview-instructions").classList.contains("hide"));
+byId("tpl-preview-instructions-close").onclick = () => setInstructionsOpen(false);
+byId("tpl-preview-again").onclick = retryPreviewTask;
+byId("tpl-preview-copy").onclick = () => copyText(byId("tpl-preview-row").textContent, byId("tpl-preview-copy"));
+byId("drawer-close").onclick = closeDrawer;
+byId("results-drawer").addEventListener("click", (event) => { if (event.target.id === "results-drawer") closeDrawer(); });
+byId("drawer-csv").onclick = () => {
+  if (!drawerTarget) return;
+  if (drawerTarget.kind === "batch") downloadBatchCsv(drawerTarget.id);
+  else downloadCsv(drawerTarget.id);
+};
+document.querySelectorAll(".drawer-tab").forEach((tabButton) => tabButton.onclick = () => showDrawerView(tabButton.dataset.view));
+
+// Load account transactions when the Account tab is first opened, and lazily
+// after that on each visit, so the history stays fresh.
+document.querySelector('.tab[data-tab="account"]').addEventListener("click", () => { loadTransactions(); loadKeyMini(); });
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  if (!byId("tpl-preview").classList.contains("hide")) closePreview();
+  else if (!byId("results-drawer").classList.contains("hide")) closeDrawer();
+});
+
+// Refresh immediately when the tab regains focus, so a user coming back sees
+// current numbers without waiting for the next poll.
+document.addEventListener("visibilitychange", () => { if (!document.hidden) liveTick(); });
+
+// Session persistence: if a key is already stored (e.g. after a refresh), skip
+// the signup view and reconnect silently. A stale key just falls back to signup.
+if (hasApiKey()) connect({ silent: true });

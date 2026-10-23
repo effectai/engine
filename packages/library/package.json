@@ -5,9 +5,9 @@
   "type": "module",
   "version": "1.0.0",
   "scripts": {
-    "build": "pnpm run build:node && pnpm run build:browser",
-    "build:node": "tsup ./src/node.ts --config ../../tsup.config.package.ts",
-    "build:browser": "tsup ./src/browser.ts --config ../../tsup.config.browser.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "clean": "rm -rf dist",
     "test": "vitest",
     "format": "pnpm biome format --write . --config-path ../../biome.json",
     "generate": "protons ./src/core/protocol/task/task.proto",
@@ -18,10 +18,10 @@
   "module": "./dist/node.js",
   "exports": {
     ".": {
-      "types": "./dist/node.d.ts",
-      "browser": "./dist/browser.browser.mjs",
-      "import": "./dist/node.js",
-      "default": "./dist/node.js"
+      "import": {
+        "types": "./dist/node.d.ts",
+        "default": "./dist/node.js"
+      }
     }
   },
   "dependencies": {

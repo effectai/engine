@@ -1,4 +1,4 @@
-import { availableCapabilities } from "../constants/capabilities";
+import { availableCapabilities } from "@effectai/capabilities";
 
 type UserCapabilityAssignment = {
   id: string;

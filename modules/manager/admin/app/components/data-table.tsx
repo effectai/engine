@@ -42,6 +42,11 @@ export function DataTable<TData, TValue>({
   const [pageSizeInput, setPageSizeInput] = useState(pageSize);
   const [pageIndex, setPageIndex] = useState(0);
 
+  const currentPageIndex = Math.min(
+    pageIndex,
+    Math.max(0, Math.ceil(data.length / pageSizeInput) - 1),
+  );
+
   const table = useReactTable({
     data,
     columns,
@@ -53,7 +58,7 @@ export function DataTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     state: {
       pagination: {
-        pageIndex: pageIndex,
+        pageIndex: currentPageIndex,
         pageSize: pageSizeInput,
       },
       sorting,
@@ -129,7 +134,7 @@ export function DataTable<TData, TValue>({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setPageIndex(pageIndex - 1)}
+          onClick={() => setPageIndex(currentPageIndex - 1)}
           disabled={!table.getCanPreviousPage()}
         >
           Previous
@@ -137,7 +142,7 @@ export function DataTable<TData, TValue>({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setPageIndex(pageIndex + 1)}
+          onClick={() => setPageIndex(currentPageIndex + 1)}
           disabled={!table.getCanNextPage()}
         >
           Next

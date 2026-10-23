@@ -265,8 +265,7 @@ export function createTaskWorker({
 
       if (lastTaskEvent.type === "create") {
         const createdAt = lastTaskEvent.timestamp;
-        //TODO:: fetch this from manager connection state
-        return now - createdAt > timeLimitSeconds;
+        return now - createdAt >= timeLimitSeconds;
       }
 
       return false;

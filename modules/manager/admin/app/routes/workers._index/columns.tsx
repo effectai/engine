@@ -1,17 +1,19 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
-import { formatReward, sliceBoth } from "@/app/lib/utils";
+import type { ColumnDef, HeaderContext } from "@tanstack/react-table";
+import {
+  formatEffect,
+  formatTimestamp,
+  getSuccessRate,
+  sliceBoth,
+  toDate,
+} from "@/app/lib/utils";
 import { Link } from "@remix-run/react";
 import type { WorkerState } from "../../../../dist/stores/managerWorkerStore";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/app/components/ui/button";
-import { ArrowUpDown, Circle, CircleOff, Search } from "lucide-react";
+import { ArrowUpDown, Circle, CircleOff } from "lucide-react";
 import { Badge } from "@/app/components/ui/badge";
-
-const calculateSuccessRate = (item: WorkerData) => {
-  return (item.state.tasksCompleted / item.state.totalTasks) * 100;
-};
 
 export type WorkerData = {
   state: WorkerState & {
@@ -19,14 +21,26 @@ export type WorkerData = {
   };
 };
 
-// 🔑 columns is now a function that takes callbacks
-export const columns = ({
-  onSearchIDClick,
-  onSearchACClick,
-}: {
-  onSearchIDClick: () => void;
-  onSearchACClick: () => void;
-}): ColumnDef<WorkerData>[] => [
+/**
+ * Workers that have never been assigned a task have no success rate. Sorting
+ * them as -1 keeps them grouped below genuine 0% workers instead of turning
+ * into NaN, which would leave the row order untouched.
+ */
+const NO_SUCCESS_RATE = -1;
+
+const sortableHeader =
+  (label: string) =>
+  <TValue,>({ column }: HeaderContext<WorkerData, TValue>) => (
+    <Button
+      variant="ghost"
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+    >
+      {label}
+      <ArrowUpDown className="ml-2 h-4 w-4" />
+    </Button>
+  );
+
+export const columns: ColumnDef<WorkerData>[] = [
   {
     accessorKey: "state.isOnline",
     header: "Status",
@@ -35,43 +49,40 @@ export const columns = ({
       const isBanned = row.original.state.banned;
 
       return (
-        <Badge variant={isBanned ? "purple" : isOnline ? "green" : "destructive"} className="gap-2">
+        <Badge
+          variant={isBanned ? "purple" : isOnline ? "green" : "destructive"}
+          className="gap-2"
+        >
           {isBanned ? (
             <>
               <Circle className="h-3 w-3 fill-current" />
               Banned
             </>
+          ) : isOnline ? (
+            <>
+              <Circle className="h-3 w-3 fill-current" />
+              Online
+            </>
           ) : (
-            isOnline ? (
-              <>
-                <Circle className="h-3 w-3 fill-current" />
-                Online
-              </>
-            ) : (
-              <>
-                <CircleOff className="h-3 w-3" />
-                Offline
-              </>
-            )
+            <>
+              <CircleOff className="h-3 w-3" />
+              Offline
+            </>
           )}
         </Badge>
       );
     },
   },
   {
-    accessorKey: "state.id",
-    header: () => (
-      <Button variant="ghost" onClick={onSearchIDClick}>
-        ID
-        <Search className="ml-2 h-4 w-4" />
-      </Button>
-    ),
+    accessorKey: "state.peerId",
+    header: "ID",
     cell: ({ row }) => {
       const id = row.original.state.peerId;
       return (
         <Link
           to={`/workers/${id}`}
-          className="text-blue-500 hover:text-blue-700"
+          title={id}
+          className="font-mono text-blue-500 hover:text-blue-700"
         >
           {sliceBoth(id)}
         </Link>
@@ -79,77 +90,75 @@ export const columns = ({
     },
   },
   {
-    accessorKey: "state.lastActivity",
-    header: "Last Activity",
+    accessorKey: "state.discordName",
+    header: sortableHeader("Discord"),
     cell: ({ row }) => {
-      const distance = formatDistanceToNow(
-        new Date(row.original.state.lastActivity * 1000),
-        { addSuffix: true }
+      const discordName = row.original.state.discordName;
+
+      return discordName ? (
+        <span>{discordName}</span>
+      ) : (
+        <span className="text-muted-foreground">Not linked</span>
       );
-      return <span>{distance}</span>;
+    },
+  },
+  {
+    accessorKey: "state.lastActivity",
+    header: sortableHeader("Last Activity"),
+    cell: ({ row }) => {
+      const lastActivity = row.original.state.lastActivity;
+
+      if (!lastActivity) {
+        return <span className="text-muted-foreground">Never</span>;
+      }
+
+      return (
+        <span title={formatTimestamp(lastActivity)}>
+          {formatDistanceToNow(toDate(lastActivity), { addSuffix: true })}
+        </span>
+      );
     },
   },
   {
     accessorKey: "state.accessCodeRedeemed",
-    header: () => (
-      <Button variant="ghost" onClick={onSearchACClick}>
-        Access Code
-        <Search className="ml-2 h-4 w-4" />
-      </Button>
-    ),
+    header: "Access Code",
+    cell: ({ row }) => {
+      const accessCode = row.original.state.accessCodeRedeemed;
+
+      return accessCode ? (
+        <span className="font-mono">{accessCode}</span>
+      ) : (
+        <span className="text-muted-foreground">None</span>
+      );
+    },
   },
   {
     id: "successRate",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Success Rate
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    sortingFn: (rowA, rowB) => {
-      const successRateA = calculateSuccessRate(rowA.original);
-      const successRateB = calculateSuccessRate(rowB.original);
-      return successRateB - successRateA;
-    },
+    accessorFn: (row) => getSuccessRate(row.state) ?? NO_SUCCESS_RATE,
+    sortingFn: "basic",
+    header: sortableHeader("Success Rate"),
     cell: ({ row }) => {
-      const successRate =
-        row.original.state.tasksCompleted > 0
-          ? (
-              (row.original.state.tasksCompleted /
-                row.original.state.totalTasks) *
-              100
-            ).toFixed(1)
-          : "0.0";
+      const { tasksCompleted, totalTasks } = row.original.state;
+      const successRate = getSuccessRate(row.original.state);
+
+      if (successRate === null) {
+        return <span className="text-muted-foreground">No tasks yet</span>;
+      }
 
       return (
         <span>
-          {successRate}% ({row.original.state.tasksCompleted}/
-          {row.original.state.totalTasks})
+          {successRate.toFixed(1)}% ({tasksCompleted}/{totalTasks})
         </span>
       );
     },
   },
   {
     accessorKey: "state.totalEarned",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Total Earned
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
+    header: sortableHeader("Total Earned"),
+    cell: ({ row }) => (
+      <span>
+        {formatEffect(BigInt(row.original.state.totalEarned ?? 0n), 2)} EFFECT
+      </span>
     ),
-    cell: ({ row }) =>
-      row.original.state.totalEarned ? (
-        <span>
-          {formatReward(BigInt(row.original.state.totalEarned))} EFFECT
-        </span>
-      ) : (
-        0n
-      ),
   },
 ];
