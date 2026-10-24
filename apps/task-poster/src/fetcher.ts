@@ -126,7 +126,7 @@ const formatDate = (ts: number) =>
 
 // little shorthand to inject form field's value if it exists
 const addVal = (values: FormValues, key: string,  defaultVal: string = ""): string =>
-  `${values[key] ? `value="${escapeHTML(values[key])}"` : defaultVal ? `value="${escapeHTML(defaultVal)}"` : ""}`;
+  `${values[key] ? `value="${escapeHTML(String(values[key]))}"` : defaultVal ? `value="${escapeHTML(defaultVal)}"` : ""}`;
 
 type FormValues = Record<string, any>;
 
@@ -1116,7 +1116,7 @@ export const addFetcherRoutes = (app: Express): void => {
     ))!;
     const results = (await Promise.all(
       resultIds.map(i => db.get<any>(["task-result", i.key[4]]))
-    )).map(p => p!.data)
+    )).filter(p => p).map(p => p!.data)
       .map(p => { p["timestamp"] = formatDate(p["timestamp"]); return p; });
 
     let cols = ["timestamp", "submissionByPeer", "taskId", "result"];
@@ -1162,7 +1162,7 @@ export const addFetcherRoutes = (app: Express): void => {
 <table style="font-size: 9px; margin: 0 auto;">
     <thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead>
     <tbody>${results.map((r: any) => `
-      <tr>${cols.map(c => `<td>${r[c]}</td>`).join("")}</tr>`).join("")}
+      <tr>${cols.map(c => `<td>${escapeHTML(String(r[c]))}</td>`).join("")}</tr>`).join("")}
     </tbody>
 </table>
 </section>
@@ -1213,6 +1213,7 @@ export const addFetcherRoutes = (app: Express): void => {
 
   app.get("/task/:tid", async (req, res) => {
     const tid = req.params.tid;
+    if (!/^[\p{L}\p{N}@_-]+$/u.test(tid)) return make404(res);
     const t = await db.get<Task>(["task", tid]);
     const ts = JSON.stringify(t, (_, v) => typeof v === 'bigint' ? v.toString() : v)
     res.send(ts);
@@ -1414,6 +1415,7 @@ ${Object.entries(peers)
       if (!f) return make404(res);
 
       const offset = Number(req.query.offset || "0");
+      if (!Number.isInteger(offset) || offset < 0) return make404(res);
 
       const tasks = await getPendingTasks(f!);
 
@@ -1449,7 +1451,7 @@ ${Object.entries(peers)
 <pre>${JSON.stringify(task, (_, v) => typeof v === 'bigint' ? v.toString() : v)}</pre>`));
     });
 
-  app.get("/d/:id/pipeline-preview", async (req, res) => {
+  app.get("/d/:id/pipeline-preview", requireAuth, async (req, res) => {
     let { pipelineSource, filter } = req.query;
     const id = Number(req.params.id);
 
