@@ -70,16 +70,24 @@ const maxNonce = (payments: StoredPayment[]): bigint =>
  * Failures are logged but not thrown, this is a best effort basis to
  * backup payments.
  */
+// One sync at a time: a second one started mid-download would see the
+// incomplete marker and start the whole download again in parallel
+let activeSync: Promise<void> | null = null;
+
 export function usePaymentSync() {
+  const toast = useToast();
+
   const syncPayments = async (
     managerMultiaddr: Multiaddr,
     nonces: { remoteNonce: bigint | null; localNonce: bigint },
   ): Promise<void> => {
-    try {
-      await runSync(managerMultiaddr, nonces);
-    } catch (error) {
-      console.error("[PaymentSync] Sync failed:", error);
-    }
+    if (activeSync) return activeSync;
+    activeSync = runSync(managerMultiaddr, nonces, toast)
+      .catch((error) => console.error("[PaymentSync] Sync failed:", error))
+      .finally(() => {
+        activeSync = null;
+      });
+    return activeSync;
   };
 
   return { syncPayments };
@@ -88,6 +96,7 @@ export function usePaymentSync() {
 const runSync = async (
   managerMultiaddr: Multiaddr,
   nonces: { remoteNonce: bigint | null; localNonce: bigint },
+  toast: ReturnType<typeof useToast>,
 ): Promise<void> => {
   const workerStore = useWorkerStore();
   const entity = workerStore.instance?.entity;
@@ -136,23 +145,43 @@ const runSync = async (
     remoteMax = maxNonce(headBatch);
   }
 
+  // Set while a download runs. Downloads go newest first, so if it is still
+  // set the last one was cut short and left a gap below localMax: download
+  // everything above the on-chain nonce again instead.
+  const incompleteKey = `payment-sync-incomplete-${modifierHex}-${managerPeerId}`;
+  const incomplete = localStorage.getItem(incompleteKey) !== null;
+
   // If remote nonce is higher: download payments
-  const downloadCutoff = localMax > onChainNonce ? localMax : onChainNonce;
+  const downloadCutoff =
+    !incomplete && localMax > onChainNonce ? localMax : onChainNonce;
   if (remoteMax > downloadCutoff && remoteHead) {
     console.log(
       `[PaymentSync] Downloading payments above nonce ${downloadCutoff.toString()}`,
     );
-    await downloadRemoteChain({
-      entity,
-      managerMultiaddr,
-      headHash: remoteHead,
-      cutoff: downloadCutoff,
-      managerPeerId,
-      managerPublicKey,
-      recipient,
+    localStorage.setItem(incompleteKey, "1");
+    const notice = toast.add({
+      title: "Restoring payments",
+      description: "Keep this page open until it finishes.",
+      duration: 0,
     });
+    try {
+      await downloadRemoteChain({
+        entity,
+        managerMultiaddr,
+        headHash: remoteHead,
+        cutoff: downloadCutoff,
+        managerPeerId,
+        managerPublicKey,
+        recipient,
+      });
+      localStorage.removeItem(incompleteKey);
+    } finally {
+      toast.remove(notice.id);
+    }
     return;
   }
+  // Nothing left to download (e.g. claimed since), so no gap to fill
+  localStorage.removeItem(incompleteKey);
 
   // If local nonce is higher: upload payments
   const uploadCutoff = remoteMax > onChainNonce ? remoteMax : onChainNonce;
@@ -268,9 +297,11 @@ const downloadRemoteChain = async ({
   let downloaded = 0;
 
   while (cursor) {
-    const [res] = await (entity.sendMessage(managerMultiaddr, {
+    const [res, err] = await (entity.sendMessage(managerMultiaddr, {
       getObject: { hash: cursor, limit: NODE_FETCH_LIMIT },
     }) as Promise<[any, any]>);
+    // Throw rather than stop so the download stays marked incomplete
+    if (err) throw new Error(`Failed to fetch payment batch: ${err}`);
     const items: any[] = (res as any)?.items ?? [];
     if (items.length === 0) break;
 

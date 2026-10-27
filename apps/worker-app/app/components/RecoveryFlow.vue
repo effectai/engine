@@ -19,8 +19,14 @@
           </p>
         </div>
         <template v-else>
-        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Recover Your Wallet</h2>
-        <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">
+          {{ isAuthenticated ? "Switch Wallet" : "Recover Your Wallet" }}
+        </h2>
+        <p v-if="isAuthenticated" style="font-size: 14px; color: #666; margin-bottom: 20px;">
+          Pick the wallet you want to use on this device. Each wallet keeps its own
+          EFFECT and payments.
+        </p>
+        <p v-else style="font-size: 14px; color: #666; margin-bottom: 20px;">
           We found wallets already linked to this account. Pick the one whose wallet address
           matches the address you used before.
         </p>
@@ -40,6 +46,12 @@
             }"
             @click="selectedModifier = device.modifier"
           >
+            <span
+              v-if="device.address === account"
+              style="display: inline-flex; font-size: 12px; font-weight: 600; color: #111827; border: 1px solid #d1d5db; border-radius: 4px; padding: 1px 8px; margin: 0 6px 8px 0;"
+            >
+              Current
+            </span>
             <span
               v-if="selectedModifier === device.modifier"
               style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: white; background: #111827; border-radius: 999px; padding: 2px 8px; margin-bottom: 8px;"
@@ -108,15 +120,15 @@
           style="margin-top: 16px;"
           @click="resolveRecovery(selectedModifier)"
         >
-          Recover Selected Wallet
+          {{ isAuthenticated ? "Use This Wallet" : "Recover Selected Wallet" }}
         </UButton>
         <button
           style="margin-top: 16px; width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background: transparent; font-size: 14px; cursor: pointer;"
-          @click="confirmingNewWallet = true"
+          @click="isAuthenticated ? resolveRecovery(null) : (confirmingNewWallet = true)"
         >
-          Create New Wallet
+          {{ isAuthenticated ? "Cancel" : "Create New Wallet" }}
         </button>
-        <p style="font-size: 12px; color: #888; margin-top: 8px; text-align: center;">
+        <p v-if="!isAuthenticated" style="font-size: 12px; color: #888; margin-top: 8px; text-align: center;">
           A new wallet gets a different address from the ones above.
         </p>
         </template>
@@ -133,8 +145,14 @@
         style="background: white; border-radius: 16px; padding: 24px; max-width: 420px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);"
       >
         <div class="text-center space-y-2 mb-4">
-          <h2 class="text-xl font-semibold">Wallet Recovered</h2>
-          <p class="text-sm text-gray-600 dark:text-gray-400">
+          <h2 class="text-xl font-semibold">
+            {{ switched ? "Wallet Switched" : "Wallet Recovered" }}
+          </h2>
+          <p v-if="switched" class="text-sm text-gray-600 dark:text-gray-400">
+            Connect to a manager to load this wallet's payments. New earnings will
+            go to this wallet.
+          </p>
+          <p v-else class="text-sm text-gray-600 dark:text-gray-400">
             We recovered your wallet. In order to sync your latest data, you will
             first need to connect to a manager.
           </p>
@@ -149,6 +167,12 @@
         >
           Connect to Manager
         </UButton>
+        <button
+          style="margin-top: 8px; width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background: transparent; font-size: 14px; cursor: pointer;"
+          @click="recoveredManagerP2pAddr = null; navigateTo('/')"
+        >
+          Not Now
+        </button>
       </div>
     </div>
   </div>
@@ -162,8 +186,19 @@ const toast = useToast();
 const {
   pendingRecoveryPrivateKey,
   loginWithPrivateKey,
+  loginWithWeb3Auth,
+  web3Auth,
+  isAuthenticated,
+  account,
   privateKey: privateKeyRef,
 } = useAuth();
+
+// Keep the Web3Auth identity for social logins instead of "Anonymous Worker".
+// Social logins set privateKey alongside the pending key; pasted keys don't.
+const completeLogin = (pk: string) =>
+  web3Auth.value?.status === "connected" && pk === privateKeyRef.value
+    ? loginWithWeb3Auth()
+    : loginWithPrivateKey(pk);
 const { connectToManagerMutation } = useSession();
 const { mutateAsync: connectToManager } = connectToManagerMutation;
 const {
@@ -175,6 +210,8 @@ const {
 } = useLoginRecovery();
 
 const recoveredManagerP2pAddr = ref<string | null>(null);
+// Set when the connect box follows a wallet switch rather than a login
+const switched = ref(false);
 const connecting = ref(false);
 const selectedModifier = ref<string | null>(null);
 const expandedDeviceInfo = ref<string | null>(null);
@@ -190,29 +227,47 @@ watch(
   () => pendingRecoveryPrivateKey.value,
   async (pk) => {
     if (!pk) return;
+    const switching = isAuthenticated.value;
     const recovered = await checkForRecovery(pk);
+    // Switching wallet: apply the picked modifier and reload, then ask them
+    // to reconnect so the manager pays the new address
+    if (switching) {
+      pendingRecoveryPrivateKey.value = null;
+      if (recovered) {
+        localStorage.setItem("modifierHex", recovered.modifier);
+        localStorage.setItem("switchManager", recovered.managerP2pAddr);
+        window.location.reload();
+      } else if (!devices.value.length) {
+        toast.add({ title: "No other wallets found", color: "warning" });
+      }
+      return;
+    }
+    pendingRecoveryPrivateKey.value = null;
     if (recovered) {
       localStorage.setItem("modifierHex", recovered.modifier);
       // UUIDs are no longer needed, so we don't recover them. Use an tempy
       // value for now until they are permantenly removed
       localStorage.setItem("modifier", "00000000-0000-0000-0000-000000000000");
-      // Complete auth
-      await loginWithPrivateKey(pk);
-      // Initialize the worker
-      const { initialize } = useWorkerStore();
-      const pkBytes = Buffer.from(pk, "hex").slice(0, 32);
-      await initialize(pkBytes);
-      // Suppress OnboardModal
-      localStorage.setItem("newUser", "false");
-      // Show connect box
-      recoveredManagerP2pAddr.value = recovered.managerP2pAddr;
     } else {
-      // No recovery needed, generate random modifier and complete auth
+      // No recovery needed, generate random modifier
       localStorage.setItem("modifier", crypto.randomUUID());
-      await loginWithPrivateKey(pk);
-      navigateTo("/");
     }
-    pendingRecoveryPrivateKey.value = null;
+    await completeLogin(pk);
+    if (!isAuthenticated.value) {
+      toast.add({
+        title: "Login failed",
+        description: "Please try logging in again.",
+        color: "error",
+      });
+      return;
+    }
+    if (!recovered) return navigateTo("/");
+
+    const { initialize } = useWorkerStore();
+    const pkBytes = Buffer.from(pk, "hex").slice(0, 32);
+    await initialize(pkBytes);
+    localStorage.setItem("newUser", "false");
+    recoveredManagerP2pAddr.value = recovered.managerP2pAddr;
   },
   { immediate: true },
 );
@@ -230,6 +285,7 @@ const handleRecoveryConnect = async (code?: string) => {
       description: "Successfully synced your data.",
       color: "success",
     });
+    recoveredManagerP2pAddr.value = null;
     navigateTo("/");
   } catch (error) {
     if (error instanceof Error) {
@@ -243,6 +299,15 @@ const handleRecoveryConnect = async (code?: string) => {
     connecting.value = false;
   }
 };
+
+onMounted(() => {
+  const switchManager = localStorage.getItem("switchManager");
+  localStorage.removeItem("switchManager");
+  if (switchManager && isAuthenticated.value) {
+    switched.value = true;
+    recoveredManagerP2pAddr.value = switchManager;
+  }
+});
 </script>
 
 <style scoped></style>

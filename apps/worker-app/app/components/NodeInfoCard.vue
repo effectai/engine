@@ -20,6 +20,7 @@
 
     <!-- Claim modal -->
     <ClaimPaymentsModal v-model="isOpenClaimModal" />
+    <RecoveryFlow />
 
     <!-- Main content -->
     <div class="p-4 space-y-5 flex flex-col h-full">
@@ -127,7 +128,7 @@ const walletMeta = {
 };
 
 const toast = useToast();
-const { requestPrivateKey } = useAuth();
+const { requestPrivateKey, privateKey, pendingRecoveryPrivateKey } = useAuth();
 const exportPrivateKey = async () => {
   const privateKey = await requestPrivateKey();
   if (privateKey) {
@@ -150,6 +151,11 @@ const items: DropdownMenuItem[] = [
     label: "Export Private Key",
     icon: "material-symbols:key",
     onSelect: exportPrivateKey,
+  },
+  {
+    label: "Switch Wallet",
+    icon: "lucide:wallet",
+    onSelect: () => (pendingRecoveryPrivateKey.value = privateKey.value),
   },
 ];
 
