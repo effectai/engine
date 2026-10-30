@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 
 export const useSession = () => {
   const sessionStore = useSessionStore();
+  const queryClient = useQueryClient();
 
   const { account } = useAuth();
   const { manager, isActive, status, uptimeSeconds } =
@@ -62,6 +63,8 @@ export const useSession = () => {
       console.error(error);
     },
     onSuccess: () => {
+      // Payments may have just been restored by the sync
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
       // queryClient.invalidateQueries({
       //   queryKey: ["manager", "connection-status"],
       // });

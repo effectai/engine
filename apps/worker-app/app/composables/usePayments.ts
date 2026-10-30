@@ -50,6 +50,9 @@ export const usePayments = () => {
         .toString()
         .split("/");
 
+      // Other wallets used on this device share the store; only show ours
+      if (recipient !== account.value) continue;
+
       seenManagers.add(`${peerId}-${managerPublicKey}-${recipient}`);
     }
 

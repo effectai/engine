@@ -49,6 +49,11 @@ const addApiRoutes = (app: Router) => {
   };
 
   // Paths are relative to the router's /api mount, so no /api prefix here.
+
+  app.get("/console", (_req: Request, res: Response) => {
+    res.redirect(301, "./");
+  });
+
   app.options("/stats", (_req: Request, res: Response) => {
     setCorsHeaders(res);
     res.status(204).end();

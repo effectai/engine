@@ -6,7 +6,7 @@
         <h1 class="text-4xl md:text-5xl font-light text-gray-900 leading-tight">
           Privacy Policy
         </h1>
-        <p class="mt-4 text-sm text-gray-400">Last updated: July 1, 2026</p>
+        <p class="mt-4 text-sm text-gray-400">Last updated: October 9, 2026</p>
       </div>
     </section>
 
@@ -22,22 +22,40 @@
         <h2>1. Who We Are</h2>
         <p>
           Effect AI is the data controller responsible for the processing described in this policy.
-          You can reach us at <a href="mailto:hello@effect.ai">hello@effect.ai</a>.
+          You can reach us at <a href="mailto:hello@effect.ai">hello@effect.ai</a> or on our
+          <a href="https://discord.com/invite/effectnetwork" target="_blank" rel="noopener"
+            >Discord</a
+          >.
         </p>
 
         <h2>2. Information We Collect</h2>
+        <p>
+          The Plugin communicates with two domains, both owned and operated by Effect AI:
+        </p>
+        <ul>
+          <li>
+            <strong><code>figma.dataffect.xyz</code></strong>: the VibeCheck backend. It receives
+            your <strong>Figma user ID</strong> and the <strong>PNG image(s)</strong> of the design
+            you submit.
+          </li>
+          <li>
+            <strong><code>ipfs.effect.ai</code></strong>: Effect AI's IPFS storage gateway. It
+            receives <strong>only the PNG image(s)</strong>. Your Figma user ID is never sent to it.
+          </li>
+        </ul>
         <p>When you use the Plugin we may collect and process the following:</p>
         <ul>
           <li>
             <strong>Figma user identifier.</strong> Your Figma account identifier
-            (<code>figma.currentUser.id</code>), which the Plugin sends with each request. We use
-            this to associate your submitted tasks with your account.
+            (<code>figma.currentUser.id</code>), which the Plugin sends to
+            <code>figma.dataffect.xyz</code> with each request. We use this to associate your
+            submitted tasks with your account. It is not shared with Effect AI workers.
           </li>
           <li>
             <strong>Design images.</strong> When you submit a task, the Plugin exports the selected
-            frame(s) or page(s) of your Figma design as one or more PNG images. These images are
-            uploaded to a decentralised storage network (IPFS) and distributed to Effect AI workers
-            for review.
+            frame(s) or page(s) of your Figma design as one or more PNG images and sends them to
+            <code>figma.dataffect.xyz</code>, which stores them on IPFS via
+            <code>ipfs.effect.ai</code> so Effect AI workers can view them for review.
           </li>
           <li>
             <strong>Task configuration.</strong> Metadata you provide when configuring a task (e.g.
@@ -81,11 +99,11 @@
 
         <h2>5. Data Retention</h2>
         <p>
-          Task records (including your Figma user identifier, design image URLs, and results) are
-          retained for as long as is necessary to provide the service and for a reasonable period
-          thereafter for backup and audit purposes. You may delete individual tasks from the History
-          view inside the Plugin, or request deletion of your task data at any time by contacting us
-          (see Section 8).
+          Task records (including your Figma user identifier, design images, and results) are
+          retained until you delete them. You can delete any task from the History view inside the
+          Plugin, which removes the task record from <code>figma.dataffect.xyz</code> and unpins its
+          images from <code>ipfs.effect.ai</code>. You can also request deletion of all your task
+          data at any time by contacting us (see Section 11).
         </p>
         <p>
           Design images uploaded to IPFS are content-addressed, publicly retrievable by anyone who

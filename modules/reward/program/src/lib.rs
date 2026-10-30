@@ -53,4 +53,9 @@ pub mod effect_reward {
     pub fn close(ctx: Context<Close>) -> Result<()> {
         ctx.accounts.handler()
     }
+
+    /// One-time admin repair of the EFFECT [ReflectionAccount](#reflection-account) after the cross-mint Claim exploit.
+    pub fn repair_pool(ctx: Context<RepairPool>, reflection_gap: u128) -> Result<()> {
+        ctx.accounts.handler(reflection_gap)
+    }
 }
