@@ -75,6 +75,23 @@
           <!-- Providers -->
           <div v-else class="mt-8 space-y-6">
             <div v-if="!option" class="space-y-4">
+              <div
+                v-if="!SOCIAL_LOGIN_ENABLED"
+                class="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+              >
+                Google, GitHub and Discord login are temporarily unavailable
+                for maintenance. If you have your private key, you can still
+                log in below. For updates, follow
+                <a
+                  href="https://x.com/Web3Auth"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="font-medium underline"
+                  >Web3Auth on X</a
+                >.
+              </div>
+
+              <template v-if="SOCIAL_LOGIN_ENABLED">
               <div class="grid grid-cols-2 gap-3">
                 <UButton
                   block
@@ -133,6 +150,7 @@
                   </span>
                 </div>
               </div>
+              </template>
 
               <UButton
                 block
@@ -161,6 +179,8 @@
   </div>
 </template>
 <script setup lang="ts">
+import { SOCIAL_LOGIN_ENABLED } from "~/composables/useAuth";
+
 const { web3Auth, loginWithWeb3Auth } = useAuth();
 
 definePageMeta({
