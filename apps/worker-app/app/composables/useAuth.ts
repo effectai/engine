@@ -32,6 +32,8 @@ export function getModifierHex(): string | null {
   return hex;
 }
 
+export const SOCIAL_LOGIN_ENABLED = false;
+
 type UserInfo = {
   username: string;
   profileImage: string;
@@ -144,6 +146,12 @@ export const useAuth = () => {
   };
 
   const loginWithWeb3Auth = async (loginProvider?: string) => {
+    // Block any new social login while the kill switch is off
+    if (!SOCIAL_LOGIN_ENABLED && loginProvider) {
+      error.value = "Social login is temporarily disabled";
+      return;
+    }
+
     if (!web3Auth.value) {
       await init();
     }
