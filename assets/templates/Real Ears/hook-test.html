@@ -1,0 +1,550 @@
+<style>
+  [v-cloak] { display: none; }
+
+  .re-app {
+    --ink: #14140f;
+    --ink-soft: #3b3b34;
+    --muted: #6f6f66;
+    --line: #dcdcd2;
+    --paper: #ffffff;
+    --wash: #f4f4ee;
+    --lime: #e2ff03;
+    --good: #1f7a3d;
+    --bad: #c2331f;
+    --bad-wash: #fdeeea;
+    --warn-wash: #fff4c7;
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 1.75rem 1rem 3rem;
+    text-align: left;
+    color: var(--ink);
+    background: var(--wash);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+  }
+  .re-app *, .re-app *::before, .re-app *::after { box-sizing: border-box; }
+  .re-app button { font-family: inherit; cursor: pointer; }
+  .re-app button:disabled { cursor: not-allowed; }
+  .re-app button:focus-visible,
+  .re-app textarea:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  /* Header */
+  .re-title { margin: 0 0 0.25rem; font-size: 1.75rem; font-weight: 400; letter-spacing: -0.02em; line-height: 1.2; color: var(--ink); }
+  .re-sub { margin: 0; color: var(--muted); font-size: 1rem; }
+
+  /* Context: genre, stage, artist question */
+  .re-context { margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+  .re-tag {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: baseline;
+    padding: 0.25rem 0.6rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .re-tag small { color: var(--muted); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .re-ask {
+    margin-top: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+  }
+  .re-ask small { display: block; color: var(--muted); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .re-ask p { margin: 0.15rem 0 0; font-size: 1.05rem; font-weight: 400; }
+  .re-plain { margin: 0.75rem 0 0; color: var(--muted); font-size: 0.9rem; }
+
+  /* Player */
+  .re-player {
+    margin-top: 1.25rem;
+    padding: 1.1rem 1.25rem 1rem;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 4px;
+  }
+  .re-player-top { display: flex; align-items: center; gap: 1rem; }
+  .re-play {
+    flex: none;
+    width: 3.5rem;
+    height: 3.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--lime);
+    color: var(--ink);
+    border: 0;
+    border-radius: 3px;
+    transition: transform 0.12s ease;
+  }
+  .re-play:hover:not(:disabled) { transform: scale(1.05); }
+  .re-play:disabled { opacity: 0.4; }
+  .re-play svg { width: 1.5rem; height: 1.5rem; fill: currentColor; }
+  .re-player .re-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
+  .re-player .re-time { margin-top: 0.1rem; font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .re-player .re-time span { color: rgba(255, 255, 255, 0.5); font-weight: 500; }
+  .re-player-info { min-width: 0; flex: 1; }
+
+  /* Decorative waveform used as the progress display */
+  .re-wave {
+    margin-top: 1rem;
+    height: 3.25rem;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .re-wave.is-seekable { cursor: pointer; }
+  .re-bar { flex: 1; min-width: 0; background: rgba(255, 255, 255, 0.2); border-radius: 1px; transition: background 0.15s ease; }
+  .re-bar.is-on { background: var(--lime); }
+  .re-meter { margin-top: 0.75rem; display: flex; align-items: center; gap: 0.75rem; font-size: 0.78rem; color: rgba(255, 255, 255, 0.65); }
+  .re-meter-track { flex: 1; height: 4px; background: rgba(255, 255, 255, 0.15); border-radius: 1px; overflow: hidden; }
+  .re-meter-fill { height: 100%; background: #fff; transition: width 0.25s linear; }
+  .re-meter.is-done { color: var(--lime); }
+  .re-meter.is-done .re-meter-fill { background: var(--lime); }
+
+  /* Notices */
+  .re-note { margin-top: 0.75rem; font-size: 0.9rem; color: var(--muted); }
+  .re-note.is-good { color: var(--good); font-weight: 600; }
+  .re-alert {
+    margin-top: 0.75rem;
+    padding: 0.7rem 0.9rem;
+    background: var(--bad-wash);
+    border: 1px solid #efc3ba;
+    border-radius: 3px;
+    color: var(--bad);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  /* Question cards */
+  .re-locked { opacity: 0.4; pointer-events: none; user-select: none; }
+  .re-card {
+    margin-top: 1rem;
+    padding: 1.15rem 1.25rem 1.25rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  .re-qhead { display: flex; gap: 0.75rem; align-items: flex-start; margin-bottom: 0.9rem; }
+  .re-num {
+    flex: none;
+    width: 1.7rem;
+    height: 1.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ink);
+    color: var(--lime);
+    border-radius: 2px;
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+  .re-q { margin: 0; font-size: 1.02rem; font-weight: 400; line-height: 1.35; padding-top: 0.15rem; }
+  .re-q small { display: block; margin-top: 0.1rem; color: var(--muted); font-size: 0.82rem; font-weight: 400; }
+
+  /* Segmented scale */
+  .re-scale { display: grid; gap: 0.35rem; }
+  .re-scale-btn {
+    padding: 0.7rem 0;
+    background: var(--wash);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    font-size: 1rem;
+    font-weight: 700;
+    transition: background 0.1s ease, color 0.1s ease;
+  }
+  .re-scale-btn:hover { border-color: var(--ink); }
+  .re-scale-btn.is-on { background: var(--ink); border-color: var(--ink); color: var(--lime); }
+  .re-scale-ends { display: flex; justify-content: space-between; margin-top: 0.4rem; color: var(--muted); font-size: 0.78rem; }
+
+  /* Option cards */
+  .re-options { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .re-option {
+    padding: 0.75rem 0.9rem;
+    background: var(--wash);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    text-align: left;
+    transition: background 0.1s ease;
+  }
+  .re-option:hover { border-color: var(--ink); }
+  .re-option strong { display: block; font-size: 0.95rem; }
+  .re-option span { display: block; color: var(--muted); font-size: 0.8rem; }
+  .re-option.is-on { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .re-option.is-on span { color: rgba(255, 255, 255, 0.7); }
+  .re-option.is-on strong { color: var(--lime); }
+
+  /* Chips */
+  .re-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .re-chip {
+    padding: 0.4rem 0.75rem;
+    background: var(--wash);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+  .re-chip:hover:not(:disabled) { border-color: var(--ink); }
+  .re-chip:disabled { opacity: 0.35; }
+  .re-chip.is-on { background: var(--ink); border-color: var(--ink); color: var(--lime); }
+  .re-chip.is-flag.is-on { background: var(--warn-wash); border-color: #b88a00; color: var(--ink); }
+  .re-counter { margin: 0.6rem 0 0; color: var(--muted); font-size: 0.8rem; }
+
+  /* Comment box */
+  .re-text {
+    width: 100%;
+    min-height: 7.5rem;
+    padding: 0.75rem 0.85rem;
+    background: var(--wash);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font: inherit;
+    font-size: 0.98rem;
+    resize: vertical;
+  }
+  .re-text:focus { border-color: var(--ink); outline: none; background: var(--paper); }
+  .re-words { margin-top: 0.5rem; display: flex; align-items: center; gap: 0.75rem; font-size: 0.8rem; color: var(--muted); }
+  .re-words-track { flex: 1; height: 4px; background: var(--line); border-radius: 1px; overflow: hidden; }
+  .re-words-fill { height: 100%; background: var(--ink); transition: width 0.2s ease; }
+  .re-words.is-ok { color: var(--good); }
+  .re-words.is-ok .re-words-fill { background: var(--good); }
+
+  /* Submit */
+  .re-foot { margin-top: 1.25rem; }
+  .re-submit {
+    width: 100%;
+    padding: 1rem;
+    background: var(--ink);
+    color: var(--lime);
+    border: 0;
+    border-radius: 3px;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .re-submit:hover:not(:disabled) { background: #000; }
+  .re-submit:disabled { opacity: 0.6; }
+  .re-progress { margin: 0.6rem 0 0; text-align: center; color: var(--muted); font-size: 0.82rem; }
+
+  @media (max-width: 520px) {
+    .re-title { font-size: 1.45rem; }
+    .re-scale.is-ten { grid-template-columns: repeat(5, 1fr) !important; }
+  }
+
+  /* Hook only */
+  .re-stage { text-align: center; padding: 1.75rem 1.25rem 1.5rem; }
+  .re-stage .re-wave { height: 5rem; }
+  .re-stage .re-time { font-size: 2.25rem; letter-spacing: -0.02em; }
+  .re-stage .re-label { margin-bottom: 0.25rem; }
+  .re-actions { margin-top: 1.25rem; display: flex; justify-content: center; }
+  .re-start,
+  .re-skip {
+    min-width: 14rem;
+    padding: 1rem 2rem;
+    border: 0;
+    border-radius: 3px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+  }
+  .re-start { background: var(--lime); color: var(--ink); }
+  .re-skip { background: var(--bad); color: #fff; }
+  .re-start:disabled { opacity: 0.4; }
+  .re-start svg, .re-skip svg { width: 1.2rem; height: 1.2rem; fill: currentColor; }
+  .re-result {
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    font-weight: 700;
+  }
+  .re-result span { color: var(--lime); }
+  .re-bar.is-stop { background: var(--bad); }
+  .re-rules { margin: 1.25rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.5rem; grid-template-columns: repeat(3, 1fr); }
+  .re-rules li { padding: 0.7rem 0.85rem; background: var(--paper); border: 1px solid var(--line); border-radius: 3px; font-size: 0.88rem; }
+  .re-rules strong { display: block; margin-bottom: 0.1rem; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  @media (max-width: 600px) {
+    .re-rules { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div id="app" class="re-app" v-cloak>
+  <h1 class="re-title">Would You Skip This Song?</h1>
+  <p class="re-sub">Listen like you're going through a playlist and skip the moment you'd skip for real</p>
+
+  <div class="re-context" v-if="payload.genre">
+    <span class="re-tag"><small>Genre</small>{{ payload.genre }}</span>
+  </div>
+
+  <ul class="re-rules">
+    <li><strong>Press play</strong>The song starts like it just came up in your playlist</li>
+    <li><strong>Stop when you'd skip</strong>Press the red button the moment you lose interest, or let it play to the end</li>
+    <li><strong>One listen only</strong>No rewind and no replay, so react naturally</li>
+  </ul>
+
+  <audio ref="player" preload="auto" :src="clipUrl" @timeupdate="onTimeUpdate" @ended="finish(false)" @error="loadError = true"></audio>
+
+  <div class="re-player re-stage">
+    <div class="re-label">{{ stageLabel }}</div>
+    <div class="re-time">{{ formatTime(currentTime) }} <span>/ {{ formatTime(duration) }}</span></div>
+
+    <div class="re-wave" aria-hidden="true">
+      <div
+        v-for="(height, barIndex) in bars"
+        :key="barIndex"
+        class="re-bar"
+        :class="{ 'is-on': (barIndex + 0.5) / bars.length <= progress / 100, 'is-stop': skipped && barIndex === stopBarIndex }"
+        :style="{ height: height + '%' }"
+      ></div>
+    </div>
+
+    <div class="re-actions">
+      <button v-if="stage === 'ready'" class="re-start" @click="play" :disabled="loadError">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>Play
+      </button>
+      <button v-else-if="stage === 'playing'" class="re-skip" @click="finish(true)">
+        I don't like this anymore
+      </button>
+    </div>
+
+    <p v-if="stage === 'done' && skipped" class="re-result">You skipped at <span>{{ formatTime(skipAt) }}</span></p>
+    <p v-else-if="stage === 'done'" class="re-result">You listened to the <span>whole clip</span></p>
+  </div>
+
+
+  <template v-if="stage === 'done'">
+    <section class="re-card">
+      <div class="re-qhead">
+        <span class="re-num">1</span>
+        <h2 class="re-q">How much did the opening grab you?</h2>
+      </div>
+      <div class="re-scale" style="grid-template-columns: repeat(5, 1fr)">
+        <button
+          v-for="score in 5"
+          :key="score"
+          class="re-scale-btn"
+          :class="{ 'is-on': grab === score }"
+          @click="grab = score"
+        >{{ score }}</button>
+      </div>
+      <div class="re-scale-ends"><span>Not at all</span><span>Hooked</span></div>
+    </section>
+
+    <section class="re-card">
+      <div class="re-qhead">
+        <span class="re-num">2</span>
+        <h2 class="re-q">
+          {{ skipped ? "What made you want to skip?" : "What kept you listening?" }}
+          <small v-if="payload.question">The artist also asks: "{{ payload.question }}". Mention it if you can</small>
+          <small v-else>Be specific about what you heard</small>
+        </h2>
+      </div>
+      <textarea
+        class="re-text"
+        placeholder="Be specific about what you heard"
+        v-model="comment"
+        maxlength="1000"
+      ></textarea>
+      <div class="re-words" :class="{ 'is-ok': wordCount >= minWords }">
+        <div class="re-words-track"><div class="re-words-fill" :style="{ width: Math.min(100, (wordCount / minWords) * 100) + '%' }"></div></div>
+        <span>{{ wordCount }} words (at least {{ minWords }})</span>
+      </div>
+    </section>
+  </template>
+
+  <div class="re-foot">
+    <p class="re-alert" v-if="notListened">Please play the clip and either skip it or listen to the end first</p>
+    <p class="re-alert" v-if="notComplete">Task incomplete. Please answer every question</p>
+    <p class="re-alert" v-if="tooShort">Please write at least {{ minWords }} words in your answer</p>
+
+    <button class="re-submit" style="margin-top: 0.75rem" @click.prevent="uploadAndSubmit" :disabled="btnLoading">
+      {{ btnLoading ? "Submitting" : "Submit" }}
+    </button>
+  </div>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    // The backend sends everything as one base64 JSON column, so text written
+    // by the artist can never break out of this script. Plain JSON is accepted
+    // too. Returns null when the task has no usable data.
+    function decodePayload(raw) {
+      if (!raw || raw.indexOf("$" + "{") === 0) return null;
+      let decoded = null;
+      try {
+        const bytes = Uint8Array.from(atob(raw), (char) => char.charCodeAt(0));
+        decoded = JSON.parse(new TextDecoder().decode(bytes));
+      } catch (error) {
+        try {
+          decoded = JSON.parse(raw);
+        } catch (parseError) {
+          decoded = null;
+        }
+      }
+      return decoded && Array.isArray(decoded.clips) && decoded.clips.length ? decoded : null;
+    }
+
+    const BAR_COUNT = 60;
+
+    // Fixed pseudo waveform. It is decoration for the progress display, not real audio data.
+    function makeBars() {
+      return Array.from({ length: BAR_COUNT }, (unused, barIndex) =>
+        Math.round(20 + 80 * Math.abs(Math.sin(barIndex * 0.47) * Math.cos(barIndex * 0.19 + 2)))
+      );
+    }
+
+    const payload = decodePayload("${payload}");
+    if (!payload) {
+      // Nothing to play, so tell the worker instead of rendering a broken task.
+      const root = document.getElementById("app");
+      root.removeAttribute("v-cloak");
+      root.innerHTML = '<p class="re-alert">This task is missing its music. Please report it</p>';
+    } else createApp({
+      data() {
+        return {
+          title: "Effect AI - Would You Skip This Song?",
+          payload: payload,
+          clipUrl: payload.clips[0].url,
+          duration: payload.clips[0].duration,
+          bars: makeBars(),
+          minWords: 5,
+          // ready -> playing -> done. There is no seeking and no replay: the
+          // point is the listener's first-listen reaction.
+          stage: "ready",
+          currentTime: 0,
+          skipped: false,
+          skipAt: null,
+          loadError: false,
+          grab: 0,
+          comment: "",
+          btnLoading: false,
+          notComplete: false,
+          notListened: false,
+          tooShort: false,
+          instructions:
+            "<div>" +
+            "<h2>Would You Skip This Song?</h2>" +
+            "<p>An artist wants to know if the opening of their song keeps people listening. You'll hear the start of the track once, just like when a new song comes on in a playlist.</p>" +
+            "<h3>1. Instructions</h3>" +
+            "<ul>" +
+            "<li>Use headphones or speakers at a comfortable volume, then press Play.</li>" +
+            "<li>Press Skip the moment you'd skip this song in real life. If you'd keep listening, let it play to the end.</li>" +
+            "<li>You only get one listen. There's no rewind, so react naturally.</li>" +
+            "<li>Then rate how much the opening grabbed you and explain why you skipped or stayed, in at least 5 words.</li>" +
+            "<li><strong>DO NOT</strong> skip right away just to finish faster, and don't wait to the end if you'd really have skipped.</li>" +
+            "</ul>" +
+            "<h3>2. Examples</h3>" +
+            "<p><strong>Good explanation</strong></p>" +
+            "<ul><li>\"Nothing happened for the first 15 seconds, just the same pad sound, so I got bored.\"</li>" +
+            "<li>\"The drums coming in with the vocal hooked me right away.\"</li></ul>" +
+            "<p><strong>Bad explanation</strong></p>" +
+            "<ul><li>\"Didn't like it\" (doesn't say why)</li></ul>" +
+            "<h3>3. Tips for Success</h3>" +
+            "<ul><li>There's no right answer. Skipping is useful feedback too.</li>" +
+            "<li>If the clip won't play or is silent, report the task.</li></ul>" +
+            "</div>"
+        };
+      },
+      computed: {
+        progress() {
+          return Math.min(100, (this.currentTime / this.duration) * 100);
+        },
+        stopBarIndex() {
+          return Math.min(this.bars.length - 1, Math.floor((this.progress / 100) * this.bars.length));
+        },
+        stageLabel() {
+          if (this.stage === "playing") return "Now playing. Press the red button when you lose interest";
+          if (this.stage === "done") return this.skipped ? "Skipped" : "Finished";
+          return "Ready when you are";
+        },
+        wordCount() {
+          const text = this.comment.trim();
+          return text ? text.split(/\s+/).length : 0;
+        }
+      },
+      mounted() {
+        this.$refs.player.volume = 0.5;
+        window.top.postMessage({ type: "task-instructions", instructions: this.instructions }, "*");
+      },
+      methods: {
+        formatTime(seconds) {
+          const whole = Math.max(0, Math.floor(seconds || 0));
+          return Math.floor(whole / 60) + ":" + String(whole % 60).padStart(2, "0");
+        },
+        async play() {
+          try {
+            await this.$refs.player.play();
+            this.stage = "playing";
+          } catch (error) {
+            console.error("Playback failed:", error);
+            this.loadError = true;
+          }
+        },
+        onTimeUpdate() {
+          this.currentTime = Math.min(this.duration, this.$refs.player.currentTime);
+        },
+        finish(skipped) {
+          if (this.stage !== "playing") return;
+          const player = this.$refs.player;
+          player.pause();
+          this.skipped = skipped;
+          this.skipAt = skipped ? Math.round(player.currentTime * 10) / 10 : null;
+          this.currentTime = skipped ? player.currentTime : this.duration;
+          this.stage = "done";
+        },
+        async uploadAndSubmit() {
+          this.btnLoading = true;
+          this.notListened = this.stage !== "done";
+          this.notComplete = !this.notListened && !this.grab;
+          this.tooShort = !this.notListened && this.wordCount < this.minWords;
+          if (this.notListened || this.notComplete || this.tooShort) {
+            this.btnLoading = false;
+            return;
+          }
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  taskTitle: this.title,
+                  answer: {
+                    taskId: this.payload.taskId,
+                    checkType: "hook",
+                    audioUrl: this.payload.clips[0].url,
+                    skipped: this.skipped,
+                    skipAt: this.skipAt,
+                    grab: this.grab,
+                    comment: this.comment.trim()
+                  }
+                }
+              },
+              "*"
+            );
+          } catch (error) {
+            console.error("Submit failed:", error);
+          }
+          this.btnLoading = false;
+        }
+      }
+    }).mount("#app");
+  </script>
+</div>

@@ -1,0 +1,629 @@
+<style>
+  [v-cloak] { display: none; }
+
+  .re-app {
+    --ink: #14140f;
+    --ink-soft: #3b3b34;
+    --muted: #6f6f66;
+    --line: #dcdcd2;
+    --paper: #ffffff;
+    --wash: #f4f4ee;
+    --lime: #e2ff03;
+    --good: #1f7a3d;
+    --bad: #c2331f;
+    --bad-wash: #fdeeea;
+    --warn-wash: #fff4c7;
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 1.75rem 1rem 3rem;
+    text-align: left;
+    color: var(--ink);
+    background: var(--wash);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+  }
+  .re-app *, .re-app *::before, .re-app *::after { box-sizing: border-box; }
+  .re-app button { font-family: inherit; cursor: pointer; }
+  .re-app button:disabled { cursor: not-allowed; }
+  .re-app button:focus-visible,
+  .re-app textarea:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  /* Header */
+  .re-title { margin: 0 0 0.25rem; font-size: 1.75rem; font-weight: 400; letter-spacing: -0.02em; line-height: 1.2; color: var(--ink); }
+  .re-sub { margin: 0; color: var(--muted); font-size: 1rem; }
+
+  /* Context: genre, stage, artist question */
+  .re-context { margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+  .re-tag {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: baseline;
+    padding: 0.25rem 0.6rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .re-tag small { color: var(--muted); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .re-ask {
+    margin-top: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+  }
+  .re-ask small { display: block; color: var(--muted); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .re-ask p { margin: 0.15rem 0 0; font-size: 1.05rem; font-weight: 400; }
+  .re-plain { margin: 0.75rem 0 0; color: var(--muted); font-size: 0.9rem; }
+
+  /* Player */
+  .re-player {
+    margin-top: 1.25rem;
+    padding: 1.1rem 1.25rem 1rem;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 4px;
+  }
+  .re-player-top { display: flex; align-items: center; gap: 1rem; }
+  .re-play {
+    flex: none;
+    width: 3.5rem;
+    height: 3.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--lime);
+    color: var(--ink);
+    border: 0;
+    border-radius: 3px;
+    transition: transform 0.12s ease;
+  }
+  .re-play:hover:not(:disabled) { transform: scale(1.05); }
+  .re-play:disabled { opacity: 0.4; }
+  .re-play svg { width: 1.5rem; height: 1.5rem; fill: currentColor; }
+  .re-player .re-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
+  .re-player .re-time { margin-top: 0.1rem; font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .re-player .re-time span { color: rgba(255, 255, 255, 0.5); font-weight: 500; }
+  .re-player-info { min-width: 0; flex: 1; }
+
+  /* Decorative waveform used as the progress display */
+  .re-wave {
+    margin-top: 1rem;
+    height: 3.25rem;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .re-wave.is-seekable { cursor: pointer; }
+  .re-bar { flex: 1; min-width: 0; background: rgba(255, 255, 255, 0.2); border-radius: 1px; transition: background 0.15s ease; }
+  .re-bar.is-on { background: var(--lime); }
+  .re-meter { margin-top: 0.75rem; display: flex; align-items: center; gap: 0.75rem; font-size: 0.78rem; color: rgba(255, 255, 255, 0.65); }
+  .re-meter-track { flex: 1; height: 4px; background: rgba(255, 255, 255, 0.15); border-radius: 1px; overflow: hidden; }
+  .re-meter-fill { height: 100%; background: #fff; transition: width 0.25s linear; }
+  .re-meter.is-done { color: var(--lime); }
+  .re-meter.is-done .re-meter-fill { background: var(--lime); }
+
+  /* Notices */
+  .re-note { margin-top: 0.75rem; font-size: 0.9rem; color: var(--muted); }
+  .re-note.is-good { color: var(--good); font-weight: 600; }
+  .re-alert {
+    margin-top: 0.75rem;
+    padding: 0.7rem 0.9rem;
+    background: var(--bad-wash);
+    border: 1px solid #efc3ba;
+    border-radius: 3px;
+    color: var(--bad);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  /* Question cards */
+  .re-locked { opacity: 0.4; pointer-events: none; user-select: none; }
+  .re-card {
+    margin-top: 1rem;
+    padding: 1.15rem 1.25rem 1.25rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  .re-qhead { display: flex; gap: 0.75rem; align-items: flex-start; margin-bottom: 0.9rem; }
+  .re-num {
+    flex: none;
+    width: 1.7rem;
+    height: 1.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ink);
+    color: var(--lime);
+    border-radius: 2px;
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+  .re-q { margin: 0; font-size: 1.02rem; font-weight: 400; line-height: 1.35; padding-top: 0.15rem; }
+  .re-q small { display: block; margin-top: 0.1rem; color: var(--muted); font-size: 0.82rem; font-weight: 400; }
+
+  /* Segmented scale */
+  .re-scale { display: grid; gap: 0.35rem; }
+  .re-scale-btn {
+    padding: 0.7rem 0;
+    background: var(--wash);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    font-size: 1rem;
+    font-weight: 700;
+    transition: background 0.1s ease, color 0.1s ease;
+  }
+  .re-scale-btn:hover { border-color: var(--ink); }
+  .re-scale-btn.is-on { background: var(--ink); border-color: var(--ink); color: var(--lime); }
+  .re-scale-ends { display: flex; justify-content: space-between; margin-top: 0.4rem; color: var(--muted); font-size: 0.78rem; }
+
+  /* Option cards */
+  .re-options { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .re-option {
+    padding: 0.75rem 0.9rem;
+    background: var(--wash);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    text-align: left;
+    transition: background 0.1s ease;
+  }
+  .re-option:hover { border-color: var(--ink); }
+  .re-option strong { display: block; font-size: 0.95rem; }
+  .re-option span { display: block; color: var(--muted); font-size: 0.8rem; }
+  .re-option.is-on { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .re-option.is-on span { color: rgba(255, 255, 255, 0.7); }
+  .re-option.is-on strong { color: var(--lime); }
+
+  /* Chips */
+  .re-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .re-chip {
+    padding: 0.4rem 0.75rem;
+    background: var(--wash);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+  .re-chip:hover:not(:disabled) { border-color: var(--ink); }
+  .re-chip:disabled { opacity: 0.35; }
+  .re-chip.is-on { background: var(--ink); border-color: var(--ink); color: var(--lime); }
+  .re-chip.is-flag.is-on { background: var(--warn-wash); border-color: #b88a00; color: var(--ink); }
+  .re-counter { margin: 0.6rem 0 0; color: var(--muted); font-size: 0.8rem; }
+
+  /* Comment box */
+  .re-text {
+    width: 100%;
+    min-height: 7.5rem;
+    padding: 0.75rem 0.85rem;
+    background: var(--wash);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font: inherit;
+    font-size: 0.98rem;
+    resize: vertical;
+  }
+  .re-text:focus { border-color: var(--ink); outline: none; background: var(--paper); }
+  .re-words { margin-top: 0.5rem; display: flex; align-items: center; gap: 0.75rem; font-size: 0.8rem; color: var(--muted); }
+  .re-words-track { flex: 1; height: 4px; background: var(--line); border-radius: 1px; overflow: hidden; }
+  .re-words-fill { height: 100%; background: var(--ink); transition: width 0.2s ease; }
+  .re-words.is-ok { color: var(--good); }
+  .re-words.is-ok .re-words-fill { background: var(--good); }
+
+  /* Submit */
+  .re-foot { margin-top: 1.25rem; }
+  .re-submit {
+    width: 100%;
+    padding: 1rem;
+    background: var(--ink);
+    color: var(--lime);
+    border: 0;
+    border-radius: 3px;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .re-submit:hover:not(:disabled) { background: #000; }
+  .re-submit:disabled { opacity: 0.6; }
+  .re-progress { margin: 0.6rem 0 0; text-align: center; color: var(--muted); font-size: 0.82rem; }
+
+  @media (max-width: 520px) {
+    .re-title { font-size: 1.45rem; }
+    .re-scale.is-ten { grid-template-columns: repeat(5, 1fr) !important; }
+  }
+
+  /* Compare only */
+  .re-app { max-width: 1040px; }
+  .re-versus { margin-top: 1.25rem; display: grid; gap: 0.75rem; grid-template-columns: 1fr 1fr; }
+  .re-versus .re-player { margin-top: 0; display: flex; flex-direction: column; border: 2px solid var(--ink); }
+  .re-versus .re-player.is-picked { border-color: var(--lime); box-shadow: 0 0 0 2px var(--ink); }
+  .re-versus .re-wave { height: 2.75rem; }
+  .re-versus .re-time { font-size: 1.05rem; }
+  .re-clip-name { font-size: 1.1rem; font-weight: 400; }
+  .re-pick {
+    margin-top: 0.9rem;
+    padding: 0.7rem;
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 2px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .re-pick:hover:not(:disabled) { border-color: #fff; }
+  .re-pick:disabled { opacity: 0.35; }
+  .re-pick.is-on { background: var(--lime); border-color: var(--lime); color: var(--ink); }
+  @media (max-width: 600px) {
+    .re-versus { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div id="app" class="re-app" v-cloak>
+  <h1 class="re-title">Which Version Is Better?</h1>
+  <p class="re-sub">Listen to two versions of the same music and pick the one you prefer</p>
+
+  <div class="re-context" v-if="payload.genre || payload.stage">
+    <span class="re-tag" v-if="payload.genre"><small>Genre</small>{{ payload.genre }}</span>
+    <span class="re-tag" v-if="payload.stage"><small>Stage</small>{{ payload.stage }}</span>
+  </div>
+  <div class="re-ask" v-if="payload.question">
+    <small>The artist asks</small>
+    <p>{{ payload.question }}</p>
+  </div>
+  <p class="re-plain" v-if="!payload.genre && !payload.stage && !payload.question">
+    The two clips are different versions of the same track. Listen for what's different
+  </p>
+
+  <div class="re-versus">
+    <div
+      v-for="(clip, index) in shown"
+      :key="index"
+      class="re-player"
+      :class="{ 'is-picked': choice === index }"
+    >
+      <audio
+        :ref="'player' + index"
+        preload="auto"
+        :src="clip.url"
+        @play="onPlay(index)"
+        @pause="onPause(index)"
+        @ended="onPause(index)"
+        @loadedmetadata="onMetadata(index)"
+        @timeupdate="onTimeUpdate(index)"
+        @error="loadError = true"
+      ></audio>
+
+      <div class="re-player-top">
+        <button class="re-play" @click="togglePlay(index)" :disabled="loadError" :aria-label="playing[index] ? 'Pause clip ' + (index + 1) : 'Play clip ' + (index + 1)">
+          <svg v-if="!playing[index]" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+          <svg v-else viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z" /></svg>
+        </button>
+        <div class="re-player-info">
+          <div class="re-clip-name">Clip {{ index + 1 }}</div>
+          <div class="re-time">{{ formatTime(currentTimes[index]) }} <span>/ {{ formatTime(totals[index]) }}</span></div>
+        </div>
+      </div>
+
+      <div class="re-wave is-seekable" @click="seek(index, $event)" role="slider" :aria-label="'Seek clip ' + (index + 1)">
+        <div
+          v-for="(height, barIndex) in bars[index]"
+          :key="barIndex"
+          class="re-bar"
+          :class="{ 'is-on': (barIndex + 0.5) / bars[index].length <= progress(index) / 100 }"
+          :style="{ height: height + '%' }"
+        ></div>
+      </div>
+
+      <div class="re-meter" :class="{ 'is-done': heard(index) }">
+        <span>{{ heard(index) ? "Heard" : "Listened" }}</span>
+        <div class="re-meter-track"><div class="re-meter-fill" :style="{ width: listenedPercent(index) + '%' }"></div></div>
+        <span>{{ Math.min(Math.floor(listened[index]), required[index]) }}s / {{ required[index] }}s</span>
+      </div>
+
+      <button class="re-pick" :class="{ 'is-on': choice === index }" :disabled="!unlocked" @click="choice = index">
+        {{ choice === index ? "Your pick" : "I prefer this one" }}
+      </button>
+    </div>
+  </div>
+
+  <p v-if="!unlocked" class="re-note">Listen to both clips all the way through to unlock your pick and the questions. You can replay and switch as often as you like</p>
+  <p v-else class="re-note is-good">Thanks for listening. Pick your favourite and answer below</p>
+
+  <div :class="{ 're-locked': !unlocked }" :aria-disabled="!unlocked">
+    <section class="re-card">
+      <div class="re-qhead">
+        <span class="re-num">1</span>
+        <h2 class="re-q">How big is the difference to you?</h2>
+      </div>
+      <div class="re-options">
+        <button class="re-option" :class="{ 'is-on': strength === 'slight' }" @click="strength = 'slight'">
+          <strong>Slight</strong>
+          <span>It was close</span>
+        </button>
+        <button class="re-option" :class="{ 'is-on': strength === 'clear' }" @click="strength = 'clear'">
+          <strong>Clear</strong>
+          <span>It wasn't close</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="re-card">
+      <div class="re-qhead">
+        <span class="re-num">2</span>
+        <h2 class="re-q">Why did you pick it?<small>Choose all that apply</small></h2>
+      </div>
+      <div class="re-chips">
+        <button
+          v-for="reason in payload.reasonOptions"
+          :key="reason"
+          class="re-chip"
+          :class="{ 'is-on': reasons.includes(reason) }"
+          @click="toggleReason(reason)"
+        >{{ reason }}</button>
+      </div>
+    </section>
+
+    <section class="re-card">
+      <div class="re-qhead">
+        <span class="re-num">3</span>
+        <h2 class="re-q">
+          {{ payload.question ? "Answer the artist: " + payload.question : "What made the difference for you?" }}
+          <small>Say "the one I picked" and "the other one" instead of clip numbers</small>
+        </h2>
+      </div>
+      <textarea
+        class="re-text"
+        placeholder="Describe what you heard"
+        v-model="comment"
+        maxlength="1000"
+      ></textarea>
+      <div class="re-words" :class="{ 'is-ok': wordCount >= minWords }">
+        <div class="re-words-track"><div class="re-words-fill" :style="{ width: Math.min(100, (wordCount / minWords) * 100) + '%' }"></div></div>
+        <span>{{ wordCount }} words (at least {{ minWords }})</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="re-foot">
+    <p class="re-alert" v-if="notListened">Please listen to both clips before answering</p>
+    <p class="re-alert" v-if="notComplete">Task incomplete. Please pick a clip and answer every question</p>
+    <p class="re-alert" v-if="tooShort">Please write at least {{ minWords }} words in your answer</p>
+
+    <button class="re-submit" style="margin-top: 0.75rem" @click.prevent="uploadAndSubmit" :disabled="btnLoading">
+      {{ btnLoading ? "Submitting" : "Submit" }}
+    </button>
+    <p class="re-progress">{{ answeredCount }} of 4 answered</p>
+  </div>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.9.4/css/bulma.min.css" />
+  <link href="https://app.effect.network/force-defaults.css" rel="stylesheet" />
+
+  <script type="module">
+    import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    // The backend sends everything as one base64 JSON column, so text written
+    // by the artist can never break out of this script. Plain JSON is accepted
+    // too. Returns null when the task has no usable data.
+    function decodePayload(raw) {
+      if (!raw || raw.indexOf("$" + "{") === 0) return null;
+      let decoded = null;
+      try {
+        const bytes = Uint8Array.from(atob(raw), (char) => char.charCodeAt(0));
+        decoded = JSON.parse(new TextDecoder().decode(bytes));
+      } catch (error) {
+        try {
+          decoded = JSON.parse(raw);
+        } catch (parseError) {
+          decoded = null;
+        }
+      }
+      return decoded && Array.isArray(decoded.clips) && decoded.clips.length ? decoded : null;
+    }
+
+    const BAR_COUNT = 36;
+
+    // Fixed pseudo waveform. It is decoration for the progress display, not real audio data.
+    // The two clips get different shapes so they are easy to tell apart.
+    function makeBars(seed) {
+      return Array.from({ length: BAR_COUNT }, (unused, barIndex) =>
+        Math.round(22 + 78 * Math.abs(Math.sin(barIndex * (0.5 + seed * 0.13)) * Math.cos(barIndex * 0.23 + seed)))
+      );
+    }
+
+    const payload = decodePayload("${payload}");
+    if (!payload) {
+      // Nothing to play, so tell the worker instead of rendering a broken task.
+      const root = document.getElementById("app");
+      root.removeAttribute("v-cloak");
+      root.innerHTML = '<p class="re-alert">This task is missing its music. Please report it</p>';
+    } else createApp({
+      data() {
+        // Play the versions in random order so "first heard" bias cancels out
+        // across listeners. `order` maps each shown clip back to A or B.
+        const order = Math.random() < 0.5 ? ["A", "B"] : ["B", "A"];
+        const byVersion = { A: payload.clips[0], B: payload.clips[1] };
+        const shown = order.map((version) => byVersion[version]);
+        return {
+          title: "Effect AI - Which Version Is Better?",
+          payload: payload,
+          order: order,
+          shown: shown,
+          bars: [makeBars(1), makeBars(2)],
+          required: shown.map((clip) => Math.max(1, Math.floor(clip.duration * 0.9))),
+          minWords: 5,
+          totals: shown.map((clip) => clip.duration),
+          currentTimes: [0, 0],
+          playing: [false, false],
+          listened: [0, 0],
+          lastTime: [0, 0],
+          tracking: [false, false],
+          loadError: false,
+          choice: null,
+          strength: "",
+          reasons: [],
+          comment: "",
+          btnLoading: false,
+          notComplete: false,
+          notListened: false,
+          tooShort: false,
+          instructions:
+            "<div>" +
+            "<h2>Which Version Is Better?</h2>" +
+            "<p>An artist made two versions of the same track, for example two different mixes, and wants to know which one real listeners prefer. You don't need to be a musician.</p>" +
+            "<h3>1. Instructions</h3>" +
+            "<ul>" +
+            "<li>Use headphones if you can. Differences between versions can be subtle.</li>" +
+            "<li>Listen to both clips all the way through. You can replay them and switch back and forth as much as you like.</li>" +
+            "<li>Pick the clip you prefer, say how big the difference felt, and choose the reasons.</li>" +
+            "<li>Explain your choice in at least 5 words. Say \"the one I picked\" and \"the other one\" rather than clip numbers, because other listeners hear the clips in a different order.</li>" +
+            "<li><strong>DO NOT</strong> pick at random. If they sound identical to you, pick the one you'd rather keep listening to and choose \"Slight\".</li>" +
+            "</ul>" +
+            "<h3>2. Examples</h3>" +
+            "<p><strong>Good explanation</strong></p>" +
+            "<ul><li>\"The one I picked has clearer vocals. In the other one the words get lost under the guitars.\"</li>" +
+            "<li>\"Very close, but the bass in the one I picked feels warmer and fuller.\"</li></ul>" +
+            "<p><strong>Bad explanation</strong></p>" +
+            "<ul><li>\"Clip 1 better\" (doesn't say why, and clip numbers differ between listeners)</li></ul>" +
+            "<h3>3. Tips for Success</h3>" +
+            "<ul><li>Switch between the clips at the same moment in the song to hear the difference.</li>" +
+            "<li>If a clip won't play or is silent, report the task.</li></ul>" +
+            "</div>"
+        };
+      },
+      computed: {
+        unlocked() {
+          return this.heard(0) && this.heard(1);
+        },
+        wordCount() {
+          const text = this.comment.trim();
+          return text ? text.split(/\s+/).length : 0;
+        },
+        answeredCount() {
+          const answers = [this.choice !== null, this.strength, this.reasons.length, this.wordCount >= this.minWords];
+          return answers.filter(Boolean).length;
+        }
+      },
+      mounted() {
+        this.player(0).volume = 0.5;
+        this.player(1).volume = 0.5;
+        window.top.postMessage({ type: "task-instructions", instructions: this.instructions }, "*");
+      },
+      methods: {
+        player(index) {
+          const ref = this.$refs["player" + index];
+          return Array.isArray(ref) ? ref[0] : ref;
+        },
+        formatTime(seconds) {
+          const whole = Math.max(0, Math.floor(seconds || 0));
+          return Math.floor(whole / 60) + ":" + String(whole % 60).padStart(2, "0");
+        },
+        heard(index) {
+          return this.listened[index] >= this.required[index];
+        },
+        progress(index) {
+          return this.totals[index] ? Math.min(100, (this.currentTimes[index] / this.totals[index]) * 100) : 0;
+        },
+        listenedPercent(index) {
+          return Math.min(100, (this.listened[index] / this.required[index]) * 100);
+        },
+        async togglePlay(index) {
+          const current = this.player(index);
+          if (!current.paused) {
+            current.pause();
+            return;
+          }
+          try {
+            await current.play();
+          } catch (error) {
+            console.error("Playback failed:", error);
+            this.loadError = true;
+          }
+        },
+        onMetadata(index) {
+          const current = this.player(index);
+          if (Number.isFinite(current.duration) && current.duration > 0) this.totals[index] = current.duration;
+        },
+        onPlay(index) {
+          // One clip at a time.
+          const other = this.player(1 - index);
+          if (!other.paused) other.pause();
+          this.playing[index] = true;
+          this.tracking[index] = true;
+          this.lastTime[index] = this.player(index).currentTime;
+        },
+        onPause(index) {
+          this.playing[index] = false;
+          this.tracking[index] = false;
+        },
+        seek(index, event) {
+          if (!this.totals[index]) return;
+          const box = event.currentTarget.getBoundingClientRect();
+          const ratio = Math.min(1, Math.max(0, (event.clientX - box.left) / box.width));
+          this.player(index).currentTime = ratio * this.totals[index];
+          this.currentTimes[index] = this.player(index).currentTime;
+        },
+        // Counts only time actually played, so skipping ahead doesn't unlock.
+        onTimeUpdate(index) {
+          const now = Math.min(this.totals[index], this.player(index).currentTime);
+          const delta = now - this.lastTime[index];
+          if (this.tracking[index] && delta > 0 && delta < 1.5) this.listened[index] += delta;
+          this.lastTime[index] = now;
+          this.currentTimes[index] = Math.max(0, now);
+        },
+        toggleReason(reason) {
+          if (this.reasons.includes(reason)) this.reasons = this.reasons.filter((picked) => picked !== reason);
+          else this.reasons.push(reason);
+        },
+        async uploadAndSubmit() {
+          this.btnLoading = true;
+          this.notListened = !this.unlocked;
+          this.notComplete = this.choice === null || !this.strength || !this.reasons.length;
+          this.tooShort = this.wordCount < this.minWords;
+          if (this.notListened || this.notComplete || this.tooShort) {
+            this.btnLoading = false;
+            return;
+          }
+          // Vue state is wrapped in reactive Proxies, which postMessage can't
+          // clone, so arrays are copied into plain ones first.
+          try {
+            parent.postMessage(
+              {
+                task: "submit",
+                values: {
+                  taskTitle: this.title,
+                  answer: {
+                    taskId: this.payload.taskId,
+                    checkType: "compare",
+                    audioUrlA: this.payload.clips[0].url,
+                    audioUrlB: this.payload.clips[1].url,
+                    winner: this.order[this.choice],
+                    strength: this.strength,
+                    reasons: Array.from(this.reasons),
+                    comment: this.comment.trim(),
+                    order: this.order.join("")
+                  }
+                }
+              },
+              "*"
+            );
+          } catch (error) {
+            console.error("Submit failed:", error);
+          }
+          this.btnLoading = false;
+        }
+      }
+    }).mount("#app");
+  </script>
+</div>
