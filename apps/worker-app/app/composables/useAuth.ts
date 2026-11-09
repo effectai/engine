@@ -32,6 +32,8 @@ export function getModifierHex(): string | null {
   return hex;
 }
 
+export const SOCIAL_LOGIN_ENABLED = false;
+
 type UserInfo = {
   username: string;
   profileImage: string;
@@ -144,17 +146,31 @@ export const useAuth = () => {
   };
 
   const loginWithWeb3Auth = async (loginProvider?: string) => {
+    // Block any new social login while the kill switch is off
+    if (!SOCIAL_LOGIN_ENABLED && loginProvider) {
+      error.value = "Social login is temporarily disabled";
+      return;
+    }
+
     if (!web3Auth.value) {
       await init();
     }
 
     try {
-      // Ensure Web3Auth is initialized and connected
-      if (web3Auth.value?.status !== "ready") {
+      // Ready for a new login, or already connected after the redirect
+      // (recovery completes the login from there)
+      if (
+        !web3Auth.value ||
+        !["ready", "connected"].includes(web3Auth.value.status)
+      ) {
         throw new Error("Failed to connect");
       }
 
       if (loginProvider) {
+        // Drop a leftover session so the chosen provider is the one used
+        if (web3Auth.value.status === "connected") {
+          await web3Auth.value.logout();
+        }
         console.log("Connecting with provider:", loginProvider);
         await web3Auth.value.connectTo(WALLET_ADAPTERS.AUTH, {
           loginProvider,
@@ -173,10 +189,11 @@ export const useAuth = () => {
         return;
       }
 
-      setProvider(privateKeyHex);
+      privateKey.value = privateKeyHex;
+      await setProvider(privateKeyHex);
 
       userInfo.value = await web3Auth.value?.getUserInfo().then((user) => ({
-        username: user.name || "Web3Auth User",
+        username: user.name || user.email || "Web3Auth User",
         profileImage:
           user.profileImage ||
           "https://avatars.dicebear.com/api/identicon/default.svg",
@@ -255,7 +272,7 @@ export const useAuth = () => {
         }
 
         userInfo.value = await web3Auth.value?.getUserInfo().then((user) => ({
-          username: user.name || "Web3Auth User",
+          username: user.name || user.email || "Web3Auth User",
           profileImage:
             user.profileImage ||
             "https://avatars.dicebear.com/api/identicon/default.svg",

@@ -12,6 +12,8 @@ export default defineContentConfig({
         image: z.object({
           src: z.string(),
         }),
+        // Optional background for the post's title area; defaults to /img/blog-header.png
+        headerImage: z.string().optional(),
         published: z.boolean(),
       }),
     }),

@@ -433,6 +433,7 @@ export const addTemplateRoutes = (app: Express): void => {
 
   app.get("/t/:id", requireAuth, async (req, res) => {
     const tid = req.params.id;
+    if (!/^[\p{L}\p{N}@_-]+$/u.test(tid)) return make404(res);
     const tpl = await getTemplate(tid);
     if (!tpl) return make404(res);
     res.send(page(await tplViewPage(tpl!.data)));
@@ -464,6 +465,7 @@ ${templateDataForm(html, fields, req.body)}`);
 
   app.post("/t/:id", requireAuth, async (req, res) => {
     const tid = req.params.id;
+    if (!/^[\p{L}\p{N}@_-]+$/u.test(tid)) return make404(res);
     const tpl = await getTemplate(tid);
     if (!tpl) return make404(res);
 

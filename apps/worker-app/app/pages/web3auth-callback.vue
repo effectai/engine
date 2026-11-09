@@ -35,7 +35,7 @@ onMounted(async () => {
     privateKey.value = privateKeyHex;
 
     userInfo.value = await web3Auth.value?.getUserInfo().then((user) => ({
-      username: user.email || user.name || "Web3Auth User",
+      username: user.name || user.email || "Web3Auth User",
       profileImage:
         user.profileImage ||
         "https://avatars.dicebear.com/api/identicon/default.svg",
