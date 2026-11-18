@@ -25,6 +25,9 @@ export default defineNuxtConfig({
     clientNodeCompat: true,
   },
   vite: {
+    resolve: {
+      alias: { events: "events" },
+    },
     esbuild: {
       target: "esnext",
     },

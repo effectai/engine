@@ -1,15 +1,16 @@
 import { generateKeyPairFromSeed } from "@effectai/protocol-core";
 
 import { useLocalStorage } from "@vueuse/core";
-import { AuthAdapter } from "@web3auth/auth-adapter";
+import { CHAIN_NAMESPACES } from "@web3auth/base";
 import {
-  CHAIN_NAMESPACES,
+  authConnector,
   UX_MODE,
-  WALLET_ADAPTERS,
+  WALLET_CONNECTORS,
   WEB3AUTH_NETWORK,
+  Web3AuthNoModal,
+  type AuthConnectorType,
   type Web3AuthNoModalOptions,
-} from "@web3auth/base";
-import { Web3AuthNoModal } from "@web3auth/no-modal";
+} from "@web3auth/no-modal";
 import {
   SolanaPrivateKeyProvider,
   SolanaWallet,
@@ -32,7 +33,7 @@ export function getModifierHex(): string | null {
   return hex;
 }
 
-export const SOCIAL_LOGIN_ENABLED = false;
+export const SOCIAL_LOGIN_ENABLED = true;
 
 type UserInfo = {
   username: string;
@@ -114,29 +115,28 @@ export const useAuth = () => {
   const init = async () => {
     try {
       console.log("Initializing Web3Auth...");
-      const privateKeyProvider = new SolanaPrivateKeyProvider({
-        config: { chainConfig },
-      });
-
+      const redirectUrl = `${window.location.origin}/web3auth-callback`;
       const web3AuthOptions: Web3AuthNoModalOptions = {
         clientId,
         web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
-        privateKeyProvider,
-        chainConfig,
+        chains: [chainConfig],
+        connectors: [
+          authConnector({
+            connectorSettings: { redirectUrl, uxMode: UX_MODE.REDIRECT },
+          }),
+        ],
       };
 
       const web3authInstance = new Web3AuthNoModal(web3AuthOptions);
-      const redirectUrl = `${window.location.origin}/web3auth-callback`;
-      const authAdapter = new AuthAdapter({
-        privateKeyProvider,
-        adapterSettings: {
-          redirectUrl,
-          uxMode: UX_MODE.REDIRECT,
-        },
-      });
-
-      web3authInstance.configureAdapter(authAdapter);
       await web3authInstance.init();
+
+      if (!["ready", "connected", "errored"].includes(web3authInstance.status)) {
+        await new Promise<void>((resolve) => {
+          web3authInstance.once("ready", () => resolve());
+          web3authInstance.once("connected", () => resolve());
+          web3authInstance.once("errored", () => resolve());
+        });
+      }
 
       web3Auth.value = web3authInstance;
     } catch (e) {
@@ -172,15 +172,16 @@ export const useAuth = () => {
           await web3Auth.value.logout();
         }
         console.log("Connecting with provider:", loginProvider);
-        await web3Auth.value.connectTo(WALLET_ADAPTERS.AUTH, {
-          loginProvider,
+        await web3Auth.value.connectTo(WALLET_CONNECTORS.AUTH, {
+          authConnection: loginProvider,
         });
       }
 
-      const pk = await web3Auth.value.provider?.request({
-        method: "solanaPrivateKey",
-      });
-      const privateKeyHex = pk as string;
+      const privateKeyHex = (
+        web3Auth.value.getConnector(
+          WALLET_CONNECTORS.AUTH,
+        ) as AuthConnectorType | null
+      )?.authInstance?.ed25519PrivKey as string;
 
       // If no modifier, defer auth and show recovery
       if (!localStorage.getItem("modifier")) {
@@ -262,9 +263,11 @@ export const useAuth = () => {
       }
 
       if (web3Auth.value?.status === "connected") {
-        const pk = await web3Auth.value.provider?.request({
-          method: "solanaPrivateKey",
-        });
+        const pk = (
+          web3Auth.value.getConnector(
+            WALLET_CONNECTORS.AUTH,
+          ) as AuthConnectorType | null
+        )?.authInstance?.ed25519PrivKey;
 
         if (!pk) {
           error.value = "Failed to retrieve private key from Web3Auth";

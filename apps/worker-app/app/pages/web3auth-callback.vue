@@ -3,6 +3,8 @@
 </template>
 
 <script setup lang="ts">
+import { WALLET_CONNECTORS, type AuthConnectorType } from "@web3auth/no-modal";
+
 const { web3Auth, init, privateKey, userInfo, isAuthenticated, pendingRecoveryPrivateKey } = useAuth();
 
 definePageMeta({
@@ -12,9 +14,11 @@ definePageMeta({
 onMounted(async () => {
   await init();
   if (web3Auth.value?.status === "connected") {
-    const pk = await web3Auth.value.provider?.request({
-      method: "solanaPrivateKey",
-    });
+    const pk = (
+      web3Auth.value.getConnector(
+        WALLET_CONNECTORS.AUTH,
+      ) as AuthConnectorType | null
+    )?.authInstance?.ed25519PrivKey;
 
     if (!pk) {
       console.error("No private key found");
